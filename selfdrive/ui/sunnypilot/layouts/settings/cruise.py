@@ -19,15 +19,6 @@ class CruiseLayout(Widget):
     current_gap = int(self._params.get("CustomAccLongPressIncrement", encoding="utf8") or "3")
 
     items = [
-      option_item_sp(
-        title="Option Control Test",
-        description="This is but a test",
-        min_value=1,
-        max_value=4,
-        initial_value=current_gap,
-        value_change_step=1,
-        on_value_changed=on_gap_change
-      )
     ]
     return items
 

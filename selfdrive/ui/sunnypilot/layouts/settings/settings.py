@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from openpilot.selfdrive.ui.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
-from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.device import DeviceLayoutSP
 from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
@@ -55,7 +55,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     # Panel configuration
     self._panels = {
-      OP.PanelType.DEVICE: PanelInfo("Device", DeviceLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_home.png"),
+      OP.PanelType.DEVICE: PanelInfo("Device", DeviceLayoutSP(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_home.png"),
       OP.PanelType.NETWORK: PanelInfo("Network", NetworkLayout(), icon="icons/network.png"),
       OP.PanelType.SUNNYLINK: PanelInfo("sunnylink", SunnylinkLayout(), icon="icons/shell.png"),
       OP.PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
