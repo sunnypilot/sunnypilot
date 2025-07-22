@@ -85,6 +85,13 @@ class SettingsLayoutSP(OP.SettingsLayout):
         content_x = rect.x + 90
         text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
 
+        # Draw background if selected
+        if is_selected:
+          self.container_rect = rl.Rectangle(
+            content_x - 20, rect.y, OP.SIDEBAR_WIDTH - 70, OP.NAV_BTN_HEIGHT
+          )
+          rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
+
         if self.panel_info.icon:
           icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE)
           rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2), rl.WHITE)
