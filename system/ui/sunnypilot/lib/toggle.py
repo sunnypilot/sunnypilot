@@ -18,7 +18,7 @@ class ToggleSP(Toggle):
       knob_color = style.TOGGLE_DISABLED_KNOB_COLOR
 
     # Draw background
-    bg_rect = rl.Rectangle(self._rect.x + 5, self._rect.y + 10, style.TOGGLE_WIDTH - 10, style.TOGGLE_BG_HEIGHT)
+    bg_rect = rl.Rectangle(self._rect.x, self._rect.y, style.TOGGLE_WIDTH, style.TOGGLE_BG_HEIGHT)
 
     # Draw outline first
     outline_color = style.TOGGLE_ON_COLOR
@@ -43,7 +43,7 @@ class ToggleSP(Toggle):
     knob_travel_distance = right_edge - left_edge - 2 * knob_radius
     min_knob_x = left_edge + knob_radius
     knob_x = min_knob_x + knob_travel_distance * self._progress
-    knob_y = self._rect.y + style.TOGGLE_HEIGHT / 2
+    knob_y = self._rect.y + style.TOGGLE_BG_HEIGHT / 2
 
     rl.draw_circle(int(knob_x), int(knob_y), knob_radius, knob_color)
 

@@ -71,9 +71,9 @@ class ListItemSP(ListItem):
     if left_action_item:
       left_rect = rl.Rectangle(
         content_x,
-        self._rect.y + (style.ITEM_BASE_HEIGHT - style.BUTTON_HEIGHT) // 2,
+        self._rect.y + (style.ITEM_BASE_HEIGHT - style.TOGGLE_HEIGHT) // 2,
         style.TOGGLE_WIDTH,
-        style.BUTTON_HEIGHT
+        style.TOGGLE_HEIGHT
       )
       text_x = left_rect.x + left_rect.width + style.ITEM_PADDING
 
