@@ -130,6 +130,7 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
   painter.drawPolygon(track_vertices);
 }
 
+
 void ModelRenderer::updatePathGradient(QLinearGradient &bg) {
   static const QColor throttle_colors[] = {
       QColor::fromHslF(148. / 360., 0.94, 0.51, 0.4),
