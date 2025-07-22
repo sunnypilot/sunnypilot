@@ -28,6 +28,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "../assets/offroad/icon_monitoring.png",
       false,
     },
+    {
+      "RainbowMode",
+      tr("Enable Tesla Rainbow Mode"),
+      tr("Enable the rainbow mode, which displays a rainbow effect on the screen."),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
   };
 
   // Add regular toggles first
