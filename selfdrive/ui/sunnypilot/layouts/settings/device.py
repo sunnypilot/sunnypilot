@@ -12,7 +12,7 @@ from openpilot.system.ui.lib.list_view import text_item, button_item, dual_butto
 from openpilot.system.ui.lib.scroller import Scroller
 from openpilot.system.ui.lib.widget import Widget, DialogResult
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
-from openpilot.system.ui.sunnypilot.lib.list_view import option_item_sp
+from openpilot.system.ui.sunnypilot.lib.list_view import option_item_sp, multiple_button_item_sp
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 from openpilot.system.ui.widgets.confirm_dialog import confirm_dialog, alert_dialog
 from openpilot.system.ui.widgets.html_render import HtmlRenderer
@@ -69,8 +69,19 @@ class DeviceLayoutSP(DeviceLayout):
         enabled=True,
         icon="",
         value_map=offroad_time_options,
+        label_width=300,
         use_float_scaling=False)
     ),
+
+    items.append(
+      multiple_button_item_sp(
+        "Wake Up Behavior",
+        "Wake Up Behavior",
+        param="DeviceBootMode",
+        buttons=["Default", "Offroad"],
+        button_width=255,
+      ),
+    )
 
     items += [dual_button_item("Reboot", "Power Off", left_callback=self._reboot_prompt, right_callback=self._power_off_prompt),]
 

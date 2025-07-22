@@ -1,10 +1,12 @@
 import pyray as rl
 from collections.abc import Callable
-from typing import Optional, Union
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+import openpilot.system.ui.sunnypilot.lib.styles as styles
+
+style = styles.Default
 
 # Dimensions and styling constants
 BUTTON_WIDTH = 80
@@ -32,6 +34,7 @@ class OptionControlSP(Widget):
                  value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                  on_value_changed: Callable[[int], None] | None = None,
                  value_map: dict[str, tuple[str, str]] | None = None,
+                 label_width: int = LABEL_WIDTH,
                  use_float_scaling: bool = False):
 
         super().__init__()
@@ -43,6 +46,7 @@ class OptionControlSP(Widget):
         self._enabled = enabled
         self.on_value_changed = on_value_changed
         self.value_map = value_map
+        self.label_width = label_width
         self.use_float_scaling = use_float_scaling
         self.current_value = min_value
         if self.value_map:
@@ -55,26 +59,12 @@ class OptionControlSP(Widget):
 
         # Initialize font and button styles
         self._font = gui_app.font(FontWeight.MEDIUM)
-        self._init_styles()
 
         # Layout rectangles for components
         self.minus_btn_rect = rl.Rectangle(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
-        self.label_rect = rl.Rectangle(0, 0, LABEL_WIDTH, BUTTON_HEIGHT)
+        self.label_rect = rl.Rectangle(0, 0, self.label_width, BUTTON_HEIGHT)
         self.plus_btn_rect = rl.Rectangle(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.container_rect = rl.Rectangle(0, 0, 0, 0)
-
-    def _init_styles(self):
-        """Initialize color styles for the widget"""
-        # Main colors
-        self.surface_container = rl.Color(57, 57, 57, 255)      # Container background
-        self.btn_enabled = rl.Color(74, 74, 74, 255)            # Normal button
-        self.btn_pressed = rl.Color(30, 121, 232, 255)          # Pressed button
-        self.btn_disabled = rl.Color(18, 18, 18, 255)           # Disabled button
-
-        # Text colors
-        self.text_enabled = rl.Color(255, 255, 255, 255)        # Enabled text
-        self.text_pressed = rl.Color(255, 255, 255, 255)        # Pressed text
-        self.text_disabled = rl.Color(92, 92, 92, 255)          # Disabled text
 
     def set_enabled(self, enabled: bool | Callable[[], bool]):
         """Set whether the control is enabled"""
@@ -98,7 +88,7 @@ class OptionControlSP(Widget):
     def _update_layout_rects(self):
         """Update the layout rectangles when the widget rect changes"""
         # Calculate total control width
-        control_width = (BUTTON_WIDTH * 2) + LABEL_WIDTH + (BUTTON_SPACING * 2)
+        control_width = (BUTTON_WIDTH * 2) + self.label_width + (BUTTON_SPACING * 2)
 
         # Position the control in the parent rectangle
         start_x = self._rect.x + self._rect.width - control_width - (CONTAINER_PADDING * 2)
@@ -128,12 +118,12 @@ class OptionControlSP(Widget):
         self.label_rect = rl.Rectangle(
             label_x,
             component_y,
-            LABEL_WIDTH,
+            self.label_width,
             BUTTON_HEIGHT
         )
 
         # Plus button
-        plus_x = label_x + LABEL_WIDTH + BUTTON_SPACING
+        plus_x = label_x + self.label_width + BUTTON_SPACING
         self.plus_btn_rect = rl.Rectangle(
             plus_x,
             component_y,
@@ -174,7 +164,7 @@ class OptionControlSP(Widget):
         enabled = self.is_enabled()
 
         # Draw container background
-        rl.draw_rectangle_rounded(self.container_rect, 1, BUTTON_CORNER_RADIUS, self.surface_container)
+        rl.draw_rectangle_rounded(self.container_rect, 1, BUTTON_CORNER_RADIUS, style.OPTIONCONTROL_CONTAINER_BG)
 
         # Determine button states
         minus_enabled = enabled and self.current_value > self.min_value
@@ -211,14 +201,14 @@ class OptionControlSP(Widget):
 
         # Determine button colors based on state
         if not enabled:
-            bg_color = self.btn_disabled
-            text_color = self.text_disabled
+            bg_color = style.OPTIONCONTROL_BTN_DISABLED
+            text_color = style.OPTIONCONTROL_TEXT_DISABLED
         elif is_pressed:
-            bg_color = self.btn_pressed
-            text_color = self.text_pressed
+            bg_color = style.OPTIONCONTROL_BTN_PRESSED
+            text_color = style.OPTIONCONTROL_TEXT_PRESSED
         else:
-            bg_color = self.btn_enabled
-            text_color = self.text_enabled
+            bg_color = style.OPTIONCONTROL_BTN_ENABLED
+            text_color = style.OPTIONCONTROL_TEXT_ENABLED
 
         # Draw button background
         rl.draw_rectangle_rounded(rect, 1, BUTTON_CORNER_RADIUS, bg_color)
@@ -234,7 +224,7 @@ class OptionControlSP(Widget):
     def _render_value_label(self):
         """Render the current value label"""
         text = self.get_displayed_value()
-        text_color = self.text_enabled if self.is_enabled() else self.text_disabled
+        text_color = style.OPTIONCONTROL_TEXT_ENABLED if self.is_enabled() else style.OPTIONCONTROL_TEXT_DISABLED
 
         # Calculate text position centered in the label area
         text_size = measure_text_cached(self._font, text, VALUE_FONT_SIZE)

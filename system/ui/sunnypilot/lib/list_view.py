@@ -5,6 +5,7 @@ from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from collections.abc import Callable
 
+from openpilot.common.params import Params
 from openpilot.system.ui.sunnypilot.lib.toggle import ToggleSP
 import openpilot.system.ui.sunnypilot.lib.styles as styles
 from openpilot.system.ui.sunnypilot.lib.option_control import OptionControlSP
@@ -116,6 +117,58 @@ class ListItemSP(ListItem):
         style.ITEM_DESC_TEXT_COLOR,
       )
 
+class MultipleButtonActionSP(MultipleButtonAction):
+  def __init__(self, param: str, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
+    MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
+    self.param = param
+    if param is not None:
+      self.selected_button = int(Params().get(self.param, encoding="utf8"))
+  def _render(self, rect: rl.Rectangle) -> bool:
+    spacing = 20
+    button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
+    clicked = -1
+
+    for i, text in enumerate(self.buttons):
+      button_x = rect.x + i * (self.button_width + spacing)
+      button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+
+      # Check button state
+      mouse_pos = rl.get_mouse_position()
+      is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
+      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self._is_pressed
+      is_selected = i == self.selected_button
+
+      # Button colors
+      if is_selected:
+        bg_color = style.ON_BG_COLOR
+        if is_pressed:
+          bg_color = style.ON_HOVER_BG_COLOR
+      elif is_pressed:
+        bg_color = style.OFF_HOVER_BG_COLOR
+      else:
+        bg_color = style.OFF_BG_COLOR
+
+      # Draw button
+      rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
+
+      # Draw text
+      text_size = measure_text_cached(self._font, text, 40)
+      text_x = button_x + (self.button_width - text_size.x) / 2
+      text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, style.ITEM_TEXT_COLOR)
+
+      # Handle click
+      if is_hovered and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT) and self._is_pressed:
+        clicked = i
+
+    if clicked >= 0:
+      self.selected_button = clicked
+      Params().put(self.param, str(self.selected_button))
+      if self.callback:
+        self.callback(clicked)
+      return True
+    return False
+
 def toggle_item_sp(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
@@ -139,9 +192,9 @@ def dual_button_item_sp(left_text: str, right_text: str, left_callback: Callable
   action = DualButtonAction(left_text, right_text, left_callback, right_callback, enabled)
   return ListItemSP(title="", description=description, action_item=action)
 
-def multiple_button_item_sp(title: str, description: str, buttons: list[str], selected_index: int,
+def multiple_button_item_sp(title: str, description: str, buttons: list[str], selected_index: int = 0, param: str | None = None,
                          button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
-  action = MultipleButtonAction(buttons, button_width, selected_index, callback=callback)
+  action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
 
 
@@ -151,6 +204,7 @@ class OptionControlActionSP(ItemAction):
                value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                on_value_changed: Callable[[int], None] | None = None,
                value_map: dict[str, tuple[str, str]] | None = None,
+               label_width: int = style.BUTTON_WIDTH,
                use_float_scaling: bool = False):
     # Initialize with zero width - the component will size itself
     super().__init__(width=0, enabled=enabled)
@@ -158,7 +212,7 @@ class OptionControlActionSP(ItemAction):
     # Create the option control
     self.option_control = OptionControlSP(
         param, min_value, max_value, value_change_step,
-        enabled, on_value_changed, value_map, use_float_scaling
+        enabled, on_value_changed, value_map, label_width, use_float_scaling
     )
 
   def _render(self, rect: rl.Rectangle) -> bool | int | None:
@@ -177,10 +231,10 @@ def option_item_sp(title: str, description: str | Callable[[], str] | None, para
                    min_value: int, max_value: int, value_change_step: int = 1,
                    on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
-                   icon: str = "", value_map: dict[str, tuple[str, str]] | None = None,
+                   icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[str, tuple[str, str]] | None = None,
                    use_float_scaling: bool = False) -> ListItem:
   action = OptionControlActionSP(
       param, min_value, max_value, value_change_step,
-      enabled, on_value_changed, value_map, use_float_scaling
+      enabled, on_value_changed, value_map, label_width, use_float_scaling
   )
   return ListItemSP(title=title, description=description, action_item=action, icon=icon)
