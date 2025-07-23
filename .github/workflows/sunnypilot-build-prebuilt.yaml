@@ -36,19 +36,11 @@ on:
         default: false
 
 jobs:
-  debug:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Workflow triggered!"
   build:
-    concurrency:
-      group: build-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
-    runs-on: self-hosted
+    runs-on: ubuntu-24.04
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
       version: ${{ steps.set-env.outputs.version }}
-      extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
     steps:
       - name: Debug
@@ -74,7 +66,7 @@ jobs:
 
       - name: Set prebuilt branch
         run: |
-          echo "NEW_BRANCH=prebuilt" >> $GITHUB_ENV
+          echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
 
       - name: Setup build environment
@@ -166,7 +158,6 @@ jobs:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
-    if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build ]
     runs-on: ubuntu-24.04
     environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
@@ -200,8 +191,7 @@ jobs:
             "${{ env.OUTPUT_DIR }}" \
             "${{ needs.build.outputs.new_branch }}" \
             "${{ needs.build.outputs.version }}" \
-            "https://x-access-token:${{github.token}}@github.com/mouxangithub/openpilot.git" \
-            "-${{ needs.build.outputs.extra_version_identifier }}"
+            "https://x-access-token:${{github.token}}@github.com/mouxangithub/openpilot.git"
 
           echo ""
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
