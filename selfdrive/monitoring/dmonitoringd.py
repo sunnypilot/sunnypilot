@@ -22,17 +22,16 @@ def dmonitoringd_thread():
       # iterate when model has new output
       continue
 
-    valid = sm.all_checks()
-    if valid:
-      DM.run_step(sm)
-
-    # publish
-    dat = DM.get_state_packet(valid=valid)
-    pm.send('driverMonitoringState', dat)
-
-    # load live always-on toggle
-    if sm['driverStateV2'].frameId % 40 == 1:
-      DM.always_on = params.get_bool("AlwaysOnDM")
+    if DM.always_on:
+      valid = sm.all_checks()
+      if valid:
+        DM.run_step(sm)
+      # publish
+      dat = DM.get_state_packet(valid=valid)
+      pm.send('driverMonitoringState', dat)
+    else:
+      # DM.reset(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"))
+      pass
 
     # save rhd virtual toggle every 5 mins
     if (sm['driverStateV2'].frameId % 6000 == 0 and
