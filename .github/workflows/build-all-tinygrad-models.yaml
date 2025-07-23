@@ -87,6 +87,7 @@ jobs:
           mkdir -p "$recompiled_dir"
           touch "$recompiled_dir/.gitkeep"
           echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
+          echo "Created new recompiled dir: $recompiled_dir"
 
       - name: Download context
         uses: actions/download-artifact@v4
