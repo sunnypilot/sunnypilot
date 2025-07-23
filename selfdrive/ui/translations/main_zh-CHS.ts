@@ -84,39 +84,40 @@
     </message>
     <message>
         <source>Prevent large data uploads when on a metered cellular connection</source>
-        <translation type="unfinished"></translation>
+        <translation>在移动网络下，禁止大流量数据上传</translation>
     </message>
     <message>
         <source>default</source>
-        <translation type="unfinished"></translation>
+        <translation>默认</translation>
     </message>
     <message>
         <source>metered</source>
-        <translation type="unfinished"></translation>
+        <translation>按量计费</translation>
     </message>
     <message>
         <source>unmetered</source>
-        <translation type="unfinished"></translation>
+        <translation>不限流量</translation>
     </message>
     <message>
         <source>Wi-Fi Network Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>Wi-Fi 计费</translation>
     </message>
     <message>
         <source>Prevent large data uploads when on a metered Wi-Fi connection</source>
-        <translation type="unfinished"></translation>
+        <translation>在计费的 Wi-Fi 网络下，禁止大流量数据上传</translation>
     </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>
     <message>
         <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
+        <translation>打转向灯自动变道</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置转向灯触发自动变道的延迟计时器。启用计时器后，自动变道时无需轻推方向盘。默认为需轻推方向盘（Nudge模式）。
+使用本功能时请务必谨慎。仅当交通和路况允许时方可使用转向灯变道。</translation>
     </message>
     <message>
         <source>s</source>
@@ -124,15 +125,15 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <source>Nudge</source>
-        <translation type="unfinished"></translation>
+        <translation>轻推</translation>
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
+        <translation>自动</translation>
     </message>
 </context>
 <context>
@@ -181,35 +182,35 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable GitHub runner service</source>
-        <translation type="unfinished"></translation>
+        <translation>启用 GitHub Runner 服务</translation>
     </message>
     <message>
         <source>Enables or disables the github runner service.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用或禁用 GitHub Runner 服务</translation>
     </message>
     <message>
         <source>Error Log</source>
-        <translation type="unfinished"></translation>
+        <translation>错误日志</translation>
     </message>
     <message>
         <source>VIEW</source>
-        <translation type="unfinished">查看</translation>
+        <translation>查看</translation>
     </message>
     <message>
         <source>View the error log for sunnypilot crashes.</source>
-        <translation type="unfinished"></translation>
+        <translation>查看 ​​sunnypilot​​ 崩溃的错误日志</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished"></translation>
+        <translation>​​openpilot 纵向控制（Alpha 测试版）​​</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished"></translation>
+        <translation>​​警告：当前车型的 openpilot 纵向控制功能处于 Alpha 测试阶段，启用后将禁用自动紧急制动（AEB）。​​</translation>
     </message>
     <message>
         <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished"></translation>
+        <translation>​​该车型默认使用原车自带的自适应巡航（ACC），而非 sunnypilot 的纵向控制功能。开启此选项将切换为 sunnypilot 纵向控制。建议启用时同步开启「实验模式」以获得完整 Alpha 版功能支持。​​</translation>
     </message>
 </context>
 <context>
@@ -343,8 +344,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>预览</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>将您的设备与comma connect （stable.konik.ai）配对并领取您的comma prime优惠。</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -356,94 +357,94 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disengage to Reset Calibration</source>
-        <translation type="unfinished"></translation>
+        <translation>​​解除状态以重置校准​​</translation>
     </message>
     <message>
         <source> Resetting calibration will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
+        <translation>重置校准将导致 openpilot 在车辆通电状态下重启</translation>
     </message>
 </context>
 <context>
     <name>DevicePanelSP</name>
     <message>
         <source>Driver Camera Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶员画面</translation>
     </message>
     <message>
         <source>Training Guide</source>
-        <translation type="unfinished"></translation>
+        <translation>​​培训指南​​</translation>
     </message>
     <message>
         <source>Regulatory</source>
-        <translation type="unfinished">监管信息</translation>
+        <translation>监管信息</translation>
     </message>
     <message>
         <source>Language</source>
-        <translation type="unfinished"></translation>
+        <translation>语言</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
-        <translation type="unfinished">您确定要查看新手指南吗？</translation>
+        <translation>您确定要查看新手指南吗？</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished">预览</translation>
+        <translation>预览</translation>
     </message>
     <message>
         <source>Select a language</source>
-        <translation type="unfinished">选择语言</translation>
+        <translation>选择语言</translation>
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">重启</translation>
+        <translation>重启</translation>
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">关机</translation>
+        <translation>关机</translation>
     </message>
     <message>
         <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>离线模式</translation>
     </message>
     <message>
         <source>Are you sure you want to exit Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>​​确定要退出“始终离线模式”吗？​​</translation>
     </message>
     <message>
         <source>Confirm</source>
-        <translation type="unfinished">确认</translation>
+        <translation>确认</translation>
     </message>
     <message>
         <source>Are you sure you want to enter Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>​​确定要启用“始终离线模式”吗？​​</translation>
     </message>
     <message>
         <source>Disengage to Enter Always Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>​​退出当前状态以启用离线模式​​</translation>
     </message>
     <message>
         <source>Exit Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>​​退出离线模式​​</translation>
     </message>
     <message>
         <source>Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>始终离线模式</translation>
     </message>
     <message>
         <source>Quiet Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>​​静音模式​​</translation>
     </message>
     <message>
         <source>Reset Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>​​恢复默认设置​​</translation>
     </message>
     <message>
         <source>Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back.</source>
-        <translation type="unfinished"></translation>
+        <translation>​​是否确定将所有 sunnypilot 设置恢复为默认值？此操作不可逆，重置后无法恢复原有配置。​​</translation>
     </message>
     <message>
         <source>Reset</source>
-        <translation type="unfinished">重置</translation>
+        <translation>重置</translation>
     </message>
     <message>
         <source>The reset cannot be undone. You have been warned.</source>
@@ -454,27 +455,27 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DriveStats</name>
     <message>
         <source>Drives</source>
-        <translation type="unfinished"></translation>
+        <translation>​​驾驶​​</translation>
     </message>
     <message>
         <source>Hours</source>
-        <translation type="unfinished"></translation>
+        <translation>​​小时​​</translation>
     </message>
     <message>
         <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
+        <translation>​​累计数据​​</translation>
     </message>
     <message>
         <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
+        <translation>​​过去一周​​</translation>
     </message>
     <message>
         <source>KM</source>
-        <translation type="unfinished"></translation>
+        <translation>公里</translation>
     </message>
     <message>
         <source>Miles</source>
-        <translation type="unfinished"></translation>
+        <translation>英里</translation>
     </message>
 </context>
 <context>
@@ -523,7 +524,9 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>sunnypilot learns to drive by watching humans, like you, drive.
 
 Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="unfinished"></translation>
+        <translation>​​sunnypilot 通过观察人类驾驶（如您的驾驶行为）来学习驾驶。​​
+
+​​Firehose 模式​​可最大化训练数据上传，用于改进 openpilot 的驾驶模型。数据越多，模型越强，​​实验模式（Experimental Mode）​​的表现也会更优。</translation>
     </message>
     <message>
         <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
@@ -549,43 +552,43 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>HyundaiSettings</name>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <source>Dynamic</source>
-        <translation type="unfinished"></translation>
+        <translation>​​动态​​</translation>
     </message>
     <message>
         <source>Predictive</source>
-        <translation type="unfinished"></translation>
+        <translation>​​预测​​</translation>
     </message>
     <message>
         <source>Custom Longitudinal Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>​​自定义纵向控制调校​​</translation>
     </message>
     <message>
         <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation type="unfinished"></translation>
+        <translation>​​此功能仅在使用 openpilot 纵向控制时可用。​​</translation>
     </message>
     <message>
         <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
-        <translation type="unfinished"></translation>
+        <translation>在设备面板中启用 &quot; 始终离线模式 &quot;，或关闭车辆以选择选项。</translation>
     </message>
     <message>
         <source>Off: Uses default tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭：使用默认调校</translation>
     </message>
     <message>
         <source>Dynamic: Adjusts acceleration limits based on current speed</source>
-        <translation type="unfinished"></translation>
+        <translation>动态模式：根据当前速度调整加速限制</translation>
     </message>
     <message>
         <source>Predictive: Uses future trajectory data to anticipate needed adjustments</source>
-        <translation type="unfinished"></translation>
+        <translation>预测模式：利用未来轨迹数据预判所需调整</translation>
     </message>
     <message>
         <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
+        <translation>通过调整 openpilot 纵向控制的加速平顺性，微调您的驾驶体验。</translation>
     </message>
 </context>
 <context>
@@ -605,136 +608,136 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>LaneChangeSettings</name>
     <message>
         <source>Back</source>
-        <translation type="unfinished">返回</translation>
+        <translation>返回</translation>
     </message>
     <message>
         <source>Auto Lane Change: Delay with Blind Spot</source>
-        <translation type="unfinished"></translation>
+        <translation>自动变道：带盲点监测的延迟功能</translation>
     </message>
     <message>
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
+        <translation>开启后，当盲点监测系统(BSM)检测到障碍车辆时，将启用延迟计时器来实现无缝变道，确保操作安全。</translation>
     </message>
 </context>
 <context>
     <name>LateralPanel</name>
     <message>
         <source>Modular Assistive Driving System (MADS)</source>
-        <translation type="unfinished"></translation>
+        <translation>模块化辅助驾驶系统 (MADS)</translation>
     </message>
     <message>
         <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用备受喜爱的MADS功能。禁用此开关可恢复为原厂sunnypilot接管/退出模式。</translation>
     </message>
     <message>
         <source>Customize MADS</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义 MADS</translation>
     </message>
     <message>
         <source>Customize Lane Change</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义变道设置</translation>
     </message>
     <message>
         <source>Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).</source>
-        <translation type="unfinished"></translation>
+        <translation>启用自动车道居中（ALC）与自适应巡航控制（ACC）的独立接合功能。</translation>
     </message>
     <message>
         <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
+        <translation>启动车辆以检查车辆兼容性。</translation>
     </message>
     <message>
         <source>This platform supports all MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>该平台支持所有MADS设置。</translation>
     </message>
     <message>
         <source>This platform supports limited MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>该平台仅支持部分MADS设置。</translation>
     </message>
 </context>
 <context>
     <name>MadsSettings</name>
     <message>
         <source>Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation>通过主巡航开关切换</translation>
     </message>
     <message>
         <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：对于没有LFA/LKAS按钮的车辆，禁用此功能将导致横向控制无法启用。</translation>
     </message>
     <message>
         <source>Unified Engagement Mode (UEM)</source>
-        <translation type="unfinished"></translation>
+        <translation>统一接合模式 (UEM)</translation>
     </message>
     <message>
         <source>Engage lateral and longitudinal control with cruise control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>通过巡航控制接合实现横向与纵向控制。</translation>
     </message>
     <message>
         <source>Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：通过UEM接合横向控制后，该功能将保持启用状态，直至手动按下MADS按钮或车辆熄火才会解除。</translation>
     </message>
     <message>
         <source>Remain Active</source>
-        <translation type="unfinished"></translation>
+        <translation>保持启用</translation>
     </message>
     <message>
         <source>Disengage</source>
-        <translation type="unfinished"></translation>
+        <translation>解除控制</translation>
     </message>
     <message>
         <source>Steering Mode on Brake Pedal</source>
-        <translation type="unfinished"></translation>
+        <translation>刹车踏板转向模式</translation>
     </message>
     <message>
         <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
+        <translation>启动车辆以检测车辆兼容性。</translation>
     </message>
     <message>
         <source>This feature defaults to OFF, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>该功能默认关闭，由于车辆限制无法进行选择。</translation>
     </message>
     <message>
         <source>This feature defaults to ON, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>该功能默认开启，且因车辆限制无法修改。</translation>
     </message>
     <message>
         <source>This platform only supports Disengage mode due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>受限于车辆条件，该平台仅支持「解除控制」模式。</translation>
     </message>
     <message>
         <source>Remain Active: ALC will remain active when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>保持启用：当刹车踏板被踩下时，ALC（自动车道居中）将保持激活。</translation>
     </message>
     <message>
         <source>Pause</source>
-        <translation type="unfinished"></translation>
+        <translation>暂停控制</translation>
     </message>
     <message>
         <source>Pause: ALC will pause when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>暂停模式：当刹车踏板被踩下时，ALC（自动车道居中）将暂停运作。</translation>
     </message>
     <message>
         <source>Disengage: ALC will disengage when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>解除模式：当刹车踏板被踩下时，ALC（自动车道居中）将立即解除。</translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.</source>
-        <translation type="unfinished"></translation>
+        <translation>选择在sunnypilot中手动踩下刹车踏板后，自动车道居中（ALC）的运行方式。</translation>
     </message>
 </context>
 <context>
     <name>MaxTimeOffroad</name>
     <message>
         <source>Max Time Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>最大离线时间</translation>
     </message>
     <message>
         <source>Device will automatically shutdown after set time once the engine is turned off.&lt;br/&gt;(30h is the default)</source>
-        <translation type="unfinished"></translation>
+        <translation>一旦发动机关闭，设备将在设定时间后自动关闭。&lt;br/&gt;（默认为30小时）</translation>
     </message>
     <message>
         <source>Always On</source>
-        <translation type="unfinished"></translation>
+        <translation>始终打开</translation>
     </message>
     <message>
         <source>h</source>
@@ -746,118 +749,118 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source> (default)</source>
-        <translation type="unfinished"></translation>
+        <translation> (默认)</translation>
     </message>
 </context>
 <context>
     <name>ModelsPanel</name>
     <message>
         <source>Current Model</source>
-        <translation type="unfinished"></translation>
+        <translation>当前模型</translation>
     </message>
     <message>
         <source>SELECT</source>
-        <translation type="unfinished">选择</translation>
+        <translation>选择</translation>
     </message>
     <message>
         <source>No custom model selected!</source>
-        <translation type="unfinished"></translation>
+        <translation>未选择自定义模型！</translation>
     </message>
     <message>
         <source>Driving</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶</translation>
     </message>
     <message>
         <source>Navigation</source>
-        <translation type="unfinished"></translation>
+        <translation>导航</translation>
     </message>
     <message>
         <source>Vision</source>
-        <translation type="unfinished"></translation>
+        <translation>愿景</translation>
     </message>
     <message>
         <source>Policy</source>
-        <translation type="unfinished"></translation>
+        <translation>政策</translation>
     </message>
     <message>
         <source>Downloading %1 model [%2]... (%3%)</source>
-        <translation type="unfinished"></translation>
+        <translation>正在下载 %1 model [%2]... (%3%)</translation>
     </message>
     <message>
         <source>%1 model [%2] %3</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 model [%2] %3</translation>
     </message>
     <message>
         <source>downloaded</source>
-        <translation type="unfinished"></translation>
+        <translation>已下载</translation>
     </message>
     <message>
         <source>ready</source>
-        <translation type="unfinished"></translation>
+        <translation>就绪</translation>
     </message>
     <message>
         <source>from cache</source>
-        <translation type="unfinished"></translation>
+        <translation>来自缓存</translation>
     </message>
     <message>
         <source>%1 model [%2] download failed</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 model [%2] 下载失败</translation>
     </message>
     <message>
         <source>%1 model [%2] pending...</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 model [%2] 挂起...</translation>
     </message>
     <message>
         <source>Fetching models...</source>
-        <translation type="unfinished"></translation>
+        <translation>获取模型...</translation>
     </message>
     <message>
         <source>Use Default</source>
-        <translation type="unfinished"></translation>
+        <translation>使用默认模型</translation>
     </message>
     <message>
         <source>Select a Model</source>
-        <translation type="unfinished"></translation>
+        <translation>选择模型</translation>
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished"></translation>
+        <translation>默认</translation>
     </message>
     <message>
         <source>Model download has started in the background.</source>
-        <translation type="unfinished"></translation>
+        <translation>模型已在后台开始下载</translation>
     </message>
     <message>
         <source>We STRONGLY suggest you to reset calibration.</source>
-        <translation type="unfinished"></translation>
+        <translation>我们强烈建议您重置校准。</translation>
     </message>
     <message>
         <source>Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
+        <translation>您现在想这样做吗？</translation>
     </message>
     <message>
         <source>Reset Calibration</source>
-        <translation type="unfinished">重置设备校准</translation>
+        <translation>重置设备校准</translation>
     </message>
     <message>
         <source>Driving Model Selector</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶模式选择</translation>
     </message>
     <message>
         <source>Warning: You are on a metered connection!</source>
-        <translation type="unfinished"></translation>
+        <translation>警告：您使用的是按流量计费的连接！</translation>
     </message>
     <message>
         <source>Continue</source>
-        <translation type="unfinished">继续</translation>
+        <translation>继续</translation>
     </message>
     <message>
         <source>on Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>使用流量</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
@@ -894,70 +897,70 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>NetworkingSP</name>
     <message>
         <source>Scan</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描</translation>
     </message>
     <message>
         <source>Scanning...</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描中...</translation>
     </message>
 </context>
 <context>
     <name>NeuralNetworkLateralControl</name>
     <message>
         <source>Neural Network Lateral Control (NNLC)</source>
-        <translation type="unfinished"></translation>
+        <translation>神经网络横向控制（NNLC）</translation>
     </message>
     <message>
         <source>NNLC is currently not available on this platform.</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC 目前在此平台上不可用。</translation>
     </message>
     <message>
         <source>Start the car to check car compatibility</source>
-        <translation type="unfinished"></translation>
+        <translation>启动汽车检查汽车兼容性</translation>
     </message>
     <message>
         <source>NNLC Not Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC 未加载</translation>
     </message>
     <message>
         <source>NNLC Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC 已加载</translation>
     </message>
     <message>
         <source>Match</source>
-        <translation type="unfinished"></translation>
+        <translation>匹配</translation>
     </message>
     <message>
         <source>Exact</source>
-        <translation type="unfinished"></translation>
+        <translation>精确</translation>
     </message>
     <message>
         <source>Fuzzy</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊</translation>
     </message>
     <message>
         <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too.</source>
-        <translation type="unfinished"></translation>
+        <translation>匹配：&quot;Exact&quot;是理想的，但&quot;Fuzzy&quot;也可以。</translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller, with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
-        <translation type="unfinished"></translation>
+        <translation>以前称为&lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;，它取代了横向&lt;b&gt;&quot;torque&quot;&lt;/b&gt;控制，​​其中一个版本采用神经网络训练，针对每款车型（严格来说是针对不同的电动助力转向系统固件版本）的驾驶数据进行优化，从而提升控制精度。​​</translation>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server</source>
-        <translation type="unfinished"></translation>
+        <translation>通过以下渠道联系sunnypilot Discord服务器上的sunnypilots团队</translation>
     </message>
     <message>
         <source>with feedback, or to provide log data for your car if your car is currently unsupported:</source>
-        <translation type="unfinished"></translation>
+        <translation>提供反馈，或者在您的汽车目前不受支持的情况下为您的汽车提供日志数据：</translation>
     </message>
     <message>
         <source>if there are any issues:</source>
-        <translation type="unfinished"></translation>
+        <translation>如果有任何问题：</translation>
     </message>
     <message>
         <source>and donate logs to get NNLC loaded for your car:</source>
-        <translation type="unfinished"></translation>
+        <translation>并上传日志为您的汽车加载NNLC：</translation>
     </message>
 </context>
 <context>
@@ -1010,7 +1013,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot现在处于离线模式。在禁用离线模式之前，sunnypilot不会启动。转到&quot;设置&quot; -&gt; &quot;设备&quot;退出“始终离线模式”模式。</translation>
     </message>
 </context>
 <context>
@@ -1058,16 +1061,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>将您的设备与comma账号配对</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>在手机上访问 https://connect.comma.ai</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>在手机上访问 https://stable.konik.ai</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>点击“添加新设备”，扫描右侧二维码</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>将 connect.comma.ai 收藏到您的主屏幕，以便像应用程序一样使用它</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>将 stable.konik.ai 收藏到您的主屏幕，以便像应用程序一样使用它</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1089,42 +1092,42 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>ParamControlSP</name>
     <message>
         <source>Enable</source>
-        <translation type="unfinished">启用</translation>
+        <translation>启用</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
     <name>PlatformSelector</name>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation>车辆</translation>
     </message>
     <message>
         <source>SEARCH</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索</translation>
     </message>
     <message>
         <source>Search your vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索您的车辆</translation>
     </message>
     <message>
         <source>Enter model year (e.g., 2021) and model name (Toyota Corolla):</source>
-        <translation type="unfinished"></translation>
+        <translation>输入车型年份和名称(例如: Toyota Corolla):</translation>
     </message>
     <message>
         <source>SEARCHING</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索</translation>
     </message>
     <message>
         <source>REMOVE</source>
-        <translation type="unfinished">删除</translation>
+        <translation>删除</translation>
     </message>
     <message>
-        <source>This setting will take effect immediately.</source>
-        <translation type="unfinished"></translation>
+        <source>Select vehicle to force fingerprint manually.</source>
+        <translation>选择车辆以手动强制指纹识别。</translation>
     </message>
     <message>
         <source>This setting will take effect once the device enters offroad state.</source>
@@ -1182,8 +1185,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>现在升级</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>打开connect.comma.ai以注册comma prime会员</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>打开stable.konik.ai以注册comma prime会员</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1326,11 +1329,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">设备</translation>
+        <translation>设备</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">网络</translation>
+        <translation>网络</translation>
     </message>
     <message>
         <source>sunnylink</source>
@@ -1338,19 +1341,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">设定</translation>
+        <translation>设定</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">软件</translation>
+        <translation>软件</translation>
     </message>
     <message>
         <source>Trips</source>
-        <translation type="unfinished"></translation>
+        <translation>行程</translation>
     </message>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation>车辆</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -1362,19 +1365,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Steering</source>
-        <translation type="unfinished"></translation>
+        <translation>转向</translation>
     </message>
     <message>
         <source>Models</source>
-        <translation type="unfinished"></translation>
+        <translation>模型</translation>
     </message>
     <message>
         <source>Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation>巡航</translation>
     </message>
     <message>
         <source>Visuals</source>
-        <translation type="unfinished"></translation>
+        <translation>视觉</translation>
     </message>
 </context>
 <context>
@@ -1479,8 +1482,8 @@ This may take up to a minute.</source>
         <translation>完成设置</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>将您的设备与comma connect （stable.konik.ai）配对并领取您的comma prime优惠。</translation>
     </message>
     <message>
         <source>Pair device</source>
@@ -1491,7 +1494,7 @@ This may take up to a minute.</source>
     <name>Sidebar</name>
     <message>
         <source>CONNECT</source>
-        <translation>CONNECT</translation>
+        <translation>云端服务</translation>
     </message>
     <message>
         <source>OFFLINE</source>
@@ -1566,23 +1569,23 @@ This may take up to a minute.</source>
     <name>SidebarSP</name>
     <message>
         <source>DISABLED</source>
-        <translation type="unfinished"></translation>
+        <translation>禁用</translation>
     </message>
     <message>
         <source>OFFLINE</source>
-        <translation type="unfinished">离线</translation>
+        <translation>离线</translation>
     </message>
     <message>
         <source>REGIST...</source>
-        <translation type="unfinished"></translation>
+        <translation>注册...</translation>
     </message>
     <message>
         <source>ONLINE</source>
-        <translation type="unfinished">在线</translation>
+        <translation>在线</translation>
     </message>
     <message>
         <source>ERROR</source>
-        <translation type="unfinished">连接出错</translation>
+        <translation>连接出错</translation>
     </message>
     <message>
         <source>SUNNYLINK</source>
@@ -1733,7 +1736,7 @@ This may take up to a minute.</source>
     <name>SunnylinkPanel</name>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
-        <translation type="unfinished"></translation>
+        <translation>这是主开关，如果你想这样做，它将允许你切断任何sunnylink请求。</translation>
     </message>
     <message>
         <source>Enable sunnylink</source>
@@ -1741,15 +1744,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation type="unfinished"></translation>
+        <translation>🎉欢迎回来!我们很高兴看到您再次启用sunnylink！ 🚀</translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation type="unfinished"></translation>
+        <translation>👋不瞒你说，看到你停用阳光云端我们挺难过的 😢，不过等你准备好回来时，我们随时欢迎 🎉。</translation>
     </message>
     <message>
         <source>Device ID</source>
-        <translation type="unfinished"></translation>
+        <translation>设备ID</translation>
     </message>
     <message>
         <source>N/A</source>
@@ -1757,19 +1760,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor Status</source>
-        <translation type="unfinished"></translation>
+        <translation>赞助商状态</translation>
     </message>
     <message>
         <source>SPONSOR</source>
-        <translation type="unfinished"></translation>
+        <translation>赞助商</translation>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
-        <translation type="unfinished"></translation>
+        <translation>成为sunnypilot的赞助商，以便在sunnylink功能可用时尽早使用。</translation>
     </message>
     <message>
         <source>Pair GitHub Account</source>
-        <translation type="unfinished"></translation>
+        <translation>配对GitHub账号</translation>
     </message>
     <message>
         <source>PAIR</source>
@@ -1777,118 +1780,118 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
-        <translation type="unfinished"></translation>
+        <translation>配对您的GitHub帐户，以授予您的设备赞助商优惠，包括sunnylink上的API访问权限。</translation>
     </message>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>未找到sunnylink加密狗ID。这可能是由于互联网连接较弱或sunnylink注册问题。请重新启动并重试。</translation>
     </message>
     <message>
         <source>Not Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>非赞助商</translation>
     </message>
     <message>
         <source>Paired</source>
-        <translation type="unfinished"></translation>
+        <translation>配对</translation>
     </message>
     <message>
         <source>Not Paired</source>
-        <translation type="unfinished"></translation>
+        <translation>未配对</translation>
     </message>
     <message>
         <source>THANKS ♥</source>
-        <translation type="unfinished"></translation>
+        <translation>谢谢♥</translation>
     </message>
     <message>
         <source>Backup Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>备份设置</translation>
     </message>
     <message>
         <source>Are you sure you want to backup sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation>您确定要备份sunnypilot设置吗？</translation>
     </message>
     <message>
         <source>Back Up</source>
-        <translation type="unfinished"></translation>
+        <translation>备份</translation>
     </message>
     <message>
         <source>Restore Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>还原设置</translation>
     </message>
     <message>
         <source>Are you sure you want to restore the last backed up sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation>您确定要还原上次备份的sunnypilot设置吗？</translation>
     </message>
     <message>
         <source>Restore</source>
-        <translation type="unfinished"></translation>
+        <translation>恢复</translation>
     </message>
     <message>
         <source>Backup in progress %1%</source>
-        <translation type="unfinished"></translation>
+        <translation>备份正在进行 %1%</translation>
     </message>
     <message>
         <source>Backup Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>>备份失败</translation>
     </message>
     <message>
         <source>Settings backup completed.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置备份已完成。</translation>
     </message>
     <message>
         <source>Restore in progress %1%</source>
-        <translation type="unfinished"></translation>
+        <translation>还原正在进行 %1%</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation>还原失败</translation>
     </message>
     <message>
         <source>Unable to restore the settings, try again later.</source>
-        <translation type="unfinished"></translation>
+        <translation>无法还原设置，请稍后重试。</translation>
     </message>
     <message>
         <source>Settings restored. Confirm to restart the interface.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置已恢复。确认重新启动界面。</translation>
     </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
     <message>
         <source>Scan the QR code to login to your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描二维码登录您的GitHub账号</translation>
     </message>
     <message>
         <source>Follow the prompts to complete the pairing process</source>
-        <translation type="unfinished"></translation>
+        <translation>按照提示完成配对过程</translation>
     </message>
     <message>
         <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
-        <translation type="unfinished"></translation>
+        <translation>重新输入&quot;sunnylink&quot; 核实赞助状态的小组</translation>
     </message>
     <message>
         <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>如果赞助状态没有更新，请联系Discord上的主持人(https://discord.gg/sunnypilot)</translation>
     </message>
     <message>
         <source>Scan the QR code to visit sunnyhaibin&apos;s GitHub Sponsors page</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描二维码访问 sunnyhaibin 的 GitHub 赞助页面</translation>
     </message>
     <message>
         <source>Choose your sponsorship tier and confirm your support</source>
-        <translation type="unfinished"></translation>
+        <translation>选择您的赞助级别并确认您的支持</translation>
     </message>
     <message>
         <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
-        <translation type="unfinished"></translation>
+        <translation>加入我们的Discord社区（https://discord.gg/sunnypilot）并联系主持人确认您的赞助商身份</translation>
     </message>
     <message>
         <source>Pair your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation>关联您的GitHub账户</translation>
     </message>
     <message>
         <source>Early Access: Become a sunnypilot Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>抢先体验：成为sunnypilot赞助者</translation>
     </message>
 </context>
 <context>
@@ -1931,6 +1934,10 @@ This may take up to a minute.</source>
     <message>
         <source>Record and Upload Driver Camera</source>
         <translation>录制并上传驾驶员摄像头</translation>
+    </message>
+    <message>
+        <source>Record and Upload Microphone Audio</source>
+        <translation>录制并上传麦克风音频</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
@@ -2010,11 +2017,55 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
+        <translation>启用动态实验性控制</translation>
+    </message>
+    <message>
+        <source>Enable vibe controller.</source>
+        <translation>启用振动控制器</translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Accel</source>
+        <translation>启用动态加速</translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Personality</source>
+        <translation>启用动态个性</translation>
+    </message>
+    <message>
+        <source>Enable drive mode btn link</source>
+        <translation>启用驾驶模式按钮</translation>
+    </message>
+    <message>
+        <source>Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)</source>
+        <translation>将车辆驾驶模式按钮与加速特性相关联，根据驾驶风格（例如：放松、标准、运动）进行调整</translation>
+    </message>
+    <message>
+        <source>Toyota: Auto Brake Hold</source>
+        <translation>丰田：自动驻车</translation>
+    </message>
+    <message>
+        <source>As you may auto brake hold currently supported by openpilot, this feature will allow sunnypilot to automatically hold the vehicle at a stop when the lead car is stopped. (TSS2 only)</source>
+        <translation>正如您可能已经了解的，openpilot目前支持自动刹车保持功能，而sunnypilot也将通过此功能，在前车停止时自动保持车辆停止状态。（仅限TSS2）</translation>
+    </message>
+    <message>
+        <source>Toyota: Enhanced BSM</source>
+        <translation>丰田：增强型盲点监测系统（BSM）</translation>
+    </message>
+    <message>
+        <source>Supports car that openpilot does not currently support such as the TSS-P/LSS, Prius TSS2, Lexus IS. This feature will allow sunnypilot to use the car&apos;s blind spot monitoring system to detect vehicles in the blind spot and alert the driver.</source>
+        <translation>支持目前OpenPilot尚不支持的车型，如TSS-P/LSS、普锐斯TSS2、雷克萨斯IS。该功能将允许Sunnypilot利用车辆的盲点监测系统来检测盲点中的车辆，并向驾驶员发出警报。</translation>
+    </message>
+    <message>
+        <source>Toyota: custom tune</source>
+        <translation>丰田：定制调校</translation>
+    </message>
+    <message>
+        <source>Custome tune for Toyota TSS2 cars. This feature will allow SunnyPilot to adjust vehicle dynamics to be more natural and comfortable, tuned off the TSS2 Prius, Corolla, and RAV4.</source>
+        <translation>为丰田TSS2车型定制调校。该功能将使SunnyPilot能够调整车辆动态，使其更加自然舒适，与TSS2 Prius、Corolla和RAV4的调校有所不同。</translation>
     </message>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用开关后，模型将自动判断何时使用sunnypilot ACC（自适应巡航）或sunnypilot端到端纵向控制。</translation>
     </message>
     <message>
         <source>Enable sunnypilot</source>
@@ -2022,15 +2073,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用sunnypilot系统实现自适应巡航控制与车道保持辅助功能。使用过程中需始终保持注意力。</translation>
     </message>
     <message>
         <source> Changing this setting will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
+        <translation>修改此设置将在车辆通电时重启openpilot系统。</translation>
     </message>
     <message>
         <source>openpilot longitudinal control may come in a future update.</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot纵向控制功能可能在未来的更新中提供。</translation>
     </message>
 </context>
 <context>
@@ -2080,7 +2131,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
-        <translation type="unfinished"></translation>
+        <translation>最大化您的训练数据上传量，以提升openpilot的驾驶模型性能。</translation>
     </message>
 </context>
 <context>
