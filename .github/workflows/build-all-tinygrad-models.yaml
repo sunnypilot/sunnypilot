@@ -109,7 +109,8 @@ jobs:
           > triggered_run_ids.txt
           BRANCH="${{ github.event.inputs.branch }}"
 
-          SRC_JSON_FILE=$(ls docs/docs/driving_models_v*.json | sort -V | tail -2 | head -1)
+          cd docs
+          SRC_JSON_FILE=$(ls docs/driving_models_v*.json | sort -V | tail -2 | head -1)
           echo "Using source JSON for model list: $SRC_JSON_FILE"
 
           jq -c '.bundles[] | select(.runner=="tinygrad")' "$SRC_JSON_FILE" | while read -r bundle; do
@@ -137,9 +138,10 @@ jobs:
               echo "Could not find the triggered workflow run for $display_name ($ref) after waiting."
               exit 1
             fi
-            echo "$RUN_ID" >> triggered_run_ids.txt
+            echo "$RUN_ID" >> ../triggered_run_ids.txt
             sleep 20
           done
+          cd ..
 
       - name: Wait for all model builds to finish
         env:
