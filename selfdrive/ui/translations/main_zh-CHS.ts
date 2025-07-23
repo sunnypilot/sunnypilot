@@ -667,11 +667,11 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>ModelRenderer</name>
     <message>
         <source>LAT</source>
-        <translation>横向</translation>
+        <translation>LAT</translation>
     </message>
     <message>
         <source>LONG</source>
-        <translation>纵向</translation>
+        <translation>LONG</translation>
     </message>
 </context>
 <context>

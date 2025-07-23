@@ -83,6 +83,8 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
 
     painter.setBrush(bg);
     painter.drawPolygon(track_vertices);
+    LongFuel(painter, surface_rect.height(), surface_rect.width());
+    LateralFuel(painter, surface_rect.height(), surface_rect.width());
   } else {
     // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height(), surface_rect.width());
