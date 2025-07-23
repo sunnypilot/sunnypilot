@@ -25,6 +25,13 @@ on:
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
+  workflow_dispatch:
+    inputs:
+      wait_for_tests:
+        description: 'Wait for selfdrive_tests to finish'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
