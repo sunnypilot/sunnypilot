@@ -108,7 +108,11 @@ jobs:
           set -e
           > triggered_run_ids.txt
           BRANCH="${{ github.event.inputs.branch }}"
-          jq -c '.bundles[] | select(.runner=="tinygrad")' "$JSON_FILE" | while read -r bundle; do
+
+          SRC_JSON_FILE=$(ls docs/docs/driving_models_v*.json | sort -V | tail -2 | head -1)
+          echo "Using source JSON for model list: $SRC_JSON_FILE"
+
+          jq -c '.bundles[] | select(.runner=="tinygrad")' "$SRC_JSON_FILE" | while read -r bundle; do
             ref=$(echo "$bundle" | jq -r '.ref')
             display_name=$(echo "$bundle" | jq -r '.display_name' | sed 's/ ([^)]*)//g')
             is_20hz=$(echo "$bundle" | jq -r '.is_20hz')
@@ -120,18 +124,21 @@ jobs:
               -f upstream_branch="$ref" \
               -f custom_name="$display_name" \
               -f is_20hz="$is_20hz"
-            for i in {1..24}; do
+            echo "Triggered workflow for $display_name ($ref), waiting for run to appear..."
+            for i in {1..36}; do
               RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="$BRANCH" --created ">$START_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
               if [ -n "$RUN_ID" ]; then
+                echo "Found run ID: $RUN_ID for $display_name ($ref)"
                 break
               fi
               sleep 5
             done
             if [ -z "$RUN_ID" ]; then
-              echo "ould not find the triggered workflow run for $display_name ($ref)"
+              echo "Could not find the triggered workflow run for $display_name ($ref) after waiting."
               exit 1
             fi
             echo "$RUN_ID" >> triggered_run_ids.txt
+            sleep 20
           done
 
       - name: Wait for all model builds to finish
