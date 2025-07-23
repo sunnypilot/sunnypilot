@@ -118,7 +118,6 @@ jobs:
                 echo "Found run ID: $RUN_ID for $display_name ($ref)"
                 break
               fi
-              sleep 5
             done
             if [ -z "$RUN_ID" ]; then
               echo "Could not find the triggered workflow run for $display_name ($ref) after waiting."
@@ -135,23 +134,50 @@ jobs:
           FAILED_RUNS=()
           declare -A RUN_ID_TO_NAME
 
+          # Get artifact names for each run
           while read -r RUN_ID; do
             ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name' || echo "unknown")
             RUN_ID_TO_NAME["$RUN_ID"]="$ARTIFACT_NAME"
           done < triggered_run_ids.txt
 
-          while read -r RUN_ID; do
-            echo "Watching run ID: $RUN_ID"
-            gh run watch "$RUN_ID" --repo sunnypilot/sunnypilot
-            CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
-            ARTIFACT_NAME="${RUN_ID_TO_NAME[$RUN_ID]}"
-            echo "Run $RUN_ID ($ARTIFACT_NAME) concluded with: $CONCLUSION"
-            if [[ "$CONCLUSION" == "success" ]]; then
-              SUCCESS_RUNS+=("$RUN_ID")
-            else
-              FAILED_RUNS+=("$RUN_ID")
+          # Poll all runs together, sleep between checks to avoid API rate limits
+          RUN_IDS=($(cat triggered_run_ids.txt))
+          declare -A RUN_STATUS
+          for RUN_ID in "${RUN_IDS[@]}"; do
+            RUN_STATUS["$RUN_ID"]="in_progress"
+          done
+
+          while :; do
+            ALL_DONE=true
+            for RUN_ID in "${RUN_IDS[@]}"; do
+              if [[ "${RUN_STATUS[$RUN_ID]}" == "in_progress" ]]; then
+                # Try to get status, skip on API error
+                CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion' 2>/dev/null || echo "api_error")
+                if [[ "$CONCLUSION" == "api_error" ]]; then
+                  echo "Warning: Could not fetch status for run $RUN_ID, will retry."
+                  ALL_DONE=false
+                  continue
+                fi
+                if [[ -z "$CONCLUSION" || "$CONCLUSION" == "null" ]]; then
+                  ALL_DONE=false
+                  continue
+                fi
+                ARTIFACT_NAME="${RUN_ID_TO_NAME[$RUN_ID]}"
+                echo "Run $RUN_ID ($ARTIFACT_NAME) concluded with: $CONCLUSION"
+                RUN_STATUS["$RUN_ID"]="$CONCLUSION"
+                if [[ "$CONCLUSION" == "success" ]]; then
+                  SUCCESS_RUNS+=("$RUN_ID")
+                else
+                  FAILED_RUNS+=("$RUN_ID")
+                fi
+              fi
+            done
+            if $ALL_DONE; then
+              break
             fi
-          done < triggered_run_ids.txt
+            echo "Waiting for unfinished runs... sleeping 120s"
+            sleep 120
+          done
 
           if [[ ${#SUCCESS_RUNS[@]} -eq 0 ]]; then
             echo "All model builds failed. Aborting."
