@@ -22,7 +22,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayo
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 
 OP.PANEL_COLOR = rl.BLACK
-ICON_SIZE = 80
+ICON_SIZE = 70
 
 OP.PanelType = IntEnum( # type: ignore
   "PanelType",
@@ -93,8 +93,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
           rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
 
         if self.panel_info.icon:
-          icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE)
-          rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2), rl.WHITE)
+          icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
+          rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2), rl.WHITE)
           content_x += ICON_SIZE + 20
 
         # Draw button text (right-aligned)
