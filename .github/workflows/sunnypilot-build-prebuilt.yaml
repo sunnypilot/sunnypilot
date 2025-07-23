@@ -36,6 +36,10 @@ on:
         default: false
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Workflow triggered!"
   build:
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
@@ -47,6 +51,9 @@ jobs:
       extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
     steps:
+      - name: Debug
+        run: |
+          echo "Build job is running!"
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -65,71 +72,10 @@ jobs:
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_C3_SOURCE_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Set Feature Branch Prebuilt Configuration
-        id: set_feature_configuration
-        if: (
-              !(env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH) &&
-              !(env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH) &&
-              !(startsWith(github.ref, 'refs/tags/'))
-            )
+      - name: Set prebuilt branch
         run: |
-          echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
+          echo "NEW_BRANCH=prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
-
-      - name: Set dev-c3-new prebuilt Configuration
-        id: set_dev_configuration
-        if: (
-                steps.set_feature_configuration.outcome == 'skipped' &&
-                env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH
-            )
-        run: |
-          echo "NEW_BRANCH=${{ env.DEV_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=${{ github.run_number }}" >> $GITHUB_ENV
-
-      - name: Set staging-c3-new prebuilt Configuration
-        id: set_staging_configuration
-        if: (
-                steps.set_feature_configuration.outcome == 'skipped' &&
-                !contains(github.event_name, 'pull_request') &&
-                steps.set_dev_configuration.outcome == 'skipped' &&
-                (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
-            )
-        run: |
-          echo "NEW_BRANCH=${{ env.STAGING_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=staging" >> $GITHUB_ENV
-          echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')-staging" >> $GITHUB_ENV
-
-      - name: Set release-c3-new prebuilt Configuration
-        id: set_tag_configuration
-        if: (
-              steps.set_feature_configuration.outcome == 'skipped' &&
-              !contains(github.event_name, 'pull_request') &&
-              steps.set_staging_configuration.outcome == 'skipped' &&
-              startsWith(github.ref, 'refs/tags/')
-            )
-        run: |
-          echo "NEW_BRANCH=${{ env.RELEASE_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=release" >> $GITHUB_ENV
-          echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')-release" >> $GITHUB_ENV
-
-      - name: Set environment variables
-        id: set-env
-        run: |
-          # Write to GITHUB_OUTPUT from environment variables
-          echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-          [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
-          [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-
-          # Set up common environment
-          source /etc/profile;
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          printenv >> $GITHUB_ENV
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            cat $GITHUB_OUTPUT
-          fi
 
       - name: Setup build environment
         run: |
