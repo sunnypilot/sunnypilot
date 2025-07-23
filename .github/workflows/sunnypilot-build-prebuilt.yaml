@@ -21,7 +21,9 @@ env:
 
 on:
   push:
-    branches: [ master-new, C3 ]
+    branches:
+      - master-new
+      - C3
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
@@ -37,7 +39,7 @@ jobs:
   build:
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     runs-on: self-hosted
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
