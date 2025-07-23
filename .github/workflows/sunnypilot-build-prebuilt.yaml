@@ -66,6 +66,25 @@ jobs:
           echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
 
+
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Write to GITHUB_OUTPUT from environment variables
+          echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+          [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
+          [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
+          fi
+
       - name: Setup build environment
         run: |
           sudo mkdir -p "${BUILD_DIR}/"
@@ -85,7 +104,6 @@ jobs:
 
       - name: Build Main Project
         run: |
-          pip install capnp
           export PYTHONPATH="$BUILD_DIR"
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
