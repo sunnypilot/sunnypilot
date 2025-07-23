@@ -25,28 +25,9 @@ on:
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
-  workflow_dispatch:
-    inputs:
-      wait_for_tests:
-        description: 'Wait for selfdrive_tests to finish'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
-  validate_tests:
-    runs-on: ubuntu-24.04
-    if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
-    steps:
-      - uses: actions/checkout@v4
-      - name: Wait for Tests
-        uses: ./.github/workflows/wait-for-action # Path to where you place the action
-        with:
-          workflow: selfdrive_tests.yaml # The workflow file to monitor
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
   build:
-    needs: [ validate_tests ]
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
