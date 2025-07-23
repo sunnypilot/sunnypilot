@@ -255,26 +255,3 @@ jobs:
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
           echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
-
-  manage-pr-labels:
-    name: Remove prebuilt label
-    runs-on: ubuntu-latest
-    if: (always() && contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
-    env:
-      LABEL: prebuilt
-    steps:
-      - name: Remove trust-fork-pr label if present
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              name: process.env.LABEL
-            });
-
-            console.log(`Removed '${process.env.LABEL}' label from PR #${prNumber}`);
