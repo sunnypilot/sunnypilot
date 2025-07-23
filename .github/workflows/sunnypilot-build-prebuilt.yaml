@@ -71,7 +71,8 @@ jobs:
 
       - name: Setup build environment
         run: |
-          mkdir -p "${BUILD_DIR}/"
+          sudo mkdir -p "${BUILD_DIR}/"
+          sudo chown -R $USER /data/openpilot
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "BUILD_DIR: ${BUILD_DIR}"
