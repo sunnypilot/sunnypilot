@@ -18,6 +18,20 @@ offroad_time_options = {
   "10": ["1440", "24h"],
   "11": ["1800", "30h (Default)"]
 }
+brightness_options = {
+  "0": ["1", "Auto (Dark)"],
+  "1": ["0", "Auto"],
+  "2": ["10", "10"],
+  "3": ["20", "20"],
+  "4": ["30", "30"],
+  "5": ["40", "40"],
+  "6": ["50", "50"],
+  "7": ["60", "60"],
+  "8": ["70", "70"],
+  "9": ["80", "80"],
+  "10": ["90", "90"],
+  "11": ["100", "100"]
+}
 
 class DeviceLayoutSP(DeviceLayout):
   def __init__(self):
@@ -72,13 +86,32 @@ class DeviceLayoutSP(DeviceLayout):
       label_callback=self.update_interactivity_timeout_label
     )
 
+    self.brightness = option_item_sp(
+      title="Brightness",
+      description="Overrides the brightness of the device.",
+      param="Brightness",
+      min_value=0,
+      max_value=11,
+      value_change_step=1,
+      on_value_changed=None,
+      enabled=True,
+      icon="",
+      value_map=brightness_options,
+      label_width=300,
+      use_float_scaling=False,
+      label_callback=None
+    )
+
     items += [
       self.device_wake_mode,
       self.max_time_offroad,
-      self.interactivity_timeout
+      self.interactivity_timeout,
+      self.brightness,
     ]
 
-    items += [dual_button_item("Reboot", "Power Off", left_callback=self._reboot_prompt, right_callback=self._power_off_prompt),]
+    items += [
+      dual_button_item("Reboot", "Power Off", left_callback=self._reboot_prompt, right_callback=self._power_off_prompt),
+    ]
 
     return items
 
