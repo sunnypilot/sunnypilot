@@ -68,7 +68,11 @@ jobs:
       - name: Set next recompiled dir
         id: set-recompiled
         run: |
-          cd gitlab_docs/models
+          cd gitlab_docs
+          echo "checkout models/"
+          git sparse-checkout set --no-cone models/
+          git checkout main
+          cd models
           latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
           if [[ -z "$latest_dir" ]]; then
             next_dir=1
@@ -76,7 +80,12 @@ jobs:
             next_dir=$((latest_dir+1))
           fi
           recompiled_dir="recompiled${next_dir}"
+          if [ -d "$recompiled_dir" ]; then
+            echo "ERROR: $recompiled_dir already exists in GitLab repo"
+            exit 1
+          fi
           mkdir -p "$recompiled_dir"
+          touch "$recompiled_dir/.gitkeep"
           echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
 
       - name: Download context
