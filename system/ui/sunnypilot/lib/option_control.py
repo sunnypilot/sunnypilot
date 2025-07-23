@@ -35,7 +35,7 @@ class OptionControlSP(Widget):
                  on_value_changed: Callable[[int], None] | None = None,
                  value_map: dict[str, tuple[str, str]] | None = None,
                  label_width: int = LABEL_WIDTH,
-                 use_float_scaling: bool = False):
+                 use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None):
 
         super().__init__()
         self.params = Params()
@@ -49,6 +49,7 @@ class OptionControlSP(Widget):
         self.label_width = label_width
         self.use_float_scaling = use_float_scaling
         self.current_value = min_value
+        self.label_callback = label_callback
         if self.value_map:
             for key in self.value_map:
                 if self.value_map[key][0] == self.params.get(self.param_key, encoding="utf8"):
@@ -89,6 +90,10 @@ class OptionControlSP(Widget):
         """Update the layout rectangles when the widget rect changes"""
         # Calculate total control width
         control_width = (BUTTON_WIDTH * 2) + self.label_width + (BUTTON_SPACING * 2)
+        total_width = control_width + (CONTAINER_PADDING * 2)
+
+        # Update the widget's width to match the control
+        self._rect.width = total_width
 
         # Position the control in the parent rectangle
         start_x = self._rect.x + self._rect.width - control_width - (CONTAINER_PADDING * 2)
@@ -97,7 +102,7 @@ class OptionControlSP(Widget):
         self.container_rect = rl.Rectangle(
             start_x,
             self._rect.y + TOP_PADDING,
-            control_width + (CONTAINER_PADDING * 2),
+            total_width,
             BUTTON_HEIGHT + (CONTAINER_PADDING * 2)
         )
 
@@ -138,6 +143,9 @@ class OptionControlSP(Widget):
     def get_displayed_value(self) -> str:
         """Get the displayed value, handling value mapping if present"""
         value = self.current_value
+
+        if callable(self.label_callback):
+            return self.label_callback(value)
 
         if self.value_map:
             # Use the value map to get the display string

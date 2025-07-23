@@ -123,6 +123,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
     self.param = param
     if param is not None:
       self.selected_button = int(Params().get(self.param, encoding="utf8"))
+
   def _render(self, rect: rl.Rectangle) -> bool:
     spacing = 20
     button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
@@ -169,6 +170,36 @@ class MultipleButtonActionSP(MultipleButtonAction):
       return True
     return False
 
+
+class OptionControlActionSP(ItemAction):
+  def __init__(self, param: str, min_value: int, max_value: int,
+               value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
+               on_value_changed: Callable[[int], None] | None = None,
+               value_map: dict[str, tuple[str, str]] | None = None,
+               label_width: int = style.BUTTON_WIDTH,
+               use_float_scaling: bool = False,
+               label_callback: Callable[[int], str] | None = None):
+    # Initialize with zero width - the component will size itself
+    super().__init__()
+
+    # Create the option control
+    self.option_control = OptionControlSP(
+      param, min_value, max_value, value_change_step,
+      enabled, on_value_changed, value_map, label_width, use_float_scaling,
+      label_callback
+    )
+
+  def _render(self, rect: rl.Rectangle) -> bool | int | None:
+    # Ensure the touch validity callback is passed to the option control
+    if hasattr(self, '_touch_valid_callback') and self._touch_valid_callback:
+      self.option_control.set_touch_valid_callback(self._touch_valid_callback)
+
+    # Pass the enabled state to the option control
+    self.option_control.set_enabled(self.enabled)
+
+    # Render the control and return whether a value change occurred
+    return self.option_control.render(rect)
+
 def toggle_item_sp(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
@@ -192,49 +223,19 @@ def dual_button_item_sp(left_text: str, right_text: str, left_callback: Callable
   action = DualButtonAction(left_text, right_text, left_callback, right_callback, enabled)
   return ListItemSP(title="", description=description, action_item=action)
 
-def multiple_button_item_sp(title: str, description: str, buttons: list[str], selected_index: int = 0, param: str | None = None,
-                         button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
+def multiple_button_item_sp(title: str, description: str| Callable[[], str], buttons: list[str], selected_index: int = 0, param: str | None = None,
+                         button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = "") -> ListItem:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
 
-
-
-class OptionControlActionSP(ItemAction):
-  def __init__(self, param: str, min_value: int, max_value: int,
-               value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
-               on_value_changed: Callable[[int], None] | None = None,
-               value_map: dict[str, tuple[str, str]] | None = None,
-               label_width: int = style.BUTTON_WIDTH,
-               use_float_scaling: bool = False):
-    # Initialize with zero width - the component will size itself
-    super().__init__(width=0, enabled=enabled)
-
-    # Create the option control
-    self.option_control = OptionControlSP(
-        param, min_value, max_value, value_change_step,
-        enabled, on_value_changed, value_map, label_width, use_float_scaling
-    )
-
-  def _render(self, rect: rl.Rectangle) -> bool | int | None:
-    # Ensure the touch validity callback is passed to the option control
-    if hasattr(self, '_touch_valid_callback') and self._touch_valid_callback:
-      self.option_control.set_touch_valid_callback(self._touch_valid_callback)
-
-    # Pass the enabled state to the option control
-    self.option_control.set_enabled(self.enabled)
-
-    # Render the control and return whether a value change occurred
-    return self.option_control.render(rect)
-
-
-def option_item_sp(title: str, description: str | Callable[[], str] | None, param: str,
-                   min_value: int, max_value: int, value_change_step: int = 1,
-                   on_value_changed: Callable[[int], None] | None = None,
+def option_item_sp(title: str, param: str,
+                   min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
+                   value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
                    icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[str, tuple[str, str]] | None = None,
-                   use_float_scaling: bool = False) -> ListItem:
+                   use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None) -> ListItem:
   action = OptionControlActionSP(
       param, min_value, max_value, value_change_step,
-      enabled, on_value_changed, value_map, label_width, use_float_scaling
+      enabled, on_value_changed, value_map, label_width, use_float_scaling, label_callback
   )
   return ListItemSP(title=title, description=description, action_item=action, icon=icon)
