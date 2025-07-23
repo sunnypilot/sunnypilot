@@ -63,7 +63,7 @@ jobs:
           submodules: recursive
           ref: ${{ env.SOURCE_BRANCH }}
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
-      - run: git lfs pull
+      # - run: git lfs pull
 
       - name: Cache SCons
         uses: actions/cache@v4
