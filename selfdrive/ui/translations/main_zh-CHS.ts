@@ -1733,6 +1733,17 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>VisualsPanel</name>
+    <message>
+        <source>Show Blind Spot Warnings</source>
+        <translation>显示盲区警告</translation>
+    </message>
+    <message>
+        <source>Enable Rainbow Mode</source>
+        <translation>启用彩虹之路模式</translation>
+    </message>
+</context>
+<context>
     <name>SunnylinkPanel</name>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
