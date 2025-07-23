@@ -27,4 +27,5 @@ protected:
  Params params;
  std::map<std::string, ParamControlSP*> toggles;
  ParamWatcher * param_watcher;
+ ButtonParamControlSP *chevron_info_settings;
 };
