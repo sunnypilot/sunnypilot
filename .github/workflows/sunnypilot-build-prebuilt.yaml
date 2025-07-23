@@ -43,9 +43,6 @@ jobs:
       version: ${{ steps.set-env.outputs.version }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
     steps:
-      - name: Debug
-        run: |
-          echo "Build job is running!"
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -72,7 +69,7 @@ jobs:
       - name: Setup build environment
         run: |
           sudo mkdir -p "${BUILD_DIR}/"
-          sudo chown -R $USER /data/openpilot
+          sudo chown -R $USER "${BUILD_DIR}"
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "BUILD_DIR: ${BUILD_DIR}"
@@ -88,6 +85,7 @@ jobs:
 
       - name: Build Main Project
         run: |
+          pip install capnp
           export PYTHONPATH="$BUILD_DIR"
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
