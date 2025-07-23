@@ -125,7 +125,7 @@ jobs:
               exit 1
             fi
             echo "$RUN_ID" >> triggered_run_ids.txt
-            sleep 5
+            sleep 3
           done
 
       - name: Wait for all model builds to finish
