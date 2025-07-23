@@ -103,4 +103,5 @@ def register(show_spinner=False) -> str | None:
 
 
 if __name__ == "__main__":
-  print(register())
+  # print(register())
+  pass
