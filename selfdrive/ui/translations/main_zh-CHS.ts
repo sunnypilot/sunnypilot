@@ -163,6 +163,55 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
 </context>
 <context>
+    <name>DeveloperPanelSP</name>
+    <message>
+        <source>Enable GitHub runner service</source>
+        <translation>启用 GitHub Runner 服务</translation>
+    </message>
+    <message>
+        <source>Enables or disables the github runner service.</source>
+        <translation>启用或禁用 GitHub Runner 服务</translation>
+    </message>
+    <message>
+        <source>Error Log</source>
+        <translation>错误日志</translation>
+    </message>
+    <message>
+        <source>VIEW</source>
+        <translation>查看</translation>
+    </message>
+    <message>
+        <source>View the error log for sunnypilot crashes.</source>
+        <translation>查看 ​​sunnypilot​​ 崩溃的错误日志</translation>
+    </message>
+    <message>
+        <source>Show Advanced Controls</source>
+        <translation>显示高级控件</translation>
+    </message>
+    <message>
+        <source>Toggle visibility of advanced sunnypilot controls.
+This only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state.</source>
+        <translation>切换高级SunnyPilot控件的可见性。
+这仅切换控件的可见性，不会切换实际控件的启用/禁用状态。</translation>
+    </message>
+    <message>
+        <source>Enable Quickboot Mode</source>
+        <translation>启用快速启动模式</translation>
+    </message>
+    <message>
+        <source>Enable Quickboot Mode</source>
+        <translation>启用快速启动模式</translation>
+    </message>
+    <message>
+        <source>Quickboot mode requires updates to be disabled.&lt;br&gt;Enable &apos;Disable Updates&apos; in the Software panel first.</source>
+        <translation>快速启动模式需要禁用更新。&lt;br&gt;请先在软件面板中启用&quot;禁用更新&quot;。</translation>
+    </message>
+    <message>
+        <source>When toggled on, this creates a prebuilt file to allow accelerated boot times. When toggled off, it immediately removes the prebuilt file so compilation of locally edited cpp files can be made. &lt;br&gt;&lt;br&gt;&lt;b&gt;To edit C++ files locally on device, you MUST first turn off this toggle so the changes can recompile.&lt;/b&gt;</source>
+        <translation>当开关打开时，这会创建一个预构建的文件以实现更快的启动时间。当开关关闭时，它会立即删除预构建文件，以便可以编译本地编辑的cpp文件。&lt;br&gt;&lt;br&gt;&lt;b&gt;要在设备上本地编辑C++文件，您必须首先关闭此开关，以便更改可以重新编译。&lt;/b&gt;</translation>
+    </message>
+</context>
+<context>
     <name>DeveloperPanel</name>
     <message>
         <source>Joystick Debug Mode</source>
@@ -296,6 +345,30 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>关机</translation>
     </message>
     <message>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down.</source>
+        <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。</translation>
+    </message>
+    <message>
+        <source>Steering lag calibration is %1% complete.</source>
+        <translation>转向延迟校准完成%1%。</translation>
+    </message>
+    <message>
+        <source>Steering lag calibration is complete.</source>
+        <translation>转向延迟校准已完成。</translation>
+    </message>
+    <message>
+        <source>Steering torque response calibration is %1% complete.</source>
+        <translation>转向力矩响应校准完成%1%。</translation>
+    </message>
+    <message>
+        <source>Steering torque response calibration is complete.</source>
+        <translation>转向力矩响应校准已完成。</translation>
+    </message>
+    <message>
+        <source>openpilot is continuously calibrating, resetting is rarely required. Resetting calibration will restart openpilot if the car is powered on.</source>
+        <translation>openpilot会持续进行校准，很少需要重置。如果汽车通电，重置校准将重新启动openpilot。</translation>
+    </message>
+    <message>
         <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
         <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。一般来说，sunnypilot会持续更新校准，很少需要重置。</translation>
     </message>
@@ -361,7 +434,26 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source> Resetting calibration will restart openpilot if the car is powered on.</source>
-        <translation>重置校准将导致 openpilot 在车辆通电状态下重启</translation>
+        <translation>​​重置校准将导致 openpilot 在车辆通电状态下重启。​​</translation>
+    </message>
+</context>
+<context>
+    <name>Brightness</name>
+    <message>
+        <source>Brightness</source>
+        <translation>​​亮度​</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>自动</translation>
+    </message>
+    <message>
+        <source>Auto (Dark)</source>
+        <translation>​自动（夜晚）​</translation>
+    </message>
+    <message>
+        <source>Overrides the brightness of the device.</source>
+        <translation>​​覆盖设备的亮度设置​​</translation>
     </message>
 </context>
 <context>
@@ -448,7 +540,45 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>The reset cannot be undone. You have been warned.</source>
-        <translation type="unfinished"></translation>
+        <translation>​​警告：重置操作不可撤销，请谨慎执行。​​</translation>
+    </message>
+    <message>
+        <source>Wake-Up Behavior</source>
+        <translation>唤醒模式</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>默认</translation>
+    </message>
+    <message>
+        <source>Offroad</source>
+        <translation>离线</translation>
+    </message>
+    <message>
+        <source>Controls state of the device after boot/sleep.</source>
+        <translation>​​控制设备启动/休眠后的状态​​</translation>
+    </message>
+    <message>
+        <source>⁍ Default: Device will boot/wake-up normally &amp; will be ready to engage.</source>
+        <translation>⁍ 默认模式：设备将正常启动/唤醒，并随时准备启用</translation>
+    </message>
+    <message>
+        <source>⁍ Offroad: Device will be in Always Offroad mode after boot/wake-up.</source>
+        <translation>⁍ ​离线模式：设备在启动/唤醒后将保持始终处于离线模式。</translation>
+    </message>
+    <message>
+        <source>Interactivity Timeout</source>
+        <translation>交互超时</translation>
+    </message>
+    <message>
+        <source>Apply a custom timeout for settings UI.
+This is the time after which settings UI closes automatically if user is not interacting with the screen.</source>
+        <translation>为设置UI应用自定义超时。
+这是设置UI在用户不与屏幕交互时自动关闭的时间。</translation>
+    </message>
+    <message>
+        <source>DEFAULT</source>
+        <translation>默认</translation>
     </message>
 </context>
 <context>
@@ -534,6 +664,17 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
 </context>
 <context>
+    <name>ModelRenderer</name>
+    <message>
+        <source>LAT</source>
+        <translation>横向</translation>
+    </message>
+    <message>
+        <source>LONG</source>
+        <translation>纵向</translation>
+    </message>
+</context>
+<context>
     <name>HudRenderer</name>
     <message>
         <source>km/h</source>
@@ -546,6 +687,54 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>MAX</source>
         <translation>最高定速</translation>
+    </message>
+    <message>
+        <source>LAT</source>
+        <translation>横向</translation>
+    </message>
+    <message>
+        <source>LONG</source>
+        <translation>纵向</translation>
+    </message>
+    <message>
+        <source>SPEED</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>LIMIT</source>
+        <translation>极限</translation>
+    </message>
+    <message>
+        <source>AHEAD</source>
+        <translation>前方</translation>
+    </message>
+    <message>
+        <source>IGNORED</source>
+        <translation>忽视</translation>
+    </message>
+    <message>
+        <source>PREPARING</source>
+        <translation>预备</translation>
+    </message>
+    <message>
+        <source>ADAPTING</source>
+        <translation>适应</translation>
+    </message>
+    <message>
+        <source>ACTIVE</source>
+        <translation>主动</translation>
+    </message>
+    <message>
+        <source>TURN AHEAD</source>
+        <translation>前行</translation>
+    </message>
+    <message>
+        <source>TURNING</source>
+        <translation>转弯</translation>
+    </message>
+    <message>
+        <source>TURN EXIT</source>
+        <translation>出口</translation>
     </message>
 </context>
 <context>
@@ -653,9 +842,21 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <source>This platform supports limited MADS settings.</source>
         <translation>该平台仅支持部分MADS设置。</translation>
     </message>
+    <message>
+        <source>Pause Lateral Control with Blinker</source>
+        <translation>使用转向灯暂停横向控制</translation>
+    </message>
+    <message>
+        <source>Pause lateral control with blinker when traveling below the desired speed selected.</source>
+        <translation>当行驶速度低于所选的理想速度时，用转向灯暂停横向控制。</translation>
+    </message>
 </context>
 <context>
     <name>MadsSettings</name>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
     <message>
         <source>Toggle with Main Cruise</source>
         <translation>通过主巡航开关切换</translation>
@@ -783,6 +984,22 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>政策</translation>
     </message>
     <message>
+        <source>Driving Model</source>
+        <translation>驾驶模型</translation>
+    </message>
+    <message>
+        <source>Navigation Model</source>
+        <translation>导航模型</translation>
+    </message>
+    <message>
+        <source>Vision Model</source>
+        <translation>视觉模型</translation>
+    </message>
+    <message>
+        <source>Policy Model</source>
+        <translation>策略模型</translation>
+    </message>
+    <message>
         <source>Downloading %1 model [%2]... (%3%)</source>
         <translation>正在下载 %1 model [%2]... (%3%)</translation>
     </message>
@@ -861,6 +1078,44 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>Cancel</source>
         <translation>取消</translation>
+    </message>
+    <message>
+        <source>Live Learning Steer Delay</source>
+        <translation>​​实时学习转向延迟校准​​</translation>
+    </message>
+    <message>
+        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
+        <translation>​启用此功能，汽车便可学习和调整其转向响应时间。禁用此功能则使用固定的转向响应时间。保持启用此功能可提供原厂OpenPilot体验。当车辆处于公路行驶状态时，当前值会自动更新。</translation>
+    </message>
+    <message>
+        <source>Adjust Software Delay</source>
+        <translation>调整软件延迟</translation>
+    </message>
+    <message>
+        <source>Adjust the software delay when Live Learning Steer Delay is toggled off.
+The default software delay value is 0.2</source>
+        <translation>当实时学习转向延迟功能被关闭时，调整软件延迟。
+软件延迟的默认值为0.2秒</translation>
+    </message>
+    <message>
+        <source>Allow Dynamic Model Outputs</source>
+        <translation>允许动态模型输出</translation>
+    </message>
+    <message>
+        <source>Enable this to allow dynamic model output parsing on all models produced after September, 2024. The affects of this toggle have been noted to make Gas and Brake controls noticeably smoother.</source>
+        <translation>启用此功能，允许在2024年9月之后生产的所有模型上进行动态模型输出解析。此切换功能的效果已被注意到，使油门和刹车控制明显更平滑。</translation>
+    </message>
+    <message>
+        <source>Enable this to allow potentially smoother Gas and Brake controls on all models produced after September, 2024.</source>
+        <translation>启用此功能，可让2024年9月后生产的所有车型实现更平稳的油门和刹车控制。</translation>
+    </message>
+    <message>
+        <source>Clear Model Cache</source>
+        <translation>模型缓存</translation>
+    </message>
+    <message>
+        <source>CLEAR</source>
+        <translation>清除</translation>
     </message>
 </context>
 <context>
@@ -1733,6 +1988,274 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>SpeedLimitControlPolicy</name>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+    <message>
+        <source>Speed Limit Source</source>
+        <translation>限速来源</translation>
+    </message>
+    <message>
+        <source>Car
+Only</source>
+        <translation>仅限汽车</translation>
+    </message>
+    <message>
+        <source>Map
+Only</source>
+        <translation>仅限地图</translation>
+    </message>
+    <message>
+        <source>Car
+First</source>
+        <translation>汽车优先</translation>
+    </message>
+    <message>
+        <source>Map
+First</source>
+        <translation>地图优先</translation>
+    </message>
+    <message>
+        <source>Combined
+Data</source>
+        <translation>组合</translation>
+    </message>
+    <message>
+        <source>⦿ Car Only: Use Speed Limit data only from Car</source>
+        <translation>⦿ 仅限汽车：仅使用来自汽车的速度限制数据</translation>
+    </message>
+    <message>
+        <source>⦿ Map Only: Use Speed Limit data only from OpenStreetMaps</source>
+        <translation>⦿ 仅限地图：仅使用来自OpenStreetMaps的速度限制数据</translation>
+    </message>
+    <message>
+        <source>⦿ Car First: Use Speed Limit data from Car if available, else use from OpenStreetMaps</source>
+        <translation>⦿ 汽车优先：若汽车有速度限制数据，则使用该数据；若无，则使用OpenStreetMaps的数据</translation>
+    </message>
+    <message>
+        <source>⦿ Map First: Use Speed Limit data from OpenStreetMaps if available, else use from Car</source>
+        <translation>⦿ 地图优先：若OpenStreetMaps有速度限制数据，则使用该数据；若无，则使用车辆提供的数据</translation>
+    </message>
+    <message>
+        <source>⦿ Combined: Use combined Speed Limit data from Car &amp; OpenStreetMaps</source>
+        <translation>⦿ 组合：使用来自汽车和OpenStreetMaps的组合限速数据</translation>
+    </message>
+</context>
+<context>
+    <name>SpeedLimitControlSubpanel</name>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+    <message>
+        <source>Customize Warning</source>
+        <translation>自定义警告</translation>
+    </message>
+    <message>
+        <source>Customize Source</source>
+        <translation>自定义来源</translation>
+    </message>
+    <message>
+        <source>Engage Mode</source>
+        <translation>介入模式</translation>
+    </message>
+    <message>
+        <source>Speed Limit Offset</source>
+        <translation>速度限制偏移</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>自动</translation>
+    </message>
+    <message>
+        <source>User Confirm</source>
+        <translation>用户确认</translation>
+    </message>
+    <message>
+        <source>⦿ Auto: Automatic speed adjustment based on speed limit data</source>
+        <translation>⦿ 自动：根据限速数据自动调整速度</translation>
+    </message>
+    <message>
+        <source>⦿ User Confirm: Asks driver to confirm speed adjustment based on speed limit data</source>
+        <translation>⦿ 用户确认：要求驾驶员根据限速数据确认速度调整</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Percent</source>
+        <translation>比例</translation>
+    </message>
+    <message>
+        <source>⦿ None: No Offset</source>
+        <translation>⦿ 无：无偏移</translation>
+    </message>
+    <message>
+        <source>⦿ Fixed: Adds a fixed offset [Speed Limit + Offset]</source>
+        <translation>⦿ 固定：添加固定偏移量[速度限制+偏移量]</translation>
+    </message>
+    <message>
+        <source>⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]</source>
+        <translation>⦿ 比例：添加百分比偏移量[速度限制 + (偏移量 % 速度限制)]</translation>
+    </message>
+</context>
+<context>
+    <name>SpeedLimitControlWarning</name>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+    <message>
+        <source>Speed Limit Warning</source>
+        <translation>限速警告</translation>
+    </message>
+    <message>
+        <source>Warning Offset</source>
+        <translation>警告偏移</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>显示</translation>
+    </message>
+    <message>
+        <source>Chime</source>
+        <translation>警告</translation>
+    </message>
+    <message>
+        <source>⦿ Off: No Warning</source>
+        <translation>⦿ 关闭：无警告</translation>
+    </message>
+    <message>
+        <source>⦿ Display: Speed Limit Sign will visually alert</source>
+        <translation>⦿ 显示：限速标志将在视觉上发出警示</translation>
+    </message>
+    <message>
+        <source>⦿ Chime: Speed Limit Sign will visually alert along with an audible chime</source>
+        <translation>⦿ 警告：限速标志会通过视觉提示和蜂鸣声进行提醒</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Percent</source>
+        <translation>比例</translation>
+    </message>
+    <message>
+        <source>⦿ None: No Offset</source>
+        <translation>⦿ 无：无偏移</translation>
+    </message>
+    <message>
+        <source>⦿ Fixed: Adds a fixed offset [Speed Limit + Offset]</source>
+        <translation>⦿ 固定：添加固定偏移量[速度限制+偏移量]</translation>
+    </message>
+    <message>
+        <source>⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]</source>
+        <translation>⦿ 比例：添加百分比偏移量[速度限制 + (偏移量 % 速度限制)]</translation>
+    </message>
+</context>
+<context>
+    <name>SpeedLimitControl</name>
+    <message>
+        <source>Customize SLC</source>
+        <translation>自定义SLC</translation>
+    </message>
+</context>
+<context>
+    <name>LongitudinalPanel</name>
+    <message>
+        <source>Custom ACC Speed Increments</source>
+        <translation>自定义ACC速度增量</translation>
+    </message>
+    <message>
+        <source>Short Press</source>
+        <translation>短按</translation>
+    </message>
+    <message>
+        <source>Long Press</source>
+        <translation>长按</translation>
+    </message>
+    <message>
+        <source>Speed Limit Control (SLC)</source>
+        <translation>限速控制（SLC）</translation>
+    </message>
+    <message>
+        <source>Customize SLC</source>
+        <translation>自定义SLC</translation>
+    </message>
+    <message>
+        <source>When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed.</source>
+        <translation>当您启用自适应巡航控制（ACC）时，系统会提示您将巡航速度设置为根据指定的偏移量和源策略调整后的道路限速，或设置为当前行驶速度。最大巡航速度始终为设定的最大速度。</translation>
+    </message>
+    <message>
+        <source>Enable custom Short &amp; Long press increments for cruise speed increase/decrease.</source>
+        <translation>启用自定义短按/长按增量调节巡航速度增减功能。</translation>
+    </message>
+    <message>
+        <source>This feature can only be used with openpilot longitudinal control enabled.</source>
+        <translation>该功能仅在使用openpilot纵向控制时可用。</translation>
+    </message>
+    <message>
+        <source>This feature is not supported on this platform due to vehicle limitations.</source>
+        <translation>由于车辆限制，该平台不支持此功能。</translation>
+    </message>
+    <message>
+        <source>Start the vehicle to check vehicle compatibility.</source>
+        <translation>启动车辆以检查车辆兼容性。</translation>
+    </message>
+    <message>
+        <source>Vision Turn Speed Controller</source>
+        <translation>视觉转向速度控制器</translation>
+    </message>
+    <message>
+        <source>Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged.</source>
+        <translation>该控制器也被称为V-TSC，在OP纵向接合时，它能根据曲率自动减速。</translation>
+    </message>
+    <message>
+        <source>Vibe Personality Controller</source>
+        <translation>高级驾驶个性系统</translation>
+    </message>
+    <message>
+        <source>Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). Customize your driving experience with independent acceleration and distance personalities.</source>
+        <translation>高级驾驶个性系统，分别控制驾驶模式行为（Eco/Normal/Sport）和跟车距离行为（Relaxed/Standard/Aggressive）。通过独立的加速和距离个性，定制您的驾驶体验。</translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation>驾驶模式行为</translation>
+    </message>
+    <message>
+        <source>Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). Adjust how aggressively the vehicle accelerates while maintaining smooth operation.</source>
+        <translation>驾驶模式行为：节能（高效）、普通（平衡）、运动（响应）。调整车辆加速的力度，同时保持平稳运行。</translation>
+    </message>
+    <message>
+        <source>Following Distance Personality</source>
+        <translation>跟车距离行为</translation>
+    </message>
+    <message>
+        <source>Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). Fine-tune your comfort level in traffic situations.</source>
+        <translation>控制跟车距离和刹车行为：舒适（更长距离，更柔和的刹车），标准（平衡），激进（更短距离，更坚定的刹车）。根据您的舒适度在交通情况下进行微调。</translation>
+    </message>
+</context>
+<context>
     <name>VisualsPanel</name>
     <message>
         <source>Show Blind Spot Warnings</source>
@@ -1741,6 +2264,172 @@ This may take up to a minute.</source>
     <message>
         <source>Enable Rainbow Mode</source>
         <translation>启用彩虹之路模式</translation>
+    </message>
+    <message>
+        <source>Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported.</source>
+        <translation>启用此功能后，只要您的车辆支持盲点监测系统（BSM），当检测到盲区有车辆时将会显示警告。</translation>
+    </message>
+    <message>
+        <source>Display Metrics Below Chevron</source>
+        <translation>车标下方显示指标</translation>
+    </message>
+    <message>
+        <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).</source>
+        <translation>在跟踪前车的箭头下方显示有用的指标（仅适用于使用openpilot纵向控制的车辆）。</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Distance</source>
+        <translation>距离</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>时间</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>全部</translation>
+    </message>
+</context>
+<context>
+    <name>OsmPanel</name>
+    <message>
+        <source>Mapd Version</source>
+        <translation>地图版本</translation>
+    </message>
+    <message>
+        <source>Offline Maps ETA</source>
+        <translation>预计时间</translation>
+    </message>
+    <message>
+        <source>Time Elapsed</source>
+        <translation>已用时间</translation>
+    </message>
+    <message>
+        <source>Loading...</source>
+        <translation>加载中...</translation>
+    </message>
+    <message>
+        <source>Downloaded Maps</source>
+        <translation>地图缓存</translation>
+    </message>
+    <message>
+        <source>DELETE</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <source>This will delete ALL downloaded maps
+
+Are you sure you want to delete all the maps?</source>
+        <translation>这将删除所有已下载的地图
+确定要删除全部地图吗？</translation>
+    </message>
+    <message>
+        <source>Yes, delete all the maps.</source>
+        <translation>是的，删除所有地图。</translation>
+    </message>
+    <message>
+        <source>Database Update</source>
+        <translation>更新时间</translation>
+    </message>
+    <message>
+        <source>CHECK</source>
+        <translation>检查</translation>
+    </message>
+    <message>
+        <source>Country</source>
+        <translation>国家</translation>
+    </message>
+    <message>
+        <source>SELECT</source>
+        <translation>选择</translation>
+    </message>
+    <message>
+        <source>Fetching Country list...</source>
+        <translation>正在获取国家列表...</translation>
+    </message>
+    <message>
+        <source>State</source>
+        <translation>州/省</translation>
+    </message>
+    <message>
+        <source>Fetching State list...</source>
+        <translation>正在获取地区列表...</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>全部</translation>
+    </message>
+    <message>
+        <source>REFRESH</source>
+        <translation>刷新</translation>
+    </message>
+    <message>
+        <source>UPDATE</source>
+        <translation>更新</translation>
+    </message>
+    <message>
+        <source>Download starting...</source>
+        <translation>开始下载...</translation>
+    </message>
+    <message>
+        <source>Error: Invalid download. Retry.</source>
+        <translation>错误：下载无效。请重试。</translation>
+    </message>
+    <message>
+        <source>Download complete!</source>
+        <translation>下载完成！</translation>
+    </message>
+    <message>
+        <source>\n\nWarning: You are on a metered connection!</source>
+        <translation>\n\n警告：您当前使用的是计量收费网络连接！</translation>
+    </message>
+    <message>
+        <source>This will start the download process and it might take a while to complete.</source>
+        <translation>这将开始更新下载地图数据，可能需要一些时间才能完成。</translation>
+    </message>
+    <message>
+        <source>Continue on Metered</source>
+        <translation>使用流量继续</translation>
+    </message>
+    <message>
+        <source>Start Download</source>
+        <translation>开始下载</translation>
+    </message>
+    <message>
+        <source>m</source>
+        <translation>m</translation>
+    </message>
+    <message>
+        <source>s</source>
+        <translation>s</translation>
+    </message>
+    <message>
+        <source>Calculating...</source>
+        <translation>计算中...</translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation>已下载</translation>
+    </message>
+    <message>
+        <source>Calculating ETA...</source>
+        <translation>正在计算预计到达时间...</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation>准备就绪</translation>
+    </message>
+    <message>
+        <source>Time remaining: </source>
+        <translation>剩余时间：</translation>
     </message>
 </context>
 <context>
@@ -1997,6 +2686,26 @@ This may take up to a minute.</source>
     <message>
         <source>Driving Personality</source>
         <translation>驾驶风格</translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation>驾驶模式</translation>
+    </message>
+    <message>
+        <source>Sport</source>
+        <translation>运动</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>普通</translation>
+    </message>
+    <message>
+        <source>Eco</source>
+        <translation>节能</translation>
+    </message>
+    <message>
+        <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
+        <translation>推荐选择普通模式。在运动模式下，阳光领航将提供强劲的加速，带来动感驾驶体验。在节能模式下，阳光领航将采用更平稳、更柔和的加速方式。在支持该功能的车辆上，您可以在驾驶屏幕上的公路设置中循环切换这些加速模式。</translation>
     </message>
     <message>
         <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
