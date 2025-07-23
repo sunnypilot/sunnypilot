@@ -5,23 +5,25 @@ env:
   OUTPUT_DIR: ${{ github.workspace }}/output
   CI_DIR: ${{ github.workspace }}/release/ci
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
-  PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
-  
+  PUBLIC_REPO_URL: "https://github.com/mouxangithub/openpilot"
+
   # Branch configurations
-  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master-new' }} # vars are set on repo settings.
-  DEV_C3_SOURCE_BRANCH: ${{ vars.DEV_C3_SOURCE_BRANCH || 'master-dev-c3-new' }} # vars are set on repo settings.
-  
+  STAGING_C3_SOURCE_BRANCH: ${{ 'master-new' }} # vars are set on repo settings.
+  DEV_C3_SOURCE_BRANCH: ${{ 'master-dev-c3-new' }} # vars are set on repo settings.
+
   # Target branch configurations
-  STAGING_TARGET_BRANCH: ${{ vars.STAGING_TARGET_BRANCH || 'staging-c3-new' }} # vars are set on repo settings.
-  DEV_TARGET_BRANCH: ${{ vars.DEV_TARGET_BRANCH || 'dev-c3-new' }} # vars are set on repo settings.
-  RELEASE_TARGET_BRANCH: ${{ vars.RELEASE_TARGET_BRANCH || 'release-c3-new' }} # vars are set on repo settings.
-  
+  STAGING_TARGET_BRANCH: ${{ 'staging-c3-new' }}
+  DEV_TARGET_BRANCH: ${{ 'dev-c3-new' }}
+  RELEASE_TARGET_BRANCH: ${{ 'release-c3-new' }}
+
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
 
+  AUTO_DEPLOY_PREBUILT_BRANCHES: '["master-new", "staging-c3-new", "dev-c3-new"]'
+
 on:
   push:
-    branches: [ master, master-new, master-dev-c3-new ]
+    branches: [ master-new, C3 ]
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
@@ -70,7 +72,7 @@ jobs:
         with:
           path: ${{env.SCONS_CACHE_DIR}}
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.) 
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
@@ -91,7 +93,7 @@ jobs:
       - name: Set dev-c3-new prebuilt Configuration
         id: set_dev_configuration
         if: (
-                steps.set_feature_configuration.outcome == 'skipped' && 
+                steps.set_feature_configuration.outcome == 'skipped' &&
                 env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH
             )
         run: |
@@ -104,7 +106,7 @@ jobs:
         if: (
                 steps.set_feature_configuration.outcome == 'skipped' &&
                 !contains(github.event_name, 'pull_request') &&
-                steps.set_dev_configuration.outcome == 'skipped' && 
+                steps.set_dev_configuration.outcome == 'skipped' &&
                 (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
             )
         run: |
@@ -133,7 +135,7 @@ jobs:
           [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
           [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-          
+
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
@@ -235,7 +237,7 @@ jobs:
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build ]
     runs-on: ubuntu-24.04
-    environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
+    environment: ${{ (contains(fromJSON(env.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -266,48 +268,16 @@ jobs:
             "${{ env.OUTPUT_DIR }}" \
             "${{ needs.build.outputs.new_branch }}" \
             "${{ needs.build.outputs.version }}" \
-            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
+            "https://x-access-token:${{github.token}}@github.com/mouxangithub/openpilot.git" \
             "-${{ needs.build.outputs.extra_version_identifier }}"
-          
+
           echo ""
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
           echo ""
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
-          echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
+          echo "2. Current value: ${{ env.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
 
-  notify:
-    needs: [ build, publish ]
-    runs-on: ubuntu-24.04
-    if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Alpine Linux environment
-        uses: jirutka/setup-alpine@v1.2.0
-        with:
-          packages: 'jq gettext curl'
-
-      - name: Send Discord Notification
-        env:
-          DISCORD_WEBHOOK: ${{ contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES), env.SOURCE_BRANCH) && secrets.DISCORD_DEV_FEEDBACK_CHANNEL_WEBHOOK || secrets.DISCORD_DEV_PRIVATE_CHANNEL_WEBHOOK }}
-        run: |
-          TEMPLATE='${{ vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
-          export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
-          export VERSION="${{ needs.build.outputs.version }}"
-          export branch_name=${{ env.SOURCE_BRANCH }}
-          export new_branch=${{ needs.build.outputs.new_branch }}
-          export extra_version_identifier=${{ needs.build.outputs.extra_version_identifier || github.run_number}}
-          echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
-          curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
-          
-          echo ""
-          echo "----   ℹ️ To update the list of branches that notify to dev-feedback  -----"
-          echo ""
-          echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/DEV_FEEDBACK_NOTIFICATION_BRANCHES"
-          echo "2. Current value: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
-          echo "3. Update as needed (JSON array with no spaces)"
-        shell: alpine.sh {0}
-  
   manage-pr-labels:
     name: Remove prebuilt label
     runs-on: ubuntu-latest
