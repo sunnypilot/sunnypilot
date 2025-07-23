@@ -37,15 +37,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
       version: ${{ steps.set-env.outputs.version }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
     steps:
-      - name: Debug
-        run: |
-          echo "Build job is running!"
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -69,12 +66,32 @@ jobs:
           echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
 
+
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Write to GITHUB_OUTPUT from environment variables
+          echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+          [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
+          [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
+          fi
+
       - name: Setup build environment
         run: |
           sudo mkdir -p "${BUILD_DIR}/"
-          sudo chown -R $USER /data/openpilot
+          sudo chown -R $USER "${BUILD_DIR}"
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
+          pip3 install --break-system-packages --no-cache-dir pyyaml Cython scons pycapnp pre-commit ruff parameterized coverage numpy pytest smbus2 pycryptodome  # ✅ 添加 pycryptodome
           echo "BUILD_DIR: ${BUILD_DIR}"
           echo "CI_DIR: ${CI_DIR}"
           echo "VERSION: ${{ steps.set-env.outputs.version }}"
