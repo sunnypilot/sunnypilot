@@ -19,8 +19,6 @@ env:
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
 
-  AUTO_DEPLOY_PREBUILT_BRANCHES: '["master-new", "staging-c3-new", "dev-c3-new"]'
-
 on:
   push:
     branches: [ master-new, C3 ]
@@ -237,7 +235,7 @@ jobs:
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build ]
     runs-on: ubuntu-24.04
-    environment: ${{ (contains(fromJSON(env.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
+    environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -275,7 +273,7 @@ jobs:
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
           echo ""
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
-          echo "2. Current value: ${{ env.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
+          echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
 
   manage-pr-labels:
