@@ -10,40 +10,12 @@ on:
         type: string
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      json_file: ${{ steps.get-json.outputs.json_file }}
-    steps:
-      - name: Checkout docs repo
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot-docs
-          ref: gh-pages
-          path: docs
-          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
-      - name: Get next JSON version to use
-        id: get-json
-        run: |
-          cd docs/docs
-          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
-          next=$((latest+1))
-          json_file="driving_models_v${next}.json"
-          cp "driving_models_v${latest}.json" "$json_file"
-          echo "json_file=$json_file" >> $GITHUB_OUTPUT
-
-      - name: Upload context for next jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: context
-          path: docs
-
   build-all:
     runs-on: ubuntu-latest
-    needs: setup
     env:
-      JSON_FILE: docs/docs/${{ needs.setup.outputs.json_file }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+      CI_SUNNYPILOT_DOCS_PRIVATE_KEY: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
     steps:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -54,6 +26,14 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
       - name: Clone GitLab docs repo
         env:
@@ -88,31 +68,36 @@ jobs:
           touch "$recompiled_dir/.gitkeep"
           echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
           echo "Created new recompiled dir: $recompiled_dir"
+          cd ../..
 
-      - name: Download context
-        uses: actions/download-artifact@v4
-        with:
-          name: context
-          path: .
+      - name: Get next JSON version to use (from GitHub docs repo)
+        id: get-json
+        run: |
+          cd docs/docs
+          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
+          next=$((latest+1))
+          json_file="driving_models_v${next}.json"
+          cp "driving_models_v${latest}.json" "$json_file"
+          echo "json_file=$json_file" >> $GITHUB_OUTPUT
+          echo "JSON_FILE=docs/docs/$json_file" >> $GITHUB_ENV
+          echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq gh
+          sudo apt-get install -y jq gh unzip
 
       - name: Build all tinygrad models
         id: trigger-builds
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           > triggered_run_ids.txt
           BRANCH="${{ github.event.inputs.branch }}"
-
-          cd docs
-          SRC_JSON_FILE=$(ls docs/driving_models_v*.json | sort -V | tail -2 | head -1)
-          echo "Using source JSON for model list: $SRC_JSON_FILE"
-
+          SRC_JSON_FILE="$SRC_JSON_FILE"
+          if [ ! -f "$SRC_JSON_FILE" ]; then
+            echo "ERROR: Source JSON file $SRC_JSON_FILE not found!"
+            exit 1
+          fi
           jq -c '.bundles[] | select(.runner=="tinygrad")' "$SRC_JSON_FILE" | while read -r bundle; do
             ref=$(echo "$bundle" | jq -r '.ref')
             display_name=$(echo "$bundle" | jq -r '.display_name' | sed 's/ ([^)]*)//g')
@@ -138,14 +123,11 @@ jobs:
               echo "Could not find the triggered workflow run for $display_name ($ref) after waiting."
               exit 1
             fi
-            echo "$RUN_ID" >> ../triggered_run_ids.txt
+            echo "$RUN_ID" >> triggered_run_ids.txt
             sleep 20
           done
-          cd ..
 
       - name: Wait for all model builds to finish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           SUCCESS_RUNS=()
@@ -183,20 +165,13 @@ jobs:
             echo "You may want to rerun these models manually."
           fi
 
+          echo "${SUCCESS_RUNS[@]}" > success_run_ids.txt
+
       - name: Download and extract all model artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
-          SUCCESS_RUNS=()
-          while read -r RUN_ID; do
-            CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
-            if [[ "$CONCLUSION" == "success" ]]; then
-              SUCCESS_RUNS+=("$RUN_ID")
-            fi
-          done < triggered_run_ids.txt
-
-          for RUN_ID in "${SUCCESS_RUNS[@]}"; do
+          mkdir -p "$ARTIFACT_DIR"
+          for RUN_ID in $(cat success_run_ids.txt); do
             ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name')
             echo "Downloading artifact: $ARTIFACT_NAME from run: $RUN_ID"
             mkdir -p "$ARTIFACT_DIR/$ARTIFACT_NAME"
