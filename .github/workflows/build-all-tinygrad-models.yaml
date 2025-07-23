@@ -81,6 +81,7 @@ jobs:
           echo "json_file=$json_file" >> $GITHUB_OUTPUT
           echo "JSON_FILE=docs/docs/$json_file" >> $GITHUB_ENV
           echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
+          echo "SRC_JSON_FILE: docs/docs/driving_models_v${latest}.json"
 
       - name: Install dependencies
         run: |
