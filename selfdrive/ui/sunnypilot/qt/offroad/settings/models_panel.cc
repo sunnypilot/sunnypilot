@@ -7,21 +7,57 @@
 
 #include <algorithm>
 #include <QJsonDocument>
+#include <QStyle>
+#include <QtConcurrent/QtConcurrent>
+#include <QDir>
 
 #include "common/model.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
+static const QString progressStyleActive = "QProgressBar {"
+    "  font-size: 40px;"
+    "  font-weight: 200;"
+    "  padding: 1px;"
+    "  border: 3px solid black;"
+    "  border-radius: 10px;"
+    "}"
+    "QProgressBar::chunk {"
+    "  background-color: #1e79e8;"
+    "  border-radius: 10px;"
+    "}";
+
+static const QString progressStyleInactive = progressStyleActive +
+    "QProgressBar::chunk {"
+    "  background-color: transparent;"
+    "}";
+
+static const QString progressStyleDone = progressStyleActive +
+    "QProgressBar {"
+    "  color: #33ab4c;"
+    "}"
+    "QProgressBar::chunk {"
+    "  background-color: transparent;"
+    "}";
+
+static const QString progressStyleError = progressStyleActive +
+    "QProgressBar {"
+    "  color: red;"
+    "}"
+    "QProgressBar::chunk {"
+    "  background-color: transparent;"
+    "}";
+
 ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(50, 20, 50, 20);
 
-  ListWidgetSP *list = new ListWidgetSP(this);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
   ScrollViewSP *scroller = new ScrollViewSP(list, this);
   main_layout->addWidget(scroller);
 
   const auto current_model = GetActiveModelName();
-  currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
+  currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), "", this);
   currentModelLblBtn->setValue(current_model);
 
   connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &ModelsPanel::handleCurrentModelLblBtnClicked);
@@ -32,23 +68,88 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
+  clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
+  connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
+
+  list->addItem(clearModelCacheBtn);
+
+  // Create progress bars for downloads
+  supercomboProgressBar = createProgressBar(this);
+  QString supercomboType = tr("Driving Model");
+  supercomboFrame = createModelDetailFrame(this, supercomboType, supercomboProgressBar);
+  list->addItem(supercomboFrame);
+
+  navigationProgressBar = createProgressBar(this);
+  QString navigationType = tr("Navigation Model");
+  navigationFrame = createModelDetailFrame(this, navigationType, navigationProgressBar);
+  list->addItem(navigationFrame);
+
+  visionProgressBar = createProgressBar(this);
+  QString visionType = tr("Vision Model");
+  visionFrame = createModelDetailFrame(this, visionType, visionProgressBar);
+  list->addItem(visionFrame);
+
+  policyProgressBar = createProgressBar(this);
+  QString policyType = tr("Policy Model");
+  policyFrame = createModelDetailFrame(this, policyType, policyProgressBar);
+  list->addItem(policyFrame);
+
+  list->addItem(horizontal_line());
+
   // LiveDelay toggle
-  list->addItem(new ParamControlSP("LagdToggle",
-                                   tr("Live Learning Steer Delay"),
-                                   tr("Enable this for the car to learn and adapt its steering response time. "
-                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
-                                   "../assets/offroad/icon_shell.png"));
+  lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
+  lagd_toggle_control->showDescription();
+  list->addItem(lagd_toggle_control);
+
+  // Software delay control
+  delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
+                                     tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
+                                        "\nThe default software delay value is 0.2"),
+                                     "", {5, 30}, 1, false, nullptr, true, true);
+
+  connect(delay_control, &OptionControlSP::updateLabels, [=]() {
+    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
+  });
+  connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
+    delay_control->setVisible(!state);
+  });
+  delay_control->showDescription();
+  list->addItem(delay_control);
 }
 
+QProgressBar* ModelsPanel::createProgressBar(QWidget *parent) {
+  QProgressBar *progressBar = new QProgressBar(parent);
+  progressBar->setRange(0, 100);
+  progressBar->setValue(0);
+  progressBar->setTextVisible(true);
+  progressBar->setAlignment(Qt::AlignVCenter);
+  return progressBar;
+}
+
+QFrame* ModelsPanel::createModelDetailFrame(QWidget *parent, QString &typeName, QProgressBar *progressBar) {
+  QFrame *frame = new QFrame(parent);
+  QHBoxLayout *layout = new QHBoxLayout(frame);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(50);
+  layout->addWidget(new QLabel(typeName));
+  layout->addWidget(progressBar);
+  frame->setVisible(false);
+  return frame;
+}
 
 /**
  * @brief Updates the UI with bundle download progress information
  * Reads status from modelManagerSP cereal message and displays status for all models
  */
 void ModelsPanel::handleBundleDownloadProgress() {
+  supercomboFrame->setVisible(false);
+  visionFrame->setVisible(false);
+  policyFrame->setVisible(false);
+  navigationFrame->setVisible(false);
+
   using DS = cereal::ModelManagerSP::DownloadStatus;
   if (!model_manager.hasSelectedBundle() && !model_manager.hasActiveBundle()) {
-    currentModelLblBtn->setDescription(tr("No custom model selected!"));
     return;
   }
 
@@ -61,21 +162,27 @@ void ModelsPanel::handleBundleDownloadProgress() {
 
   // Get status for each model type in order
   for (const auto &model: models) {
-    QString typeName;
     QString modelName = QString::fromStdString(bundle.getDisplayName());
+
+    QProgressBar *progressBar = nullptr;
+    QFrame *modelFrame = nullptr;
 
     switch (model.getType()) {
       case cereal::ModelManagerSP::Model::Type::SUPERCOMBO:
-        typeName = tr("Driving");
+        progressBar = supercomboProgressBar;
+        modelFrame = supercomboFrame;
         break;
       case cereal::ModelManagerSP::Model::Type::NAVIGATION:
-        typeName = tr("Navigation");
+        progressBar = navigationProgressBar;
+        modelFrame = navigationFrame;
         break;
       case cereal::ModelManagerSP::Model::Type::VISION:
-        typeName = tr("Vision");
+        progressBar = visionProgressBar;
+        modelFrame = visionFrame;
         break;
       case cereal::ModelManagerSP::Model::Type::POLICY:
-        typeName = tr("Policy");
+        progressBar = policyProgressBar;
+        modelFrame = policyFrame;
         break;
     }
 
@@ -83,31 +190,26 @@ void ModelsPanel::handleBundleDownloadProgress() {
     QString line;
 
     if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
-      line = tr("Downloading %1 model [%2]... (%3%)").arg(typeName, modelName).arg(progress.getProgress(), 0, 'f', 2);
+      progressBar->setStyleSheet(progressStyleActive);
+      progressBar->setValue(progress.getProgress());
+      progressBar->setFormat(QString("  %1% - %2").arg(static_cast<int>(progress.getProgress())).arg(modelName));
+      device()->resetInteractiveTimeout();
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
-      line = tr("%1 model [%2] %3").arg(typeName, modelName, download_status_changed ? tr("downloaded") : tr("ready"));
+      progressBar->setStyleSheet(progressStyleDone);
+      progressBar->setFormat(tr("  %1 - %2").arg(modelName, download_status_changed ? tr("downloaded") : tr("ready")));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::CACHED) {
-      line = tr("%1 model [%2] %3").arg(typeName, modelName, download_status_changed ? tr("from cache") : tr("ready"));
+      progressBar->setStyleSheet(progressStyleDone);
+      progressBar->setFormat(tr("  %1 - %2").arg(modelName, download_status_changed ? tr("from cache") : tr("ready")));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::FAILED) {
-      line = tr("%1 model [%2] download failed").arg(typeName, modelName);
+      progressBar->setStyleSheet(progressStyleError);
+      progressBar->setFormat(tr("  download failed - %1").arg(modelName));
     } else {
-      line = tr("%1 model [%2] pending...").arg(typeName, modelName);
+      progressBar->setStyleSheet(progressStyleInactive);
+      progressBar->setFormat(tr("  pending - %1").arg(modelName));
     }
-    status.append(line);
-  }
-
-  currentModelLblBtn->setDescription(status.join("\n"));
-
-  if (prev_download_status != download_status) {
-    switch (bundle.getStatus()) {
-      case cereal::ModelManagerSP::DownloadStatus::DOWNLOADING:
-      case cereal::ModelManagerSP::DownloadStatus::CACHED:
-      case cereal::ModelManagerSP::DownloadStatus::DOWNLOADED:
-        currentModelLblBtn->showDescription();
-        break;
-      case cereal::ModelManagerSP::DownloadStatus::FAILED:
-      default:
-        break;
+    // keep navigation hidden for now to avoid confusion
+    if (model.getType() != cereal::ModelManagerSP::Model::Type::NAVIGATION) {
+      modelFrame->setVisible(true);
     }
   }
   prev_download_status = download_status;
@@ -125,6 +227,17 @@ QString ModelsPanel::GetActiveModelName() {
   return DEFAULT_MODEL;
 }
 
+/**
+ * @brief Gets the short name of the currently selected model bundle
+ * @return Display short name of the selected bundle or default model name
+ */
+QString ModelsPanel::GetActiveModelInternalName() {
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getInternalName());
+  }
+  return DEFAULT_MODEL;
+}
+
 void ModelsPanel::updateModelManagerState() {
   const SubMaster &sm = *(uiStateSP()->sm);
   model_manager = sm["modelManagerSP"].getModelManagerSP();
@@ -138,28 +251,73 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
-  // Create mapping of bundle indices to display names
-  QMap<uint32_t, QString> index_to_bundle;
+  struct ModelEntry {
+    QString folder;
+    QString displayName;
+    int index;
+  };
+  QList<ModelEntry> sortedModels;
+  QSet<QString> modelFolders;
   const auto bundles = model_manager.getAvailableBundles();
-  for (const auto &bundle: bundles) {
-    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
+
+  for (const auto &bundle : bundles) {
+    auto overrides = bundle.getOverrides();
+    QString gen;
+    for (const auto &override : overrides) {
+      if (override.getKey() == "folder") {
+        gen = QString::fromStdString(override.getValue().cStr());
+      }
+    }
+
+    modelFolders.insert(gen);
+    sortedModels.append(ModelEntry{
+      gen,
+      QString::fromStdString(bundle.getDisplayName()),
+      static_cast<int>(bundle.getIndex())
+    });
   }
 
-  // Sort bundles by index in descending order
-  QStringList bundleNames;
-  // Add "Default" as the first option
-  bundleNames.append(DEFAULT_MODEL);
+  std::sort(sortedModels.begin(), sortedModels.end(),
+    [](const ModelEntry &a, const ModelEntry &b) {
+      return a.index > b.index;
+    });
 
-  auto indices = index_to_bundle.keys();
-  std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
-  for (const auto &index: indices) {
-    bundleNames.append(index_to_bundle[index]);
+  // Create a list of folder-maxIndex pairs for sorting
+  QList<QPair<QString, int>> folderMaxIndices;
+  for (const auto &folder : modelFolders) {
+    int maxIndex = -1;
+    for (const auto &model : sortedModels) {
+      if (model.folder == folder) {
+        maxIndex = std::max(maxIndex, model.index);
+      }
+    }
+    folderMaxIndices.append(qMakePair(folder, maxIndex));
   }
 
-  currentModelLblBtn->setValue(GetActiveModelName());
+  // Sort folders by their highest model index
+  std::sort(folderMaxIndices.begin(), folderMaxIndices.end(),
+      [](const QPair<QString, int> &a, const QPair<QString, int> &b) {
+          return a.second > b.second;
+      });
 
-  const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
+  // Create the final items list using sorted folders
+  QList<QPair<QString, QStringList>> items;
+  for (const auto &folderPair : folderMaxIndices) {
+    QStringList folderModels;
+    for (const auto &model : sortedModels) {
+      if (model.folder == folderPair.first) {
+        folderModels.append(model.displayName);
+      }
+    }
+    items.append(qMakePair(folderPair.first, folderModels));
+  }
+
+  items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
+
+  currentModelLblBtn->setValue(GetActiveModelInternalName());
+
+  const QString selectedBundleName = TreeOptionDialog::getSelection(
+    tr("Select a Model"), items, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
@@ -197,7 +355,27 @@ void ModelsPanel::updateLabels() {
   updateModelManagerState();
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
-  currentModelLblBtn->setValue(GetActiveModelName());
+  currentModelLblBtn->setValue(GetActiveModelInternalName());
+
+  // Update lagdToggle description with current value
+  QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
+                   "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
+                   "The Current value is updated automatically when the vehicle is Onroad.");
+  QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
+  if (!current.isEmpty()) {
+    desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
+  }
+  lagd_toggle_control->setDescription(desc);
+  lagd_toggle_control->showDescription();
+
+  delay_control->setVisible(!params.getBool("LagdToggle"));
+  if (delay_control->isVisible()) {
+    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
+    delay_control->showDescription();
+  }
+
+  clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
 
 /**
@@ -217,4 +395,33 @@ void ModelsPanel::showResetParamsDialog() {
     params.remove("CalibrationParams");
     params.remove("LiveTorqueParameters");
   }
+}
+
+void ModelsPanel::clearModelCache() {
+  QString confirmMsg = tr("This will delete ALL downloaded models from the cache"
+                            "<br/><u>except the currently active model</u>."
+                            "<br/><br/>Are you sure you want to continue?");
+  QString content("<body><h2 style=\"text-align: center;\">" + tr("Driving Model Selector") + "</h2><br>"
+                "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + confirmMsg + "</p></body>");
+  if (showConfirmationDialog(
+    content,
+    tr("Clear Cache"))) {
+      params.putBool("ModelManager_ClearCache", true);
+    }
+}
+
+double ModelsPanel::calculateCacheSize() {
+  QFuture<qint64> future_ModelCacheSize = QtConcurrent::run([=]() {
+
+    QDir model_dir(QString::fromStdString(Path::model_root()));
+    QFileInfoList model_files = model_dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+    qint64 totalSize = 0;
+    for (const QFileInfo &model_file : model_files) {
+        if (model_file.isFile()) {
+            totalSize += model_file.size();
+        }
+    }
+    return totalSize;
+  });
+  return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
 }

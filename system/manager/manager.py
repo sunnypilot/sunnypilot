@@ -9,6 +9,7 @@ from cereal import log
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
 from openpilot.common.params import Params, ParamKeyType
+from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
 from openpilot.system.manager.process import ensure_running
@@ -49,21 +50,30 @@ def manager_init() -> None:
     ("BlindSpot", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
+    ("Brightness", "0"),
+    ("ChevronInfo", "4"),
+    ("CustomAccIncrementsEnabled", "0"),
+    ("CustomAccLongPressIncrement", "5"),
+    ("CustomAccShortPressIncrement", "1"),
     ("DeviceBootMode", "0"),
+    ("DisableUpdates", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
+    ("InteractivityTimeout", "0"),
     ("LagdToggle", "1"),
+    ("LagdToggledelay", "0.2"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
-    ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
+    ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
+    ("ShowAdvancedControls", "0" if build_metadata.tested_channel else "1"),
   ]
 
   # device boot mode
@@ -95,6 +105,7 @@ def manager_init() -> None:
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
   params.put("GitBranch", build_metadata.channel)
   params.put("GitRemote", build_metadata.openpilot.git_origin)
+  params.put_bool("IsDevelopmentBranch", build_metadata.development_channel)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
   params.put("HardwareSerial", serial)
@@ -231,8 +242,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-  from openpilot.system.ui.text import TextWindow
-
   unblock_stdout()
 
   try:

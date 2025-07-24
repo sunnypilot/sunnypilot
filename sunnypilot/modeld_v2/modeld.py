@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.models.modeld_lagd import ModeldLagd
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -54,15 +54,15 @@ class ModelState:
       raise
 
     model_bundle = get_active_bundle()
-    self.generation = model_bundle.generation
+    self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
-    self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
+    self.frames = {name: DrivingModelFrame(context, buffer_length) for name in self.model_runner.vision_input_names}
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
     # img buffers are managed in openCL transform code
@@ -86,7 +86,11 @@ class ModelState:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
                                   self.numpy_inputs['desire'].shape[2])
 
-  def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
+  @property
+  def mlsim(self) -> bool:
+    return bool(self.generation is not None and self.generation >= 11)
+
+  def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
@@ -110,8 +114,7 @@ class ModelState:
       if key in inputs and key not in ['desire']:
         self.numpy_inputs[key][:] = inputs[key]
 
-    imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
-               'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
+    imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
 
     # Prepare inputs using the model runner
     self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
@@ -152,7 +155,7 @@ class ModelState:
       self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
       self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
       self.numpy_inputs[input_name_prev][:] = self.full_prev_desired_curv[0, self.temporal_idxs]
-      if self.generation == 11:
+      if self.mlsim:
         self.numpy_inputs[input_name_prev][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
     else:
       length = outputs['desired_curvature'][0].size
@@ -166,7 +169,7 @@ class ModelState:
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.generation)
+    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.mlsim)
     if v_ego > self.MIN_LAT_CONTROL_SPEED:
       desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
     else:
@@ -240,7 +243,7 @@ def main(demo=False):
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
 
-  modeld_lagd = ModeldLagd()
+  modeld_lagd = LagdToggle()
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
@@ -315,6 +318,8 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
+    transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
@@ -324,7 +329,7 @@ def main(demo=False):
       inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
-    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
+    model_output = model.run(bufs, transforms, inputs, prepare_only)
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
