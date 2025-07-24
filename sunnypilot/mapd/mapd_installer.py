@@ -26,14 +26,22 @@ VERSION = 'v1.10.0'
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
 
 
+def update_installed_version(version: str, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  params.put("MapdVersion", version)
+
+
 class MapdInstallManager:
   def __init__(self, spinner_ref: Spinner):
     self._spinner = spinner_ref
+    self._params = Params()
 
   def download(self) -> None:
     self.ensure_directories_exist()
     self._download_file()
-    self.update_installed_version(VERSION)
+    update_installed_version(VERSION, self._params)
 
   def check_and_download(self) -> None:
     if self.download_needed():
@@ -82,13 +90,8 @@ class MapdInstallManager:
       temp_file.unlink()
     logging.error("Failed to download file after all retries")
 
-  @staticmethod
-  def update_installed_version(version: str) -> None:
-    Params().put("MapdVersion", version)
-
-  @staticmethod
-  def get_installed_version() -> str:
-    return Params().get("MapdVersion", encoding="utf-8") or ""
+  def get_installed_version(self) -> str:
+    return self._params.get("MapdVersion", encoding="utf-8") or ""
 
   def wait_for_internet_connection(self, return_on_failure: bool = False) -> bool:
     max_retries = 10
@@ -146,7 +149,7 @@ if __name__ == "__main__":
   if is_prebuilt():
     debug_msg = f"[DEBUG] This is prebuilt, no mapd install required. VERSION: [{VERSION}], Param [{install_manager.get_installed_version()}]"
     spinner.update(debug_msg)
-    install_manager.update_installed_version(VERSION)
+    update_installed_version(VERSION)
   else:
     spinner.update(f"Checking if mapd is installed and valid. Prebuilt [{is_prebuilt()}]")
     install_manager.non_prebuilt_install()
