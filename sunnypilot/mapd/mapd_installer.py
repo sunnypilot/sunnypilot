@@ -47,9 +47,8 @@ class MapdInstallManager:
     if self.download_needed():
       self.download()
 
-  @staticmethod
-  def download_needed() -> bool:
-    return not os.path.exists(MAPD_PATH) or MapdInstallManager.get_installed_version() != VERSION
+  def download_needed(self) -> bool:
+    return not os.path.exists(MAPD_PATH) or self.get_installed_version() != VERSION
 
   @staticmethod
   def ensure_directories_exist() -> None:
@@ -125,7 +124,7 @@ class MapdInstallManager:
         return
 
       if self.wait_for_internet_connection(return_on_failure=True):
-        self._spinner.update(f"Downloading pfeiferj's mapd [{install_manager.get_installed_version()}] => [{VERSION}].")
+        self._spinner.update(f"Downloading pfeiferj's mapd [{self.get_installed_version()}] => [{VERSION}].")
         time.sleep(0.1)
         self.check_and_download()
       self._spinner.close()
