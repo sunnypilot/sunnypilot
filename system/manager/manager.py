@@ -80,6 +80,8 @@ def manager_init() -> None:
     ("HkgTuningAngleMaxTorqueReductionGain", "100"),
     ("HkgTuningOverridingCycles", "17"),
     ("HkgAngleLiveTuning", "0"),
+    ("HkgMaxLateralAccel", "9"),
+    ("HkgMaxLateralJerk", "9"),
   ]
 
   # device boot mode
