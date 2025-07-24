@@ -210,4 +210,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OsmStateTitle", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+
+    {"DashcamServerRunning", PERSISTENT},
+    {"DashcamServerPort", PERSISTENT},
 };
