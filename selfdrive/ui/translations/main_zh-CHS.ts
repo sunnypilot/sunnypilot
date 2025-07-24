@@ -2289,6 +2289,10 @@ Data</source>
         <translation>启用特斯拉彩虹模式</translation>
     </message>
     <message>
+        <source>Enable the rainbow mode, which displays a rainbow effect on the screen.</source>
+        <translation>启用彩虹模式，在屏幕上显示彩虹效果。</translation>
+    </message>
+    <message>
         <source>Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported.</source>
         <translation>启用此功能后，只要您的车辆支持盲点监测系统（BSM），当检测到盲区有车辆时将会显示警告。</translation>
     </message>
