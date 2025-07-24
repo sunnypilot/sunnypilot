@@ -116,12 +116,10 @@ void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
         lead_status_alpha = std::min(1.0f, lead_status_alpha + 0.1f);
     }
 
-    // FIXED: Check if lead_one actually has status before drawing
     if (has_lead_one) {
         drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
     }
 
-    // Draw lead_two if it exists and is sufficiently separated from lead_one
     if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
         drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
     }
