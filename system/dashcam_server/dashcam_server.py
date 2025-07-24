@@ -21,7 +21,7 @@ from openpilot.common.params import Params
 from openpilot.system.loggerd.config import SEGMENT_LENGTH
 
 # 配置
-DEFAULT_PORT = 8082
+DEFAULT_PORT = 8008
 VIDEO_EXTENSIONS = {'.hevc', '.ts', '.mp4'}
 SUPPORTED_CAMERAS = ['fcamera', 'dcamera', 'ecamera', 'qcamera']
 
@@ -384,21 +384,23 @@ class DashcamServer:
         self.logger.info(f"行车记录仪服务器启动在端口 {self.port}")
         print(f"行车记录仪服务器启动在 http://0.0.0.0:{self.port}")
 
-def main():
-    """主函数"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
 
-    server = DashcamServer()
+async def main():
+  logging.basicConfig(
+    level=logging.INFO,
+    filename=os.path.join("/tmp/", "dashcam_server.log"),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  )
 
-    try:
-        asyncio.run(server.start_server())
-        # 保持服务器运行
-        asyncio.get_event_loop().run_forever()
-    except KeyboardInterrupt:
-        print("服务器停止")
+  server = DashcamServer()
+  await server.start_server()
+
+  # 用 asyncio.Event() 代替 sleep 循环，让任务优雅持久运行
+  await asyncio.Event().wait()
+
 
 if __name__ == '__main__':
-    main()
+  try:
+    asyncio.run(main())
+  except (KeyboardInterrupt, SystemExit):
+    print("行车记录仪服务器已停止")
