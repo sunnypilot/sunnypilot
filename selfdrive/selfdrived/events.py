@@ -189,7 +189,14 @@ def longitudinal_maneuver_alert(CP: car.CarParams, CS: car.CarState, sm: messagi
 
 def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   personality = str(personality).title()
-  return NormalPermanentAlert(f"驾驶风格: {personality}", duration=1.5)
+  personality_en = ""
+  if personality == "Aggressive":
+    personality_en = "激进"
+  elif personality == "Standard":
+    personality_en = "标准"
+  elif personality == "Relaxed":
+    personality_en = "舒适"
+  return NormalPermanentAlert(f"驾驶风格: {personality_en}", duration=1.5)
 
 
 def invalid_lkas_setting_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
