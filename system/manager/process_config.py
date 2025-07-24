@@ -149,6 +149,9 @@ procs = [
   # sunnylink <3
   DaemonProcess("manage_sunnylinkd", "sunnypilot.sunnylink.athena.manage_sunnylinkd", "SunnylinkdPid"),
   PythonProcess("sunnylink_registration_manager", "sunnypilot.sunnylink.registration_manager", sunnylink_need_register_shim),
+
+  # Dashcam Server Daemon
+  DaemonProcess("dashcam_serverd", "system.dashcam_server.dashcam_server", "DashcamServerPid"),
 ]
 
 # sunnypilot

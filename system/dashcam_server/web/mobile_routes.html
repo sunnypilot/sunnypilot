@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>行车记录仪 - 移动端</title>
+    <title>行车记录仪 - 路线视图</title>
     <style>
         * {
             margin: 0;
@@ -130,30 +130,31 @@
             font-size: 0.8rem;
         }
 
-        .segments-list {
+        .routes-list {
             background: white;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .segment-item {
+        .route-item {
             display: flex;
             align-items: center;
             padding: 1rem;
             border-bottom: 1px solid #eee;
             transition: background 0.2s ease;
+            cursor: pointer;
         }
 
-        .segment-item:last-child {
+        .route-item:last-child {
             border-bottom: none;
         }
 
-        .segment-item:active {
+        .route-item:active {
             background: #f8f9fa;
         }
 
-        .segment-thumbnail {
+        .route-thumbnail {
             width: 60px;
             height: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -167,25 +168,32 @@
             flex-shrink: 0;
         }
 
-        .segment-info {
+        .route-info {
             flex: 1;
             min-width: 0;
         }
 
-        .segment-time {
+        .route-name {
             font-weight: 600;
             font-size: 0.9rem;
             margin-bottom: 0.25rem;
+            color: #667eea;
         }
 
-        .segment-details {
+        .route-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .route-details {
             font-size: 0.8rem;
             color: #666;
             display: flex;
             gap: 1rem;
         }
 
-        .segment-actions {
+        .route-actions {
             display: flex;
             gap: 0.5rem;
             flex-shrink: 0;
@@ -228,80 +236,26 @@
             border: 1px solid #f5c6cb;
         }
 
-        .video-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            z-index: 1000;
-        }
-
-        .video-content {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .video-header {
-            background: #333;
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .video-player {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-        }
-
-        .video-player video {
-            width: 100%;
-            height: auto;
-            max-height: 100%;
-        }
-
-        .video-controls {
-            background: #333;
-            padding: 1rem;
+        .view-toggle {
             display: flex;
             gap: 0.5rem;
-            overflow-x: auto;
+            margin-bottom: 1rem;
         }
 
-        .camera-btn {
-            padding: 0.5rem 1rem;
-            background: #555;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            cursor: pointer;
+        .view-toggle .btn {
+            flex: 1;
         }
 
-        .camera-btn.active {
+        .view-toggle .btn.active {
             background: #667eea;
-        }
-
-        .camera-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            color: white;
         }
     </style>
     <link href="./css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="header">
-        <h1><i class="fas fa-video"></i> 行车记录仪</h1>
+        <h1><i class="fas fa-video"></i> 行车记录仪 - 路线视图</h1>
         <div class="status" id="status">连接中...</div>
     </div>
 
@@ -309,6 +263,10 @@
         <!-- 系统信息 -->
         <div class="info-card">
             <div class="info-grid" id="info-grid">
+                <div class="info-item">
+                    <div class="info-label">总路线数</div>
+                    <div class="info-value" id="total-routes">-</div>
+                </div>
                 <div class="info-item">
                     <div class="info-label">总段数</div>
                     <div class="info-value" id="total-segments">-</div>
@@ -318,14 +276,16 @@
                     <div class="info-value" id="total-size">-</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">摄像头</div>
-                    <div class="info-value" id="camera-count">-</div>
-                </div>
-                <div class="info-item">
                     <div class="info-label">状态</div>
                     <div class="info-value" id="server-status">-</div>
                 </div>
             </div>
+        </div>
+
+        <!-- 视图切换 -->
+        <div class="view-toggle">
+            <button id="route-view-btn" class="btn active">路线视图</button>
+            <button id="segment-view-btn" class="btn">段视图</button>
         </div>
 
         <!-- 筛选器 -->
@@ -335,35 +295,12 @@
                 <input type="date" id="end-date" class="filter-input" placeholder="结束日期">
             </div>
             <div class="filter-row">
-                <select id="camera-filter" class="filter-input">
-                    <option value="">全部摄像头</option>
-                    <option value="fcamera">前置摄像头</option>
-                    <option value="dcamera">驾驶员摄像头</option>
-                    <option value="ecamera">广角摄像头</option>
-                    <option value="qcamera">低质量摄像头</option>
-                </select>
                 <button id="apply-filter" class="btn btn-primary">筛选</button>
             </div>
         </div>
 
-        <!-- 视图切换 -->
-        <div class="view-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-            <button id="route-view-btn" class="btn" style="flex: 1;">路线视图</button>
-            <button id="segment-view-btn" class="btn active" style="flex: 1; background: #667eea; color: white;">段视图</button>
-        </div>
-
         <!-- 错误提示 -->
         <div id="error-message" class="error" style="display: none;"></div>
-
-        <!-- 格式兼容性提示 -->
-        <div id="format-info" class="info-card" style="background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 1rem;">
-            <h4 style="margin-bottom: 0.5rem; color: #1976d2;"><i class="fas fa-info-circle"></i> 视频格式说明</h4>
-            <p style="font-size: 0.9rem; margin: 0; color: #424242;">
-                • <strong>低质量摄像头 (qcamera)</strong>: 最佳兼容性，包含音频<br>
-                • <strong>其他摄像头</strong>: 高质量视频，部分设备可能不支持<br>
-                • 如遇播放问题，请优先选择"低质量"摄像头
-            </p>
-        </div>
 
         <!-- 加载指示器 -->
         <div id="loading" class="loading" style="display: none;">
@@ -371,8 +308,8 @@
             加载中...
         </div>
 
-        <!-- 视频段列表 -->
-        <div class="segments-list" id="segments-list">
+        <!-- 路线列表 -->
+        <div class="routes-list" id="routes-list">
             <!-- 动态生成 -->
         </div>
 
@@ -384,71 +321,62 @@
         </div>
     </div>
 
-    <!-- 视频播放模态框 -->
-    <div class="video-modal" id="video-modal">
-        <div class="video-content">
-            <div class="video-header">
-                <span id="video-title">视频播放</span>
-                <button id="close-video" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-times"></i> 关闭
-                </button>
-            </div>
-            <div class="video-player">
-                <video id="main-video" controls preload="metadata">
-                    您的浏览器不支持视频播放。
-                </video>
-            </div>
-            <div class="video-controls" id="video-controls">
-                <!-- 动态生成摄像头按钮 -->
-            </div>
-        </div>
-    </div>
-
     <script>
-        // 移动端行车记录仪查看器
-        class MobileDashcamViewer {
+        // 移动端行车记录仪路线查看器
+        class MobileRouteViewer {
             constructor() {
                 this.currentPage = 1;
                 this.pageLimit = 10;
-                this.currentSegment = null;
+                this.currentView = 'routes'; // 'routes' or 'segments'
                 this.init();
             }
 
             init() {
                 this.setupEventListeners();
                 this.loadInfo();
-                this.loadSegments();
+                this.loadRoutes();
             }
 
             setupEventListeners() {
                 document.getElementById('apply-filter').addEventListener('click', () => {
                     this.currentPage = 1;
-                    this.loadSegments();
+                    this.loadRoutes();
                 });
 
                 document.getElementById('prev-page').addEventListener('click', () => {
                     if (this.currentPage > 1) {
                         this.currentPage--;
-                        this.loadSegments();
+                        this.loadRoutes();
                     }
                 });
 
                 document.getElementById('next-page').addEventListener('click', () => {
                     this.currentPage++;
-                    this.loadSegments();
-                });
-
-                document.getElementById('close-video').addEventListener('click', () => {
-                    this.closeVideo();
+                    this.loadRoutes();
                 });
 
                 document.getElementById('route-view-btn').addEventListener('click', () => {
-                    window.location.href = '/mobile_routes.html';
+                    this.switchView('routes');
                 });
 
                 document.getElementById('segment-view-btn').addEventListener('click', () => {
-                    // 当前就是段视图，不需要操作
+                    this.switchView('segments');
                 });
+            }
+
+            switchView(view) {
+                this.currentView = view;
+                this.currentPage = 1;
+
+                // 更新按钮状态
+                document.getElementById('route-view-btn').classList.toggle('active', view === 'routes');
+                document.getElementById('segment-view-btn').classList.toggle('active', view === 'segments');
+
+                if (view === 'routes') {
+                    this.loadRoutes();
+                } else {
+                    window.location.href = '/mobile.html';
+                }
             }
 
             async loadInfo() {
@@ -462,14 +390,14 @@
             }
 
             updateInfo(info) {
-                document.getElementById('total-segments').textContent = info.total_segments;
-                document.getElementById('total-size').textContent = this.formatFileSize(info.total_size);
-                document.getElementById('camera-count').textContent = info.available_cameras.length;
+                document.getElementById('total-routes').textContent = info.total_routes || 0;
+                document.getElementById('total-segments').textContent = info.total_segments || 0;
+                document.getElementById('total-size').textContent = this.formatFileSize(info.total_size || 0);
                 document.getElementById('server-status').textContent = '正常';
                 document.getElementById('status').textContent = '已连接';
             }
 
-            async loadSegments() {
+            async loadRoutes() {
                 this.showLoading(true);
 
                 try {
@@ -480,52 +408,61 @@
 
                     const startDate = document.getElementById('start-date').value;
                     const endDate = document.getElementById('end-date').value;
-                    const cameraFilter = document.getElementById('camera-filter').value;
 
                     if (startDate) params.append('start_date', startDate + 'T00:00:00');
                     if (endDate) params.append('end_date', endDate + 'T23:59:59');
-                    if (cameraFilter) params.append('camera', cameraFilter);
 
-                    const response = await fetch(`/api/segments?${params}`);
+                    const response = await fetch(`/api/routes?${params}`);
                     const data = await response.json();
 
-                    this.renderSegments(data.segments);
+                    this.renderRoutes(data.routes);
                     this.updatePagination(data);
                 } catch (error) {
-                    this.showError('加载视频段失败: ' + error.message);
+                    this.showError('加载路线列表失败: ' + error.message);
                 } finally {
                     this.showLoading(false);
                 }
             }
 
-            renderSegments(segments) {
-                const list = document.getElementById('segments-list');
+            renderRoutes(routes) {
+                const list = document.getElementById('routes-list');
                 list.innerHTML = '';
 
-                segments.forEach(segment => {
+                routes.forEach(route => {
                     const item = document.createElement('div');
-                    item.className = 'segment-item';
+                    item.className = 'route-item';
+
+                    const startTime = new Date(route.start_time);
+                    const endTime = new Date(route.end_time);
+                    const duration = Math.round((endTime - startTime) / 1000 / 60); // 分钟
+
                     item.innerHTML = `
-                        <div class="segment-thumbnail">
-                            <i class="fas fa-video"></i>
+                        <div class="route-thumbnail">
+                            <i class="fas fa-route"></i>
                         </div>
-                        <div class="segment-info">
-                            <div class="segment-time">${new Date(segment.timestamp).toLocaleString('zh-CN')}</div>
-                            <div class="segment-details">
-                                <span>${this.formatDuration(segment.duration)}</span>
-                                <span>${this.formatFileSize(segment.size)}</span>
-                                <span>${Object.keys(segment.cameras).join(', ')}</span>
+                        <div class="route-info">
+                            <div class="route-name">${route.route_name}</div>
+                            <div class="route-time">${startTime.toLocaleString('zh-CN')} - ${endTime.toLocaleString('zh-CN')}</div>
+                            <div class="route-details">
+                                <span>${route.segment_count} 段</span>
+                                <span>${duration} 分钟</span>
+                                <span>${this.formatFileSize(route.total_size)}</span>
                             </div>
                         </div>
-                        <div class="segment-actions">
+                        <div class="route-actions">
                             <button class="btn btn-primary btn-sm play-btn">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
                     `;
 
-                    item.querySelector('.play-btn').addEventListener('click', () => {
-                        this.playSegment(segment);
+                    item.querySelector('.play-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.playRoute(route.route_name);
+                    });
+
+                    item.addEventListener('click', () => {
+                        this.playRoute(route.route_name);
                     });
 
                     list.appendChild(item);
@@ -548,100 +485,14 @@
                 }
             }
 
-            async playSegment(segment) {
-                this.currentSegment = segment;
-
-                // 获取详细信息
-                try {
-                    const response = await fetch(`/api/segments/${segment.segment_id}`);
-                    const segmentDetail = await response.json();
-                    this.showVideo(segmentDetail);
-                } catch (error) {
-                    this.showError('加载视频详情失败: ' + error.message);
-                }
-            }
-
-            showVideo(segment) {
-                document.getElementById('video-title').textContent = new Date(segment.timestamp).toLocaleString('zh-CN');
-
-                // 生成摄像头按钮
-                const controls = document.getElementById('video-controls');
-                controls.innerHTML = '';
-
-                const cameraNames = {
-                    'fcamera': '前置',
-                    'dcamera': '驾驶员',
-                    'ecamera': '广角',
-                    'qcamera': '低质量'
-                };
-
-                // 按兼容性排序摄像头（移动端优先使用兼容格式）
-                const cameraOrder = ['qcamera', 'fcamera', 'dcamera', 'ecamera'];
-                const availableCameras = Object.keys(segment.cameras);
-                const sortedCameras = cameraOrder.filter(cam => availableCameras.includes(cam))
-                    .concat(availableCameras.filter(cam => !cameraOrder.includes(cam)));
-
-                sortedCameras.forEach(camera => {
-                    const btn = document.createElement('button');
-                    btn.className = 'camera-btn';
-                    btn.textContent = cameraNames[camera] || camera;
-                    btn.addEventListener('click', () => {
-                        this.switchCamera(camera, `/api/video/${segment.segment_id}/${camera}`);
-                        document.querySelectorAll('.camera-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                    });
-                    controls.appendChild(btn);
-                });
-
-                // 播放兼容性最好的摄像头（qcamera优先）
-                const defaultCamera = sortedCameras[0];
-                this.switchCamera(defaultCamera, `/api/video/${segment.segment_id}/${defaultCamera}`);
-                controls.firstChild.classList.add('active');
-
-                document.getElementById('video-modal').style.display = 'block';
-            }
-
-            switchCamera(camera, streamUrl) {
-                const video = document.getElementById('main-video');
-
-                // 添加错误处理
-                video.onerror = (e) => {
-                    console.error('视频加载失败:', e);
-                    this.showError(`${camera} 摄像头视频加载失败，可能是格式不兼容`);
-
-                    // 尝试切换到qcamera（如果可用且不是当前摄像头）
-                    if (camera !== 'qcamera' && this.currentSegment && this.currentSegment.cameras['qcamera']) {
-                        setTimeout(() => {
-                            const qcameraBtn = document.querySelector('[data-camera="qcamera"]');
-                            if (qcameraBtn) {
-                                qcameraBtn.click();
-                            }
-                        }, 1000);
-                    }
-                };
-
-                video.onloadstart = () => {
-                    console.log(`开始加载 ${camera} 视频:`, streamUrl);
-                };
-
-                video.oncanplay = () => {
-                    console.log(`${camera} 视频可以播放`);
-                };
-
-                video.src = streamUrl;
-                video.load();
-            }
-
-            closeVideo() {
-                document.getElementById('video-modal').style.display = 'none';
-                const video = document.getElementById('main-video');
-                video.pause();
-                video.src = '';
+            playRoute(routeName) {
+                // 跳转到路线播放页面
+                window.location.href = `/route_player.html?route=${encodeURIComponent(routeName)}`;
             }
 
             showLoading(show) {
                 document.getElementById('loading').style.display = show ? 'block' : 'none';
-                document.getElementById('segments-list').style.display = show ? 'none' : 'block';
+                document.getElementById('routes-list').style.display = show ? 'none' : 'block';
             }
 
             showError(message) {
@@ -660,23 +511,11 @@
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
-
-            formatDuration(seconds) {
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-
-                if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-                }
-            }
         }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            new MobileDashcamViewer();
+            new MobileRouteViewer();
         });
     </script>
 </body>
