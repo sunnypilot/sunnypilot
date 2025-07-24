@@ -120,7 +120,7 @@ jobs:
               fi
             done
             if [ -z "$RUN_ID" ]; then
-              echo "Could not find the triggered workflow run for $display_name ($ref) after waiting."
+              echo "Could not find the triggered workflow run for $display_name ($ref)."
               exit 1
             fi
             echo "$RUN_ID" >> triggered_run_ids.txt
@@ -139,7 +139,7 @@ jobs:
             RUN_ID_TO_NAME["$RUN_ID"]="$ARTIFACT_NAME"
           done < triggered_run_ids.txt
 
-          # Poll all runs together, sleep between checks to avoid API rate limits
+          # Poll all runs together, sleep between checks to avoid 90,000 line run logs
           RUN_IDS=($(cat triggered_run_ids.txt))
           declare -A RUN_STATUS
           for RUN_ID in "${RUN_IDS[@]}"; do
@@ -174,7 +174,7 @@ jobs:
             if $ALL_DONE; then
               break
             fi
-            echo "Waiting for unfinished runs... sleeping 120s"
+            echo "Waiting for unfinished runs... sleeping for 2 minutes"
             sleep 120
           done
 
