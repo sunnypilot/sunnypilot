@@ -214,7 +214,6 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HkgTuningAngleMaxTorqueReductionGain", PERSISTENT | BACKUP},
     {"HkgTuningAngleActiveTorqueReductionGain", PERSISTENT | BACKUP},
     {"HkgTuningOverridingCycles", PERSISTENT | BACKUP},
-    {"HkgAngleLiveTuning", CLEAR_ON_MANAGER_START},
-    {"HkgMaxLateralAccel", PERSISTENT | BACKUP},
-    {"HkgMaxLateralJerk", PERSISTENT | BACKUP},    
+    {"HkgAngleLiveTuning", CLEAR_ON_MANAGER_START}
+    
 };

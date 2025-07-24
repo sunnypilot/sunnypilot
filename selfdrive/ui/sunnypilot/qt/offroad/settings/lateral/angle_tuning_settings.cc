@@ -54,21 +54,6 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   second_row->addWidget(hkgAngleMaxTorque);
   list->addItem(second_row);
   
-  auto third_row = new QHBoxLayout();
-  hkgMaxLateralAccel = new OptionControlSP("HkgMaxLateralAccel", tr("Max Lateral Accel"), tr("[ROLL COMPENSATED] Maximum lateral acceleration allowed by the vehicle."), "../assets/offroad/icon_blank.png", {9, 36}, 1, false, nullptr, false, true);
-  connect(hkgMaxLateralAccel, &OptionControlSP::updateLabels, hkgMaxLateralAccel, [=]() {
-    this->updateToggles(offroad);
-  });
-  third_row->addWidget(hkgMaxLateralAccel);
-
-  hkgMaxLateralJerk = new OptionControlSP("HkgMaxLateralJerk", tr("Max Lateral Jerk"), tr("[ROLL COMPENSATED] Maximum lateral jerk allowed by the vehicle."), "../assets/offroad/icon_blank.png", {9, 36}, 1, false, nullptr, false, true);
-  connect(hkgMaxLateralJerk, &OptionControlSP::updateLabels, hkgMaxLateralJerk, [=]() {
-    this->updateToggles(offroad);
-  });
-  third_row->addWidget(hkgMaxLateralJerk);
-  
-  list->addItem(third_row);
-  
   QObject::connect(uiState(), &UIState::offroadTransition, this, &AngleTunningSettings::updateToggles);
 
   main_layout->addWidget(new ScrollViewSP(list, this));
@@ -98,19 +83,5 @@ void AngleTunningSettings::updateToggles(bool _offroad) {
   auto HkgTuningOverridingCyclesValue = QString::fromStdString(params.get("HkgTuningOverridingCycles")).toInt();
   hkgTuningOverridingCycles->setLabel(QString::number(HkgTuningOverridingCyclesValue));
 
-  auto HkgMaxLateralAccelValue = QString::fromStdString(params.get("HkgMaxLateralAccel")).toDouble();
-  if (HkgMaxLateralAccelValue < 10) {
-    hkgMaxLateralAccel->setLabel("Auto (default)");
-  } else {
-    hkgMaxLateralAccel->setLabel(QString::number(HkgMaxLateralAccelValue / 10) +" m/s²");
-  }
-
-  auto HkgMaxLateralJerkValue = QString::fromStdString(params.get("HkgMaxLateralJerk")).toDouble();
-  if (HkgMaxLateralJerkValue < 10) {
-    hkgMaxLateralJerk->setLabel("Auto (default)");
-  } else {
-    hkgMaxLateralJerk->setLabel(QString::number(HkgMaxLateralJerkValue / 10) +" m/s³");
-  }
-  
   offroad = _offroad;
 }
