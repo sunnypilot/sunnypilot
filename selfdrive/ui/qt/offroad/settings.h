@@ -88,6 +88,8 @@ protected:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
+  ButtonParamControl *distraction_detection_level;
+
 
   virtual void updateToggles();
 };

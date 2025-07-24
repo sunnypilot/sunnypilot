@@ -84,6 +84,14 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     },
   };
 
+  std::vector<QString> distraction_button_texts{tr("Strict"), tr("Moderate"), tr("Lenient")};
+  distraction_detection_level = new ButtonParamControl("DistractionDetectionLevel", tr("Distraction Detection Level"),
+                                          tr("Set how sensitive the driver distraction detection should be. "
+                                          "Strict: Very sensitive, warns on minor distractions. "
+                                          "Moderate: Balanced between sensitivity and false positives. "
+                                          "Lenient: Only alerts on clear distractions."),
+                                          "../assets/icons/monitoring.png",
+                                          distraction_button_texts);
 
   std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
@@ -120,6 +128,10 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     // insert longitudinal personality after NDOG toggle
     if (param == "DisengageOnAccelerator") {
       addItem(long_personality_setting);
+    }
+
+    if(param == "AlwaysOnDM") {
+      addItem(distraction_detection_level);
     }
   }
 

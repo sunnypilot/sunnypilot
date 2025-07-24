@@ -2736,6 +2736,26 @@ Are you sure you want to delete all the maps?</source>
         <translation>即使在sunnypilot未激活时也启用驾驶员监控。</translation>
     </message>
     <message>
+        <source>Distraction Detection Level</source>
+        <translation>分心检测级别</translation>
+    </message>
+    <message>
+        <source>Strict</source>
+        <translation>严格</translation>
+    </message>
+    <message>
+        <source>Moderate</source>
+        <translation>适中</translation>
+    </message>
+    <message>
+        <source>Lenient</source>
+        <translation>宽松</translation>
+    </message>
+    <message>
+        <source>Set how sensitive the driver distraction detection should be. Strict: Very sensitive, warns on minor distractions. Moderate: Balanced between sensitivity and false positives. Lenient: Only alerts on clear distractions.</source>
+        <translation>设置驾驶员分心检测的灵敏度。严格模式：非常敏感，对轻微分心行为发出警告。适中模式：在敏感度和误报之间保持平衡。宽松模式：仅对明显的分心行为发出警告。</translation>
+    </message>
+    <message>
         <source>Enable Dynamic Experimental Control</source>
         <translation>启用动态实验性控制</translation>
     </message>

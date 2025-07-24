@@ -23,6 +23,12 @@ DESCRIPTIONS = {
   'RecordFront': "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",
   "IsMetric": "Display speed in km/h instead of mph.",
   "RecordAudio": "Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.",
+  "DistractionDetectionLevel": (
+    "Set how sensitive the driver distraction detection should be.\n"
+    "Strict: Very sensitive, warns on minor distractions.\n"
+    "Moderate: Balanced between sensitivity and false positives.\n"
+    "Lenient: Only alerts on clear distractions."
+  ),
 }
 
 
@@ -56,6 +62,15 @@ class TogglesLayout(Widget):
         callback=self._set_longitudinal_personality,
         selected_index=int(self._params.get("LongitudinalPersonality") or 0),
         icon="speed_limit.png"
+      ),
+      multiple_button_item(
+        "Distraction Detection Level",
+        DESCRIPTIONS["DistractionDetectionLevel"],
+        buttons=["Strict", "Moderate", "Lenient"],
+        button_width=255,
+        callback=self._set_distraction_level,
+        selected_index=int(self._params.get("DistractionDetectionLevel") or 1),
+        icon="monitoring.png"
       ),
       toggle_item(
         "Enable Lane Departure Warnings",
@@ -93,3 +108,6 @@ class TogglesLayout(Widget):
 
   def _set_longitudinal_personality(self, button_index: int):
     self._params.put("LongitudinalPersonality", str(button_index))
+
+  def _set_distraction_level(self, button_index: int):
+    self._params.put("DistractionDetectionLevel", str(button_index))
