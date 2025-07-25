@@ -104,12 +104,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all model artifacts
-        run: |
+        uses: actions/download-artifact@v4
+        with:
+          pattern: model-*
+          path: output
+      - run: |
           ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
           mkdir -p "$ARTIFACT_DIR"
-          for name in $(ls ${{ github.workspace }}/output); do
+          for name in $(ls output); do
             mkdir -p "$ARTIFACT_DIR/$name"
-            cp -r ${{ github.workspace }}/output/$name/* "$ARTIFACT_DIR/$name/"
+            cp -r output/$name/* "$ARTIFACT_DIR/$name/"
           done
 
       - name: Push recompiled dir to GitLab
