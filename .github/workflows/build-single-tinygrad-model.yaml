@@ -3,6 +3,14 @@ name: Build Single Tinygrad Model and Push
 on:
   workflow_dispatch:
     inputs:
+      runner_type:
+        description: 'Runner type'
+        required: false
+        default: '[self-hosted, james-mac]'
+        type: choice
+        options:
+          - ubuntu-latest
+          - '[self-hosted, james-mac]'
       build_model_ref:
         description: 'Branch to use for build-model workflow'
         required: false
@@ -50,7 +58,7 @@ on:
 
 jobs:
   build-single:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.inputs.runner_type }}
     env:
       RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
       JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
