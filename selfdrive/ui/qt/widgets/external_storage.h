@@ -30,5 +30,5 @@ private:
   void mountStorage();
   void unmountStorage();
   void formatStorage();
-  void checkAndUpdateFstab();
+  void runFormat();
 };
