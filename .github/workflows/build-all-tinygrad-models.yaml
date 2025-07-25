@@ -10,12 +10,11 @@ on:
         type: string
 
 jobs:
-  build-all:
+  setup:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-      CI_SUNNYPILOT_DOCS_PRIVATE_KEY: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+    outputs:
+      json_file: ${{ steps.get-json.outputs.json_file }}
+      model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
     steps:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -78,142 +77,187 @@ jobs:
           next=$((latest+1))
           json_file="driving_models_v${next}.json"
           cp "driving_models_v${latest}.json" "$json_file"
-          echo "json_file=$json_file" >> $GITHUB_OUTPUT
-          echo "JSON_FILE=docs/docs/$json_file" >> $GITHUB_ENV
+          echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
           echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
-          echo "SRC_JSON_FILE: docs/docs/driving_models_v${latest}.json"
-
-      - name: Install dependencies
+      - name: Extract tinygrad models
+        id: set-matrix
+        working-directory: docs/docs
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq gh unzip
+          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name, is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
+          echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
-      - name: Build all tinygrad models
-        id: trigger-builds
+  get_models:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+      CI_SUNNYPILOT_DOCS_PRIVATE_KEY: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+    outputs:
+      model_date: ${{ steps.commit-date.outputs.model_date }}
+    steps:
+      - name: Checkout upstream repo
+        id: checkout_upstream
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: commaai/openpilot
+          ref: ${{ matrix.model.ref }}
+          submodules: recursive
+          path: openpilot
+
+      - name: Fallback to sunnypilot/sunnypilot
+        if: steps.checkout_upstream.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          ref: ${{ matrix.model.ref }}
+          submodules: recursive
+          path: openpilot
+
+      - name: Get commit date
+        id: commit-date
         run: |
-          set -e
-          > triggered_run_ids.txt
-          BRANCH="${{ github.event.inputs.branch }}"
-          SRC_JSON_FILE="$SRC_JSON_FILE"
-          if [ ! -f "$SRC_JSON_FILE" ]; then
-            echo "ERROR: Source JSON file $SRC_JSON_FILE not found!"
-            exit 1
-          fi
-          jq -c '.bundles[] | select(.runner=="tinygrad")' "$SRC_JSON_FILE" | while read -r bundle; do
-            ref=$(echo "$bundle" | jq -r '.ref')
-            display_name=$(echo "$bundle" | jq -r '.display_name' | sed 's/ ([^)]*)//g')
-            is_20hz=$(echo "$bundle" | jq -r '.is_20hz')
-            echo "Triggering build for: $display_name ($ref) [20Hz: $is_20hz]"
-            START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            gh workflow run sunnypilot-build-model.yaml \
-              --repo sunnypilot/sunnypilot \
-              --ref "$BRANCH" \
-              -f upstream_branch="$ref" \
-              -f custom_name="$display_name" \
-              -f is_20hz="$is_20hz"
-            echo "Triggered workflow for $display_name ($ref), waiting for run to appear..."
-            for i in {1..36}; do
-              RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="$BRANCH" --created ">$START_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
-              if [ -n "$RUN_ID" ]; then
-                echo "Found run ID: $RUN_ID for $display_name ($ref)"
-                break
-              fi
-            done
-            if [ -z "$RUN_ID" ]; then
-              echo "Could not find the triggered workflow run for $display_name ($ref)."
-              exit 1
-            fi
-            echo "$RUN_ID" >> triggered_run_ids.txt
-          done
+          cd ${{ github.workspace }}/openpilot
+          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
+          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
 
-      - name: Wait for all model builds to finish
+      - run: |
+          cd ${{ github.workspace }}/openpilot
+          git lfs pull
+
+      - name: Upload models
+        uses: actions/upload-artifact@v4
+        with:
+          name: models-${{ matrix.model.display_name }}
+          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
+
+  build_models:
+    needs: [setup, get_models]
+    runs-on: [self-hosted, tici]
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+      fail-fast: false
+    env:
+      BUILD_DIR: "/data/openpilot"
+      OUTPUT_DIR: ${{ github.workspace }}/output
+      SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
+      UPSTREAM_REPO: "commaai/openpilot"
+      TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
+      MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - run: git lfs pull
+      - name: Cache SCons
+        uses: actions/cache@v4
+        with:
+          path: ${{env.SCONS_CACHE_DIR}}
+          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
+          restore-keys: |
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Set environment variables
+        id: set-env
         run: |
-          set -e
-          SUCCESS_RUNS=()
-          FAILED_RUNS=()
-          declare -A RUN_ID_TO_NAME
-
-          # Get artifact names for each run
-          while read -r RUN_ID; do
-            ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name' || echo "unknown")
-            RUN_ID_TO_NAME["$RUN_ID"]="$ARTIFACT_NAME"
-          done < triggered_run_ids.txt
-
-          # Poll all runs together, sleep between checks to avoid 90,000 line run logs
-          RUN_IDS=($(cat triggered_run_ids.txt))
-          declare -A RUN_STATUS
-          for RUN_ID in "${RUN_IDS[@]}"; do
-            RUN_STATUS["$RUN_ID"]="in_progress"
-          done
-
-          while :; do
-            ALL_DONE=true
-            for RUN_ID in "${RUN_IDS[@]}"; do
-              if [[ "${RUN_STATUS[$RUN_ID]}" == "in_progress" ]]; then
-                # Try to get status, skip on API error
-                CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion' 2>/dev/null || echo "api_error")
-                if [[ "$CONCLUSION" == "api_error" ]]; then
-                  echo "Warning: Could not fetch status for run $RUN_ID, will retry."
-                  ALL_DONE=false
-                  continue
-                fi
-                if [[ -z "$CONCLUSION" || "$CONCLUSION" == "null" ]]; then
-                  ALL_DONE=false
-                  continue
-                fi
-                ARTIFACT_NAME="${RUN_ID_TO_NAME[$RUN_ID]}"
-                echo "Run $RUN_ID ($ARTIFACT_NAME) concluded with: $CONCLUSION"
-                RUN_STATUS["$RUN_ID"]="$CONCLUSION"
-                if [[ "$CONCLUSION" == "success" ]]; then
-                  SUCCESS_RUNS+=("$RUN_ID")
-                else
-                  FAILED_RUNS+=("$RUN_ID")
-                fi
-              fi
-            done
-            if $ALL_DONE; then
-              break
-            fi
-            echo "Waiting for unfinished runs... sleeping for 2 minutes"
-            sleep 120
-          done
-
-          if [[ ${#SUCCESS_RUNS[@]} -eq 0 ]]; then
-            echo "All model builds failed. Aborting."
-            exit 1
-          fi
-
-          if [[ ${#FAILED_RUNS[@]} -gt 0 ]]; then
-            echo "WARNING: The following model builds failed:"
-            for RUN_ID in "${FAILED_RUNS[@]}"; do
-              echo "- $RUN_ID (${RUN_ID_TO_NAME[$RUN_ID]})"
-            done
-            echo "You may want to rerun these models manually."
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
           fi
 
-          echo "${SUCCESS_RUNS[@]}" > success_run_ids.txt
+      - name: Setup build environment
+        run: |
+          mkdir -p "${BUILD_DIR}/"
+          sudo find $BUILD_DIR/ -mindepth 1 -delete
+          echo "Starting build stage..."
+          echo "BUILD_DIR: ${BUILD_DIR}"
+          echo "CI_DIR: ${CI_DIR}"
+          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
+          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
+          echo "-------"
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            printenv
+          fi
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx
 
-      - name: Download and extract all model artifacts
+      - name: Download models
+        uses: actions/download-artifact@v4
+        with:
+          name: models-${{ matrix.model.display_name }}
+          path: ${{ env.MODELS_DIR }}
+
+      - name: Build Models
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            base_name=$(basename "$onnx_file" .onnx)
+            output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
+            echo "Compiling: $onnx_file -> $output_file"
+            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+          done
+
+      - name: Prepare Output
+        run: |
+          sudo rm -rf ${{ env.OUTPUT_DIR }}
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          rsync -avm \
+            --include='*.dlc' \
+            --include='*.thneed' \
+            --include='*.pkl' \
+            --include='*.onnx' \
+            --exclude='*' \
+            --delete-excluded \
+            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "${{ env.MODELS_DIR }}" \
+            --output-dir "${{ env.OUTPUT_DIR }}" \
+            --custom-name "${{ matrix.model.display_name }} (${{ needs.get_models.outputs.model_date }})" \
+            --upstream-branch "${{ matrix.model.ref }}" \
+            ${{ matrix.model.is_20hz && '--is-20hz' || '' }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ matrix.model.display_name }}
+          path: ${{ env.OUTPUT_DIR }}
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+
+  push_results:
+    needs: [setup, build_models]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all model artifacts
         run: |
           ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
           mkdir -p "$ARTIFACT_DIR"
-          for RUN_ID in $(cat success_run_ids.txt); do
-            ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name')
-            echo "Downloading artifact: $ARTIFACT_NAME from run: $RUN_ID"
-            mkdir -p "$ARTIFACT_DIR/$ARTIFACT_NAME"
-            echo "Created directory: $ARTIFACT_DIR/$ARTIFACT_NAME"
-            gh run download "$RUN_ID" --repo sunnypilot/sunnypilot -n "$ARTIFACT_NAME" --dir "$ARTIFACT_DIR/$ARTIFACT_NAME"
-            echo "Downloaded artifact zip(s) to: $ARTIFACT_DIR/$ARTIFACT_NAME"
-            ZIP_PATH=$(find "$ARTIFACT_DIR/$ARTIFACT_NAME" -type f -name '*.zip' | head -n1)
-            if [ -n "$ZIP_PATH" ]; then
-              echo "Unzipping $ZIP_PATH to $ARTIFACT_DIR/$ARTIFACT_NAME"
-              unzip -o "$ZIP_PATH" -d "$ARTIFACT_DIR/$ARTIFACT_NAME"
-              rm -f "$ZIP_PATH"
-              echo "Unzipped and removed $ZIP_PATH"
-            else
-              echo "No zip file found in $ARTIFACT_DIR/$ARTIFACT_NAME (This is NOT an error)."
-            fi
-            echo "Done processing $ARTIFACT_NAME"
+          for name in $(ls ${{ github.workspace }}/output); do
+            mkdir -p "$ARTIFACT_DIR/$name"
+            cp -r ${{ github.workspace }}/output/$name/* "$ARTIFACT_DIR/$name/"
           done
 
       - name: Push recompiled dir to GitLab
@@ -232,7 +276,7 @@ jobs:
       - name: Run json_parser.py to update JSON
         run: |
           python3 docs/json_parser.py \
-            --json-path "$JSON_FILE" \
+            --json-path "${{ needs.setup.outputs.json_file }}" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR"
 
       - name: Push updated JSON to GitHub docs repo
@@ -241,6 +285,6 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git checkout gh-pages
-          git add docs/"$(basename $JSON_FILE)"
-          git commit -m "Update $(basename $JSON_FILE) after recompiling models" || echo "No changes to commit"
+          git add docs/"$(basename ${{ needs.setup.outputs.json_file }})"
+          git commit -m "Create $(basename ${{ needs.setup.outputs.json_file }}) after recompiling models" || echo "No changes to commit"
           git push origin gh-pages
