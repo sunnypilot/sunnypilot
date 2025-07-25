@@ -24,6 +24,7 @@ private:
   Params params;
 
   bool refreshPending = false;
+  bool formatting = false;
   void refresh();
   void debouncedRefresh();
   void mountStorage();

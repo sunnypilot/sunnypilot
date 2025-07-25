@@ -38,7 +38,6 @@ void ExternalStorageControl::debouncedRefresh() {
   if (refreshPending) return;
   refreshPending = true;
 
-  // Let UI settle before starting refresh
   QTimer::singleShot(250, this, [=]() {
     refreshPending = false;
     refresh();
@@ -68,26 +67,32 @@ void ExternalStorageControl::refresh() {
     }
 
     QMetaObject::invokeMethod(this, [=]() {
-      if (!hasDrive) {
-        setValue(tr("insert drive"));
-        setText(tr("CHECK"));
-      } else if (!hasFs || !hasLabel) {
-        setValue(tr("needs format"));
+      if (formatting) {
+        setValue(tr("formatting"));
         setText(tr("FORMAT"));
-      } else if (isMounted) {
-        setValue(info);
-        setText(tr("UNMOUNT"));
+        setEnabled(false);
       } else {
-        setValue("drive detected");
-        setText(tr("MOUNT"));
+        if (!hasDrive) {
+          setValue(tr("insert drive"));
+          setText(tr("CHECK"));
+        } else if (!hasFs || !hasLabel) {
+          setValue(tr("needs format"));
+          setText(tr("FORMAT"));
+        } else if (isMounted) {
+          setValue(info);
+          setText(tr("UNMOUNT"));
+        } else {
+          setValue("drive detected");
+          setText(tr("MOUNT"));
+        }
+        setEnabled(true);
       }
-      setEnabled(true);
     }, Qt::QueuedConnection);
   });
 }
 
 void ExternalStorageControl::mountStorage() {
-  setText(tr("mounting"));
+  setValue(tr("mounting"));
   setEnabled(false);
 
   QtConcurrent::run([=]() {
@@ -98,10 +103,10 @@ void ExternalStorageControl::mountStorage() {
       "grep -q '/dev/sdg1 /mnt/external_realdata' /etc/fstab || "
       "echo '/dev/sdg1 /mnt/external_realdata ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab && "
       "sudo systemctl daemon-reexec && "
-      "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata && "
+      "sudo mount /mnt/external_realdata && "
+      "sudo chown -R comma:comma /mnt/external_realdata && "
       "sudo chmod -R 775 /mnt/external_realdata && "
-      "sudo mount -o remount,ro / && "
-      "sudo mount /mnt/external_realdata");
+      "sudo mount -o remount,ro /");
     process.waitForFinished();
 
     QMetaObject::invokeMethod(this, [=]() {
@@ -111,7 +116,7 @@ void ExternalStorageControl::mountStorage() {
 }
 
 void ExternalStorageControl::unmountStorage() {
-  setText(tr("unmounting"));
+  setValue(tr("unmounting"));
   setEnabled(false);
 
   QtConcurrent::run([=]() {
@@ -126,43 +131,25 @@ void ExternalStorageControl::unmountStorage() {
 }
 
 void ExternalStorageControl::formatStorage() {
-  setText(tr("unmounting"));
+  unmountStorage();
+  formatting = true;
+  setValue(tr("formatting"));
   setEnabled(false);
 
-  QtConcurrent::run([=]() {
-    QProcess umount;
-    umount.start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
-    umount.waitForFinished();
-
-    QMetaObject::invokeMethod(this, [=]() {
-      setText(tr("formatting"));
-      setEnabled(false);
-
-      QtConcurrent::run([=]() {
-        QProcess process;
-        process.start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
-        process.waitForFinished();
-
-        int exitCode = process.exitCode();
-        QProcess::ExitStatus exitStatus = process.exitStatus();
-
-        if (exitCode == 0 && exitStatus == QProcess::NormalExit) {
-          QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
-
-          QMetaObject::invokeMethod(this, [=]() {
-            mountStorage();
-          }, Qt::QueuedConnection);
-        } else {
-          QMetaObject::invokeMethod(this, [=]() {
-            qWarning() << "Formatting failed with exit code" << exitCode;
-            setText(tr("FORMAT"));
-            setEnabled(true);
-            debouncedRefresh();
-          }, Qt::QueuedConnection);
-        }
-      });
-    }, Qt::QueuedConnection);
-  });
+  QProcess *process = new QProcess(this);
+  connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+          this, [=](int exitCode, QProcess::ExitStatus status) {
+            process->deleteLater();
+            formatting = false;
+            if (exitCode == 0 && status == QProcess::NormalExit) {
+              QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
+              mountStorage();
+            } else {
+              setValue(tr("needs format"));
+              setEnabled(true);
+            }
+          });
+  process->start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
 }
 
 void ExternalStorageControl::showEvent(QShowEvent *event) {
