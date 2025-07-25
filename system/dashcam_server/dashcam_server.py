@@ -8,6 +8,9 @@ import os
 import json
 import asyncio
 import logging
+import tempfile
+import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -17,13 +20,14 @@ from aiohttp import web, WSMsgType
 from aiohttp.web_fileresponse import FileResponse
 from aiohttp.web import StreamResponse
 
-
 from openpilot.system.hardware.hw import Paths
 from openpilot.common.params import Params
 from openpilot.system.loggerd.config import SEGMENT_LENGTH
 
+SEGMENT_LENGTH = 60  # 默认段长度60秒
+
 # 配置
-DEFAULT_PORT = 8008
+DEFAULT_PORT = 8009
 VIDEO_EXTENSIONS = {'.hevc', '.ts', '.mp4'}
 SUPPORTED_CAMERAS = ['fcamera', 'dcamera', 'ecamera', 'qcamera']
 
@@ -252,7 +256,14 @@ class DashcamServer:
         self.file_manager = VideoFileManager(log_root)
         self.app = web.Application()
         self.logger = logging.getLogger(__name__)
+        # HLS临时文件目录
+        self.hls_temp_dir = Path(tempfile.gettempdir()) / "dashcam_hls"
+        self.hls_temp_dir.mkdir(exist_ok=True)
+        # HLS缓存管理 - 简单的文件缓存，不需要session
+        self.hls_cache = {}  # f"{segment_id}_{camera}" -> {path, created_time}
         self._setup_routes()
+        # 启动清理任务
+        asyncio.create_task(self._cleanup_hls_cache())
 
     def _setup_routes(self):
         """设置路由"""
@@ -262,6 +273,10 @@ class DashcamServer:
         self.app.router.add_get('/api/routes/{route_name}', self.get_route_detail)
         self.app.router.add_get('/api/segments', self.get_segments)
         self.app.router.add_get('/api/segments/{segment_id}', self.get_segment_detail)
+        # HLS视频流路由
+        self.app.router.add_get('/api/hls/{segment_id}/{camera}/playlist.m3u8', self.get_hls_playlist)
+        self.app.router.add_get('/api/hls/{segment_id}/{camera}/{filename}', self.get_hls_segment)
+        # 保留原有的直接视频流路由作为备用
         self.app.router.add_get('/api/video/{segment_id}/{camera}', self.stream_video)
 
         # 静态文件服务
@@ -272,6 +287,15 @@ class DashcamServer:
         self.app.router.add_get('/mobile.html', self.mobile_handler)
         self.app.router.add_get('/mobile_routes.html', self.route_view_handler)
         self.app.router.add_get('/route_player.html', self.route_player_handler)
+
+    async def route_demo_handler(self, request):
+        static_path = Path(__file__).parent / 'web' / 'demo.html'
+        return FileResponse(static_path)
+
+    async def test_hls_handler(self, request):
+        """HLS测试页面处理"""
+        static_path = Path(__file__).parent / 'web' / 'test_hls.html'
+        return FileResponse(static_path)
 
     async def mobile_handler(self, request):
         """移动端页面处理"""
@@ -458,56 +482,217 @@ class DashcamServer:
             self.logger.error(f"获取视频段详情失败: {e}")
             return web.json_response({'error': str(e)}, status=500)
 
+    async def get_hls_playlist(self, request):
+        """获取HLS播放列表"""
+        segment_id = request.match_info['segment_id']
+        camera = request.match_info['camera']
+
+        segment = self.file_manager.get_segment_by_id(segment_id)
+        if not segment or camera not in segment.cameras:
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        video_path = segment.cameras[camera]
+        print(video_path)
+        if not Path(video_path).exists():
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        # 使用segment_id和camera作为唯一标识
+        cache_key = f"{segment_id}_{camera}"
+
+        # 检查是否已经生成过HLS文件
+        if cache_key in self.hls_cache:
+            cache_dir = self.hls_cache[cache_key]['path']
+            playlist_path = cache_dir / "playlist.m3u8"
+
+            if playlist_path.exists():
+                # 更新访问时间
+                self.hls_cache[cache_key]['last_access'] = time.time()
+
+                # 读取并返回播放列表
+                with open(playlist_path, 'r') as f:
+                    playlist_content = f.read()
+
+                return web.Response(
+                    text=playlist_content,
+                    content_type='application/vnd.apple.mpegurl',
+                    headers={
+                        'Access-Control-Allow-Origin': '*',
+                        'Cache-Control': 'no-cache'
+                    }
+                )
+
+        # 生成新的HLS文件
+        cache_dir = self.hls_temp_dir / cache_key
+        cache_dir.mkdir(exist_ok=True)
+        playlist_path = cache_dir / "playlist.m3u8"
+
+        cmd = [
+            "ffmpeg",
+            "-i", video_path,
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-crf", "23",
+            "-f", "hls",
+            "-hls_time", "6",  # 每个段6秒
+            "-hls_list_size", "0",  # 保留所有段
+            "-hls_segment_filename", str(cache_dir / "segment_%03d.ts"),
+            "-y",  # 覆盖输出文件
+            str(playlist_path)
+        ]
+
+        # 如果没有音频，移除音频流
+        if not segment.has_audio:
+            cmd.extend(["-an"])
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            # 等待FFmpeg完成
+            await proc.wait()
+
+            # 检查播放列表是否生成
+            if not playlist_path.exists():
+                return web.json_response({'error': 'HLS生成失败'}, status=500)
+
+            # 保存缓存信息
+            self.hls_cache[cache_key] = {
+                'path': cache_dir,
+                'created_time': time.time(),
+                'last_access': time.time()
+            }
+
+            # 读取并返回播放列表
+            with open(playlist_path, 'r') as f:
+                playlist_content = f.read()
+
+            return web.Response(
+                text=playlist_content,
+                content_type='application/vnd.apple.mpegurl',
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Cache-Control': 'no-cache'
+                }
+            )
+
+        except Exception as e:
+            self.logger.error(f"HLS生成失败: {e}")
+            return web.json_response({'error': 'HLS生成失败'}, status=500)
+
+    async def get_hls_segment(self, request):
+        """获取HLS视频段"""
+        segment_id = request.match_info['segment_id']
+        camera = request.match_info['camera']
+        filename = request.match_info['filename']
+
+        # 使用segment_id和camera作为缓存键
+        cache_key = f"{segment_id}_{camera}"
+
+        if cache_key not in self.hls_cache:
+            return web.json_response({'error': 'HLS缓存不存在'}, status=404)
+
+        cache_dir = self.hls_cache[cache_key]['path']
+        file_path = cache_dir / filename
+
+        if not file_path.exists():
+            return web.json_response({'error': 'HLS段文件不存在'}, status=404)
+
+        # 更新访问时间
+        self.hls_cache[cache_key]['last_access'] = time.time()
+
+        return FileResponse(
+            file_path,
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'video/mp2t'
+            }
+        )
+
     async def stream_video(self, request):
-      segment_id = request.match_info['segment_id']
-      camera = request.match_info['camera']
-      segment = self.file_manager.get_segment_by_id(segment_id)
+        """原有的直接视频流方法，作为备用"""
+        segment_id = request.match_info['segment_id']
+        camera = request.match_info['camera']
+        segment = self.file_manager.get_segment_by_id(segment_id)
 
-      if not segment or camera not in segment.cameras:
-        return web.json_response({'error': '视频文件不存在'}, status=404)
+        if not segment or camera not in segment.cameras:
+            return web.json_response({'error': '视频文件不存在'}, status=404)
 
-      video_path = segment.cameras[camera]
-      if not Path(video_path).exists():
-        return web.json_response({'error': '视频文件不存在'}, status=404)
+        video_path = segment.cameras[camera]
+        if not Path(video_path).exists():
+            return web.json_response({'error': '视频文件不存在'}, status=404)
 
-      # 启动 ffmpeg 子进程，实时转码
-      cmd = [
-        "ffmpeg",
-        "-i", video_path,
-        "-f", "mp4",
-        "-vcodec", "libx264",
-        "-preset", "ultrafast",
-        "-movflags", "frag_keyframe+empty_moov+default_base_moof",
-        "-an",  # 如果有音频可去掉这一行
-        "pipe:1"
-      ]
+        # 启动 ffmpeg 子进程，实时转码
+        cmd = [
+            "ffmpeg",
+            "-i", video_path,
+            "-f", "mp4",
+            "-vcodec", "libx264",
+            "-preset", "ultrafast",
+            "-g", "48",  # 关键帧间隔
+            "-movflags", "frag_keyframe+default_base_moof",
+            "-an",
+            "pipe:1"
+        ]
 
-      proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL
-      )
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL
+        )
 
-      resp = StreamResponse(
-        status=200,
-        reason='OK',
-        headers={
-          'Content-Type': 'video/mp4',
-          'Transfer-Encoding': 'chunked',
-        }
-      )
-      await resp.prepare(request)
+        resp = StreamResponse(
+            status=200,
+            reason='OK',
+            headers={
+                'Content-Type': 'video/mp4',
+                'Transfer-Encoding': 'chunked',
+            }
+        )
+        await resp.prepare(request)
 
-      try:
+        try:
+            while True:
+                chunk = await proc.stdout.read(8192)
+                if not chunk:
+                    break
+                await resp.write(chunk)
+        finally:
+            await proc.wait()
+
+        return resp
+
+    async def _cleanup_hls_cache(self):
+        """清理过期的HLS缓存"""
         while True:
-          chunk = await proc.stdout.read(8192)
-          if not chunk:
-            break
-          await resp.write(chunk)
-      finally:
-        await proc.wait()
+            try:
+                current_time = time.time()
+                expired_caches = []
 
-      return resp
+                for cache_key, cache_info in self.hls_cache.items():
+                    # 如果缓存超过2小时未访问，标记为过期
+                    if current_time - cache_info['last_access'] > 7200:
+                        expired_caches.append(cache_key)
+
+                for cache_key in expired_caches:
+                    cache_info = self.hls_cache.pop(cache_key)
+
+                    # 删除临时文件
+                    if cache_info['path'].exists():
+                        try:
+                            shutil.rmtree(cache_info['path'])
+                        except:
+                            pass
+
+                    self.logger.info(f"清理过期HLS缓存: {cache_key}")
+
+            except Exception as e:
+                self.logger.error(f"清理HLS缓存失败: {e}")
+
+            # 每10分钟清理一次
+            await asyncio.sleep(600)
 
     async def start_server(self):
         """启动服务器"""

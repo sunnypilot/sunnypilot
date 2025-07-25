@@ -256,6 +256,7 @@
         }
     </style>
     <link href="./css/all.min.css" rel="stylesheet">
+    <script src="./js/hls.min.js"></script>
 </head>
 <body>
     <div class="player-container">
@@ -342,6 +343,7 @@
                 this.autoPlay = false;
                 this.controlsVisible = true;
                 this.controlsTimeout = null;
+                this.hls = null; // HLS.js实例
 
                 this.init();
             }
@@ -408,6 +410,18 @@
                 document.getElementById('video-area').addEventListener('click', () => {
                     this.toggleControls();
                 });
+
+                // 页面卸载时清理HLS实例
+                window.addEventListener('beforeunload', () => {
+                    this.destroy();
+                });
+            }
+
+            destroy() {
+                if (this.hls) {
+                    this.hls.destroy();
+                    this.hls = null;
+                }
             }
 
             async loadRouteData() {
@@ -461,10 +475,15 @@
                 this.updateTimeInfo();
                 this.buildCameraControls(segment);
 
-                // 选择最佳摄像头
-                // const availableCameras = Object.keys(segment.cameras);
-                // const preferredCameras = ['qcamera', 'fcamera', 'dcamera', 'ecamera'];
-                // this.currentCamera = preferredCameras.find(cam => availableCameras.includes(cam)) || availableCameras[0];
+                // 选择最佳摄像头（优先选择兼容性好的摄像头）
+                const availableCameras = Object.keys(segment.cameras);
+                const preferredCameras = ['fcamera', 'dcamera', 'ecamera'];
+                const bestCamera = preferredCameras.find(cam => availableCameras.includes(cam)) || availableCameras[0];
+
+                // 如果当前摄像头在新段中不可用，切换到最佳摄像头
+                if (!availableCameras.includes(this.currentCamera)) {
+                    this.currentCamera = bestCamera;
+                }
 
                 await this.switchCamera(this.currentCamera);
             }
@@ -507,12 +526,82 @@
                     btn.classList.toggle('active', btn.dataset.camera === camera);
                 });
 
-                // 加载视频
-                const video = document.getElementById('main-video');
-                const videoUrl = `/api/video/${segment.segment_id}/${camera}`;
+                // 清理之前的HLS实例
+                if (this.hls) {
+                    this.hls.destroy();
+                    this.hls = null;
+                }
 
-                video.src = videoUrl;
-                video.load();
+                // 加载HLS视频
+                const video = document.getElementById('main-video');
+                const hlsUrl = `/api/hls/${segment.segment_id}/${camera}/playlist.m3u8`;
+
+                this.showLoading(true);
+
+                if (Hls.isSupported()) {
+                    // 使用HLS.js
+                    this.hls = new Hls({
+                        debug: false,
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                    });
+
+                    this.hls.loadSource(hlsUrl);
+                    this.hls.attachMedia(video);
+
+                    this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        this.showLoading(false);
+                        // 如果当前没有暂停，自动播放
+                        if (!video.paused || this.autoPlay) {
+                            video.play().catch(e => {
+                                console.log('自动播放被阻止');
+                            });
+                        }
+                    });
+
+                    this.hls.on(Hls.Events.ERROR, (event, data) => {
+                        console.error('HLS错误:', data);
+                        this.showLoading(false);
+                        if (data.fatal) {
+                            switch (data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    this.showError(`${camera} 网络错误，正在重试...`);
+                                    this.hls.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    this.showError(`${camera} 媒体错误，正在恢复...`);
+                                    this.hls.recoverMediaError();
+                                    break;
+                                default:
+                                    this.showError(`${camera} 播放失败: ${data.reason}`);
+                                    this.hls.destroy();
+                                    this.hls = null;
+                                    break;
+                            }
+                        }
+                    });
+
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Safari原生支持HLS
+                    video.src = hlsUrl;
+                    video.addEventListener('loadedmetadata', () => {
+                        this.showLoading(false);
+                        if (!video.paused || this.autoPlay) {
+                            video.play().catch(e => {
+                                console.log('自动播放被阻止');
+                            });
+                        }
+                    });
+
+                    video.addEventListener('error', () => {
+                        this.showLoading(false);
+                        this.showError(`${camera} 播放失败`);
+                    });
+
+                } else {
+                    this.showLoading(false);
+                    this.showError('浏览器不支持HLS播放');
+                }
             }
 
             updateProgressBar() {
