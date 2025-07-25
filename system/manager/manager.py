@@ -38,6 +38,8 @@ def manager_init() -> None:
     ("CompletedTrainingVersion", "0"),
     ("DisengageOnAccelerator", "0"),
     ("DistractionDetectionLevel", "1"),  # 默认为适中模式
+    ("DashcamServerPort", "8009"),  # 默认8009端口
+    ("DashcamServerEnabled", "0"),  # 默认关闭
     ("GsmMetered", "1"),
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),

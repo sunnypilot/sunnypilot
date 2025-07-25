@@ -151,7 +151,7 @@ procs = [
   PythonProcess("sunnylink_registration_manager", "sunnypilot.sunnylink.registration_manager", sunnylink_need_register_shim),
 
   # Dashcam Server Daemon
-  DaemonProcess("dashcam_serverd", "system.dashcam_server.dashcam_server", "DashcamServerPid"),
+  PythonProcess("manage_dashcam_serverd", "system.dashcam_server.manage_dashcam_serverd", always_run),
 ]
 
 # sunnypilot

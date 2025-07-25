@@ -89,9 +89,11 @@ protected:
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
   ButtonParamControl *distraction_detection_level;
+  ButtonControl *dashcam_port_btn;
 
 
   virtual void updateToggles();
+  void updateDashcamPortButton();
 };
 
 class SoftwarePanel : public ListWidget {

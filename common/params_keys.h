@@ -26,6 +26,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CurrentBootlog", PERSISTENT},
     {"CurrentRoute", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"DashcamServerEnabled", PERSISTENT | BACKUP},
+    {"DashcamServerPort", PERSISTENT | BACKUP},
     {"DisableLogging", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"DisablePowerDown", PERSISTENT | BACKUP},
     {"DisableUpdates", PERSISTENT | BACKUP},
@@ -212,5 +214,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
 
     {"DashcamServerPid", PERSISTENT},
+    {"DashcamServerPort", PERSISTENT | BACKUP},
+    {"DashcamServerEnabled", PERSISTENT | BACKUP},
 
 };

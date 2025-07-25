@@ -708,13 +708,17 @@ class DashcamServer:
 
 
 async def main():
+  params = Params()
+  params.put("DashcamServerPid", str(os.getpid()))
+  port = int(params.get("DashcamServerPort", encoding='utf-8'))
+
   logging.basicConfig(
     level=logging.INFO,
     filename=os.path.join("/tmp/", "dashcam_server.log"),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
   )
 
-  server = DashcamServer()
+  server = DashcamServer(port=port)
   await server.start_server()
 
   # 用 asyncio.Event() 代替 sleep 循环，让任务优雅持久运行

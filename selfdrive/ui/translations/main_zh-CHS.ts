@@ -2756,6 +2756,30 @@ Are you sure you want to delete all the maps?</source>
         <translation>设置驾驶员分心检测的灵敏度。严格模式：非常敏感，对轻微分心行为发出警告。适中模式：在敏感度和误报之间保持平衡。宽松模式：仅对明显的分心行为发出警告。</translation>
     </message>
     <message>
+        <source>Enable Dashcam Server</source>
+        <translation>开启行车记录仪服务</translation>
+    </message>
+    <message>
+        <source>Enable HTTP server for viewing dashcam recordings through web browser.</source>
+        <translation>启用 HTTP 服务以通过网页浏览器查看行车记录视频。</translation>
+    </message>
+    <message>
+        <source>Dashcam Server Port</source>
+        <translation>行车记录仪服务端口</translation>
+    </message>
+    <message>
+        <source>Set the port number for the dashcam server.</source>
+        <translation>设置行车记录仪服务器的端口号。</translation>
+    </message>
+    <message>
+        <source>Enter Port Number</source>
+        <translation>输入端口号</translation>
+    </message>
+    <message>
+        <source>Port (1024-65535)</source>
+        <translation>端口号 (1024-65535)</translation>
+    </message>
+    <message>
         <source>Enable Dynamic Experimental Control</source>
         <translation>启用动态实验性控制</translation>
     </message>
