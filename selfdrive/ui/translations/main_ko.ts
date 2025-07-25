@@ -104,7 +104,7 @@
     </message>
     <message>
         <source>Prevent large data uploads when on a metered Wi-Fi connection</source>
-        <translation>Wi-Fi 네트워크가 종량제인경우, 대용량 파일 업로드를 제한합니다</translation>
+        <translation>Wi-Fi 네트워크가 종량제인 경우, 대용량 파일 업로드를 제한합니다</translation>
     </message>
 </context>
 <context>
