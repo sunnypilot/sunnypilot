@@ -9,6 +9,7 @@
 
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#define ButtonControl ButtonControlSP
 
 class ExternalStorageControl : public ButtonControl {
   Q_OBJECT
