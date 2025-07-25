@@ -92,7 +92,7 @@ jobs:
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
-
+      REF: ${{ inputs.upstream_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -194,7 +194,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
-          path: ${{ env.OUTPUT_DIR }}
+          path: ${{ env.OUTPUT_DIR }}-${{ env.REF }}
 
       - name: Re-enable powersave
         if: always()
