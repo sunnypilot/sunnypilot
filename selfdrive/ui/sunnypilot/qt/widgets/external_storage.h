@@ -23,9 +23,10 @@ protected:
 private:
   Params params;
 
+  bool refreshPending = false;
   void refresh();
+  void debouncedRefresh();
   void mountStorage();
   void unmountStorage();
   void formatStorage();
-  void runFormat();
 };
