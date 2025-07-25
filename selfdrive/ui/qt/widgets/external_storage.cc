@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QShowEvent>
 #include <QTimer>
+#include <QtConcurrent>
 
 #include "common/params.h"
 #include "selfdrive/ui/qt/api.h"
@@ -61,15 +62,18 @@ void ExternalStorageControl::refresh() {
           setValue(tr("needs format"));
           setText(tr("FORMAT"));
         } else if (isMounted) {
-          QProcess *usage = new QProcess(this);
-          connect(usage, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, [=](int, QProcess::ExitStatus) {
-            QString info = usage->readAllStandardOutput().trimmed();
-            setValue(info);
-            setText(tr("UNMOUNT"));
-            usage->deleteLater();
-            setEnabled(true);
+          QtConcurrent::run([=]() {
+            QProcess df;
+            df.start("sh", QStringList() << "-c" << "df -h /mnt/external_realdata | awk 'NR==2 {print $3 \"/\" $2}'");
+            df.waitForFinished();
+            QString info = df.readAllStandardOutput().trimmed();
+
+            QMetaObject::invokeMethod(this, [=]() {
+              setValue(info);
+              setText(tr("UNMOUNT"));
+              setEnabled(true);
+            }, Qt::QueuedConnection);
           });
-          usage->start("sh", QStringList() << "-c" << "df -h /mnt/external_realdata | awk 'NR==2 {print $3 \"/\" $2}'");
           return;
         } else {
           setValue("");
@@ -90,23 +94,24 @@ void ExternalStorageControl::mountStorage() {
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess *process = new QProcess(this);
-  connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-          this, [=](int, QProcess::ExitStatus) {
-            process->deleteLater();
-            refresh();
-          });
+  QtConcurrent::run([=]() {
+    QProcess process;
+    process.start("sh", QStringList() << "-c" <<
+      "sudo mount -o remount,rw / && "
+      "sudo mkdir -p /mnt/external_realdata && "
+      "grep -q '/dev/sdg1 /mnt/external_realdata' /etc/fstab || "
+      "echo '/dev/sdg1 /mnt/external_realdata ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab && "
+      "sudo systemctl daemon-reexec && "
+      "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata && "
+      "sudo chmod -R 775 /mnt/external_realdata && "
+      "sudo mount -o remount,ro / && "
+      "sudo mount /mnt/external_realdata");
+    process.waitForFinished();
 
-  process->start("sh", QStringList() << "-c" <<
-    "sudo mount -o remount,rw / && "
-    "sudo mkdir -p /mnt/external_realdata && "
-    "grep -q '/dev/sdg1 /mnt/external_realdata' /etc/fstab || "
-    "echo '/dev/sdg1 /mnt/external_realdata ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab && "
-    "sudo systemctl daemon-reexec && "
-    "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata && "
-    "sudo chmod -R 775 /mnt/external_realdata && "
-    "sudo mount -o remount,ro / && "
-    "sudo mount /mnt/external_realdata");
+    QMetaObject::invokeMethod(this, [=]() {
+      refresh();
+    }, Qt::QueuedConnection);
+  });
 }
 
 void ExternalStorageControl::unmountStorage() {
@@ -114,13 +119,15 @@ void ExternalStorageControl::unmountStorage() {
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess *process = new QProcess(this);
-  connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-          this, [=](int, QProcess::ExitStatus) {
-            process->deleteLater();
-            refresh();
-          });
-  process->start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
+  QtConcurrent::run([=]() {
+    QProcess process;
+    process.start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
+    process.waitForFinished();
+
+    QMetaObject::invokeMethod(this, [=]() {
+      refresh();
+    }, Qt::QueuedConnection);
+  });
 }
 
 void ExternalStorageControl::formatStorage() {
@@ -128,13 +135,15 @@ void ExternalStorageControl::formatStorage() {
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess *umount = new QProcess(this);
-  connect(umount, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-          this, [=](int, QProcess::ExitStatus) {
-            umount->deleteLater();
-            runFormat();
-          });
-  umount->start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
+  QtConcurrent::run([=]() {
+    QProcess umount;
+    umount.start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
+    umount.waitForFinished();
+
+    QMetaObject::invokeMethod(this, [=]() {
+      runFormat();
+    }, Qt::QueuedConnection);
+  });
 }
 
 void ExternalStorageControl::runFormat() {
@@ -142,20 +151,28 @@ void ExternalStorageControl::runFormat() {
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess *process = new QProcess(this);
-  connect(process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-          this, [=](int exitCode, QProcess::ExitStatus status) {
-            process->deleteLater();
-            if (exitCode == 0 && status == QProcess::NormalExit) {
-              QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
-              mountStorage();
-            } else {
-              qWarning() << "Formatting failed with exit code" << exitCode;
-              setText(tr("FORMAT"));
-              setEnabled(true);
-            }
-          });
-  process->start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
+  QtConcurrent::run([=]() {
+    QProcess *process = new QProcess();
+    process->start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
+    process->waitForFinished();
+
+    int exitCode = process->exitCode();
+    QProcess::ExitStatus exitStatus = process->exitStatus();
+    delete process;
+
+    if (exitCode == 0 && exitStatus == QProcess::NormalExit) {
+      QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
+      QMetaObject::invokeMethod(this, [=]() {
+        mountStorage();
+      }, Qt::QueuedConnection);
+    } else {
+      QMetaObject::invokeMethod(this, [=]() {
+        qWarning() << "Formatting failed with exit code" << exitCode;
+        setText(tr("FORMAT"));
+        setEnabled(true);
+      }, Qt::QueuedConnection);
+    }
+  });
 }
 
 void ExternalStorageControl::showEvent(QShowEvent *event) {
