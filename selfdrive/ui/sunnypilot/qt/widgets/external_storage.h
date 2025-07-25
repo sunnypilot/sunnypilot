@@ -1,15 +1,14 @@
+/**
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+ *
+ * This file is part of sunnypilot and is licensed under the MIT License.
+ * See the LICENSE.md file in the root directory for more details.
+ */
+
 #pragma once
 
-#include <QPushButton>
-
 #include "system/hardware/hw.h"
-
-#ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
-#define ButtonControl ButtonControlSP
-#else
-#include "selfdrive/ui/qt/widgets/controls.h"
-#endif
 
 class ExternalStorageControl : public ButtonControl {
   Q_OBJECT
@@ -24,9 +23,6 @@ private:
   Params params;
 
   void refresh();
-  bool isStorageMounted();
-  bool isFilesystemPresent();
-  bool isDriveInitialized();
   void mountStorage();
   void unmountStorage();
   void formatStorage();
