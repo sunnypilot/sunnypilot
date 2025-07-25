@@ -15,6 +15,8 @@ from dataclasses import dataclass, asdict
 
 from aiohttp import web, WSMsgType
 from aiohttp.web_fileresponse import FileResponse
+from aiohttp.web import StreamResponse
+
 
 from openpilot.system.hardware.hw import Paths
 from openpilot.common.params import Params
@@ -246,11 +248,7 @@ class DashcamServer:
     def __init__(self, port: int = DEFAULT_PORT, log_root: str = None):
         self.port = port
         if log_root is None:
-            try:
-                log_root = Paths.log_root()
-            except:
-                # 如果无法获取默认路径，使用当前目录下的data目录
-                log_root = "./data"
+          log_root = Paths.log_root()
         self.file_manager = VideoFileManager(log_root)
         self.app = web.Application()
         self.logger = logging.getLogger(__name__)
@@ -265,9 +263,6 @@ class DashcamServer:
         self.app.router.add_get('/api/segments', self.get_segments)
         self.app.router.add_get('/api/segments/{segment_id}', self.get_segment_detail)
         self.app.router.add_get('/api/video/{segment_id}/{camera}', self.stream_video)
-
-        # WebSocket for real-time updates
-        self.app.router.add_get('/ws', self.websocket_handler)
 
         # 静态文件服务
         static_path = Path(__file__).parent / 'web'
@@ -464,94 +459,55 @@ class DashcamServer:
             return web.json_response({'error': str(e)}, status=500)
 
     async def stream_video(self, request):
-        """视频流API"""
-        segment_id = request.match_info['segment_id']
-        camera = request.match_info['camera']
+      segment_id = request.match_info['segment_id']
+      camera = request.match_info['camera']
+      segment = self.file_manager.get_segment_by_id(segment_id)
 
-        try:
-            segment = self.file_manager.get_segment_by_id(segment_id)
-            if not segment or camera not in segment.cameras:
-                return web.json_response({'error': '视频文件不存在'}, status=404)
+      if not segment or camera not in segment.cameras:
+        return web.json_response({'error': '视频文件不存在'}, status=404)
 
-            video_path = Path(segment.cameras[camera])
-            if not video_path.exists():
-                return web.json_response({'error': '视频文件不存在'}, status=404)
+      video_path = segment.cameras[camera]
+      if not Path(video_path).exists():
+        return web.json_response({'error': '视频文件不存在'}, status=404)
 
-            # 检查用户代理，判断是否为移动设备
-            user_agent = request.headers.get('User-Agent', '').lower()
-            is_mobile = any(mobile in user_agent for mobile in ['mobile', 'android', 'iphone', 'ipad'])
+      # 启动 ffmpeg 子进程，实时转码
+      cmd = [
+        "ffmpeg",
+        "-i", video_path,
+        "-f", "mp4",
+        "-vcodec", "libx264",
+        "-preset", "ultrafast",
+        "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+        "-an",  # 如果有音频可去掉这一行
+        "pipe:1"
+      ]
 
-            # 检查是否需要转换格式
-            file_ext = video_path.suffix.lower()
+      proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL
+      )
 
-            if is_mobile and file_ext == '.hevc':
-                # 移动端不支持HEVC，返回转换提示或使用qcamera
-                if 'qcamera' in segment.cameras:
-                    # 重定向到qcamera（通常是.ts格式，兼容性更好）
-                    qcamera_path = Path(segment.cameras['qcamera'])
-                    return FileResponse(
-                        qcamera_path,
-                        headers={
-                            'Accept-Ranges': 'bytes',
-                            'Content-Type': 'video/mp2t',
-                            'X-Fallback-Camera': 'qcamera'
-                        }
-                    )
-                else:
-                    return web.json_response({
-                        'error': '移动设备不支持HEVC格式，请使用qcamera或等待转换功能'
-                    }, status=415)
+      resp = StreamResponse(
+        status=200,
+        reason='OK',
+        headers={
+          'Content-Type': 'video/mp4',
+          'Transfer-Encoding': 'chunked',
+        }
+      )
+      await resp.prepare(request)
 
-            # 设置正确的Content-Type
-            if file_ext == '.ts':
-                content_type = 'video/mp2t'
-            elif file_ext == '.hevc':
-                content_type = 'video/mp4'  # 某些浏览器可能支持
-            elif file_ext == '.mp4':
-                content_type = 'video/mp4'
-            else:
-                content_type = 'application/octet-stream'
+      try:
+        while True:
+          chunk = await proc.stdout.read(8192)
+          if not chunk:
+            break
+          await resp.write(chunk)
+      finally:
+        await proc.wait()
 
-            # 支持Range请求用于视频流
-            return FileResponse(
-                video_path,
-                headers={
-                    'Accept-Ranges': 'bytes',
-                    'Content-Type': content_type,
-                    'X-Original-Format': file_ext
-                }
-            )
-
-        except Exception as e:
-            self.logger.error(f"视频流失败: {e}")
-            return web.json_response({'error': str(e)}, status=500)
-
-    async def websocket_handler(self, request):
-        """WebSocket处理器"""
-        ws = web.WebSocketResponse()
-        await ws.prepare(request)
-
-        try:
-            async for msg in ws:
-                if msg.type == WSMsgType.TEXT:
-                    data = json.loads(msg.data)
-                    await self._handle_ws_message(ws, data)
-                elif msg.type == WSMsgType.ERROR:
-                    self.logger.error(f'WebSocket错误: {ws.exception()}')
-        except Exception as e:
-            self.logger.error(f'WebSocket处理错误: {e}')
-
-        return ws
-
-    async def _handle_ws_message(self, ws, data):
-        """处理WebSocket消息"""
-        msg_type = data.get('type')
-
-        if msg_type == 'ping':
-            await ws.send_str(json.dumps({'type': 'pong'}))
-        elif msg_type == 'subscribe_updates':
-            # 实现实时更新订阅
-            pass
+      return resp
 
     async def start_server(self):
         """启动服务器"""

@@ -462,9 +462,9 @@
                 this.buildCameraControls(segment);
 
                 // 选择最佳摄像头
-                const availableCameras = Object.keys(segment.cameras);
-                const preferredCameras = ['qcamera', 'fcamera', 'dcamera', 'ecamera'];
-                this.currentCamera = preferredCameras.find(cam => availableCameras.includes(cam)) || availableCameras[0];
+                // const availableCameras = Object.keys(segment.cameras);
+                // const preferredCameras = ['qcamera', 'fcamera', 'dcamera', 'ecamera'];
+                // this.currentCamera = preferredCameras.find(cam => availableCameras.includes(cam)) || availableCameras[0];
 
                 await this.switchCamera(this.currentCamera);
             }
