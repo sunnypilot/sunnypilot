@@ -588,7 +588,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation>가감속</translation>
+        <translation>openpilot의 가감속 제어를 이용하여 주행시 가감속 제어량을 조정하고 주행 경험을 미세조정하세요</translation>
     </message>
 </context>
 <context>
