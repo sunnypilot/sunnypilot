@@ -35,24 +35,41 @@ jobs:
     outputs:
       model_date: ${{ steps.commit-date.outputs.model_date }}
     steps:
-      - uses: actions/checkout@v4
+      # Note: To allow dynamic models from both openpilot and sunnypilot (merges/mashups), we try commaai as default,
+      # and fallback to sunnypilot if the ref checkout fails.
+      - name: Checkout commaai/openpilot
+        id: checkout_upstream
+        continue-on-error: true
+        uses: actions/checkout@v4
         with:
-          repository: ${{ env.UPSTREAM_REPO }}
+          repository: commaai/openpilot
           ref: ${{ github.event.inputs.upstream_branch }}
           submodules: recursive
+          path: openpilot
+
+      - name: Fallback to sunnypilot/sunnypilot
+        if: steps.checkout_upstream.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          ref: ${{ github.event.inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
       - name: Get commit date
         id: commit-date
         run: |
-          # Get the commit date in YYYY-MM-DD format
+          cd ${{ github.workspace }}/openpilot
           commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-      - run: git lfs pull
+      - run: |
+          cd ${{ github.workspace }}/openpilot
+          git lfs pull
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: models
-          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
+          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
 
   build_model:
     runs-on: self-hosted
@@ -71,7 +88,7 @@ jobs:
         with:
           path: ${{env.SCONS_CACHE_DIR}}
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.) 
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
