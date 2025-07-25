@@ -13,7 +13,11 @@ ExternalStorageControl::ExternalStorageControl() :
   ButtonControl(tr("External Storage"), "", tr("Extend your comma device's storage by inserting a USB drive into the aux port.")) {
 
   QObject::connect(this, &ButtonControl::clicked, [=]() {
-    if (text() == tr("MOUNT")) {
+    if (text() == tr("CHECK")) {
+      setText(tr("checking"));
+      setEnabled(false);
+      mountStorage();
+    } else if (text() == tr("MOUNT")) {
       setText(tr("mounting"));
       setEnabled(false);
       mountStorage();
@@ -44,7 +48,10 @@ void ExternalStorageControl::refresh() {
     storageInfo = process.readAllStandardOutput().trimmed();
   }
 
-  if (!hasFilesystem || !isDriveInitialized()) {
+  if (!hasFilesystem) {
+    setValue(tr("insert drive"));
+    setText(tr("CHECK"));
+  } else if (!isDriveInitialized()) {
     setValue(tr("needs format"));
     setText(tr("FORMAT"));
   } else if (isMounted) {
@@ -82,21 +89,25 @@ bool ExternalStorageControl::isDriveInitialized() {
 }
 
 void ExternalStorageControl::mountStorage() {
-  QProcess::execute("sh", QStringList() << "-c" << "sudo mount -o remount,rw /");
-  QProcess::execute("sh", QStringList() << "-c" << "sudo mkdir -p /mnt/external_realdata");
-  QProcess::execute("sh", QStringList() << "-c" << "sudo mount -o remount,ro /");
   setText(tr("mounting"));
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess process;
-  process.start("sh", QStringList() << "-c" << "sudo mount /mnt/external_realdata");
-  process.waitForFinished();
+  QProcess *process = new QProcess(this);
+  connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          this, [=](int, QProcess::ExitStatus) {
+            process->deleteLater();
+            refresh();
+          });
 
-  QProcess::execute("sh", QStringList() << "-c" << "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata");
-  QProcess::execute("sh", QStringList() << "-c" << "sudo chmod -R 775 /mnt/external_realdata");
-
-  refresh();
+  process->start("sh", QStringList() << "-c" <<
+    "sudo mount -o remount,rw / && " 
+    "sudo mkdir -p /mnt/external_realdata && "
+    "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata && "
+    "sudo chmod -R 775 /mnt/external_realdata && "
+    "sudo mount -o remount,ro / && "
+    "sudo mount /mnt/external_realdata"
+  );
 }
 
 void ExternalStorageControl::unmountStorage() {
@@ -104,11 +115,13 @@ void ExternalStorageControl::unmountStorage() {
   setEnabled(false);
   QCoreApplication::processEvents();
 
-  QProcess process;
-  process.start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
-  process.waitForFinished();
-
-  refresh();
+  QProcess *process = new QProcess(this);
+  connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          this, [=](int, QProcess::ExitStatus) {
+            process->deleteLater();
+            refresh();
+          });
+  process->start("sh", QStringList() << "-c" << "sudo umount /mnt/external_realdata");
 }
 
 void ExternalStorageControl::formatStorage() {
@@ -122,10 +135,7 @@ void ExternalStorageControl::formatStorage() {
   connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           this, [=](int exitCode, QProcess::ExitStatus exitStatus) {
             if (exitCode == 0 && exitStatus == QProcess::NormalExit) {
-              checkAndUpdateFstab();
               mountStorage();
-              QProcess::execute("sh", QStringList() << "-c" << "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata");
-              QProcess::execute("sh", QStringList() << "-c" << "sudo chmod -R 775 /mnt/external_realdata");
               QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
             } else {
               qWarning() << "Formatting failed with exit code" << exitCode;
