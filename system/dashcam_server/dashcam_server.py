@@ -493,7 +493,6 @@ class DashcamServer:
             return web.json_response({'error': '视频文件不存在'}, status=404)
 
         video_path = segment.cameras[camera]
-        print(video_path)
         if not Path(video_path).exists():
             return web.json_response({'error': '视频文件不存在'}, status=404)
 

@@ -319,6 +319,11 @@
             <div class="camera-controls" id="camera-controls">
                 <!-- 动态生成摄像头按钮 -->
             </div>
+
+            <!-- 预加载状态 -->
+            <div id="preload-status" style="display: none; position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; z-index: 1000;">
+                预加载中...
+            </div>
         </div>
 
         <!-- 自动播放指示器 -->
@@ -339,11 +344,17 @@
                 this.routeName = this.getRouteFromUrl();
                 this.routeData = null;
                 this.currentSegmentIndex = 0;
-                this.currentCamera = 'qcamera';
+                this.currentCamera = 'fcamera';
                 this.autoPlay = false;
                 this.controlsVisible = true;
                 this.controlsTimeout = null;
                 this.hls = null; // HLS.js实例
+
+                // 预加载管理
+                this.preloadCache = new Map(); // segment_id_camera -> {status, promise, timestamp}
+                this.preloadQueue = []; // 预加载队列
+                this.maxPreloadCount = 3; // 最多预加载3个片段
+                this.preloadInProgress = false; // 是否正在预加载
 
                 this.init();
             }
@@ -422,6 +433,205 @@
                     this.hls.destroy();
                     this.hls = null;
                 }
+                // 清理预加载缓存
+                this.preloadCache.clear();
+                this.preloadQueue = [];
+            }
+
+            // 预加载HLS播放列表
+            async preloadHLS(segmentId, camera) {
+                const cacheKey = `${segmentId}_${camera}`;
+
+                // 如果已经在缓存中，直接返回
+                if (this.preloadCache.has(cacheKey)) {
+                    const cached = this.preloadCache.get(cacheKey);
+                    if (cached.status === 'completed') {
+                        return cached.promise;
+                    }
+                    if (cached.status === 'loading') {
+                        return cached.promise;
+                    }
+                }
+
+                // 创建预加载Promise
+                const preloadPromise = this.requestHLSPreload(segmentId, camera);
+
+                this.preloadCache.set(cacheKey, {
+                    status: 'loading',
+                    promise: preloadPromise,
+                    timestamp: Date.now()
+                });
+
+                try {
+                    await preloadPromise;
+                    // 更新状态为完成
+                    this.preloadCache.set(cacheKey, {
+                        status: 'completed',
+                        promise: preloadPromise,
+                        timestamp: Date.now()
+                    });
+                    console.log(`预加载完成: ${segmentId}/${camera}`);
+                } catch (error) {
+                    console.error(`预加载失败: ${segmentId}/${camera}`, error);
+                    this.preloadCache.set(cacheKey, {
+                        status: 'failed',
+                        promise: preloadPromise,
+                        timestamp: Date.now()
+                    });
+                }
+
+                return preloadPromise;
+            }
+
+            // 请求HLS预加载
+            async requestHLSPreload(segmentId, camera) {
+                const hlsUrl = `/api/hls/${segmentId}/${camera}/playlist.m3u8`;
+
+                try {
+                    const response = await fetch(hlsUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    // 读取播放列表内容但不使用，只是为了触发服务器端的转码
+                    await response.text();
+                    return true;
+                } catch (error) {
+                    console.error(`预加载请求失败: ${hlsUrl}`, error);
+                    throw error;
+                }
+            }
+
+            // 启动预加载队列处理
+            async startPreloadQueue() {
+                if (this.preloadInProgress) {
+                    return;
+                }
+
+                this.preloadInProgress = true;
+                this.updatePreloadStatus();
+
+                while (this.preloadQueue.length > 0) {
+                    const { segmentId, camera } = this.preloadQueue.shift();
+
+                    try {
+                        await this.preloadHLS(segmentId, camera);
+                        this.updatePreloadStatus();
+                        // 每个预加载之间稍微延迟，避免服务器压力过大
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (error) {
+                        console.error('预加载队列处理失败:', error);
+                    }
+                }
+
+                this.preloadInProgress = false;
+                this.updatePreloadStatus();
+            }
+
+            // 更新预加载状态显示
+            updatePreloadStatus() {
+                const statusElement = document.getElementById('preload-status');
+                if (!statusElement) return;
+
+                const completedCount = Array.from(this.preloadCache.values())
+                    .filter(cache => cache.status === 'completed').length;
+                const queueCount = this.preloadQueue.length;
+                const loadingCount = Array.from(this.preloadCache.values())
+                    .filter(cache => cache.status === 'loading').length;
+
+                if (this.preloadInProgress || queueCount > 0 || loadingCount > 0) {
+                    statusElement.textContent = `预加载中... (已完成: ${completedCount}, 队列: ${queueCount})`;
+                    statusElement.style.display = 'block';
+                } else if (completedCount > 0) {
+                    statusElement.textContent = `已预加载 ${completedCount} 个片段`;
+                    statusElement.style.display = 'block';
+                    // 3秒后隐藏状态
+                    setTimeout(() => {
+                        if (statusElement.textContent.includes('已预加载')) {
+                            statusElement.style.display = 'none';
+                        }
+                    }, 3000);
+                } else {
+                    statusElement.style.display = 'none';
+                }
+            }
+
+            // 添加到预加载队列
+            addToPreloadQueue(segmentId, camera) {
+                const cacheKey = `${segmentId}_${camera}`;
+
+                // 避免重复添加
+                if (this.preloadCache.has(cacheKey) ||
+                    this.preloadQueue.some(item => `${item.segmentId}_${item.camera}` === cacheKey)) {
+                    return;
+                }
+
+                this.preloadQueue.push({ segmentId, camera });
+
+                // 限制队列长度
+                if (this.preloadQueue.length > this.maxPreloadCount) {
+                    this.preloadQueue = this.preloadQueue.slice(-this.maxPreloadCount);
+                }
+
+                // 启动队列处理
+                this.startPreloadQueue();
+            }
+
+            // 预加载相邻片段
+            preloadAdjacentSegments() {
+                if (!this.routeData || !this.routeData.segments) {
+                    return;
+                }
+
+                const segments = this.routeData.segments;
+                const currentIndex = this.currentSegmentIndex;
+
+                // 预加载下一个片段
+                if (currentIndex + 1 < segments.length) {
+                    const nextSegment = segments[currentIndex + 1];
+                    this.addToPreloadQueue(nextSegment.segment_id, this.currentCamera);
+                }
+
+                // 预加载下下个片段
+                if (currentIndex + 2 < segments.length) {
+                    const nextNextSegment = segments[currentIndex + 2];
+                    this.addToPreloadQueue(nextNextSegment.segment_id, this.currentCamera);
+                }
+
+                // 如果有前一个片段也预加载（用于向前播放）
+                if (currentIndex - 1 >= 0) {
+                    const prevSegment = segments[currentIndex - 1];
+                    this.addToPreloadQueue(prevSegment.segment_id, this.currentCamera);
+                }
+
+                // 清理过期的缓存
+                this.cleanupExpiredCache();
+            }
+
+            // 清理过期的预加载缓存
+            cleanupExpiredCache() {
+                const now = Date.now();
+                const maxAge = 10 * 60 * 1000; // 10分钟过期
+
+                for (const [key, cache] of this.preloadCache.entries()) {
+                    if (now - cache.timestamp > maxAge) {
+                        this.preloadCache.delete(key);
+                        console.log(`清理过期缓存: ${key}`);
+                    }
+                }
+
+                // 限制缓存大小
+                if (this.preloadCache.size > 20) {
+                    const entries = Array.from(this.preloadCache.entries());
+                    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+                    // 删除最旧的缓存
+                    const toDelete = entries.slice(0, entries.length - 15);
+                    toDelete.forEach(([key]) => {
+                        this.preloadCache.delete(key);
+                        console.log(`清理旧缓存: ${key}`);
+                    });
+                }
             }
 
             async loadRouteData() {
@@ -477,7 +687,7 @@
 
                 // 选择最佳摄像头（优先选择兼容性好的摄像头）
                 const availableCameras = Object.keys(segment.cameras);
-                const preferredCameras = ['fcamera', 'dcamera', 'ecamera'];
+                const preferredCameras = ['fcamera', 'dcamera', 'ecamera', 'qcamera'];
                 const bestCamera = preferredCameras.find(cam => availableCameras.includes(cam)) || availableCameras[0];
 
                 // 如果当前摄像头在新段中不可用，切换到最佳摄像头
@@ -486,6 +696,9 @@
                 }
 
                 await this.switchCamera(this.currentCamera);
+
+                // 启动相邻片段的预加载
+                this.preloadAdjacentSegments();
             }
 
             buildCameraControls(segment) {
@@ -535,8 +748,18 @@
                 // 加载HLS视频
                 const video = document.getElementById('main-video');
                 const hlsUrl = `/api/hls/${segment.segment_id}/${camera}/playlist.m3u8`;
+                const cacheKey = `${segment.segment_id}_${camera}`;
 
-                this.showLoading(true);
+                // 检查是否已经预加载
+                const preloaded = this.preloadCache.get(cacheKey);
+                if (preloaded && preloaded.status === 'completed') {
+                    console.log(`使用预加载数据: ${segment.segment_id}/${camera}`);
+                    // 预加载完成，可以快速加载
+                    this.showLoading(false);
+                } else {
+                    console.log(`未预加载，正在加载: ${segment.segment_id}/${camera}`);
+                    this.showLoading(true);
+                }
 
                 if (Hls.isSupported()) {
                     // 使用HLS.js
@@ -602,6 +825,11 @@
                     this.showLoading(false);
                     this.showError('浏览器不支持HLS播放');
                 }
+
+                // 切换摄像头后，重新预加载相邻片段（因为摄像头变了）
+                setTimeout(() => {
+                    this.preloadAdjacentSegments();
+                }, 1000); // 延迟1秒，让当前视频先加载
             }
 
             updateProgressBar() {

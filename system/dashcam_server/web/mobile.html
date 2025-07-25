@@ -578,7 +578,7 @@
                 };
 
                 // 按兼容性排序摄像头（移动端优先使用兼容格式）
-                const cameraOrder = ['qcamera', 'fcamera', 'dcamera', 'ecamera'];
+                const cameraOrder = ['fcamera', 'dcamera', 'ecamera', 'qcamera'];
                 const availableCameras = Object.keys(segment.cameras);
                 const sortedCameras = cameraOrder.filter(cam => availableCameras.includes(cam))
                     .concat(availableCameras.filter(cam => !cameraOrder.includes(cam)));
