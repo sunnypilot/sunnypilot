@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: commaai/openpilot
-          ref: ${{ github.event.inputs.upstream_branch }}
+          ref: ${{ inputs.upstream_branch }}
           submodules: recursive
           path: openpilot
 
@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: sunnypilot/sunnypilot
-          ref: ${{ github.event.inputs.upstream_branch }}
+          ref: ${{ inputs.upstream_branch }}
           submodules: recursive
           path: openpilot
       - name: Get commit date
