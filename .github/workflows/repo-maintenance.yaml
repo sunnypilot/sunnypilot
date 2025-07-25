@@ -13,7 +13,7 @@ env:
 jobs:
   update_translations:
     runs-on: ubuntu-latest
-    if: github.repository == 'commaai/openpilot'
+    if: github.repository == 'sunnypilot/sunnypilot'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/setup-with-retry
@@ -23,12 +23,12 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
         with:
-          author: Vehicle Researcher <user@comma.ai>
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           commit-message: "Update translations"
           title: "[bot] Update translations"
           body: "Automatic PR from repo-maintenance -> update_translations"
           branch: "update-translations"
-          base: "master"
+          base: "master-new"
           delete-branch: true
           labels: bot
 
@@ -61,12 +61,12 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
       with:
-        author: Vehicle Researcher <user@comma.ai>
-        token: ${{ secrets.ACTIONS_CREATE_PR_PAT }}
+        author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+        token: ${{ github.repository == 'commaai/openpilot' && secrets.ACTIONS_CREATE_PR_PAT || secrets.GITHUB_TOKEN }}
         commit-message: Update Python packages
         title: '[bot] Update Python packages'
         branch: auto-package-updates
-        base: master
+        base: master-new
         delete-branch: true
         body: 'Automatic PR from repo-maintenance -> package_updates'
         labels: bot
