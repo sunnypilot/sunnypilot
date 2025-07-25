@@ -283,6 +283,7 @@ class DashcamServer:
         static_path = Path(__file__).parent / 'web'
         self.app.router.add_static('/css', static_path / 'css', name='css')
         self.app.router.add_static('/js', static_path / 'js', name='js')
+        self.app.router.add_static('/webfonts', static_path / 'webfonts', name='webfonts')
         self.app.router.add_get('/', self.route_view_handler)
         self.app.router.add_get('/mobile.html', self.mobile_handler)
         self.app.router.add_get('/mobile_routes.html', self.route_view_handler)
