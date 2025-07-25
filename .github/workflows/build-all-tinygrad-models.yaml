@@ -86,169 +86,20 @@ jobs:
           jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name, is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
           echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
-  get_models:
-    needs: setup
-    runs-on: ubuntu-latest
+  get_and_build:
+    needs: [setup]
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
     strategy:
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-      CI_SUNNYPILOT_DOCS_PRIVATE_KEY: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-    outputs:
-      model_date: ${{ steps.commit-date.outputs.model_date }}
-    steps:
-      - name: Checkout upstream repo
-        id: checkout_upstream
-        continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: commaai/openpilot
-          ref: ${{ matrix.model.ref }}
-          submodules: recursive
-          path: openpilot
-
-      - name: Fallback to sunnypilot/sunnypilot
-        if: steps.checkout_upstream.outcome == 'failure'
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot
-          ref: ${{ matrix.model.ref }}
-          submodules: recursive
-          path: openpilot
-
-      - name: Get commit date
-        id: commit-date
-        run: |
-          cd ${{ github.workspace }}/openpilot
-          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
-          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
-
-      - run: |
-          cd ${{ github.workspace }}/openpilot
-          git lfs pull
-
-      - name: Upload models
-        uses: actions/upload-artifact@v4
-        with:
-          name: models-${{ matrix.model.display_name }}
-          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
-
-  build_models:
-    needs: [setup, get_models]
-    runs-on: [self-hosted, tici]
-    strategy:
-      matrix:
-        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
-      fail-fast: false
-    env:
-      BUILD_DIR: "/data/openpilot"
-      OUTPUT_DIR: ${{ github.workspace }}/output
-      SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
-      UPSTREAM_REPO: "commaai/openpilot"
-      TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
-      MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - run: git lfs pull
-      - name: Cache SCons
-        uses: actions/cache@v4
-        with:
-          path: ${{env.SCONS_CACHE_DIR}}
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
-          restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}-model
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}-model
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}
-
-      - name: Set environment variables
-        id: set-env
-        run: |
-          source /etc/profile;
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          printenv >> $GITHUB_ENV
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            cat $GITHUB_OUTPUT
-          fi
-
-      - name: Setup build environment
-        run: |
-          mkdir -p "${BUILD_DIR}/"
-          sudo find $BUILD_DIR/ -mindepth 1 -delete
-          echo "Starting build stage..."
-          echo "BUILD_DIR: ${BUILD_DIR}"
-          echo "CI_DIR: ${CI_DIR}"
-          echo "VERSION: ${{ steps.set-env.outputs.version }}"
-          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
-          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
-          echo "-------"
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            printenv
-          fi
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
-          rm -rf ${{ env.MODELS_DIR }}/*.onnx
-
-      - name: Download models
-        uses: actions/download-artifact@v4
-        with:
-          name: models-${{ matrix.model.display_name }}
-          path: ${{ env.MODELS_DIR }}
-
-      - name: Build Models
-        run: |
-          source /etc/profile
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
-          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
-            base_name=$(basename "$onnx_file" .onnx)
-            output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
-            echo "Compiling: $onnx_file -> $output_file"
-            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
-            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
-          done
-
-      - name: Prepare Output
-        run: |
-          sudo rm -rf ${{ env.OUTPUT_DIR }}
-          mkdir -p ${{ env.OUTPUT_DIR }}
-          rsync -avm \
-            --include='*.dlc' \
-            --include='*.thneed' \
-            --include='*.pkl' \
-            --include='*.onnx' \
-            --exclude='*' \
-            --delete-excluded \
-            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
-          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
-            --model-dir "${{ env.MODELS_DIR }}" \
-            --output-dir "${{ env.OUTPUT_DIR }}" \
-            --custom-name "${{ matrix.model.display_name }} (${{ needs.get_models.outputs.model_date }})" \
-            --upstream-branch "${{ matrix.model.ref }}" \
-            ${{ matrix.model.is_20hz && '--is-20hz' || '' }}
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-${{ matrix.model.display_name }}
-          path: ${{ env.OUTPUT_DIR }}
-
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+    with:
+      upstream_branch: ${{ matrix.model.ref }}
+      custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz || true }}
+    secrets: inherit
 
   push_results:
-    needs: [setup, build_models]
+    needs: [setup, get_and_build ]
     runs-on: ubuntu-latest
     steps:
       - name: Download all model artifacts
