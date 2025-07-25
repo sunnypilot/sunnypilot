@@ -84,7 +84,7 @@ jobs:
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: models
+          name: models-${{ env.REF }}
           path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
 
   build_model:
@@ -147,7 +147,7 @@ jobs:
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
-          name: models
+          name: models-${{ env.REF }}
           path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
@@ -194,7 +194,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
-          path: ${{ env.OUTPUT_DIR }}-${{ env.REF }}
+          path: ${{ env.OUTPUT_DIR }}
 
       - name: Re-enable powersave
         if: always()
