@@ -27,7 +27,8 @@ DESCRIPTIONS = {
     "Set how sensitive the driver distraction detection should be.\n"
     "Strict: Very sensitive, warns on minor distractions.\n"
     "Moderate: Balanced between sensitivity and false positives.\n"
-    "Lenient: Only alerts on clear distractions."
+    "Lenient: Only alerts on clear distractions.\n"
+    "Off: Disable Driver Distraction Detection and Control."
   ),
 }
 
@@ -66,7 +67,7 @@ class TogglesLayout(Widget):
       multiple_button_item(
         "Distraction Detection Level",
         DESCRIPTIONS["DistractionDetectionLevel"],
-        buttons=["Strict", "Moderate", "Lenient"],
+        buttons=["Strict", "Moderate", "Lenient", "Off"],
         button_width=255,
         callback=self._set_distraction_level,
         selected_index=int(self._params.get("DistractionDetectionLevel") or 1),
