@@ -88,7 +88,7 @@ protected:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
-  ButtonParamControl *distraction_detection_level;
+  ButtonParamControl *accel_personality_setting;
   ButtonControl *dashcam_port_btn;
 
 
