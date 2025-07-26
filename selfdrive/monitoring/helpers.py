@@ -125,7 +125,7 @@ def face_orientation_from_net(angles_desc, pos_desc, rpy_calib):
 
 
 class DriverMonitoring:
-  def __init__(self, rhd_saved=False, settings=None, always_on=False):
+  def __init__(self, rhd_saved=False, settings=None, always_on=False, distraction_detection_level=None):
     if settings is None:
       settings = DRIVER_MONITOR_SETTINGS()
     # init policy settings
@@ -143,6 +143,7 @@ class DriverMonitoring:
     self.ee2_calibrated = False
 
     self.always_on = always_on
+    self.distraction_detection_level = distraction_detection_level
     self.distracted_types = []
     self.driver_distracted = False
     self.driver_distraction_filter = FirstOrderFilter(0., self.settings._DISTRACTED_FILTER_TS, self.settings._DT_DMON)
@@ -414,3 +415,18 @@ class DriverMonitoring:
       wrong_gear=sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park],
       car_speed=sm['carState'].vEgo
     )
+
+  def set_distract_level_params(self):
+    if self.distraction_detection_level == 0:
+      self.settings._DISTRACTED_TIME = 8.0
+      self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = 5.0
+      self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 4.0
+    elif self.distraction_detection_level == 1:
+      self.settings._DISTRACTED_TIME = 11.0
+      self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = 8.
+      self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 6.
+    else:  # 宽松
+      self.settings._DISTRACTED_TIME = 20.0
+      self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = 10.0
+      self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 7.0
+

@@ -667,11 +667,11 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>ModelRenderer</name>
     <message>
         <source>LAT</source>
-        <translation>LAT</translation>
+        <translation>横向</translation>
     </message>
     <message>
         <source>LONG</source>
-        <translation>LONG</translation>
+        <translation>纵向</translation>
     </message>
 </context>
 <context>
@@ -2761,6 +2761,50 @@ Are you sure you want to delete all the maps?</source>
     <message>
         <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
         <translation>即使在sunnypilot未激活时也启用驾驶员监控。</translation>
+    </message>
+    <message>
+        <source>Distraction Detection Level</source>
+        <translation>分心检测级别</translation>
+    </message>
+    <message>
+        <source>Strict</source>
+        <translation>严格</translation>
+    </message>
+    <message>
+        <source>Moderate</source>
+        <translation>适中</translation>
+    </message>
+    <message>
+        <source>Lenient</source>
+        <translation>宽松</translation>
+    </message>
+    <message>
+        <source>Set how sensitive the driver distraction detection should be. Strict: Very sensitive, warns on minor distractions. Moderate: Balanced between sensitivity and false positives. Lenient: Only alerts on clear distractions.</source>
+        <translation>设置驾驶员分心检测的灵敏度。严格模式：非常敏感，对轻微分心行为发出警告。适中模式：在敏感度和误报之间保持平衡。宽松模式：仅对明显的分心行为发出警告。</translation>
+    </message>
+    <message>
+        <source>Enable Dashcam Server</source>
+        <translation>开启行车记录仪服务</translation>
+    </message>
+    <message>
+        <source>Enable HTTP server for viewing dashcam recordings through web browser.</source>
+        <translation>启用 HTTP 服务以通过网页浏览器查看行车记录视频。</translation>
+    </message>
+    <message>
+        <source>Dashcam Server Port</source>
+        <translation>行车记录仪服务端口</translation>
+    </message>
+    <message>
+        <source>Set the port number for the dashcam server.</source>
+        <translation>设置行车记录仪服务器的端口号。</translation>
+    </message>
+    <message>
+        <source>Enter Port Number</source>
+        <translation>输入端口号</translation>
+    </message>
+    <message>
+        <source>Port (1024-65535)</source>
+        <translation>端口号 (1024-65535)</translation>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>行车记录仪 - 移动端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 1rem;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filters {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .segments-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .segment-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s ease;
+        }
+
+        .segment-item:last-child {
+            border-bottom: none;
+        }
+
+        .segment-item:active {
+            background: #f8f9fa;
+        }
+
+        .segment-thumbnail {
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .segment-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .segment-time {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .segment-details {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .segment-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 1.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+        }
+
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            z-index: 1000;
+        }
+
+        .video-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-header {
+            background: #333;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-player {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .video-player video {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+        }
+
+        .video-controls {
+            background: #333;
+            padding: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .camera-btn {
+            padding: 0.5rem 1rem;
+            background: #555;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .camera-btn.active {
+            background: #667eea;
+        }
+
+        .camera-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+    <link href="./css/all.min.css" rel="stylesheet">
+    <script src="./js/hls.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-video"></i> 行车记录仪</h1>
+        <div class="status" id="status">连接中...</div>
+    </div>
+
+    <div class="container">
+        <!-- 系统信息 -->
+        <div class="info-card">
+            <div class="info-grid" id="info-grid">
+                <div class="info-item">
+                    <div class="info-label">总段数</div>
+                    <div class="info-value" id="total-segments">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">总大小</div>
+                    <div class="info-value" id="total-size">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">摄像头</div>
+                    <div class="info-value" id="camera-count">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">状态</div>
+                    <div class="info-value" id="server-status">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="filters">
+            <div class="filter-row">
+                <input type="date" id="start-date" class="filter-input" placeholder="开始日期">
+                <input type="date" id="end-date" class="filter-input" placeholder="结束日期">
+            </div>
+            <div class="filter-row">
+                <select id="camera-filter" class="filter-input">
+                    <option value="">全部摄像头</option>
+                    <option value="fcamera">前置摄像头</option>
+                    <option value="dcamera">驾驶员摄像头</option>
+                    <option value="ecamera">广角摄像头</option>
+                    <option value="qcamera">低质量摄像头</option>
+                </select>
+                <button id="apply-filter" class="btn btn-primary">筛选</button>
+            </div>
+        </div>
+
+        <!-- 视图切换 -->
+        <div class="view-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <button id="route-view-btn" class="btn" style="flex: 1;">路线视图</button>
+            <button id="segment-view-btn" class="btn active" style="flex: 1; background: #667eea; color: white;">段视图</button>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="error-message" class="error" style="display: none;"></div>
+
+        <!-- HLS播放说明 -->
+        <div id="format-info" class="info-card" style="background: #e8f5e8; border-left: 4px solid #4caf50; margin-bottom: 1rem;">
+            <h4 style="margin-bottom: 0.5rem; color: #2e7d32;"><i class="fas fa-info-circle"></i> HLS流媒体播放</h4>
+            <p style="font-size: 0.9rem; margin: 0; color: #424242;">
+                • 使用HLS技术，支持所有现代浏览器和移动设备<br>
+                • 自动适应网络状况，提供流畅播放体验<br>
+                • 首次播放需要转码，请稍等片刻
+            </p>
+        </div>
+
+        <!-- 加载指示器 -->
+        <div id="loading" class="loading" style="display: none;">
+            <i class="fas fa-spinner"></i><br>
+            加载中...
+        </div>
+
+        <!-- 视频段列表 -->
+        <div class="segments-list" id="segments-list">
+            <!-- 动态生成 -->
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button id="prev-page" class="btn btn-secondary">上一页</button>
+            <span id="page-info">第 1 页</span>
+            <button id="next-page" class="btn btn-secondary">下一页</button>
+        </div>
+    </div>
+
+    <!-- 视频播放模态框 -->
+    <div class="video-modal" id="video-modal">
+        <div class="video-content">
+            <div class="video-header">
+                <span id="video-title">视频播放</span>
+                <button id="close-video" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-times"></i> 关闭
+                </button>
+            </div>
+            <div class="video-player">
+                <video id="main-video" controls preload="metadata">
+                    您的浏览器不支持视频播放。
+                </video>
+            </div>
+            <div class="video-controls" id="video-controls">
+                <!-- 动态生成摄像头按钮 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 移动端行车记录仪查看器
+        class MobileDashcamViewer {
+            constructor() {
+                this.currentPage = 1;
+                this.pageLimit = 10;
+                this.currentSegment = null;
+                this.hls = null; // HLS.js实例
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadInfo();
+                this.loadSegments();
+            }
+
+            setupEventListeners() {
+                document.getElementById('apply-filter').addEventListener('click', () => {
+                    this.currentPage = 1;
+                    this.loadSegments();
+                });
+
+                document.getElementById('prev-page').addEventListener('click', () => {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.loadSegments();
+                    }
+                });
+
+                document.getElementById('next-page').addEventListener('click', () => {
+                    this.currentPage++;
+                    this.loadSegments();
+                });
+
+                document.getElementById('close-video').addEventListener('click', () => {
+                    this.closeVideo();
+                });
+
+                document.getElementById('route-view-btn').addEventListener('click', () => {
+                    window.location.href = '/mobile_routes.html';
+                });
+
+                document.getElementById('segment-view-btn').addEventListener('click', () => {
+                    // 当前就是段视图，不需要操作
+                });
+            }
+
+            async loadInfo() {
+                try {
+                    const response = await fetch('/api/info');
+                    const info = await response.json();
+                    this.updateInfo(info);
+                } catch (error) {
+                    this.showError('加载系统信息失败: ' + error.message);
+                }
+            }
+
+            updateInfo(info) {
+                document.getElementById('total-segments').textContent = info.total_segments;
+                document.getElementById('total-size').textContent = this.formatFileSize(info.total_size);
+                document.getElementById('camera-count').textContent = info.available_cameras.length;
+                document.getElementById('server-status').textContent = '正常';
+                document.getElementById('status').textContent = '已连接';
+            }
+
+            async loadSegments() {
+                this.showLoading(true);
+
+                try {
+                    const params = new URLSearchParams({
+                        page: this.currentPage,
+                        limit: this.pageLimit
+                    });
+
+                    const startDate = document.getElementById('start-date').value;
+                    const endDate = document.getElementById('end-date').value;
+                    const cameraFilter = document.getElementById('camera-filter').value;
+
+                    if (startDate) params.append('start_date', startDate + 'T00:00:00');
+                    if (endDate) params.append('end_date', endDate + 'T23:59:59');
+                    if (cameraFilter) params.append('camera', cameraFilter);
+
+                    const response = await fetch(`/api/segments?${params}`);
+                    const data = await response.json();
+
+                    this.renderSegments(data.segments);
+                    this.updatePagination(data);
+                } catch (error) {
+                    this.showError('加载视频段失败: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            renderSegments(segments) {
+                const list = document.getElementById('segments-list');
+                list.innerHTML = '';
+
+                segments.forEach(segment => {
+                    const item = document.createElement('div');
+                    item.className = 'segment-item';
+                    item.innerHTML = `
+                        <div class="segment-thumbnail">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="segment-info">
+                            <div class="segment-time">${new Date(segment.timestamp).toLocaleString('zh-CN')}</div>
+                            <div class="segment-details">
+                                <span>${this.formatDuration(segment.duration)}</span>
+                                <span>${this.formatFileSize(segment.size)}</span>
+                                <span>${Object.keys(segment.cameras).join(', ')}</span>
+                            </div>
+                        </div>
+                        <div class="segment-actions">
+                            <button class="btn btn-primary btn-sm play-btn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    item.querySelector('.play-btn').addEventListener('click', () => {
+                        this.playSegment(segment);
+                    });
+
+                    list.appendChild(item);
+                });
+            }
+
+            updatePagination(data) {
+                const paginationEl = document.getElementById('pagination');
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                const pageInfo = document.getElementById('page-info');
+
+                if (data.total > data.limit) {
+                    paginationEl.style.display = 'flex';
+                    prevBtn.disabled = data.page <= 1;
+                    nextBtn.disabled = !data.has_next;
+                    pageInfo.textContent = `第 ${data.page} 页 (共 ${data.total} 条)`;
+                } else {
+                    paginationEl.style.display = 'none';
+                }
+            }
+
+            async playSegment(segment) {
+                this.currentSegment = segment;
+
+                // 获取详细信息
+                try {
+                    const response = await fetch(`/api/segments/${segment.segment_id}`);
+                    const segmentDetail = await response.json();
+                    this.showVideo(segmentDetail);
+                } catch (error) {
+                    this.showError('加载视频详情失败: ' + error.message);
+                }
+            }
+
+            showVideo(segment) {
+                document.getElementById('video-title').textContent = new Date(segment.timestamp).toLocaleString('zh-CN');
+
+                // 生成摄像头按钮
+                const controls = document.getElementById('video-controls');
+                controls.innerHTML = '';
+
+                const cameraNames = {
+                    'fcamera': '前置',
+                    'dcamera': '驾驶员',
+                    'ecamera': '广角',
+                    'qcamera': '低质量'
+                };
+
+                // 按兼容性排序摄像头（移动端优先使用兼容格式）
+                const cameraOrder = ['fcamera', 'dcamera', 'ecamera', 'qcamera'];
+                const availableCameras = Object.keys(segment.cameras);
+                const sortedCameras = cameraOrder.filter(cam => availableCameras.includes(cam))
+                    .concat(availableCameras.filter(cam => !cameraOrder.includes(cam)));
+
+                sortedCameras.forEach(camera => {
+                    const btn = document.createElement('button');
+                    btn.className = 'camera-btn';
+                    btn.textContent = cameraNames[camera] || camera;
+                    btn.addEventListener('click', () => {
+                        this.switchCamera(camera, segment.segment_id);
+                        document.querySelectorAll('.camera-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    });
+                    controls.appendChild(btn);
+                });
+
+                // 播放兼容性最好的摄像头（qcamera优先）
+                const defaultCamera = sortedCameras[0];
+                this.switchCamera(defaultCamera, segment.segment_id);
+                controls.firstChild.classList.add('active');
+
+                document.getElementById('video-modal').style.display = 'block';
+            }
+
+            switchCamera(camera, segmentId) {
+                const video = document.getElementById('main-video');
+
+                // 清理之前的HLS实例
+                if (this.hls) {
+                    this.hls.destroy();
+                    this.hls = null;
+                }
+
+                // 构建HLS播放列表URL
+                const hlsUrl = `/api/hls/${segmentId}/${camera}/playlist.m3u8`;
+
+                console.log(`切换到 ${camera} 摄像头，HLS URL:`, hlsUrl);
+
+                // 检查浏览器是否支持HLS
+                if (Hls.isSupported()) {
+                    // 使用HLS.js
+                    this.hls = new Hls({
+                        debug: false,
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                    });
+
+                    this.hls.loadSource(hlsUrl);
+                    this.hls.attachMedia(video);
+
+                    this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        console.log(`${camera} HLS清单解析完成，开始播放`);
+                        video.play().catch(e => {
+                            console.log('自动播放被阻止，需要用户交互');
+                        });
+                    });
+
+                    this.hls.on(Hls.Events.ERROR, (event, data) => {
+                        console.error('HLS错误:', data);
+                        if (data.fatal) {
+                            switch (data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    this.showError(`${camera} 网络错误，正在重试...`);
+                                    this.hls.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    this.showError(`${camera} 媒体错误，正在恢复...`);
+                                    this.hls.recoverMediaError();
+                                    break;
+                                default:
+                                    this.showError(`${camera} 播放失败: ${data.reason}`);
+                                    this.hls.destroy();
+                                    break;
+                            }
+                        }
+                    });
+
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Safari原生支持HLS
+                    video.src = hlsUrl;
+                    video.addEventListener('loadedmetadata', () => {
+                        console.log(`${camera} HLS加载完成（原生支持）`);
+                        video.play().catch(e => {
+                            console.log('自动播放被阻止，需要用户交互');
+                        });
+                    });
+                } else {
+                    this.showError('浏览器不支持HLS播放');
+                }
+            }
+
+            closeVideo() {
+                document.getElementById('video-modal').style.display = 'none';
+                const video = document.getElementById('main-video');
+                video.pause();
+                video.src = '';
+
+                // 清理HLS实例
+                if (this.hls) {
+                    this.hls.destroy();
+                    this.hls = null;
+                }
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+                document.getElementById('segments-list').style.display = show ? 'none' : 'block';
+            }
+
+            showError(message) {
+                const errorEl = document.getElementById('error-message');
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            formatDuration(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new MobileDashcamViewer();
+        });
+    </script>
+</body>
+</html>

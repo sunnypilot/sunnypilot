@@ -95,7 +95,38 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
 
 void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width) {
   QLinearGradient bg(0, height, 0, 0);
-  if (experimental_mode) {
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+
+  float v_ego = sm["carState"].getCarState().getVEgo();
+  bool rainbow = Params().getBool("RainbowMode");
+
+  // Get the current time in seconds for dynamic effect (speed of rainbow movement)
+  float time_offset = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count() / 1000.0f;
+
+  if (rainbow) {  // Rainbow Mode
+      const int max_len = track_vertices.length();
+      bg.setSpread(QGradient::PadSpread);  // Pad for a smooth gradient fade
+
+      for (int i = 0; i < max_len; i += 2) {  // Skip every other point for performance
+          if (track_vertices[i].y() < 0 || track_vertices[i].y() > height) continue;
+
+          float lin_grad_point = (height - track_vertices[i].y()) / height;
+
+          // Use easing for smoother color transitions
+          float eased_point = pow(lin_grad_point, 1.5f);  // Ease-in effect
+
+          // Dynamic hue with subtle, smooth animation
+          float path_hue = fmod(eased_point * 360.0 + (v_ego * 20.0) + (time_offset * 100.0), 360.0);
+
+          // Smooth alpha transition with longer fade
+          float alpha = util::map_val(eased_point, 0.2f, 0.75f, 0.8f, 0.0f);
+
+          // Use soft lightness for a premium feel
+          bg.setColorAt(eased_point, QColor::fromHslF(path_hue / 360.0, 1.0f, 0.55f, alpha));
+      }
+  } else if (experimental_mode) {
     // The first half of track_vertices are the points for the right side of the path
     const auto &acceleration = model.getAcceleration().getX();
     const int max_len = std::min<int>(track_vertices.length() / 2, acceleration.size());

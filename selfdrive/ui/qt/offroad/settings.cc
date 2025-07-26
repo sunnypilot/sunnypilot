@@ -13,6 +13,7 @@
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/qt/offroad/firehose.h"
 
@@ -112,8 +113,23 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/icons/metric.png",
       false,
     },
+    {
+      "DashcamServerEnabled",
+      tr("Enable Dashcam Server"),
+      tr("Enable HTTP server for viewing dashcam recordings through web browser."),
+      "../assets/icons/network.png",
+      false,
+    },
   };
 
+  std::vector<QString> distraction_button_texts{tr("Strict"), tr("Moderate"), tr("Lenient")};
+  distraction_detection_level = new ButtonParamControl("DistractionDetectionLevel", tr("Distraction Detection Level"),
+                                          tr("Set how sensitive the driver distraction detection should be. "
+                                          "Strict: Very sensitive, warns on minor distractions. "
+                                          "Moderate: Balanced between sensitivity and false positives. "
+                                          "Lenient: Only alerts on clear distractions."),
+                                          "../assets/icons/monitoring.png",
+                                          distraction_button_texts);
 
   std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
@@ -160,6 +176,28 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       addItem(long_personality_setting);
       addItem(accel_personality_setting);
     }
+
+    if(param == "AlwaysOnDM") {
+      addItem(distraction_detection_level);
+    }
+
+    // Add dashcam server port setting after DashcamServerEnabled
+    if (param == "DashcamServerEnabled") {
+      dashcam_port_btn = new ButtonControl(tr("Dashcam Server Port"), tr("8082"), tr("Set the port number for the dashcam server."));
+      QObject::connect(dashcam_port_btn, &ButtonControl::clicked, [=]() {
+        QString current_port = QString::fromStdString(params.get("DashcamServerPort"));
+        QString new_port = InputDialog::getText(tr("Enter Port Number"), this, tr("Port (1024-65535)"), false, 4, current_port);
+        if (!new_port.isEmpty()) {
+          bool ok;
+          int port_num = new_port.toInt(&ok);
+          if (ok && port_num >= 1024 && port_num <= 65535) {
+            params.put("DashcamServerPort", new_port.toStdString());
+            dashcam_port_btn->setText(new_port);
+          }
+        }
+      });
+      addItem(dashcam_port_btn);
+    }
   }
 
   // Toggles with confirmation dialogs
@@ -203,6 +241,14 @@ void TogglesPanel::scrollToToggle(const QString &param) {
 
 void TogglesPanel::showEvent(QShowEvent *event) {
   updateToggles();
+  updateDashcamPortButton();
+}
+
+void TogglesPanel::updateDashcamPortButton() {
+  if (dashcam_port_btn) {
+    QString current_port = QString::fromStdString(params.get("DashcamServerPort"));
+    dashcam_port_btn->setText(current_port);
+  }
 }
 
 void TogglesPanel::updateToggles() {

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>行车记录仪 - 路线视图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 1rem;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filters {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .routes-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .route-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .route-item:last-child {
+            border-bottom: none;
+        }
+
+        .route-item:active {
+            background: #f8f9fa;
+        }
+
+        .route-thumbnail {
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .route-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .route-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            color: #667eea;
+        }
+
+        .route-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .route-details {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .route-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 1.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .view-toggle .btn {
+            flex: 1;
+        }
+
+        .view-toggle .btn.active {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+    <link href="./css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-video"></i> 行车记录仪 - 路线视图</h1>
+        <div class="status" id="status">连接中...</div>
+    </div>
+
+    <div class="container">
+        <!-- 系统信息 -->
+        <div class="info-card">
+            <div class="info-grid" id="info-grid">
+                <div class="info-item">
+                    <div class="info-label">总路线数</div>
+                    <div class="info-value" id="total-routes">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">总段数</div>
+                    <div class="info-value" id="total-segments">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">总大小</div>
+                    <div class="info-value" id="total-size">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">状态</div>
+                    <div class="info-value" id="server-status">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图切换 -->
+        <div class="view-toggle">
+            <button id="route-view-btn" class="btn active">路线视图</button>
+            <button id="segment-view-btn" class="btn">段视图</button>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="filters">
+            <div class="filter-row">
+                <input type="date" id="start-date" class="filter-input" placeholder="开始日期">
+                <input type="date" id="end-date" class="filter-input" placeholder="结束日期">
+            </div>
+            <div class="filter-row">
+                <button id="apply-filter" class="btn btn-primary">筛选</button>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="error-message" class="error" style="display: none;"></div>
+
+        <!-- 加载指示器 -->
+        <div id="loading" class="loading" style="display: none;">
+            <i class="fas fa-spinner"></i><br>
+            加载中...
+        </div>
+
+        <!-- 路线列表 -->
+        <div class="routes-list" id="routes-list">
+            <!-- 动态生成 -->
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button id="prev-page" class="btn btn-secondary">上一页</button>
+            <span id="page-info">第 1 页</span>
+            <button id="next-page" class="btn btn-secondary">下一页</button>
+        </div>
+    </div>
+
+    <script>
+        // 移动端行车记录仪路线查看器
+        class MobileRouteViewer {
+            constructor() {
+                this.currentPage = 1;
+                this.pageLimit = 10;
+                this.currentView = 'routes'; // 'routes' or 'segments'
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadInfo();
+                this.loadRoutes();
+            }
+
+            setupEventListeners() {
+                document.getElementById('apply-filter').addEventListener('click', () => {
+                    this.currentPage = 1;
+                    this.loadRoutes();
+                });
+
+                document.getElementById('prev-page').addEventListener('click', () => {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.loadRoutes();
+                    }
+                });
+
+                document.getElementById('next-page').addEventListener('click', () => {
+                    this.currentPage++;
+                    this.loadRoutes();
+                });
+
+                document.getElementById('route-view-btn').addEventListener('click', () => {
+                    this.switchView('routes');
+                });
+
+                document.getElementById('segment-view-btn').addEventListener('click', () => {
+                    this.switchView('segments');
+                });
+            }
+
+            switchView(view) {
+                this.currentView = view;
+                this.currentPage = 1;
+
+                // 更新按钮状态
+                document.getElementById('route-view-btn').classList.toggle('active', view === 'routes');
+                document.getElementById('segment-view-btn').classList.toggle('active', view === 'segments');
+
+                if (view === 'routes') {
+                    this.loadRoutes();
+                } else {
+                    window.location.href = '/mobile.html';
+                }
+            }
+
+            async loadInfo() {
+                try {
+                    const response = await fetch('/api/info');
+                    const info = await response.json();
+                    this.updateInfo(info);
+                } catch (error) {
+                    this.showError('加载系统信息失败: ' + error.message);
+                }
+            }
+
+            updateInfo(info) {
+                document.getElementById('total-routes').textContent = info.total_routes || 0;
+                document.getElementById('total-segments').textContent = info.total_segments || 0;
+                document.getElementById('total-size').textContent = this.formatFileSize(info.total_size || 0);
+                document.getElementById('server-status').textContent = '正常';
+                document.getElementById('status').textContent = '已连接';
+            }
+
+            async loadRoutes() {
+                this.showLoading(true);
+
+                try {
+                    const params = new URLSearchParams({
+                        page: this.currentPage,
+                        limit: this.pageLimit
+                    });
+
+                    const startDate = document.getElementById('start-date').value;
+                    const endDate = document.getElementById('end-date').value;
+
+                    if (startDate) params.append('start_date', startDate + 'T00:00:00');
+                    if (endDate) params.append('end_date', endDate + 'T23:59:59');
+
+                    const response = await fetch(`/api/routes?${params}`);
+                    const data = await response.json();
+
+                    this.renderRoutes(data.routes);
+                    this.updatePagination(data);
+                } catch (error) {
+                    this.showError('加载路线列表失败: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            renderRoutes(routes) {
+                const list = document.getElementById('routes-list');
+                list.innerHTML = '';
+
+                routes.forEach(route => {
+                    const item = document.createElement('div');
+                    item.className = 'route-item';
+
+                    const startTime = new Date(route.start_time);
+                    const endTime = new Date(route.end_time);
+                    const duration = Math.round((endTime - startTime) / 1000 / 60); // 分钟
+
+                    item.innerHTML = `
+                        <div class="route-thumbnail">
+                            <i class="fas fa-route"></i>·
+                        </div>
+                        <div class="route-info">
+                            <div class="route-name">${route.route_name}</div>
+                            <div class="route-time">${startTime.toLocaleString('zh-CN')} - ${endTime.toLocaleString('zh-CN')}</div>
+                            <div class="route-details">
+                                <span>${route.segment_count} 段</span>
+                                <span>${duration} 分钟</span>
+                                <span>${this.formatFileSize(route.total_size)}</span>
+                            </div>
+                        </div>
+                        <div class="route-actions">
+                            <button class="btn btn-primary btn-sm play-btn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    item.querySelector('.play-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.playRoute(route.route_name);
+                    });
+
+                    item.addEventListener('click', () => {
+                        this.playRoute(route.route_name);
+                    });
+
+                    list.appendChild(item);
+                });
+            }
+
+            updatePagination(data) {
+                const paginationEl = document.getElementById('pagination');
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                const pageInfo = document.getElementById('page-info');
+
+                if (data.total > data.limit) {
+                    paginationEl.style.display = 'flex';
+                    prevBtn.disabled = data.page <= 1;
+                    nextBtn.disabled = !data.has_next;
+                    pageInfo.textContent = `第 ${data.page} 页 (共 ${data.total} 条)`;
+                } else {
+                    paginationEl.style.display = 'none';
+                }
+            }
+
+            playRoute(routeName) {
+                // 跳转到路线播放页面
+                window.location.href = `/route_player.html?route=${encodeURIComponent(routeName)}`;
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+                document.getElementById('routes-list').style.display = show ? 'none' : 'block';
+            }
+
+            showError(message) {
+                const errorEl = document.getElementById('error-message');
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new MobileRouteViewer();
+        });
+    </script>
+</body>
+</html>
