@@ -8,18 +8,10 @@ on:
         required: false
         default: 'master-new'
         type: string
-      runner_type:
-        description: 'Runner type'
-        required: false
-        default: 'ubuntu-latest'
-        type: choice
-        options:
-          - ubuntu-latest
-          - '[self-hosted, james-mac]'
 
 jobs:
   setup:
-    runs-on: ${{ github.event.inputs.runner_type }}
+    runs-on: ubuntu-latest
     outputs:
       json_file: ${{ steps.get-json.outputs.json_file }}
       model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
@@ -96,7 +88,7 @@ jobs:
 
   get_and_build:
     needs: [setup]
-    uses: sunnypilot/sunnypilot/.github/workflows/sunnypilot-build-model.yaml@${{github.event.inputs.branch}}
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
     strategy:
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
@@ -109,7 +101,7 @@ jobs:
 
   push_results:
     needs: [setup, get_and_build ]
-    runs-on: ${{ github.event.inputs.runner_type }}
+    runs-on: ubuntu-latest
     steps:
       - name: Download all model artifacts
         uses: actions/download-artifact@v4

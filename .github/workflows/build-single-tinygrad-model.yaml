@@ -6,7 +6,7 @@ on:
       runner_type:
         description: 'Runner type'
         required: false
-        default: 'ubuntu-latest'
+        default: '[self-hosted, james-mac]'
         type: choice
         options:
           - ubuntu-latest
@@ -57,21 +57,12 @@ on:
         type: number
 
 jobs:
-  setup:
-    name: Validate Inputs
-    runs-on: ubuntu-latest
+  build-single:
+    runs-on: ${{ github.event.inputs.runner_type }}
     env:
       RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
       JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
     steps:
-      - name: Checkout docs repo
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot-docs
-          ref: gh-pages
-          path: docs
-          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -94,6 +85,14 @@ jobs:
           git checkout main
           cd ..
 
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
       - name: Validate recompiled dir and JSON version
         run: |
           if [ ! -d "gitlab_docs/models/$RECOMPILED_DIR" ]; then
@@ -105,28 +104,66 @@ jobs:
             exit 1
           fi
 
-  build_model:
-    name: Build Model
-    needs: setup
-    uses: sunnypilot/sunnypilot/.github/workflows/sunnypilot-build-model.yaml@${{github.event.inputs.build_model_ref}}
-    with:
-      upstream_branch: ${{ github.event.inputs.upstream_branch }}
-      custom_name: ${{ github.event.inputs.custom_name }}
-    secrets: inherit
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gh
 
-  postprocess:
-    name: Postprocess and Push
-    needs: [setup, build_model]
-    runs-on: ${{ github.event.inputs.runner_type }}
-    env:
-      RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
-      JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
-    steps:
+      - name: Build model
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          gh workflow run sunnypilot-build-model.yaml \
+            --repo sunnypilot/sunnypilot \
+            --ref "${{ github.event.inputs.build_model_ref }}" \
+            -f upstream_branch="${{ github.event.inputs.upstream_branch }}" \
+            -f custom_name="${{ github.event.inputs.custom_name }}"
+
+          for i in {1..24}; do
+            RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="${{ github.event.inputs.build_model_ref }}" --created ">$START_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
+            if [ -n "$RUN_ID" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "$RUN_ID" ]; then
+            echo "Could not find the triggered workflow run."
+            exit 1
+          fi
+
+          echo "Watching run ID: $RUN_ID"
+          gh run watch "$RUN_ID" --repo sunnypilot/sunnypilot
+          CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
+          echo "Run concluded with: $CONCLUSION"
+          if [[ "$CONCLUSION" != "success" ]]; then
+            echo "Workflow run failed with conclusion: $CONCLUSION"
+            exit 1
+          fi
+
       - name: Download and extract model artifact
-        uses: actions/download-artifact@v4
-        with:
-          pattern: model-*
-          path: gitlab_docs/models/${{ env.RECOMPILED_DIR }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
+          RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="${{ github.event.inputs.build_model_ref }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+          ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name')
+          echo "Downloading artifact: $ARTIFACT_NAME from run: $RUN_ID"
+          mkdir -p "$ARTIFACT_DIR/$ARTIFACT_NAME"
+          echo "Created directory: $ARTIFACT_DIR/$ARTIFACT_NAME"
+          gh run download "$RUN_ID" --repo sunnypilot/sunnypilot -n "$ARTIFACT_NAME" --dir "$ARTIFACT_DIR/$ARTIFACT_NAME"
+          echo "Downloaded artifact zip(s) to: $ARTIFACT_DIR/$ARTIFACT_NAME"
+          ZIP_PATH=$(find "$ARTIFACT_DIR/$ARTIFACT_NAME" -type f -name '*.zip' | head -n1)
+          if [ -n "$ZIP_PATH" ]; then
+            echo "Unzipping $ZIP_PATH to $ARTIFACT_DIR/$ARTIFACT_NAME"
+            unzip -o "$ZIP_PATH" -d "$ARTIFACT_DIR/$ARTIFACT_NAME"
+            rm -f "$ZIP_PATH"
+            echo "Unzipped and removed $ZIP_PATH"
+          else
+            echo "No zip file found in $ARTIFACT_DIR/$ARTIFACT_NAME"
+          fi
+          echo "Done processing $ARTIFACT_NAME"
 
       - name: Push recompiled dir to GitLab
         env:
