@@ -2,12 +2,6 @@ name: Build All Tinygrad Models and Push to GitLab
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to run workflow from'
-        required: false
-        default: 'master-new'
-        type: string
 
 jobs:
   setup:
