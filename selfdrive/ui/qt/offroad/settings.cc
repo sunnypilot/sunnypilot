@@ -200,6 +200,32 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     }
   }
 
+  auto alwaysOnDMToggle = toggles["AlwaysOnDM"];
+  if (alwaysOnDMToggle) {
+    // 初始化时根据 AlwaysOnDM 状态设置 distraction_detection_level 可见性
+    bool alwaysOnDMEnabled = params.getBool("AlwaysOnDM");
+    distraction_detection_level->setVisible(alwaysOnDMEnabled);
+
+    // 连接切换信号
+    QObject::connect(alwaysOnDMToggle, &ParamControl::toggleFlipped, [=](bool state) {
+      distraction_detection_level->setVisible(state);
+      // 同时更新 distraction_detection_level 的状态
+      distraction_detection_level->refresh();
+    });
+  }
+  // 在这里添加 DashcamServerEnabled 与 dashcam_port_btn 联动控制代码
+  auto dashcamServerToggle = toggles["DashcamServerEnabled"];
+  if (dashcamServerToggle && dashcam_port_btn) {
+    // 初始化时根据 DashcamServerEnabled 状态设置 dashcam_port_btn 可见性
+    bool dashcamServerEnabled = params.getBool("DashcamServerEnabled");
+    dashcam_port_btn->setVisible(dashcamServerEnabled);
+
+    // 连接切换信号
+    QObject::connect(dashcamServerToggle, &ParamControl::toggleFlipped, [=](bool state) {
+      dashcam_port_btn->setVisible(state);
+    });
+  }
+
   // Toggles with confirmation dialogs
 #ifndef SUNNYPILOT
   toggles["ExperimentalMode"]->setActiveIcon("../assets/icons/experimental.svg");
