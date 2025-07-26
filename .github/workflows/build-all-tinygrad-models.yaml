@@ -14,36 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       json_file: ${{ steps.get-json.outputs.json_file }}
-    steps:
-      - name: Checkout docs repo
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot-docs
-          ref: gh-pages
-          path: docs
-          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
-      - name: Get next JSON version to use
-        id: get-json
-        run: |
-          cd docs/docs
-          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
-          next=$((latest+1))
-          json_file="driving_models_v${next}.json"
-          cp "driving_models_v${latest}.json" "$json_file"
-          echo "json_file=$json_file" >> $GITHUB_OUTPUT
-
-      - name: Upload context for next jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: context
-          path: docs
-
-  build-all:
-    runs-on: ubuntu-latest
-    needs: setup
-    env:
-      JSON_FILE: docs/docs/${{ needs.setup.outputs.json_file }}
+      model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
     steps:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -54,6 +25,14 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
       - name: Clone GitLab docs repo
         env:
@@ -68,7 +47,11 @@ jobs:
       - name: Set next recompiled dir
         id: set-recompiled
         run: |
-          cd gitlab_docs/models
+          cd gitlab_docs
+          echo "checkout models/"
+          git sparse-checkout set --no-cone models/
+          git checkout main
+          cd models
           latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
           if [[ -z "$latest_dir" ]]; then
             next_dir=1
@@ -76,124 +59,61 @@ jobs:
             next_dir=$((latest_dir+1))
           fi
           recompiled_dir="recompiled${next_dir}"
-          mkdir -p "$recompiled_dir"
-          echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
-
-      - name: Download context
-        uses: actions/download-artifact@v4
-        with:
-          name: context
-          path: .
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq gh
-
-      - name: Build all tinygrad models
-        id: trigger-builds
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          > triggered_run_ids.txt
-          BRANCH="${{ github.event.inputs.branch }}"
-          jq -c '.bundles[] | select(.runner=="tinygrad")' "$JSON_FILE" | while read -r bundle; do
-            ref=$(echo "$bundle" | jq -r '.ref')
-            display_name=$(echo "$bundle" | jq -r '.display_name' | sed 's/ ([^)]*)//g')
-            is_20hz=$(echo "$bundle" | jq -r '.is_20hz')
-            echo "Triggering build for: $display_name ($ref) [20Hz: $is_20hz]"
-            START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            gh workflow run sunnypilot-build-model.yaml \
-              --repo sunnypilot/sunnypilot \
-              --ref "$BRANCH" \
-              -f upstream_branch="$ref" \
-              -f custom_name="$display_name" \
-              -f is_20hz="$is_20hz"
-            for i in {1..24}; do
-              RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="$BRANCH" --created ">$START_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
-              if [ -n "$RUN_ID" ]; then
-                break
-              fi
-              sleep 5
-            done
-            if [ -z "$RUN_ID" ]; then
-              echo "ould not find the triggered workflow run for $display_name ($ref)"
-              exit 1
-            fi
-            echo "$RUN_ID" >> triggered_run_ids.txt
-          done
-
-      - name: Wait for all model builds to finish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          SUCCESS_RUNS=()
-          FAILED_RUNS=()
-          declare -A RUN_ID_TO_NAME
-
-          while read -r RUN_ID; do
-            ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name' || echo "unknown")
-            RUN_ID_TO_NAME["$RUN_ID"]="$ARTIFACT_NAME"
-          done < triggered_run_ids.txt
-
-          while read -r RUN_ID; do
-            echo "Watching run ID: $RUN_ID"
-            gh run watch "$RUN_ID" --repo sunnypilot/sunnypilot
-            CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
-            ARTIFACT_NAME="${RUN_ID_TO_NAME[$RUN_ID]}"
-            echo "Run $RUN_ID ($ARTIFACT_NAME) concluded with: $CONCLUSION"
-            if [[ "$CONCLUSION" == "success" ]]; then
-              SUCCESS_RUNS+=("$RUN_ID")
-            else
-              FAILED_RUNS+=("$RUN_ID")
-            fi
-          done < triggered_run_ids.txt
-
-          if [[ ${#SUCCESS_RUNS[@]} -eq 0 ]]; then
-            echo "All model builds failed. Aborting."
+          if [ -d "$recompiled_dir" ]; then
+            echo "ERROR: $recompiled_dir already exists in GitLab repo"
             exit 1
           fi
+          mkdir -p "$recompiled_dir"
+          touch "$recompiled_dir/.gitkeep"
+          echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
+          echo "Created new recompiled dir: $recompiled_dir"
+          cd ../..
 
-          if [[ ${#FAILED_RUNS[@]} -gt 0 ]]; then
-            echo "WARNING: The following model builds failed:"
-            for RUN_ID in "${FAILED_RUNS[@]}"; do
-              echo "- $RUN_ID (${RUN_ID_TO_NAME[$RUN_ID]})"
-            done
-            echo "You may want to rerun these models manually."
-          fi
-
-      - name: Download and extract all model artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get next JSON version to use (from GitHub docs repo)
+        id: get-json
         run: |
-          ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
-          SUCCESS_RUNS=()
-          while read -r RUN_ID; do
-            CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
-            if [[ "$CONCLUSION" == "success" ]]; then
-              SUCCESS_RUNS+=("$RUN_ID")
-            fi
-          done < triggered_run_ids.txt
+          cd docs/docs
+          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
+          next=$((latest+1))
+          json_file="driving_models_v${next}.json"
+          cp "driving_models_v${latest}.json" "$json_file"
+          echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
+          echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
+      - name: Extract tinygrad models
+        id: set-matrix
+        working-directory: docs/docs
+        run: |
+          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name, is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
+          echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
-          for RUN_ID in "${SUCCESS_RUNS[@]}"; do
-            ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name')
-            echo "Downloading artifact: $ARTIFACT_NAME from run: $RUN_ID"
-            mkdir -p "$ARTIFACT_DIR/$ARTIFACT_NAME"
-            echo "Created directory: $ARTIFACT_DIR/$ARTIFACT_NAME"
-            gh run download "$RUN_ID" --repo sunnypilot/sunnypilot -n "$ARTIFACT_NAME" --dir "$ARTIFACT_DIR/$ARTIFACT_NAME"
-            echo "Downloaded artifact zip(s) to: $ARTIFACT_DIR/$ARTIFACT_NAME"
-            ZIP_PATH=$(find "$ARTIFACT_DIR/$ARTIFACT_NAME" -type f -name '*.zip' | head -n1)
-            if [ -n "$ZIP_PATH" ]; then
-              echo "Unzipping $ZIP_PATH to $ARTIFACT_DIR/$ARTIFACT_NAME"
-              unzip -o "$ZIP_PATH" -d "$ARTIFACT_DIR/$ARTIFACT_NAME"
-              rm -f "$ZIP_PATH"
-              echo "Unzipped and removed $ZIP_PATH"
-            else
-              echo "No zip file found in $ARTIFACT_DIR/$ARTIFACT_NAME (This is NOT an error)."
-            fi
-            echo "Done processing $ARTIFACT_NAME"
+  get_and_build:
+    needs: [setup]
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+    name: Model [${{ matrix.model.display_name }}] from ref [${{ matrix.model.ref }}]
+    with:
+      upstream_branch: ${{ matrix.model.ref }}
+      custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz || true }}
+    secrets: inherit
+
+  push_results:
+    needs: [setup, get_and_build ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: model-*
+          path: output
+      - run: |
+          ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
+          mkdir -p "$ARTIFACT_DIR"
+          for name in $(ls output); do
+            mkdir -p "$ARTIFACT_DIR/$name"
+            cp -r output/$name/* "$ARTIFACT_DIR/$name/"
           done
 
       - name: Push recompiled dir to GitLab
@@ -212,7 +132,7 @@ jobs:
       - name: Run json_parser.py to update JSON
         run: |
           python3 docs/json_parser.py \
-            --json-path "$JSON_FILE" \
+            --json-path "${{ needs.setup.outputs.json_file }}" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR"
 
       - name: Push updated JSON to GitHub docs repo
@@ -221,6 +141,6 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git checkout gh-pages
-          git add docs/"$(basename $JSON_FILE)"
-          git commit -m "Update $(basename $JSON_FILE) after recompiling models" || echo "No changes to commit"
+          git add docs/"$(basename ${{ needs.setup.outputs.json_file }})"
+          git commit -m "Create $(basename ${{ needs.setup.outputs.json_file }}) after recompiling models" || echo "No changes to commit"
           git push origin gh-pages
