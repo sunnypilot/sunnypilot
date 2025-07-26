@@ -64,7 +64,6 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
     // The animation shifts the entire spectrum smoothly
     float animation_speed = 40.0f; // speed vroom vroom
     float hue_offset = fmod(time_offset * animation_speed, 360.0f);
-
     // 6-8 color stops for smooth transitions more color makes it laggy
     const int num_stops = 7;
     for (int i = 0; i < num_stops; i++) {
