@@ -425,8 +425,12 @@ class DriverMonitoring:
       self.settings._DISTRACTED_TIME = 11.0
       self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = 8.
       self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 6.
-    else:  # 宽松
+    elif self.distraction_detection_level == 2:  # 宽松
       self.settings._DISTRACTED_TIME = 20.0
       self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = 10.0
       self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 7.0
+    else:
+      self.settings._DISTRACTED_TIME = float('inf')  # 或一个非常大的数值
+      self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL = float('inf')
+      self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = float('inf')
 

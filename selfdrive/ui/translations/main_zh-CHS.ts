@@ -2819,8 +2819,12 @@ Are you sure you want to delete all the maps?</source>
         <translation>宽松</translation>
     </message>
     <message>
-        <source>Set how sensitive the driver distraction detection should be. Strict: Very sensitive, warns on minor distractions. Moderate: Balanced between sensitivity and false positives. Lenient: Only alerts on clear distractions.</source>
-        <translation>设置驾驶员分心检测的灵敏度。严格模式：非常敏感，对轻微分心行为发出警告。适中模式：在敏感度和误报之间保持平衡。宽松模式：仅对明显的分心行为发出警告。</translation>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Set how sensitive the driver distraction detection should be. Strict: Very sensitive, warns on minor distractions. Moderate: Balanced between sensitivity and false positives. Lenient: Only alerts on clear distractions. Off: Only disable Driver Distraction Monitoring.</source>
+        <translation>设置驾驶员分心检测的灵敏度。严格模式：非常敏感，对轻微分心行为发出警告。适中模式：在敏感度和误报之间保持平衡。宽松模式：仅对明显的分心行为发出警告。关闭: 仅关闭驾驶员分心检测</translation>
     </message>
     <message>
         <source>Enable Dashcam Server</source>

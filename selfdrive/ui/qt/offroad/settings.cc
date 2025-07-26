@@ -122,12 +122,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     },
   };
 
-  std::vector<QString> distraction_button_texts{tr("Strict"), tr("Moderate"), tr("Lenient")};
+  std::vector<QString> distraction_button_texts{tr("Strict"), tr("Moderate"), tr("Lenient"), tr("Off")};
   distraction_detection_level = new ButtonParamControl("DistractionDetectionLevel", tr("Distraction Detection Level"),
                                           tr("Set how sensitive the driver distraction detection should be. "
                                           "Strict: Very sensitive, warns on minor distractions. "
                                           "Moderate: Balanced between sensitivity and false positives. "
-                                          "Lenient: Only alerts on clear distractions."),
+                                          "Lenient: Only alerts on clear distractions."
+                                          "Off: Only disable Driver Distraction Monitoring."),
                                           "../assets/icons/monitoring.png",
                                           distraction_button_texts);
 
