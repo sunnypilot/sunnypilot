@@ -66,7 +66,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "ToyotaTSS2Long",
       tr("Toyota: custom tune"),
-      tr("Custome tune for Toyota TSS2 cars. ",
+      tr("Custome tune for Toyota TSS2 cars. "
          "This feature will allow SunnyPilot to adjust vehicle dynamics to be more natural and comfortable, tuned off the TSS2 Prius, Corolla, and RAV4."),
       "../assets/offroad/icon_blank.png",
       false,
@@ -88,7 +88,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "AlwaysOnDM",
       tr("Always-On Driver Monitoring"),
-      tr("Enable driver monitoring even when sunnypilot is not engaged."),
+      tr("For your safety consideration, we recommend you enable this setting as it can effectively monitor and remind you of your driving safety habits in certain situations."),
       "../assets/icons/monitoring.png",
       false,
     },
