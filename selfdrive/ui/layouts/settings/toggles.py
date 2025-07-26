@@ -28,7 +28,7 @@ DESCRIPTIONS = {
     "Strict: Very sensitive, warns on minor distractions.\n"
     "Moderate: Balanced between sensitivity and false positives.\n"
     "Lenient: Only alerts on clear distractions.\n"
-    "Off: Only disable Driver Distraction Monitoring."
+    "Off: Disable Driver Distraction Detection and Control."
   ),
 }
 
