@@ -36,6 +36,7 @@ on:
         description: 'Model folder'
         required: true
         type: choice
+        default: 'Other'
         options:
           - Simple Plan Models
           - Space Lab Models
