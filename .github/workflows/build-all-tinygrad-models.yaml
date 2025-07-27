@@ -118,7 +118,7 @@ jobs:
 
   retry_get_and_build:
     needs: [setup, retry_failed_models]
-    if: ${{ needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' }}
+    if: ${{ always() && needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' }}
     uses: ./.github/workflows/sunnypilot-build-model.yaml
     strategy:
       matrix:
