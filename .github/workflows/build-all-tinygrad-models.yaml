@@ -77,7 +77,7 @@ jobs:
         id: set-matrix
         working-directory: docs/docs
         run: |
-          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | sub(" \\([^)]*\\)$"; ""), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
+          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | sub(" \([^)]*\)$"; ""), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
           echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
   get_and_build:
