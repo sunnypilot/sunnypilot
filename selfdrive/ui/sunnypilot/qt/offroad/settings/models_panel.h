@@ -21,6 +21,7 @@ private:
   QString GetActiveModelName();
   QString GetActiveModelInternalName();
   void updateModelManagerState();
+  void showEvent(QShowEvent *event) override;
 
   bool isDownloading() const {
     if (!model_manager.hasSelectedBundle()) {
