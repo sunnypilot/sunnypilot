@@ -98,7 +98,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                           "Strict: Very sensitive, warns on minor distractions. "
                                           "Moderate: Balanced between sensitivity and false positives. "
                                           "Lenient: Only alerts on clear distractions. "
-                                          "Off: Disable Driver Distraction Detection and Control."),),
+                                          "Off: Disable Driver Distraction Detection and Control."),
                                           "../assets/icons/monitoring.png",
                                           distraction_button_texts);
 
