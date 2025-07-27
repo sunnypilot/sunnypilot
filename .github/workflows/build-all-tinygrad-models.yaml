@@ -132,9 +132,9 @@ jobs:
     secrets: inherit
 
   push_results:
-    needs: [setup, get_and_build, retry_get_and_build]
+    needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && (needs.get_and_build.result == 'success' || (needs.retry_get_and_build.result == 'success' && needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != ''))
     steps:
       - name: Download all model artifacts
         uses: actions/download-artifact@v4
