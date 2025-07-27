@@ -97,6 +97,7 @@ jobs:
   retry_failed_models:
     needs: [setup, get_and_build]
     runs-on: ubuntu-latest
+    if: always()
     outputs:
       retry_matrix: ${{ steps.set-retry-matrix.outputs.retry_matrix }}
     steps:
@@ -132,6 +133,7 @@ jobs:
   push_results:
     needs: [setup, get_and_build, retry_get_and_build]
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - name: Download all model artifacts
         uses: actions/download-artifact@v4
