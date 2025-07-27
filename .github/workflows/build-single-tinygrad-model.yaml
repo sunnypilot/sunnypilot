@@ -38,6 +38,7 @@ on:
         type: choice
         options:
           - Simple Plan Models
+          - Space Lab Models
           - TR Models
           - DTR Models
           - Custom Merge Models
