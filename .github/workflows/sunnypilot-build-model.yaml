@@ -154,7 +154,7 @@ jobs:
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
-          name: models-${{ env.REF }}
+          name: models-${{ env.REF }}-${{ inputs.artifact_suffix }}
           path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
