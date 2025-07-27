@@ -153,23 +153,29 @@ jobs:
           path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
+        id: build_model
         run: |
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+          build_failed=0
 
           # Loop through all .onnx files
           find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            [ -e "$onnx_file" ] || continue
             base_name=$(basename "$onnx_file" .onnx)
             output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
-
             echo "Compiling: $onnx_file -> $output_file"
-            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file" || build_failed=1
             QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
           done
 
+          echo "build_failed=$build_failed" >> $GITHUB_OUTPUT
+          exit 0
+
       - name: Prepare Output
+        if: steps.build_model.outputs.build_failed == '0'
         run: |
           sudo rm -rf ${{ env.OUTPUT_DIR }}
           mkdir -p ${{ env.OUTPUT_DIR }}
@@ -193,7 +199,7 @@ jobs:
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
-        if: success()
+        if: steps.build_model.outputs.build_failed == '0'
         uses: actions/upload-artifact@v4
         with:
           name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
@@ -204,8 +210,8 @@ jobs:
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
-      - name: Mark success for failure
-        if: failure()
+      - name: Note if failed model build
+        if: steps.build_model.outputs.build_failed == '1'
         run: |
           echo "::warning title=Model Build Failed::Model build failed for ${{ env.MODEL_NAME }} (ref: ${{ env.REF }})"
         continue-on-error: true
