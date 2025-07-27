@@ -77,7 +77,7 @@ jobs:
         id: set-matrix
         working-directory: docs/docs
         run: |
-          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name, is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
+          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | sub(" \\([^)]*\\)$"; ""), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
           echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
   get_and_build:
@@ -110,7 +110,7 @@ jobs:
         run: |
           matrix='${{ needs.setup.outputs.model_matrix }}'
           echo "$matrix" > matrix.json
-          built=($(ls output | sed -e 's/^model-//' -e 's/-.*$//'))
+          built=($(ls output | sed -e 's/^model-//' -e 's/-[0-9]\+$//' | awk '{while(sub(/ \([^)]+\)$/, "")){}; gsub(/^ +| +$/, ""); print}'))
           jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
             'map(select(.display_name as $n | ($built | index($n) | not)))' matrix.json > retry_matrix.json
           echo "retry_matrix=$(cat retry_matrix.json)" >> $GITHUB_OUTPUT
