@@ -135,14 +135,22 @@ jobs:
   push_results:
     needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
     runs-on: ubuntu-latest
-    if: always() && (needs.get_and_build.result == 'success' || (needs.retry_get_and_build.result == 'success' && needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != ''))
+    if: always() && (needs.get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != ''))
     steps:
       - name: Download all model artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: model-*
           path: output
-      - run: |
+      - name: Compare built models to json
+        run: |
+          echo '${{ needs.setup.outputs.model_matrix }}' | jq -r '.[].display_name' | sed -E 's/^ +| +$//g' | sort > expected.txt
+          ls output | sed -E 's/^model-//; s/-retry$//; s/ \([^)]*\)//' | sort > built.txt
+          echo "Built models:"; cat built.txt
+          echo "Expected models:"; cat expected.txt
+          echo -n "Missing models: "; comm -23 expected.txt built.txt || echo "None"
+      - name: Copy model artifacts to GitLab
+        run: |
           ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
           mkdir -p "$ARTIFACT_DIR"
           for name in $(ls output); do
