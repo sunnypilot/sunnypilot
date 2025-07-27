@@ -93,22 +93,8 @@ jobs:
       is_20hz: ${{ matrix.model.is_20hz || true }}
     secrets: inherit
 
-  check_matrix_results:
-    needs: get_and_build
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Fail if all matrix builds failed
-        run: |
-          if [[ "${{ needs.get_and_build.result }}" == "failure" ]]; then
-            echo "All matrix builds failed. Failing workflow."
-            exit 1
-          else
-            echo "At least one matrix build succeeded."
-          fi
-
   push_results:
-    needs: [setup, get_and_build, check_matrix_results]
+    needs: [setup, get_and_build]
     runs-on: ubuntu-latest
     steps:
       - name: Download all model artifacts

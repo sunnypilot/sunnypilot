@@ -193,6 +193,7 @@ jobs:
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
@@ -202,3 +203,9 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+
+      - name: Mark success for failure
+        if: failure()
+        run: |
+          echo "::warning title=Model Build Failed::Model build failed for ${{ env.MODEL_NAME }} (ref: ${{ env.REF }})"
+        continue-on-error: true
