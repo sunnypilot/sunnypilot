@@ -142,20 +142,16 @@ jobs:
         with:
           pattern: model-*
           path: output
-      - name: Compare built models to json
-        run: |
-          echo '${{ needs.setup.outputs.model_matrix }}' | jq -r '.[].display_name' | sed -E 's/^ +| +$//g' | sort > expected.txt
-          ls output | sed -E 's/^model-//; s/-retry$//; s/ \([^)]*\)//' | sort > built.txt
-          echo "Built models:"; cat built.txt
-          echo "Expected models:"; cat expected.txt
-          echo -n "Missing models: "; comm -23 expected.txt built.txt || echo "None"
+
       - name: Copy model artifacts to GitLab
         run: |
           ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
           mkdir -p "$ARTIFACT_DIR"
-          for name in $(ls output); do
+          for path in output/*; do
+            name="$(basename "$path")"
             mkdir -p "$ARTIFACT_DIR/$name"
-            cp -r output/$name/* "$ARTIFACT_DIR/$name/"
+            cp -r "$path"/* "$ARTIFACT_DIR/$name/"
+            echo "Copied $name -> $ARTIFACT_DIR/$name"
           done
 
       - name: Push recompiled dir to GitLab
