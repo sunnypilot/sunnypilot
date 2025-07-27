@@ -26,10 +26,13 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CurrentBootlog", PERSISTENT},
     {"CurrentRoute", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"DashcamServerEnabled", PERSISTENT | BACKUP},
+    {"DashcamServerPort", PERSISTENT | BACKUP},
     {"DisableLogging", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"DisablePowerDown", PERSISTENT | BACKUP},
     {"DisableUpdates", PERSISTENT | BACKUP},
     {"DisengageOnAccelerator", PERSISTENT | BACKUP},
+    {"DistractionDetectionLevel", PERSISTENT | BACKUP},
     {"DongleId", PERSISTENT},
     {"DoReboot", CLEAR_ON_MANAGER_START},
     {"DoShutdown", CLEAR_ON_MANAGER_START},
@@ -121,6 +124,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
+    {"DistractionDetectionLevel", PERSISTENT | BACKUP},
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", PERSISTENT},
@@ -183,6 +187,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     {"DynamicExperimentalControl", PERSISTENT | BACKUP},
     {"BlindSpot", PERSISTENT | BACKUP},
+    {"RainbowMode", PERSISTENT},
 
     // model panel params
     {"LagdToggle", PERSISTENT | BACKUP},
@@ -208,4 +213,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OsmStateTitle", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+
+    {"DashcamServerPid", PERSISTENT},
+    {"DashcamServerPort", PERSISTENT | BACKUP},
+    {"DashcamServerEnabled", PERSISTENT | BACKUP},
+
 };

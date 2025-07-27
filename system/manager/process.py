@@ -273,7 +273,29 @@ class DaemonProcess(ManagerProcess):
     self.params.put(self.param_name, str(proc.pid))
 
   def stop(self, retry=True, block=True, sig=None) -> None:
-    pass
+    if self.params is None:
+      self.params = Params()
+
+    pid = self.params.get(self.param_name, encoding='utf-8')
+    if pid is not None:
+      try:
+        import signal as signal_module
+        sig_to_send = sig if sig is not None else signal_module.SIGTERM
+        os.kill(int(pid), sig_to_send)
+        cloudlog.info(f"sent signal {sig_to_send} to daemon {self.name} (pid: {pid})")
+        if retry and sig_to_send != signal_module.SIGKILL:
+          # Wait a bit and then send SIGKILL if process is still alive
+          time.sleep(2)
+          try:
+            os.kill(int(pid), 0)  # Check if process is still alive
+            os.kill(int(pid), signal_module.SIGKILL)
+            cloudlog.info(f"sent SIGKILL to daemon {self.name} (pid: {pid})")
+          except OSError:
+            pass  # Process already dead
+      except (OSError, ValueError):
+        pass  # Process already dead or invalid PID
+      finally:
+        self.params.remove(self.param_name)
 
 
 def ensure_running(procs: ValuesView[ManagerProcess], started: bool, params=None, CP: car.CarParams=None,

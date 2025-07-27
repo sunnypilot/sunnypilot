@@ -13,7 +13,11 @@ def dmonitoringd_thread():
   sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'selfdriveState', 'modelV2',
                             'carControl'], poll='driverStateV2')
 
-  DM = DriverMonitoring(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"))
+  DM = DriverMonitoring(
+    rhd_saved=params.get_bool("IsRhdDetected"),
+    always_on=params.get_bool("AlwaysOnDM"),
+    distraction_detection_level=int(params.get("DistractionDetectionLevel") or 1)
+   )
 
   # 20Hz <- dmonitoringmodeld
   while True:
@@ -25,6 +29,8 @@ def dmonitoringd_thread():
     valid = sm.all_checks()
     if DM.always_on and valid:
       DM.run_step(sm)
+      ## 设置分心率
+      DM.set_distract_level_params()
 
     # publish
     dat = DM.get_state_packet(valid=valid)
@@ -33,6 +39,7 @@ def dmonitoringd_thread():
     # load live always-on toggle
     if sm['driverStateV2'].frameId % 40 == 1:
       DM.always_on = params.get_bool("AlwaysOnDM")
+      DM.distraction_detection_level = int(params.get("DistractionDetectionLevel") or 1)
 
     # save rhd virtual toggle every 5 mins
     if (sm['driverStateV2'].frameId % 6000 == 0 and

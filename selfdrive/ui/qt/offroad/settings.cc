@@ -13,6 +13,7 @@
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/qt/offroad/firehose.h"
 
@@ -57,7 +58,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "AlwaysOnDM",
       tr("Always-On Driver Monitoring"),
-      tr("Enable driver monitoring even when sunnypilot is not engaged."),
+      tr("For your safety consideration, we recommend you enable this setting as it can effectively monitor and remind you of your driving safety habits in certain situations."),
       "../assets/icons/monitoring.png",
       false,
     },
@@ -82,8 +83,24 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/icons/metric.png",
       false,
     },
+    {
+      "DashcamServerEnabled",
+      tr("Enable Dashcam Server"),
+      tr("Enable HTTP server for viewing dashcam recordings through web browser."),
+      "../assets/icons/network.png",
+      false,
+    },
   };
 
+  std::vector<QString> distraction_button_texts{tr("Strict"), tr("Moderate"), tr("Lenient"), tr("Off")};
+  distraction_detection_level = new ButtonParamControl("DistractionDetectionLevel", tr("Distraction Detection Level"),
+                                          tr("Set how sensitive the driver distraction detection should be. "
+                                          "Strict: Very sensitive, warns on minor distractions. "
+                                          "Moderate: Balanced between sensitivity and false positives. "
+                                          "Lenient: Only alerts on clear distractions. "
+                                          "Off: Disable Driver Distraction Detection and Control."),),
+                                          "../assets/icons/monitoring.png",
+                                          distraction_button_texts);
 
   std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
@@ -121,6 +138,54 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     if (param == "DisengageOnAccelerator") {
       addItem(long_personality_setting);
     }
+
+    if(param == "AlwaysOnDM") {
+      addItem(distraction_detection_level);
+    }
+
+    // Add dashcam server port setting after DashcamServerEnabled
+    if (param == "DashcamServerEnabled") {
+      dashcam_port_btn = new ButtonControl(tr("Dashcam Server Port"), tr("8082"), tr("Set the port number for the dashcam server."));
+      QObject::connect(dashcam_port_btn, &ButtonControl::clicked, [=]() {
+        QString current_port = QString::fromStdString(params.get("DashcamServerPort"));
+        QString new_port = InputDialog::getText(tr("Enter Port Number"), this, tr("Port (1024-65535)"), false, 4, current_port);
+        if (!new_port.isEmpty()) {
+          bool ok;
+          int port_num = new_port.toInt(&ok);
+          if (ok && port_num >= 1024 && port_num <= 65535) {
+            params.put("DashcamServerPort", new_port.toStdString());
+            dashcam_port_btn->setText(new_port);
+          }
+        }
+      });
+      addItem(dashcam_port_btn);
+    }
+  }
+
+  auto alwaysOnDMToggle = toggles["AlwaysOnDM"];
+  if (alwaysOnDMToggle) {
+    // 初始化时根据 AlwaysOnDM 状态设置 distraction_detection_level 可见性
+    bool alwaysOnDMEnabled = params.getBool("AlwaysOnDM");
+    distraction_detection_level->setVisible(alwaysOnDMEnabled);
+
+    // 连接切换信号
+    QObject::connect(alwaysOnDMToggle, &ParamControl::toggleFlipped, [=](bool state) {
+      distraction_detection_level->setVisible(state);
+      // 同时更新 distraction_detection_level 的状态
+      distraction_detection_level->refresh();
+    });
+  }
+  // 在这里添加 DashcamServerEnabled 与 dashcam_port_btn 联动控制代码
+  auto dashcamServerToggle = toggles["DashcamServerEnabled"];
+  if (dashcamServerToggle && dashcam_port_btn) {
+    // 初始化时根据 DashcamServerEnabled 状态设置 dashcam_port_btn 可见性
+    bool dashcamServerEnabled = params.getBool("DashcamServerEnabled");
+    dashcam_port_btn->setVisible(dashcamServerEnabled);
+
+    // 连接切换信号
+    QObject::connect(dashcamServerToggle, &ParamControl::toggleFlipped, [=](bool state) {
+      dashcam_port_btn->setVisible(state);
+    });
   }
 
   // Toggles with confirmation dialogs
@@ -157,6 +222,14 @@ void TogglesPanel::scrollToToggle(const QString &param) {
 
 void TogglesPanel::showEvent(QShowEvent *event) {
   updateToggles();
+  updateDashcamPortButton();
+}
+
+void TogglesPanel::updateDashcamPortButton() {
+  if (dashcam_port_btn) {
+    QString current_port = QString::fromStdString(params.get("DashcamServerPort"));
+    dashcam_port_btn->setText(current_port);
+  }
 }
 
 void TogglesPanel::updateToggles() {
