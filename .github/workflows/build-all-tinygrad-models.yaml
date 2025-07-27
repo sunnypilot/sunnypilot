@@ -94,8 +94,43 @@ jobs:
       is_20hz: ${{ matrix.model.is_20hz || true }}
     secrets: inherit
 
-  push_results:
+  retry_failed_models:
     needs: [setup, get_and_build]
+    runs-on: ubuntu-latest
+    outputs:
+      retry_matrix: ${{ steps.set-retry-matrix.outputs.retry_matrix }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: model-*
+          path: output
+
+      - id: set-retry-matrix
+        run: |
+          matrix='${{ needs.setup.outputs.model_matrix }}'
+          echo "$matrix" > matrix.json
+          built=($(ls output | sed -e 's/^model-//' -e 's/-.*$//'))
+          jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
+            'map(select(.display_name as $n | ($built | index($n) | not)))' matrix.json > retry_matrix.json
+          echo "retry_matrix=$(cat retry_matrix.json)" >> $GITHUB_OUTPUT
+
+  retry_get_and_build:
+    needs: [setup, retry_failed_models]
+    if: ${{ needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' }}
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.retry_failed_models.outputs.retry_matrix) }}
+      fail-fast: false
+    name: Retry Model [${{ matrix.model.display_name }}] from ref [${{ matrix.model.ref }}]
+    with:
+      upstream_branch: ${{ matrix.model.ref }}
+      custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz || true }}
+    secrets: inherit
+
+  push_results:
+    needs: [setup, get_and_build, retry_get_and_build]
     runs-on: ubuntu-latest
     steps:
       - name: Download all model artifacts
