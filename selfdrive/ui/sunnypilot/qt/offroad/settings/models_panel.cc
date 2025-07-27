@@ -366,13 +366,11 @@ void ModelsPanel::updateLabels() {
     desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
   }
   lagd_toggle_control->setDescription(desc);
-  lagd_toggle_control->showDescription();
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
     float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-    delay_control->showDescription();
   }
 
   clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
@@ -424,4 +422,11 @@ double ModelsPanel::calculateCacheSize() {
     return totalSize;
   });
   return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
+}
+
+void ModelsPanel::showEvent(QShowEvent *event) {
+  lagd_toggle_control->showDescription();
+  if (delay_control->isVisible()) {
+    delay_control->showDescription();
+  }
 }
