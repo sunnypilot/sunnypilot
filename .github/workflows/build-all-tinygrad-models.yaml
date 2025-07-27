@@ -86,6 +86,7 @@ jobs:
     strategy:
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+      fail-fast: false
     name: Model [${{ matrix.model.display_name }}] from ref [${{ matrix.model.ref }}]
     with:
       upstream_branch: ${{ matrix.model.ref }}
