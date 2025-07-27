@@ -129,6 +129,7 @@ jobs:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
       is_20hz: ${{ matrix.model.is_20hz || true }}
+      artifact_suffix: -retry
     secrets: inherit
 
   push_results:
