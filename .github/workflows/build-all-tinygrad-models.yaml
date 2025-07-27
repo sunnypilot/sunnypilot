@@ -108,11 +108,12 @@ jobs:
 
       - id: set-retry-matrix
         run: |
-          matrix='${{ needs.setup.outputs.model_matrix }}'
-          echo "$matrix" > matrix.json
-          built=($(ls output | sed -e 's/^model-//' -e 's/-[0-9]\+$//' | awk '{while(sub(/ \([^)]+\)$/, "")){}; gsub(/^ +| +$/, ""); print}'))
+          echo '${{ needs.setup.outputs.model_matrix }}' > matrix.json
+          built=(); while IFS= read -r line; do built+=("$line"); done < <(
+            ls output | sed -E 's/^model-//' | sed -E 's/-[0-9]+$//' | sed -E 's/ \([^)]*\)//' | awk '{gsub(/^ +| +$/, ""); print}'
+          )
           jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
-            'map(select(.display_name as $n | ($built | index($n) | not)))' matrix.json > retry_matrix.json
+            'map(select(.display_name as $n | ($built | index($n | gsub("^ +| +$"; "")) | not)))' matrix.json > retry_matrix.json
           echo "retry_matrix=$(cat retry_matrix.json)" >> $GITHUB_OUTPUT
 
   retry_get_and_build:
