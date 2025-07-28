@@ -14,15 +14,11 @@ on:
       recompiled_dir:
         description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
         required: true
-        type: number
+        type: string
       json_version:
         description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
         required: true
-        type: number
-      version:
-        description: 'Minimum selector version'
-        required: false
-        type: number
+        type: string
       artifact_suffix:
         description: 'Suffix for artifact name'
         required: false
