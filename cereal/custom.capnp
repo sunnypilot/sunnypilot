@@ -282,7 +282,9 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
   roadName @5 :Text;
 }
 
-struct CustomReserved9 @0xa1680744031fdb2d {
+struct ModelDataV2SP @0xa1680744031fdb2d {
+  leftLaneChangeEdgeBlock @0 :Bool;
+  rightLaneChangeEdgeBlock @1 :Bool;
 }
 
 struct CustomReserved10 @0xcb9fd56c7057593a {

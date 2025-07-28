@@ -95,6 +95,7 @@ def manager_init() -> None:
     ("SpeedLimitWarningType", "0"),
     ("SpeedLimitWarningOffsetType", "0"),
     ("SpeedLimitWarningValueOffset", "0"),
+    ("RoadEdgeLaneChangeEnabled", "1"),
   ]
 
   # device boot mode
