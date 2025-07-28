@@ -33,6 +33,12 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
       tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
       "../assets/offroad/icon_blank.png",
     },
+    {
+      "RoadEdgeLaneChangeEnabled",
+      tr("Block Lane Change: Road Edge Detection"),
+      tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
+      "../assets/offroad/icon_blank.png",
+    }
   };
 
   // Controls: Auto Lane Change Timer

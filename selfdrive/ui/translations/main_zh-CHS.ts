@@ -811,6 +811,14 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
         <translation>开启后，当盲点监测系统(BSM)检测到障碍车辆时，将启用延迟计时器来实现无缝变道，确保操作安全。</translation>
     </message>
+    <message>
+        <source>Block Lane Change: Road Edge Detection</source>
+        <translation>阻止车道变更：道路边缘检测</translation>
+    </message>
+    <message>
+        <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
+        <translation>启用此开关，当检测到方向盘一侧的道路边缘时，阻止车道变更。</translation>
+    </message>
 </context>
 <context>
     <name>LateralPanel</name>
