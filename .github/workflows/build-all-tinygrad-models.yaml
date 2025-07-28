@@ -28,6 +28,7 @@ jobs:
           cp "driving_models_v${latest}.json" "$json_file"
           echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
           echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
+      
       - name: Extract tinygrad models
         id: set-matrix
         working-directory: docs/docs
