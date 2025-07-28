@@ -10,16 +10,6 @@ jobs:
       json_file: ${{ steps.get-json.outputs.json_file }}
       model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-
-      - name: Add GitLab.com SSH key to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-
       - name: Checkout docs repo (sunnypilot-docs, gh-pages)
         uses: actions/checkout@v4
         with:
@@ -27,41 +17,6 @@ jobs:
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
-      - name: Clone GitLab docs repo
-        env:
-          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
-        run: |
-          echo "Cloning GitLab"
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
-          cd gitlab_docs
-          git checkout main
-          cd ..
-
-      - name: Set next recompiled dir
-        id: set-recompiled
-        run: |
-          cd gitlab_docs
-          echo "checkout models/"
-          git sparse-checkout set --no-cone models/
-          git checkout main
-          cd models
-          latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
-          if [[ -z "$latest_dir" ]]; then
-            next_dir=1
-          else
-            next_dir=$((latest_dir+1))
-          fi
-          recompiled_dir="recompiled${next_dir}"
-          if [ -d "$recompiled_dir" ]; then
-            echo "ERROR: $recompiled_dir already exists in GitLab repo"
-            exit 1
-          fi
-          mkdir -p "$recompiled_dir"
-          touch "$recompiled_dir/.gitkeep"
-          echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
-          echo "Created new recompiled dir: $recompiled_dir"
-          cd ../..
 
       - name: Get next JSON version to use (from GitHub docs repo)
         id: get-json
@@ -79,6 +34,12 @@ jobs:
         run: |
           jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | gsub(" \\([^)]*\\)"; "")), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
           echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+
+      - name: Upload generated JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: driving-json
+          path: ${{ steps.get-json.outputs.json_file }}
 
   get_and_build:
     needs: [setup]
@@ -137,11 +98,47 @@ jobs:
     runs-on: ubuntu-latest
     if: always() && (needs.get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != ''))
     steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+      - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
       - name: Download all model artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: model-*
           path: output
+
+      - name: Clone GitLab docs repo
+        env:
+          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
+        run: |
+          echo "Cloning GitLab"
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
+          cd gitlab_docs
+          git checkout main
+          git sparse-checkout set --no-cone models/
+          git checkout main
+          cd models
+          latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
+          if [[ -z "$latest_dir" ]]; then
+            next_dir=1
+          else
+            next_dir=$((latest_dir+1))
+          fi
+          recompiled_dir="recompiled${next_dir}"
+          if [ -d "$recompiled_dir" ]; then
+            echo "ERROR: $recompiled_dir already exists in GitLab repo"
+            exit 1
+          fi
+          mkdir -p "$recompiled_dir"
+          touch "$recompiled_dir/.gitkeep"
+          echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
+          echo "Created new recompiled dir: $recompiled_dir"
+          cd ../..
 
       - name: Copy model artifacts to GitLab
         run: |
@@ -167,6 +164,20 @@ jobs:
           git commit -m "Add $(basename $RECOMPILED_DIR) from build-all-tinygrad-models"
           git push origin main
 
+      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
+      - name: Download JSON from setup
+        uses: actions/download-artifact@v4
+        with:
+          name: driving-json
+          path: docs/docs
+
       - name: Run json_parser.py to update JSON
         run: |
           python3 docs/json_parser.py \
@@ -176,9 +187,8 @@ jobs:
       - name: Push updated JSON to GitHub docs repo
         run: |
           cd docs
-          git config --global user.name "GitHub Action"
+          git add docs/"$(basename "${{ needs.setup.outputs.json_file }}")"
           git config --global user.email "action@github.com"
-          git checkout gh-pages
-          git add docs/"$(basename ${{ needs.setup.outputs.json_file }})"
-          git commit -m "Create $(basename ${{ needs.setup.outputs.json_file }}) after recompiling models" || echo "No changes to commit"
+          git config --global user.name "GitHub Action"
+          git commit -m "Update $(basename ${{ needs.setup.outputs.json_file }}) with new model links" || echo "No changes to commit"
           git push origin gh-pages
