@@ -3022,4 +3022,33 @@ Are you sure you want to delete all the maps?</source>
         <translation>确定</translation>
     </message>
 </context>
+<context>
+    <name>TSKKeyboard</name>
+    <message>
+        <source>TSK Keyboard (tap to see installed)</source>
+        <translation>TSK安装器</translation>
+    </message>
+    <message>
+        <source>INSTALL</source>
+        <translation>安装</translation>
+    </message>
+    <message>
+        <source>Archived key: </source>
+        <translation>归档密钥</translation>
+    </message>
+    <message>
+        <source>Enter your Car Security Key</source>
+        <translation>请输入您的汽车安全钥匙</translation>
+    </message>
+    <message>
+        <source>Success!
+Restart comma to have openpilot use the key</source>
+        <translation>安装成功！
+重启您的设备让openpilot使用该密钥</translation>
+    </message>
+    <message>
+        <source>Invalid key: %1</source>
+        <translation>无效密钥: %1</translation>
+    </message>
+</context>
 </TS>
