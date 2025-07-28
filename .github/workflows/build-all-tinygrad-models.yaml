@@ -77,10 +77,10 @@ jobs:
       - name: Push empty recompiled dir to GitLab
         run: |
           cd gitlab_docs
-          git add models/"${{ steps.create-recompiled-dir.outputs.recompiled_dir }}"
+          git add models/recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }}
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git commit -m "Add empty ${{ steps.create-recompiled-dir.outputs.recompiled_dir }} for build-all" || echo "No changes to commit"
+          git commit -m "Add recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }} for build-all" || echo "No changes to commit"
           git push origin main
 
       - name: Push new JSON to GitHub docs repo
