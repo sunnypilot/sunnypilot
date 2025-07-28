@@ -1,6 +1,37 @@
 name: Build Single Tinygrad Model and Push
 
 on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream commit to build from'
+        required: true
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      recompiled_dir:
+        description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
+        required: true
+        type: number
+      json_version:
+        description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
+        required: true
+        type: number
+      generation:
+        description: 'Model generation'
+        required: false
+        type: number
+      version:
+        description: 'Minimum selector version'
+        required: false
+        type: number
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -46,16 +77,17 @@ on:
         type: number
 
 env:
-  RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
-  JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
+  RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
+  JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
 
 jobs:
   build_model:
     uses: ./.github/workflows/sunnypilot-build-model.yaml
     with:
-      upstream_branch: ${{ github.event.inputs.upstream_branch }}
-      custom_name: ${{ github.event.inputs.custom_name || github.event.inputs.upstream_branch }}
+      upstream_branch: ${{ inputs.upstream_branch }}
+      custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
       is_20hz: true
+      artifact_suffix: ${{ inputs.artifact_suffix }}
     secrets: inherit
 
   publish_model:
@@ -126,6 +158,7 @@ jobs:
         run: |
           cd gitlab_docs
           git checkout main
+          git pull origin main
           for d in models/"$RECOMPILED_DIR"/*/; do
             git sparse-checkout add "$d"
           done
@@ -135,18 +168,22 @@ jobs:
           git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
           git push origin main
 
+      - run: |
+          cd docs
+          git pull origin gh-pages
+
       - name: Run json_parser.py to update JSON
         run: |
-          FOLDER="${{ github.event.inputs.model_folder }}"
+          FOLDER="${{ inputs.model_folder }}"
           if [ "$FOLDER" = "Other" ]; then
-            FOLDER="${{ github.event.inputs.custom_model_folder }}"
+            FOLDER="${{ inputs.custom_model_folder }}"
           fi
           ARGS=""
           if [ "$FOLDER" != "None" ] && [ -n "$FOLDER" ]; then
             ARGS="$ARGS --model-folder \"$FOLDER\""
           fi
-          [ -n "${{ github.event.inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ github.event.inputs.generation }}\""
-          [ -n "${{ github.event.inputs.version }}" ] && ARGS="$ARGS --version \"${{ github.event.inputs.version }}\""
+          [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
+          [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
