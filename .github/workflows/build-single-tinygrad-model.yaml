@@ -19,10 +19,6 @@ on:
         description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
         required: true
         type: number
-      generation:
-        description: 'Model generation'
-        required: false
-        type: number
       version:
         description: 'Minimum selector version'
         required: false
