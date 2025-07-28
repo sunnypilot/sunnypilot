@@ -10,8 +10,8 @@ SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
 
-def get_curvature_from_output(output, vego, lat_action_t, current_generation=None):
-  if current_generation != 11:
+def get_curvature_from_output(output, vego, lat_action_t, mlsim):
+  if not mlsim:
     if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
       return float(desired_curv[0, 0])
 
@@ -100,7 +100,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyzt(modelV2.orientationRate, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.ORIENTATION_RATE].T)
 
   # temporal pose
-  temporal_pose = modelV2.temporalPose
+  temporal_pose = modelV2.temporalPoseDEPRECATED
   if 'sim_pose' in net_output_data:
     temporal_pose.trans = net_output_data['sim_pose'][0,:ModelConstants.POSE_WIDTH//2].tolist()
     temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:ModelConstants.POSE_WIDTH//2].tolist()

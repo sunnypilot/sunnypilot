@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <QJsonDocument>
 #include <QStyle>
+#include <QtConcurrent/QtConcurrent>
+#include <QDir>
 
 #include "common/model.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
@@ -66,6 +68,11 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
+  clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
+  connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
+
+  list->addItem(clearModelCacheBtn);
+
   // Create progress bars for downloads
   supercomboProgressBar = createProgressBar(this);
   QString supercomboType = tr("Driving Model");
@@ -98,7 +105,7 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
-                                     "", {10, 30}, 1, false, nullptr, true);
+                                     "", {5, 30}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
     float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
@@ -244,28 +251,73 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
-  // Create mapping of bundle indices to display names
-  QMap<uint32_t, QString> index_to_bundle;
+  struct ModelEntry {
+    QString folder;
+    QString displayName;
+    int index;
+  };
+  QList<ModelEntry> sortedModels;
+  QSet<QString> modelFolders;
   const auto bundles = model_manager.getAvailableBundles();
-  for (const auto &bundle: bundles) {
-    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
+
+  for (const auto &bundle : bundles) {
+    auto overrides = bundle.getOverrides();
+    QString gen;
+    for (const auto &override : overrides) {
+      if (override.getKey() == "folder") {
+        gen = QString::fromStdString(override.getValue().cStr());
+      }
+    }
+
+    modelFolders.insert(gen);
+    sortedModels.append(ModelEntry{
+      gen,
+      QString::fromStdString(bundle.getDisplayName()),
+      static_cast<int>(bundle.getIndex())
+    });
   }
 
-  // Sort bundles by index in descending order
-  QStringList bundleNames;
-  // Add "Default" as the first option
-  bundleNames.append(DEFAULT_MODEL);
+  std::sort(sortedModels.begin(), sortedModels.end(),
+    [](const ModelEntry &a, const ModelEntry &b) {
+      return a.index > b.index;
+    });
 
-  auto indices = index_to_bundle.keys();
-  std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
-  for (const auto &index: indices) {
-    bundleNames.append(index_to_bundle[index]);
+  // Create a list of folder-maxIndex pairs for sorting
+  QList<QPair<QString, int>> folderMaxIndices;
+  for (const auto &folder : modelFolders) {
+    int maxIndex = -1;
+    for (const auto &model : sortedModels) {
+      if (model.folder == folder) {
+        maxIndex = std::max(maxIndex, model.index);
+      }
+    }
+    folderMaxIndices.append(qMakePair(folder, maxIndex));
   }
+
+  // Sort folders by their highest model index
+  std::sort(folderMaxIndices.begin(), folderMaxIndices.end(),
+      [](const QPair<QString, int> &a, const QPair<QString, int> &b) {
+          return a.second > b.second;
+      });
+
+  // Create the final items list using sorted folders
+  QList<QPair<QString, QStringList>> items;
+  for (const auto &folderPair : folderMaxIndices) {
+    QStringList folderModels;
+    for (const auto &model : sortedModels) {
+      if (model.folder == folderPair.first) {
+        folderModels.append(model.displayName);
+      }
+    }
+    items.append(qMakePair(folderPair.first, folderModels));
+  }
+
+  items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
 
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
+  const QString selectedBundleName = TreeOptionDialog::getSelection(
+    tr("Select a Model"), items, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
@@ -314,14 +366,14 @@ void ModelsPanel::updateLabels() {
     desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
   }
   lagd_toggle_control->setDescription(desc);
-  lagd_toggle_control->showDescription();
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
     float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-    delay_control->showDescription();
   }
+
+  clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
 
 /**
@@ -340,5 +392,41 @@ void ModelsPanel::showResetParamsDialog() {
   if (showConfirmationDialog(content, button_text, false)) {
     params.remove("CalibrationParams");
     params.remove("LiveTorqueParameters");
+  }
+}
+
+void ModelsPanel::clearModelCache() {
+  QString confirmMsg = tr("This will delete ALL downloaded models from the cache"
+                            "<br/><u>except the currently active model</u>."
+                            "<br/><br/>Are you sure you want to continue?");
+  QString content("<body><h2 style=\"text-align: center;\">" + tr("Driving Model Selector") + "</h2><br>"
+                "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + confirmMsg + "</p></body>");
+  if (showConfirmationDialog(
+    content,
+    tr("Clear Cache"))) {
+      params.putBool("ModelManager_ClearCache", true);
+    }
+}
+
+double ModelsPanel::calculateCacheSize() {
+  QFuture<qint64> future_ModelCacheSize = QtConcurrent::run([=]() {
+
+    QDir model_dir(QString::fromStdString(Path::model_root()));
+    QFileInfoList model_files = model_dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+    qint64 totalSize = 0;
+    for (const QFileInfo &model_file : model_files) {
+        if (model_file.isFile()) {
+            totalSize += model_file.size();
+        }
+    }
+    return totalSize;
+  });
+  return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
+}
+
+void ModelsPanel::showEvent(QShowEvent *event) {
+  lagd_toggle_control->showDescription();
+  if (delay_control->isVisible()) {
+    delay_control->showDescription();
   }
 }
