@@ -854,6 +854,14 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <source>Pause lateral control with blinker when traveling below the desired speed selected.</source>
         <translation>当行驶速度低于所选的理想速度时，用转向灯暂停横向控制。</translation>
     </message>
+    <message>
+        <source>Block Lane Change: Road Edge Detection</source>
+        <translation>阻止车道变更：道路边缘检测</translation>
+    </message>
+    <message>
+        <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
+        <translation>启用此开关，当检测到方向盘一侧的道路边缘时，阻止车道变更。</translation>
+    </message>
 </context>
 <context>
     <name>MadsSettings</name>
