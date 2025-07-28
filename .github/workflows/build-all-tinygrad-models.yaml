@@ -34,7 +34,7 @@ jobs:
           json_file="driving_models_v${next}.json"
           cp "driving_models_v${latest}.json" "$json_file"
           echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
-          echo "json_version=$next" >> $GITHUB_OUTPUT
+          echo "json_version=$((next+0))" >> $GITHUB_OUTPUT
           echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
 
       - name: Extract tinygrad models
@@ -68,9 +68,9 @@ jobs:
           else
             next_dir=$((latest_dir+1))
           fi
-          recompiled_dir="recompiled${next_dir}"
-          mkdir -p "$recompiled_dir"
-          touch "$recompiled_dir/.gitkeep"
+          recompiled_dir="${next_dir}"
+          mkdir -p "recompiled${recompiled_dir}"
+          touch "recompiled${recompiled_dir}/.gitkeep"
           cd ../..
           echo "recompiled_dir=$recompiled_dir" >> $GITHUB_OUTPUT
 
