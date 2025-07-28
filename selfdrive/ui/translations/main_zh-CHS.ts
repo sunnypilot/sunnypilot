@@ -811,6 +811,14 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
         <translation>开启后，当盲点监测系统(BSM)检测到障碍车辆时，将启用延迟计时器来实现无缝变道，确保操作安全。</translation>
     </message>
+    <message>
+        <source>Block Lane Change: Road Edge Detection</source>
+        <translation>阻止车道变更：道路边缘检测</translation>
+    </message>
+    <message>
+        <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
+        <translation>启用此开关，当检测到方向盘一侧的道路边缘时，阻止车道变更。</translation>
+    </message>
 </context>
 <context>
     <name>LateralPanel</name>
@@ -3012,6 +3020,35 @@ Are you sure you want to delete all the maps?</source>
     <message>
         <source>Confirm</source>
         <translation>确定</translation>
+    </message>
+</context>
+<context>
+    <name>TSKKeyboard</name>
+    <message>
+        <source>TSK Keyboard (tap to see installed)</source>
+        <translation>TSK安装器</translation>
+    </message>
+    <message>
+        <source>INSTALL</source>
+        <translation>安装</translation>
+    </message>
+    <message>
+        <source>Archived key: </source>
+        <translation>归档密钥</translation>
+    </message>
+    <message>
+        <source>Enter your Car Security Key</source>
+        <translation>请输入您的汽车安全钥匙</translation>
+    </message>
+    <message>
+        <source>Success!
+Restart comma to have openpilot use the key</source>
+        <translation>安装成功！
+重启您的设备让openpilot使用该密钥</translation>
+    </message>
+    <message>
+        <source>Invalid key: %1</source>
+        <translation>无效密钥: %1</translation>
     </message>
 </context>
 </TS>
