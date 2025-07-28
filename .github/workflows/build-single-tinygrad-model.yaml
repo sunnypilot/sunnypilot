@@ -22,7 +22,9 @@ on:
       model_folder:
         description: 'Model folder'
         type: choice
+        default: 'None'
         options:
+          - None
           - Simple Plan Models
           - Space Lab Models
           - TR Models
@@ -140,7 +142,9 @@ jobs:
             FOLDER="${{ github.event.inputs.custom_model_folder }}"
           fi
           ARGS=""
-          [ -n "$FOLDER" ] && ARGS="$ARGS --model-folder \"$FOLDER\""
+          if [ "$FOLDER" != "None" ] && [ -n "$FOLDER" ]; then
+            ARGS="$ARGS --model-folder \"$FOLDER\""
+          fi
           [ -n "${{ github.event.inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ github.event.inputs.generation }}\""
           [ -n "${{ github.event.inputs.version }}" ] && ARGS="$ARGS --version \"${{ github.event.inputs.version }}\""
           eval python3 docs/json_parser.py \
