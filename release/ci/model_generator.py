@@ -5,7 +5,6 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime, UTC
-from openpilot.sunnypilot.models.helpers import REQUIRED_MIN_SELECTOR_VERSION
 
 
 def create_short_name(full_name):
@@ -100,7 +99,7 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "environment": "development",
     "runner": "tinygrad",
     "index": -1,
-    "minimum_selector_version": f"{REQUIRED_MIN_SELECTOR_VERSION}",
+    "minimum_selector_version": "-1",
     "generation": "-1",
     "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "overrides": {},

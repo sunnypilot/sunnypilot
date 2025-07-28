@@ -2,6 +2,11 @@ name: Build All Tinygrad Models and Push to GitLab
 
 on:
   workflow_dispatch:
+    inputs:
+      selector_version:
+        description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
+        required: true
+        type: string
 
 jobs:
   setup:
@@ -49,7 +54,7 @@ jobs:
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
       fail-fast: false
-    name: Model [${{ matrix.model.display_name }}] from ref [${{ matrix.model.ref }}]
+    name: Model [${{ matrix.model.display_name }}] from ref [${{ matrix.model.ref }} ]
     with:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
@@ -183,7 +188,8 @@ jobs:
         run: |
           python3 docs/json_parser.py \
             --json-path "${{ needs.setup.outputs.json_file }}" \
-            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR"
+            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --version "${{ inputs.selector_version }}"
 
       - name: Push updated JSON to GitHub docs repo
         run: |
