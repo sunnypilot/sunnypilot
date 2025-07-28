@@ -25,6 +25,7 @@ from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
+from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
@@ -250,6 +251,7 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
+  RELC = RoadEdgeLaneChangeController(params.get_bool("RoadEdgeLaneChangeEnabled"))
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -348,7 +350,7 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, RELC.left_edge_detected, RELC.right_edge_detected)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
