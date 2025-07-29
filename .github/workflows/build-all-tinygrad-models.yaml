@@ -150,7 +150,7 @@ jobs:
   publish_models:
     name: Publish models sequentially
     needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
-    if: ${{ needs.get_and_build.result == 'success' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' ) }}
+    if: ${{ !cancelled() && (needs.get_and_build.result != 'failure' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '')) }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
