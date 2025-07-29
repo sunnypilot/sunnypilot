@@ -158,7 +158,14 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
-          git push origin main
+          n=0
+          until [ $n -ge 10 ]
+          do
+            git push origin main && break
+            echo "push failed, retrying"
+            git pull --rebase origin main
+            n=$((n+1))
+          done
 
       - run: |
           cd docs
@@ -189,4 +196,11 @@ jobs:
           git checkout gh-pages
           git add docs/"$(basename $JSON_FILE)"
           git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
-          git push origin gh-pages
+          n=0
+          until [ $n -ge 10 ]
+          do
+            git push origin gh-pages && break
+            echo "push failed, retrying"
+            git pull --rebase origin gh-pages
+            n=$((n+1))
+          done
