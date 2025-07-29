@@ -63,7 +63,9 @@ TSKKeyboard::TSKKeyboard() :
 void TSKKeyboard::refresh() {
   QString key = QString::fromStdString(params.get("SecOCKey"));
   if (!key.length()) {
-    key = "Not Installed";
+    key = tr("Not Installed");
+  } else {
+    key = tr("Archived key: ") +  key;
   }
   setDescription(key);
   setEnabled(true);
