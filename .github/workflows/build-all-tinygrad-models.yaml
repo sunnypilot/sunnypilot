@@ -153,7 +153,7 @@ jobs:
     if: ${{ needs.get_and_build.result == 'success' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' ) }}
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 0
+      max-parallel: 1
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
     env:
