@@ -33,6 +33,11 @@ on:
         required: false
         default: true
         type: boolean
+      bypass_push:
+        description: 'Bypass pushing to GitLab for build-all'
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -91,12 +96,11 @@ jobs:
     secrets: inherit
 
   publish_model:
+    if: ${{ !inputs.bypass_push }}
     concurrency:
       group: gitlab-push-${{ inputs.recompiled_dir }}
       cancel-in-progress: false
     needs: build_model
-    strategy:
-      max-parallel: 0
     runs-on: ubuntu-latest
     steps:
       - name: Set up SSH
