@@ -1,6 +1,7 @@
 from cereal import car, log, custom
 import cereal.messaging as messaging
 from opendbc.car import DT_CTRL, structs
+from opendbc.car.gm.values import GMFlags
 from opendbc.car.interfaces import MAX_CTRL_SPEED
 
 from openpilot.selfdrive.selfdrived.events import Events

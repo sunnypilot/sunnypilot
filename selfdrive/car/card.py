@@ -12,7 +12,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog, ForwardingHandler
 
-from opendbc.car import DT_CTRL, structs
+from opendbc.car import DT_CTRL, structs, ButtonType
 from opendbc.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
 from opendbc.car.carlog import carlog
 from opendbc.car.fw_versions import ObdCallback
@@ -81,6 +81,7 @@ class Car:
     self.CS_prev = car.CarState.new_message()
     self.CS_SP_prev = custom.CarStateSP.new_message()
     self.initialized_prev = False
+    self.resume_prev_button = False
 
     self.last_actuators_output = structs.CarControl.Actuators()
 
@@ -218,11 +219,16 @@ class Car:
     self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
     if self.sm['carControl'].enabled and not self.CC_prev.enabled:
       # Use CarState w/ buttons from the step selfdrived enables on
-      self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode, self.dynamic_experimental_control)
+      self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode, self.dynamic_experimental_control, self.resume_prev_button)
 
     # TODO: mirror the carState.cruiseState struct?
     CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
     CS.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
+
+    if any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents):
+      self.resume_prev_button = True
+    elif any(be.type in (ButtonType.decelCruise, ButtonType.setCruise) for be in CS.buttonEvents):
+      self.resume_prev_button = False
 
     return CS, CS_SP, RD
 
