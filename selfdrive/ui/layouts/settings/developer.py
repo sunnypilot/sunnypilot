@@ -4,6 +4,9 @@ from openpilot.system.ui.lib.widget import Widget
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.ssh_key import ssh_key_item
 
+if Params().get_bool("sunnypilot_ui"):
+  from openpilot.system.ui.sunnypilot.lib.list_view import toggle_item_sp as toggle_item
+
 # Description constants
 DESCRIPTIONS = {
   'enable_adb': (
