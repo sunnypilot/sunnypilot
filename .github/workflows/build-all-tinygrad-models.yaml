@@ -131,8 +131,8 @@ jobs:
           echo "retry_matrix=$(cat retry_matrix.json)" >> $GITHUB_OUTPUT
 
   retry_get_and_build:
-    needs: [setup, retry_failed_models]
-    if: ${{ always() && needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' }}
+    needs: [setup, get_and_build, retry_failed_models]
+    if: ${{ needs.get_and_build.result == 'failure' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '') }}
     strategy:
       matrix:
         model: ${{ fromJson(needs.retry_failed_models.outputs.retry_matrix) }}
