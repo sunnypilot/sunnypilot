@@ -13,9 +13,7 @@ from openpilot.common.params import Params
 
 NEARSIDE_PROB = 0.2
 EDGE_PROB = 0.35
-EDGE_LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 EDGE_REACTION_TIME = 1.0
-EDGE_COOLDOWN_TIME = 5.0
 MAX_EDGE_DETECTION_TIME = 3.0
 
 class RoadEdgeLaneChangeController:
@@ -27,10 +25,6 @@ class RoadEdgeLaneChangeController:
     self.right_edge_detected = False
     self.left_edge_timer = 0.0
     self.right_edge_timer = 0.0
-    self.edge_triggered_direction = log.LaneChangeDirection.none
-    self.edge_cooldown_timer = 0.0
-    self.edge_lane_change_active = False
-    self.safe_for_edge_lane_change = False
     self.param_check_counter = 0
     self.PARAM_CHECK_FREQUENCY = 100
 
@@ -52,12 +46,11 @@ class RoadEdgeLaneChangeController:
     self.right_edge_detected = False
     self.left_edge_timer = 0.0
     self.right_edge_timer = 0.0
-    self.edge_triggered_direction = log.LaneChangeDirection.none
-    self.edge_lane_change_active = False
 
   def _update_edge_detection(self, road_edge_stds, lane_line_probs):
     if not self.enabled:
       return
+
     left_road_edge_prob = np.clip(1.0 - road_edge_stds[0], 0.0, 1.0)
     right_road_edge_prob = np.clip(1.0 - road_edge_stds[1], 0.0, 1.0)
 
@@ -94,60 +87,32 @@ class RoadEdgeLaneChangeController:
     self.update_params()
     if not self.enabled:
       return
-    if self.edge_cooldown_timer > 0.0:
-      self.edge_cooldown_timer -= DT_MDL
+
     self._update_edge_detection(road_edge_stds, lane_line_probs)
     if self.left_edge_timer > MAX_EDGE_DETECTION_TIME or self.right_edge_timer > MAX_EDGE_DETECTION_TIME:
       self._reset_state()
 
   def should_trigger_lane_change(self, carstate, lateral_active):
-    if not self.enabled or not (self.left_edge_detected or self.right_edge_detected):
+    if not self.enabled:
       return False, log.LaneChangeDirection.none
-    self._check_safety_conditions(carstate, lateral_active)
-    if not self.safe_for_edge_lane_change:
-      return False, log.LaneChangeDirection.none
-    direction = self._determine_lane_change_direction(carstate)
-    if direction != log.LaneChangeDirection.none and not self.edge_lane_change_active:
-      return True, direction
     return False, log.LaneChangeDirection.none
 
-  def trigger_edge_lane_change(self, direction):
-    if direction == log.LaneChangeDirection.none:
+  def is_lane_change_blocked(self, direction):
+    if not self.enabled:
       return False
-    self.edge_triggered_direction = direction
-    self.edge_lane_change_active = True
-    self.edge_cooldown_timer = EDGE_COOLDOWN_TIME
-    return True
 
-  def _check_safety_conditions(self, carstate, lateral_active):
-    v_ego = carstate.vEgo
-    self.safe_for_edge_lane_change = (
-          v_ego >= EDGE_LANE_CHANGE_SPEED_MIN and
-          lateral_active and
-          self.edge_cooldown_timer <= 0.0 and
-          self.desire_helper.lane_change_state == log.LaneChangeState.off and
-          not (carstate.leftBlindspot or carstate.rightBlindspot) and
-          not carstate.brakePressed
-    )
+    if direction == log.LaneChangeDirection.left:
+      return self.left_edge_detected
+    elif direction == log.LaneChangeDirection.right:
+      return self.right_edge_detected
 
-  def _determine_lane_change_direction(self, carstate):
-    if self.left_edge_detected and not carstate.rightBlindspot:
-      return log.LaneChangeDirection.right
-    if self.right_edge_detected and not carstate.leftBlindspot:
-      return log.LaneChangeDirection.left
-    return log.LaneChangeDirection.none
+    return False
 
-  def update_lane_change_state(self):
-    if self.edge_lane_change_active and self.desire_helper.lane_change_state == log.LaneChangeState.off:
-      self.edge_lane_change_active = False
-      self.edge_triggered_direction = log.LaneChangeDirection.none
+  def can_change_lane_left(self):
+    return not self.left_edge_detected if self.enabled else True
 
-  def should_override_blinker(self, carstate):
-    if not self.edge_lane_change_active:
-      return False, False
-    left_blinker = self.edge_triggered_direction == log.LaneChangeDirection.left
-    right_blinker = self.edge_triggered_direction == log.LaneChangeDirection.right
-    return True, (left_blinker, right_blinker)
+  def can_change_lane_right(self):
+    return not self.right_edge_detected if self.enabled else True
 
   @property
   def edge_detected(self):
