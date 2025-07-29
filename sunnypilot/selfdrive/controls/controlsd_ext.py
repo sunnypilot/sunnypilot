@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import cereal.messaging as messaging
-from cereal import custom
+from cereal import log, custom
 
 from opendbc.car import structs
 from openpilot.common.params import Params
@@ -44,12 +44,32 @@ class ControlsExt:
     # MADS not available, use stock state to engage
     return bool(sm['selfdriveState'].active)
 
+  @staticmethod
+  def get_radar_state(ld: log.RadarState.LeadData) -> dict:
+    return {
+      "dRel": ld.dRel,
+      "yRel": ld.yRel,
+      "vRel": ld.vRel,
+      "aRel": ld.aRel,
+      "vLead": ld.vLead,
+      "dPath": ld.dPath,
+      "vLat": ld.vLat,
+      "vLeadK": ld.vLeadK,
+      "aLeadK": ld.aLeadK,
+      "fcw": ld.fcw,
+      "status": ld.status,
+      "aLeadTau": ld.aLeadTau,
+      "modelProb": ld.modelProb,
+      "radar": ld.radar,
+      "radarTrackId": ld.radarTrackId,
+    }
+
   def state_control_ext(self, sm: messaging.SubMaster) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
 
     if sm.updated['radarState']:
-      CC_SP.leadOne = sm['radarState'].leadOne
-      CC_SP.leadTwo = sm['radarState'].leadTwo
+      CC_SP.leadOne = self.get_radar_state(sm['radarState'].leadOne)
+      CC_SP.leadTwo = self.get_radar_state(sm['radarState'].leadTwo)
 
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads
