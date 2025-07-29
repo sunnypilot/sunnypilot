@@ -84,55 +84,56 @@
     </message>
     <message>
         <source>Prevent large data uploads when on a metered cellular connection</source>
-        <translation type="unfinished"></translation>
+        <translation>종량제 데이터 요금제를 사용 중인 경우 대용량 파일 업로드를 제한합니다</translation>
     </message>
     <message>
         <source>default</source>
-        <translation type="unfinished"></translation>
+        <translation>기본값</translation>
     </message>
     <message>
         <source>metered</source>
-        <translation type="unfinished"></translation>
+        <translation>종량제</translation>
     </message>
     <message>
         <source>unmetered</source>
-        <translation type="unfinished"></translation>
+        <translation>무제한</translation>
     </message>
     <message>
         <source>Wi-Fi Network Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>종량제 Wi-Fi 네트워크</translation>
     </message>
     <message>
         <source>Prevent large data uploads when on a metered Wi-Fi connection</source>
-        <translation type="unfinished"></translation>
+        <translation>Wi-Fi 네트워크가 종량제인 경우, 대용량 파일 업로드를 제한합니다</translation>
     </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>
     <message>
         <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
+        <translation>방향지시등으로 자동차선변경</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
+        <translation>방향지시등으로 자동차선변경시 차선변경 전까지의 지연시간을 지정하세요. 지연시간을 설정하면 핸들을 건드리지 않아도 지정된 지연시간 후 자동으로 차선을 변경합니다. 기본값은 &quot;조향 필요&quot; 입니다.
+기능사용시 실제 교통상황에 유의해 주세요.</translation>
     </message>
     <message>
         <source>s</source>
-        <translation type="unfinished"></translation>
+        <translation>초</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>꺼짐</translation>
     </message>
     <message>
         <source>Nudge</source>
-        <translation type="unfinished"></translation>
+        <translation>조향 필요</translation>
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
+        <translation>즉시</translation>
     </message>
 </context>
 <context>
@@ -181,35 +182,35 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable GitHub runner service</source>
-        <translation type="unfinished"></translation>
+        <translation>GitHub runner 서비스 활성화</translation>
     </message>
     <message>
         <source>Enables or disables the github runner service.</source>
-        <translation type="unfinished"></translation>
+        <translation>github runner 서비스를 활성화/비활성화 합니다.</translation>
     </message>
     <message>
         <source>Error Log</source>
-        <translation type="unfinished"></translation>
+        <translation>오류 로그</translation>
     </message>
     <message>
         <source>VIEW</source>
-        <translation type="unfinished">보기</translation>
+        <translation>보기</translation>
     </message>
     <message>
         <source>View the error log for sunnypilot crashes.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot이 충돌할때의 오류 로그를 확인합니다.</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot 가감속 제어 (Alpha)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished"></translation>
+        <translation>경고: 이 차량에서 openpilot 가감속 제어는 alpha 버전이며, 차량의 기본 긴급 제동을 비활성화합니다</translation>
     </message>
     <message>
         <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 차량에서는 openpilot 가감속 제어 대신 차량순정 ACC (어댑티브 크루즈 컨트롤) 시스템을 기본값으로 사용합니다. 이 설정을 활성화하면 openpilot 가감속 제어를 대신 사용합니다. 활성화시에는 실험모드 사용을 권장합니다.</translation>
     </message>
 </context>
 <context>
@@ -236,11 +237,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)</source>
-        <translation>운전자 모니터링이 잘 되는지 확인하기 위해 후면 카메라를 미리 봅니다. (차량 시동이 꺼져 있어야 합니다)</translation>
+        <translation>운전자 모니터링이 잘 되는지 확인하기 위해 후면 카메라를 확인합니다. (차량 시동이 꺼져 있어야 합니다)</translation>
     </message>
     <message>
         <source>Reset Calibration</source>
-        <translation>캘리브레이션</translation>
+        <translation>캘리브레이션 초기화</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -324,7 +325,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disengage to Reboot</source>
-        <translation>재부팅하려면 연결을 해제하세요</translation>
+        <translation>재부팅하려면 sunnypilot을 해제하세요</translation>
     </message>
     <message>
         <source>Are you sure you want to power off?</source>
@@ -332,7 +333,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disengage to Power Off</source>
-        <translation>전원을 끄려면 연결을 해제하세요</translation>
+        <translation>전원을 끄려면 sunnypilot을 해제하세요</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -348,7 +349,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Pair Device</source>
-        <translation>장치 동기화</translation>
+        <translation>장치 페어링</translation>
     </message>
     <message>
         <source>PAIR</source>
@@ -356,22 +357,22 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disengage to Reset Calibration</source>
-        <translation type="unfinished"></translation>
+        <translation>캘리브레이션을 초기화하려면 sunnypilot을 해제하세요</translation>
     </message>
     <message>
         <source> Resetting calibration will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
+        <translation>차량의 시동을 켜면 캘리브레이션 초기화가 계속됩니다</translation>
     </message>
 </context>
 <context>
     <name>DevicePanelSP</name>
     <message>
         <source>Driver Camera Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>운전자 카메라 확인</translation>
     </message>
     <message>
         <source>Training Guide</source>
-        <translation type="unfinished"></translation>
+        <translation>트레이닝 가이드</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -379,11 +380,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Language</source>
-        <translation type="unfinished"></translation>
+        <translation>언어</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
-        <translation type="unfinished">트레이닝 가이드를 다시 확인하시겠습니까?</translation>
+        <translation>트레이닝 가이드를 다시 확인하시겠습니까?</translation>
     </message>
     <message>
         <source>Review</source>
@@ -391,55 +392,55 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Select a language</source>
-        <translation type="unfinished">언어를 선택하세요</translation>
+        <translation>언어를 선택하세요</translation>
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">재부팅</translation>
+        <translation>재부팅</translation>
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">전원 끄기</translation>
+        <translation>전원 끄기</translation>
     </message>
     <message>
         <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>오프로드 모드</translation>
     </message>
     <message>
         <source>Are you sure you want to exit Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>상시 오프로드 모드를 종료할까요?</translation>
     </message>
     <message>
         <source>Confirm</source>
-        <translation type="unfinished">확인</translation>
+        <translation>확인</translation>
     </message>
     <message>
         <source>Are you sure you want to enter Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>상시 오프로드 모드를 시작할까요?</translation>
     </message>
     <message>
         <source>Disengage to Enter Always Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>상시 오프로드 모드로 진입하려면 sunnypilot을 해제하세요</translation>
     </message>
     <message>
         <source>Exit Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>상시 오프로드모드 종료</translation>
     </message>
     <message>
         <source>Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>상시 오프로드 모드</translation>
     </message>
     <message>
         <source>Quiet Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>조용히 모드</translation>
     </message>
     <message>
         <source>Reset Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>설정 초기화</translation>
     </message>
     <message>
         <source>Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back.</source>
-        <translation type="unfinished"></translation>
+        <translation>정말로 모든 sunnypilot의 설정을 기본값으로 초기화 할까요? 이 작업은 되돌릴 수 없습니다.</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -447,34 +448,34 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>The reset cannot be undone. You have been warned.</source>
-        <translation type="unfinished"></translation>
+        <translation>초기화를 하면 되돌릴 수 없습니다. 계속하시겠습니까?</translation>
     </message>
 </context>
 <context>
     <name>DriveStats</name>
     <message>
         <source>Drives</source>
-        <translation type="unfinished"></translation>
+        <translation>주행 횟수</translation>
     </message>
     <message>
         <source>Hours</source>
-        <translation type="unfinished"></translation>
+        <translation>주행 시간 (시)</translation>
     </message>
     <message>
         <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
+        <translation>전체</translation>
     </message>
     <message>
         <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
+        <translation>지난 주 통계</translation>
     </message>
     <message>
         <source>KM</source>
-        <translation type="unfinished"></translation>
+        <translation>KM</translation>
     </message>
     <message>
         <source>Miles</source>
-        <translation type="unfinished"></translation>
+        <translation>마일</translation>
     </message>
 </context>
 <context>
@@ -523,11 +524,13 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>sunnypilot learns to drive by watching humans, like you, drive.
 
 Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot은 여러분 같은 사람들의 운전을 보고 학습합니다.
+
+파이어호스모드는 openpilot의 드라이빙 모델의 개선을 위해 여러분의 운전 정보를 자동으로 수집하고 업로드, 학습 해 더욱 양질의 모델을 만들 수 있게 하는 모드입니다.</translation>
     </message>
     <message>
         <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;비활성화&lt;/span&gt;: 종량제가 아닌 네트워크에 연결하세요</translation>
     </message>
 </context>
 <context>
@@ -549,7 +552,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>HyundaiSettings</name>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>끄기</translation>
     </message>
     <message>
         <source>Dynamic</source>
@@ -561,31 +564,31 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Custom Longitudinal Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>커스텀 가감속 튜닝</translation>
     </message>
     <message>
         <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 기능은 openpilot 가감속 제어가 활성화되어야 사용할 수 있습니다</translation>
     </message>
     <message>
         <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
-        <translation type="unfinished"></translation>
+        <translation>장치 패널에서 &quot;상시 오프로드&quot;을 활성화 하거나, 차량 시동을 끄고 해당 옵션을 선택하세요.</translation>
     </message>
     <message>
         <source>Off: Uses default tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>끄기: 기본 튜닝값 사용</translation>
     </message>
     <message>
         <source>Dynamic: Adjusts acceleration limits based on current speed</source>
-        <translation type="unfinished"></translation>
+        <translation>Dynamic: 현재 속도를 기반으로 가속 제한을 조정합니다</translation>
     </message>
     <message>
         <source>Predictive: Uses future trajectory data to anticipate needed adjustments</source>
-        <translation type="unfinished"></translation>
+        <translation>Predictive: 추후 조향정보를 바탕으로 가감속을 제어합니다</translation>
     </message>
     <message>
         <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot의 가감속 제어를 이용하여 주행시 가감속 제어량을 조정하고 주행 경험을 미세조정하세요</translation>
     </message>
 </context>
 <context>
@@ -609,163 +612,163 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Auto Lane Change: Delay with Blind Spot</source>
-        <translation type="unfinished"></translation>
+        <translation>자동차선변경: 사각지대 차량 감지시 지연 타이머 작동</translation>
     </message>
     <message>
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 기능을 활성화하면 사각지대에 차량이 감지되는 경우, 자동차선변경을 지연합니다.</translation>
     </message>
 </context>
 <context>
     <name>LateralPanel</name>
     <message>
         <source>Modular Assistive Driving System (MADS)</source>
-        <translation type="unfinished"></translation>
+        <translation>모듈형 운전 지원 시스템 (MADS)</translation>
     </message>
     <message>
         <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>MADS 기능을 활성화 합니다. 비활성화 하면 순정 sunnypilot 설정/해제로 돌아갑니다</translation>
     </message>
     <message>
         <source>Customize MADS</source>
-        <translation type="unfinished"></translation>
+        <translation>MADS 커스터마이징</translation>
     </message>
     <message>
         <source>Customize Lane Change</source>
-        <translation type="unfinished"></translation>
+        <translation>자동차선변경 커스터마이징</translation>
     </message>
     <message>
         <source>Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).</source>
-        <translation type="unfinished"></translation>
+        <translation>차선중앙유지와 ACC(어댑티브 크루즈 컨트롤)을 별도로 활성화 할 수 있게 합니다</translation>
     </message>
     <message>
         <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
+        <translation>차량 호환성을 확인하려면 차량의 시동을 걸어주세요</translation>
     </message>
     <message>
         <source>This platform supports all MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 차량은 MADS의 모든 기능을 지원합니다</translation>
     </message>
     <message>
         <source>This platform supports limited MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 차량은 MADS의 일부 기능을 지원합니다</translation>
     </message>
 </context>
 <context>
     <name>MadsSettings</name>
     <message>
         <source>Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation>크루즈 토글시 같이 토글</translation>
     </message>
     <message>
         <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>참고: 차로중앙유지 버튼이 없는 차량의 경우, 해당 기능을 끄면 차량중앙유지를 활성할 방법이 없어질 수 있습니다</translation>
     </message>
     <message>
         <source>Unified Engagement Mode (UEM)</source>
-        <translation type="unfinished"></translation>
+        <translation>통합 활성화 모드 (UEM)</translation>
     </message>
     <message>
         <source>Engage lateral and longitudinal control with cruise control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>크루즈 컨트롤 활성화시 조향보조와 가감속제어를 모두 활성화합니다</translation>
     </message>
     <message>
         <source>Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.</source>
-        <translation type="unfinished"></translation>
+        <translation>참고: 조향보조가 UEM을 통해 활성화 된 경우, 수동으로 비활성화 하거나 차량의 시동을 종료할 때 까지 활성화 됩니다.</translation>
     </message>
     <message>
         <source>Remain Active</source>
-        <translation type="unfinished"></translation>
+        <translation>계속 활성화</translation>
     </message>
     <message>
         <source>Disengage</source>
-        <translation type="unfinished"></translation>
+        <translation>해제</translation>
     </message>
     <message>
         <source>Steering Mode on Brake Pedal</source>
-        <translation type="unfinished"></translation>
+        <translation>브레이크를 밟았을 때 조향보조</translation>
     </message>
     <message>
         <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
+        <translation>차량 호환성을 확인하려면 차량의 시동을 걸어주세요</translation>
     </message>
     <message>
         <source>This feature defaults to OFF, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>차량 제약사항으로 인해 이 기능은 &quot;끄기&quot;로 유지됩니다</translation>
     </message>
     <message>
         <source>This feature defaults to ON, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>차량 제약사항으로 인해 이 기능은 &quot;켜기&quot;로 유지됩니다</translation>
     </message>
     <message>
         <source>This platform only supports Disengage mode due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
+        <translation>이 차량은 차량 제약사항으로 인해 &quot;해제&quot; 설정만 지원됩니다</translation>
     </message>
     <message>
         <source>Remain Active: ALC will remain active when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>계속 활성화: 브레이크를 밟아도 자동차선변경이 계속 활성화 상태로 유지됩니다</translation>
     </message>
     <message>
         <source>Pause</source>
-        <translation type="unfinished"></translation>
+        <translation>일시중단</translation>
     </message>
     <message>
         <source>Pause: ALC will pause when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>일시중단: 브레이크를 밟으면 자동차선변경이 일시중단됩니다</translation>
     </message>
     <message>
         <source>Disengage: ALC will disengage when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>해제: 브레이크를 밟으면 자동차선변경이 해제됩니다</translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot에서 브레이크를 밟았을 때 자동차선변경이 어떻게 동작할지 설정하세요</translation>
     </message>
 </context>
 <context>
     <name>MaxTimeOffroad</name>
     <message>
         <source>Max Time Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>오프로드 최대시간</translation>
     </message>
     <message>
         <source>Device will automatically shutdown after set time once the engine is turned off.&lt;br/&gt;(30h is the default)</source>
-        <translation type="unfinished"></translation>
+        <translation>시동이 꺼진 후 기기가 꺼질 때 까지의 시간을 지정하세요.&lt;br/&gt;(기본값: 30시간)</translation>
     </message>
     <message>
         <source>Always On</source>
-        <translation type="unfinished"></translation>
+        <translation>항상 켜짐</translation>
     </message>
     <message>
         <source>h</source>
-        <translation type="unfinished"></translation>
+        <translation>시간</translation>
     </message>
     <message>
         <source>m</source>
-        <translation type="unfinished"></translation>
+        <translation>분</translation>
     </message>
     <message>
         <source> (default)</source>
-        <translation type="unfinished"></translation>
+        <translation> (기본값)</translation>
     </message>
 </context>
 <context>
     <name>ModelsPanel</name>
     <message>
         <source>Current Model</source>
-        <translation type="unfinished"></translation>
+        <translation>현재 모델</translation>
     </message>
     <message>
         <source>SELECT</source>
-        <translation type="unfinished">선택</translation>
+        <translation>선택</translation>
     </message>
     <message>
         <source>No custom model selected!</source>
-        <translation type="unfinished"></translation>
+        <translation>커스텀 모델이 선택되지 않았습니다!</translation>
     </message>
     <message>
         <source>Driving</source>
-        <translation type="unfinished"></translation>
+        <translation>운전</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -773,35 +776,35 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Vision</source>
-        <translation type="unfinished"></translation>
+        <translation>비전</translation>
     </message>
     <message>
         <source>Policy</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">정책</translation>
     </message>
     <message>
         <source>Downloading %1 model [%2]... (%3%)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 모델 다운로드 중 [%2]... (%3%)</translation>
     </message>
     <message>
         <source>%1 model [%2] %3</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 모델 [%2] %3</translation>
     </message>
     <message>
         <source>downloaded</source>
-        <translation type="unfinished"></translation>
+        <translation>다운로드 완료</translation>
     </message>
     <message>
         <source>ready</source>
-        <translation type="unfinished"></translation>
+        <translation>준비 완료</translation>
     </message>
     <message>
         <source>from cache</source>
-        <translation type="unfinished"></translation>
+        <translation>캐시됨</translation>
     </message>
     <message>
         <source>%1 model [%2] download failed</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 모델 [%2] 다운로드 실패</translation>
     </message>
     <message>
         <source>%1 model [%2] pending...</source>
@@ -809,43 +812,43 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Fetching models...</source>
-        <translation type="unfinished"></translation>
+        <translation>모델 가져오는 중...</translation>
     </message>
     <message>
         <source>Use Default</source>
-        <translation type="unfinished"></translation>
+        <translation>기본값 사용</translation>
     </message>
     <message>
         <source>Select a Model</source>
-        <translation type="unfinished"></translation>
+        <translation>모델 선택</translation>
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished"></translation>
+        <translation>기본값</translation>
     </message>
     <message>
         <source>Model download has started in the background.</source>
-        <translation type="unfinished"></translation>
+        <translation>모델 다운로드가 백그라운드에서 진행 중입니다.</translation>
     </message>
     <message>
         <source>We STRONGLY suggest you to reset calibration.</source>
-        <translation type="unfinished"></translation>
+        <translation>캘리브레이션 초기화를 &quot;적극&quot; 권장합니다.</translation>
     </message>
     <message>
         <source>Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
+        <translation>지금 진행할까요</translation>
     </message>
     <message>
         <source>Reset Calibration</source>
-        <translation type="unfinished">캘리브레이션</translation>
+        <translation>캘리브레이션 초기화</translation>
     </message>
     <message>
         <source>Driving Model Selector</source>
-        <translation type="unfinished"></translation>
+        <translation>운전 모델 선택</translation>
     </message>
     <message>
         <source>Warning: You are on a metered connection!</source>
-        <translation type="unfinished"></translation>
+        <translation>경고: 현재 종량제 네트워크에 연결되어 있습니다!</translation>
     </message>
     <message>
         <source>Continue</source>
@@ -853,7 +856,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>on Metered</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">종량제 네트워크 사용 중</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -905,23 +908,23 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>NeuralNetworkLateralControl</name>
     <message>
         <source>Neural Network Lateral Control (NNLC)</source>
-        <translation type="unfinished"></translation>
+        <translation>인공신경망기반 조향보조 (NNLC)</translation>
     </message>
     <message>
         <source>NNLC is currently not available on this platform.</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC가 이 차량에서 지원되지 않습니다.</translation>
     </message>
     <message>
         <source>Start the car to check car compatibility</source>
-        <translation type="unfinished"></translation>
+        <translation>차량 호환성을 확인하려면 차량의 시동을 걸어주세요</translation>
     </message>
     <message>
         <source>NNLC Not Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC 로드되지 않음</translation>
     </message>
     <message>
         <source>NNLC Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC 로드 완료</translation>
     </message>
     <message>
         <source>Match</source>
@@ -941,7 +944,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller, with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">NNFF로 불렸던 기능으로, 기존 조향보조 시스템을 각 차량별로 학습된 인공신경망 모델로 교체해 더욱 정확한 조향제어를 제공합니다.</translation>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server</source>
@@ -953,11 +956,11 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>if there are any issues:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">문제가 있는 경우:</translation>
     </message>
     <message>
         <source>and donate logs to get NNLC loaded for your car:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">로그를 제공해 차량에 NNLC를 활성화하세요</translation>
     </message>
 </context>
 <context>
@@ -1010,7 +1013,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot이 현재 상시 오프로드모드 입니다. 상시 오프로드모드가 비활성화 될 때 까지 sunnypilot을 활성화 할 수 없습니다. 상시 오프로드모드를 해제하려면 &quot;설정&quot; -&gt; &quot;장치&quot; 에서 상시 오프로드모드를 종료하세요</translation>
     </message>
 </context>
 <context>
@@ -1100,23 +1103,23 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>PlatformSelector</name>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량</translation>
     </message>
     <message>
         <source>SEARCH</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">검색</translation>
     </message>
     <message>
         <source>Search your vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">내 차량 찾기</translation>
     </message>
     <message>
         <source>Enter model year (e.g., 2021) and model name (Toyota Corolla):</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량 연식과 모델을 입력하세요:</translation>
     </message>
     <message>
         <source>SEARCHING</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">검색 중</translation>
     </message>
     <message>
         <source>REMOVE</source>
@@ -1124,15 +1127,15 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>This setting will take effect immediately.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">이 설정은 즉시 적용됩니다</translation>
     </message>
     <message>
         <source>This setting will take effect once the device enters offroad state.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">오프로드 상태로 진입하면 이 설정이 즉시 적용됩니다</translation>
     </message>
     <message>
         <source>Vehicle Selector</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량 선택</translation>
     </message>
     <message>
         <source>Confirm</source>
@@ -1144,35 +1147,35 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>No vehicles found for query: %1</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">검색어 (%1) 에 맞는 차량이 없습니다.</translation>
     </message>
     <message>
         <source>Select a vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량을 선택하세요</translation>
     </message>
     <message>
         <source>Unrecognized Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">미인식 차량</translation>
     </message>
     <message>
         <source>Fingerprinted automatically</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량지문 자동인식됨</translation>
     </message>
     <message>
         <source>Manually selected</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">수동 선택</translation>
     </message>
     <message>
         <source>Not fingerprinted or manually selected</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량지문 미인식 및 수동선택되지 않음</translation>
     </message>
     <message>
         <source>Select vehicle to force fingerprint manually.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">강제로 차량 지문값을 가져오려면 차량의 시동을 거세요</translation>
     </message>
     <message>
         <source>Colors represent fingerprint status:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">글씨 색상은 차량지문 수집상태를 의미합니다:</translation>
     </message>
 </context>
 <context>
@@ -1334,7 +1337,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnylink</translation>
     </message>
     <message>
         <source>Toggles</source>
@@ -1346,11 +1349,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Trips</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">트립</translation>
     </message>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">차량</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -1362,15 +1365,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Steering</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">조향</translation>
     </message>
     <message>
         <source>Models</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">모델</translation>
     </message>
     <message>
         <source>Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">크루즈</translation>
     </message>
     <message>
         <source>Visuals</source>
@@ -1574,7 +1577,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>REGIST...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">등록 중</translation>
     </message>
     <message>
         <source>ONLINE</source>
@@ -1586,7 +1589,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SUNNYLINK</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">SUNNYLINK</translation>
     </message>
 </context>
 <context>
@@ -1668,15 +1671,15 @@ This may take up to a minute.</source>
     <name>SoftwarePanelSP</name>
     <message>
         <source>Search Branch</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">브랜치 검색</translation>
     </message>
     <message>
         <source>Enter search keywords, or leave blank to list all branches.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">키워드를 입력하거나, 빈 칸으로 입력해 모든 브랜치를 확인하세요</translation>
     </message>
     <message>
         <source>No branches found for keywords: %1</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">해당 키워드 (%1) 으로 브랜치를 찾을수 없었어요</translation>
     </message>
     <message>
         <source>Select a branch</source>
@@ -1737,19 +1740,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnylink 활성화</translation>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">🎉돌아오신 것을 환영합니다! sunnylink를 다시 활성화 해주셔서 감사합니다! 🚀</translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">👋sunnylink를 떠나신다니, 정말 아쉬워요 😢, 다시 돌아오는 날까지 기다릴께요 🎉.</translation>
     </message>
     <message>
         <source>Device ID</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">장치 ID</translation>
     </message>
     <message>
         <source>N/A</source>
@@ -1757,19 +1760,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor Status</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">스폰서 상태</translation>
     </message>
     <message>
         <source>SPONSOR</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">스폰서</translation>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot의 스폰서가 되어 sunnylink의 신규기능을 미리 맛보세요</translation>
     </message>
     <message>
         <source>Pair GitHub Account</source>
-        <translation type="unfinished"></translation>
+        <translation>GitHub 계정 연동</translation>
     </message>
     <message>
         <source>PAIR</source>
@@ -1777,118 +1780,118 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">GitHub 계정을 연동하면 sunnylink API 접근 등의 스폰서 특전 기능들을 이용할 수 있습니다.</translation>
     </message>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot 동글 ID를 찾을 수 없어요. 인터넷 연결이 불안정하거나 sunnylink 등록 오류인거 같아요. 재부팅후 다시 시도해주세요.</translation>
     </message>
     <message>
         <source>Not Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>스폰서 아님</translation>
     </message>
     <message>
         <source>Paired</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">페어링 됨</translation>
     </message>
     <message>
         <source>Not Paired</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">페어링 되지 않음</translation>
     </message>
     <message>
         <source>THANKS ♥</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">감사합니다 ♥</translation>
     </message>
     <message>
         <source>Backup Settings</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">설정 백업</translation>
     </message>
     <message>
         <source>Are you sure you want to backup sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot 설정값을 백업할까요?</translation>
     </message>
     <message>
         <source>Back Up</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">백업</translation>
     </message>
     <message>
         <source>Restore Settings</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">설정 복원</translation>
     </message>
     <message>
         <source>Are you sure you want to restore the last backed up sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot 설정을 마지막 백업 버전으로 복원할까요?</translation>
     </message>
     <message>
         <source>Restore</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">복원</translation>
     </message>
     <message>
         <source>Backup in progress %1%</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">백업 진행 중 %1%</translation>
     </message>
     <message>
         <source>Backup Failed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">백업 실패</translation>
     </message>
     <message>
         <source>Settings backup completed.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">설정 백업이 완료되었어요</translation>
     </message>
     <message>
         <source>Restore in progress %1%</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">복원 진행 중 %1%</translation>
     </message>
     <message>
         <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">복원 실패</translation>
     </message>
     <message>
         <source>Unable to restore the settings, try again later.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">설정을 복원할 수 없었어요. 나중에 다시 시도해주세요.</translation>
     </message>
     <message>
         <source>Settings restored. Confirm to restart the interface.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">설정 복원이 완료되었어요. &quot;확인&quot;을 눌러 인터페이스를 재시작해주세요.</translation>
     </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
     <message>
         <source>Scan the QR code to login to your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">QR코드를 스캔해 GitHub 계정에 로그인하세요</translation>
     </message>
     <message>
         <source>Follow the prompts to complete the pairing process</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">페어링을 완료하려면 표시된 내용을 따라주세요</translation>
     </message>
     <message>
         <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">&quot;sunnylink&quot; 패널에 다시 들어와 스폰서 상태를 확인해주세요</translation>
     </message>
     <message>
         <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">스폰서 상태가 제대로 갱신되지 않았다면, 디스코드 커뮤니티 (https://discord.gg/sunnypilot) 의 moderator 에게 문의해주세요</translation>
     </message>
     <message>
         <source>Scan the QR code to visit sunnyhaibin&apos;s GitHub Sponsors page</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">QR코드를 스캔해 sunnyhalbin의 GitHub Sponsors 페이지에 접속하세요</translation>
     </message>
     <message>
         <source>Choose your sponsorship tier and confirm your support</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">스폰서 티어를 선택하고 확인하세요</translation>
     </message>
     <message>
         <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">디스코드 커뮤니티 (https://discord.gg/sunnypilot) 에 접속해 moderator 에게 스폰서 상태를 확인해달라고 요청하세요</translation>
     </message>
     <message>
         <source>Pair your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">GitHub 계정 페어링하기</translation>
     </message>
     <message>
         <source>Early Access: Become a sunnypilot Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">미리 해보기: Sunnypilot의 스폰서가 되세요</translation>
     </message>
 </context>
 <context>
@@ -1903,11 +1906,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Welcome to sunnypilot</source>
-        <translation>오픈 파일럿에 오신 것을 환영합니다.</translation>
+        <translation>sunnypilot에 오신 것을 환영합니다.</translation>
     </message>
     <message>
         <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
-        <translation>오픈파일럿을 사용하려면 이용약관에 동의해야 합니다. 최신 약관은 &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; 에서 최신 약관을 읽은 후 계속하세요.</translation>
+        <translation>sunnypilot을 사용하려면 이용약관에 동의해야 합니다. 최신 약관은 &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; 에서 최신 약관을 읽은 후 계속하세요.</translation>
     </message>
 </context>
 <context>
@@ -2010,11 +2013,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">동적 실험모드 제어 활성화</translation>
     </message>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">활성화 하면 모델을 통해 sunnypilot ACC 또는 단대단 가감속 제어를 사용할 지 자동으로 선택합니다</translation>
     </message>
     <message>
         <source>Enable sunnypilot</source>
@@ -2022,15 +2025,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot 자체 ACC(어댑티브 크루즈 컨트롤)와 차선중앙유지 시스템을 사용합니다. 이 기능을 사용할 때에는 반드시 전방주시 및 교통상황에 유의하십시오.</translation>
     </message>
     <message>
         <source> Changing this setting will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
+        <translation>시동이 켜져있는 상태에서는 이 설정을 변경하면 openpilot 을 재시작합니다.</translation>
     </message>
     <message>
         <source>openpilot longitudinal control may come in a future update.</source>
-        <translation type="unfinished"></translation>
+        <translation>추후 업데이트에서 openpilot 가감속 제어가 추가될 수 있습니다</translation>
     </message>
 </context>
 <context>
