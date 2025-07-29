@@ -210,7 +210,7 @@ jobs:
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4
         with:
-          name: artifact-name
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
           path: ${{ env.OUTPUT_DIR }}/artifact_name.txt
 
       - name: Re-enable powersave
