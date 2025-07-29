@@ -25,27 +25,6 @@ struct ModularAssistiveDrivingSystem {
   }
 }
 
-# Same struct as Log.RadarState.LeadData
-struct LeadData {
-  dRel @0 :Float32;
-  yRel @1 :Float32;
-  vRel @2 :Float32;
-  aRel @3 :Float32;
-  vLead @4 :Float32;
-  dPath @6 :Float32;
-  vLat @7 :Float32;
-  vLeadK @8 :Float32;
-  aLeadK @9 :Float32;
-  fcw @10 :Bool;
-  status @11 :Bool;
-  aLeadTau @12 :Float32;
-  modelProb @13 :Float32;
-  radar @14 :Bool;
-  radarTrackId @15 :Int32 = -1;
-
-  aLeadDEPRECATED @5 :Float32;
-}
-
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 }
@@ -195,8 +174,6 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
   params @1 :List(Param);
-  leadOne @2 :LeadData;
-  leadTwo @3 :LeadData;
 
   struct Param {
     key @0 :Text;
