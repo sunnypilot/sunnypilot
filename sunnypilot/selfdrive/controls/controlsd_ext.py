@@ -45,7 +45,7 @@ class ControlsExt:
     return bool(sm['selfdriveState'].active)
 
   @staticmethod
-  def get_radar_state(ld: log.RadarState.LeadData) -> dict:
+  def get_lead_data(ld: log.RadarState.LeadData) -> dict:
     return {
       "dRel": ld.dRel,
       "yRel": ld.yRel,
@@ -68,8 +68,8 @@ class ControlsExt:
     CC_SP = custom.CarControlSP.new_message()
 
     if sm.updated['radarState']:
-      CC_SP.leadOne = self.get_radar_state(sm['radarState'].leadOne)
-      CC_SP.leadTwo = self.get_radar_state(sm['radarState'].leadTwo)
+      CC_SP.leadOne = self.get_lead_data(sm['radarState'].leadOne)
+      CC_SP.leadTwo = self.get_lead_data(sm['radarState'].leadTwo)
 
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads
