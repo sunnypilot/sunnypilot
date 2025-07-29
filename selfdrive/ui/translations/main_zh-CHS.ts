@@ -3045,8 +3045,12 @@ Are you sure you want to delete all the maps?</source>
         <translation>安装</translation>
     </message>
     <message>
+        <source>Not Installed</source>
+        <translation>未安装</translation>
+    </message>
+    <message>
         <source>Archived key: </source>
-        <translation>归档密钥</translation>
+        <translation>存储密钥: </translation>
     </message>
     <message>
         <source>Enter your Car Security Key</source>
