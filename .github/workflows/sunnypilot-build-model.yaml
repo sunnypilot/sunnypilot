@@ -197,7 +197,11 @@ jobs:
             --upstream-branch "${{ inputs.upstream_branch }}" \
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
+      - name: Write artifact name to file
+        run: echo "model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}" > ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
       - name: Upload Build Artifacts
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}

@@ -135,10 +135,22 @@ jobs:
             exit 1
           fi
 
+      - name: Download artifact name file
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name
+          path: artifact_name
+
+      - name: Read artifact name
+        id: read-artifact-name
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
       - name: Download and extract model artifact
         uses: actions/download-artifact@v4
         with:
-          name: model-${{ inputs.custom_name || inputs.upstream_branch }}${{ inputs.artifact_suffix }}
+          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
       - name: Copy model artifact(s) to GitLab recompiled dir
