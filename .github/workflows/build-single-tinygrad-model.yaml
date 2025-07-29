@@ -158,11 +158,18 @@ jobs:
           ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}"
           mkdir -p "$ARTIFACT_DIR"
           for path in output/*; do
-            [ -d "$path" ] || continue
+            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
+              continue
+            fi
             name="$(basename "$path")"
-            mkdir -p "$ARTIFACT_DIR/$name"
-            cp -r "$path"/* "$ARTIFACT_DIR/$name/"
-            echo "Copied $name -> $ARTIFACT_DIR/$name"
+            if [ -d "$path" ]; then
+              mkdir -p "$ARTIFACT_DIR/$name"
+              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
+              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
+            else
+              cp "$path" "$ARTIFACT_DIR/"
+              echo "Copied file $name -> $ARTIFACT_DIR/"
+            fi
           done
 
       - name: Push recompiled dir to GitLab
