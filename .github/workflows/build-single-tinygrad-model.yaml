@@ -91,6 +91,9 @@ jobs:
     secrets: inherit
 
   publish_model:
+    concurrency:
+      group: gitlab-push-${{ inputs.recompiled_dir }}
+      cancel-in-progress: false
     needs: build_model
     runs-on: ubuntu-latest
     steps:
