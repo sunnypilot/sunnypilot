@@ -95,6 +95,8 @@ jobs:
       group: gitlab-push-${{ inputs.recompiled_dir }}
       cancel-in-progress: false
     needs: build_model
+    strategy:
+      max-parallel: 0
     runs-on: ubuntu-latest
     steps:
       - name: Set up SSH
@@ -191,14 +193,7 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
-          n=0
-          until [ $n -ge 10 ]
-          do
-            git push origin main && break
-            echo "push failed, retrying"
-            git pull --rebase origin main
-            n=$((n+1))
-          done
+          git push origin main
 
       - run: |
           cd docs
@@ -231,11 +226,4 @@ jobs:
           git checkout gh-pages
           git add docs/"$(basename $JSON_FILE)"
           git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
-          n=0
-          until [ $n -ge 10 ]
-          do
-            git push origin gh-pages && break
-            echo "push failed, retrying"
-            git pull --rebase origin gh-pages
-            n=$((n+1))
-          done
+          git push origin gh-pages
