@@ -207,6 +207,12 @@ jobs:
           name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
 
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name
+          path: ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
       - name: Re-enable powersave
         if: always()
         run: |
