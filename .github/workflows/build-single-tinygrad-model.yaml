@@ -162,6 +162,11 @@ jobs:
           name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
+      - name: Remove unwanted files
+        run: |
+          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
+          find output -type f -name 'dmonitoring_model.onnx' -delete
+
       - name: Copy model artifact(s) to GitLab recompiled dir
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}

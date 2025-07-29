@@ -223,6 +223,8 @@ jobs:
       - name: Remove onnx files bc not needed for recompiled dir since they already exist from single build
         run: |
           find output -type f -name '*.onnx' -delete
+          find output -type f -name 'big_*.pkl' -delete
+          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
 
       - name: Copy model artifacts to gitlab
         env:
