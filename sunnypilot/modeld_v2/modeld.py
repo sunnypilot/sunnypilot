@@ -217,7 +217,7 @@ def main(demo=False):
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
   # messaging
-  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
+  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
