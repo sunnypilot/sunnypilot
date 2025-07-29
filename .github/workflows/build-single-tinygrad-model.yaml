@@ -96,7 +96,7 @@ jobs:
     secrets: inherit
 
   publish_model:
-    if: ${{ !inputs.bypass_push }}
+    if: ${{ !inputs.bypass_push && !cancelled() }}
     concurrency:
       group: gitlab-push-${{ inputs.recompiled_dir }}
       cancel-in-progress: false
