@@ -157,16 +157,21 @@ jobs:
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
-      - name: Pull latest JSON
+      - name: Checkout gitlab docs repo
         run: |
-          cd docs
-          git pull origin gh-pages
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
+          cd gitlab_docs
+          git checkout main
+          git sparse-checkout set --no-cone models/recompiled${{ needs.setup.outputs.recompiled_dir }}
+          cd ..
 
       - name: Validate JSON
         run: |
+          cd docs
+          git pull origin gh-pages
           python3 docs/json_parser.py \
             --json-path "${{ needs.setup.outputs.json_file }}" \
-            --recompiled-dir "gitlab_docs/models/${{ needs.setup.outputs.recompiled_dir }}" \
+            --recompiled-dir "../gitlab_docs/models/recompiled${{ needs.setup.outputs.recompiled_dir }}" \
             --version "${{ inputs.selector_version }}" \
             --sort-by-date
 
@@ -175,7 +180,6 @@ jobs:
           cd docs
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git checkout gh-pages
           git add docs/"$(basename ${{ needs.setup.outputs.json_file }})"
           git commit -m "Final update $(basename ${{ needs.setup.outputs.json_file }}) after all models" || echo "No changes to commit"
           git push origin gh-pages
