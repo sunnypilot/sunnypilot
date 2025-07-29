@@ -130,7 +130,7 @@ jobs:
       - name: Download and extract model artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: model-*
+          name: model-${{ inputs.custom_name || inputs.upstream_branch }}${{ inputs.artifact_suffix }}
           path: output
 
       - name: Copy model artifact(s) to GitLab recompiled dir
