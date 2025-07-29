@@ -82,7 +82,7 @@ class CarSpecificEvents:
       events = self.create_common_events(CS, CS_prev)
 
       if self.CP.openpilotLongitudinalControl:
-        if CS.cruiseState.standstill and not CS.brakePressed:
+        if CS.cruiseState.standstill and not (CS.brakePressed or self.CP.autoResumeSng):
           events.add(EventName.resumeRequired)
         if CS.vEgo < self.CP.minEnableSpeed:
           events.add(EventName.belowEngageSpeed)
@@ -113,7 +113,8 @@ class CarSpecificEvents:
       if self.CP.openpilotLongitudinalControl:
         if CS.vEgo < self.CP.minEnableSpeed + 0.5:
           events.add(EventName.belowEngageSpeed)
-        if CC.enabled and CS.vEgo < self.CP.minEnableSpeed:
+        if ((CC.enabled and CS.vEgo < self.CP.minEnableSpeed) or
+            ((self.CP.flags & GMFlags.CC_LONG) and CS.vEgo < self.CP.minEnableSpeed and CS.cruiseState.enabled)):
           events.add(EventName.speedTooLow)
 
       # TODO: this needs to be implemented generically in carState struct
