@@ -1946,7 +1946,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>CHECK</source>
-        <translation>查看</translation>
+        <translation>检查</translation>
     </message>
     <message>
         <source>Uninstall</source>
@@ -1971,6 +1971,18 @@ This may take up to a minute.</source>
     <message>
         <source>never</source>
         <translation>从未更新</translation>
+    </message>
+    <message>
+        <source>downloading...</source>
+        <translation>下载中...</translation>
+    </message>
+    <message>
+        <source>finalizing update...</source>
+        <translation>加载更新中...</translation>
+    </message>
+    <message>
+        <source>checking...</source>
+        <translation>检查中...</translation>
     </message>
 </context>
 <context>
