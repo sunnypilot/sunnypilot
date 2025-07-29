@@ -86,6 +86,7 @@ jobs:
       - name: Push new JSON to GitHub docs repo
         run: |
           cd docs
+          git pull origin gh-pages
           git add docs/"$(basename ${{ steps.get-json.outputs.json_file }})"
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
