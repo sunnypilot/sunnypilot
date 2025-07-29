@@ -158,6 +158,7 @@ jobs:
           ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}"
           mkdir -p "$ARTIFACT_DIR"
           for path in output/*; do
+            [ -d "$path" ] || continue
             name="$(basename "$path")"
             mkdir -p "$ARTIFACT_DIR/$name"
             cp -r "$path"/* "$ARTIFACT_DIR/$name/"
