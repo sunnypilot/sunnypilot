@@ -278,6 +278,10 @@ class DashcamServer:
         self.app.router.add_get('/api/hls/{segment_id}/{camera}/{filename}', self.get_hls_segment)
         # 保留原有的直接视频流路由作为备用
         self.app.router.add_get('/api/video/{segment_id}/{camera}', self.stream_video)
+        self.app.router.add_get('/api/video/raw/{segment_id}/{camera}', self.get_raw_video)
+        self.app.router.add_get('/api/video/info/{segment_id}/{camera}', self.get_video_info)
+        self.app.router.add_get('/api/thumbnail/{segment_id}/{camera}', self.get_thumbnail)
+        self.app.router.add_get('/api/routes/{route_name}/video_segments', self.get_route_video_segments)
 
         # 静态文件服务
         static_path = Path(__file__).parent / 'web'
@@ -396,11 +400,50 @@ class DashcamServer:
             route_dict['start_time'] = route.start_time.isoformat()
             route_dict['end_time'] = route.end_time.isoformat()
 
-            # 转换segments
+            # 转换segments并获取video_info
             serializable_segments = []
             for seg in route.segments:
                 seg_dict = asdict(seg)
                 seg_dict['timestamp'] = seg.timestamp.isoformat()
+
+                # 为每个摄像头获取video_info和第一帧
+                video_info = {}
+                for camera in seg.cameras.keys():
+                    try:
+                        # 获取视频文件路径
+                        video_path = seg.cameras[camera]
+                        if os.path.exists(video_path):
+                            # 使用ffprobe获取视频信息
+                            info = await self._get_video_info_internal(video_path)
+                            # 获取第一帧缩略图
+                            thumbnail_path = await self._get_video_thumbnail(video_path, seg.segment_id, camera)
+                            info['thumbnail'] = thumbnail_path
+                            video_info[camera] = info
+                        else:
+                            # 如果文件不存在，使用默认值
+                            video_info[camera] = {
+                                'duration': seg.duration,
+                                'width': 1920,
+                                'height': 1080,
+                                'fps': 30,
+                                'bitrate': 0,
+                                'size': 0,
+                                'thumbnail': None
+                            }
+                    except Exception as e:
+                        self.logger.warning(f"获取视频信息失败 {seg.segment_id}/{camera}: {e}")
+                        # 使用默认值
+                        video_info[camera] = {
+                            'duration': seg.duration,
+                            'width': 1920,
+                            'height': 1080,
+                            'fps': 30,
+                            'bitrate': 0,
+                            'size': 0,
+                            'thumbnail': None
+                        }
+
+                seg_dict['video_info'] = video_info
                 serializable_segments.append(seg_dict)
 
             route_dict['segments'] = serializable_segments
@@ -611,6 +654,112 @@ class DashcamServer:
             }
         )
 
+    async def get_raw_video(self, request):
+        """获取原生HEVC视频文件（用于Flutter客户端直接播放）"""
+        segment_id = request.match_info['segment_id']
+        camera = request.match_info['camera']
+
+        segment = self.file_manager.get_segment_by_id(segment_id)
+        if not segment or camera not in segment.cameras:
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        video_path = segment.cameras[camera]
+        if not Path(video_path).exists():
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        # 直接返回原始HEVC文件
+        return FileResponse(
+            video_path,
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'video/mp4',  # HEVC通常在MP4容器中
+                'Accept-Ranges': 'bytes'  # 支持范围请求，用于视频播放器seek
+            }
+        )
+
+    async def get_video_info(self, request):
+        """获取视频文件信息（分辨率、编码格式、时长等）"""
+        segment_id = request.match_info['segment_id']
+        camera = request.match_info['camera']
+
+        segment = self.file_manager.get_segment_by_id(segment_id)
+        if not segment or camera not in segment.cameras:
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        video_path = segment.cameras[camera]
+        if not Path(video_path).exists():
+            return web.json_response({'error': '视频文件不存在'}, status=404)
+
+        try:
+            # 使用ffprobe获取视频信息
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_format",
+                "-show_streams",
+                video_path
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                return web.json_response({'error': '无法获取视频信息'}, status=500)
+
+            video_info = json.loads(stdout.decode())
+
+            # 提取有用的信息
+            format_info = video_info.get('format', {})
+            video_stream = None
+            audio_stream = None
+
+            for stream in video_info.get('streams', []):
+                if stream.get('codec_type') == 'video' and video_stream is None:
+                    video_stream = stream
+                elif stream.get('codec_type') == 'audio' and audio_stream is None:
+                    audio_stream = stream
+
+            result = {
+                'segment_id': segment_id,
+                'camera': camera,
+                'file_size': int(format_info.get('size', 0)),
+                'duration': float(format_info.get('duration', 0)),
+                'format_name': format_info.get('format_name', ''),
+                'has_video': video_stream is not None,
+                'has_audio': audio_stream is not None
+            }
+
+            if video_stream:
+                result['video'] = {
+                    'codec': video_stream.get('codec_name', ''),
+                    'width': int(video_stream.get('width', 0)),
+                    'height': int(video_stream.get('height', 0)),
+                    'fps': eval(video_stream.get('r_frame_rate', '0/1')),
+                    'bitrate': int(video_stream.get('bit_rate', 0)) if video_stream.get('bit_rate') else None
+                }
+
+            if audio_stream:
+                result['audio'] = {
+                    'codec': audio_stream.get('codec_name', ''),
+                    'sample_rate': int(audio_stream.get('sample_rate', 0)),
+                    'channels': int(audio_stream.get('channels', 0)),
+                    'bitrate': int(audio_stream.get('bit_rate', 0)) if audio_stream.get('bit_rate') else None
+                }
+
+            return web.json_response(result, headers={
+                'Access-Control-Allow-Origin': '*'
+            })
+
+        except Exception as e:
+            self.logger.error(f"获取视频信息失败: {e}")
+            return web.json_response({'error': '获取视频信息失败'}, status=500)
+
     async def stream_video(self, request):
         """原有的直接视频流方法，作为备用"""
         segment_id = request.match_info['segment_id']
@@ -693,6 +842,244 @@ class DashcamServer:
 
             # 每10分钟清理一次
             await asyncio.sleep(600)
+
+    async def _get_video_info_internal(self, video_path):
+        """内部方法：获取视频文件信息"""
+        try:
+            # 使用ffprobe获取视频信息
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_format",
+                "-show_streams",
+                video_path
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                raise Exception(f"ffprobe failed: {stderr.decode()}")
+
+            video_info = json.loads(stdout.decode())
+
+            # 提取有用的信息
+            format_info = video_info.get('format', {})
+            video_stream = None
+
+            for stream in video_info.get('streams', []):
+                if stream.get('codec_type') == 'video' and video_stream is None:
+                    video_stream = stream
+                    break
+
+            result = {
+                'duration': float(format_info.get('duration', 0)),
+                'size': int(format_info.get('size', 0)),
+                'format_name': format_info.get('format_name', ''),
+            }
+
+            if video_stream:
+                result.update({
+                    'width': int(video_stream.get('width', 0)),
+                    'height': int(video_stream.get('height', 0)),
+                    'fps': eval(video_stream.get('r_frame_rate', '0/1')) if video_stream.get('r_frame_rate') else 0,
+                    'bitrate': int(video_stream.get('bit_rate', 0)) if video_stream.get('bit_rate') else 0,
+                    'codec': video_stream.get('codec_name', ''),
+                })
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"获取视频信息失败 {video_path}: {e}")
+            raise
+
+    async def _get_video_thumbnail(self, video_path, segment_id, camera):
+        """获取视频第一帧缩略图"""
+        try:
+            # 创建缩略图目录
+            thumbnail_dir = os.path.join(os.path.dirname(video_path), 'thumbnails')
+            os.makedirs(thumbnail_dir, exist_ok=True)
+
+            # 缩略图文件名
+            thumbnail_filename = f"{segment_id}_{camera}_thumb.jpg"
+            thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
+
+            # 如果缩略图已存在，直接返回
+            if os.path.exists(thumbnail_path):
+                return f"/api/thumbnail/{segment_id}/{camera}"
+
+            # 使用ffmpeg生成第一帧缩略图
+            cmd = [
+                "ffmpeg",
+                "-i", video_path,
+                "-vf", "scale=320:180",  # 缩放到320x180
+                "-vframes", "1",  # 只提取一帧
+                "-f", "image2",
+                "-y",  # 覆盖已存在的文件
+                thumbnail_path
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                self.logger.warning(f"生成缩略图失败 {video_path}: {stderr.decode()}")
+                return None
+
+            return f"/api/thumbnail/{segment_id}/{camera}"
+
+        except Exception as e:
+            self.logger.error(f"生成缩略图失败 {video_path}: {e}")
+            return None
+
+    async def get_thumbnail(self, request):
+        """获取视频缩略图API"""
+        try:
+            segment_id = request.match_info['segment_id']
+            camera = request.match_info['camera']
+
+            # 查找对应的视频段
+            segments = self.file_manager.scan_segments()
+            segment = None
+            for seg in segments:
+                if seg.segment_id == segment_id:
+                    segment = seg
+                    break
+
+            if not segment or camera not in segment.cameras:
+                return web.Response(status=404, text='缩略图不存在')
+
+            video_path = segment.cameras[camera]
+            thumbnail_dir = os.path.join(os.path.dirname(video_path), 'thumbnails')
+            thumbnail_filename = f"{segment_id}_{camera}_thumb.jpg"
+            thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
+
+            if not os.path.exists(thumbnail_path):
+                return web.Response(status=404, text='缩略图不存在')
+
+            return web.FileResponse(
+                thumbnail_path,
+                headers={'Content-Type': 'image/jpeg'}
+            )
+
+        except Exception as e:
+            self.logger.error(f"获取缩略图失败: {e}")
+            return web.Response(status=500, text='获取缩略图失败')
+
+    async def get_route_video_segments(self, request):
+        """获取路线的所有视频段信息（包含video_info和缩略图）"""
+        try:
+            route_name = request.match_info['route_name']
+
+            # 使用 file_manager 的方法获取路线
+            route = self.file_manager.get_route_by_name(route_name)
+
+            if not route:
+                return web.json_response({'error': '路线不存在'}, status=404)
+
+            # 构建响应数据
+            segments_info = []
+            total_duration = 0
+
+            for seg in route.segments:
+                segment_info = {
+                    'segment_id': seg.segment_id,
+                    'segment_number': seg.segment_num,
+                    'timestamp': seg.timestamp.isoformat(),
+                    'cameras': {}
+                }
+
+                # 第一步：收集所有摄像头的信息
+                camera_infos = {}
+                valid_duration = None  # 用于存储找到的有效时长
+
+                # 为每个摄像头获取详细信息
+                for camera, video_path in seg.cameras.items():
+                    camera_info = {
+                        'video_path': video_path,
+                        'video_info': None,
+                        'thumbnail': None
+                    }
+
+                    try:
+                        # 获取视频信息
+                        video_info = await self._get_video_info_internal(video_path)
+                        camera_info['video_info'] = video_info
+
+                        # 获取缩略图
+                        thumbnail_url = await self._get_video_thumbnail(video_path, seg.segment_id, camera)
+                        camera_info['thumbnail'] = thumbnail_url
+
+                    except Exception as e:
+                        self.logger.warning(f"获取视频信息失败 {seg.segment_id}/{camera}: {e}")
+                        camera_info['video_info'] = {
+                            'duration': seg.duration,
+                            'width': 1920,
+                            'height': 1080,
+                            'fps': 30,
+                            'bitrate': 0,
+                            'size': 0,
+                            'format_name': 'unknown'
+                        }
+
+                    camera_infos[camera] = camera_info
+
+                # 第二步：找到有效的duration（优先级：qcamera > 其他摄像头 > 默认值）
+                # 优先使用qcamera的时长
+                if 'qcamera' in camera_infos and camera_infos['qcamera']['video_info']:
+                    qcamera_duration = camera_infos['qcamera']['video_info'].get('duration', 0)
+                    if qcamera_duration > 0:
+                        valid_duration = qcamera_duration
+
+                # 如果qcamera没有有效时长，尝试其他摄像头
+                if valid_duration is None:
+                    for camera, camera_info in camera_infos.items():
+                        if camera_info['video_info']:
+                            duration = camera_info['video_info'].get('duration', 0)
+                            if duration > 0:
+                                valid_duration = duration
+                                break
+
+                # 如果都没有有效时长，使用默认值
+                if valid_duration is None:
+                    valid_duration = seg.duration
+
+                # 第三步：将有效时长应用到所有摄像头的video_info中
+                for camera, camera_info in camera_infos.items():
+                    if camera_info['video_info']:
+                        camera_info['video_info']['duration'] = valid_duration
+
+                # 将摄像头信息添加到段信息中
+                segment_info['cameras'] = camera_infos
+
+                # 累加总时长
+                total_duration += valid_duration
+
+                segments_info.append(segment_info)
+
+            response_data = {
+                'route_name': route_name,
+                'total_segments': len(segments_info),
+                'total_duration': total_duration,
+                'segments': segments_info
+            }
+
+            return web.json_response(response_data)
+
+        except Exception as e:
+            self.logger.error(f"获取路线视频段信息失败: {e}")
+            return web.json_response({'error': '获取路线视频段信息失败'}, status=500)
 
     async def start_server(self):
         """启动服务器"""
