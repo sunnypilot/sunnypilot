@@ -77,7 +77,6 @@ on:
         required: false
         type: number
 env:
-  ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
   JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
 
@@ -158,6 +157,8 @@ jobs:
           path: output
 
       - name: Copy model artifact(s) to GitLab recompiled dir
+        env:
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
           mkdir -p "$ARTIFACT_DIR"
