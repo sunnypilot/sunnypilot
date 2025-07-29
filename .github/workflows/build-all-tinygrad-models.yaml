@@ -3,7 +3,7 @@ name: Build All Tinygrad Models and Push to GitLab
 on:
   workflow_dispatch:
     inputs:
-      selector_version:
+      set_min_version:
         description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
         required: true
         type: string
@@ -104,6 +104,7 @@ jobs:
       custom_name: ${{ matrix.model.display_name }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
+      set_min_version: ${{ inputs.set_min_version }}
     secrets: inherit
 
   retry_failed_models:
@@ -142,44 +143,5 @@ jobs:
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
       artifact_suffix: -retry
+      set_min_version: ${{ inputs.set_min_version }}
     secrets: inherit
-
-  push_results:
-    needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
-    runs-on: ubuntu-latest
-    if: always() && (needs.get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != ''))
-    steps:
-      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot-docs
-          ref: gh-pages
-          path: docs
-          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
-      - name: Checkout gitlab docs repo
-        run: |
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
-          cd gitlab_docs
-          git checkout main
-          git sparse-checkout set --no-cone models/recompiled${{ needs.setup.outputs.recompiled_dir }}
-          cd ..
-
-      - name: Validate JSON
-        run: |
-          cd docs
-          git pull origin gh-pages
-          python3 docs/json_parser.py \
-            --json-path "${{ needs.setup.outputs.json_file }}" \
-            --recompiled-dir "../gitlab_docs/models/recompiled${{ needs.setup.outputs.recompiled_dir }}" \
-            --version "${{ inputs.selector_version }}" \
-            --sort-by-date
-
-      - name: Push updated JSON to GitHub docs repo
-        run: |
-          cd docs
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add docs/"$(basename ${{ needs.setup.outputs.json_file }})"
-          git commit -m "Final update $(basename ${{ needs.setup.outputs.json_file }}) after all models" || echo "No changes to commit"
-          git push origin gh-pages

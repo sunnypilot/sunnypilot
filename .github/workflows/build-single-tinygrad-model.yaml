@@ -24,6 +24,15 @@ on:
         required: false
         type: string
         default: ''
+      set_min_version:
+        description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
+        required: true
+        type: string
+      sort_by_date:
+        description: 'Sort bundles by date'
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -67,7 +76,6 @@ on:
         description: 'Minimum selector version'
         required: false
         type: number
-
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
   JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
@@ -183,6 +191,8 @@ jobs:
           fi
           [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
           [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
+          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
+          [ -n "${{ inputs.sort_by_date }}" ] && ARGS="$ARGS --sort-by-date"
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
