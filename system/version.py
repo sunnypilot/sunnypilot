@@ -84,6 +84,10 @@ class OpenpilotMetadata:
     return self.git_normalized_origin == "github.com/commaai/openpilot"
 
   @property
+  def sunnypilot_remote(self) -> bool:
+    return self.git_normalized_origin == "github.com/sunnypilot/sunnypilot"
+
+  @property
   def git_normalized_origin(self) -> str:
     return self.git_origin \
       .replace("git@", "", 1) \
