@@ -60,6 +60,7 @@ typedef struct UIScene {
   cereal::PandaState::PandaType pandaType;
 
   cereal::LongitudinalPersonality personality;
+  cereal::LongitudinalPlanSP::AccelerationPersonality accel_personality;
 
   float light_sensor = -1;
   bool started, ignition, is_metric, recording_audio;
