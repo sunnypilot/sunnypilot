@@ -119,7 +119,7 @@ jobs:
         id: get-prs
         run: |
           # Use GitHub API to get PRs with specific label, ordered by creation date
-          gh api graphql -f query='
+          PR_LIST=$(gh api graphql -f query='
             query($label:String!) {
               search(query: $label, type:ISSUE, first:100) {
                 nodes {
@@ -151,19 +151,20 @@ jobs:
                   }
                 }
               }
-            }' -F label="is:pr is:open label:${PR_LABEL} draft:false sort:created-asc" \
-            > ${{ runner.temp }}/pr_list_output.json
+            }' -F label="is:pr is:open label:${PR_LABEL} draft:false sort:created-asc")
 
-          echo "PR list written to ${{ runner.temp }}/pr_list_output.json"
+          PR_LIST=$(echo "$PR_LIST" | base64 | tr -d '\n')
+          echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Process PRs
         run: |
+          PR_DECODED=$(echo "${{ steps.get-prs.outputs.PR_LIST }}" | base64 -d)
           cp ${{ github.workspace }}/release/ci/squash_and_merge.py /tmp/squash_and_merge.py && \
           chmod +x /tmp/squash_and_merge.py && \
           python3 ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
-            --pr-data "$(cat ${{ runner.temp }}/pr_list_output.json)" \
+            --pr-data "$PR_DECODED" \
             --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
             --squash-script-path '/tmp/squash_and_merge.py'
         env:
