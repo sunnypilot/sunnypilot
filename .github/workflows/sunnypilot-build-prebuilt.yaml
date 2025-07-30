@@ -50,7 +50,7 @@ jobs:
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
-    runs-on: self-hosted
+    runs-on: [self-hosted, tici]
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
       version: ${{ steps.set-env.outputs.version }}
