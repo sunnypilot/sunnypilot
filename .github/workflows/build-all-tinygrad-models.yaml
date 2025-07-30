@@ -105,7 +105,6 @@ jobs:
       custom_name: ${{ matrix.model.display_name }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
-      set_min_version: ${{ inputs.set_min_version }}
     secrets: inherit
 
   retry_failed_models:
@@ -144,7 +143,6 @@ jobs:
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
       artifact_suffix: -retry
-      set_min_version: ${{ inputs.set_min_version }}
     secrets: inherit
 
   publish_models:
@@ -260,7 +258,7 @@ jobs:
           git add models/"$RECOMPILED_DIR"
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-all-tinygrad-models" || echo "No changes to commit"
+          git commit -m "Update $RECOMPILED_DIR with model from build-all-tinygrad-models" || echo "No changes to commit"
           git push origin main
       - run: |
           cd docs

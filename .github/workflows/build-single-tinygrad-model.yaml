@@ -24,15 +24,6 @@ on:
         required: false
         type: string
         default: ''
-      set_min_version:
-        description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
-        required: true
-        type: string
-      sort_by_date:
-        description: 'Sort bundles by date'
-        required: false
-        default: true
-        type: boolean
       bypass_push:
         description: 'Bypass pushing to GitLab for build-all'
         required: false
@@ -220,11 +211,10 @@ jobs:
           fi
           [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
           [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
-          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
-          [ -n "${{ inputs.sort_by_date }}" ] && ARGS="$ARGS --sort-by-date"
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --sort-by-date \
             $ARGS
 
       - name: Push updated JSON to GitHub docs repo
