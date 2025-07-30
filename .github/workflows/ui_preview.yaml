@@ -23,7 +23,7 @@ jobs:
   preview:
     if: github.repository == 'sunnypilot/sunnypilot'
     name: preview
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     timeout-minutes: 20
     permissions:
       contents: read

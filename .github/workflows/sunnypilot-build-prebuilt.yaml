@@ -35,7 +35,7 @@ on:
 
 jobs:
   validate_tests:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
     steps:
       - uses: actions/checkout@v4
@@ -234,7 +234,7 @@ jobs:
       cancel-in-progress: true
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build ]
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
     steps:
       - uses: actions/checkout@v4
@@ -278,7 +278,7 @@ jobs:
 
   notify:
     needs: [ build, publish ]
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     steps:
       - uses: actions/checkout@v4
@@ -310,7 +310,7 @@ jobs:
   
   manage-pr-labels:
     name: Remove prebuilt label
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     if: (always() && contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
     env:
       LABEL: prebuilt
