@@ -29,7 +29,7 @@ env:
 jobs:
   generate_cereal_artifact:
     name: Generate cereal validation artifacts
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +55,7 @@ jobs:
 
   validate_cereal_with_upstream:
     name: Validate cereal with Upstream
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     needs: generate_cereal_artifact
     steps:
       - uses: actions/checkout@v4

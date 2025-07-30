@@ -11,7 +11,7 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     outputs:
       json_file: ${{ steps.get-json.outputs.json_file }}
     steps:
@@ -40,7 +40,7 @@ jobs:
           path: docs
 
   build-all:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}
     needs: setup
     env:
       JSON_FILE: docs/docs/${{ needs.setup.outputs.json_file }}
