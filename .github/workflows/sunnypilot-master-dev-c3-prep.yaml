@@ -152,9 +152,9 @@ jobs:
                 }
               }
             }' -F label="is:pr is:open label:${PR_LABEL} draft:false sort:created-asc" \
-            > /tmp/pr_list_output.json
+            > ${{ runner.temp }}/pr_list_output.json
 
-          echo "PR list written to /tmp/pr_list_output.json"
+          echo "PR list written to ${{ runner.temp }}/pr_list_output.json"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -163,7 +163,7 @@ jobs:
           cp ${{ github.workspace }}/release/ci/squash_and_merge.py /tmp/squash_and_merge.py && \
           chmod +x /tmp/squash_and_merge.py && \
           python3 ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
-            --pr-data "$(cat /tmp/pr_list_output.json)" \
+            --pr-data "$(cat ${{ runner.temp }}/pr_list_output.json)" \
             --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
             --squash-script-path '/tmp/squash_and_merge.py'
         env:
