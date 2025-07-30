@@ -11,12 +11,12 @@ on:
   push:
     branches:
       - master
-      - master-new
+      - master-new    
   pull_request_target:
-    types: [ labeled ]
-    branches:
-      - 'master'
-      - 'master-new'
+    types: [ labeled ]  
+    branches:    
+      - 'master'        
+      - 'master-new'            
   workflow_dispatch:
     inputs:
       source_branch:
