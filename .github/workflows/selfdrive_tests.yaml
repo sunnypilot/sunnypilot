@@ -41,7 +41,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     env:
       STRIPPED_DIR: /tmp/releasepilot
     steps:
@@ -79,7 +79,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -145,7 +145,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     env:
       PYTHONWARNINGS: default
     steps:
@@ -164,7 +164,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -189,7 +189,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -237,7 +237,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     strategy:
       fail-fast: false
       matrix:
@@ -351,7 +351,7 @@ jobs:
       ((github.event_name != 'pull_request') ||
       (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
-      || (${{ fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
+      || (fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-24.04"]') }}) }}
     steps:
       - uses: actions/checkout@v4
         with:
