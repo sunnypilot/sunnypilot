@@ -9,6 +9,8 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Set up Docker
+      uses: docker/setup-docker-action@v4
     # assert that this action is retried using the setup-with-retry
     - shell: bash
       if: ${{ inputs.is_retried == 'false' }}
