@@ -25,6 +25,7 @@ blacklist = [
 whitelist: list[str] = [
 ]
 
+
 if __name__ == "__main__":
   for f in Path(ROOT).rglob("**/*"):
     if not (f.is_file() or f.is_symlink()):
