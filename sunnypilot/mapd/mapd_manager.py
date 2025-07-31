@@ -12,21 +12,19 @@ import os
 import glob
 import shutil
 
-from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
 from openpilot.system.hardware.hw import Paths
+from openpilot.sunnypilot.mapd import MAPD_PATH
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION, update_installed_version
 
 # PFEIFER - MAPD {{
 params = Params()
 mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else params
 # }} PFEIFER - MAPD
-
-MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/mapd_pfeiferj')
-MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 
 def get_files_for_cleanup() -> list[str]:
@@ -117,6 +115,7 @@ def update_osm_db() -> None:
 
 
 def main_thread():
+  update_installed_version(VERSION, params)
   config_realtime_process([0, 1, 2, 3], 5)
 
   rk = Ratekeeper(1, print_delay_threshold=None)

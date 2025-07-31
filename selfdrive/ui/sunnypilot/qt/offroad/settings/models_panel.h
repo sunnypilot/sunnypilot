@@ -21,6 +21,7 @@ private:
   QString GetActiveModelName();
   QString GetActiveModelInternalName();
   void updateModelManagerState();
+  void showEvent(QShowEvent *event) override;
 
   bool isDownloading() const {
     if (!model_manager.hasSelectedBundle()) {
@@ -41,6 +42,8 @@ private:
   cereal::ModelManagerSP::Reader model_manager;
   cereal::ModelManagerSP::DownloadStatus download_status{};
   cereal::ModelManagerSP::DownloadStatus prev_download_status{};
+  void clearModelCache();
+  double calculateCacheSize();
 
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -75,5 +78,6 @@ private:
   QProgressBar *policyProgressBar;
   QFrame *policyFrame;
   Params params;
+  ButtonControlSP *clearModelCacheBtn;
 
 };
