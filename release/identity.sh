@@ -1,4 +1,4 @@
-export GIT_COMMITTER_NAME="Jason Wen"
-export GIT_COMMITTER_EMAIL="jason.wen@sunnypilot.ai"
-export GIT_AUTHOR_NAME="Jason Wen"
-export GIT_AUTHOR_EMAIL="jason.wen@sunnypilot.ai"
+export GIT_COMMITTER_NAME="github-actions[bot]"
+export GIT_COMMITTER_EMAIL="github-actions[bot]@users.noreply.github.com"
+export GIT_AUTHOR_NAME="github-actions[bot]"
+export GIT_AUTHOR_EMAIL="github-actions[bot]@users.noreply.github.com"
