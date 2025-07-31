@@ -1,4 +1,4 @@
-name: Build and push all tinygrad models 
+name: Build and push all tinygrad models
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ jobs:
         env:
           GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
         run: |
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai3.git gitlab_docs
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
           cd gitlab_docs
           git checkout main
           git sparse-checkout set --no-cone models/
@@ -174,7 +174,7 @@ jobs:
           GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
         run: |
           echo "Cloning GitLab"
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai3.git gitlab_docs
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
           cd gitlab_docs
           echo "checkout models/${RECOMPILED_DIR}"
           git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
