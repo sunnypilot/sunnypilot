@@ -25,6 +25,7 @@ private:
 
   bool refreshPending = false;
   bool formatting = false;
+  void updateState(bool offroad);
   void refresh();
   void debouncedRefresh();
   void mountStorage();

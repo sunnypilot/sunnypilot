@@ -16,6 +16,7 @@
 #include "common/params.h"
 #include "selfdrive/ui/qt/api.h"
 #include "selfdrive/ui/qt/widgets/input.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 ExternalStorageControl::ExternalStorageControl() :
   ButtonControl(tr("External Storage"), "", tr("Extend your comma device's storage by inserting a USB drive into the aux port.")) {
@@ -31,7 +32,15 @@ ExternalStorageControl::ExternalStorageControl() :
       }
     }
   });
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &ExternalStorageControl::updateState);
+  updateState(!uiState()->scene.started);
+
   refresh();
+}
+
+void ExternalStorageControl::updateState(bool offroad) {
+  setEnabled(offroad);
 }
 
 void ExternalStorageControl::debouncedRefresh() {
@@ -85,7 +94,7 @@ void ExternalStorageControl::refresh() {
           setValue("drive detected");
           setText(tr("MOUNT"));
         }
-        setEnabled(true);
+        updateState(!uiState()->scene.started);
       }
     }, Qt::QueuedConnection);
   });
@@ -146,7 +155,7 @@ void ExternalStorageControl::formatStorage() {
               mountStorage();
             } else {
               setValue(tr("needs format"));
-              setEnabled(true);
+              updateState(!uiState()->scene.started);
             }
           });
   process->start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
