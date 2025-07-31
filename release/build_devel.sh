@@ -19,16 +19,16 @@ cd $TARGET_DIR
 cp -r $SOURCE_DIR/.git $TARGET_DIR
 pre-commit uninstall || true
 
-echo "[-] bringing __nightly and devel in sync T=$SECONDS"
+echo "[-] bringing __nightly and staging-c3-new in sync T=$SECONDS"
 cd $TARGET_DIR
 
 git fetch --depth 1 origin __nightly
-git fetch --depth 1 origin devel
+git fetch --depth 1 origin staging-c3-new
 
 git checkout -f --track origin/__nightly
 git reset --hard __nightly
 git checkout __nightly
-git reset --hard origin/devel
+git reset --hard origin/staging-c3-new
 git clean -xdff
 git lfs uninstall
 
