@@ -84,6 +84,10 @@ class OpenpilotMetadata:
     return self.git_normalized_origin == "github.com/commaai/openpilot"
 
   @property
+  def sunnypilot_remote(self) -> bool:
+    return self.git_normalized_origin == "github.com/sunnypilot/sunnypilot"
+
+  @property
   def git_normalized_origin(self) -> str:
     return self.git_origin \
       .replace("git@", "", 1) \
@@ -118,8 +122,12 @@ class BuildMetadata:
     return self.channel in MASTER_SP_BRANCHES
 
   @property
+  def development_channel(self) -> bool:
+    return self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
+
+  @property
   def channel_type(self) -> str:
-    if self.channel.startswith("dev-"):
+    if self.development_channel:
       return "development"
     elif self.channel.startswith("staging-"):
       return "staging"

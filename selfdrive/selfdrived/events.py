@@ -11,7 +11,7 @@ from openpilot.selfdrive.locationd.calibrationd import MIN_SPEED_FILTER
 
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, SoftDisableAlert, UserSoftDisableAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, \
-  StartupAlert, AlertCallbackType
+  StartupAlert, AlertCallbackType, wrong_car_mode_alert
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -170,13 +170,6 @@ def modeld_lagging_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
   return NormalPermanentAlert("Driving Model Lagging", f"{sm['modelV2'].frameDropPerc:.1f}% frames dropped")
 
 
-def wrong_car_mode_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  text = "Enable Adaptive Cruise to Engage"
-  if CP.brand == "honda":
-    text = "Enable Main Switch to Engage"
-  return NoEntryAlert(text)
-
-
 def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   gb = sm['carControl'].actuators.accel / 4.
   steer = sm['carControl'].actuators.torque
@@ -198,6 +191,16 @@ def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
   personality = str(personality).title()
   return NormalPermanentAlert(f"Driving Personality: {personality}", duration=1.5)
 
+
+def invalid_lkas_setting_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  text = "Toggle stock LKAS on or off to engage"
+  if CP.brand == "tesla":
+    text = "Switch to Traffic-Aware Cruise Control to engage"
+  elif CP.brand == "mazda":
+    text = "Enable your car's LKAS to engage"
+  elif CP.brand == "nissan":
+    text = "Disable your car's stock LKAS to engage"
+  return NormalPermanentAlert("Invalid LKAS setting", text)
 
 
 EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
@@ -252,8 +255,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.invalidLkasSetting: {
-    ET.PERMANENT: NormalPermanentAlert("Invalid LKAS setting",
-                                       "Toggle stock LKAS on or off to engage"),
+    ET.PERMANENT: invalid_lkas_setting_alert,
     ET.NO_ENTRY: NoEntryAlert("Invalid LKAS setting"),
   },
 
@@ -510,6 +512,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
                               visual_alert=VisualAlert.brakePressed),
   },
 
+  EventName.steerDisengage: {
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
+    ET.NO_ENTRY: NoEntryAlert("Steering Pressed"),
+  },
+
   EventName.preEnableStandstill: {
     ET.PRE_ENABLE: Alert(
       "Release Brake to Engage",
@@ -578,11 +585,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.noGps: {
-    ET.PERMANENT: Alert(
-      "Poor GPS reception",
-      "Ensure device has a clear view of the sky",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=600.)
   },
 
   EventName.tooDistracted: {
@@ -729,7 +731,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # causing the connection to the panda to be lost
   EventName.usbError: {
     ET.SOFT_DISABLE: soft_disable_alert("USB Error: Reboot Your Device"),
-    ET.PERMANENT: NormalPermanentAlert("USB Error: Reboot Your Device", ""),
+    ET.PERMANENT: NormalPermanentAlert("USB Error: Reboot Your Device"),
     ET.NO_ENTRY: NoEntryAlert("USB Error: Reboot Your Device"),
   },
 
@@ -817,6 +819,9 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: personality_changed_alert,
   },
 
+  EventName.userFlag: {
+    ET.PERMANENT: NormalPermanentAlert("Bookmark Saved", duration=1.5),
+  },
 }
 
 

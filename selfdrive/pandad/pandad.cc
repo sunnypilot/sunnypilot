@@ -25,7 +25,7 @@
 // - If a panda connection is dropped, pandad will reconnect to all pandas
 // - If a panda is added, we will only reconnect when we are offroad
 // CAN buses:
-// - Each panda will have it's block of 4 buses. E.g.: the second panda will use
+// - Each panda will have its block of 4 buses. E.g.: the second panda will use
 //   bus numbers 4, 5, 6 and 7
 // - The internal panda will always be used for accessing the OBD2 port,
 //   and thus firmware queries
@@ -41,7 +41,7 @@
 #define CUTOFF_IL 400
 #define SATURATE_IL 1000
 
-#define ALT_EXP_DISENGAGE_LATERAL_ON_BRAKE 2048
+#define ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE 2048
 
 ExitHandler do_exit;
 
@@ -57,7 +57,7 @@ bool check_all_connected(const std::vector<Panda *> &pandas) {
 
 bool process_mads_heartbeat(SubMaster *sm) {
   const int &alt_exp = (*sm)["carParams"].getCarParams().getAlternativeExperience();
-  const bool disengage_lateral_on_brake = (alt_exp & ALT_EXP_DISENGAGE_LATERAL_ON_BRAKE) != 0;
+  const bool disengage_lateral_on_brake = (alt_exp & ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE) != 0;
 
   const auto &mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
   const bool heartbeat_type = disengage_lateral_on_brake ? mads.getActive() : mads.getEnabled();
@@ -474,7 +474,12 @@ void pandad_run(std::vector<Panda *> &pandas) {
     for (auto *panda : pandas) {
       std::string log = panda->serial_read();
       if (!log.empty()) {
-        LOGD("%s", log.c_str());
+        if (log.find("Register 0x") != std::string::npos) {
+          // Log register divergent faults as errors
+          LOGE("%s", log.c_str());
+        } else {
+          LOGD("%s", log.c_str());
+        }
       }
     }
 

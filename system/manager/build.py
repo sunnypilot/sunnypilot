@@ -7,14 +7,14 @@ from pathlib import Path
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.spinner import Spinner
 from openpilot.common.text_window import TextWindow
-from openpilot.system.hardware import HARDWARE, AGNOS
 from openpilot.common.swaglog import cloudlog, add_file_handler
+from openpilot.system.hardware import HARDWARE, AGNOS
 from openpilot.system.version import get_build_metadata
 
 MAX_CACHE_SIZE = 4e9 if "CI" in os.environ else 2e9
 CACHE_DIR = Path("/data/scons_cache" if AGNOS else "/tmp/scons_cache")
 
-TOTAL_SCONS_NODES = 3130
+TOTAL_SCONS_NODES = 3800
 MAX_BUILD_PROGRESS = 100
 
 def build(spinner: Spinner, dirty: bool = False, minimal: bool = False) -> None:

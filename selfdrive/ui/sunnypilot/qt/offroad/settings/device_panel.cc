@@ -31,15 +31,16 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
       continue;
     }
 
-    auto *btn = new PushButtonSP(text, 720, this, param);
+    auto *btn = new PushButtonSP(text, 750, this, param);
     btn->setObjectName(id);
-
-    device_grid_layout->addWidget(btn, row, col);
     buttons[id] = btn;
 
-    col++;
-    if (col > 1) {
-      col = 0;
+    if (col==0) {
+      device_grid_layout->addWidget(btn, row, col, Qt::AlignLeft);
+      col++;
+    } else {
+      device_grid_layout->addWidget(btn, row, col, Qt::AlignRight);
+      col=0;
       row++;
     }
   }
@@ -74,19 +75,48 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
+  // Max Time Offroad
+  maxTimeOffroad = new MaxTimeOffroad();
+  connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
+  addItem(maxTimeOffroad);
+
+    toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
+  addItem(toggleDeviceBootMode);
+
+  connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonClicked, this, [=](int index) {
+    params.put("DeviceBootMode", QString::number(index).toStdString());
+    updateState();
+  });
+
+  interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
+                                     tr("Apply a custom timeout for settings UI."
+                                        "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
+                                     "", {0, 120}, 10, true, nullptr, false);
+
+  connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
+    updateState();
+  });
+
+  addItem(interactivityTimeout);
+  
+  // Brightness
+  brightness = new Brightness();
+  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
+  addItem(brightness);
+
   addItem(device_grid_layout);
 
   // offroad mode and power buttons
 
   QHBoxLayout *power_layout = new QHBoxLayout();
-  power_layout->setSpacing(5);
+  power_layout->setSpacing(25);
 
-  PushButtonSP *rebootBtn = new PushButtonSP(tr("Reboot"), 720, this);
+  PushButtonSP *rebootBtn = new PushButtonSP(tr("Reboot"), 750, this);
   rebootBtn->setStyleSheet(rebootButtonStyle);
   power_layout->addWidget(rebootBtn);
   QObject::connect(rebootBtn, &PushButtonSP::clicked, this, &DevicePanelSP::reboot);
 
-  PushButtonSP *poweroffBtn = new PushButtonSP(tr("Power Off"), 720, this);
+  PushButtonSP *poweroffBtn = new PushButtonSP(tr("Power Off"), 750, this);
   poweroffBtn->setStyleSheet(powerOffButtonStyle);
   power_layout->addWidget(poweroffBtn);
   QObject::connect(poweroffBtn, &PushButtonSP::clicked, this, &DevicePanelSP::poweroff);
@@ -100,15 +130,24 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   QObject::connect(offroadBtn, &PushButtonSP::clicked, this, &DevicePanelSP::setOffroadMode);
 
   QVBoxLayout *power_group_layout = new QVBoxLayout();
-  power_group_layout->setSpacing(30);
+  power_group_layout->setSpacing(25);
   power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
   power_group_layout->addLayout(power_layout);
 
   addItem(power_group_layout);
 
+  std::vector always_enabled_btns = {
+    rebootBtn,
+    poweroffBtn,
+    offroadBtn,
+    buttons["quietModeBtn"],
+  };
+
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
-      if (btn != rebootBtn && btn != poweroffBtn && btn != offroadBtn) {
+      bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
+
+      if (!always_enabled) {
         btn->setEnabled(offroad);
       }
     }
@@ -164,4 +203,17 @@ void DevicePanelSP::updateState() {
   bool offroad_mode_param = params.getBool("OffroadMode");
   offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Always Offroad"));
   offroadBtn->setStyleSheet(offroad_mode_param ? alwaysOffroadStyle : autoOffroadStyle);
+
+  DeviceSleepModeStatus currStatus = DeviceSleepModeStatus::DEFAULT;
+  if (params.get("DeviceBootMode") == "1") {
+    currStatus = DeviceSleepModeStatus::OFFROAD;
+  }
+  toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
+
+  QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
+  if (timeoutValue == "0") {
+    interactivityTimeout->setLabel("Default");
+  } else {
+    interactivityTimeout->setLabel(timeoutValue + "s");
+  }
 }

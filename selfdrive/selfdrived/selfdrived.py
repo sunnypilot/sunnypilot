@@ -7,7 +7,6 @@ import cereal.messaging as messaging
 
 from cereal import car, log, custom
 from msgq.visionipc import VisionIpcClient, VisionStreamType
-from opendbc.safety import ALTERNATIVE_EXPERIENCE
 
 
 from openpilot.common.params import Params
@@ -20,6 +19,7 @@ from openpilot.selfdrive.selfdrived.events import Events, ET
 from openpilot.selfdrive.selfdrived.state import StateMachine
 from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, set_offroad_alert
 
+from openpilot.system.hardware import HARDWARE
 from openpilot.system.version import get_build_metadata
 
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
@@ -30,7 +30,6 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
 TESTING_CLOSET = "TESTING_CLOSET" in os.environ
-IGNORE_PROCESSES = {"loggerd", "encoderd", "statsd"}
 LONGITUDINAL_PERSONALITY_MAP = {v: k for k, v in log.LongitudinalPersonality.schema.enumerants.items()}
 
 ThermalStatus = log.DeviceState.ThermalStatus
@@ -67,7 +66,6 @@ class SelfdriveD(CruiseHelper):
       self.CP_SP = CP_SP
 
     self.car_events = CarSpecificEvents(self.CP)
-    self.disengage_on_accelerator = not (self.CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS)
 
     # Setup sockets
     self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
@@ -87,9 +85,9 @@ class SelfdriveD(CruiseHelper):
       # no vipc in replay will make them ignored anyways
       ignore += ['roadCameraState', 'wideRoadCameraState']
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
-                                   'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose',
+                                   'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose', 'liveDelay',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                   'controlsState', 'carControl', 'driverAssistance', 'alertDebug'] + \
+                                   'controlsState', 'carControl', 'driverAssistance', 'alertDebug', 'userFlag'] + \
                                    self.camera_packets + self.sensor_packets + self.gps_packets,
                                   ignore_alive=ignore, ignore_avg_freq=ignore,
                                   ignore_valid=ignore, frequency=int(1/DT_CTRL))
@@ -97,12 +95,13 @@ class SelfdriveD(CruiseHelper):
     # read params
     self.is_metric = self.params.get_bool("IsMetric")
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
+    self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
 
     car_recognized = self.CP.brand != 'mock'
 
     # cleanup old params
-    if not self.CP.experimentalLongitudinalAvailable:
-      self.params.remove("ExperimentalLongitudinalEnabled")
+    if not self.CP.alphaLongitudinalAvailable:
+      self.params.remove("AlphaLongitudinalEnabled")
     if not self.CP.openpilotLongitudinalControl:
       self.params.remove("ExperimentalMode")
 
@@ -127,8 +126,17 @@ class SelfdriveD(CruiseHelper):
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
+    # some comma three with NVMe experience NVMe dropouts mid-drive that
+    # cause loggerd to crash on write, so ignore it only on that platform
+    self.ignored_processes = set()
+    nvme_expected = os.path.exists('/dev/nvme0n1') or (not os.path.isfile("/persist/comma/living-in-the-moment"))
+    if HARDWARE.get_device_type() == 'tici' and nvme_expected:
+      self.ignored_processes = {'loggerd', }
+    self.ignored_processes.update({'mapd'})
+
     # Determine startup event
-    self.startup_event = EventName.startup if build_metadata.openpilot.comma_remote and build_metadata.tested_channel else EventName.startupMaster
+    is_remote = build_metadata.openpilot.comma_remote or build_metadata.openpilot.sunnypilot_remote
+    self.startup_event = EventName.startup if is_remote and build_metadata.tested_channel else EventName.startupMaster
     if not car_recognized:
       self.startup_event = EventName.startupNoCar
     elif car_recognized and self.CP.passive:
@@ -175,7 +183,11 @@ class SelfdriveD(CruiseHelper):
       self.events.add(EventName.selfdriveInitializing)
       return
 
-    # no more events while in dashcam mode
+    # Check for user flag (bookmark) press
+    if self.sm.updated['userFlag']:
+      self.events.add(EventName.userFlag)
+
+    # Don't add any more events while in dashcam mode
     if self.CP.passive:
       return
 
@@ -192,7 +204,7 @@ class SelfdriveD(CruiseHelper):
       car_events = self.car_events.update(CS, self.CS_prev, self.sm['carControl']).to_msg()
       self.events.add_from_msg(car_events)
 
-      car_events_sp = self.car_events_sp.update().to_msg()
+      car_events_sp = self.car_events_sp.update(CS, self.events).to_msg()
       self.events_sp.add_from_msg(car_events_sp)
 
       if self.CP.notCar:
@@ -283,7 +295,7 @@ class SelfdriveD(CruiseHelper):
       if not_running != self.not_running_prev:
         cloudlog.event("process_not_running", not_running=not_running, error=True)
       self.not_running_prev = not_running
-    if self.sm.recv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
+    if self.sm.recv_frame['managerState'] and (not_running - self.ignored_processes):
       self.events.add(EventName.processNotRunning)
     else:
       if not SIMULATION and not self.rk.lagging:
@@ -371,16 +383,16 @@ class SelfdriveD(CruiseHelper):
     if (planner_fcw or model_fcw) and not self.CP.notCar:
       self.events.add(EventName.fcw)
 
+    # GPS checks
+    gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_CTRL < 2.0
+    if not gps_ok and self.sm['livePose'].inputsOK and (self.distance_traveled > 1500):
+      self.events.add(EventName.noGps)
+    if gps_ok:
+      self.distance_traveled = 0
+    self.distance_traveled += abs(CS.vEgo) * DT_CTRL
+
     # TODO: fix simulator
     if not SIMULATION or REPLAY:
-      # Not show in first 1.5 km to allow for driving out of garage. This event shows after 5 minutes
-      gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_CTRL < 2.0
-      if not gps_ok and self.sm['livePose'].inputsOK and (self.distance_traveled > 1500):
-        self.events.add(EventName.noGps)
-      if gps_ok:
-        self.distance_traveled = 0
-      self.distance_traveled += abs(CS.vEgo) * DT_CTRL
-
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
 
@@ -535,11 +547,12 @@ class SelfdriveD(CruiseHelper):
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
+      self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
+      self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.read_personality_param()
 
       self.mads.read_params()
-      self.car_events_sp.read_params()
       time.sleep(0.1)
 
   def run(self):

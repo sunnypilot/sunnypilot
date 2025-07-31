@@ -11,6 +11,8 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
 MIN_POINTS_TOTAL = 4000
@@ -49,10 +51,12 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator):
+class TorqueEstimator(ParameterEstimator, LagdToggle):
   def __init__(self, CP, decimated=False, track_all_points=False):
+    super().__init__()
+    self.CP = CP
     self.hist_len = int(HISTORY / DT_MDL)
-    self.lag = CP.steerActuatorDelay + .2  # from controlsd
+    self.lag = 0.0
     self.track_all_points = track_all_points  # for offline analysis, without max lateral accel or max steer torque filters
     if decimated:
       self.min_bucket_points = MIN_BUCKET_POINTS / 10
@@ -175,7 +179,8 @@ class TorqueEstimator(ParameterEstimator):
       self.raw_points["steer_override"].append(msg.steeringPressed)
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
-
+    elif which == "liveDelay":
+      self.lag = self.lagd_torqued_main(self.CP, msg)
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
@@ -232,6 +237,7 @@ class TorqueEstimator(ParameterEstimator):
     liveTorqueParameters.latAccelOffsetFiltered = float(self.filtered_params['latAccelOffset'].x)
     liveTorqueParameters.frictionCoefficientFiltered = float(self.filtered_params['frictionCoefficient'].x)
     liveTorqueParameters.totalBucketPoints = len(self.filtered_points)
+    liveTorqueParameters.calPerc = self.filtered_points.get_valid_percent()
     liveTorqueParameters.decay = self.decay
     liveTorqueParameters.maxResets = self.resets
     return msg
@@ -241,7 +247,7 @@ def main(demo=False):
   config_realtime_process([0, 1, 2, 3], 5)
 
   pm = messaging.PubMaster(['liveTorqueParameters'])
-  sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose'], poll='livePose')
+  sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose', 'liveDelay'], poll='livePose')
 
   params = Params()
   estimator = TorqueEstimator(messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams))

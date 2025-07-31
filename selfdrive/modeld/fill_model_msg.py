@@ -56,7 +56,7 @@ def fill_lane_line_meta(builder, lane_lines, lane_line_probs):
   builder.rightProb = lane_line_probs[2]
 
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
-                   net_output_data: dict[str, np.ndarray], v_ego: float, delay: float,
+                   net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action,
                    publish_state: PublishState, vipc_frame_id: int, vipc_frame_id_extra: int,
                    frame_id: int, frame_drop: float, timestamp_eof: int, model_execution_time: float,
                    valid: bool) -> None:
@@ -71,7 +71,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.frameIdExtra = vipc_frame_id_extra
   driving_model_data.frameDropPerc = frame_drop_perc
   driving_model_data.modelExecutionTime = model_execution_time
-  driving_model_data.action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+
+  driving_model_data.action = action
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -88,25 +89,11 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyzt(modelV2.orientation, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.T_FROM_CURRENT_EULER].T)
   fill_xyzt(modelV2.orientationRate, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.ORIENTATION_RATE].T)
 
-  # temporal pose
-  temporal_pose = modelV2.temporalPose
-  if 'sim_pose' in net_output_data:
-    temporal_pose.trans = net_output_data['sim_pose'][0,:ModelConstants.POSE_WIDTH//2].tolist()
-    temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:ModelConstants.POSE_WIDTH//2].tolist()
-    temporal_pose.rot = net_output_data['sim_pose'][0,ModelConstants.POSE_WIDTH//2:].tolist()
-    temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,ModelConstants.POSE_WIDTH//2:].tolist()
-  else:
-    temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
-    temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
-    temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
-    temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
-
-
   # poly path
   fill_xyz_poly(driving_model_data.path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
-  # lateral planning
-  modelV2.action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  # action
+  modelV2.action = action
 
   # times at X_IDXS of edges and lines aren't used
   LINE_T_IDXS: list[float] = []
