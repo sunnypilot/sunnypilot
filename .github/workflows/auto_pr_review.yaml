@@ -33,7 +33,7 @@ jobs:
         exclude: /sunnypilot:.*/
         change-to: ${{ github.base_ref }}
         already-exists-action: close_this
-        already-exists-comment: "Your PR should be made against the `master-new` branch"
+        already-exists-comment: "Your PR should be made against the `master` branch"
 
   update-pr-labels:
     name: Update fork's PR Labels
