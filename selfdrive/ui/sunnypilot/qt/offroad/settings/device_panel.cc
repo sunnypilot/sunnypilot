@@ -212,7 +212,7 @@ void DevicePanelSP::updateState() {
 
   QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
   if (timeoutValue == "0") {
-    interactivityTimeout->setLabel("DEFAULT");
+    interactivityTimeout->setLabel("Default");
   } else {
     interactivityTimeout->setLabel(timeoutValue + "s");
   }
