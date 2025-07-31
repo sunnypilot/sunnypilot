@@ -55,7 +55,7 @@ jobs:
           path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
 
   build_model:
-    runs-on: self-hosted
+    runs-on: [self-hosted, tici]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
@@ -71,7 +71,7 @@ jobs:
         with:
           path: ${{env.SCONS_CACHE_DIR}}
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.) 
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
