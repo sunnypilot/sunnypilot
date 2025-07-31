@@ -5,8 +5,13 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/external_storage.h"
 
 DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(parent) {
+
+  #ifndef __APPLE__
+  addItem(new ExternalStorageControl());
+  #endif
 
   // Advanced Controls Toggle
   showAdvancedControls = new ParamControlSP("ShowAdvancedControls", tr("Show Advanced Controls"), tr("Toggle visibility of advanced sunnypilot controls.\nThis only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state."), "");
