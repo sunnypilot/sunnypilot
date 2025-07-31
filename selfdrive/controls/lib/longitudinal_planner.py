@@ -55,7 +55,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.CP = CP
     self.mpc = LongitudinalMpc(dt=dt)
     # TODO remove mpc modes when TR released
-    self._last_mode = None
     self.mpc.mode = 'acc'
     LongitudinalPlannerSP.__init__(self, self.CP, self.mpc)
     self.fcw = False
@@ -102,10 +101,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       self.mode = dec_mpc_mode
       if not self.mlsim:
         self.mpc.mode = dec_mpc_mode
-    if self._last_mode != self.mode:
-      if self.mode == 'blended':
-        self.reset_blend_transition()
-      self._last_mode = self.mode
+
+    self.handle_mode_transition(self.mode)
 
     if len(sm['carControl'].orientationNED) == 3:
       accel_coast = get_coast_accel(sm['carControl'].orientationNED[1])

@@ -22,11 +22,6 @@ class LongitudinalPlannerSP:
     self.transition_init()
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
 
-  def transition_init(self) -> None:
-    self._params = Params()
-    self._transition_counter = 0
-    self._transition_steps = 40
-
   @property
   def mlsim(self) -> bool:
     # If we don't have a generation set, we assume it's default model. Which as of today are mlsim.
@@ -38,8 +33,17 @@ class LongitudinalPlannerSP:
 
     return self.dec.mode()
 
-  def reset_blend_transition(self):
+  def transition_init(self) -> None:
+    self._params = Params()
     self._transition_counter = 0
+    self._transition_steps = 40
+    self._last_mode = 'acc'
+
+  def handle_mode_transition(self, mode: str) -> None:
+    if self._last_mode != mode:
+      if mode == 'blended':
+        self._transition_counter = 0
+      self._last_mode = mode
 
   def blend_accel_transition(self, mpc_accel: float, e2e_accel: float, v_ego: float) -> float:
     if self._params.get_bool("BlendAccToE2ETransition"):
@@ -47,7 +51,7 @@ class LongitudinalPlannerSP:
         self._transition_counter += 1
         progress = self._transition_counter / self._transition_steps
         if v_ego > 5.0 and e2e_accel < 0.0:
-          # use k2.0 and normalize at 0.5
+          # use k2.0 and normalize midpoint at 0.5
           sigmoid = 1.0 / (1.0 + math.exp(-2.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
           blend_factor = 1.0 - (1.0 - progress) * (1.0 - sigmoid)
           blended = mpc_accel + (e2e_accel - mpc_accel) * blend_factor
