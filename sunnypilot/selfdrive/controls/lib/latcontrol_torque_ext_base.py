@@ -49,7 +49,7 @@ class LatControlTorqueExtBase(LagdToggle):
     self.model_v2 = None
     self.model_valid = False
     self.torque_params = lac_torque.torque_params
-    self.use_steering_angle = lac_torque.torque_params.useSteeringAngle
+    self.use_steering_angle = True  # FIXME-SP: deprecated in upstream
 
     self.actual_lateral_jerk: float = 0.0
     self.lateral_jerk_setpoint: float = 0.0

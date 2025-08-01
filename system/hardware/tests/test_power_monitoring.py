@@ -206,18 +206,18 @@ class TestPowerMonitoring:
       (None, MAX_TIME_OFFROAD_S + 1, True),  # exceeds 30h (1800+ mins)
 
       # Valid max time values (in minutes)
-      ("60", 59, False),  # under limit
-      ("60", 120, True),  # over limit
-      ("10", 8, False),  # under limit
-      ("10", 11, True),  # over limit
+      (60, 59, False),  # under limit
+      (60, 120, True),  # over limit
+      (10, 8, False),  # under limit
+      (10, 11, True),  # over limit
 
       # Edge case: max time is zero → no limit enforced
-      ("0", 0, False),
-      ("0", 400, False),
+      (0, 0, False),
+      (0, 400, False),
 
       # Invalid max time formats or negative values → fallback to 30 hours
-      ("invalid", 100, False),  # should fallback to 30h
-      ("-1", MAX_TIME_OFFROAD_S + 1, True),  # should fallback to 30h, and exceed it
+      (-100, 100, False),  # should fallback to 30h
+      (-1, MAX_TIME_OFFROAD_S + 1, True),  # should fallback to 30h, and exceed it
     ]
   )
   def test_max_time_offroad_exceeded(self, max_time_offroad, offroad_time_min, expected_result):

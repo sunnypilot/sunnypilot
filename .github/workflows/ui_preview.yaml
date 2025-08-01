@@ -3,20 +3,18 @@ on:
   push:
     branches:
       - master
-      - master-new
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
     branches:
       - 'master'
-      - 'master-new'
     paths:
       - 'selfdrive/ui/**'
   workflow_dispatch:
 
 env:
   UI_JOB_NAME: "Create UI Report"
-  REPORT_NAME: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && 'master' || github.event.number }}
-  SHA: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && github.sha || github.event.pull_request.head.sha }}
+  REPORT_NAME: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'master' || github.event.number }}
+  SHA: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.sha || github.event.pull_request.head.sha }}
   BRANCH_NAME: "openpilot/pr-${{ github.event.number }}"
 
 jobs:
@@ -66,7 +64,7 @@ jobs:
           ref: openpilot_master_ui
 
       - name: Saving new master ui
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && github.event_name == 'push'
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         working-directory: ${{ github.workspace }}/master_ui
         run: |
           git checkout --orphan=new_master_ui

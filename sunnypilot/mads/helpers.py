@@ -25,10 +25,7 @@ def read_steering_mode_param(CP: structs.CarParams, params: Params):
   if get_mads_limited_brands(CP):
     return MadsSteeringModeOnBrake.DISENGAGE
 
-  try:
-    return int(params.get("MadsSteeringMode"))
-  except (ValueError, TypeError):
-    return MadsSteeringModeOnBrake.REMAIN_ACTIVE
+  return params.get("MadsSteeringMode", return_default=True)
 
 
 def set_alternative_experience(CP: structs.CarParams, params: Params):
@@ -59,6 +56,6 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   # TODO-SP: To enable MADS full support for Rivian/Tesla, identify consistent signals for MADS toggling
   mads_partial_support = get_mads_limited_brands(CP)
   if mads_partial_support:
-    params.put("MadsSteeringMode", "2")
+    params.put("MadsSteeringMode", 2)
     params.put_bool("MadsUnifiedEngagementMode", True)
     params.remove("MadsMainCruiseAllowed")

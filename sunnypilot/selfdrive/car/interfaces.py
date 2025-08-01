@@ -30,7 +30,7 @@ def _initialize_custom_longitudinal_tuning(CI: CarInterfaceBase, CP: structs.Car
 
   # Hyundai Custom Longitudinal Tuning
   if CP.brand == 'hyundai':
-    hyundai_longitudinal_tuning = int(params.get("HyundaiLongitudinalTuning", encoding="utf8") or 0)
+    hyundai_longitudinal_tuning = params.get("HyundaiLongitudinalTuning")
     if hyundai_longitudinal_tuning == LongitudinalTuningType.DYNAMIC:
       CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_DYNAMIC.value
     if hyundai_longitudinal_tuning == LongitudinalTuningType.PREDICTIVE:

@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import cereal.messaging as messaging
-from cereal import custom
+from cereal import log, custom
 
 from opendbc.car import structs
 from openpilot.common.params import Params
@@ -26,7 +26,7 @@ class ControlsExt:
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['selfdriveStateSP']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
 
   def get_params_sp(self) -> None:
@@ -44,8 +44,31 @@ class ControlsExt:
     # MADS not available, use stock state to engage
     return bool(sm['selfdriveState'].active)
 
+  @staticmethod
+  def get_lead_data(ld: log.RadarState.LeadData) -> dict:
+    return {
+      "dRel": ld.dRel,
+      "yRel": ld.yRel,
+      "vRel": ld.vRel,
+      "aRel": ld.aRel,
+      "vLead": ld.vLead,
+      "dPath": ld.dPath,
+      "vLat": ld.vLat,
+      "vLeadK": ld.vLeadK,
+      "aLeadK": ld.aLeadK,
+      "fcw": ld.fcw,
+      "status": ld.status,
+      "aLeadTau": ld.aLeadTau,
+      "modelProb": ld.modelProb,
+      "radar": ld.radar,
+      "radarTrackId": ld.radarTrackId,
+    }
+
   def state_control_ext(self, sm: messaging.SubMaster) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
+
+    CC_SP.leadOne = self.get_lead_data(sm['radarState'].leadOne)
+    CC_SP.leadTwo = self.get_lead_data(sm['radarState'].leadTwo)
 
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads

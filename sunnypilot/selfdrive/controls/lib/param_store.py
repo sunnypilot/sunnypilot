@@ -26,7 +26,7 @@ class ParamStore:
 
   def update(self, params: Params) -> None:
     old_values = dict(self.values)
-    self.values = {k: params.get(k, encoding='utf8') or "0" for k in self.keys}
+    self.values = {k: params.get(k) or "0" for k in self.keys}
     if old_values != self.values:
       self.cached_params_list = None
 

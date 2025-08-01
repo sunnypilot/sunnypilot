@@ -169,16 +169,16 @@ class ModelManagerSP:
         self.available_models = self.model_fetcher.get_available_bundles()
         self.active_bundle = get_active_bundle(self.params)
 
-        if index_to_download := self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8"):
-          if model_to_download := next((model for model in self.available_models if model.index == int(index_to_download)), None):
+        if index_to_download := self.params.get("ModelManager_DownloadIndex"):
+          if model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:
               cloudlog.exception(e)
             finally:
-              self.params.put("ModelManager_DownloadIndex", "")
+              self.params.remove("ModelManager_DownloadIndex")
 
-        if self.params.get("ModelManager_ClearCache", block=False, encoding="utf-8"):
+        if self.params.get("ModelManager_ClearCache"):
             self.clear_model_cache()
             self.params.remove("ModelManager_ClearCache")
 

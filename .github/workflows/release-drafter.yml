@@ -3,7 +3,6 @@ name: Release Drafter
 on:
   push:
     branches:
-      - master-new
       - master
     tags:
       - 'v*'

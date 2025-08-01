@@ -90,7 +90,7 @@ class MapdInstallManager:
     logging.error("Failed to download file after all retries")
 
   def get_installed_version(self) -> str:
-    return self._params.get("MapdVersion", encoding="utf-8") or ""
+    return str(self._params.get("MapdVersion"))
 
   def wait_for_internet_connection(self, return_on_failure: bool = False) -> bool:
     max_retries = 10

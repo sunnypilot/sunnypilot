@@ -32,7 +32,7 @@ class BackupManagerSP:
 
   def __init__(self):
     self.params = Params()
-    self.device_id = self.params.get("SunnylinkDongleId", encoding="utf8")
+    self.device_id = self.params.get("SunnylinkDongleId")
     self.api = SunnylinkApi(self.device_id)
     self.pm = messaging.PubMaster(["backupManagerSP"])
 
@@ -253,7 +253,7 @@ class BackupManagerSP:
             self.params.remove("BackupManager_CreateBackup")
 
         # Check for restore command
-        restore_version = self.params.get("BackupManager_RestoreVersion", encoding="utf8")
+        restore_version = self.params.get("BackupManager_RestoreVersion")
         if restore_version:
           try:
             version = int(restore_version) if restore_version.isdigit() else None

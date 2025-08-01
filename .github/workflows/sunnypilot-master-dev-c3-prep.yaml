@@ -1,7 +1,7 @@
 name: Build dev-c3-new
 
 env:
-  DEFAULT_SOURCE_BRANCH: "master-new"
+  DEFAULT_SOURCE_BRANCH: "master"
   DEFAULT_TARGET_BRANCH: "master-dev-c3-new"
   PR_LABEL: "dev-c3"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
@@ -11,18 +11,16 @@ on:
   push:
     branches:
       - master
-      - master-new    
   pull_request_target:
     types: [ labeled ]  
     branches:    
-      - 'master'        
-      - 'master-new'            
+      - 'master'
   workflow_dispatch:
     inputs:
       source_branch:
         description: 'Source branch to reset from'
         required: true
-        default: 'master-new'
+        default: 'master'
         type: string
       target_branch:
         description: 'Target branch to reset and squash into'

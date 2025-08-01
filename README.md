@@ -64,7 +64,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `master-new` branch.
+Pull requests should be against the most current `master` branch.
 
 ## 📊 User Data
 

@@ -17,19 +17,13 @@ class VCruiseHelperSP:
     self.params = Params()
 
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-    self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
-    self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
-
-  def read_int_param(self, key: str, default: int = 0) -> int:
-    try:
-      return int(self.params.get(key, encoding='utf8'))
-    except (ValueError, TypeError):
-      return default
+    self.short_increment = self.params.get("CustomAccShortPressIncrement", return_default=True)
+    self.long_increment = self.params.get("CustomAccLongPressIncrement", return_default=True)
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-    self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
-    self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
+    self.short_increment = self.params.get("CustomAccShortPressIncrement", return_default=True)
+    self.long_increment = self.params.get("CustomAccLongPressIncrement", return_default=True)
 
   def update_v_cruise_delta(self, long_press: bool, v_cruise_delta: float) -> tuple[bool, float]:
     if not self.custom_acc_enabled:
