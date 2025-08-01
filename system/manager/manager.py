@@ -74,6 +74,7 @@ def manager_init() -> None:
     ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
     ("ShowAdvancedControls", "0" if build_metadata.tested_channel else "1"),
+    ("RoadEdgeLaneChangeEnabled", "0"),
   ]
 
   # device boot mode
