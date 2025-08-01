@@ -216,7 +216,7 @@ class TestPowerMonitoring:
       (0, 400, False),
 
       # Invalid max time formats or negative values → fallback to 30 hours
-      ("invalid", 100, False),  # should fallback to 30h
+      (-100, 100, False),  # should fallback to 30h
       (-1, MAX_TIME_OFFROAD_S + 1, True),  # should fallback to 30h, and exceed it
     ]
   )
