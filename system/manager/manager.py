@@ -45,6 +45,7 @@ def manager_init() -> None:
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
+    ("AccelPersonality", "1"),
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "0"),
     ("BlindSpot", "0"),
@@ -74,6 +75,10 @@ def manager_init() -> None:
     ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
     ("ShowAdvancedControls", "0" if build_metadata.tested_channel else "1"),
+    ("VibePersonalityEnabled", "0"),
+    ("VibeAccelPersonalityEnabled", "0"),
+    ("VibeFollowPersonalityEnabled", "0"),
+
   ]
 
   # device boot mode
