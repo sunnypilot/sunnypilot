@@ -29,11 +29,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        target: /^(?!master-new$).*/
+        target: /^(?!master$).*/
         exclude: /sunnypilot:.*/
         change-to: ${{ github.base_ref }}
         already-exists-action: close_this
-        already-exists-comment: "Your PR should be made against the `master-new` branch"
+        already-exists-comment: "Your PR should be made against the `master` branch"
 
   update-pr-labels:
     name: Update fork's PR Labels

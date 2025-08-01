@@ -8,7 +8,7 @@ env:
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
   
   # Branch configurations
-  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master-new' }} # vars are set on repo settings.
+  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master' }} # vars are set on repo settings.
   DEV_C3_SOURCE_BRANCH: ${{ vars.DEV_C3_SOURCE_BRANCH || 'master-dev-c3-new' }} # vars are set on repo settings.
   
   # Target branch configurations
@@ -21,7 +21,7 @@ env:
 
 on:
   push:
-    branches: [ master, master-new, master-dev-c3-new ]
+    branches: [ master, master-dev-c3-new ]
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]

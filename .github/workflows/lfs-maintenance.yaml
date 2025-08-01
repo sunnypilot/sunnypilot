@@ -9,10 +9,10 @@ on:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
   push:
     branches:
-      - 'master-new'
+      - 'master'
   pull_request:
     branches:
-      - 'master-new'
+      - 'master'
   workflow_dispatch:  # enables manual triggering
     inputs:
       upstream_branch:
