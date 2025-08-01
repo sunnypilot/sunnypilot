@@ -176,7 +176,7 @@ class ModelManagerSP:
             except Exception as e:
               cloudlog.exception(e)
             finally:
-              self.params.put("ModelManager_DownloadIndex", "")
+              self.params.remove("ModelManager_DownloadIndex")
 
         if self.params.get("ModelManager_ClearCache"):
             self.clear_model_cache()
