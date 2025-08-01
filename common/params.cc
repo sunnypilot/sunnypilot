@@ -103,10 +103,10 @@ Params::~Params() {
   assert(queue.empty());
 }
 
-std::vector<std::string> Params::allKeys(ParamKeyType type) const {
+std::vector<std::string> Params::allKeys(ParamKeyFlag flag) const {
   std::vector<std::string> ret;
   for (auto &p : keys) {
-    if (type == ALL || (p.second & type)) {
+    if (flag == ALL || (p.second.flags & flag)) {
       ret.push_back(p.first);
     }
   }
