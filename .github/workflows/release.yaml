@@ -25,7 +25,7 @@ jobs:
       if: ${{ github.event_name == 'schedule' }}
       uses: lewagon/wait-on-check-action@ccfb013c15c8afb7bf2b7c028fb74dc5a068cccc
       with:
-        ref: master
+        ref: sp-docker
         wait-interval: 30
         running-workflow-name: 'build staging-c3-new'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
