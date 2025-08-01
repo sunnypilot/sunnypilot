@@ -62,6 +62,7 @@ def manager_init() -> None:
     ("InteractivityTimeout", "0"),
     ("LagdToggle", "1"),
     ("LagdToggledelay", "0.2"),
+    ("LagdToggledelayoffset", "0.0"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
