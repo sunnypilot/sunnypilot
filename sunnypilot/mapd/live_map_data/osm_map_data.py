@@ -31,7 +31,7 @@ class OsmMapData(BaseMapData):
     self.mem_params.put("LastGPSPosition", json.dumps(params))
 
   def get_current_speed_limit(self) -> float:
-    return float(self.mem_params.get("MapSpeedLimit"))
+    return float(self.mem_params.get("MapSpeedLimit") or 0.0)
 
   def get_current_road_name(self) -> str:
     return str(self.mem_params.get("RoadName"))
