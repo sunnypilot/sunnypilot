@@ -21,7 +21,7 @@ from pathlib import Path
 
 # see the README.md for more details on the model selector versioning
 CURRENT_SELECTOR_VERSION = 8
-REQUIRED_MIN_SELECTOR_VERSION = 6
+REQUIRED_MIN_SELECTOR_VERSION = 8
 
 USE_ONNX = os.getenv('USE_ONNX', PC)
 
