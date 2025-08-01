@@ -23,15 +23,6 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
-  // chill to experimental transition control
-  accToE2ETransitionControl = new ParamControlSP("BlendAccToE2ETransition",
-    tr("Blend chill to experimental mode transition"),
-    tr("Enable to blend braking desires when switching from chill to experimental in a smoother, more natural way. "
-      "This allows for a gradual transition when switching from ACC to E2E longitudinal control."),
-    "../assets/offroad/icon_shell.png", nullptr, true);
-  accToE2ETransitionControl->showDescription();
-  list->addItem(accToE2ETransitionControl);
-
   main_layout->addWidget(cruisePanelScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);

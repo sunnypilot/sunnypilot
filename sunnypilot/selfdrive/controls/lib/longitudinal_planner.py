@@ -46,7 +46,7 @@ class LongitudinalPlannerSP:
       self._last_mode = mode
 
   def blend_accel_transition(self, mpc_accel: float, e2e_accel: float, v_ego: float) -> float:
-    if self._params.get_bool("BlendAccToE2ETransition"):
+    if self._params.get_bool("DynamicExperimentalControl"):
       if self._transition_counter < self._transition_steps:
         self._transition_counter += 1
         progress = self._transition_counter / self._transition_steps
