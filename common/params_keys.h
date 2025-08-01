@@ -200,7 +200,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"MapdVersion", {PERSISTENT, STRING, ""}},
     {"MapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT, "0.0"}},
     {"NextMapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, JSON}},
-    {"Offroad_OSMUpdateRequired", {CLEAR_ON_MANAGER_START, STRING}},
+    {"Offroad_OSMUpdateRequired", {CLEAR_ON_MANAGER_START, JSON}},
     {"OsmDbUpdatesCheck", {CLEAR_ON_MANAGER_START, BOOL}},  // mapd database update happens with device ON, reset on boot
     {"OSMDownloadBounds", {PERSISTENT, STRING}},
     {"OsmDownloadedDate", {PERSISTENT, STRING, "0.0"}},
