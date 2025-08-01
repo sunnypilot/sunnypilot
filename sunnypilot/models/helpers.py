@@ -64,6 +64,7 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
   """
   return bool(REQUIRED_MIN_SELECTOR_VERSION <= bundle.get("minimumSelectorVersion", 0) <= CURRENT_SELECTOR_VERSION)
 
+
 def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
   if params is None:
