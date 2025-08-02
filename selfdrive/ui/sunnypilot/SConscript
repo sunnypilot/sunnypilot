@@ -4,6 +4,7 @@ widgets_src = [
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/drive_stats.cc",
   "sunnypilot/qt/widgets/expandable_row.cc",
+  "sunnypilot/qt/widgets/external_storage.cc",
   "sunnypilot/qt/widgets/prime.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
   "sunnypilot/qt/network/networking.cc",
