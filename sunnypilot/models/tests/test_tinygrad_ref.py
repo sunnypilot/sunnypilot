@@ -6,7 +6,12 @@ def get_tinygrad_ref():
   repo_path = os.path.join(BASEDIR, "tinygrad_repo")
   git_path = os.path.join(repo_path, ".git")
   try:
-    git_dir = git_path if os.path.isdir(git_path) else os.path.join(repo_path, open(git_path).read().strip()[8:])
+    if os.path.isdir(git_path):
+      git_dir = git_path
+    else:
+      with open(git_path) as f:
+        line = f.read().strip()
+      git_dir = os.path.join(repo_path, line[8:])
     with open(os.path.join(git_dir, "HEAD")) as f:
       ref = f.read().strip()
     if ref.startswith("ref:"):
