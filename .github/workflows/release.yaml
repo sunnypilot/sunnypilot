@@ -25,7 +25,7 @@ jobs:
       if: ${{ github.event_name == 'schedule' }}
       uses: lewagon/wait-on-check-action@ccfb013c15c8afb7bf2b7c028fb74dc5a068cccc
       with:
-        ref: sp-docker
+        ref: master
         wait-interval: 30
         running-workflow-name: 'build __nightly'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
