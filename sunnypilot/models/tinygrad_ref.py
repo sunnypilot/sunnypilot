@@ -1,8 +1,9 @@
 import os
 import subprocess
+from openpilot.common.basedir import BASEDIR
 
 def get_tinygrad_ref():
-  repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "tinygrad_repo"))
+  repo_path = os.path.join(BASEDIR, "tinygrad_repo")
   try:
     ref = subprocess.check_output([
       "git", "-C", repo_path, "rev-parse", "HEAD"
