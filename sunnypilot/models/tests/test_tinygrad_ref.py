@@ -5,9 +5,9 @@ from openpilot.common.basedir import BASEDIR
 def get_tinygrad_ref():
   repo_path = os.path.join(BASEDIR, "tinygrad_repo")
   try:
-    ref = subprocess.check_output([
-      "git", "-C", repo_path, "rev-parse", "HEAD"
-    ], encoding="utf-8").strip()
+    ref = subprocess.check_output(
+      ["git", "rev-parse", "HEAD"], cwd=repo_path, encoding="utf-8"
+    ).strip()
     return ref
   except Exception as e:
     print(f"Error getting tinygrad_repo ref: {e}")
