@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_stagingc3new:
-    name: build staging-c3-new
+  build___nightly:
+    name: build __nightly
     env:
       ImageOS: ubuntu24
     container:
@@ -27,7 +27,7 @@ jobs:
       with:
         ref: sp-docker
         wait-interval: 30
-        running-workflow-name: 'build staging-c3-new'
+        running-workflow-name: 'build __nightly'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         check-regexp: ^((?!.*(build prebuilt).*).)*$
     - uses: actions/checkout@v4
@@ -38,5 +38,5 @@ jobs:
       run: |
         git config --global --add safe.directory '*'
         git lfs pull
-    - name: Push staging-c3-new
+    - name: Push __nightly
       run: BRANCH=__nightly release/build_devel.sh
