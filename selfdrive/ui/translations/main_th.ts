@@ -8,10 +8,6 @@
         <translation>ปิด</translation>
     </message>
     <message>
-        <source>Snooze Update</source>
-        <translation>เลื่อนการอัปเดต</translation>
-    </message>
-    <message>
         <source>Reboot and Update</source>
         <translation>รีบูตและอัปเดต</translation>
     </message>
@@ -108,34 +104,6 @@
     </message>
 </context>
 <context>
-    <name>AutoLaneChangeTimer</name>
-    <message>
-        <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
-Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>s</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Nudge</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ConfirmationDialog</name>
     <message>
         <source>Ok</source>
@@ -149,8 +117,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
 <context>
     <name>DeclinePage</name>
     <message>
-        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
-        <translation>คุณต้องยอมรับเงื่อนไขและข้อตกลง เพื่อใช้งาน sunnypilot</translation>
+        <source>You must accept the Terms and Conditions in order to use openpilot.</source>
+        <translation>คุณต้องยอมรับเงื่อนไขและข้อตกลง เพื่อใช้งาน openpilot</translation>
     </message>
     <message>
         <source>Back</source>
@@ -165,51 +133,31 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DeveloperPanel</name>
     <message>
         <source>Joystick Debug Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>โหมดดีบักจอยสติ๊ก</translation>
     </message>
     <message>
         <source>Longitudinal Maneuver Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable ADB</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable GitHub runner service</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enables or disables the github runner service.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Error Log</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>VIEW</source>
-        <translation type="unfinished">ดู</translation>
-    </message>
-    <message>
-        <source>View the error log for sunnypilot crashes.</source>
-        <translation type="unfinished"></translation>
+        <translation>โหมดการควบคุมการเร่ง/เบรค</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished"></translation>
+        <translation>ระบบควบคุมการเร่ง/เบรคโดย openpilot (Alpha)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished"></translation>
+        <translation>คำเตือน: การควบคุมการเร่ง/เบรคโดย openpilot สำหรับรถคันนี้ยังอยู่ในสถานะ alpha และระบบเบรคฉุกเฉินอัตโนมัติ (AEB) จะถูกปิด</translation>
     </message>
     <message>
-        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished"></translation>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation>โดยปกติสำหรับรถคันนี้ openpilot จะควบคุมการเร่ง/เบรคด้วยระบบ ACC จากโรงงาน แทนการควยคุมโดย openpilot เปิดสวิตซ์นี้เพื่อให้ openpilot ควบคุมการเร่ง/เบรค แนะนำให้เปิดโหมดทดลองเมื่อต้องการให้ openpilot ควบคุมการเร่ง/เบรค ซึ่งอยู่ในสถานะ alpha</translation>
+    </message>
+    <message>
+        <source>Enable ADB</source>
+        <translation>เปิด ADB</translation>
+    </message>
+    <message>
+        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
+        <translation>ADB (Android Debug Bridge) อนุญาตให้เชื่อมต่ออุปกรณ์ของคุณผ่าน USB หรือผ่านเครือข่าย ดูข้อมูลเพิ่มเติมที่ https://docs.comma.ai/how-to/connect-to-comma</translation>
     </message>
 </context>
 <context>
@@ -259,8 +207,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>ทบทวน</translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of sunnypilot</source>
-        <translation>ตรวจสอบกฎ คุณสมบัติ และข้อจำกัดของ sunnypilot</translation>
+        <source>Review the rules, features, and limitations of openpilot</source>
+        <translation>ตรวจสอบกฎ คุณสมบัติ และข้อจำกัดของ openpilot</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -293,10 +241,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Power Off</source>
         <translation>ปิดเครื่อง</translation>
-    </message>
-    <message>
-        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>sunnypilot กำหนดให้ติดตั้งอุปกรณ์ โดยสามารถเอียงด้านซ้ายหรือขวาไม่เกิน 4° และเอียงขึ้นด้านบนไม่เกิน 5° หรือเอียงลงด้านล่างไม่เกิน 9° sunnypilot ทำการคาลิเบรทอย่างต่อเนื่อง แทบจะไม่จำเป็นต้องทำการรีเซ็ตการคาลิเบรท</translation>
     </message>
     <message>
         <source> Your device is pointed %1° %2 and %3° %4.</source>
@@ -359,121 +303,31 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source> Resetting calibration will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>DevicePanelSP</name>
-    <message>
-        <source>Driver Camera Preview</source>
+        <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Training Guide</source>
+        <source>openpilot is continuously calibrating, resetting is rarely required. Resetting calibration will restart openpilot if the car is powered on.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Regulatory</source>
-        <translation type="unfinished">ระเบียบข้อบังคับ</translation>
-    </message>
-    <message>
-        <source>Language</source>
+        <source>
+
+Steering lag calibration is %1% complete.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Are you sure you want to review the training guide?</source>
-        <translation type="unfinished">คุณแน่ใจหรือไม่ว่าต้องการทบทวนคู่มือการใช้งาน?</translation>
-    </message>
-    <message>
-        <source>Review</source>
-        <translation type="unfinished">ทบทวน</translation>
-    </message>
-    <message>
-        <source>Select a language</source>
-        <translation type="unfinished">เลือกภาษา</translation>
-    </message>
-    <message>
-        <source>Reboot</source>
-        <translation type="unfinished">รีบูต</translation>
-    </message>
-    <message>
-        <source>Power Off</source>
-        <translation type="unfinished">ปิดเครื่อง</translation>
-    </message>
-    <message>
-        <source>Offroad Mode</source>
+        <source>
+
+Steering lag calibration is complete.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Are you sure you want to exit Always Offroad mode?</source>
+        <source> Steering torque response calibration is %1% complete.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Confirm</source>
-        <translation type="unfinished">ยืนยัน</translation>
-    </message>
-    <message>
-        <source>Are you sure you want to enter Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Disengage to Enter Always Offroad Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Exit Always Offroad</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Always Offroad</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Quiet Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reset Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="unfinished">รีเซ็ต</translation>
-    </message>
-    <message>
-        <source>The reset cannot be undone. You have been warned.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
+        <source> Steering torque response calibration is complete.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -498,35 +352,37 @@ Please use caution when using this feature. Only use the blinker when traffic an
 <context>
     <name>FirehosePanel</name>
     <message>
-        <source>🔥 Firehose Mode 🔥</source>
-        <translation type="unfinished"></translation>
+        <source>openpilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation>openpilot เรียนรู้วิธีขับรถจากการเฝ้าดูการขับขี่ของมนุษย์เช่นคุณ
+
+โหมดสายยางดับเพลิงช่วยให้คุณอัปโหลดข้อมูลการฝึกฝนได้มากที่สุด เพื่อนำไปพัฒนาโมเดลการขับขี่ของ openpilot ข้อมูลที่มากขึ้นหมายถึงโมเดลที่ใหญ่ขึ้น และนั่นหมายถึงโหมดทดลองที่ดีขึ้น</translation>
     </message>
     <message>
         <source>Firehose Mode: ACTIVE</source>
-        <translation type="unfinished"></translation>
+        <translation>โหมดสายยางดับเพลิง: เปิดใช้งาน</translation>
     </message>
     <message>
         <source>ACTIVE</source>
-        <translation type="unfinished"></translation>
+        <translation>เปิดใช้งาน</translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
-        <translation type="unfinished"></translation>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <translation>เพื่อประสิทธิภาพสูงสุด ควรนำอุปกรณ์เข้ามาข้างใน เชื่อมต่อกับอะแดปเตอร์ USB-C คุณภาพดี และ Wi-Fi สัปดาห์ละครั้ง&lt;br&gt;&lt;br&gt;โหมดสายยางดับเพลิงยังสามารถทำงานระหว่างขับรถได้ หากเชื่อมต่อกับฮอตสปอตหรือซิมการ์ดที่มีเน็ตไม่จำกัด&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;คำถามที่พบบ่อย&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;วิธีการขับหรือสถานที่ขับขี่มีผลหรือไม่?&lt;/i&gt;ไม่มีผล แค่ขับขี่ตามปกติของคุณ&lt;br&gt;&lt;br&gt;&lt;i&gt;เซกเมนต์ทั้งหมดของฉันจะถูกดึงข้อมูลในโหมดสายยางดับเพลิงหรือไม่?&lt;/i&gt;ไม่ใช่ เราจะเลือกดึงข้อมูลเพียงบางส่วนจากเซกเมนต์ของคุณ&lt;br&gt;&lt;br&gt;&lt;i&gt;อะแดปเตอร์ USB-C แบบไหนดี?&lt;/i&gt;ที่ชาร์จเร็วของโทรศัพท์หรือแล็ปท็อปแบบใดก็ได้ สามารถใช้ได้&lt;br&gt;&lt;br&gt;&lt;i&gt;ซอฟต์แวร์ที่ใช้มีผลหรือไม่?&lt;/i&gt;มีผล เฉพาะ openpilot ตัวหลัก (และ fork เฉพาะบางตัว) เท่านั้น ที่สามารถนำข้อมูลไปใช้ฝึกฝนโมเดลได้</translation>
     </message>
     <message numerus="yes">
         <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>มีการขับขี่ของคุณ &lt;b&gt;%n เซกเมนต์&lt;/b&gt; อยู่ในชุดข้อมูลการฝึกฝนแล้วในขณะนี้</numerusform>
         </translation>
     </message>
     <message>
-        <source>sunnypilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="unfinished"></translation>
+        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
+        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;ไม่เปิดใช้งาน&lt;/span&gt;: เชื่อมต่อกับเครือข่ายที่ไม่จำกัดข้อมูล</translation>
     </message>
     <message>
-        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
+        <source>Firehose Mode</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -546,49 +402,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
 </context>
 <context>
-    <name>HyundaiSettings</name>
-    <message>
-        <source>Off</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dynamic</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Predictive</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Longitudinal Tuning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off: Uses default tuning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dynamic: Adjusts acceleration limits based on current speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Predictive: Uses future trajectory data to anticipate needed adjustments</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>InputDialog</name>
     <message>
         <source>Cancel</source>
@@ -599,265 +412,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>
             <numerusform>ต้องการอย่างน้อย %n ตัวอักษร!</numerusform>
         </translation>
-    </message>
-</context>
-<context>
-    <name>LaneChangeSettings</name>
-    <message>
-        <source>Back</source>
-        <translation type="unfinished">ย้อนกลับ</translation>
-    </message>
-    <message>
-        <source>Auto Lane Change: Delay with Blind Spot</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>LateralPanel</name>
-    <message>
-        <source>Modular Assistive Driving System (MADS)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Customize MADS</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Customize Lane Change</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This platform supports all MADS settings.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This platform supports limited MADS settings.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>MadsSettings</name>
-    <message>
-        <source>Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Unified Engagement Mode (UEM)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Engage lateral and longitudinal control with cruise control engagement.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Remain Active</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Disengage</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Steering Mode on Brake Pedal</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This feature defaults to OFF, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This feature defaults to ON, and does not allow selection due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This platform only supports Disengage mode due to vehicle limitations.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Remain Active: ALC will remain active when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Pause: ALC will pause when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Disengage: ALC will disengage when the brake pedal is pressed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>MaxTimeOffroad</name>
-    <message>
-        <source>Max Time Offroad</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Device will automatically shutdown after set time once the engine is turned off.&lt;br/&gt;(30h is the default)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Always On</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>h</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>m</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source> (default)</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ModelsPanel</name>
-    <message>
-        <source>Current Model</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>SELECT</source>
-        <translation type="unfinished">เลือก</translation>
-    </message>
-    <message>
-        <source>No custom model selected!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Driving</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Navigation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Vision</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Policy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloading %1 model [%2]... (%3%)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] %3</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ready</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>from cache</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] download failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] pending...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fetching models...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use Default</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select a Model</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Model download has started in the background.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>We STRONGLY suggest you to reset calibration.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reset Calibration</source>
-        <translation type="unfinished">รีเซ็ตการคาลิเบรท</translation>
-    </message>
-    <message>
-        <source>Driving Model Selector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Warning: You are on a metered connection!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Continue</source>
-        <translation type="unfinished">ดำเนินการต่อ</translation>
-    </message>
-    <message>
-        <source>on Metered</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">ยกเลิก</translation>
     </message>
 </context>
 <context>
@@ -891,88 +445,18 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
 </context>
 <context>
-    <name>NetworkingSP</name>
-    <message>
-        <source>Scan</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Scanning...</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>NeuralNetworkLateralControl</name>
-    <message>
-        <source>Neural Network Lateral Control (NNLC)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>NNLC is currently not available on this platform.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Start the car to check car compatibility</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>NNLC Not Loaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>NNLC Loaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Match</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Exact</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fuzzy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller, with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>with feedback, or to provide log data for your car if your car is currently unsupported:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>if there are any issues:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>and donate logs to get NNLC loaded for your car:</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>OffroadAlert</name>
     <message>
         <source>Device temperature too high. System cooling down before starting. Current internal component temperature: %1</source>
         <translation>อุณหภูมิของอุปกรณ์สูงเกินไป ระบบกำลังทำความเย็นก่อนเริ่ม อุณหภูมิของชิ้นส่วนภายในปัจจุบัน: %1</translation>
     </message>
     <message>
-        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, sunnypilot won&apos;t engage in %1</source>
-        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดทเดี๋ยวนี้ ถ้าคุณไม่เชื่อมต่ออินเตอร์เน็ต sunnypilot จะไม่ทำงานในอีก %1</translation>
+        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, openpilot won&apos;t engage in %1</source>
+        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดทเดี๋ยวนี้ ถ้าคุณไม่เชื่อมต่ออินเตอร์เน็ต openpilot จะไม่ทำงานในอีก %1</translation>
     </message>
     <message>
-        <source>Connect to internet to check for updates. sunnypilot won&apos;t automatically start until it connects to internet to check for updates.</source>
-        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดท sunnypilot จะไม่เริ่มทำงานอัตโนมัติจนกว่าจะได้เชื่อมต่อกับอินเตอร์เน็ตเพื่อตรวจสอบอัปเดท</translation>
+        <source>Connect to internet to check for updates. openpilot won&apos;t automatically start until it connects to internet to check for updates.</source>
+        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดท openpilot จะไม่เริ่มทำงานอัตโนมัติจนกว่าจะได้เชื่อมต่อกับอินเตอร์เน็ตเพื่อตรวจสอบอัปเดท</translation>
     </message>
     <message>
         <source>Unable to download updates
@@ -989,27 +473,31 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>กำลังดาวน์โหลดอัปเดทสำหรับระบบปฏิบัติการอยู่เบื้องหลัง คุณจะได้รับการแจ้งเตือนเมื่อระบบพร้อมสำหรับการติดตั้ง</translation>
     </message>
     <message>
-        <source>Device failed to register. It will not connect to or upload to comma.ai servers, and receives no support from comma.ai. If this is an official device, visit https://comma.ai/support.</source>
-        <translation>ไม่สามารถลงทะเบียนอุปกรณ์ได้ อุปกรณ์จะไม่สามารถเชื่อมต่อหรืออัปโหลดไปยังเซิร์ฟเวอร์ของ comma.ai ได้และจะไม่ได้รับการสนับสนุนจาก comma.ai ถ้านี่คืออุปกรณ์อย่างเป็นทางการ กรุณาติดต่อ https://comma.ai/support</translation>
-    </message>
-    <message>
         <source>NVMe drive not mounted.</source>
         <translation>ไม่ได้ติดตั้งไดร์ฟ NVMe</translation>
     </message>
     <message>
-        <source>Unsupported NVMe drive detected. Device may draw significantly more power and overheat due to the unsupported NVMe.</source>
-        <translation>ตรวจพบไดร์ฟ NVMe ที่ไม่รองรับ อุปกรณ์อาจใช้พลังงานมากขึ้นและร้อนเกินไปเนื่องจากไดร์ฟ NVMe ที่ไม่รองรับ</translation>
+        <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
+        <translation>openpilot ไม่สามารถระบุรถยนต์ของคุณได้ ระบบอาจไม่รองรับรถยนต์ของคุณหรือไม่รู้จัก ECU กรุณาส่ง pull request เพื่อเพิ่มรุ่นของเฟิร์มแวร์ให้กับรถยนต์ที่เหมาะสม หากต้องการความช่วยเหลือให้เข้าร่วม discord.comma.ai</translation>
     </message>
     <message>
-        <source>sunnypilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>sunnypilot ไม่สามารถระบุรถยนต์ของคุณได้ ระบบอาจไม่รองรับรถยนต์ของคุณหรือไม่รู้จัก ECU กรุณาส่ง pull request เพื่อเพิ่มรุ่นของเฟิร์มแวร์ให้กับรถยนต์ที่เหมาะสม หากต้องการความช่วยเหลือให้เข้าร่วม discord.comma.ai</translation>
+        <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
+        <translation>openpilot ตรวจพบการเปลี่ยนแปลงของตำแหน่งที่ติดตั้ง กรุณาตรวจสอบว่าได้เลื่อนอุปกรณ์เข้ากับจุดติดตั้งจนสุดแล้ว และจุดติดตั้งได้ยึดติดกับกระจกหน้าอย่างแน่นหนา</translation>
     </message>
     <message>
-        <source>sunnypilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
-        <translation>sunnypilot ตรวจพบการเปลี่ยนแปลงของตำแหน่งที่ติดตั้ง กรุณาตรวจสอบว่าได้เลื่อนอุปกรณ์เข้ากับจุดติดตั้งจนสุดแล้ว และจุดติดตั้งได้ยึดติดกับกระจกหน้าอย่างแน่นหนา</translation>
+        <source>Device failed to register with the comma.ai backend. It will not connect or upload to comma.ai servers, and receives no support from comma.ai. If this is a device purchased at comma.ai/shop, open a ticket at https://comma.ai/support.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
+        <source>Acknowledge Excessive Actuation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Snooze Update</source>
+        <translation type="unfinished">เลื่อนการอัปเดต</translation>
+    </message>
+    <message>
+        <source>openpilot has detected excessive %1 actuation. This may be due to a software bug. Please contact support at https://comma.ai/support.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1031,8 +519,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
 <context>
     <name>OnroadAlerts</name>
     <message>
-        <source>sunnypilot Unavailable</source>
-        <translation>sunnypilot ไม่สามารถใช้งานได้</translation>
+        <source>openpilot Unavailable</source>
+        <translation>openpilot ไม่สามารถใช้งานได้</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
@@ -1044,11 +532,11 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Waiting to start</source>
-        <translation type="unfinished"></translation>
+        <translation>รอเริ่มทำงาน</translation>
     </message>
     <message>
         <source>System Unresponsive</source>
-        <translation type="unfinished"></translation>
+        <translation>ระบบไม่ตอบสนอง</translation>
     </message>
 </context>
 <context>
@@ -1071,7 +559,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
-        <translation type="unfinished"></translation>
+        <translation>กรุณาเชื่อมต่อ Wi-Fi เพื่อทำการจับคู่ครั้งแรกให้เสร็จสิ้น</translation>
     </message>
 </context>
 <context>
@@ -1083,96 +571,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
-    </message>
-</context>
-<context>
-    <name>ParamControlSP</name>
-    <message>
-        <source>Enable</source>
-        <translation type="unfinished">เปิดใช้งาน</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">ยกเลิก</translation>
-    </message>
-</context>
-<context>
-    <name>PlatformSelector</name>
-    <message>
-        <source>Vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>SEARCH</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Search your vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enter model year (e.g., 2021) and model name (Toyota Corolla):</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>SEARCHING</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>REMOVE</source>
-        <translation type="unfinished">ลบ</translation>
-    </message>
-    <message>
-        <source>This setting will take effect immediately.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>This setting will take effect once the device enters offroad state.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Vehicle Selector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Confirm</source>
-        <translation type="unfinished">ยืนยัน</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">ยกเลิก</translation>
-    </message>
-    <message>
-        <source>No vehicles found for query: %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select a vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Unrecognized Vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fingerprinted automatically</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Manually selected</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Not fingerprinted or manually selected</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select vehicle to force fingerprint manually.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Colors represent fingerprint status:</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1203,7 +601,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Remote snapshots</source>
-        <translation type="unfinished"></translation>
+        <translation>ภาพถ่ายระยะไกล</translation>
     </message>
 </context>
 <context>
@@ -1220,8 +618,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
 <context>
     <name>QObject</name>
     <message>
-        <source>sunnypilot</source>
-        <translation>sunnypilot</translation>
+        <source>openpilot</source>
+        <translation>openpilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -1244,47 +642,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>now</source>
         <translation>ตอนนี้</translation>
-    </message>
-</context>
-<context>
-    <name>Reset</name>
-    <message>
-        <source>Reset failed. Reboot to try again.</source>
-        <translation>การรีเซ็ตล้มเหลว รีบูตเพื่อลองอีกครั้ง</translation>
-    </message>
-    <message>
-        <source>Are you sure you want to reset your device?</source>
-        <translation>คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตอุปกรณ์?</translation>
-    </message>
-    <message>
-        <source>System Reset</source>
-        <translation>รีเซ็ตระบบ</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>ยกเลิก</translation>
-    </message>
-    <message>
-        <source>Reboot</source>
-        <translation>รีบูต</translation>
-    </message>
-    <message>
-        <source>Confirm</source>
-        <translation>ยืนยัน</translation>
-    </message>
-    <message>
-        <source>Resetting device...
-This may take up to a minute.</source>
-        <translation>กำลังรีเซ็ตอุปกรณ์...
-อาจใช้เวลาถึงหนึ่งนาที</translation>
-    </message>
-    <message>
-        <source>Unable to mount data partition. Partition may be corrupted. Press confirm to erase and reset your device.</source>
-        <translation>ไม่สามารถเมานต์พาร์ติชั่นข้อมูลได้ พาร์ติชั่นอาจเสียหาย กดยืนยันเพื่อลบและรีเซ็ตอุปกรณ์ของคุณ</translation>
-    </message>
-    <message>
-        <source>System reset triggered. Press confirm to erase all content and settings. Press cancel to resume boot.</source>
-        <translation>ระบบถูกรีเซ็ต กดยืนยันเพื่อลบข้อมูลและการตั้งค่าทั้งหมด กดยกเลิกเพื่อบูตต่อ</translation>
     </message>
 </context>
 <context>
@@ -1311,70 +668,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Developer</source>
-        <translation type="unfinished"></translation>
+        <translation>นักพัฒนา</translation>
     </message>
     <message>
         <source>Firehose</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SettingsWindowSP</name>
-    <message>
-        <source>×</source>
-        <translation type="unfinished">×</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation type="unfinished">อุปกรณ์</translation>
-    </message>
-    <message>
-        <source>Network</source>
-        <translation type="unfinished">เครือข่าย</translation>
-    </message>
-    <message>
-        <source>sunnylink</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggles</source>
-        <translation type="unfinished">ตัวเลือก</translation>
-    </message>
-    <message>
-        <source>Software</source>
-        <translation type="unfinished">ซอฟต์แวร์</translation>
-    </message>
-    <message>
-        <source>Trips</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Developer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Firehose</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Steering</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Models</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Cruise</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Visuals</source>
-        <translation type="unfinished"></translation>
+        <translation>สายยางดับเพลิง</translation>
     </message>
 </context>
 <context>
@@ -1464,12 +762,22 @@ This may take up to a minute.</source>
         <translation>เลือกซอฟต์แวร์ที่จะติดตั้ง</translation>
     </message>
     <message>
-        <source>sunnypilot</source>
-        <translation>sunnypilot</translation>
+        <source>openpilot</source>
+        <translation>openpilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
         <translation>ซอฟต์แวร์ที่กำหนดเอง</translation>
+    </message>
+    <message>
+        <source>WARNING: Custom Software</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use caution when installing third-party software. Third-party software has not been tested by comma, and may cause damage to your device and/or vehicle.
+
+If you&apos;d like to proceed, use https://flash.comma.ai to restore your device to a factory state later.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1563,33 +871,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>SidebarSP</name>
-    <message>
-        <source>DISABLED</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>OFFLINE</source>
-        <translation type="unfinished">ออฟไลน์</translation>
-    </message>
-    <message>
-        <source>REGIST...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ONLINE</source>
-        <translation type="unfinished">ออนไลน์</translation>
-    </message>
-    <message>
-        <source>ERROR</source>
-        <translation type="unfinished">เกิดข้อผิดพลาด</translation>
-    </message>
-    <message>
-        <source>SUNNYLINK</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>SoftwarePanel</name>
     <message>
         <source>Uninstall %1</source>
@@ -1665,25 +946,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>SoftwarePanelSP</name>
-    <message>
-        <source>Search Branch</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enter search keywords, or leave blank to list all branches.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>No branches found for keywords: %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select a branch</source>
-        <translation type="unfinished">เลือก Branch</translation>
-    </message>
-</context>
-<context>
     <name>SshControl</name>
     <message>
         <source>SSH Keys</source>
@@ -1730,168 +992,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>SunnylinkPanel</name>
-    <message>
-        <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable sunnylink</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Device ID</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>N/A</source>
-        <translation type="unfinished">ไม่มี</translation>
-    </message>
-    <message>
-        <source>Sponsor Status</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>SPONSOR</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Pair GitHub Account</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAIR</source>
-        <translation type="unfinished">จับคู่</translation>
-    </message>
-    <message>
-        <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Not Sponsor</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Paired</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Not Paired</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>THANKS ♥</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Backup Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Are you sure you want to backup sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Back Up</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Restore Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Are you sure you want to restore the last backed up sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Restore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Backup in progress %1%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Backup Failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Settings backup completed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Restore in progress %1%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Restore Failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Unable to restore the settings, try again later.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Settings restored. Confirm to restart the interface.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SunnylinkSponsorPopup</name>
-    <message>
-        <source>Scan the QR code to login to your GitHub account</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Follow the prompts to complete the pairing process</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Scan the QR code to visit sunnyhaibin&apos;s GitHub Sponsors page</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Choose your sponsorship tier and confirm your support</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Pair your GitHub account</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Early Access: Become a sunnypilot Sponsor</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>TermsPage</name>
     <message>
         <source>Decline</source>
@@ -1902,16 +1002,20 @@ This may take up to a minute.</source>
         <translation>ยอมรับ</translation>
     </message>
     <message>
-        <source>Welcome to sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <source>Welcome to openpilot</source>
+        <translation>ยินดีต้อนรับสู่ openpilot</translation>
     </message>
     <message>
-        <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
-        <translation type="unfinished"></translation>
+        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <translation>คุณต้องยอมรับข้อกำหนดและเงื่อนไขเพื่อใช้งาน openpilot อ่านข้อกำหนดล่าสุดได้ที่ &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; ก่อนดำเนินการต่อ</translation>
     </message>
 </context>
 <context>
     <name>TogglesPanel</name>
+    <message>
+        <source>Enable openpilot</source>
+        <translation>เปิดใช้งาน openpilot</translation>
+    </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
         <translation>เปิดใช้งานการเตือนการออกนอกเลน</translation>
@@ -1941,20 +1045,20 @@ This may take up to a minute.</source>
         <translation>ยกเลิกระบบช่วยขับเมื่อเหยียบคันเร่ง</translation>
     </message>
     <message>
-        <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
-        <translation>เมื่อเปิดใช้งาน การกดแป้นคันเร่งจะเป็นการยกเลิกระบบช่วยขับโดย sunnypilot</translation>
+        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
+        <translation>เมื่อเปิดใช้งาน การกดแป้นคันเร่งจะเป็นการยกเลิกระบบช่วยขับโดย openpilot</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
         <translation>โหมดทดลอง</translation>
     </message>
     <message>
-        <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>โดยปกติ sunnypilot จะขับใน&lt;b&gt;โหมดชิล&lt;/b&gt; เปิดโหมดทดลองเพื่อใช้&lt;b&gt;ความสามารถในขั้นพัฒนา&lt;/b&gt; ซึ่งยังไม่พร้อมสำหรับโหมดชิล ความสามารถในขั้นพัฒนามีดังนี้:</translation>
+        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation>โดยปกติ openpilot จะขับใน&lt;b&gt;โหมดชิล&lt;/b&gt; เปิดโหมดทดลองเพื่อใช้&lt;b&gt;ความสามารถในขั้นพัฒนา&lt;/b&gt; ซึ่งยังไม่พร้อมสำหรับโหมดชิล ความสามารถในขั้นพัฒนามีดังนี้:</translation>
     </message>
     <message>
-        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>ให้ sunnypilot ควบคุมการเร่ง/เบรค โดย sunnypilot จะขับอย่างที่มนุษย์คิด รวมถึงการหยุดที่ไฟแดง และป้ายหยุดรถ เนื่องจาก sunnypilot จะกำหนดความเร็วในการขับด้วยตัวเอง การตั้งความเร็วจะเป็นเพียงการกำหนดความเร็วสูงสูดเท่านั้น ความสามารถนี้ยังอยู่ในขั้นพัฒนา อาจเกิดข้อผิดพลาดขึ้นได้</translation>
+        <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation>ให้ openpilot ควบคุมการเร่ง/เบรค โดย openpilot จะขับอย่างที่มนุษย์คิด รวมถึงการหยุดที่ไฟแดง และป้ายหยุดรถ เนื่องจาก openpilot จะกำหนดความเร็วในการขับด้วยตัวเอง การตั้งความเร็วจะเป็นเพียงการกำหนดความเร็วสูงสูดเท่านั้น ความสามารถนี้ยังอยู่ในขั้นพัฒนา อาจเกิดข้อผิดพลาดขึ้นได้</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -1963,6 +1067,10 @@ This may take up to a minute.</source>
     <message>
         <source>Experimental mode is currently unavailable on this car since the car&apos;s stock ACC is used for longitudinal control.</source>
         <translation>ขณะนี้โหมดทดลองไม่สามารถใช้งานได้ในรถคันนี้ เนื่องจากเปิดใช้ระบบควบคุมการเร่ง/เบรคของรถที่ติดตั้งจากโรงงานอยู่</translation>
+    </message>
+    <message>
+        <source>openpilot longitudinal control may come in a future update.</source>
+        <translation>ระบบควบคุมการเร่ง/เบรคโดย openpilot อาจมาในการอัปเดตในอนาคต</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -1981,20 +1089,20 @@ This may take up to a minute.</source>
         <translation>บุคลิกการขับขี่</translation>
     </message>
     <message>
-        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
-        <translation>ระบบควบคุมการเร่ง/เบรคโดย sunnypilot เวอร์ชัน alpha สามารถทดสอบได้พร้อมกับโหมดการทดลอง บน branch ที่กำลังพัฒนา</translation>
+        <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation>ระบบควบคุมการเร่ง/เบรคโดย openpilot เวอร์ชัน alpha สามารถทดสอบได้พร้อมกับโหมดการทดลอง บน branch ที่กำลังพัฒนา</translation>
     </message>
     <message>
         <source>End-to-End Longitudinal Control</source>
         <translation>ควบคุมเร่ง/เบรคแบบ End-to-End</translation>
     </message>
     <message>
-        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
-        <translation>เปิดระบบควบคุมการเร่ง/เบรคโดย sunnypilot (alpha) เพื่อเปิดใช้งานโหมดทดลอง</translation>
+        <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation>เปิดระบบควบคุมการเร่ง/เบรคโดย openpilot (alpha) เพื่อเปิดใช้งานโหมดทดลอง</translation>
     </message>
     <message>
-        <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>แนะนำให้ใช้แบบมาตรฐาน ในโหมดดุดัน sunnypilot จะตามรถคันหน้าใกล้ขึ้นและเร่งและเบรคแบบดุดันมากขึ้น ในโหมดผ่อนคลาย sunnypilot จะอยู่ห่างจากรถคันหน้ามากขึ้น ในรถรุ่นที่รองรับคุณสามารถเปลี่ยนบุคลิกไปแบบต่าง ๆ โดยใช้ปุ่มปรับระยะห่างบนพวงมาลัย</translation>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>แนะนำให้ใช้แบบมาตรฐาน ในโหมดดุดัน openpilot จะตามรถคันหน้าใกล้ขึ้นและเร่งและเบรคแบบดุดันมากขึ้น ในโหมดผ่อนคลาย openpilot จะอยู่ห่างจากรถคันหน้ามากขึ้น ในรถรุ่นที่รองรับคุณสามารถเปลี่ยนบุคลิกไปแบบต่าง ๆ โดยใช้ปุ่มปรับระยะห่างบนพวงมาลัย</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -2002,26 +1110,14 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Always-On Driver Monitoring</source>
-        <translation type="unfinished"></translation>
+        <translation>การเฝ้าระวังผู้ขับขี่ตลอดเวลา</translation>
     </message>
     <message>
-        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
-        <translation type="unfinished"></translation>
+        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <translation>เปิดใช้งานการเฝ้าระวังผู้ขับขี่แม้เมื่อ openpilot ไม่ได้เข้าควบคุมอยู่</translation>
     </message>
     <message>
-        <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable sunnypilot</source>
-        <translation>เปิดใช้งาน sunnypilot</translation>
-    </message>
-    <message>
-        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature.</source>
+        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2029,58 +1125,27 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
+        <source>Record and Upload Microphone Audio</source>
         <translation type="unfinished"></translation>
     </message>
-</context>
-<context>
-    <name>Updater</name>
     <message>
-        <source>Update Required</source>
-        <translation>จำเป็นต้องอัปเดต</translation>
-    </message>
-    <message>
-        <source>An operating system update is required. Connect your device to Wi-Fi for the fastest update experience. The download size is approximately 1GB.</source>
-        <translation>จำเป็นต้องมีการอัปเดตระบบปฏิบัติการ เชื่อมต่ออุปกรณ์ของคุณกับ Wi-Fi เพื่อประสบการณ์การอัปเดตที่เร็วที่สุด ขนาดดาวน์โหลดประมาณ 1GB</translation>
-    </message>
-    <message>
-        <source>Connect to Wi-Fi</source>
-        <translation>เชื่อมต่อกับ Wi-Fi</translation>
-    </message>
-    <message>
-        <source>Install</source>
-        <translation>ติดตั้ง</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>ย้อนกลับ</translation>
-    </message>
-    <message>
-        <source>Loading...</source>
-        <translation>กำลังโหลด...</translation>
-    </message>
-    <message>
-        <source>Reboot</source>
-        <translation>รีบูต</translation>
-    </message>
-    <message>
-        <source>Update failed</source>
-        <translation>การอัปเดตล้มเหลว</translation>
+        <source>Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>WiFiPromptWidget</name>
     <message>
         <source>Open</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>เปิด</translation>
     </message>
     <message>
         <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
-        <translation type="unfinished"></translation>
+        <translation>อัปโหลดข้อมูลการฝึกฝนให้ได้มากที่สุด เพื่อพัฒนาโมเดลการขับขี่ของ openpilot</translation>
+    </message>
+    <message>
+        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
+        <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; โหมดสายยางดับเพลิง &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
     </message>
 </context>
 <context>

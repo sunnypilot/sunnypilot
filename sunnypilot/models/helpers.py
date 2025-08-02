@@ -19,8 +19,9 @@ from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
 
-CURRENT_SELECTOR_VERSION = 7
-REQUIRED_MIN_SELECTOR_VERSION = 5
+# see the README.md for more details on the model selector versioning
+CURRENT_SELECTOR_VERSION = 8
+REQUIRED_MIN_SELECTOR_VERSION = 8
 
 USE_ONNX = os.getenv('USE_ONNX', PC)
 
@@ -62,6 +63,7 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
   :rtype: Bool
   """
   return bool(REQUIRED_MIN_SELECTOR_VERSION <= bundle.get("minimumSelectorVersion", 0) <= CURRENT_SELECTOR_VERSION)
+
 
 def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
@@ -110,7 +112,7 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
     runner_type = active_bundle.runner.raw
 
   if cached_runner_type != runner_type:
-    params.put("ModelRunnerTypeCache", str(int(runner_type)))
+    params.put("ModelRunnerTypeCache", int(runner_type))
 
   return runner_type
 
