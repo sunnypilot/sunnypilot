@@ -32,7 +32,6 @@ env:
 
 jobs:
   build_release:
-    if: false # build_release blocked for the time being to only comma as we may have a different process.
     name: build release
     runs-on:
       - 'ubuntu-24.04'
