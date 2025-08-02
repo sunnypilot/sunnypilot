@@ -408,9 +408,9 @@ def create_screenshots():
       params.put("DongleId", "123456789012345")
       params.put("SunnylinkDongleId", "123456789012345")
       if name == 'prime':
-        params.put('PrimeType', '1')
+        params.put('PrimeType', 1)
       elif name == 'pair_device':
-        params.put('ApiCache_Device', '{"is_paired":0, "prime_type":-1}')
+        params.put('ApiCache_Device', {"is_paired":0, "prime_type":-1})
 
       t.test_ui(name, setup)
 

@@ -18,7 +18,7 @@ def main():
 
 def manage_athenad(dongle_id_param, pid_param, process_name, target):
   params = Params()
-  dongle_id = params.get(dongle_id_param, encoding='utf-8')
+  dongle_id = params.get(dongle_id_param)
   build_metadata = get_build_metadata()
 
   cloudlog.bind_global(dongle_id=dongle_id,
