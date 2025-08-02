@@ -46,8 +46,8 @@ class SunnylinkApi(BaseApi):
       time.sleep(0.5)
 
   def _resolve_dongle_ids(self):
-    sunnylink_dongle_id = self.params.get("SunnylinkDongleId", encoding='utf-8')
-    comma_dongle_id = self.dongle_id or self.params.get("DongleId", encoding='utf-8')
+    sunnylink_dongle_id = self.params.get("SunnylinkDongleId")
+    comma_dongle_id = self.dongle_id or self.params.get("DongleId")
     return sunnylink_dongle_id, comma_dongle_id
 
   def _resolve_imeis(self):
@@ -63,7 +63,7 @@ class SunnylinkApi(BaseApi):
     return imei1, imei2
 
   def _resolve_serial(self):
-    return (self.params.get("HardwareSerial", encoding='utf8')
+    return (self.params.get("HardwareSerial")
             or HARDWARE.get_serial())
 
   def register_device(self, spinner=None, timeout=60, verbose=False):

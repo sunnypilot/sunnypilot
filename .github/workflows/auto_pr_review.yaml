@@ -1,7 +1,7 @@
 name: "PR review"
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, edited]
+    types: [ opened, reopened, synchronize, edited ]
 
 jobs:
   labeler:
@@ -39,7 +39,7 @@ jobs:
     name: Update fork's PR Labels
     runs-on: ubuntu-latest
     if: (github.event.pull_request.head.repo.fork && (contains(github.event_name, 'pull_request') && github.event.action == 'synchronize'))
-    env: 
+    env:
       PR_LABEL: 'dev-c3'
       TRUST_FORK_PR_LABEL: 'trust-fork-pr'
     steps:
@@ -64,7 +64,7 @@ jobs:
             
             core.setOutput('has-dev-c3', hasDevC3Label ? 'true' : 'false');
             core.setOutput('has-trust', hasTrustLabel ? 'true' : 'false');
-      
+
       - name: Remove trust-fork-pr label if present
         if: steps.check-labels.outputs.has-dev-c3 == 'true' && steps.check-labels.outputs.has-trust == 'true'
         uses: actions/github-script@v7
@@ -72,14 +72,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
-            
+
             await github.rest.issues.removeLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
               name: process.env.TRUST_FORK_PR_LABEL
             });
-            
+
             console.log(`Removed '${process.env.TRUST_FORK_PR_LABEL}' label from PR #${prNumber} as it received new commits`);
             
             // Add a comment to the PR

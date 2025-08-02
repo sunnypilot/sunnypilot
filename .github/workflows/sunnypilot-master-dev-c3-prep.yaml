@@ -12,8 +12,8 @@ on:
     branches:
       - master
   pull_request_target:
-    types: [ labeled ]  
-    branches:    
+    types: [ labeled ]
+    branches:
       - 'master'
   workflow_dispatch:
     inputs:
@@ -41,10 +41,10 @@ jobs:
   reset-and-squash:
     runs-on: ubuntu-latest
     if: (
-            (github.event_name == 'workflow_dispatch')
-            || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-            || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
-        )
+      (github.event_name == 'workflow_dispatch')
+      || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+      )
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,9 +54,9 @@ jobs:
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
-                (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-                || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
-            )
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+          )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}

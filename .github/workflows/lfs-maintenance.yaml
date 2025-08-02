@@ -13,7 +13,7 @@ on:
   pull_request:
     branches:
       - 'master'
-  workflow_dispatch:  # enables manual triggering
+  workflow_dispatch: # enables manual triggering
     inputs:
       upstream_branch:
         default: 'master'
@@ -30,7 +30,7 @@ jobs:
         with:
           repository: 'commaai/openpilot'
           ref: ${{ inputs.upstream_branch }}
-      
+
       - name: LFS Fetch
         run: |
           git lfs fetch
@@ -48,7 +48,7 @@ jobs:
       - name: Add GitLab public keys
         run: |
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-      
+
       - name: Ensure branch
         run: |
           if git symbolic-ref -q HEAD >/dev/null; then
