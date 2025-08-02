@@ -92,7 +92,7 @@ class Uploader:
     self.immediate_priority = {"qlog": 0, "qlog.bz2": 0, "qcamera.ts": 1}
 
   def list_upload_files(self, metered: bool) -> Iterator[tuple[str, str, str]]:
-    r = self.params.get("AthenadRecentlyViewedRoutes", encoding="utf8")
+    r = self.params.get("AthenadRecentlyViewedRoutes")
     requested_routes = [] if r is None else r.split(",")
 
     for logdir in listdir_by_creation(self.root):
@@ -250,7 +250,7 @@ def main(exit_event: threading.Event = None) -> None:
   clear_locks(Paths.log_root())
 
   params = Params()
-  dongle_id = params.get("SunnylinkDongleId", encoding='utf8')
+  dongle_id = params.get("SunnylinkDongleId")
 
   offroad_transition_prev = 0.
   offroad_last = False

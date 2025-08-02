@@ -64,6 +64,7 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
   """
   return bool(REQUIRED_MIN_SELECTOR_VERSION <= bundle.get("minimumSelectorVersion", 0) <= CURRENT_SELECTOR_VERSION)
 
+
 def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
   if params is None:
@@ -111,7 +112,7 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
     runner_type = active_bundle.runner.raw
 
   if cached_runner_type != runner_type:
-    params.put("ModelRunnerTypeCache", str(int(runner_type)))
+    params.put("ModelRunnerTypeCache", int(runner_type))
 
   return runner_type
 
