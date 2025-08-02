@@ -3,7 +3,7 @@ from sunnypilot.models.tinygrad_ref import get_tinygrad_ref, read_ref_file
 
 
 def test_tinygrad_ref():
-  ref_file = os.path.join(os.path.dirname(__file__), "tinygrad_ref")
+  ref_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tinygrad_ref")
   current_ref = get_tinygrad_ref()
   file_ref = read_ref_file(ref_file)
   assert file_ref == current_ref, (

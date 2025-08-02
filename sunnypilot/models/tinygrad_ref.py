@@ -33,7 +33,7 @@ def write_ref_file(ref_file, ref):
     f.write(ref + "\n")
 
 def main():
-  ref_file = os.path.join(os.path.dirname(__file__), "tests", "tinygrad_ref")
+  ref_file = os.path.join(os.path.dirname(__file__), "tinygrad_ref")
   current_ref = get_tinygrad_ref()
   if not current_ref:
     print("Could not determine tinygrad_repo ref.")
