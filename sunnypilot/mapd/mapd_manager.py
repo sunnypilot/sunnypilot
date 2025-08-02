@@ -56,7 +56,7 @@ def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
 
 
 def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
-  params.put("OsmDownloadedDate", str(time.time()))
+  params.put("OsmDownloadedDate", str(time.monotonic()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
   osm_download_locations = json.dumps({
@@ -98,12 +98,12 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
 
 
 def update_osm_db() -> None:
-  # last_downloaded_date = float(params.get('OsmDownloadedDate', encoding='utf-8') or 0.0)
-  # if params.get_bool("OsmDbUpdatesCheck") or time.time() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
+  # last_downloaded_date = params.get("OsmDownloadedDate", return_default=True)
+  # if params.get_bool("OsmDbUpdatesCheck") or time.monotonic() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
     cleanup_old_osm_data(get_files_for_cleanup())
-    country = params.get('OsmLocationName', encoding='utf-8')
-    state = params.get('OsmStateName', encoding='utf-8') or "All"
+    country = params.get("OsmLocationName", return_default=True)
+    state = params.get("OsmStateName", return_default=True)
     filtered_nations, filtered_states = filter_nations_and_states([country], [state])
     request_refresh_osm_location_data(filtered_nations, filtered_states)
 

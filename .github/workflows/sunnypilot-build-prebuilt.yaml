@@ -80,10 +80,10 @@ jobs:
       - name: Set Feature Branch Prebuilt Configuration
         id: set_feature_configuration
         if: (
-              !(env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH) &&
-              !(env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH) &&
-              !(startsWith(github.ref, 'refs/tags/'))
-            )
+          !(env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH) &&
+          !(env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH) &&
+          !(startsWith(github.ref, 'refs/tags/'))
+          )
         run: |
           echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
@@ -91,9 +91,9 @@ jobs:
       - name: Set dev-c3-new prebuilt Configuration
         id: set_dev_configuration
         if: (
-                steps.set_feature_configuration.outcome == 'skipped' && 
-                env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH
-            )
+          steps.set_feature_configuration.outcome == 'skipped' &&
+          env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH
+          )
         run: |
           echo "NEW_BRANCH=${{ env.DEV_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
@@ -102,11 +102,11 @@ jobs:
       - name: Set staging-c3-new prebuilt Configuration
         id: set_staging_configuration
         if: (
-                steps.set_feature_configuration.outcome == 'skipped' &&
-                !contains(github.event_name, 'pull_request') &&
-                steps.set_dev_configuration.outcome == 'skipped' && 
-                (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
-            )
+          steps.set_feature_configuration.outcome == 'skipped' &&
+          !contains(github.event_name, 'pull_request') &&
+          steps.set_dev_configuration.outcome == 'skipped' &&
+          (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
+          )
         run: |
           echo "NEW_BRANCH=${{ env.STAGING_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=staging" >> $GITHUB_ENV
@@ -115,11 +115,11 @@ jobs:
       - name: Set release-c3-new prebuilt Configuration
         id: set_tag_configuration
         if: (
-              steps.set_feature_configuration.outcome == 'skipped' &&
-              !contains(github.event_name, 'pull_request') &&
-              steps.set_staging_configuration.outcome == 'skipped' &&
-              startsWith(github.ref, 'refs/tags/')
-            )
+          steps.set_feature_configuration.outcome == 'skipped' &&
+          !contains(github.event_name, 'pull_request') &&
+          steps.set_staging_configuration.outcome == 'skipped' &&
+          startsWith(github.ref, 'refs/tags/')
+          )
         run: |
           echo "NEW_BRANCH=${{ env.RELEASE_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=release" >> $GITHUB_ENV
@@ -227,7 +227,6 @@ jobs:
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
-
   publish:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
@@ -268,7 +267,7 @@ jobs:
             "${{ needs.build.outputs.version }}" \
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
             "-${{ needs.build.outputs.extra_version_identifier }}"
-          
+
           echo ""
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
           echo ""
@@ -299,7 +298,7 @@ jobs:
           export extra_version_identifier=${{ needs.build.outputs.extra_version_identifier || github.run_number}}
           echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
           curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
-          
+
           echo ""
           echo "----   ℹ️ To update the list of branches that notify to dev-feedback  -----"
           echo ""
@@ -307,7 +306,7 @@ jobs:
           echo "2. Current value: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
         shell: alpine.sh {0}
-  
+
   manage-pr-labels:
     name: Remove prebuilt label
     runs-on: ubuntu-latest
