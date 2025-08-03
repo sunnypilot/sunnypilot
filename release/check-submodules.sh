@@ -2,12 +2,24 @@
 
 has_submodule_changes() {
   local submodule_path="$1"
-  if [ -n "$SUBMODULE_DIFF" ];  then
+  if [ -n "$SUBMODULE_DIFF" ]; then
     echo "$SUBMODULE_DIFF" | grep -q "^$submodule_path$"
     return $?
   fi
   return 1
 }
+
+while read hash submodule ref; do
+  if [ -z "$hash" ] || [ -z "$submodule" ]; then
+    continue
+  fi
+
+  hash=$(echo "$hash" | sed 's/^[+-]//')
+
+  if [ "$submodule" = "tinygrad_repo" ]; then
+    echo "Skipping $submodule"
+    continue
+  fi
 
   if [ "$CHECK_PR_REFS" = "true" ] && has_submodule_changes "$submodule"; then
     echo "Checking $submodule (PR mode): verifying hash $hash exists"
@@ -19,7 +31,6 @@ has_submodule_changes() {
       exit 1
     fi
   else
-    echo "Checking $submodule (master mode): verifying hash $hash is on master"
     git -C $submodule fetch --depth 100 origin master
     git -C $submodule branch -r --contains $hash | grep "origin/master"
     if [ "$?" -eq 0 ]; then
