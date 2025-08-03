@@ -31,4 +31,8 @@ private:
   CustomAccIncrement *customAccIncrement = nullptr;
 
   ParamControlSP *visionTurnSpeedControl = nullptr;
+
+  ParamControlSP *vibePersonalityControl;
+  ParamControlSP *vibeAccelPersonalityControl;
+  ParamControlSP *vibeFollowPersonalityControl;
 };
