@@ -170,10 +170,30 @@ class DynamicExperimentalController:
       alpha=1.1,
       smoothing_factor=0.5
     )
+
+    self._slow_lead_filter = SmoothKalmanFilter(
+      measurement_noise=0.1,
+      process_noise=0.05,
+      alpha=1.02,
+      smoothing_factor=0.8
+    )
+
+    self._stopped_lead_filter = SmoothKalmanFilter(
+      measurement_noise=0.05,
+      process_noise=0.05,
+      alpha=1.05,
+      smoothing_factor=0.55
+    )
+
     self._has_lead_filtered = False
     self._has_slow_down = False
     self._has_slowness = False
     self._has_mpc_fcw = False
+    self._has_slow_lead = False
+    self._has_slower_lead = False
+    self._has_stopped_lead = False
+    self._has_stopped_lead_filtered = False
+    self._v_ego = 0.0
     self._v_ego_kph = 0.0
     self._v_cruise_kph = 0.0
     self._has_standstill = False
@@ -187,6 +207,18 @@ class DynamicExperimentalController:
   def _read_params(self) -> None:
     if self._frame % int(1. / DT_MDL) == 0:
       self._enabled = self._params.get_bool("DynamicExperimentalControl")
+      self._standstill_param = self._params.get_bool("DynamicExperimentalStandstill")
+      self._model_slow_down_param = self._params.get_bool("DynamicExperimentalModelSlowDown")
+      self._fcw_param = self._params.get_bool("DynamicExperimentalFCW")
+      self._has_lead_param = self._params.get_bool("DynamicExperimentalHasLead")
+      self._slower_lead_param = self._params.get_bool("DynamicExperimentalSlowerLead")
+      self._stopped_lead_param = self._params.get_bool("DynamicExperimentalStoppedLead")
+      self._distance_based_param = self._params.get_bool("DynamicExperimentalDistanceBased")
+      self._distance_value_param = self._params.get("DynamicExperimentalDistanceValue")
+      self._speed_based_param = self._params.get_bool("DynamicExperimentalSpeedBased")
+      self._speed_value_param = self._params.get("DynamicExperimentalSpeedValue")
+      self._slowness_param = self._params.get_bool("DynamicExperimentalSlowness")
+      self._follow_lead_param = self._params.get_bool("DynamicExperimentalFollowLead")
 
   def mode(self) -> str:
     return self._mode_manager.get_mode()
@@ -206,6 +238,9 @@ class DynamicExperimentalController:
     lead_one = sm['radarState'].leadOne
     md = sm['modelV2']
 
+    # Store lead data for use in urgency filter
+    self._last_lead_one = lead_one if lead_one.status else None
+    self._v_ego = car_state.vEgo
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = car_state.vCruise
     self._has_standstill = car_state.standstill
@@ -216,7 +251,7 @@ class DynamicExperimentalController:
     else:
       self._standstill_count = max(0, self._standstill_count - 1)
 
-    # Lead detection
+    # Lead detection with Kalman filtering
     self._lead_filter.add_data(float(lead_one.status))
     lead_value = self._lead_filter.get_value() or 0.0
     self._has_lead_filtered = lead_value > WMACConstants.LEAD_PROB
@@ -226,17 +261,25 @@ class DynamicExperimentalController:
     self._mpc_fcw_filter.add_data(float(self._mpc_fcw_crash_cnt > 0))
     self._has_mpc_fcw = fcw_filtered_value > 0.5
 
+    # Slower/stopped lead detection
+    self._calculate_slower_stopped_lead(lead_one)
+
     # Slow down detection
     self._calculate_slow_down(md)
 
-    # Slowness detection
+    # Slowness detection - only when significantly below cruise and not due to normal deceleration
     if not (self._standstill_count > 5) and not self._has_slow_down:
-      current_slowness = float(self._v_ego_kph <= (self._v_cruise_kph * WMACConstants.SLOWNESS_CRUISE_OFFSET))
+      speed_deficit_ratio = (self._v_cruise_kph - self._v_ego_kph) / max(self._v_cruise_kph, 1.0)
+
+      significant_deficit = speed_deficit_ratio > WMACConstants.SLOWNESS_DEFICIT_THRESHOLD
+      reasonable_speed = self._v_ego_kph > WMACConstants.SLOWNESS_MIN_SPEED
+
+      current_slowness = float(significant_deficit and reasonable_speed)
+
       self._slowness_filter.add_data(current_slowness)
       slowness_value = self._slowness_filter.get_value() or 0.0
 
-      # Hysteresis for slowness
-      threshold = WMACConstants.SLOWNESS_PROB * (0.8 if self._has_slowness else 1.1)
+      threshold = WMACConstants.SLOWNESS_PROB * (0.7 if self._has_slowness else 1.2)
       self._has_slowness = slowness_value > threshold
 
   def _calculate_slow_down(self, md):
@@ -294,6 +337,14 @@ class DynamicExperimentalController:
         speed_factor = 1.0 + (self._v_ego_kph - 25.0) / 80.0
         urgency = min(1.0, urgency * speed_factor)
 
+
+      # Reduce urgency if trajectory endpoint is close to lead distance, and trajectory endpoint is not significantly shorter than lead distance
+      if self._follow_lead_param and self._has_lead_filtered and self._last_lead_one is not None:
+        lead_distance = self._last_lead_one.dRel
+        distance_diff = abs(endpoint_x - lead_distance)
+        if distance_diff < 30 and endpoint_x >= (lead_distance - 18.0):
+          urgency *= 0.25
+
     # Apply filtering but with less smoothing for stops
     self._slow_down_filter.add_data(urgency)
     urgency_filtered = self._slow_down_filter.get_value() or 0.0
@@ -302,71 +353,124 @@ class DynamicExperimentalController:
     self._has_slow_down = urgency_filtered > (WMACConstants.SLOW_DOWN_PROB * 0.8)
     self._urgency = urgency_filtered
 
-  def _radarless_mode(self) -> None:
-    """Radarless mode decision logic with emergency handling."""
+  def _calculate_slower_stopped_lead(self, lead_one) -> None:
+    """Calculate significantly slower and/or stopped leads."""
+    self._has_slower_lead = False
+    self._has_stopped_lead = False
+    slow_lead_detected = 0.0
+    stopped_lead_detected = 0.0
+
+    if self._has_lead_filtered and lead_one.status:
+      lead_velocity = lead_one.vLead
+      lead_distance = lead_one.dRel
+      relative_velocity = lead_one.vRel
+
+      # Significantly slower lead
+      if self._slower_lead_param:
+        self._has_slower_lead = (relative_velocity < WMACConstants.SLOW_LEAD_VREL_THRESHOLD and
+                                lead_velocity < self._v_ego * WMACConstants.SLOW_LEAD_SPEED_RATIO)
+
+      # Likely stopped lead
+      if self._stopped_lead_param:
+        self._has_stopped_lead = lead_velocity < WMACConstants.SLOW_LEAD_STOPPED_THRESHOLD
+
+      # Filtered slower leads
+      if self._has_slower_lead:
+        if lead_distance < WMACConstants.SLOW_LEAD_DISTANCE_THRESHOLD:
+          # Distance to collision: urgency * distance * speed factors
+          time_to_close = lead_distance / max(abs(relative_velocity), 0.1)
+          slow_lead_detected = min(1.0, (10.0 / max(time_to_close, 1.0)) * (1.0 - lead_distance/75.0) * (abs(relative_velocity)/2.5))
+        else:
+          slow_lead_detected = 0.4
+
+      if self._stopped_lead_param:
+        stopped_lead_detected = float(self._has_stopped_lead)
+
+      self._slow_lead_filter.add_data(slow_lead_detected)
+      self._stopped_lead_filter.add_data(stopped_lead_detected)
+    else:
+      # If no lead, then reset filters
+      self._slow_lead_filter.add_data(0.0)
+      self._stopped_lead_filter.add_data(0.0)
+
+    # Update states
+    slow_lead_value = self._slow_lead_filter.get_value() or 0.0
+    self._has_slow_lead = slow_lead_value >= WMACConstants.SLOW_LEAD_PROB
+
+    stopped_lead_value = self._stopped_lead_filter.get_value() or 0.0
+    self._has_stopped_lead_filtered = stopped_lead_value >= WMACConstants.SLOW_LEAD_PROB
+
+  def _dynamic_experimental_mode(self, sm) -> None:
+    # Enhanced dynamic experimental mode with confidence-based transitions and emergency handling
+    lead_one = sm['radarState'].leadOne
 
     # EMERGENCY: MPC FCW - immediate blended mode
-    if self._has_mpc_fcw:
-      self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      return
-
-    # Standstill: use blended
-    if self._standstill_count > 3:
-      self._mode_manager.request_mode('blended', confidence=0.9)
-      return
-
-    # Slow down scenarios: emergency for high urgency, normal for lower urgency
-    if self._has_slow_down:
-      if self._urgency > 0.7:
-        # Emergency: immediate blended mode for high urgency stops
+    if self._fcw_param:
+      if self._has_mpc_fcw:
         self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      else:
-        # Normal: blended with urgency-based confidence
-        confidence = min(1.0, self._urgency * 1.5)
-        self._mode_manager.request_mode('blended', confidence=confidence)
-      return
+        return
 
-    # Driving slow: use ACC (but not if actively slowing down)
-    if self._has_slowness and not self._has_slow_down:
-      self._mode_manager.request_mode('acc', confidence=0.8)
-      return
+    # When standstill: blended if param is set
+    if self._standstill_param:
+      if self._standstill_count > 3:
+        self._mode_manager.request_mode('blended', confidence=0.9)
+        return
 
-    # Default: ACC
-    self._mode_manager.request_mode('acc', confidence=0.7)
+    # Advanced radar mode decision logic
+    if self._has_lead_filtered:
+      # If distance to lead is below threshold, use blended
+      if self._distance_based_param:
+        if lead_one.dRel < float(self._distance_value_param):
+          self._mode_manager.request_mode('blended', confidence=0.9)
+          return
 
-  def _radar_mode(self) -> None:
-    """Radar mode with emergency handling."""
+      if self._has_lead_param:
+        # Significantly slower lead filtering
+        if self._slower_lead_param:
+          if self._has_slow_lead:
+            self._mode_manager.request_mode('blended', confidence=0.8)
+            return
 
-    # EMERGENCY: MPC FCW - immediate blended mode
-    if self._has_mpc_fcw:
-      self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      return
+        # Check for stopped lead using filter
+        if self._stopped_lead_param:
+          if self._has_stopped_lead_filtered:
+            self._mode_manager.request_mode('blended', confidence=1.0)
+            return
 
-    # If lead detected and not in standstill: always use ACC
-    if self._has_lead_filtered and not (self._standstill_count > 3):
-      self._mode_manager.request_mode('acc', confidence=1.0)
-      return
+    # Speed-based decision: if speed is below set point, use blended
+    if self._speed_based_param:
+      if self._v_ego_kph < float(self._speed_value_param):
+        self._mode_manager.request_mode('blended', confidence=0.8)
+        return
 
-    # Slow down scenarios: emergency for high urgency, normal for lower urgency
-    if self._has_slow_down:
-      if self._urgency > 0.7:
-        # Emergency: immediate blended mode for high urgency stops
-        self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      else:
-        # Normal: blended with urgency-based confidence
-        confidence = min(1.0, self._urgency * 1.3)
-        self._mode_manager.request_mode('blended', confidence=confidence)
-      return
+    # When detecting slow down scenario: blended with emergency for high urgency
+    if self._model_slow_down_param:
+      if self._has_slow_down:
+        # If follow lead param is on, and we have a lead, prefer ACC unless very urgent
+        if self._follow_lead_param and self._has_lead_filtered:
+          if self._urgency > 0.7:
+            self._mode_manager.request_mode('blended', confidence=1.0)
+          else:
+            self._mode_manager.request_mode('acc', confidence=0.7)
+        else:
+          # Normal logic when no lead or follow lead param is off
+          if self._urgency > 0.75:
+            self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
+          else:
+            confidence = min(1.0, self._urgency * 1.5)
+            self._mode_manager.request_mode('blended', confidence=confidence)
+        return
 
-    # Standstill: use blended
-    if self._standstill_count > 3:
-      self._mode_manager.request_mode('blended', confidence=0.9)
-      return
-
-    # Driving slow: use ACC (but not if actively slowing down)
-    if self._has_slowness and not self._has_slow_down:
-      self._mode_manager.request_mode('acc', confidence=0.8)
-      return
+    # Car driving at speed lower than set speed: blended if param set
+    if self._slowness_param:
+      if self._has_slowness and not self._has_slow_down:
+        # If follow lead param is on, and we have a lead, don't trigger slowness
+        if self._follow_lead_param:
+          self._mode_manager.request_mode('acc', confidence=0.5)
+        else:
+          # Normal slowness logic when follow lead param is off
+          self._mode_manager.request_mode('blended', confidence=0.1)
+        return
 
     # Default: ACC
     self._mode_manager.request_mode('acc', confidence=0.7)
@@ -378,10 +482,7 @@ class DynamicExperimentalController:
 
     self._update_calculations(sm)
 
-    if self._CP.radarUnavailable:
-      self._radarless_mode()
-    else:
-      self._radar_mode()
+    self._dynamic_experimental_mode(sm)
 
     self._mode_manager.update()
     self._active = sm['selfdriveState'].experimentalMode and self._enabled
