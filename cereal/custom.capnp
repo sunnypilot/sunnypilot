@@ -122,6 +122,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+  visionTurnSpeedControl @1 :VisionTurnSpeedControl;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -131,6 +132,20 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     enum DynamicExperimentalControlState {
       acc @0;
       blended @1;
+    }
+  }
+
+  struct VisionTurnSpeedControl {
+    state @0 :VisionTurnSpeedControlState;
+    velocity @1 :Float32;
+    currentLateralAccel @2 :Float32;
+    maxPredictedLateralAccel @3 :Float32;
+
+    enum VisionTurnSpeedControlState {
+      disabled @0; # No predicted substantial turn on vision range or feature disabled.
+      entering @1; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
+      turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+      leaving @3; # Road ahead straightens. Start to allow positive acceleration.
     }
   }
 }
