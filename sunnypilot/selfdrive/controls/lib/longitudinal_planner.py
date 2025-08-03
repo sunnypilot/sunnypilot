@@ -11,6 +11,7 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 
@@ -20,7 +21,13 @@ class LongitudinalPlannerSP:
     self.events_sp = EventsSP()
 
     self.dec = DynamicExperimentalController(CP, mpc)
+    self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.slc = SpeedLimitController(CP)
+
+  @property
+  def mlsim(self) -> bool:
+    # If we don't have a generation set, we assume it's default model. Which as of today are mlsim.
+    return bool(self.generation is None or self.generation >= 11)
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():

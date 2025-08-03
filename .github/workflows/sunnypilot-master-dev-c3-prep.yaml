@@ -1,7 +1,7 @@
 name: Build dev-c3-new
 
 env:
-  DEFAULT_SOURCE_BRANCH: "master-new"
+  DEFAULT_SOURCE_BRANCH: "master"
   DEFAULT_TARGET_BRANCH: "master-dev-c3-new"
   PR_LABEL: "dev-c3"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
@@ -11,18 +11,16 @@ on:
   push:
     branches:
       - master
-      - master-new    
   pull_request_target:
-    types: [ labeled ]  
-    branches:    
-      - 'master'        
-      - 'master-new'            
+    types: [ labeled ]
+    branches:
+      - 'master'
   workflow_dispatch:
     inputs:
       source_branch:
         description: 'Source branch to reset from'
         required: true
-        default: 'master-new'
+        default: 'master'
         type: string
       target_branch:
         description: 'Target branch to reset and squash into'
@@ -43,10 +41,10 @@ jobs:
   reset-and-squash:
     runs-on: ubuntu-latest
     if: (
-            (github.event_name == 'workflow_dispatch')
-            || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-            || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
-        )
+      (github.event_name == 'workflow_dispatch')
+      || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+      )
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,9 +54,9 @@ jobs:
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
-                (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-                || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
-            )
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+          )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -153,6 +151,7 @@ jobs:
               }
             }' -F label="is:pr is:open label:${PR_LABEL} draft:false sort:created-asc")
 
+          PR_LIST=${PR_LIST//\'/}
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -107,7 +107,7 @@ class Car:
         with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
           cached_params = _cached_params
 
-      fixed_fingerprint = json.loads(self.params.get("CarPlatformBundle", encoding='utf-8') or "{}").get("platform", None)
+      fixed_fingerprint = json.loads(self.params.get("CarPlatformBundle") or "{}").get("platform", None)
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params, fixed_fingerprint)
       sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
@@ -147,7 +147,7 @@ class Car:
       except Exception:
         pass
 
-      secoc_key = self.params.get("SecOCKey", encoding='utf8')
+      secoc_key = self.params.get("SecOCKey")
       if secoc_key is not None:
         saved_secoc_key = bytes.fromhex(secoc_key.strip())
         if len(saved_secoc_key) == 16:

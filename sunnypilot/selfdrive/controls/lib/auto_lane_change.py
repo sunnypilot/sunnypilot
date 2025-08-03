@@ -42,7 +42,7 @@ class AutoLaneChangeController:
     self.param_read_counter = 0
     self.lane_change_delay = 0.0
 
-    self.lane_change_set_timer = AutoLaneChangeMode.NUDGE
+    self.lane_change_set_timer = self.params.get("AutoLaneChangeTimer", return_default=True)
     self.lane_change_bsm_delay = False
 
     self.prev_brake_pressed = False
@@ -61,10 +61,7 @@ class AutoLaneChangeController:
 
   def read_params(self) -> None:
     self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
-    try:
-      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
-    except (ValueError, TypeError):
-      self.lane_change_set_timer = AutoLaneChangeMode.NUDGE
+    self.lane_change_set_timer = self.params.get("AutoLaneChangeTimer", return_default=True)
 
   def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
