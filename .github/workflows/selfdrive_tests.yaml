@@ -71,9 +71,11 @@ jobs:
         if [ "${{ github.event_name }}" == "pull_request" ]; then
           git fetch origin master:refs/remotes/origin/master
           SUBMODULE_DIFF=$(git diff origin/master HEAD --submodule=short | grep "^-Subproject\|^+Subproject" | awk '{print $3}' | sort -u)
+          echo "Submodule differences found: $SUBMODULE_DIFF"
           if [ -n "$SUBMODULE_DIFF" ]; then
-            export SUBMODULE_DIFF="$SUBMODULE_DIFF"
-            export CHECK_PR_REFS=true
+            echo "SUBMODULE_DIFF=$SUBMODULE_DIFF" >> $GITHUB_ENV
+            echo "CHECK_PR_REFS=true" >> $GITHUB_ENV
+            echo "Setting environment variables for PR submodule checking"
           fi
         fi
         release/check-submodules.sh
