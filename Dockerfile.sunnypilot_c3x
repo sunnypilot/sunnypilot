@@ -1,0 +1,15 @@
+FROM agnos-system-base:latest
+
+ENV OPENPILOT_PATH=/data/openpilot
+ENV SCONSCACHEPATH=/data/scons_cache
+
+RUN mkdir -p -m 0755 ${OPENPILOT_PATH}
+RUN chown comma:comma ${OPENPILOT_PATH}
+RUN mkdir -p -m 0755 ${SCONSCACHEPATH}
+RUN chown comma:comma ${SCONSCACHEPATH}
+WORKDIR ${OPENPILOT_PATH}
+
+COPY . ${OPENPILOT_PATH}/
+
+USER root
+RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc)"
