@@ -1,2 +1,7 @@
-FROM scratch
+FROM scratch AS agnos-system-raw
 COPY tmp/rootfs-tmp-docker/ /
+
+FROM agnos-system-raw
+USER root
+RUN mkdir -p -m 0750  /home/comma
+RUN chown comma:comma /home/comma

@@ -1,76 +1,101 @@
 #!/usr/bin/env bash
 ###
-### This script requires Linux to mount and copy the ext4 AGNOS system image
+### Download and convert AGNOS system image to docker base image
+###
+### Requires Linux and root to mount and copy from ext4 filesystem
 ###
 
-# Check if running as root or with sudo
+# Check if running as root or sudo
 if [[ $EUID -ne 0 ]]; then
-    echo "Error: This script must be run as root or with sudo."
+    echo "ERROR: This script must be run as root or with sudo."
+    echo "This script requires root on Linux to copy from ext4 filesystem."
     exit 1
 fi
 
-# Check if simg2img and xz are installed
-if ! command -v simg2img >/dev/null 2>&1; then
-    echo "Error: simg2img is not installed."
-    exit 1
-fi
-
-if ! command -v xz >/dev/null 2>&1; then
-    echo "Error: xz is not installed."
-    exit 1
-fi
+# Check for required utilities
+for util in simg2img xz jq curl sha256sum; do
+    if ! command -v $util >/dev/null 2>&1; then
+        echo "ERROR: $util is not installed."
+        exit 10
+    fi
+done
 
 # Check if docker buildx is installed
 if ! docker buildx version >/dev/null 2>&1; then
-    echo "Error: docker buildx must be installed."
+    echo "Error: docker-buildx must be installed (or podman-docker)."
+    exit 255
 fi
 
-# Check if parameter is provided
-if [ -z "$1" ]; then
-    echo "Error: No file parameter provided."
-    exit 1
+### Find current system image URL within system/hardware/tici/agnos.json
+
+# find base directory
+unset BASEDIR
+unset WORKINGDIR
+AGNOSJSON="system/hardware/tici/agnos.json"
+for path in ../.. .. .; do
+    [ -f "$path/$AGNOSJSON" ] && BASEDIR=$(readlink -f "$path")
+done
+if [ -z "$BASEDIR" ]; then
+    echo "ERROR: OP base directory not found."
+    exit 255
+fi
+WORKINGDIR="$BASEDIR/tools/dockerize-agnos"
+echo "BASEDIR=$BASEDIR"
+echo "WORKINGDIR=$WORKINGDIR"
+cd $WORKINGDIR
+
+SYSTEMURL=$(jq -r '.[] | select(.name == "system") | .url' $BASEDIR/system/hardware/tici/agnos.json)
+HASH=$(jq -r '.[] | select(.name == "system") | .hash' $BASEDIR/system/hardware/tici/agnos.json)
+SYSTEMIMGXZ="tmp/$(basename $SYSTEMURL)"
+SYSTEMIMG="${SYSTEMIMGXZ%.xz}"
+SYSTEMRAW="${SYSTEMIMG%.img}.raw.img"
+
+echo "SYSTEMURL=$SYSTEMURL"
+echo "HASH=$HASH"
+
+# Download system image
+echo "Download system image from $SYSTEMURL"
+curl -C - $SYSTEMURL -o $SYSTEMIMGXZ
+
+# Decompress
+echo "Decompress system image to $SYSTEMIMG"
+rm -f $SYSTEMIMG
+xz -d -k $SYSTEMIMGXZ
+
+# Verify Integrity of sparse image
+echo "Verify integrity of decompressed sparse image $SYSTEMIMG"
+if ! echo "$HASH  $SYSTEMIMG" | sha256sum -c; then
+    exit 255
 fi
 
-# Check if file exists
-if [ ! -f "$1" ]; then
-    echo "Error: File '$1' does not exist."
-    exit 1
-fi
+# Convert to raw image
+echo "Converting '$SYSTEMIMG' to raw image"
+rm -f $SYSTEMRAW
+simg2img "$SYSTEMIMG" "$SYSTEMRAW" || { echo "Error: Failed to convert '$SYSTEMIMG' to raw image."; exit 1; }
 
-# Check if file name starts with "system-" and ends with ".img.xz"
-if [[ ! "$1" =~ ^system-.*\.img\.xz$ ]]; then
-    echo "Error: File name '$1' must start with 'system-' and end with '.img.xz'."
-    exit 1
-fi
+echo "Conversion complete. Output file: $SYSTEMRAW"
 
-# Extract intermediate and raw img filenames
-systemimgxz="$1"
-systemimg="${systemimgxz%.xz}"
-systemrawimg="${systemimg%.img}.raw.img"
-
-echo "Decompressing '$systemimgxz' to '$systemimg'..."
-xz -d -k "$systemimgxz" || { echo "Error: Failed to decompress '$systemimgxz'."; exit 1; }
-echo "Converting '$systemimg' to raw image..."
-simg2img "$systemimg" "${systemimg%.img}.raw.img" || { echo "Error: Failed to convert '$systemimg' to raw image."; exit 1; }
-
-echo "Conversion complete. Output file: $systemrawimg"
-
+### Cleanup possible leftover mounts from failed previous attempts
+# quickly unmount and get rid of reference to previous tmp mount (even if it's busy), ignore errors
+umount -l -q tmp/rootfs-img-mount/ >/dev/null 2>&1 || :
+rm -rf tmp/rootfs-img-mount/
+rm -rf tmp/rootfs-tmp-docker/
 mkdir -p tmp/rootfs-img-mount/
 mkdir -p tmp/rootfs-tmp-docker/
-echo "Mounting '$systemrawimg' at tmp/rootfs-img-mount/"
-mount -o loop,ro "$systemrawimg" tmp/rootfs-img-mount/
+echo "Mounting '$SYSTEMRAW' at tmp/rootfs-img-mount/"
+mount -o loop,ro "$SYSTEMRAW" tmp/rootfs-img-mount/
 echo "Copying contents of tmp/rootfs-img-mount/ to tmp/rootfs-tmp-docker/"
 cp -a tmp/rootfs-img-mount/. tmp/rootfs-tmp-docker/
 echo "Unmounting tmp/rootfs-img-mount/"
-umount tmp/rootfs-img-mount
+umount -l tmp/rootfs-img-mount
 echo "Building Dockerfile.agnos-system"
-docker buildx build -f Dockerfile.agnos-system -t agnos-system .
+docker buildx build -f Dockerfile.agnos-system -t agnos-system-base .
 
 # CLEANUP: Remove temporary agnos system mountpoint
 rmdir tmp/rootfs-img-mount/ 
 # CLEANUP: Remove temporary docker rootfs
 rm -rf tmp/rootfs-tmp-docker/
 # CLEANUP: Remove the intermediate .img
-rm -f "$systemimg"
+rm -f "$SYSTEMIMG"
 # CLEANUP: Remove raw.img
-rm -f "$systemrawimg"
+rm -f "$SYSTEMRAW"
