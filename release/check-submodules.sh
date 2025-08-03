@@ -2,8 +2,8 @@
 
 has_submodule_changes() {
   local submodule_path="$1"
-  if [ -n "$SUBMODULE_DIFF" ]; then
-    echo "$SUBMODULE_DIFF" | grep -q "^$submodule_path$"
+  if [ -n "$SUBMODULE_PATHS" ]; then
+    echo "$SUBMODULE_PATHS" | grep -q "$submodule_path"
     return $?
   fi
   return 1

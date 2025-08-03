@@ -69,16 +69,23 @@ jobs:
       timeout-minutes: 3
       run: |
         if [ "${{ github.event_name }}" == "pull_request" ]; then
-          git fetch origin master:refs/remotes/origin/master
-          SUBMODULE_DIFF=$(git diff origin/master HEAD --submodule=short | grep "^-Subproject\|^+Subproject" | awk '{print $3}' | sort -u)
-          echo "Submodule differences found: $SUBMODULE_DIFF"
-          if [ -n "$SUBMODULE_DIFF" ]; then
-            echo "SUBMODULE_DIFF=$SUBMODULE_DIFF" >> $GITHUB_ENV
-            echo "CHECK_PR_REFS=true" >> $GITHUB_ENV
-            echo "Setting environment variables for PR submodule checking"
-          fi
-        fi
-        release/check-submodules.sh
+           git fetch origin master:refs/remotes/origin/master
+
+           SUBMODULE_PATHS=$(git diff origin/master HEAD --name-only | grep -E '^[^/]+$' | while read path; do
+             if git ls-files --stage "$path" | grep -q "^160000"; then
+               echo "$path"
+             fi
+           done | tr '\n' ' ')
+
+           echo "Changed submodule paths: $SUBMODULE_PATHS"
+           if [ -n "$SUBMODULE_PATHS" ]; then
+             # Export variables for the script
+             export SUBMODULE_PATHS="$SUBMODULE_PATHS"
+             export CHECK_PR_REFS=true
+             echo "Setting environment variables for PR submodule checking"
+           fi
+         fi
+         release/check-submodules.sh
 
   build:
     runs-on: ${{
