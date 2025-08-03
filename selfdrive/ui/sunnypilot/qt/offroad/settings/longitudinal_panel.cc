@@ -23,6 +23,12 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
+  visionTurnSpeedControl = new ParamControlSP("VisionTurnSpeedControl",
+    tr("Vision Turn Speed Controller"),
+    tr("Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(visionTurnSpeedControl);
+
   main_layout->addWidget(cruisePanelScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);
