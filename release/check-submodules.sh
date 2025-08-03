@@ -22,7 +22,7 @@ while read hash submodule ref; do
   fi
 
   if [ "$CHECK_PR_REFS" = "true" ] && has_submodule_changes "$submodule"; then
-    echo "Checking $submodule (PR mode): verifying hash $hash exists"
+    echo "Checking $submodule (non-master): verifying hash $hash exists"
     git -C $submodule fetch --depth 100 origin
     if git -C $submodule cat-file -e $hash 2>/dev/null; then
       echo "$submodule ok (hash exists)"
