@@ -86,7 +86,7 @@ Panda *connect(std::string serial="", uint32_t index=0) {
 
   bool is_deprecated_panda = std::find(SUPPORTED_PANDA_TYPES.begin(),
                                        SUPPORTED_PANDA_TYPES.end(),
-                                       panda->hw_type) != SUPPORTED_PANDA_TYPES.end();
+                                       panda->hw_type) == SUPPORTED_PANDA_TYPES.end();
 
   if (is_deprecated_panda) {
     LOGW("panda %s is deprecated (hw_type: %s), skipping firmware check...", panda->hw_serial(), panda->hw_type);
