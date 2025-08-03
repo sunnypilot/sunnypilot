@@ -67,7 +67,16 @@ jobs:
     - name: Check submodules
       if: github.repository == 'sunnypilot/sunnypilot'
       timeout-minutes: 3
-      run: release/check-submodules.sh
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          git fetch origin master:refs/remotes/origin/master
+          SUBMODULE_DIFF=$(git diff origin/master HEAD --submodule=short | grep "^-Subproject\|^+Subproject" | awk '{print $3}' | sort -u)
+          if [ -n "$SUBMODULE_DIFF" ]; then
+            export SUBMODULE_DIFF="$SUBMODULE_DIFF"
+            export CHECK_PR_REFS=true
+          fi
+        fi
+        release/check-submodules.sh
 
   build:
     runs-on: ${{

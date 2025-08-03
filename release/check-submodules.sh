@@ -1,17 +1,32 @@
 #!/usr/bin/env bash
 
-while read hash submodule ref; do
-  if [ "$submodule" = "tinygrad_repo" ]; then
-    echo "Skipping $submodule"
-    continue
+has_submodule_changes() {
+  local submodule_path="$1"
+  if [ -n "$SUBMODULE_DIFF" ];  then
+    echo "$SUBMODULE_DIFF" | grep -q "^$submodule_path$"
+    return $?
   fi
+  return 1
+}
 
-  git -C $submodule fetch --depth 100 origin master
-  git -C $submodule branch -r --contains $hash | grep "origin/master"
-  if [ "$?" -eq 0 ]; then
-    echo "$submodule ok"
+  if [ "$CHECK_PR_REFS" = "true" ] && has_submodule_changes "$submodule"; then
+    echo "Checking $submodule (PR mode): verifying hash $hash exists"
+    git -C $submodule fetch --depth 100 origin
+    if git -C $submodule cat-file -e $hash 2>/dev/null; then
+      echo "$submodule ok (hash exists)"
+    else
+      echo "$submodule: $hash does not exist in the repository"
+      exit 1
+    fi
   else
-    echo "$submodule: $hash is not on master"
-    exit 1
+    echo "Checking $submodule (master mode): verifying hash $hash is on master"
+    git -C $submodule fetch --depth 100 origin master
+    git -C $submodule branch -r --contains $hash | grep "origin/master"
+    if [ "$?" -eq 0 ]; then
+      echo "$submodule ok"
+    else
+      echo "$submodule: $hash is not on master"
+      exit 1
+    fi
   fi
 done <<< $(git submodule status --recursive)
