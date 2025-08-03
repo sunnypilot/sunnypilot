@@ -6,7 +6,7 @@ import time
 import signal
 import subprocess
 
-from panda import Panda, PandaDFU, PandaProtocolMismatch, FW_PATH
+from panda import Panda, PandaDFU, PandaDEPRECATED, PandaProtocolMismatch, FW_PATH
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
@@ -35,6 +35,12 @@ def flash_panda(panda_serial: str) -> Panda:
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
   panda_signature = b"" if panda.bootstub else panda.get_signature()
   cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
+
+  # skip flashing if the detected device is deprecated from upstream
+  hw_type = panda.get_type()
+  if hw_type in PandaDEPRECATED.DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is deprecated (hw_type: {hw_type}), skipping flash...")
+    return panda
 
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
