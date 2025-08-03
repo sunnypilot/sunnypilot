@@ -8,8 +8,10 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/dec_controller.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 class LongitudinalPanel : public QWidget {
   Q_OBJECT
@@ -30,5 +32,8 @@ private:
   QWidget *cruisePanelScreen = nullptr;
   CustomAccIncrement *customAccIncrement = nullptr;
 
+  DecControllerSubpanel *decScreen;
+  ButtonControlSP *decManageBtn = nullptr;
+  ParamControlSP *dynamicExperimentalControl = nullptr;
   ParamControlSP *visionTurnSpeedControl = nullptr;
 };
