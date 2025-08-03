@@ -73,8 +73,10 @@ fi
 echo "Converting '$SYSTEMIMG' to raw image"
 rm -f $SYSTEMRAW
 simg2img "$SYSTEMIMG" "$SYSTEMRAW" || { echo "Error: Failed to convert '$SYSTEMIMG' to raw image."; exit 1; }
-
 echo "Conversion complete. Output file: $SYSTEMRAW"
+
+### exit upon uncaught error
+set -e
 
 ### Cleanup possible leftover mounts from failed previous attempts
 # quickly unmount and get rid of reference to previous tmp mount (even if it's busy), ignore errors
@@ -89,6 +91,8 @@ echo "Copying contents of tmp/rootfs-img-mount/ to tmp/rootfs-tmp-docker/"
 cp -a tmp/rootfs-img-mount/. tmp/rootfs-tmp-docker/
 echo "Unmounting tmp/rootfs-img-mount/"
 umount -l tmp/rootfs-img-mount
+
+
 echo "Building Dockerfile.agnos-system"
 docker buildx build -f Dockerfile.agnos-system -t agnos-system-base .
 
@@ -100,3 +104,5 @@ rm -rf tmp/rootfs-tmp-docker/
 rm -f "$SYSTEMIMG"
 # CLEANUP: Remove raw.img
 rm -f "$SYSTEMRAW"
+# CLEANUP: Remove .img.xz
+rm -f "$SYSTEMIMGXZ"
