@@ -71,21 +71,19 @@ jobs:
         if [ "${{ github.ref }}" != "refs/heads/master" ]; then
           git fetch  origin master:refs/remotes/origin/master
 
-            SUBMODULE_PATHS=$(git diff origin/master HEAD --name-only | grep -E '^[^/]+$' | while read path; do
-              if git ls-files --stage "$path" | grep -q "^160000"; then
-                echo "$path"
-              fi
-            done | tr '\n' ' ')
-
-            echo "Changed submodule paths: $SUBMODULE_PATHS"
-            if [ -n "$SUBMODULE_PATHS" ]; then
-              # Export variables for the script
-              export SUBMODULE_PATHS="$SUBMODULE_PATHS"
-              export CHECK_PR_REFS=true
-              echo "Setting environment variables for PR submodule checking"
+          SUBMODULE_PATHS=$(git diff origin/master HEAD --name-only | grep -E '^[^/]+$' | while read path; do
+            if git ls-files --stage "$path" | grep -q "^160000"; then
+              echo "$path"
             fi
+          done | tr '\n' ' ')
+
+          echo "Changed submodule paths: $SUBMODULE_PATHS"
+          if [ -n "$SUBMODULE_PATHS" ]; then
+            export SUBMODULE_PATHS="$SUBMODULE_PATHS"
+            export CHECK_PR_REFS=true
           fi
-          release/check-submodules.sh
+        fi
+        release/check-submodules.sh
 
   build:
     runs-on: ${{
