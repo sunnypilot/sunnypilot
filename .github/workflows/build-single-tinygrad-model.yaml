@@ -1,13 +1,36 @@
 name: Build Single Tinygrad Model and Push
 
 on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream commit to build from'
+        required: true
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      recompiled_dir:
+        description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
+        required: true
+        type: string
+      json_version:
+        description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
+        required: true
+        type: string
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
+      bypass_push:
+        description: 'Bypass pushing to GitLab for build-all'
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
-      build_model_ref:
-        description: 'Branch to use for build-model workflow'
-        required: false
-        default: 'master-new'
-        type: string
       upstream_branch:
         description: 'Upstream commit to build from'
         required: true
@@ -26,10 +49,12 @@ on:
         type: number
       model_folder:
         description: 'Model folder'
-        required: true
         type: choice
+        default: 'None'
         options:
+          - None
           - Simple Plan Models
+          - Space Lab Models
           - TR Models
           - DTR Models
           - Custom Merge Models
@@ -47,13 +72,27 @@ on:
         description: 'Minimum selector version'
         required: false
         type: number
+env:
+  RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
+  JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
 
 jobs:
-  build-single:
+  build_model:
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    with:
+      upstream_branch: ${{ inputs.upstream_branch }}
+      custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
+      is_20hz: true
+      artifact_suffix: ${{ inputs.artifact_suffix }}
+    secrets: inherit
+
+  publish_model:
+    if: ${{ !inputs.bypass_push && !cancelled() }}
+    concurrency:
+      group: gitlab-push-${{ inputs.recompiled_dir }}
+      cancel-in-progress: false
+    needs: build_model
     runs-on: ubuntu-latest
-    env:
-      RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
-      JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
     steps:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -96,66 +135,49 @@ jobs:
             exit 1
           fi
 
-      - name: Install dependencies
+      - name: Download artifact name file
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
+          path: artifact_name
+
+      - name: Read artifact name
+        id: read-artifact-name
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq gh
-
-      - name: Build model
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          gh workflow run sunnypilot-build-model.yaml \
-            --repo sunnypilot/sunnypilot \
-            --ref "${{ github.event.inputs.build_model_ref }}" \
-            -f upstream_branch="${{ github.event.inputs.upstream_branch }}" \
-            -f custom_name="${{ github.event.inputs.custom_name }}"
-
-          for i in {1..24}; do
-            RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="${{ github.event.inputs.build_model_ref }}" --created ">$START_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
-            if [ -n "$RUN_ID" ]; then
-              break
-            fi
-            sleep 5
-          done
-
-          if [ -z "$RUN_ID" ]; then
-            echo "Could not find the triggered workflow run."
-            exit 1
-          fi
-
-          echo "Watching run ID: $RUN_ID"
-          gh run watch "$RUN_ID" --repo sunnypilot/sunnypilot
-          CONCLUSION=$(gh run view "$RUN_ID" --repo sunnypilot/sunnypilot --json conclusion --jq '.conclusion')
-          echo "Run concluded with: $CONCLUSION"
-          if [[ "$CONCLUSION" != "success" ]]; then
-            echo "Workflow run failed with conclusion: $CONCLUSION"
-            exit 1
-          fi
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Download and extract model artifact
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
+          path: output
+
+      - name: Remove unwanted files
         run: |
-          ARTIFACT_DIR="gitlab_docs/models/$RECOMPILED_DIR"
-          RUN_ID=$(gh run list --repo sunnypilot/sunnypilot --workflow=sunnypilot-build-model.yaml --branch="${{ github.event.inputs.build_model_ref }}" --limit=1 --json databaseId --jq '.[0].databaseId')
-          ARTIFACT_NAME=$(gh api repos/sunnypilot/sunnypilot/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name | startswith("model-")) | .name')
-          echo "Downloading artifact: $ARTIFACT_NAME from run: $RUN_ID"
-          mkdir -p "$ARTIFACT_DIR/$ARTIFACT_NAME"
-          echo "Created directory: $ARTIFACT_DIR/$ARTIFACT_NAME"
-          gh run download "$RUN_ID" --repo sunnypilot/sunnypilot -n "$ARTIFACT_NAME" --dir "$ARTIFACT_DIR/$ARTIFACT_NAME"
-          echo "Downloaded artifact zip(s) to: $ARTIFACT_DIR/$ARTIFACT_NAME"
-          ZIP_PATH=$(find "$ARTIFACT_DIR/$ARTIFACT_NAME" -type f -name '*.zip' | head -n1)
-          if [ -n "$ZIP_PATH" ]; then
-            echo "Unzipping $ZIP_PATH to $ARTIFACT_DIR/$ARTIFACT_NAME"
-            unzip -o "$ZIP_PATH" -d "$ARTIFACT_DIR/$ARTIFACT_NAME"
-            rm -f "$ZIP_PATH"
-            echo "Unzipped and removed $ZIP_PATH"
-          else
-            echo "No zip file found in $ARTIFACT_DIR/$ARTIFACT_NAME"
-          fi
-          echo "Done processing $ARTIFACT_NAME"
+          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
+          find output -type f -name 'dmonitoring_model.onnx' -delete
+
+      - name: Copy model artifact(s) to GitLab recompiled dir
+        env:
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
+        run: |
+          ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
+          mkdir -p "$ARTIFACT_DIR"
+          for path in output/*; do
+            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
+              continue
+            fi
+            name="$(basename "$path")"
+            if [ -d "$path" ]; then
+              mkdir -p "$ARTIFACT_DIR/$name"
+              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
+              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
+            else
+              cp "$path" "$ARTIFACT_DIR/"
+              echo "Copied file $name -> $ARTIFACT_DIR/"
+            fi
+          done
 
       - name: Push recompiled dir to GitLab
         env:
@@ -163,28 +185,36 @@ jobs:
         run: |
           cd gitlab_docs
           git checkout main
+          git pull origin main
           for d in models/"$RECOMPILED_DIR"/*/; do
             git sparse-checkout add "$d"
           done
           git add models/"$RECOMPILED_DIR"
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git commit -m "Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
+          git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
           git push origin main
+
+      - run: |
+          cd docs
+          git pull origin gh-pages
 
       - name: Run json_parser.py to update JSON
         run: |
-          FOLDER="${{ github.event.inputs.model_folder }}"
+          FOLDER="${{ inputs.model_folder }}"
           if [ "$FOLDER" = "Other" ]; then
-            FOLDER="${{ github.event.inputs.custom_model_folder }}"
+            FOLDER="${{ inputs.custom_model_folder }}"
           fi
           ARGS=""
-          [ -n "$FOLDER" ] && ARGS="$ARGS --model-folder \"$FOLDER\""
-          [ -n "${{ github.event.inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ github.event.inputs.generation }}\""
-          [ -n "${{ github.event.inputs.version }}" ] && ARGS="$ARGS --version \"${{ github.event.inputs.version }}\""
+          if [ "$FOLDER" != "None" ] && [ -n "$FOLDER" ]; then
+            ARGS="$ARGS --model-folder \"$FOLDER\""
+          fi
+          [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
+          [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --sort-by-date \
             $ARGS
 
       - name: Push updated JSON to GitHub docs repo
