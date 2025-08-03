@@ -196,7 +196,21 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", {PERSISTENT | BACKUP, INT, "0"}},
 
+    // Dynamic Experimental Controller
     {"DynamicExperimentalControl", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalStandstill", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalModelSlowDown", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalFCW", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalHasLead", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalDistanceBased", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalDistanceValue", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalSpeedBased", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalSpeedValue", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalSlowness", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalFollowLead", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalSlowerLead", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalStoppedLead", {PERSISTENT | BACKUP, BOOL, "0"}},
+
     {"BlindSpot", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // sunnypilot model params

@@ -56,6 +56,7 @@ longitudinal_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.cc",
   "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.cc",
   "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_settings.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/dec_controller.cc",
 ]
 
 network_src = [
