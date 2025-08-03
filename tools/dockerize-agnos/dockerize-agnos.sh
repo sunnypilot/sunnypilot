@@ -43,6 +43,7 @@ WORKINGDIR="$BASEDIR/tools/dockerize-agnos"
 echo "BASEDIR=$BASEDIR"
 echo "WORKINGDIR=$WORKINGDIR"
 cd $WORKINGDIR
+mkdir -p $WORKINGDIR/tmp
 
 SYSTEMURL=$(jq -r '.[] | select(.name == "system") | .url' $BASEDIR/system/hardware/tici/agnos.json)
 HASH=$(jq -r '.[] | select(.name == "system") | .hash' $BASEDIR/system/hardware/tici/agnos.json)
