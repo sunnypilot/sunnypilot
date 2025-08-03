@@ -108,3 +108,7 @@ Pipfile
 !.idea/customTargets.xml
 !.idea/tools/*
 !.run/*
+
+
+# dockerize-agnos
+tools/dockerize-agnos/tmp/
