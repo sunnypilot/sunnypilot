@@ -94,7 +94,7 @@ umount -l tmp/rootfs-img-mount
 
 
 echo "Building Dockerfile.agnos-system"
-docker buildx build -f Dockerfile.agnos-system -t agnos-system-base .
+docker buildx build -f Dockerfile.agnos-system -t agnos-system .
 
 # CLEANUP: Remove temporary agnos system mountpoint
 rmdir tmp/rootfs-img-mount/ 
