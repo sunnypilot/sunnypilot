@@ -1,6 +1,6 @@
 # Replicate build environment of AGNOS running on C3X device
 
-FROM agnos-system-base:latest
+FROM agnos-system:latest
 
 ENV OPENPILOT_PATH=/data/openpilot
 ENV SCONSCACHEPATH=/data/scons_cache

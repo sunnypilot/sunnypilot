@@ -1,6 +1,5 @@
 # dockerize-agnos.sh usage
 ```
-git checkout dockerize-agnos --recurse-submodules
 # Any Linux x86_64 or aarch64 then upload the docker base image to a repo
 sudo tools/dockerize-agnos/dockerize-agnos.sh
 # Must be run on Linux aarch64 host
@@ -10,10 +9,6 @@ sudo docker buildx build -f Dockerfile.sunnypilot_agnos --build-arg GIT_BRANCH=$
 You can set `GIT_BRANCH` to anything so for example `master-dev-c3-new` source could prebuild to `GIT_BRANCH=dev-c3-new`.
 
 * Copy the `system-*.img.xz` file into `tools/dockerize-agnos/tmp` before running the script if you want to avoid downloading the image repeatedly. Note the script deletes this file as the last step to fully clean up after itself.
-
-# dockerize-agnos.sh TODO
-* Should docker base image include the system image hash within the name? e.g. `agnos-system-base-$HASH`
-The hash identifies which OS image is installed onto devices. You probably need some way for older branches to find their respective agnos base image? They each know the agnos system hash so they would know the exact agnos base image name. This is also how you know which old agnos images are safe to delete. 
 
 # Regarding `/dev/kgsl-3d0`
 Builds within dockerized-agnos fail when tinygrad tries to use `/dev/kgsl-3d0` to compile and test.
