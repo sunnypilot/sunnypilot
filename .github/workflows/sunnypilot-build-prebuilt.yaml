@@ -9,12 +9,6 @@ env:
   
   # Branch configurations
   STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master' }} # vars are set on repo settings.
-  DEV_C3_SOURCE_BRANCH: ${{ vars.DEV_C3_SOURCE_BRANCH || 'master-dev-c3-new' }} # vars are set on repo settings.
-  
-  # Target branch configurations
-  STAGING_TARGET_BRANCH: ${{ vars.STAGING_TARGET_BRANCH || 'staging-c3-new' }} # vars are set on repo settings.
-  DEV_TARGET_BRANCH: ${{ vars.DEV_TARGET_BRANCH || 'dev-c3-new' }} # vars are set on repo settings.
-  RELEASE_TARGET_BRANCH: ${{ vars.RELEASE_TARGET_BRANCH || 'release-c3-new' }} # vars are set on repo settings.
   
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
