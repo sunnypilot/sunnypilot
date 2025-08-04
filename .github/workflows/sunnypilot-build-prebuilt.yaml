@@ -177,7 +177,6 @@ jobs:
     outputs:
       prebuilt: ${{ steps.strategy.outputs.prebuilt }}
       environment: ${{ steps.strategy.outputs.environment }}
-      auto_deploy: ${{ steps.strategy.outputs.auto_deploy }}
       new_branch: ${{ steps.strategy.outputs.new_branch }}
       extra_version_identifier: ${{ steps.strategy.outputs.extra_version_identifier }}
       version: ${{ steps.strategy.outputs.version }}
@@ -202,15 +201,13 @@ jobs:
             VERSION="$(date '+%Y.%m.%d')-${{ github.run_number }}"
   
             echo "prebuilt=true" >> $GITHUB_OUTPUT
-            echo "environment=dev" >> $GITHUB_OUTPUT
-            echo "auto_deploy=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
+            echo "environment=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
             echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
             echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
-            echo "auto_deploy=$(echo "$CONFIG" | jq -r '.auto_deploy')" >> $GITHUB_OUTPUT
             echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
             echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
