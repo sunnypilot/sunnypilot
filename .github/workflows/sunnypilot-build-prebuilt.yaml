@@ -226,15 +226,44 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+          
+  prepare_strategy:
+    runs-on: ubuntu-24.04
+    if: ${{ always() && !failure() && !cancelled() }}
+    outputs:
+      prebuilt: ${{ steps.strategy.outputs.prebuilt }}
+      environment: ${{ steps.strategy.outputs.environment }}
+      auto_deploy: ${{ steps.strategy.outputs.auto_deploy }}
+    
+    steps:
+      - name: Extract deploy strategy
+        id: strategy
+        run: |
+          echo '::group::Strategy Extraction'
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          echo "Current branch: $BRANCH"
+          
+          STRATEGY_JSON='${{ vars.DEPLOY_STRATEGY }}'
+          CONFIG=$(echo "$STRATEGY_JSON" | jq -r --arg branch "$BRANCH" '
+            .configs[] | select(.branch == $branch)
+          ')
+          
+          echo "Matched config: $CONFIG"
+          echo "::endgroup::"
+          
+          echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
+          echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
+          echo "auto_deploy=$(echo "$CONFIG" | jq -r '.auto_deploy')" >> $GITHUB_OUTPUT
+
 
   publish:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
-    needs: [ build ]
+    needs: [ build, prepare_strategy ]
     runs-on: ubuntu-24.04
-    environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
+    environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
