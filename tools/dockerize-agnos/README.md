@@ -1,5 +1,17 @@
-# dockerize-agnos.sh
+# dockerize-agnos.sh usage
+```
+git checkout dockerize-agnos --recurse-submodules
+# Any Linux x86_64 or aarch64 then upload the docker base image to a repo
+sudo tools/dockerize-agnos/dockerize-agnos.sh
+# Must be run on Linux aarch64 host
+sudo docker buildx build -f Dockerfile.sunnypilot_agnos --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t test1
+```
+
+You can set `GIT_BRANCH` to anything so for example `master-dev-c3-new` source could prebuild to `GIT_BRANCH=dev-c3-new`.
+
 * Copy the `system-*.img.xz` file into `tools/dockerize-agnos/tmp` before running the script if you want to avoid downloading the image repeatedly. Note the script deletes this file as the last step to fully clean up after itself.
+
+# dockerize-agnos.sh TODO
 * Should docker base image include the system image hash within the name? e.g. `agnos-system-base-$HASH`
 The hash identifies which OS image is installed onto devices. You probably need some way for older branches to find their respective agnos base image? They each know the agnos system hash so they would know the exact agnos base image name. This is also how you know which old agnos images are safe to delete. 
 
@@ -23,5 +35,3 @@ It's good to know the build environment is so exactly like the device that it is
 `git am DEMO-disable-QCOM-tinygrad-compile.patch`
 
 Due to the missing `/dev/kgsl-3d0` you need to disable QCOM tinygrad compilation to avoid a build failure. Perhaps we should replace this with a prebuilt and downloaded model copied into the docker imageprior to scons?
-
-Could we add an environment variable or something to turn off that QCOM tinygrad compile as a build option?
