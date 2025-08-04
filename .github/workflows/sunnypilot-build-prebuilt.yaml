@@ -193,22 +193,28 @@ jobs:
           CONFIG=$(echo "$STRATEGY_JSON" | jq -r --arg branch "$BRANCH" '
             .configs[] | select(.branch == $branch)
           ')
-          echo "Matched config: $CONFIG"
-          echo "::endgroup::"
-
-          echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
-          echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
-          echo "auto_deploy=$(echo "$CONFIG" | jq -r '.auto_deploy')" >> $GITHUB_OUTPUT
-
-          if echo "$CONFIG" | jq -e 'has("version_prefix")'; then
-            VERSION="$(echo "$CONFIG" | jq -r '.version_prefix')-$(date '+%Y.%m.%d')-${{ github.run_number }}"
-          else
+          
+          if [[ -z "$CONFIG" || "$CONFIG" == "null" ]]; then
+            echo "No exact strategy match found. Falling back to feature/fork logic."
+            IS_FORK="${{ github.event.pull_request.head.repo.fork && 'true' || 'false' }}"
+            FORK_SUFFIX=$( [[ "$IS_FORK" == "true" ]] && echo "-fork" || echo "" )
+            NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
             VERSION="$(date '+%Y.%m.%d')-${{ github.run_number }}"
+  
+            echo "prebuilt=true" >> $GITHUB_OUTPUT
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "auto_deploy=false" >> $GITHUB_OUTPUT
+            echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+          echo "Matched config: $CONFIG"
+            echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
+            echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
+            echo "auto_deploy=$(echo "$CONFIG" | jq -r '.auto_deploy')" >> $GITHUB_OUTPUT
+            echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
+            echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
           fi
-
-          echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // empty')" >> $GITHUB_OUTPUT
   
   
   publish:
