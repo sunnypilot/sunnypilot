@@ -203,7 +203,7 @@ jobs:
   
             echo "prebuilt=true" >> $GITHUB_OUTPUT
             echo "environment=dev" >> $GITHUB_OUTPUT
-            echo "auto_deploy=false" >> $GITHUB_OUTPUT
+            echo "auto_deploy=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
