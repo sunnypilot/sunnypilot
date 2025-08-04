@@ -46,16 +46,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
-    needs: [ validate_tests ]
+    needs: [ validate_tests, prepare_strategy ]
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: [self-hosted, tici]
     outputs:
-      new_branch: ${{ steps.set-env.outputs.new_branch }}
-      version: ${{ steps.set-env.outputs.version }}
-      extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
-      commit_sha: ${{ steps.set-env.outputs.commit_sha }}
+      new_branch: ${{ needs.prepare_strategy.outputs.new_branch }}
+      version: ${{ needs.prepare_strategy.outputs.version }}
+      extra_version_identifier: ${{ needs.prepare_strategy.outputs.extra_version_identifier }}
+      commit_sha: ${{ github.sha }}
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     steps:
       - uses: actions/checkout@v4
@@ -77,61 +77,12 @@ jobs:
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_C3_SOURCE_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Set Feature Branch Prebuilt Configuration
-        id: set_feature_configuration
-        if: (
-          !(env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH) &&
-          !(env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH) &&
-          !(startsWith(github.ref, 'refs/tags/'))
-          )
-        run: |
-          echo "NEW_BRANCH=${{ env.SOURCE_BRANCH }}${{ github.event.pull_request.head.repo.fork && '-fork' || '' }}-prebuilt" >> $GITHUB_ENV
-          echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
-
-      - name: Set dev-c3-new prebuilt Configuration
-        id: set_dev_configuration
-        if: (
-          steps.set_feature_configuration.outcome == 'skipped' &&
-          env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH
-          )
-        run: |
-          echo "NEW_BRANCH=${{ env.DEV_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=${{ github.run_number }}" >> $GITHUB_ENV
-
-      - name: Set staging-c3-new prebuilt Configuration
-        id: set_staging_configuration
-        if: (
-          steps.set_feature_configuration.outcome == 'skipped' &&
-          !contains(github.event_name, 'pull_request') &&
-          steps.set_dev_configuration.outcome == 'skipped' &&
-          (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
-          )
-        run: |
-          echo "NEW_BRANCH=${{ env.STAGING_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=staging" >> $GITHUB_ENV
-          echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')-staging" >> $GITHUB_ENV
-
-      - name: Set release-c3-new prebuilt Configuration
-        id: set_tag_configuration
-        if: (
-          steps.set_feature_configuration.outcome == 'skipped' &&
-          !contains(github.event_name, 'pull_request') &&
-          steps.set_staging_configuration.outcome == 'skipped' &&
-          startsWith(github.ref, 'refs/tags/')
-          )
-        run: |
-          echo "NEW_BRANCH=${{ env.RELEASE_TARGET_BRANCH }}" >> $GITHUB_ENV
-          echo "EXTRA_VERSION_IDENTIFIER=release" >> $GITHUB_ENV
-          echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')-release" >> $GITHUB_ENV
-
       - name: Set environment variables
         id: set-env
         run: |
-          # Write to GITHUB_OUTPUT from environment variables
-          echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-          [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
-          [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "new_branch=${{ needs.prepare_strategy.outputs.new_branch }}" >> $GITHUB_OUTPUT
+          echo "version=${{ needs.prepare_strategy.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "extra_version_identifier=${{ needs.prepare_strategy.outputs.extra_version_identifier }}" >> $GITHUB_OUTPUT
           echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
           
           # Set up common environment
@@ -229,12 +180,13 @@ jobs:
           
   prepare_strategy:
     runs-on: ubuntu-24.04
-    if: ${{ always() && !failure() && !cancelled() }}
     outputs:
       prebuilt: ${{ steps.strategy.outputs.prebuilt }}
       environment: ${{ steps.strategy.outputs.environment }}
       auto_deploy: ${{ steps.strategy.outputs.auto_deploy }}
-    
+      new_branch: ${{ steps.strategy.outputs.new_branch }}
+      extra_version_identifier: ${{ steps.strategy.outputs.extra_version_identifier }}
+      version: ${{ steps.strategy.outputs.version }}
     steps:
       - name: Extract deploy strategy
         id: strategy
@@ -242,20 +194,29 @@ jobs:
           echo '::group::Strategy Extraction'
           BRANCH="${{ github.head_ref || github.ref_name }}"
           echo "Current branch: $BRANCH"
-          
+
           STRATEGY_JSON='${{ vars.DEPLOY_STRATEGY }}'
           CONFIG=$(echo "$STRATEGY_JSON" | jq -r --arg branch "$BRANCH" '
             .configs[] | select(.branch == $branch)
           ')
-          
           echo "Matched config: $CONFIG"
           echo "::endgroup::"
-          
+
           echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
           echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
           echo "auto_deploy=$(echo "$CONFIG" | jq -r '.auto_deploy')" >> $GITHUB_OUTPUT
 
+          if echo "$CONFIG" | jq -e 'has("version_prefix")'; then
+            VERSION="$(echo "$CONFIG" | jq -r '.version_prefix')-$(date '+%Y.%m.%d')-${{ github.run_number }}"
+          else
+            VERSION="$(date '+%Y.%m.%d')-${{ github.run_number }}"
+          fi
 
+          echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // empty')" >> $GITHUB_OUTPUT
+  
+  
   publish:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
