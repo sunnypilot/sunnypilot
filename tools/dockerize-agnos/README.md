@@ -3,7 +3,7 @@
 # Any Linux x86_64 or aarch64 then upload the docker base image to a repo
 sudo tools/dockerize-agnos/dockerize-agnos.sh
 # Must be run on Linux aarch64 host
-sudo docker buildx build -f Dockerfile.sunnypilot_agnos --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t test1
+sudo docker buildx build -f Dockerfile.sunnypilot_agnos --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t test1 .
 ```
 
 You can set `GIT_BRANCH` to anything so for example `master-dev-c3-new` source could prebuild to `GIT_BRANCH=dev-c3-new`.
