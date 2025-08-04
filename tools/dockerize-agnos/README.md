@@ -23,3 +23,5 @@ It's good to know the build environment is so exactly like the device that it is
 `git am DEMO-disable-QCOM-tinygrad-compile.patch`
 
 Due to the missing `/dev/kgsl-3d0` you need to disable QCOM tinygrad compilation to avoid a build failure. Perhaps we should replace this with a prebuilt and downloaded model copied into the docker imageprior to scons?
+
+Could we add an environment variable or something to turn off that QCOM tinygrad compile as a build option?
