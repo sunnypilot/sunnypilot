@@ -184,9 +184,9 @@ if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   copyparty_args += [f"-v{Paths.log_root()}:/routes:r"]
   copyparty_args += [f"-v{Paths.model_root()}:/models:rw"]
   copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw"]
-  copyparty_args += [f"-p8080"]
-  copyparty_args += [f"-z"]
-  copyparty_args += [f"-q"]
+  copyparty_args += ["-p8080"]
+  copyparty_args += ["-z"]
+  copyparty_args += ["-q"]
   procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}
