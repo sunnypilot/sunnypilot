@@ -3,12 +3,8 @@
 # Any Linux x86_64 or aarch64 then upload the docker base image to a repo
 sudo tools/dockerize-agnos/dockerize-agnos.sh
 # Must be run on Linux aarch64 host
-sudo docker buildx build -f Dockerfile.sunnypilot_agnos --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) -t test1 .
+sudo docker buildx build -f Dockerfile.sunnypilot_agnos -t test1 .
 ```
-
-You can set `GIT_BRANCH` to anything so for example `master-dev-c3-new` source could prebuild to `GIT_BRANCH=dev-c3-new`.
-
-* Copy the `system-*.img.xz` file into `tools/dockerize-agnos/tmp` before running the script if you want to avoid downloading the image repeatedly. Note the script deletes this file as the last step to fully clean up after itself.
 
 # Regarding `/dev/kgsl-3d0`
 Builds within dockerized-agnos fail when tinygrad tries to use `/dev/kgsl-3d0` to compile and test.
