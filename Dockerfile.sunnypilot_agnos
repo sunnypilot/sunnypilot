@@ -20,16 +20,3 @@ USER root
 # Launch build with the same environment as the comma user on the device
 RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc)"
 
-# Commit prebuilt to git branch
-ARG GIT_BRANCH
-ENV GIT_BRANCH=$GIT_BRANCH
-USER comma
-RUN cd ${OPENPILOT_PATH}/; \
-    [ -z "$GIT_BRANCH" ] && GIT_BRANCH=unnamed-prebuilt; \
-    git init && \
-    git config --global user.email 'github-actions[bot]@users.noreply.github.com' && \
-    git config --global user.name 'github-actions[bot]' && \
-    git add . && \
-    git commit -m 'Initial commit from Docker build' && \
-    git branch $GIT_BRANCH && \
-    git checkout $GIT_BRANCH
