@@ -197,8 +197,11 @@ class BackupManagerSP:
         real_param = next(p for p in backupable_params if p.lower() == param.lower())
         param_type = self.params.get_type(real_param)
         try:
-          value_og = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
-          value = value_og.decode('utf-8')
+          value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
+
+          if param_type != ParamKeyType.BYTES:
+            value = value.decode('utf-8')
+
           if param_type == ParamKeyType.STRING:
             value = value
           elif param_type == ParamKeyType.BOOL:
