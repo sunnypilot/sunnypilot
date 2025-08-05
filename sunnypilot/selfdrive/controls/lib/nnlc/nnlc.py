@@ -33,7 +33,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
     self.params = Params()
-    self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
+    # TODO-SP: Disable NNLC toggle for sunnypilot temporarily until sync lag issue is solved.
+    self.enabled = self.params.get_bool("NeuralNetworkLateralControl") and False
     self.has_nn_model = CP_SP.neuralNetworkLateralControl.model.path != MOCK_MODEL_PATH
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data

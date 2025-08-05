@@ -77,7 +77,8 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
-  list->addItem(nnlcToggle);
+  // TODO-SP: Disable NNLC toggle for sunnypilot temporarily until sync lag issue is solved.
+  // list->addItem(nnlcToggle);
 
   QObject::connect(nnlcToggle, &ParamControl::toggleFlipped, [=](bool state) {
     if (state) {

@@ -50,7 +50,8 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
     cloudlog.error({"nnlc event": "car doesn't match any Neural Network model"})
 
   if nnlc_model_name != "MOCK" and CP.steerControlType != structs.CarParams.SteerControlType.angle:
-    enabled = params.get_bool("NeuralNetworkLateralControl")
+    # TODO-SP: Disable NNLC toggle for sunnypilot temporarily until sync lag issue is solved.
+    enabled = params.get_bool("NeuralNetworkLateralControl") and False
 
   if enabled:
     CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
