@@ -199,7 +199,7 @@ class BackupManagerSP:
         try:
           value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
 
-          if param_type != ParamKeyType.BYTES:
+          if param_type != ParamKeyType.BYTES and not all_values_encoded:
             value = value.decode('utf-8')
 
           if param_type == ParamKeyType.STRING:
