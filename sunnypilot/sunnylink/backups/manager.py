@@ -199,17 +199,17 @@ class BackupManagerSP:
         try:
           value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
 
-          if param_type != ParamKeyType.BYTES and not all_values_encoded:
-            value = value.decode('utf-8')
+          if param_type != ParamKeyType.BYTES:
+            value = value.decode('utf-8')  # type: ignore
 
           if param_type == ParamKeyType.STRING:
             value = value
           elif param_type == ParamKeyType.BOOL:
-            value = value.lower() in ('true', '1', 'yes')
+            value = value.lower() in ('true', '1', 'yes')  # type: ignore
           elif param_type == ParamKeyType.INT:
-            value = int(value)
+            value = int(value)  # type: ignore
           elif param_type == ParamKeyType.FLOAT:
-            value = float(value)
+            value = float(value)  # type: ignore
           elif param_type == ParamKeyType.TIME:
             value = str(value)
           self.params.put(real_param, value)
