@@ -198,17 +198,17 @@ class BackupManagerSP:
         param_type = self.params.get_type(real_param)
         try:
           value_og = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
-          value = value_og
+          value = value_og.decode('utf-8')
           if param_type == ParamKeyType.STRING:
-            value = value.decode('utf-8')
+            value = value
           elif param_type == ParamKeyType.BOOL:
-            value = value.decode('utf-8').lower() in ('true', '1', 'yes')
+            value = value.lower() in ('true', '1', 'yes')
           elif param_type == ParamKeyType.INT:
             value = int(value)
           elif param_type == ParamKeyType.FLOAT:
             value = float(value)
           elif param_type == ParamKeyType.TIME:
-            value = str(value.decode('utf-8'))
+            value = str(value)
           self.params.put(real_param, value)
           restored_count += 1
         except Exception as e:
