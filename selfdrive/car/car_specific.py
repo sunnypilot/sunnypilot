@@ -82,7 +82,7 @@ class CarSpecificEvents:
       events = self.create_common_events(CS, CS_prev)
 
       if self.CP.openpilotLongitudinalControl:
-        if CS.cruiseState.standstill and not (CS.brakePressed or self.CP.autoResumeSng):
+        if CS.cruiseState.standstill and not CS.brakePressed:
           events.add(EventName.resumeRequired)
         if CS.vEgo < self.CP.minEnableSpeed:
           events.add(EventName.belowEngageSpeed)
@@ -103,18 +103,30 @@ class CarSpecificEvents:
       if CS.vEgo < self.CP.minEnableSpeed and not (CS.standstill and CS.brake >= 20 and
                                                    self.CP.networkLocation == NetworkLocation.fwdCamera):
         events.add(EventName.belowEngageSpeed)
-      if CS.cruiseState.standstill:
+      if CS.cruiseState.standstill and not self.CP.autoResumeSng:
         events.add(EventName.resumeRequired)
+      if CS.vEgo < self.CP.minSteerSpeed:
+        events.add(EventName.belowSteerSpeed)
+
+      if (self.CP.flags & GMFlags.CC_LONG) and CS.vEgo < self.CP.minEnableSpeed and CS.cruiseState.enabled:
+        events.add(EventName.speedTooLow)
 
     elif self.CP.brand == 'volkswagen':
       events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
                                          pcm_enable=self.CP.pcmCruise)
 
+      # Low speed steer alert hysteresis logic
+      if (self.CP.minSteerSpeed - 1e-3) > VWCarControllerParams.DEFAULT_MIN_STEER_SPEED and CS.vEgo < (self.CP.minSteerSpeed + 1.):
+        self.low_speed_alert = True
+      elif CS.vEgo > (self.CP.minSteerSpeed + 2.):
+        self.low_speed_alert = False
+      if self.low_speed_alert:
+        events.add(EventName.belowSteerSpeed)
+
       if self.CP.openpilotLongitudinalControl:
         if CS.vEgo < self.CP.minEnableSpeed + 0.5:
           events.add(EventName.belowEngageSpeed)
-        if ((CC.enabled and CS.vEgo < self.CP.minEnableSpeed) or
-            ((self.CP.flags & GMFlags.CC_LONG) and CS.vEgo < self.CP.minEnableSpeed and CS.cruiseState.enabled)):
+        if CC.enabled and CS.vEgo < self.CP.minEnableSpeed:
           events.add(EventName.speedTooLow)
 
       # TODO: this needs to be implemented generically in carState struct
