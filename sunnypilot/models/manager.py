@@ -8,7 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 import asyncio
 import os
 import time
-import json
 
 import aiohttp
 from openpilot.common.params import Params

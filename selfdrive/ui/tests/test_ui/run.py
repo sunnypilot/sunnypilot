@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import capnp
-import json
 import pathlib
 import shutil
 import sys

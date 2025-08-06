@@ -5,7 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import json
 import time
 
 import requests

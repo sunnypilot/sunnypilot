@@ -9,7 +9,6 @@ import hashlib
 import os
 import pickle
 import numpy as np
-import json
 
 from openpilot.common.params import Params
 from cereal import custom
