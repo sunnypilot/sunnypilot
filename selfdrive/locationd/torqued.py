@@ -11,8 +11,6 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
-
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
 MIN_POINTS_TOTAL = 4000
@@ -51,7 +49,7 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator, LagdToggle):
+class TorqueEstimator(ParameterEstimator):
   def __init__(self, CP, decimated=False, track_all_points=False):
     super().__init__()
     self.CP = CP
@@ -99,6 +97,7 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
 
     # try to restore cached params
     params = Params()
+    self.params = params
     params_cache = params.get("CarParamsPrevRoute")
     torque_cache = params.get("LiveTorqueParameters")
     if params_cache is not None and torque_cache is not None:
@@ -125,6 +124,8 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
     self.filtered_params = {}
     for param in initial_params:
       self.filtered_params[param] = FirstOrderFilter(initial_params[param], self.decay, DT_MDL)
+
+    self.frame = 0  # FIXME-SP: must remove before merge
 
   @staticmethod
   def get_restore_key(CP, version):
@@ -180,7 +181,8 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
-      self.lag = self.lagd_torqued_main(self.CP, msg)
+      if self.frame % 12 == 0:
+        self.lag = self.params.get("LagdValueCache")
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
@@ -204,6 +206,8 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
 
           if self.track_all_points:
             self.all_torque_points.append([steer, lateral_acc])
+
+    self.frame += 1  # FIXME-SP: must remove before merge
 
   def get_msg(self, valid=True, with_points=False):
     msg = messaging.new_message('liveTorqueParameters')
