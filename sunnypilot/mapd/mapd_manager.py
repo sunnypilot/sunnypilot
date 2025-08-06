@@ -59,12 +59,17 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str] = No
   params.put("OsmDownloadedDate", str(time.monotonic()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
-  osm_download_locations = json.dumps({
+  osm_download_locations = {
+    "nations": nations,
+    "states": states or []
+  }
+
+  osm_download_locations_dump = json.dumps({
     "nations": nations,
     "states": states or []
   })
 
-  print(f"Downloading maps for {osm_download_locations}")
+  print(f"Downloading maps for {osm_download_locations_dump}")
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
@@ -111,7 +116,7 @@ def update_osm_db() -> None:
     mem_params.put("OSMDownloadBounds", "")
 
   if not mem_params.get("LastGPSPosition"):
-    mem_params.put("LastGPSPosition", "{}")
+    mem_params.put("LastGPSPosition", {})
 
 
 def main_thread():

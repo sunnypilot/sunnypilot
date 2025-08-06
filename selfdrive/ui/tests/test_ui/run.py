@@ -265,12 +265,12 @@ def setup_settings_trips(click, pm: PubMaster, scroll=None):
   time.sleep(UI_DELAY)
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
-  Params().put("CarPlatformBundle", json.dumps(
+  Params().put("CarPlatformBundle",
     {
       "platform": "HONDA_CIVIC_2022",
       "name": "Honda Civic 2022-24"
     }
-  ))
+  )
 
   setup_settings_device(click, pm)
   scroll(-400, 278, 962)

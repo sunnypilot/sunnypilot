@@ -146,7 +146,7 @@ class ModelManagerSP:
       await asyncio.gather(*tasks)
       self.active_bundle = self.selected_bundle
       self.active_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
-      self.params.put("ModelManager_ActiveBundle", json.dumps(self.active_bundle.to_dict()))
+      self.params.put("ModelManager_ActiveBundle", self.active_bundle.to_dict())
       self.selected_bundle = None
 
     except Exception:

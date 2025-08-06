@@ -102,14 +102,14 @@ class ModelCache:
       if not cached_data:
         cloudlog.warning("No cached model data available")
         return {}, True
-      return json.loads(cached_data), self._is_expired()
+      return cached_data, self._is_expired()
     except Exception as e:
       cloudlog.exception(f"Error retrieving cached model data: {str(e)}")
       return {}, True
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""
-    self.params.put(self._CACHE_KEY, json.dumps(data))
+    self.params.put(self._CACHE_KEY, data)
     self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9))
 
 
