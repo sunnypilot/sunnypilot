@@ -14,9 +14,12 @@ class LagdToggle:
     self.lag = 0.0
     self._last_desc = None
 
-  @property
-  def software_delay(self):
-    return self.params.get("LagdToggleDelay")
+    self.lagd_toggle = self.params.get_bool("LagdToggle")
+    self.software_delay = self.params.get("LagdToggleDelay")
+
+  def read_params(self):
+    self.lagd_toggle = self.params.get_bool("LagdToggle")
+    self.software_delay = self.params.get("LagdToggleDelay")
 
   def _maybe_update_desc(self, desc):
     if desc != self._last_desc:
@@ -24,7 +27,7 @@ class LagdToggle:
       self._last_desc = desc
 
   def lagd_main(self, CP, sm, model):
-    if self.params.get_bool("LagdToggle"):
+    if self.lagd_toggle:
       lateral_delay = sm["liveDelay"].lateralDelay
       lat_smooth = model.LAT_SMOOTH_SECONDS
       result = lateral_delay + lat_smooth
@@ -42,7 +45,7 @@ class LagdToggle:
     return result
 
   def lagd_torqued_main(self, CP, msg):
-    if self.params.get_bool("LagdToggle"):
+    if self.lagd_toggle:
       self.lag = msg.lateralDelay
       cloudlog.debug(f"TORQUED USING LIVE DELAY: {self.lag:.3f}")
     else:
