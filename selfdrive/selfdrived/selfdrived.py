@@ -45,6 +45,8 @@ EventName = log.OnroadEvent.EventName
 ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
 
+ButtonTypeSP = custom.CarStateSP.ButtonEvent.Type
+
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
@@ -88,7 +90,7 @@ class SelfdriveD(CruiseHelper):
     self.calibrator = PoseCalibrator()
 
     # Setup sockets
-    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
+    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP', 'userFlag'])
 
     self.gps_location_service = get_gps_location_service(self.params)
     self.gps_packets = [self.gps_location_service]
@@ -97,6 +99,7 @@ class SelfdriveD(CruiseHelper):
 
     # TODO: de-couple selfdrived with card/conflate on carState without introducing controls mismatches
     self.car_state_sock = messaging.sub_sock('carState', timeout=20)
+    self.car_state_sp_sock = messaging.sub_sock('carStateSP', timeout=20)
 
     ignore = self.sensor_packets + self.gps_packets + ['alertDebug']
     if SIMULATION:
@@ -117,6 +120,8 @@ class SelfdriveD(CruiseHelper):
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
     self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
 
+    self.custom_button_mapping = self.params.get("SteeringCustomButtonMapping")
+
     car_recognized = self.CP.brand != 'mock'
 
     # cleanup old params
@@ -126,6 +131,7 @@ class SelfdriveD(CruiseHelper):
       self.params.remove("ExperimentalMode")
 
     self.CS_prev = car.CarState.new_message()
+    self.CS_SP_prev = custom.CarStateSP.new_message()
     self.AM = AlertManager()
     self.events = Events()
 
@@ -447,7 +453,9 @@ class SelfdriveD(CruiseHelper):
 
   def data_sample(self):
     _car_state = messaging.recv_one(self.car_state_sock)
+    _car_state_sp = messaging.recv_one(self.car_state_sp_sock)
     CS = _car_state.carState if _car_state else self.CS_prev
+    CS_SP = _car_state_sp.carStateSP if _car_state_sp else self.CS_SP_prev
 
     self.sm.update(0)
 
@@ -490,7 +498,7 @@ class SelfdriveD(CruiseHelper):
            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
 
-    return CS
+    return CS, CS_SP
 
   def update_alerts(self, CS):
     clear_event_types = set()
@@ -509,7 +517,7 @@ class SelfdriveD(CruiseHelper):
     self.AM.add_many(self.sm.frame, alerts + alerts_sp)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
-  def publish_selfdriveState(self, CS):
+  def publish_selfdriveState(self, CS, CS_SP):
     # selfdriveState
     ss_msg = messaging.new_message('selfdriveState')
     ss_msg.valid = True
@@ -559,8 +567,17 @@ class SelfdriveD(CruiseHelper):
       self.pm.send('onroadEventsSP', ce_send_sp)
     self.events_sp_prev = self.events_sp.names.copy()
 
+    # custom button handling for bookmark
+    custom_pressed = any(be.type == ButtonTypeSP.customButton for be in CS_SP.buttonEvents)
+    if custom_pressed:
+      # 0 = Off
+      # 1 = bookmark
+      if self.custom_button_mapping == 1:
+        uf_msg = messaging.new_message('userFlag', valid=True)
+        self.pm.send('userFlag', uf_msg)
+
   def step(self):
-    CS = self.data_sample()
+    CS, CS_SP = self.data_sample()
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
@@ -568,9 +585,10 @@ class SelfdriveD(CruiseHelper):
       self.mads.update(CS)
     self.update_alerts(CS)
 
-    self.publish_selfdriveState(CS)
+    self.publish_selfdriveState(CS, CS_SP)
 
     self.CS_prev = CS
+    self.CS_SP_prev = CS_SP
 
   def params_thread(self, evt):
     while not evt.is_set():
@@ -579,6 +597,7 @@ class SelfdriveD(CruiseHelper):
       self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.params.get("LongitudinalPersonality", return_default=True)
+      self.custom_button_mapping = self.params.get("SteeringCustomButtonMapping")
 
       self.mads.read_params()
       time.sleep(0.1)
