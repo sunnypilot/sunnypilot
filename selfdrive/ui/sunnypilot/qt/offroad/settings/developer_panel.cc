@@ -66,9 +66,9 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
          "it immediately removes the prebuilt file so compilation of locally edited cpp files can be made. "
          "<br><br><b>To edit C++ files locally on device, you MUST first turn off this toggle so the changes can recompile.</b>")
     : tr("Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' in the Software panel first."));
+  prebuiltToggle->showDescription();
 
   showAdvancedControls->setEnabled(true);
-  prebuiltToggle->showDescription();
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
 }
