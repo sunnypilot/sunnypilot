@@ -116,7 +116,7 @@ def update_osm_db() -> None:
     mem_params.put("OSMDownloadBounds", "")
 
   if not mem_params.get("LastGPSPosition"):
-    mem_params.put("LastGPSPosition", {})
+    mem_params.put("LastGPSPosition", "{}")
 
 
 def main_thread():
