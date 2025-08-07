@@ -21,6 +21,9 @@ private:
   ParamControlSP *prebuiltToggle;
   Params params;
   ParamControlSP *showAdvancedControls;
+  bool is_development = false;
+  bool is_release = false;
+  bool is_tested = false;
 
 private slots:
   void updateToggles(bool offroad);

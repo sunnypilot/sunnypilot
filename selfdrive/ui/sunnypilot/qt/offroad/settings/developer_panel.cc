@@ -47,15 +47,14 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(errorLogBtn);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &DeveloperPanelSP::updateToggles);
+
+  is_release = params.getBool("IsReleaseBranch");
+  is_tested = params.getBool("IsTestedBranch");
+  is_development = params.getBool("IsDevelopmentBranch");
 }
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
-  bool is_release = params.getBool("IsReleaseBranch");
-  bool is_tested = params.getBool("IsTestedBranch");
-  bool is_development = params.getBool("IsDevelopmentBranch");
   bool disable_updates = params.getBool("DisableUpdates");
-
-  prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
   prebuiltToggle->setEnabled(disable_updates);
 
   params.putBool("QuickBootToggle", QFile::exists("/data/openpilot/prebuilt"));
@@ -69,6 +68,7 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
 
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
+  prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
   showAdvancedControls->setEnabled(true);
 }
 
