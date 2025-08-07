@@ -55,8 +55,9 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
   bool disable_updates = params.getBool("DisableUpdates");
-  prebuiltToggle->setEnabled(disable_updates);
 
+  prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
+  prebuiltToggle->setEnabled(disable_updates);
   params.putBool("QuickBootToggle", QFile::exists("/data/openpilot/prebuilt"));
   prebuiltToggle->refresh();
 
@@ -70,7 +71,6 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
   prebuiltToggle->showDescription();
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
-  prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
 }
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
