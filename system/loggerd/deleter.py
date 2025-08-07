@@ -76,9 +76,7 @@ def deleter_thread(exit_event: threading.Event):
               try:
                 cloudlog.info(f"deleting {delete_path_external}")
                 print(f"deleting {delete_path_external}")
-                start = time.monotonic()
                 shutil.rmtree(delete_path_external)
-                print(f"deleting {delete_path_external} DONE in {time.monotonic() - start:.2f}s")
                 break
               except OSError:
                 cloudlog.exception(f"issue deleting {delete_path_external}")
@@ -101,9 +99,7 @@ def deleter_thread(exit_event: threading.Event):
         try:
           cloudlog.info(f"deleting {delete_path}")
           print(f"deleting {delete_path}")
-          start = time.monotonic()
           shutil.rmtree(delete_path)
-          print(f"deleting {delete_path} DONE in {time.monotonic() - start:.2f}s")
           break
         except OSError:
           cloudlog.exception(f"issue deleting {delete_path}")
