@@ -9,7 +9,6 @@ import math
 from cereal import messaging, custom
 from opendbc.car import structs
 from opendbc.car.interfaces import ACCEL_MIN
-from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
@@ -34,7 +33,6 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def transition_init(self) -> None:
-    self._params = Params()
     self._transition_counter = 0
     self._transition_steps = 40
     self._last_mode = 'acc'
@@ -46,7 +44,7 @@ class LongitudinalPlannerSP:
       self._last_mode = mode
 
   def blend_accel_transition(self, mpc_accel: float, e2e_accel: float, v_ego: float) -> float:
-    if self._params.get_bool("DynamicExperimentalControl"):
+    if self.dec.enabled():
       if self._transition_counter < self._transition_steps:
         self._transition_counter += 1
         progress = self._transition_counter / self._transition_steps
