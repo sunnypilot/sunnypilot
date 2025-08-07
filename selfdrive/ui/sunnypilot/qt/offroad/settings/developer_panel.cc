@@ -66,15 +66,15 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
          "<br><br><b>To edit C++ files locally on device, you MUST first turn off this toggle so the changes can recompile.</b>")
     : tr("Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' in the Software panel first."));
 
+  showAdvancedControls->setEnabled(true);
+  prebuiltToggle->showDescription();
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
   prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
-  showAdvancedControls->setEnabled(true);
 }
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
-  updateToggles(!uiState()->scene.started);
   AbstractControlSP::UpdateAllAdvancedControls();
-  prebuiltToggle->showDescription();
+  updateToggles(!uiState()->scene.started);
 }
