@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import os
 import time
 import threading
@@ -107,7 +106,7 @@ class Car:
         with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
           cached_params = _cached_params
 
-      fixed_fingerprint = json.loads(self.params.get("CarPlatformBundle") or "{}").get("platform", None)
+      fixed_fingerprint = (self.params.get("CarPlatformBundle") or {}).get("platform", None)
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params, fixed_fingerprint)
       sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
