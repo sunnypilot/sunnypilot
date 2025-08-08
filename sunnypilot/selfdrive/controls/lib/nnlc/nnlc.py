@@ -8,6 +8,7 @@ from collections import deque
 import math
 import numpy as np
 
+from opendbc.car import FRICTION_THRESHOLD, get_friction
 from opendbc.car.interfaces import LatControlInputs
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
@@ -126,7 +127,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self._ff = self.model.evaluate(nn_input)
 
     # apply friction override for cars with low NN friction response
-    # TODO-SP: verify with twilsonco if this change is appropriate
     if self.model.friction_override:
       self._pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
                                                             gravity_adjusted=False)
+      self._pid_log.error += get_friction(friction_input, self._lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
