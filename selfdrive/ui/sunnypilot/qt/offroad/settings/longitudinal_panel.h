@@ -29,4 +29,8 @@ private:
   ScrollViewSP *cruisePanelScroller = nullptr;
   QWidget *cruisePanelScreen = nullptr;
   CustomAccIncrement *customAccIncrement = nullptr;
+
+  ParamControlSP *vibePersonalityControl;
+  ParamControlSP *vibeAccelPersonalityControl;
+  ParamControlSP *vibeFollowPersonalityControl;
 };

@@ -122,6 +122,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+  accelPersonality @1 :AccelerationPersonality;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -132,6 +133,12 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       acc @0;
       blended @1;
     }
+  }
+
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
   }
 }
 
