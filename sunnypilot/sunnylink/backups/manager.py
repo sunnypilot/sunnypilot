@@ -212,6 +212,8 @@ class BackupManagerSP:
             value = float(value)  # type: ignore
           elif param_type == ParamKeyType.TIME:
             value = str(value)
+          elif param_type == ParamKeyType.JSON:
+            value = json.loads(value)
           self.params.put(real_param, value)
           restored_count += 1
         except Exception as e:
