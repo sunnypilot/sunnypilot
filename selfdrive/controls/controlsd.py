@@ -65,6 +65,8 @@ class Controls(ControlsExt):
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
 
+    self.frame = 0  # FIXME-SP: must remove before merge
+
   def update(self):
     self.sm.update(15)
     if self.sm.updated["liveCalibration"]:
@@ -93,8 +95,9 @@ class Controls(ControlsExt):
                                            torque_params.frictionCoefficientFiltered)
 
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
-      calculated_lag = self.LaC.extension.lagd_torqued_main(self.CP, self.sm['liveDelay'])
-      self.LaC.extension.update_lateral_lag(calculated_lag)
+      if self.frame % 300 == 0:
+        calculated_lag = self.params.get("LagdValueCache")  # FIXME-SP: must remove before merge
+        self.LaC.extension.update_lateral_lag(calculated_lag)
 
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
@@ -241,6 +244,8 @@ class Controls(ControlsExt):
         self.publish(CC, lac_log)
         self.run_ext(self.sm, self.pm)
         rk.monitor_time()
+
+        self.frame += 1  # FIXME-SP: must remove before merge
     finally:
       e.set()
       t.join()
