@@ -79,5 +79,6 @@ private:
   QFrame *policyFrame;
   Params params;
   ButtonControlSP *clearModelCacheBtn;
+  ButtonControlSP *refreshAvailableModelsBtn;
 
 };

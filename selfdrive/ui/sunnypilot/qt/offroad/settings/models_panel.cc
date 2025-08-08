@@ -68,6 +68,14 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
+  refreshAvailableModelsBtn = new ButtonControlSP(tr("Refresh Model List"), tr("REFRESH"), "", this);
+  connect(refreshAvailableModelsBtn, &ButtonControlSP::clicked, this, [=]() {
+    params.put("ModelManager_LastSyncTime", "0");
+    ConfirmationDialog::alert(tr("Fetching Latest Models"), this);
+  });
+
+  list->addItem(refreshAvailableModelsBtn);
+
   clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
   connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
 
