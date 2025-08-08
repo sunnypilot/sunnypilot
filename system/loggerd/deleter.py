@@ -2,6 +2,7 @@
 import os
 import shutil
 import threading
+from pathlib import Path
 from openpilot.system.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.loggerd.config import get_available_bytes, get_available_percent
@@ -59,6 +60,33 @@ def deleter_thread(exit_event: threading.Event):
         delete_path = os.path.join(Paths.log_root(), delete_dir)
 
         if any(name.endswith(".lock") for name in os.listdir(delete_path)):
+          continue
+
+        if Path(Paths.log_root_external()).is_mount():
+          out_of_bytes_external = get_available_bytes(default=MIN_BYTES + 1, path_type="external") < MIN_BYTES
+          out_of_percent_external = get_available_percent(default=MIN_PERCENT + 1, path_type="external") < MIN_PERCENT
+
+          if out_of_percent_external or out_of_bytes_external:
+            dirs_external = listdir_by_creation(Paths.log_root_external())
+
+            # remove the earliest external directory we can
+            for delete_dir_external in sorted(dirs_external):
+              delete_path_external = os.path.join(Paths.log_root_external(), delete_dir_external)
+              try:
+                cloudlog.info(f"deleting {delete_path_external}")
+                shutil.rmtree(delete_path_external)
+                break
+              except OSError:
+                cloudlog.exception(f"issue deleting {delete_path_external}")
+
+          # move directory from internal to external
+          path_external = os.path.join(Paths.log_root_external(), delete_dir)
+          try:
+            cloudlog.info(f"moving {delete_path} to {path_external}")
+            shutil.move(delete_path, path_external)
+            break
+          except Exception as e:
+            cloudlog.exception(f"issue moving {delete_path} to {path_external}: {str(e)}")
           continue
 
         try:
