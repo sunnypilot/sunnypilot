@@ -1,4 +1,4 @@
-The goal of dockerizing agnos for C3X native prebuilds is to speed up C3X native binary prebuilds by 30x+ by building on much more powerful Linux aarch64 machines.
+The goal of dockerizing agnos is to speed up C3X native binary prebuilds by 30x+ by building on more powerful Linux aarch64 machines.
 
 # dockerize-agnos.sh usage
 ```
@@ -12,7 +12,6 @@ git am tools/dockerize-agnos/DEMO-disable-QCOM-tinygrad-compile.patch
 # Docker build must happen on Linux aarch64
 sudo docker buildx build -f Dockerfile.sunnypilot_agnos -t test1 .
 
-# See TODO Items below
 ```
 
 # TODO Items
