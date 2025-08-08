@@ -31,7 +31,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -296,7 +296,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    lat_delay = modeld_lagd.lagd_main(CP, sm, model)
+    lat_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay, sm.updated["liveDelay"])
     lateral_control_params = np.array([v_ego, lat_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)

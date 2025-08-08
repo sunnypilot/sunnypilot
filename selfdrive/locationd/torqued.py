@@ -10,6 +10,7 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
+from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -125,8 +126,6 @@ class TorqueEstimator(ParameterEstimator):
     for param in initial_params:
       self.filtered_params[param] = FirstOrderFilter(initial_params[param], self.decay, DT_MDL)
 
-    self.frame = 0  # FIXME-SP: must remove before merge
-
   @staticmethod
   def get_restore_key(CP, version):
     a, b = None, None
@@ -181,8 +180,7 @@ class TorqueEstimator(ParameterEstimator):
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
-      if self.frame % 12 == 0:
-        self.lag = self.params.get("LagdValueCache")
+      self.lag = get_lat_delay(self.params, msg.lateralDelay, True)
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
@@ -206,8 +204,6 @@ class TorqueEstimator(ParameterEstimator):
 
           if self.track_all_points:
             self.all_torque_points.append([steer, lateral_acc])
-
-    self.frame += 1  # FIXME-SP: must remove before merge
 
   def get_msg(self, valid=True, with_points=False):
     msg = messaging.new_message('liveTorqueParameters')

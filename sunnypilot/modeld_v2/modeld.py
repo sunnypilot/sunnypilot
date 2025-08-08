@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -289,7 +289,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    steer_delay = modeld_lagd.lagd_main(CP, sm, model)
+    steer_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay, sm.updated["liveDelay"])
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]

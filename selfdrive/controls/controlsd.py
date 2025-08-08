@@ -21,6 +21,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
+from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
@@ -65,8 +66,6 @@ class Controls(ControlsExt):
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
 
-    self.frame = 0  # FIXME-SP: must remove before merge
-
   def update(self):
     self.sm.update(15)
     if self.sm.updated["liveCalibration"]:
@@ -95,9 +94,7 @@ class Controls(ControlsExt):
                                            torque_params.frictionCoefficientFiltered)
 
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
-      if self.frame % 300 == 0:
-        calculated_lag = self.params.get("LagdValueCache")  # FIXME-SP: must remove before merge
-        self.LaC.extension.update_lateral_lag(calculated_lag)
+      self.LaC.extension.update_lateral_lag(get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay, self.sm.updated["liveDelay"]))
 
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
@@ -244,8 +241,6 @@ class Controls(ControlsExt):
         self.publish(CC, lac_log)
         self.run_ext(self.sm, self.pm)
         rk.monitor_time()
-
-        self.frame += 1  # FIXME-SP: must remove before merge
     finally:
       e.set()
       t.join()

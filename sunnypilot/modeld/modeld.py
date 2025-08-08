@@ -25,7 +25,7 @@ from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
 
@@ -248,7 +248,7 @@ def main(demo=False):
     v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    steer_delay = modeld_lagd.lagd_main(CP, sm, model)
+    steer_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay, sm.updated["liveDelay"])
 
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
