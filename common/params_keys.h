@@ -154,6 +154,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"QuickBootToggle", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibePersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibeAccelPersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibeFollowPersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
