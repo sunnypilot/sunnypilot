@@ -18,5 +18,5 @@ COPY . ${OPENPILOT_PATH}/
 
 USER root
 # Launch build with the same environment as the comma user on the device
-RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc)"
+RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc) --skip-model-compile"
 
