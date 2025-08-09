@@ -102,13 +102,13 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lagd_toggle_control);
 
   // Software delay control
-  delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
+  delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
                                      "", {5, 30}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   });
   connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
@@ -369,7 +369,7 @@ void ModelsPanel::updateLabels() {
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   }
 

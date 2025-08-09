@@ -12,7 +12,7 @@ TRUST_FORK_LABEL = "trust-fork-pr"
 def setup_argument_parser():
   parser = argparse.ArgumentParser(description='Process and squash GitHub PRs')
   parser.add_argument('--pr-data', type=str, help='PR data in JSON format')
-  parser.add_argument('--source-branch', type=str, default='master-new',
+  parser.add_argument('--source-branch', type=str, default='master',
                       help='Source branch for merging')
   parser.add_argument('--target-branch', type=str, default='master-dev-c3-new-test',
                       help='Target branch for merging')

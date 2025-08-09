@@ -9,6 +9,27 @@ env:
   MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
 
 on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream branch to build from'
+        required: true
+        default: 'master'
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -32,34 +53,53 @@ run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from
 jobs:
   get_model:
     runs-on: ubuntu-latest
+    env:
+      REF: ${{ inputs.upstream_branch }}
     outputs:
       model_date: ${{ steps.commit-date.outputs.model_date }}
     steps:
-      - uses: actions/checkout@v4
+      # Note: To allow dynamic models from both openpilot and sunnypilot (merges/mashups), we try commaai as default,
+      # and fallback to sunnypilot if the ref checkout fails.
+      - name: Checkout commaai/openpilot
+        id: checkout_upstream
+        continue-on-error: true
+        uses: actions/checkout@v4
         with:
-          repository: ${{ env.UPSTREAM_REPO }}
-          ref: ${{ github.event.inputs.upstream_branch }}
+          repository: commaai/openpilot
+          ref: ${{ inputs.upstream_branch }}
           submodules: recursive
+          path: openpilot
+
+      - name: Fallback to sunnypilot/sunnypilot
+        if: steps.checkout_upstream.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          ref: ${{ inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
       - name: Get commit date
         id: commit-date
         run: |
-          # Get the commit date in YYYY-MM-DD format
+          cd ${{ github.workspace }}/openpilot
           commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-      - run: git lfs pull
+      - run: |
+          cd ${{ github.workspace }}/openpilot
+          git lfs pull
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: models
-          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
+          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
 
   build_model:
     runs-on: [self-hosted, tici]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
-
+      REF: ${{ inputs.upstream_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,7 +154,7 @@ jobs:
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
-          name: models
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
@@ -157,11 +197,21 @@ jobs:
             --upstream-branch "${{ inputs.upstream_branch }}" \
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
+      - name: Write artifact name to file
+        run: echo "model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}" > ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
       - name: Upload Build Artifacts
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
+          name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
+          path: ${{ env.OUTPUT_DIR }}/artifact_name.txt
 
       - name: Re-enable powersave
         if: always()
