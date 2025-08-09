@@ -9,7 +9,6 @@ import hashlib
 import os
 import pickle
 import numpy as np
-import json
 
 from openpilot.common.params import Params
 from cereal import custom
@@ -71,7 +70,7 @@ def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundl
     params = Params()
 
   try:
-    if (active_bundle := json.loads(params.get("ModelManager_ActiveBundle") or "{}")) and is_bundle_version_compatible(active_bundle):
+    if (active_bundle := params.get("ModelManager_ActiveBundle") or {}) and is_bundle_version_compatible(active_bundle):
       return custom.ModelManagerSP.ModelBundle(**active_bundle)
   except Exception:
     pass
