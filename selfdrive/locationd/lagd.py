@@ -12,6 +12,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose, fft_next_good_size, parabolic_peak_interp
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 
 BLOCK_SIZE = 100
 BLOCK_NUM = 50
@@ -374,6 +375,8 @@ def main():
     lag, valid_blocks = initial_lag_params
     lag_learner.reset(lag, valid_blocks)
 
+  lagd_toggle = LagdToggle(CP)
+
   while True:
     sm.update()
     if sm.all_checks():
@@ -392,3 +395,6 @@ def main():
 
       if sm.frame % 1200 == 0: # cache every 60 seconds
         params.put_nonblocking("LiveDelay", lag_msg_dat)
+
+      if sm.frame % 60 == 0:  # read from and write to params every 3 seconds
+        lagd_toggle.update(lag_msg)
