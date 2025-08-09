@@ -1,15 +1,25 @@
-import os
-from sunnypilot.models.tinygrad_ref import get_tinygrad_ref, read_ref_file
+import requests
+from sunnypilot.models.tinygrad_ref import get_tinygrad_ref
+from sunnypilot.models.fetcher import ModelFetcher
+
+
+def fetch_tinygrad_ref():
+  response = requests.get(ModelFetcher.MODEL_URL, timeout=10)
+  response.raise_for_status()
+  json_data = response.json()
+  return json_data.get("tinygrad_ref")
 
 
 def test_tinygrad_ref():
-  ref_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tinygrad_ref")
   current_ref = get_tinygrad_ref()
-  file_ref = read_ref_file(ref_file)
-  assert file_ref == current_ref, (
-    "tinygrad_repo ref does not match tinygrad_ref file. Please run python3 sunnypilot/models/tinygrad_ref.py to update."
+  remote_ref = fetch_tinygrad_ref()
+  assert remote_ref == current_ref, (
+    f"""tinygrad_repo ref does not match remote tinygrad_ref of current compiled driving models json.
+  Current: {current_ref}
+  Remote: {remote_ref}
+  Please run build-all workflow to update models."""
   )
-  print("tinygrad_repo ref matches tinygrad_ref file.")
+  print("tinygrad_repo ref matches current compiled driving models json ref.")
 
 if __name__ == "__main__":
   test_tinygrad_ref()
