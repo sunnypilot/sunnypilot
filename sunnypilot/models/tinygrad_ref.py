@@ -1,4 +1,5 @@
 import os
+
 from openpilot.common.basedir import BASEDIR
 
 
@@ -22,12 +23,14 @@ def get_tinygrad_ref():
     print(f"Error getting tinygrad_repo ref: {e}")
     return None
 
+
 def main():
   current_ref = get_tinygrad_ref()
   if current_ref:
     print(current_ref)
   else:
     print("")
+
 
 if __name__ == "__main__":
   main()
