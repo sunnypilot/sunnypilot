@@ -9,6 +9,6 @@ from openpilot.common.params import Params
 
 def get_lat_delay(params: Params, cur_val: float, updated: bool) -> float:
   if updated and params.get_bool("LagdToggle"):
-    return float(params.get("LagdValueCache"))
+    return float(params.get("LagdValueCache", return_default=True))
 
   return cur_val
