@@ -18,6 +18,13 @@ jobs:
       model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
       tinygrad_ref: ${{ steps.get-tinygrad-ref.outputs.tinygrad_ref }}
     steps:
+      - name: Get tinygrad_repo ref
+        id: get-tinygrad-ref
+        run: |
+          ref=$(python3 sunnypilot/models/tinygrad_ref.py)
+          echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
+          echo "tinygrad_ref is $ref"
+
       - name: Checkout docs repo (sunnypilot-docs, gh-pages)
         uses: actions/checkout@v4
         with:
@@ -37,14 +44,6 @@ jobs:
           echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
           echo "json_version=$((next+0))" >> $GITHUB_OUTPUT
           echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
-
-      - name: Get tinygrad_repo ref
-        id: get-tinygrad-ref
-        working-directory: sunnypilot
-        run: |
-          ref=$(python3 models/tinygrad_ref.py)
-          echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
-          echo "tinygrad_ref is $ref"
 
       - name: Extract tinygrad models
         id: set-matrix
