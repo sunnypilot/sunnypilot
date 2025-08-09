@@ -27,11 +27,11 @@ class LagdToggle:
       self.LAT_SMOOTH_SECONDS = LAT_SMOOTH_SECONDS
 
     self.lagd_toggle = self.params.get_bool("LagdToggle")
-    self.software_delay = self.params.get("LagdToggleDelay") or 0.2
+    self.software_delay = self.params.get("LagdToggleDelay", return_default=True)
 
   def read_params(self) -> None:
     self.lagd_toggle = self.params.get_bool("LagdToggle")
-    self.software_delay = self.params.get("LagdToggleDelay")
+    self.software_delay = self.params.get("LagdToggleDelay", return_default=True)
 
   def _maybe_update_desc(self, desc: str) -> None:
     if desc != self._last_desc:
