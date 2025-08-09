@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: 'sunnypilot/sunnypilot'
+          repository: 'commaai/openpilot'
           submodules: true
           ref: "refs/heads/master"
       - uses: ./.github/workflows/setup-with-retry
