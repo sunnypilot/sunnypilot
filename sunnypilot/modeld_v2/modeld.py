@@ -22,8 +22,9 @@ from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"

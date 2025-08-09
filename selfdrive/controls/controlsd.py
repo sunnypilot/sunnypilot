@@ -21,7 +21,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
-from openpilot.sunnypilot.livedelay.lagd_toggle import get_lat_delay
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
