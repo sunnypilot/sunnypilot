@@ -12,19 +12,12 @@ from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 
-def get_lat_delay(params, stock_lateral_delay, updated):
-  if updated and params.get_bool("LagdToggle"):
-    return params.get("LagdValueCache")
-
-  return stock_lateral_delay
-
-
 class LagdToggle:
   def __init__(self, CP: structs.CarParams):
     self.CP = CP
     self.params = Params()
     self.lag = 0.0
-    self._last_desc = None
+    self._last_desc: str = ""
 
     modeld_bundle = get_active_bundle()
     if modeld_bundle:
