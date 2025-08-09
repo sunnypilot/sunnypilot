@@ -20,7 +20,7 @@ class LagdToggle:
   def __init__(self, CP):
     self.CP = CP
     self.params = Params()
-    self.result = 0.0
+    self.lag = 0.0
     self._last_desc = None
 
     modeld_bundle = get_active_bundle()
@@ -49,16 +49,16 @@ class LagdToggle:
       steer_actuator_delay = self.CP.steerActuatorDelay
       lat_smooth = self.LAT_SMOOTH_SECONDS
       delay = self.software_delay
-      self.result = (steer_actuator_delay + delay) + lat_smooth
+      self.lag = (steer_actuator_delay + delay) + lat_smooth
       desc = (f"Vehicle steering delay ({steer_actuator_delay:.3f}s) + software delay ({delay:.3f}s) + " +
-              f"model smoothing filter ({lat_smooth:.3f}s) = total delay ({self.result:.3f}s)")
+              f"model smoothing filter ({lat_smooth:.3f}s) = total delay ({self.lag:.3f}s)")
       self._maybe_update_desc(desc)
-      self.params.put_nonblocking("LagdValueCache", self.result)
+      self.params.put_nonblocking("LagdValueCache", self.lag)
       return
 
     lateral_delay = lag_msg.liveDelay.lateralDelay
     lat_smooth = self.LAT_SMOOTH_SECONDS
-    self.result = lateral_delay + lat_smooth
-    desc = f"live steer delay learner ({lateral_delay:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({self.result:.3f}s)"
+    self.lag = lateral_delay + lat_smooth
+    desc = f"live steer delay learner ({lateral_delay:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({self.lag:.3f}s)"
     self._maybe_update_desc(desc)
-    self.params.put_nonblocking("LagdValueCache", self.result)
+    self.params.put_nonblocking("LagdValueCache", self.lag)
