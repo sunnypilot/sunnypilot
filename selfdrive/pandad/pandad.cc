@@ -84,6 +84,15 @@ Panda *connect(std::string serial="", uint32_t index=0) {
     panda->set_can_fd_auto(i, true);
   }
 
+  bool is_deprecated_panda = std::find(DEPRECATED_PANDA_TYPES.begin(),
+                                       DEPRECATED_PANDA_TYPES.end(),
+                                       panda->hw_type) != DEPRECATED_PANDA_TYPES.end();
+
+  if (is_deprecated_panda) {
+    LOGW("panda %s is deprecated (hw_type: %i), skipping firmware check...", panda->hw_serial().c_str(), static_cast<uint16_t>(panda->hw_type));
+    return panda.release();
+  }
+
   if (!panda->up_to_date() && !getenv("BOARDD_SKIP_FW_CHECK")) {
     throw std::runtime_error("Panda firmware out of date. Run pandad.py to update.");
   }
