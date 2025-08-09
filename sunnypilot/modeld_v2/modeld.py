@@ -40,13 +40,14 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
-class ModelState:
+class ModelState(ModelStateBase):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   temporal_idxs: slice | np.ndarray
 
   def __init__(self, context: CLContext):
+    ModelStateBase.__init__(self)
     try:
       self.model_runner = get_model_runner()
       self.constants = self.model_runner.constants
@@ -287,7 +288,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    steer_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay, sm.updated["liveDelay"])
+    model.lat_delay = get_lat_delay(params, model.lat_delay, sm.updated["liveDelay"])
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -324,7 +325,7 @@ def main(demo=False):
     }
 
     if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([v_ego, model.lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
@@ -336,7 +337,7 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = model.get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
+      action = model.get_action_from_model(model_output, prev_action, model.lat_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,

@@ -27,6 +27,7 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
@@ -48,7 +49,7 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-class ModelState:
+class ModelState(ModelStateBase):
   frame: ModelFrame
   wide_frame: ModelFrame
   inputs: dict[str, np.ndarray]
@@ -57,6 +58,7 @@ class ModelState:
   model: ModelRunner
 
   def __init__(self, context: CLContext):
+    ModelStateBase.__init__(self)
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
@@ -246,7 +248,7 @@ def main(demo=False):
     v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    steer_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay, sm.updated["liveDelay"])
+    model.lat_delay = get_lat_delay(params, model.lat_delay, sm.updated["liveDelay"])
 
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
@@ -281,7 +283,7 @@ def main(demo=False):
       }
 
     if "lateral_control_params" in model.inputs.keys():
-      inputs['lateral_control_params'] = np.array([max(v_ego, 0.), steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([max(v_ego, 0.), model.lat_delay], dtype=np.float32)
 
     if "driving_style" in model.inputs.keys():
       inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
@@ -304,7 +306,7 @@ def main(demo=False):
       action = model.get_action_from_model(model_output, prev_action, long_delay + DT_MDL)
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
-                     v_ego, steer_delay, model.meta)
+                     v_ego, model.lat_delay, model.meta)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
