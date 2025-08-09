@@ -128,6 +128,4 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
 
     # apply friction override for cars with low NN friction response
     if self.model.friction_override:
-      self._pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
-                                                            gravity_adjusted=False)
       self._pid_log.error += get_friction(friction_input, self._lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
