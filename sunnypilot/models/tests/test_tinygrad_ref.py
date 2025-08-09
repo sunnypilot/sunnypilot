@@ -1,4 +1,5 @@
 import requests
+
 from sunnypilot.models.tinygrad_ref import get_tinygrad_ref
 from sunnypilot.models.fetcher import ModelFetcher
 
@@ -20,6 +21,3 @@ def test_tinygrad_ref():
   Please run build-all workflow to update models."""
   )
   print("tinygrad_repo ref matches current compiled driving models json ref.")
-
-if __name__ == "__main__":
-  test_tinygrad_ref()
