@@ -29,7 +29,8 @@ jobs:
         id: get-tinygrad-ref
         run: |
           cd sunnypilot
-          ref=$(python3 sunnypilot/models/tinygrad_ref.py)
+          PYTHONPATH=$(pwd) python3 models/tinygrad_ref.py
+          ref=$(PYTHONPATH=$(pwd) python3 models/tinygrad_ref.py)
           echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
           echo "tinygrad_ref is $ref"
 
