@@ -192,8 +192,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // model panel params
     {"LagdToggle", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"LagdToggleDesc", {PERSISTENT, STRING}},
     {"LagdToggleDelay", {PERSISTENT | BACKUP, FLOAT, "0.2"}},
-    {"LagdValueCache", {PERSISTENT, FLOAT, "0.2"}},
 
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},
