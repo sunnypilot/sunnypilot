@@ -4,14 +4,13 @@ from collections import deque, defaultdict
 
 import cereal.messaging as messaging
 from cereal import car, log
-from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
+from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
-
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -34,7 +33,7 @@ MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 1  # bump this to invalidate old parameter caches
-ALLOWED_CARS = ['toyota', 'hyundai', 'rivian']
+ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
 
 
 def slope2rot(slope):
@@ -51,7 +50,7 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator, LagdToggle):
+class TorqueEstimator(ParameterEstimator):
   def __init__(self, CP, decimated=False, track_all_points=False):
     super().__init__()
     self.CP = CP
@@ -99,6 +98,7 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
 
     # try to restore cached params
     params = Params()
+    self.params = params
     params_cache = params.get("CarParamsPrevRoute")
     torque_cache = params.get("LiveTorqueParameters")
     if params_cache is not None and torque_cache is not None:
@@ -180,7 +180,7 @@ class TorqueEstimator(ParameterEstimator, LagdToggle):
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
-      self.lag = self.lagd_torqued_main(self.CP, msg)
+      self.lag = get_lat_delay(self.params, msg.lateralDelay)
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:

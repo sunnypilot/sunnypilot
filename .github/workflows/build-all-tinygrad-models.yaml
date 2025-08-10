@@ -16,7 +16,24 @@ jobs:
       recompiled_dir: ${{ steps.create-recompiled-dir.outputs.recompiled_dir }}
       json_file: ${{ steps.get-json.outputs.json_file }}
       model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
+      tinygrad_ref: ${{ steps.get-tinygrad-ref.outputs.tinygrad_ref }}
     steps:
+      - name: Checkout sunnypilot repo
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          path: sunnypilot
+          submodules: recursive
+
+      - name: Get tinygrad_repo ref
+        id: get-tinygrad-ref
+        run: |
+          cd sunnypilot
+          export PYTHONPATH=$(pwd)
+          ref=$(python3 sunnypilot/models/tinygrad_ref.py)
+          echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
+          echo "tinygrad_ref is $ref"
+
       - name: Checkout docs repo (sunnypilot-docs, gh-pages)
         uses: actions/checkout@v4
         with:
@@ -269,6 +286,7 @@ jobs:
           ARGS=""
           [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
           ARGS="$ARGS --sort-by-date"
+          ARGS="$ARGS --tinygrad-ref \"${{ needs.setup.outputs.tinygrad_ref }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
