@@ -21,6 +21,8 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
@@ -30,15 +32,16 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls(ControlsExt):
+class Controls(ControlsExt, ModelStateBase):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
     self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
     cloudlog.info("controlsd got CarParams")
 
-    # Initialize sunnypilot controlsd extension
+    # Initialize sunnypilot controlsd extension and base model state
     ControlsExt.__init__(self, self.CP, self.params)
+    ModelStateBase.__init__(self)
 
     self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
@@ -93,8 +96,9 @@ class Controls(ControlsExt):
                                            torque_params.frictionCoefficientFiltered)
 
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
-      calculated_lag = self.LaC.extension.lagd_torqued_main(self.CP, self.sm['liveDelay'])
-      self.LaC.extension.update_lateral_lag(calculated_lag)
+
+      self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
+      self.LaC.extension.update_lateral_lag(self.lat_delay)
 
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
