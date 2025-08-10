@@ -31,7 +31,8 @@ from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
-from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -79,13 +80,14 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-class ModelState:
+class ModelState(ModelStateBase):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
+    ModelStateBase.__init__(self)
     self.LAT_SMOOTH_SECONDS = LAT_SMOOTH_SECONDS
     with open(VISION_METADATA_PATH, 'rb') as f:
       vision_metadata = pickle.load(f)
@@ -249,8 +251,6 @@ def main(demo=False):
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  modeld_lagd = LagdToggle()
-
   # TODO this needs more thought, use .2s extra for now to estimate other delays
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + LONG_SMOOTH_SECONDS
@@ -296,7 +296,9 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    lat_delay = modeld_lagd.lagd_main(CP, sm, model)
+    if sm.frame % 60 == 0:
+      model.lat_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay)
+    lat_delay = model.lat_delay + LAT_SMOOTH_SECONDS
     lateral_control_params = np.array([v_ego, lat_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
