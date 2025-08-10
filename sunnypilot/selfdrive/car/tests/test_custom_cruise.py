@@ -2,7 +2,7 @@ import pytest
 from parameterized import parameterized_class
 
 from cereal import car
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.cruise import V_CRUISE_INITIAL
 from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper

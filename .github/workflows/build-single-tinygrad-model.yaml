@@ -42,11 +42,11 @@ on:
       recompiled_dir:
         description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
         required: true
-        type: number
+        type: string
       json_version:
         description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
         required: true
-        type: number
+        type: string
       model_folder:
         description: 'Model folder'
         type: choice
@@ -67,11 +67,11 @@ on:
       generation:
         description: 'Model generation'
         required: false
-        type: number
+        type: string
       version:
         description: 'Minimum selector version'
         required: false
-        type: number
+        type: string
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
   JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json

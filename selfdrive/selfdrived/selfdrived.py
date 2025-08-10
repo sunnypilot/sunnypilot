@@ -7,7 +7,6 @@ import cereal.messaging as messaging
 
 from cereal import car, log, custom
 from msgq.visionipc import VisionIpcClient, VisionStreamType
-from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 
 
 from openpilot.common.params import Params
@@ -18,6 +17,7 @@ from openpilot.common.gps import get_gps_location_service
 from openpilot.selfdrive.car.car_specific import CarSpecificEvents
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 from openpilot.selfdrive.selfdrived.events import Events, ET
+from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
 from openpilot.selfdrive.selfdrived.state import StateMachine
 from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, set_offroad_alert
 
@@ -34,7 +34,6 @@ SIMULATION = "SIMULATION" in os.environ
 TESTING_CLOSET = "TESTING_CLOSET" in os.environ
 
 LONGITUDINAL_PERSONALITY_MAP = {v: k for k, v in log.LongitudinalPersonality.schema.enumerants.items()}
-MIN_EXCESSIVE_ACTUATION_COUNT = int(0.25 / DT_CTRL)
 
 ThermalStatus = log.DeviceState.ThermalStatus
 State = log.SelfdriveState.OpenpilotState
@@ -46,21 +45,6 @@ ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
-
-
-def check_excessive_actuation(sm: messaging.SubMaster, CS: car.CarState, calibrator: PoseCalibrator, counter: int) -> tuple[int, bool]:
-  # CS.aEgo can be noisy to bumps in the road, transitioning from standstill, losing traction, etc.
-  device_pose = Pose.from_live_pose(sm['livePose'])
-  calibrated_pose = calibrator.build_calibrated_pose(device_pose)
-  accel_calibrated = calibrated_pose.acceleration.x
-
-  # livePose acceleration can be noisy due to bad mounting or aliased livePose measurements
-  accel_valid = abs(CS.aEgo - accel_calibrated) < 2
-
-  excessive_actuation = accel_calibrated > ACCEL_MAX * 2 or accel_calibrated < ACCEL_MIN * 2
-  counter = counter + 1 if sm['carControl'].longActive and excessive_actuation and accel_valid else 0
-
-  return counter, counter > MIN_EXCESSIVE_ACTUATION_COUNT
 
 
 class SelfdriveD(CruiseHelper):
@@ -85,7 +69,11 @@ class SelfdriveD(CruiseHelper):
       self.CP_SP = CP_SP
 
     self.car_events = CarSpecificEvents(self.CP)
-    self.calibrator = PoseCalibrator()
+
+    self.pose_calibrator = PoseCalibrator()
+    self.calibrated_pose: Pose | None = None
+    self.excessive_actuation_check = ExcessiveActuationCheck()
+    self.excessive_actuation = self.params.get("Offroad_ExcessiveActuation") is not None
 
     # Setup sockets
     self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
@@ -107,7 +95,7 @@ class SelfdriveD(CruiseHelper):
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose', 'liveDelay',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                   'controlsState', 'carControl', 'driverAssistance', 'alertDebug', 'userFlag'] + \
+                                   'controlsState', 'carControl', 'driverAssistance', 'alertDebug', 'userBookmark', 'audioFeedback'] + \
                                    self.camera_packets + self.sensor_packets + self.gps_packets,
                                   ignore_alive=ignore, ignore_avg_freq=ignore,
                                   ignore_valid=ignore, frequency=int(1/DT_CTRL))
@@ -143,8 +131,6 @@ class SelfdriveD(CruiseHelper):
     self.experimental_mode = False
     self.personality = self.params.get("LongitudinalPersonality", return_default=True)
     self.recalibrating_seen = False
-    self.excessive_actuation = self.params.get("Offroad_ExcessiveActuation") is not None
-    self.excessive_actuation_counter = 0
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
@@ -205,9 +191,12 @@ class SelfdriveD(CruiseHelper):
       self.events.add(EventName.selfdriveInitializing)
       return
 
-    # Check for user flag (bookmark) press
-    if self.sm.updated['userFlag']:
-      self.events.add(EventName.userFlag)
+    # Check for user bookmark press (bookmark button or end of LKAS button feedback)
+    if self.sm.updated['userBookmark']:
+      self.events.add(EventName.userBookmark)
+
+    if self.sm.updated['audioFeedback']:
+      self.events.add(EventName.audioFeedback)
 
     # Don't add any more events while in dashcam mode
     if self.CP.passive:
@@ -276,14 +265,18 @@ class SelfdriveD(CruiseHelper):
       if self.sm['driverAssistance'].leftLaneDeparture or self.sm['driverAssistance'].rightLaneDeparture:
         self.events.add(EventName.ldw)
 
-    # Check for excessive (longitudinal) actuation
+    # Check for excessive actuation
     if self.sm.updated['liveCalibration']:
-      self.calibrator.feed_live_calib(self.sm['liveCalibration'])
+      self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
+    if self.sm.updated['livePose']:
+      device_pose = Pose.from_live_pose(self.sm['livePose'])
+      self.calibrated_pose = self.pose_calibrator.build_calibrated_pose(device_pose)
 
-    self.excessive_actuation_counter, excessive_actuation = check_excessive_actuation(self.sm, CS, self.calibrator, self.excessive_actuation_counter)
-    if not self.excessive_actuation and excessive_actuation:
-      set_offroad_alert("Offroad_ExcessiveActuation", True, extra_text="longitudinal")
-      self.excessive_actuation = True
+    if self.calibrated_pose is not None:
+      excessive_actuation = self.excessive_actuation_check.update(self.sm, CS, self.calibrated_pose)
+      if not self.excessive_actuation and excessive_actuation is not None:
+        set_offroad_alert("Offroad_ExcessiveActuation", True, extra_text=str(excessive_actuation))
+        self.excessive_actuation = True
 
     if self.excessive_actuation:
       self.events.add(EventName.excessiveActuation)
@@ -339,13 +332,12 @@ class SelfdriveD(CruiseHelper):
           self.events.add(EventName.cameraFrameRate)
     if not REPLAY and self.rk.lagging:
       self.events.add(EventName.selfdrivedLagging)
-    if not self.sm.valid['radarState']:
-      if self.sm['radarState'].radarErrors.canError:
-        self.events.add(EventName.canError)
-      elif self.sm['radarState'].radarErrors.radarUnavailableTemporary:
-        self.events.add(EventName.radarTempUnavailable)
-      else:
-        self.events.add(EventName.radarFault)
+    if self.sm['radarState'].radarErrors.canError:
+      self.events.add(EventName.canError)
+    elif self.sm['radarState'].radarErrors.radarUnavailableTemporary:
+      self.events.add(EventName.radarTempUnavailable)
+    elif any(self.sm['radarState'].radarErrors.to_dict().values()):
+      self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:
       self.events.add(EventName.usbError)
     if CS.canTimeout:
