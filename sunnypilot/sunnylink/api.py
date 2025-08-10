@@ -90,7 +90,7 @@ class SunnylinkApi(BaseApi):
       sunnylink_dongle_id = UNREGISTERED_SUNNYLINK_DONGLE_ID
       self._status_update("Public key not found, setting dongle ID to unregistered.")
     else:
-      Params().put("LastSunnylinkPingTime", "0")  # Reset the last ping time to 0 if we are trying to register
+      Params().put("LastSunnylinkPingTime", 0)  # Reset the last ping time to 0 if we are trying to register
       with pubkey_path.open() as f1, privkey_path.open() as f2:
         public_key = f1.read()
         private_key = f2.read()
@@ -148,7 +148,7 @@ class SunnylinkApi(BaseApi):
 
     # Set the last ping time to the current time since we were just talking to the API
     last_ping = int(time.monotonic() * 1e9) if successful_registration else start_time
-    Params().put("LastSunnylinkPingTime", str(last_ping))
+    Params().put("LastSunnylinkPingTime", last_ping)
 
     # Disable sunnylink if registration was not successful
     if not successful_registration:
