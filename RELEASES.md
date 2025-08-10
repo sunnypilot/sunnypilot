@@ -8,7 +8,7 @@ Version 0.10.0 (2025-08-05)
   * Low-speed lead car ground-truth fixes
 
 * Enable live-learned steering actuation delay
-* Record driving feedback using LKAS button
+* Record driving feedback using LKAS button when MADS is disabled
 * Opt-in audio recording for dashcam video
 
 Version 0.9.9 (2025-05-23)
