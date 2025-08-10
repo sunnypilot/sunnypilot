@@ -110,13 +110,13 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lagd_toggle_control);
 
   // Software delay control
-  delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
+  delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
                                      "", {5, 30}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   });
   connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
@@ -369,18 +369,12 @@ void ModelsPanel::updateLabels() {
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
                    "The Current value is updated automatically when the vehicle is Onroad.");
-  QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
-  if (!current.isEmpty()) {
-    desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
-  }
   lagd_toggle_control->setDescription(desc);
-  lagd_toggle_control->showDescription();
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-    delay_control->showDescription();
   }
 
   clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
@@ -432,4 +426,11 @@ double ModelsPanel::calculateCacheSize() {
     return totalSize;
   });
   return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
+}
+
+void ModelsPanel::showEvent(QShowEvent *event) {
+  lagd_toggle_control->showDescription();
+  if (delay_control->isVisible()) {
+    delay_control->showDescription();
+  }
 }

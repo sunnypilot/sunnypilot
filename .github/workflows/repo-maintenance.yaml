@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
 
 env:
-  BASE_IMAGE: openpilot-base
-  BUILD: selfdrive/test/docker_build.sh base
+  BASE_IMAGE: sunnypilot-base
+  BUILD: release/ci/docker_build_sp.sh base
   RUN: docker run --shm-size 2G -v $PWD:/tmp/openpilot -w /tmp/openpilot -e CI=1 -e PYTHONWARNINGS=error -e FILEREADER_CACHE=1 -e PYTHONPATH=/tmp/openpilot -e NUM_JOBS -e JOB_ID -e GITHUB_ACTION -e GITHUB_REF -e GITHUB_HEAD_REF -e GITHUB_SHA -e GITHUB_REPOSITORY -e GITHUB_RUN_ID -v $GITHUB_WORKSPACE/.ci_cache/scons_cache:/tmp/scons_cache -v $GITHUB_WORKSPACE/.ci_cache/comma_download_cache:/tmp/comma_download_cache -v $GITHUB_WORKSPACE/.ci_cache/openpilot_cache:/tmp/openpilot_cache $BASE_IMAGE /bin/bash -c
 
 jobs:
   update_translations:
     runs-on: ubuntu-latest
-    if: github.repository == 'commaai/openpilot'
+    if: github.repository == 'sunnypilot/sunnypilot'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/setup-with-retry
@@ -23,7 +23,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
         with:
-          author: Vehicle Researcher <user@comma.ai>
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           commit-message: "Update translations"
           title: "[bot] Update translations"
           body: "Automatic PR from repo-maintenance -> update_translations"
@@ -36,7 +36,7 @@ jobs:
     name: package_updates
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/commaai/openpilot-base:latest
+      image: ghcr.io/sunnypilot/sunnypilot-base:latest
     if: github.repository == 'sunnypilot/sunnypilot'
     steps:
     - uses: actions/checkout@v4
@@ -61,8 +61,8 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
       with:
-        author: Vehicle Researcher <user@comma.ai>
-        token: ${{ secrets.ACTIONS_CREATE_PR_PAT }}
+        author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+        token: ${{ github.repository == 'commaai/openpilot' && secrets.ACTIONS_CREATE_PR_PAT || secrets.GITHUB_TOKEN }}
         commit-message: Update Python packages
         title: '[bot] Update Python packages'
         branch: auto-package-updates
