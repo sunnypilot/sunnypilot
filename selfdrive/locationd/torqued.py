@@ -10,7 +10,8 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
-from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -50,7 +51,7 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator):
+class TorqueEstimator(ParameterEstimator, LagdToggle):
   def __init__(self, CP, decimated=False, track_all_points=False):
     super().__init__()
     self.CP = CP
@@ -98,7 +99,6 @@ class TorqueEstimator(ParameterEstimator):
 
     # try to restore cached params
     params = Params()
-    self.params = params
     params_cache = params.get("CarParamsPrevRoute")
     torque_cache = params.get("LiveTorqueParameters")
     if params_cache is not None and torque_cache is not None:
@@ -180,7 +180,7 @@ class TorqueEstimator(ParameterEstimator):
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
-      self.lag = get_lat_delay(self.params, self.lag, True)
+      self.lag = self.lagd_torqued_main(self.CP, msg)
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
