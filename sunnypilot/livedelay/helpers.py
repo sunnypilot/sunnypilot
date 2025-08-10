@@ -7,8 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.common.params import Params
 
 
-def get_lat_delay(params: Params, cur_val: float, updated: bool) -> float:
-  if updated and params.get_bool("LagdToggle"):
+def get_lat_delay(params: Params, stock_lat_delay: float) -> float:
+  if params.get_bool("LagdToggle"):
     return float(params.get("LagdValueCache", return_default=True))
 
-  return cur_val
+  return stock_lat_delay
