@@ -9,7 +9,6 @@ import hashlib
 import os
 import pickle
 import numpy as np
-import json
 
 from openpilot.common.params import Params
 from cereal import custom
@@ -64,13 +63,14 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
   """
   return bool(REQUIRED_MIN_SELECTOR_VERSION <= bundle.get("minimumSelectorVersion", 0) <= CURRENT_SELECTOR_VERSION)
 
+
 def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
   if params is None:
     params = Params()
 
   try:
-    if (active_bundle := json.loads(params.get("ModelManager_ActiveBundle") or "{}")) and is_bundle_version_compatible(active_bundle):
+    if (active_bundle := params.get("ModelManager_ActiveBundle") or {}) and is_bundle_version_compatible(active_bundle):
       return custom.ModelManagerSP.ModelBundle(**active_bundle)
   except Exception:
     pass
@@ -111,7 +111,7 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
     runner_type = active_bundle.runner.raw
 
   if cached_runner_type != runner_type:
-    params.put("ModelRunnerTypeCache", str(int(runner_type)))
+    params.put("ModelRunnerTypeCache", int(runner_type))
 
   return runner_type
 
