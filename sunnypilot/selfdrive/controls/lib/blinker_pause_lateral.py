@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car
 
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 
 
