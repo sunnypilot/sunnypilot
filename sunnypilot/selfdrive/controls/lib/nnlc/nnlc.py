@@ -8,7 +8,7 @@ from collections import deque
 import math
 import numpy as np
 
-from opendbc.car import FRICTION_THRESHOLD, get_friction
+from opendbc.car.lateral import FRICTION_THRESHOLD, get_friction
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.selfdrive.modeld.constants import ModelConstants
