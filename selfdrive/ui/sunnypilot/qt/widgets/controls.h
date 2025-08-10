@@ -57,6 +57,7 @@ class AbstractControlSP : public AbstractControl {
   Q_OBJECT
 
 public:
+  ~AbstractControlSP();
   void setDescription(const QString &desc) override {
     if (description) description->setText(desc);
   }
@@ -81,13 +82,30 @@ public slots:
     description->setVisible(true);
   }
 
+  void setVisible(bool visible) override {
+    bool _visible = visible;
+    if (isAdvancedControl && !params.getBool("ShowAdvancedControls")) {
+      _visible = false;
+    }
+    AbstractControl::setVisible(_visible);
+  }
+
+  static void RegisterAdvancedControl(AbstractControlSP *ctrl);
+  static void UnregisterAdvancedControl(AbstractControlSP *ctrl);
+  static void UpdateAllAdvancedControls();
+
 protected:
-  AbstractControlSP(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  AbstractControlSP(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, bool advancedControl = false);
   void hideEvent(QHideEvent *e) override;
 
   QVBoxLayout *main_layout;
   ElidedLabelSP *value;
   QLabel *description = nullptr;
+  bool isAdvancedControl;
+
+private:
+  Params params;
+  static std::vector<AbstractControlSP*> advanced_controls_;
 };
 
 // AbstractControlSP_SELECTOR
@@ -97,7 +115,7 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
 
 protected:
   QSpacerItem *spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
-  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, bool advancedControl = false);
   void hideEvent(QHideEvent *e) override;
 
 };
@@ -123,7 +141,7 @@ class ButtonControlSP : public AbstractControlSP {
   Q_OBJECT
 
 public:
-  ButtonControlSP(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr);
+  ButtonControlSP(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr, bool advancedControl = false);
   inline void setText(const QString &text) { btn.setText(text); }
   inline QString text() const { return btn.text(); }
   inline void click() { btn.click(); }
@@ -142,7 +160,7 @@ class ToggleControlSP : public AbstractControlSP {
   Q_OBJECT
 
 public:
-  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControlSP(title, desc, icon, parent) {
+  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr, bool advancedControl = false) : AbstractControlSP(title, desc, icon, parent, advancedControl) {
     // space between toggle and title
     icon_label = new QLabel(this);
     hlayout->addWidget(icon_label);
@@ -173,7 +191,7 @@ class ParamControlSP : public ToggleControlSP {
   Q_OBJECT
 
 public:
-  ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr, bool advancedControl = false);
   void setConfirmation(bool _confirm, bool _store_confirm) {
     confirm = _confirm;
     store_confirm = _store_confirm;
@@ -219,7 +237,7 @@ class MultiButtonControlSP : public AbstractControlSP_SELECTOR {
 
 public:
   MultiButtonControlSP(const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), is_inline_layout(inline_layout) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false, bool advancedControl = false) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr, advancedControl), button_texts(button_texts), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -371,8 +389,8 @@ class ButtonParamControlSP : public MultiButtonControlSP {
   Q_OBJECT
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : MultiButtonControlSP(title, desc, icon,
-                                                                                                                          button_texts, minimum_button_width, inline_layout) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false, bool advancedControl = false) : MultiButtonControlSP(title, desc, icon,
+                                                                                                                          button_texts, minimum_button_width, inline_layout, advancedControl) {
     key = param.toStdString();
     int value = atoi(params.get(key).c_str());
 
@@ -480,6 +498,16 @@ private:
     return result.toInt();
   }
 
+  int getParamValueScaled() {
+    const auto param_value = QString::fromStdString(params.get(key));
+    return static_cast<int>(param_value.toFloat() * 100);
+  }
+
+  void setParamValueScaled(const int new_value) {
+    const float scaled_value = new_value / 100.0f;
+    params.put(key, QString::number(scaled_value, 'f', 2).toStdString());
+  }
+
   // Although the method is not static, and thus has access to the value property, I prefer to be explicit about the value.
   void setParamValue(const int new_value) {
     const auto value_str = valueMap != nullptr ? valueMap->value(QString::number(new_value)) : QString::number(new_value);
@@ -488,7 +516,8 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), is_inline_layout(inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false,
+                  const QMap<QString, QString> *valMap = nullptr, bool scale_float = false, bool advancedControl = false) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr, advancedControl), _title(title), valueMap(valMap), is_inline_layout(inline_layout), use_float_scaling(scale_float) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -528,7 +557,7 @@ public:
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-    value = getParamValue();
+    value = use_float_scaling ? getParamValueScaled() : getParamValue();
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -546,10 +575,15 @@ public:
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
-        value = getParamValue(); // in case it changed externally, we need to get the latest value.
+        value = use_float_scaling ? getParamValueScaled() : getParamValue();
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        setParamValue(value);
+
+        if (use_float_scaling) {
+          setParamValueScaled(value);
+        } else {
+          setParamValue(value);
+        }
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -642,6 +676,7 @@ private:
   const QString label_disabled_style = "font-size: 50px; font-weight: 450; color: #5C5C5C;";
 
   bool button_enabled = true;
+  bool use_float_scaling = false;
 };
 
 class PushButtonSP : public QPushButton {

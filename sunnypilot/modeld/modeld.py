@@ -25,7 +25,7 @@ from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
-from openpilot.sunnypilot.models.modeld_lagd import ModeldLagd
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
 
@@ -62,7 +62,7 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     bundle = get_active_bundle()
     overrides = {override.key: override.value for override in bundle.overrides}
-    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
 
     model_paths = get_model_path()
@@ -202,7 +202,7 @@ def main(demo=False):
 
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  modeld_lagd = ModeldLagd()
+  modeld_lagd = LagdToggle()
 
   # Enable lagd support for sunnypilot modeld
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS

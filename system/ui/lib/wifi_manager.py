@@ -91,7 +91,7 @@ class WifiManager:
     # Set tethering ssid as "weedle" + first 4 characters of a dongle id
     self._tethering_ssid = "weedle"
     if Params is not None:
-      dongle_id = Params().get("DongleId", encoding="utf-8")
+      dongle_id = Params().get("DongleId")
       if dongle_id:
         self._tethering_ssid += "-" + dongle_id[:4]
     self.running: bool = True
@@ -204,7 +204,7 @@ class WifiManager:
         'connection': {
           'type': Variant('s', '802-11-wireless'),
           'uuid': Variant('s', str(uuid.uuid4())),
-          'id': Variant('s', ssid),
+          'id': Variant('s', f'openpilot connection {ssid}'),
           'autoconnect-retries': Variant('i', 0),
         },
         '802-11-wireless': {
@@ -212,7 +212,10 @@ class WifiManager:
           'hidden': Variant('b', is_hidden),
           'mode': Variant('s', 'infrastructure'),
         },
-        'ipv4': {'method': Variant('s', 'auto')},
+        'ipv4': {
+          'method': Variant('s', 'auto'),
+          'dns-priority': Variant('i', 600),
+        },
         'ipv6': {'method': Variant('s', 'ignore')},
       }
 
