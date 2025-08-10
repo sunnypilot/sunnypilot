@@ -12,21 +12,19 @@ import os
 import glob
 import shutil
 
-from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
 from openpilot.system.hardware.hw import Paths
+from openpilot.sunnypilot.mapd import MAPD_PATH
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION, update_installed_version
 
 # PFEIFER - MAPD {{
 params = Params()
 mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else params
 # }} PFEIFER - MAPD
-
-MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/mapd_pfeiferj')
-MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 
 def get_files_for_cleanup() -> list[str]:
@@ -58,15 +56,20 @@ def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
 
 
 def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
-  params.put("OsmDownloadedDate", str(time.time()))
+  params.put("OsmDownloadedDate", str(time.monotonic()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
-  osm_download_locations = json.dumps({
+  osm_download_locations = {
+    "nations": nations,
+    "states": states or []
+  }
+
+  osm_download_locations_dump = json.dumps({
     "nations": nations,
     "states": states or []
   })
 
-  print(f"Downloading maps for {osm_download_locations}")
+  print(f"Downloading maps for {osm_download_locations_dump}")
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
@@ -100,12 +103,12 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
 
 
 def update_osm_db() -> None:
-  # last_downloaded_date = float(params.get('OsmDownloadedDate', encoding='utf-8') or 0.0)
-  # if params.get_bool("OsmDbUpdatesCheck") or time.time() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
+  # last_downloaded_date = params.get("OsmDownloadedDate", return_default=True)
+  # if params.get_bool("OsmDbUpdatesCheck") or time.monotonic() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
     cleanup_old_osm_data(get_files_for_cleanup())
-    country = params.get('OsmLocationName', encoding='utf-8')
-    state = params.get('OsmStateName', encoding='utf-8') or "All"
+    country = params.get("OsmLocationName", return_default=True)
+    state = params.get("OsmStateName", return_default=True)
     filtered_nations, filtered_states = filter_nations_and_states([country], [state])
     request_refresh_osm_location_data(filtered_nations, filtered_states)
 
@@ -117,6 +120,7 @@ def update_osm_db() -> None:
 
 
 def main_thread():
+  update_installed_version(VERSION, params)
   config_realtime_process([0, 1, 2, 3], 5)
 
   rk = Ratekeeper(1, print_delay_threshold=None)

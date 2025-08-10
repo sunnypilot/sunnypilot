@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import capnp
-import json
 import pathlib
 import shutil
 import sys
@@ -265,12 +264,12 @@ def setup_settings_trips(click, pm: PubMaster, scroll=None):
   time.sleep(UI_DELAY)
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
-  Params().put("CarPlatformBundle", json.dumps(
+  Params().put("CarPlatformBundle",
     {
       "platform": "HONDA_CIVIC_2022",
       "name": "Honda Civic 2022-24"
     }
-  ))
+  )
 
   setup_settings_device(click, pm)
   scroll(-400, 278, 962)
@@ -408,9 +407,9 @@ def create_screenshots():
       params.put("DongleId", "123456789012345")
       params.put("SunnylinkDongleId", "123456789012345")
       if name == 'prime':
-        params.put('PrimeType', '1')
+        params.put('PrimeType', 1)
       elif name == 'pair_device':
-        params.put('ApiCache_Device', '{"is_paired":0, "prime_type":-1}')
+        params.put('ApiCache_Device', {"is_paired":0, "prime_type":-1})
 
       t.test_ui(name, setup)
 

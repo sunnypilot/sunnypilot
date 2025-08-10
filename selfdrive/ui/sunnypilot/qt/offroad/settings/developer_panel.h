@@ -20,6 +20,7 @@ private:
   ButtonControlSP *errorLogBtn;
   ParamControlSP *prebuiltToggle;
   Params params;
+  ParamControlSP *showAdvancedControls;
 
 private slots:
   void updateToggles(bool offroad);

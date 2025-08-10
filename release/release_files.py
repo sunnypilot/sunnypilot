@@ -17,6 +17,8 @@ blacklist = [
   ".gitattributes",
   ".git$",
   ".gitmodules",
+  ".run/",
+  ".idea/",
 ]
 
 # gets you through the blacklist

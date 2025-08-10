@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <QJsonDocument>
 #include <QStyle>
+#include <QtConcurrent/QtConcurrent>
+#include <QDir>
 
 #include "common/model.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
@@ -66,6 +68,11 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
+  clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
+  connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
+
+  list->addItem(clearModelCacheBtn);
+
   // Create progress bars for downloads
   supercomboProgressBar = createProgressBar(this);
   QString supercomboType = tr("Driving Model");
@@ -95,13 +102,13 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lagd_toggle_control);
 
   // Software delay control
-  delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
+  delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
-                                     "", {5, 30}, 1, false, nullptr, true);
+                                     "", {5, 30}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   });
   connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
@@ -354,19 +361,15 @@ void ModelsPanel::updateLabels() {
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
                    "The Current value is updated automatically when the vehicle is Onroad.");
-  QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
-  if (!current.isEmpty()) {
-    desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
-  }
   lagd_toggle_control->setDescription(desc);
-  lagd_toggle_control->showDescription();
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
-    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-    delay_control->showDescription();
   }
+
+  clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
 
 /**
@@ -385,5 +388,41 @@ void ModelsPanel::showResetParamsDialog() {
   if (showConfirmationDialog(content, button_text, false)) {
     params.remove("CalibrationParams");
     params.remove("LiveTorqueParameters");
+  }
+}
+
+void ModelsPanel::clearModelCache() {
+  QString confirmMsg = tr("This will delete ALL downloaded models from the cache"
+                            "<br/><u>except the currently active model</u>."
+                            "<br/><br/>Are you sure you want to continue?");
+  QString content("<body><h2 style=\"text-align: center;\">" + tr("Driving Model Selector") + "</h2><br>"
+                "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + confirmMsg + "</p></body>");
+  if (showConfirmationDialog(
+    content,
+    tr("Clear Cache"))) {
+      params.putBool("ModelManager_ClearCache", true);
+    }
+}
+
+double ModelsPanel::calculateCacheSize() {
+  QFuture<qint64> future_ModelCacheSize = QtConcurrent::run([=]() {
+
+    QDir model_dir(QString::fromStdString(Path::model_root()));
+    QFileInfoList model_files = model_dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+    qint64 totalSize = 0;
+    for (const QFileInfo &model_file : model_files) {
+        if (model_file.isFile()) {
+            totalSize += model_file.size();
+        }
+    }
+    return totalSize;
+  });
+  return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
+}
+
+void ModelsPanel::showEvent(QShowEvent *event) {
+  lagd_toggle_control->showDescription();
+  if (delay_control->isVisible()) {
+    delay_control->showDescription();
   }
 }
