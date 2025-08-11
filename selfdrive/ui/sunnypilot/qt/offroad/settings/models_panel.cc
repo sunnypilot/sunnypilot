@@ -95,40 +95,6 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(policyFrame);
 
   list->addItem(horizontal_line());
-
-  // LiveDelay toggle
-  lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
-  lagd_toggle_control->showDescription();
-  list->addItem(lagd_toggle_control);
-
-  // Software delay control
-  int liveDelayMaxInt = 30;
-  std::string liveDelayBytes = params.get("LiveDelay");
-  if (!liveDelayBytes.empty()) {
-    capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-      reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-      liveDelayBytes.size() / sizeof(capnp::word)));
-    auto event = msg.getRoot<cereal::Event>();
-    if (event.hasLiveDelay()) {
-      auto liveDelay = event.getLiveDelay();
-      float lateralDelay = liveDelay.getLateralDelay();
-      liveDelayMaxInt = static_cast<int>(lateralDelay * 100.0f) + 20;
-    }
-  }
-  delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
-                                     tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
-                                        "\nThe default software delay value is 0.2"),
-                                     "", {5, liveDelayMaxInt}, 1, false, nullptr, true, true);
-
-  connect(delay_control, &OptionControlSP::updateLabels, [=]() {
-    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
-    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-  });
-  connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
-    delay_control->setVisible(!state);
-  });
-  delay_control->showDescription();
-  list->addItem(delay_control);
 }
 
 QProgressBar* ModelsPanel::createProgressBar(QWidget *parent) {
@@ -370,49 +336,6 @@ void ModelsPanel::updateLabels() {
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  // Update lagdToggle description with current value
-  QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
-                   "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
-  bool lagdEnabled = params.getBool("LagdToggle");
-  if (lagdEnabled) {
-    std::string liveDelayBytes = params.get("LiveDelay");
-    if (!liveDelayBytes.empty()) {
-      capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-        reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-        liveDelayBytes.size() / sizeof(capnp::word)));
-      auto event = msg.getRoot<cereal::Event>();
-      if (event.hasLiveDelay()) {
-        auto liveDelay = event.getLiveDelay();
-        float lateralDelay = liveDelay.getLateralDelay();
-        desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
-                .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 2));
-      }
-    }
-  } else {
-    std::string carParamsBytes = params.get("CarParamsPersistent");
-    if (!carParamsBytes.empty()) {
-      capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-        reinterpret_cast<const capnp::word*>(carParamsBytes.data()),
-        carParamsBytes.size() / sizeof(capnp::word)));
-      auto carParams = msg.getRoot<cereal::CarParams>();
-      float steerDelay = carParams.getSteerActuatorDelay();
-      float softwareDelay = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
-      float totalLag = steerDelay + softwareDelay;
-      desc += QString("<br><br><span style=\"color:#e0e0e0\">"
-                      "<b>%1</b> %2 s + <b>%3</b> %4 s = <b>%5</b> %6 s</span>")
-           .arg(tr("Actuator Delay:"), QString::number(steerDelay, 'f', 2),
-                tr("Software Delay:"), QString::number(softwareDelay, 'f', 2),
-                tr("Total Delay:"), QString::number(totalLag, 'f', 2));
-    }
-  }
-  lagd_toggle_control->setDescription(desc);
-
-  delay_control->setVisible(!params.getBool("LagdToggle"));
-  if (delay_control->isVisible()) {
-    float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
-    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
-  }
-
   clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
 
@@ -465,8 +388,4 @@ double ModelsPanel::calculateCacheSize() {
 }
 
 void ModelsPanel::showEvent(QShowEvent *event) {
-  lagd_toggle_control->showDescription();
-  if (delay_control->isVisible()) {
-    delay_control->showDescription();
-  }
 }
