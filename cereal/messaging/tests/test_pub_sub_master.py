@@ -86,7 +86,7 @@ class TestSubMaster:
         "cameraOdometry": (20, 10),
         "liveCalibration": (4, 4),
         "carParams": (None, None),
-        "userBookmark": (None, None),
+        "userFlag": (None, None),
       }
 
       for service, (max_freq, min_freq) in checks.items():

@@ -11,7 +11,7 @@
 #include <QToolBar>
 #include <QTabBar>
 
-#include "tools/cabana/cameraview.h"
+#include "selfdrive/ui/qt/widgets/cameraview.h"
 #include "tools/cabana/utils/util.h"
 #include "tools/replay/logreader.h"
 #include "tools/cabana/streams/replaystream.h"

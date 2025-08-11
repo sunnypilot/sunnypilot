@@ -13,7 +13,10 @@
 #include "system/loggerd/logger.h"
 
 constexpr int MAIN_FPS = 20;
-const auto MAIN_ENCODE_TYPE = Hardware::PC() ? cereal::EncodeIndex::Type::BIG_BOX_LOSSLESS : cereal::EncodeIndex::Type::FULL_H_E_V_C;
+const int MAIN_BITRATE = 1e7;
+const int LIVESTREAM_BITRATE = 1e6;
+const int QCAM_BITRATE = 256000;
+
 #define NO_CAMERA_PATIENCE 500  // fall back to time-based rotation if all cameras are dead
 
 #define INIT_ENCODE_FUNCTIONS(encode_type)                                \
@@ -26,30 +29,6 @@ const int SEGMENT_LENGTH = LOGGERD_TEST ? atoi(getenv("LOGGERD_SEGMENT_LENGTH"))
 
 constexpr char PRESERVE_ATTR_NAME[] = "user.preserve";
 constexpr char PRESERVE_ATTR_VALUE = '1';
-
-struct EncoderSettings {
-  cereal::EncodeIndex::Type encode_type;
-  int bitrate;
-  int gop_size;
-  int b_frames = 0; // we don't use b frames
-
-  static EncoderSettings MainEncoderSettings(int in_width) {
-    if (in_width <= 1344) {
-      return EncoderSettings{.encode_type = MAIN_ENCODE_TYPE, .bitrate = 5'000'000, .gop_size = 20};
-    } else {
-      return EncoderSettings{.encode_type = MAIN_ENCODE_TYPE, .bitrate = 10'000'000, .gop_size = 30};
-    }
-  }
-
-  static EncoderSettings QcamEncoderSettings() {
-    return EncoderSettings{.encode_type = cereal::EncodeIndex::Type::QCAMERA_H264, .bitrate = 256'000, .gop_size = 15};
-  }
-
-  static EncoderSettings StreamEncoderSettings() {
-    return EncoderSettings{.encode_type = cereal::EncodeIndex::Type::QCAMERA_H264, .bitrate = 1'000'000, .gop_size = 15};
-  }
-};
-
 class EncoderInfo {
 public:
   const char *publish_name;
@@ -60,8 +39,9 @@ public:
   int frame_width = -1;
   int frame_height = -1;
   int fps = MAIN_FPS;
-  std::function<EncoderSettings(int)> get_settings;
-
+  int bitrate = MAIN_BITRATE;
+  cereal::EncodeIndex::Type encode_type = Hardware::PC() ? cereal::EncodeIndex::Type::BIG_BOX_LOSSLESS
+                                                         : cereal::EncodeIndex::Type::FULL_H_E_V_C;
   ::cereal::EncodeData::Reader (cereal::Event::Reader::*get_encode_data_func)() const;
   void (cereal::Event::Builder::*set_encode_idx_func)(::cereal::EncodeIndex::Reader);
   cereal::EncodeData::Builder (cereal::Event::Builder::*init_encode_data_func)();
@@ -79,14 +59,12 @@ const EncoderInfo main_road_encoder_info = {
   .publish_name = "roadEncodeData",
   .thumbnail_name = "thumbnail",
   .filename = "fcamera.hevc",
-  .get_settings = [](int in_width){return EncoderSettings::MainEncoderSettings(in_width);},
   INIT_ENCODE_FUNCTIONS(RoadEncode),
 };
 
 const EncoderInfo main_wide_road_encoder_info = {
   .publish_name = "wideRoadEncodeData",
   .filename = "ecamera.hevc",
-  .get_settings = [](int in_width){return EncoderSettings::MainEncoderSettings(in_width);},
   INIT_ENCODE_FUNCTIONS(WideRoadEncode),
 };
 
@@ -94,36 +72,39 @@ const EncoderInfo main_driver_encoder_info = {
   .publish_name = "driverEncodeData",
   .filename = "dcamera.hevc",
   .record = Params().getBool("RecordFront"),
-  .get_settings = [](int in_width){return EncoderSettings::MainEncoderSettings(in_width);},
   INIT_ENCODE_FUNCTIONS(DriverEncode),
 };
 
 const EncoderInfo stream_road_encoder_info = {
   .publish_name = "livestreamRoadEncodeData",
   //.thumbnail_name = "thumbnail",
+  .encode_type = cereal::EncodeIndex::Type::QCAMERA_H264,
   .record = false,
-  .get_settings = [](int){return EncoderSettings::StreamEncoderSettings();},
+  .bitrate = LIVESTREAM_BITRATE,
   INIT_ENCODE_FUNCTIONS(LivestreamRoadEncode),
 };
 
 const EncoderInfo stream_wide_road_encoder_info = {
   .publish_name = "livestreamWideRoadEncodeData",
+  .encode_type = cereal::EncodeIndex::Type::QCAMERA_H264,
   .record = false,
-  .get_settings = [](int){return EncoderSettings::StreamEncoderSettings();},
+  .bitrate = LIVESTREAM_BITRATE,
   INIT_ENCODE_FUNCTIONS(LivestreamWideRoadEncode),
 };
 
 const EncoderInfo stream_driver_encoder_info = {
   .publish_name = "livestreamDriverEncodeData",
+  .encode_type = cereal::EncodeIndex::Type::QCAMERA_H264,
   .record = false,
-  .get_settings = [](int){return EncoderSettings::StreamEncoderSettings();},
+  .bitrate = LIVESTREAM_BITRATE,
   INIT_ENCODE_FUNCTIONS(LivestreamDriverEncode),
 };
 
 const EncoderInfo qcam_encoder_info = {
   .publish_name = "qRoadEncodeData",
   .filename = "qcamera.ts",
-  .get_settings = [](int){return EncoderSettings::QcamEncoderSettings();},
+  .bitrate = QCAM_BITRATE,
+  .encode_type = cereal::EncodeIndex::Type::QCAMERA_H264,
   .frame_width = 526,
   .frame_height = 330,
   .include_audio = Params().getBool("RecordAudio"),

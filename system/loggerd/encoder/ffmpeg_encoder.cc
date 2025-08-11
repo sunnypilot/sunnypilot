@@ -1,3 +1,5 @@
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 #include "system/loggerd/encoder/ffmpeg_encoder.h"
 
 #include <fcntl.h>
@@ -46,7 +48,7 @@ FfmpegEncoder::~FfmpegEncoder() {
 }
 
 void FfmpegEncoder::encoder_open() {
-  auto codec_id = encoder_info.get_settings(in_width).encode_type == cereal::EncodeIndex::Type::QCAMERA_H264
+  auto codec_id = encoder_info.encode_type == cereal::EncodeIndex::Type::QCAMERA_H264
                       ? AV_CODEC_ID_H264
                       : AV_CODEC_ID_FFVHUFF;
   const AVCodec *codec = avcodec_find_encoder(codec_id);
@@ -117,7 +119,8 @@ int FfmpegEncoder::encode_frame(VisionBuf* buf, VisionIpcBufExtra *extra) {
     ret = -1;
   }
 
-  AVPacket pkt = {};
+  AVPacket pkt;
+  av_init_packet(&pkt);
   pkt.data = NULL;
   pkt.size = 0;
   while (ret >= 0) {

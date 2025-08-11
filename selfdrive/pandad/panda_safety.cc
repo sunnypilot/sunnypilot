@@ -2,7 +2,9 @@
 #include "cereal/messaging/messaging.h"
 #include "common/swaglog.h"
 
-void PandaSafety::configureSafetyMode(bool is_onroad) {
+void PandaSafety::configureSafetyMode() {
+  bool is_onroad = params_.getBool("IsOnroad");
+
   if (is_onroad && !safety_configured_) {
     updateMultiplexingMode();
 

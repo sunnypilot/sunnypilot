@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 from openpilot.common.git import get_branch
-from openpilot.common.params import Params, ParamKeyType, ParamKeyFlag
+from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version
@@ -32,7 +32,7 @@ class BackupManagerSP:
 
   def __init__(self):
     self.params = Params()
-    self.device_id = self.params.get("SunnylinkDongleId")
+    self.device_id = self.params.get("SunnylinkDongleId", encoding="utf8")
     self.api = SunnylinkApi(self.device_id)
     self.pm = messaging.PubMaster(["backupManagerSP"])
 
@@ -72,9 +72,9 @@ class BackupManagerSP:
   def _collect_config_data(self) -> dict[str, Any]:
     """Collects configuration data to be backed up."""
     config_data = {}
-    params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyFlag.BACKUP)]
+    params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP)]
     for param in params_to_backup:
-      value = str(self.params.get(param)).encode('utf-8')
+      value = self.params.get(param)
       if value is not None:
         config_data[param] = base64.b64encode(value).decode('utf-8')
     return config_data
@@ -185,42 +185,25 @@ class BackupManagerSP:
 
   def _apply_config(self, config_data: dict[str, str], all_values_encoded: bool = False) -> None:
     """Applies configuration data from a backup, but only for parameters marked as backupable."""
-    backupable_params = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyFlag.BACKUP)]
-    backupable_set_lower = {p.lower() for p in backupable_params}
+    # Get the current list of parameters that can be backed up
+    backupable_params = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP)]
 
+    # Count for logging/reporting
     restored_count = 0
     skipped_count = 0
 
     for param, encoded_value in config_data.items():
-      if param.lower() in backupable_set_lower:
-        # Find real param name (with correct casing)
-        real_param = next(p for p in backupable_params if p.lower() == param.lower())
-        param_type = self.params.get_type(real_param)
-        try:
+      try:
+        # Only restore parameters that are currently marked as backupable
+        if param in backupable_params:
           value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
-
-          if param_type != ParamKeyType.BYTES:
-            value = value.decode('utf-8')  # type: ignore
-
-          if param_type == ParamKeyType.STRING:
-            value = value
-          elif param_type == ParamKeyType.BOOL:
-            value = value.lower() in ('true', '1', 'yes')  # type: ignore
-          elif param_type == ParamKeyType.INT:
-            value = int(value)  # type: ignore
-          elif param_type == ParamKeyType.FLOAT:
-            value = float(value)  # type: ignore
-          elif param_type == ParamKeyType.TIME:
-            value = str(value)
-          elif param_type == ParamKeyType.JSON:
-            value = json.loads(value)
-          self.params.put(real_param, value)
+          self.params.put(param, value)
           restored_count += 1
-        except Exception as e:
-          cloudlog.error(f"Failed to restore param {param}: {str(e)}")
-      else:
-        skipped_count += 1
-        cloudlog.info(f"Skipped restoring param {param}: not marked for backup in current version")
+        else:
+          skipped_count += 1
+          cloudlog.info(f"Skipped restoring param {param}: not marked for backup in current version")
+      except Exception as e:
+        cloudlog.error(f"Failed to restore param {param}: {str(e)}")
 
     cloudlog.info(f"Restore complete: {restored_count} params restored, {skipped_count} params skipped")
 
@@ -270,7 +253,7 @@ class BackupManagerSP:
             self.params.remove("BackupManager_CreateBackup")
 
         # Check for restore command
-        restore_version = self.params.get("BackupManager_RestoreVersion")
+        restore_version = self.params.get("BackupManager_RestoreVersion", encoding="utf8")
         if restore_version:
           try:
             version = int(restore_version) if restore_version.isdigit() else None

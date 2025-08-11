@@ -50,7 +50,6 @@ brew "zeromq"
 cask "gcc-arm-embedded"
 brew "portaudio"
 brew "gcc@13"
-brew "font-noto-color-emoji"
 EOS
 
 echo "[ ] finished brew install t=$SECONDS"

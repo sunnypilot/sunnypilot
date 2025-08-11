@@ -4,24 +4,20 @@
 ## release checklist
 
 **Go to `devel-staging`**
-- [ ] make issue to track release
 - [ ] update RELEASES.md
-- [ ] trigger new nightly build: https://github.com/commaai/openpilot/actions/workflows/release.yaml
-- [ ] update `devel-staging`: `git reset --hard origin/__nightly`
-- [ ] build new userdata partition from `release3-staging`
+- [ ] update `devel-staging`: `git reset --hard origin/master-ci`
 - [ ] open a pull request from `devel-staging` to `devel`
-- [ ] post on Discord, tag `@release crew`
+- [ ] post on Discord
 
 **Go to `devel`**
 - [ ] bump version on master: `common/version.h` and `RELEASES.md`
-- [ ] before merging the pull request, test the following:
+- [ ] before merging the pull request
   - [ ] update from previous release -> new release
   - [ ] update from new release -> previous release
   - [ ] fresh install with `openpilot-test.comma.ai`
   - [ ] drive on fresh install
   - [ ] no submodules or LFS
   - [ ] check sentry, MTBF, etc.
-  - [ ] stress test in production
 
 **Go to `release3`**
 - [ ] publish the blog post

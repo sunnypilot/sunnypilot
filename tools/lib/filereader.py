@@ -1,8 +1,6 @@
 import os
 import posixpath
 import socket
-from functools import cache
-from openpilot.common.retry import retry
 from urllib.parse import urlparse
 
 from openpilot.tools.lib.url_file import URLFile
@@ -10,16 +8,14 @@ from openpilot.tools.lib.url_file import URLFile
 DATA_ENDPOINT = os.getenv("DATA_ENDPOINT", "http://data-raw.comma.internal/")
 
 
-@cache
-@retry(delay=0.0)
-def internal_source_available(url: str) -> bool:
+def internal_source_available(url=DATA_ENDPOINT):
   if os.path.isdir(url):
     return True
 
   try:
     hostname = urlparse(url).hostname
     port = urlparse(url).port or 80
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
       s.settimeout(0.5)
       s.connect((hostname, port))
     return True
@@ -34,7 +30,6 @@ def resolve_name(fn):
   return fn
 
 
-@cache
 def file_exists(fn):
   fn = resolve_name(fn)
   if fn.startswith(("http://", "https://")):

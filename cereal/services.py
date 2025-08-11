@@ -72,11 +72,9 @@ _services: dict[str, tuple] = {
   "navRoute": (True, 0.),
   "navThumbnail": (True, 0.),
   "qRoadEncodeIdx": (False, 20.),
-  "userBookmark": (True, 0., 1),
+  "userFlag": (True, 0., 1),
   "soundPressure": (True, 10., 10),
   "rawAudioData": (False, 20.),
-  "bookmarkButton": (True, 0., 1),
-  "audioFeedback": (True, 0., 1),
 
   # sunnypilot
   "modelManagerSP": (False, 1., 1),

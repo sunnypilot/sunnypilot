@@ -7,7 +7,6 @@
 #include <QToolTip>
 
 #include "tools/cabana/settings.h"
-#include "tools/cabana/utils/util.h"
 
 TipLabel::TipLabel(QWidget *parent) : QLabel(parent, Qt::ToolTip | Qt::FramelessWindowHint) {
   setAttribute(Qt::WA_ShowWithoutActivating);
@@ -20,7 +19,7 @@ TipLabel::TipLabel(QWidget *parent) : QLabel(parent, Qt::ToolTip | Qt::Frameless
   font.setPointSizeF(8.34563465);
   setFont(font);
   auto palette = QToolTip::palette();
-  if (!utils::isDarkTheme()) {
+  if (settings.theme != DARK_THEME) {
     palette.setColor(QPalette::ToolTipBase, QApplication::palette().color(QPalette::Base));
     palette.setColor(QPalette::ToolTipText, QRgb(0x404044));  // same color as chart label brush
   }

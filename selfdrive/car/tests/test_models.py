@@ -5,6 +5,7 @@ import pytest
 import random
 import unittest # noqa: TID251
 from collections import defaultdict, Counter
+from functools import partial
 import hypothesis.strategies as st
 from hypothesis import Phase, given, settings
 from parameterized import parameterized_class
@@ -22,7 +23,8 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.selfdrive.pandad import can_capnp_to_list
 from openpilot.selfdrive.test.helpers import read_segment_list
 from openpilot.system.hardware.hw import DEFAULT_DOWNLOAD_CACHE_ROOT
-from openpilot.tools.lib.logreader import LogReader, LogsUnavailable, openpilotci_source, internal_source, comma_api_source
+from openpilot.tools.lib.logreader import LogReader, LogsUnavailable, openpilotci_source_zst, openpilotci_source, internal_source, \
+                                          internal_source_zst, comma_api_source, auto_source
 from openpilot.tools.lib.route import SegmentName
 
 SafetyModel = car.CarParams.SafetyModel
@@ -124,8 +126,9 @@ class TestCarModelBase(unittest.TestCase):
       segment_range = f"{cls.test_route.route}/{seg}"
 
       try:
-        sources = [internal_source] if len(INTERNAL_SEG_LIST) else [openpilotci_source, comma_api_source]
-        lr = LogReader(segment_range, sources=sources, sort_by_time=True)
+        source = partial(auto_source, sources=[internal_source, internal_source_zst] if len(INTERNAL_SEG_LIST) else \
+                                              [openpilotci_source_zst, openpilotci_source, comma_api_source])
+        lr = LogReader(segment_range, source=source, sort_by_time=True)
         return cls.get_testing_data_from_logreader(lr)
       except (LogsUnavailable, AssertionError):
         pass
@@ -196,6 +199,7 @@ class TestCarModelBase(unittest.TestCase):
   def test_car_interface(self):
     # TODO: also check for checksum violations from can parser
     can_invalid_cnt = 0
+    can_valid = False
     CC = structs.CarControl().as_reader()
     CC_SP = structs.CarControlSP()
 
@@ -203,8 +207,11 @@ class TestCarModelBase(unittest.TestCase):
       CS, _ = self.CI.update(msg)
       self.CI.apply(CC, CC_SP, msg[0])
 
+      if CS.canValid:
+        can_valid = True
+
       # wait max of 2s for low frequency msgs to be seen
-      if i > 250:
+      if i > 200 or can_valid:
         can_invalid_cnt += not CS.canValid
 
     self.assertEqual(can_invalid_cnt, 0)
@@ -324,7 +331,7 @@ class TestCarModelBase(unittest.TestCase):
 
     vehicle_speed_seen = self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar
 
-    for n, dat in enumerate(msgs):
+    for dat in msgs:
       # due to panda updating state selectively, only edges are expected to match
       # TODO: warm up CarState with real CAN messages to check edge of both sources
       #  (eg. toyota's gasPressed is the inverse of a signal being set)
@@ -343,8 +350,6 @@ class TestCarModelBase(unittest.TestCase):
 
       can = [(int(time.monotonic() * 1e9), [CanData(address=address, dat=dat, src=bus)])]
       CS, _ = self.CI.update(can)
-      if n < 5:  # CANParser warmup time
-        continue
 
       if self.safety.get_gas_pressed_prev() != prev_panda_gas:
         self.assertEqual(CS.gasPressed, self.safety.get_gas_pressed_prev())
@@ -364,7 +369,7 @@ class TestCarModelBase(unittest.TestCase):
       if self.safety.get_steering_disengage_prev() != prev_panda_steering_disengage:
         self.assertEqual(CS.steeringDisengage, self.safety.get_steering_disengage_prev())
 
-      if self.safety.get_vehicle_moving() != prev_panda_vehicle_moving and not self.CP.notCar:
+      if self.safety.get_vehicle_moving() != prev_panda_vehicle_moving:
         self.assertEqual(not CS.standstill, self.safety.get_vehicle_moving())
 
       # check vehicle speed if angle control car or available
@@ -422,7 +427,7 @@ class TestCarModelBase(unittest.TestCase):
       # TODO: check rest of panda's carstate (steering, ACC main on, etc.)
 
       checks['gasPressed'] += CS.gasPressed != self.safety.get_gas_pressed_prev()
-      checks['standstill'] += (CS.standstill == self.safety.get_vehicle_moving()) and not self.CP.notCar
+      checks['standstill'] += CS.standstill == self.safety.get_vehicle_moving()
 
       # check vehicle speed if angle control car or available
       if self.safety.get_vehicle_speed_min() > 0 or self.safety.get_vehicle_speed_max() > 0:
@@ -439,9 +444,7 @@ class TestCarModelBase(unittest.TestCase):
         if self.CP.carFingerprint in (HONDA.HONDA_PILOT, HONDA.HONDA_RIDGELINE) and CS.brake > 0.05:
           brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
-      # TODO: remove this exception before closing commaai/opendbc#1100
-      if not (self.CP.brand == "honda" and self.CP.flags & HondaFlags.BOSCH):
-        checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
+      checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
       checks['steeringDisengage'] += CS.steeringDisengage != self.safety.get_steering_disengage_prev()
 
       if self.CP.pcmCruise:

@@ -191,15 +191,8 @@ DoubleValidator::DoubleValidator(QObject *parent) : QDoubleValidator(parent) {
 }
 
 namespace utils {
-
-bool isDarkTheme() {
-  QColor windowColor = QApplication::palette().color(QPalette::Window);
-  return windowColor.lightness() < 128;
-}
-
 QPixmap icon(const QString &id) {
-  bool dark_theme = isDarkTheme();
-
+  bool dark_theme = settings.theme == DARK_THEME;
   QPixmap pm;
   QString key = "bootstrap_" % id % (dark_theme ? "1" : "0");
   if (!QPixmapCache::find(key, &pm)) {

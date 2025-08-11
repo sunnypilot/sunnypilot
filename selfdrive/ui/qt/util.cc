@@ -18,7 +18,6 @@
 #include <QtXml/QDomDocument>
 
 #include "common/swaglog.h"
-#include "common/util.h"
 #include "system/hardware/hw.h"
 
 QString getVersion() {
@@ -58,10 +57,6 @@ QMap<QString, QString> getSupportedLanguages() {
 }
 
 QString timeAgo(const QDateTime &date) {
-  if (!util::system_time_valid()) {
-    return date.date().toString();
-  }
-
   int diff = date.secsTo(QDateTime::currentDateTimeUtc());
 
   QString s;

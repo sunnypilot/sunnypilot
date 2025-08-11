@@ -21,7 +21,6 @@ public:
 private:
   void initialize_audio(int sample_rate);
   void encode_and_write_audio_frame(AVFrame* frame);
-  void process_remaining_audio();
 
   std::string vid_path, lock_path;
   FILE *of = nullptr;

@@ -55,7 +55,6 @@ PROCS = {
   "selfdrive.locationd.paramsd": 9.0,
   "selfdrive.locationd.lagd": 11.0,
   "selfdrive.ui.soundd": 3.0,
-  "selfdrive.ui.feedback.feedbackd": 1.0,
   "selfdrive.monitoring.dmonitoringd": 4.0,
   "./proclogd": 2.0,
   "system.logmessaged": 1.0,
@@ -148,7 +147,7 @@ class TestOnroad:
         while not sm.seen['carState']:
           sm.update(1000)
 
-      route = params.get("CurrentRoute")
+      route = params.get("CurrentRoute", encoding="utf-8")
       assert route is not None
 
       segs = list(Path(Paths.log_root()).glob(f"{route}--*"))

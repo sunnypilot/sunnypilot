@@ -103,10 +103,10 @@ Params::~Params() {
   assert(queue.empty());
 }
 
-std::vector<std::string> Params::allKeys(ParamKeyFlag flag) const {
+std::vector<std::string> Params::allKeys(ParamKeyType type) const {
   std::vector<std::string> ret;
   for (auto &p : keys) {
-    if (flag == ALL || (p.second.flags & flag)) {
+    if (type == ALL || (p.second & type)) {
       ret.push_back(p.first);
     }
   }
@@ -117,16 +117,8 @@ bool Params::checkKey(const std::string &key) {
   return keys.find(key) != keys.end();
 }
 
-ParamKeyFlag Params::getKeyFlag(const std::string &key) {
-  return static_cast<ParamKeyFlag>(keys[key].flags);
-}
-
 ParamKeyType Params::getKeyType(const std::string &key) {
-  return keys[key].type;
-}
-
-std::optional<std::string> Params::getKeyDefaultValue(const std::string &key) {
-  return keys[key].default_value;
+  return static_cast<ParamKeyType>(keys[key]);
 }
 
 int Params::put(const char* key, const char* value, size_t value_size) {
@@ -205,17 +197,17 @@ std::map<std::string, std::string> Params::readAll() {
   return util::read_files_in_dir(getParamPath());
 }
 
-void Params::clearAll(ParamKeyFlag key_flag) {
+void Params::clearAll(ParamKeyType key_type) {
   FileLock file_lock(params_path + "/.lock");
 
-  // 1) delete params of key_flag
+  // 1) delete params of key_type
   // 2) delete files that are not defined in the keys.
   if (DIR *d = opendir(getParamPath().c_str())) {
     struct dirent *de = NULL;
     while ((de = readdir(d))) {
       if (de->d_type != DT_DIR) {
         auto it = keys.find(de->d_name);
-        if (it == keys.end() || (it->second.flags & key_flag)) {
+        if (it == keys.end() || (it->second & key_type)) {
           unlink(getParamPath(de->d_name).c_str());
         }
       }

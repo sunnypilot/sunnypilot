@@ -42,7 +42,7 @@ def replay(route, segment, loop):
     msg = msgs[i].as_builder()
     next_msg = msgs[i + 1]
 
-    start_time = time.monotonic()
+    start_time = time.time()
     w = msg.which()
 
     if w == 'roadCameraState':
@@ -63,7 +63,7 @@ def replay(route, segment, loop):
       socks[w] = None
 
     lag += (next_msg.logMonoTime - msg.logMonoTime) / 1e9
-    lag -= time.monotonic() - start_time
+    lag -= time.time() - start_time
 
     dt = max(lag, 0.0)
     lag -= dt

@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 
-from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
+from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.locationd.models.constants import ObservationKind
 from openpilot.common.swaglog import cloudlog
 
@@ -93,9 +93,8 @@ class CarKalman(KalmanFilter):
     dim_state = CarKalman.initial_x.shape[0]
     name = CarKalman.name
 
-    # Linearized single-track lateral dynamics, equations 7.211-7.213
-    # Massimo Guiggiani, The Science of Vehicle Dynamics: Handling, Braking, and Ride of Road and Race Cars
-    # Springer Cham, 2023. doi: https://doi.org/10.1007/978-3-031-06461-6
+    # vehicle models comes from The Science of Vehicle Dynamics: Handling, Braking, and Ride of Road and Race Cars
+    # Model used is in 6.15 with formula from 6.198
 
     # globals
     global_vars = [sp.Symbol(name) for name in CarKalman.global_vars]

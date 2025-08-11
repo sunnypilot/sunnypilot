@@ -24,7 +24,7 @@ bool PandaStream::connect() {
     return false;
   }
 
-  panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
+  panda->set_safety_model(cereal::CarParams::SafetyModel::SILENT);
   for (int bus = 0; bus < config.bus_config.size(); bus++) {
     panda->set_can_speed_kbps(bus, config.bus_config[bus].can_speed_kbps);
 
@@ -72,7 +72,7 @@ void PandaStream::streamThread() {
 
     handleEvent(capnp::messageToFlatArray(msg));
 
-    panda->send_heartbeat(false);
+    panda->send_heartbeat(false, false);
   }
 }
 
