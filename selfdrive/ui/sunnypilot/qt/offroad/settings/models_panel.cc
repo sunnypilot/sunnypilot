@@ -102,10 +102,23 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lagd_toggle_control);
 
   // Software delay control
+  int liveDelayMaxInt = 30;
+  std::string liveDelayBytes = params.get("LiveDelay");
+  if (!liveDelayBytes.empty()) {
+    capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
+      reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
+      liveDelayBytes.size() / sizeof(capnp::word)));
+    auto event = msg.getRoot<cereal::Event>();
+    if (event.hasLiveDelay()) {
+      auto liveDelay = event.getLiveDelay();
+      float lateralDelay = liveDelay.getLateralDelay();
+      liveDelayMaxInt = static_cast<int>(lateralDelay * 100.0f) + 20;
+    }
+  }
   delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
-                                     "", {5, 30}, 1, false, nullptr, true, true);
+                                     "", {5, liveDelayMaxInt}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
     float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
