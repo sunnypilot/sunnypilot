@@ -107,8 +107,10 @@ class Car:
           cached_params = _cached_params
 
       fixed_fingerprint = (self.params.get("CarPlatformBundle") or {}).get("platform", None)
+      init_params_list_sp = sunnypilot_interfaces.initialize_params(self.params)
 
-      self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params, fixed_fingerprint)
+      self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params,
+                        fixed_fingerprint, init_params_list_sp)
       sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
       self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP, self.CI.CP_SP)
       self.CP = self.CI.CP
