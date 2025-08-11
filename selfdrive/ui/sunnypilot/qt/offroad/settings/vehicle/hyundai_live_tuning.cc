@@ -11,39 +11,17 @@
 struct ParamConfig {
   QString param, title, desc, defaultValue;
   float minVal = 0.0f, maxVal, step = 0.01f;
-  bool isList = false;
 };
 
-// Clipping limits on all tuning params to help prevent unsafe values.
+// Clipping limits on all tuning params to prevent unsafe values.
 static const std::vector<ParamConfig> PARAM_CONFIGS = {
+  {"LongTuningAccelMax", QObject::tr("Acceleration Max"), QObject::tr("Acceleration limit (m/s^2)"), "2.00", 0.5f, 2.0f, 0.1f},
   {"LongTuningVEgoStopping", QObject::tr("Stopping Threshold"), QObject::tr("Velocity threshold for stopping behavior (m/s)"), "0.25", 0.05f, 0.5f, 0.01f},
-  {"LongTuningVEgoStarting", QObject::tr("Starting Threshold"), QObject::tr("Velocity threshold for starting behavior (m/s)"), "0.10", 0.05f, 0.25f, 0.01f},
-  {"LongTuningStoppingDecelRate", QObject::tr("Stopping Decel Rate"), QObject::tr("Deceleration rate when stopping (m/s²)"), "0.40", 0.01f, 0.8f, 0.01f},
-  {"LongTuningLongitudinalActuatorDelay", QObject::tr("Longitudinal Actuator Delay"), QObject::tr("Delay in which desired commands are executed by your vehicle."), "0.45", 0.3f, 0.5f, 0.01f},
-  {"LongTuningMinUpperJerk", QObject::tr("Min Upper Jerk"), QObject::tr("Minimum accel jerk limit (m/s³)"), "0.50", 0.5f, 3.0f, 0.1f},
-  {"LongTuningMinLowerJerk", QObject::tr("Min Lower Jerk"), QObject::tr("Minimum braking jerk limit (m/s³)"), "0.50", 0.5f, 5.0f, 0.1f},
-  {"LongTuningJerkLimits", QObject::tr("Dynamic Tune Jerk Max"), QObject::tr("Maximum jerk limits the tune cannot exceed (m/s³)"), "4.00", 2.0f, 5.0f, 0.1f},
-  {"LongTuningLookaheadJerkBp", QObject::tr("Predictive Jerk Breakpoints"), QObject::tr("Speed breakpoints for predictive jerk (m/s). Format: 2.0,5.0,20.0"), "2.0,5.0,20.0", 0.0f, 40.0f, 0.0f, true},
-  {"LongTuningLookaheadJerkUpperV", QObject::tr("Predictive Jerk Upper Values"), QObject::tr("Acceleration jerk values for predictive jerk (m/s³). Format: 0.25,0.5,1.0"), "0.25,0.5,1.0", 0.0f, 1.0f, 0.0f, true},
-  {"LongTuningLookaheadJerkLowerV", QObject::tr("Predictive Jerk Lower Values"), QObject::tr("Braking jerk values for predictive jerk (m/s³). Format: 0.05,0.10,0.3"), "0.05,0.10,0.3", 0.0f, 1.0f, 0.0f, true},
-  {"LongTuningUpperJerkV", QObject::tr("Upper Jerk Values"), QObject::tr("Acceleration  jerk limited by speed (m/s³). Format: 2.0,2.0,1.2"), "2.0,2.0,1.2", 0.5f, 3.0f, 0.0f, true},
-  {"LongTuningLowerJerkV", QObject::tr("Lower Jerk Values"), QObject::tr("Braking jerk limited by speed (m/s³). Format: 3.0,3.0,2.5"), "3.0,3.0,2.5", 1.5f, 5.0f, 0.0f, true}
+  {"LongTuningStoppingDecelRate", QObject::tr("Stopping Decel Rate"), QObject::tr("Deceleration rate when stopping (m/s^2)"), "0.40", 0.01f, 0.8f, 0.01f},
+  {"LongTuningMinUpperJerk", QObject::tr("Min Upper Jerk"), QObject::tr("Minimum accel jerk limit (m/s^3)"), "0.50", 0.5f, 3.0f, 0.1f},
+  {"LongTuningMinLowerJerk", QObject::tr("Min Lower Jerk"), QObject::tr("Minimum braking jerk limit (m/s^3)"), "0.50", 0.5f, 8.0f, 0.1f},
+  {"LongTuningJerkLimits", QObject::tr("Dynamic Tune Jerk Max"), QObject::tr("Maximum lower jerk limit the tune cannot exceed (m/s^3)"), "4.00", 2.0f, 8.0f, 0.1f},
 };
-
-// Formats a list of comma-separated values with decimals, ensuring each value is within specified min and max limits, preventing erroneous inputs.
-QString formatListWithDecimals(const QString &input, const QString &param = "") {
-  auto config = std::find_if(PARAM_CONFIGS.begin(), PARAM_CONFIGS.end(), [&param](const ParamConfig &c) { return param == c.param; });
-  float min_val = config != PARAM_CONFIGS.end() ? config->minVal : 0.0f, max_val = config != PARAM_CONFIGS.end() ? config->maxVal : 10.0f;
-  QStringList formatted;
-  for (const QString &val : input.split(",")) {
-    bool ok; float num = val.trimmed().toFloat(&ok);
-    if (ok)
-      formatted << QString::number(qBound(min_val, num, max_val), 'f', num == (int)num ? 1 : 2);
-    else
-      formatted << QString::number(max_val, 'f', max_val == (int)max_val ? 1 : 2);
-  }
-  return formatted.join(",");
-}
 
 QWidget* createButtonWidget(const QString &text, std::function<void()> callback, bool isPushButton = false) {
   QWidget *widget = new QWidget(); QHBoxLayout *layout = new QHBoxLayout(widget);
@@ -56,9 +34,9 @@ QWidget* createButtonWidget(const QString &text, std::function<void()> callback,
 HyundaiLiveTuning::HyundaiLiveTuning(QWidget *parent) : QWidget(parent) {
   main_layout = new QVBoxLayout(this); main_layout->setContentsMargins(0, 0, 0, 0); main_layout->setSpacing(0);
   list = new ListWidgetSP(this, false);
-  list->addItem(createButtonWidget(tr("← Back"), [=]() { emit backPress(); }));
-  list->addItem(createButtonWidget(tr("Reset to Defaults"), [=]() { resetToDefaults(); }, true));
-  for (const auto &config : PARAM_CONFIGS) config.isList ? createListControl(config.param, config.title, config.desc) : createFloatControl(config.param, config.title, config.desc, config.minVal, config.maxVal, config.step);
+  list->addItem(createButtonWidget(tr("Back"), [=]() { emit backPress(); }));
+  list->addItem(createButtonWidget(tr("Reset to defaults"), [=]() { resetToDefaults(); }, true));
+  for (const auto &config : PARAM_CONFIGS) createFloatControl(config.param, config.title, config.desc, config.minVal, config.maxVal, config.step);
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
@@ -101,48 +79,18 @@ void HyundaiLiveTuning::createFloatControl(const QString &param, const QString &
   list->addItem(widget); spinner_controls[param.toStdString()] = value_label;
 }
 
-void HyundaiLiveTuning::createListControl(const QString &param, const QString &title, const QString &desc) {
-  QString current_value = QString::fromStdString(params.get(param.toStdString()));
-  if (current_value.isEmpty()) {
-    auto it = std::find_if(PARAM_CONFIGS.begin(), PARAM_CONFIGS.end(), [&param](const ParamConfig &c) { return c.param == param; });
-    if (it != PARAM_CONFIGS.end()) { current_value = it->defaultValue; params.put(param.toStdString(), current_value.toStdString()); }
-  }
-  auto control = new ButtonControlSP(title, tr("Edit"), desc + QString("<br><br><b>Current:</b> %1").arg(current_value));
-  control->showDescription();
-  connect(control, &ButtonControlSP::clicked, [=]() {
-    auto config = std::find_if(PARAM_CONFIGS.begin(), PARAM_CONFIGS.end(), [&param](const ParamConfig &c) { return c.param == param; });
-    QString prompt = tr("Enter exactly 3 comma-separated values:");
-    if (config != PARAM_CONFIGS.end()) {
-      prompt += QString("\nRange: %1 to %2").arg(QString::number(config->minVal, 'f', 1)).arg(QString::number(config->maxVal, 'f', 1));
-    }
-    QString new_value = InputDialog::getText(tr("Edit %1").arg(title), this, prompt, false, -1, QString::fromStdString(params.get(param.toStdString())));
-    if (!new_value.isEmpty() && new_value.split(",").length() == 3) { params.put(param.toStdString(), formatListWithDecimals(new_value, param).toStdString()); updateToggles(); }
-    else if (!new_value.isEmpty()) ConfirmationDialog(tr("Please enter exactly 3 comma-separated values."), tr("OK"), "", false, this).exec();
-  });
-  list->addItem(control); list_controls[param.toStdString()] = control;
-}
-
-void HyundaiLiveTuning::showEvent(QShowEvent *event) { updateToggles(); }
-
 void HyundaiLiveTuning::updateToggles() {
   for (const auto &pair : spinner_controls) {
     QString param_value = QString::fromStdString(params.get(pair.first));
     if (!param_value.isEmpty()) pair.second->setText(QString::number(param_value.toFloat(), 'f', 2));
   }
-  for (const auto &pair : list_controls) {
-    QString param_value = QString::fromStdString(params.get(pair.first));
-    if (!param_value.isEmpty()) {
-      auto it = std::find_if(PARAM_CONFIGS.begin(), PARAM_CONFIGS.end(), [&pair](const ParamConfig &c) { return c.param.toStdString() == pair.first; });
-      if (it != PARAM_CONFIGS.end()) {
-        QString updated_desc = it->desc + QString("<br><br><b>Current:</b> %1").arg(param_value);
-        pair.second->setDescription(updated_desc);
-        pair.second->showDescription();
-      }
-    }
-  }
 }
 
 void HyundaiLiveTuning::resetToDefaults() {
   for (const auto &config : PARAM_CONFIGS) params.put(config.param.toStdString(), config.defaultValue.toStdString());
+  updateToggles();
+}
+
+void HyundaiLiveTuning::showEvent(QShowEvent *event){
   updateToggles();
 }

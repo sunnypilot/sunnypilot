@@ -34,10 +34,8 @@ private:
   QVBoxLayout *main_layout;
   ListWidgetSP *list;
   std::map<std::string, QLabel*> spinner_controls;
-  std::map<std::string, ButtonControlSP*> list_controls;
 
   void resetToDefaults();
   void createFloatControl(const QString &param, const QString &title, const QString &desc,
-                         float min_val, float max_val, float step = 0.01f);
-  void createListControl(const QString &param, const QString &title, const QString &desc);
+                          float min_val, float max_val, float step = 0.01f);
 };
