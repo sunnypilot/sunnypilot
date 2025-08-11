@@ -118,7 +118,6 @@ class LatControlTorqueExtBase:
                               self.model_v2.acceleration.y) - desired_lateral_accel) / self.desired_lat_jerk_time
       self.lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
       if self.lookahead_lateral_jerk == 0.0:
-        self.lookahead_lateral_jerk = 0.0
         self.actual_lateral_jerk = 0.0
         self.lat_accel_friction_factor = 1.0
       self.lateral_jerk_setpoint = self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
