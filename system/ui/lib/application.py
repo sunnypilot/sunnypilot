@@ -7,7 +7,7 @@ import threading
 from collections.abc import Callable
 from collections import deque
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import StrEnum
 from typing import NamedTuple
 from importlib.resources import as_file, files
 from openpilot.common.swaglog import cloudlog
@@ -19,6 +19,7 @@ FPS_LOG_INTERVAL = 5  # Seconds between logging FPS drops
 FPS_DROP_THRESHOLD = 0.9  # FPS drop threshold for triggering a warning
 FPS_CRITICAL_THRESHOLD = 0.5  # Critical threshold for triggering strict actions
 MOUSE_THREAD_RATE = 140  # touch controller runs at 140Hz
+MAX_TOUCH_SLOTS = 2
 
 ENABLE_VSYNC = os.getenv("ENABLE_VSYNC", "0") == "1"
 SHOW_FPS = os.getenv("SHOW_FPS") == "1"
@@ -33,16 +34,16 @@ ASSETS_DIR = files("openpilot.selfdrive").joinpath("assets")
 FONT_DIR = ASSETS_DIR.joinpath("fonts")
 
 
-class FontWeight(IntEnum):
-  THIN = 0
-  EXTRA_LIGHT = 1
-  LIGHT = 2
-  NORMAL = 3
-  MEDIUM = 4
-  SEMI_BOLD = 5
-  BOLD = 6
-  EXTRA_BOLD = 7
-  BLACK = 8
+class FontWeight(StrEnum):
+  THIN = "Inter-Thin.ttf"
+  EXTRA_LIGHT = "Inter-ExtraLight.ttf"
+  LIGHT = "Inter-Light.ttf"
+  NORMAL = "Inter-Regular.ttf"
+  MEDIUM = "Inter-Medium.ttf"
+  SEMI_BOLD = "Inter-SemiBold.ttf"
+  BOLD = "Inter-Bold.ttf"
+  EXTRA_BOLD = "Inter-ExtraBold.ttf"
+  BLACK = "Inter-Black.ttf"
 
 
 @dataclass
@@ -58,6 +59,7 @@ class MousePos(NamedTuple):
 
 class MouseEvent(NamedTuple):
   pos: MousePos
+  slot: int
   left_pressed: bool
   left_released: bool
   left_down: bool
@@ -67,7 +69,7 @@ class MouseEvent(NamedTuple):
 class MouseState:
   def __init__(self):
     self._events: deque[MouseEvent] = deque(maxlen=MOUSE_THREAD_RATE)  # bound event list
-    self._prev_mouse_event: MouseEvent | None = None
+    self._prev_mouse_event: list[MouseEvent | None] = [None] * MAX_TOUCH_SLOTS
 
     self._rk = Ratekeeper(MOUSE_THREAD_RATE)
     self._lock = threading.Lock()
@@ -98,19 +100,21 @@ class MouseState:
       self._rk.keep_time()
 
   def _handle_mouse_event(self):
-    mouse_pos = rl.get_mouse_position()
-    ev = MouseEvent(
-      MousePos(mouse_pos.x, mouse_pos.y),
-      rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT),
-      rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT),
-      rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT),
-      time.monotonic(),
-    )
-    # Only add changes
-    if self._prev_mouse_event is None or ev[:-1] != self._prev_mouse_event[:-1]:
-      with self._lock:
-        self._events.append(ev)
-      self._prev_mouse_event = ev
+    for slot in range(MAX_TOUCH_SLOTS):
+      mouse_pos = rl.get_touch_position(slot)
+      ev = MouseEvent(
+        MousePos(mouse_pos.x, mouse_pos.y),
+        slot,
+        rl.is_mouse_button_pressed(slot),
+        rl.is_mouse_button_released(slot),
+        rl.is_mouse_button_down(slot),
+        time.monotonic(),
+      )
+      # Only add changes
+      if self._prev_mouse_event[slot] is None or ev[:-1] != self._prev_mouse_event[slot][:-1]:
+        with self._lock:
+          self._events.append(ev)
+        self._prev_mouse_event[slot] = ev
 
 
 class GuiApplication:
@@ -312,34 +316,23 @@ class GuiApplication:
     return self._height
 
   def _load_fonts(self):
-    font_files = (
-      "Inter-Thin.ttf",
-      "Inter-ExtraLight.ttf",
-      "Inter-Light.ttf",
-      "Inter-Regular.ttf",
-      "Inter-Medium.ttf",
-      "Inter-SemiBold.ttf",
-      "Inter-Bold.ttf",
-      "Inter-ExtraBold.ttf",
-      "Inter-Black.ttf",
-    )
-
     # Create a character set from our keyboard layouts
     from openpilot.system.ui.widgets.keyboard import KEYBOARD_LAYOUTS
+
     all_chars = set()
     for layout in KEYBOARD_LAYOUTS.values():
       all_chars.update(key for row in layout for key in row)
     all_chars = "".join(all_chars)
-    all_chars += "–✓°"
+    all_chars += "–✓×°"
 
     codepoint_count = rl.ffi.new("int *", 1)
     codepoints = rl.load_codepoints(all_chars, codepoint_count)
 
-    for index, font_file in enumerate(font_files):
-      with as_file(FONT_DIR.joinpath(font_file)) as fspath:
+    for font_weight_file in FontWeight:
+      with as_file(FONT_DIR.joinpath(font_weight_file)) as fspath:
         font = rl.load_font_ex(fspath.as_posix(), 200, codepoints, codepoint_count[0])
         rl.set_texture_filter(font.texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
-        self._fonts[index] = font
+        self._fonts[font_weight_file] = font
 
     rl.unload_codepoints(codepoints)
     rl.gui_set_font(self._fonts[FontWeight.NORMAL])

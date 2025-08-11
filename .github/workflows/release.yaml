@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_masterci:
-    name: build master-ci
+  build___nightly:
+    name: build __nightly
     env:
       ImageOS: ubuntu24
     container:
-      image: ghcr.io/commaai/openpilot-base:latest
+      image: ghcr.io/sunnypilot/sunnypilot-base:latest
     runs-on: ubuntu-latest
     if: github.repository == 'sunnypilot/sunnypilot'
     permissions:
@@ -27,7 +27,7 @@ jobs:
       with:
         ref: master
         wait-interval: 30
-        running-workflow-name: 'build master-ci'
+        running-workflow-name: 'build __nightly'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         check-regexp: ^((?!.*(build prebuilt).*).)*$
     - uses: actions/checkout@v4
@@ -38,5 +38,5 @@ jobs:
       run: |
         git config --global --add safe.directory '*'
         git lfs pull
-    - name: Push master-ci
+    - name: Push __nightly
       run: BRANCH=__nightly release/build_devel.sh

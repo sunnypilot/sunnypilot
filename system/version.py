@@ -12,14 +12,14 @@ from openpilot.common.git import get_commit, get_origin, get_branch, get_short_b
 
 RELEASE_SP_BRANCHES = ['release-c3']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new']
-MASTER_SP_BRANCHES = ['master', 'master-new']
+MASTER_SP_BRANCHES = ['master']
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'nightly'] + RELEASE_SP_BRANCHES
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
 
 BUILD_METADATA_FILENAME = "build.json"
 
-training_version: bytes = b"0.2.0"
-terms_version: bytes = b"2"
+training_version: str = "0.2.0"
+terms_version: str = "2"
 
 
 def get_version(path: str = BASEDIR) -> str:
@@ -82,6 +82,10 @@ class OpenpilotMetadata:
     # note to fork maintainers, this is used for release metrics. please do not
     # touch this to get rid of the orange startup alert. there's better ways to do that
     return self.git_normalized_origin == "github.com/commaai/openpilot"
+
+  @property
+  def sunnypilot_remote(self) -> bool:
+    return self.git_normalized_origin == "github.com/sunnypilot/sunnypilot"
 
   @property
   def git_normalized_origin(self) -> str:
