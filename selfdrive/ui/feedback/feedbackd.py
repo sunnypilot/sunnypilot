@@ -9,6 +9,7 @@ FEEDBACK_MAX_DURATION = 10.0
 ButtonType = car.CarState.ButtonEvent.Type
 ButtonTypeSP = custom.CarStateSP.ButtonEvent.Type
 
+# TODO-SP: Use common python enum when we move to raylib?
 CUSTOM_MAPPING_BOOKMARK = 1  # Custom button mapping value for bookmark action
 
 
