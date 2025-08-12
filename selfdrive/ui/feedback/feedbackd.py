@@ -83,13 +83,13 @@ def get_button_event(sm, params):
   # use custom button mapping if available
   use_custom = custom_mapped and sm.updated['carStateSP']
   # only allow the LKAS button to record feedback when MADS is disabled & custom button mapping is not set
-  use_lkas = sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available and not custom_mapped
+  use_lkas = sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available
 
   if use_custom:
     for be in sm['carStateSP'].buttonEvents:
       if be.type == ButtonTypeSP.customButton:
         btn_pressed = ButtonPressType.CUSTOM if be.pressed else ButtonPressType.NONE
-  elif use_lkas:
+  if use_lkas:
     for be in sm['carState'].buttonEvents:
       if be.type == ButtonType.lkas:
         btn_pressed = ButtonPressType.LKAS if be.pressed else ButtonPressType.NONE
