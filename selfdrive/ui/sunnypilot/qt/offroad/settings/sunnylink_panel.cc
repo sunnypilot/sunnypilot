@@ -66,16 +66,14 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   });
   list->addItem(horizontal_line());
 
-  QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only works for admins)");
+  QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)");
   sunnylinkUploaderEnabledBtn = new ParamControlSP(
     "EnableSunnylinkUploader",
-    tr("Enable sunnylink uploader"),
+    tr("[Don't use] Enable sunnylink uploader"),
     sunnylinkUploaderDesc,
-    "");
+    "", nullptr, true);
   list->addItem(sunnylinkUploaderEnabledBtn);
   list->addItem(horizontal_line());
-
-//EnableSunnylinkUploader  
 
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
     // resets the description to the default one for the Easter egg
@@ -271,6 +269,8 @@ void SunnylinkPanel::updatePanel() {
 
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
+
+  sunnylinkUploaderEnabledBtn->setEnabled(max_current_sponsor_rule.roleTier == SponsorTier::Guardian && is_sunnylink_enabled);
 
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");
