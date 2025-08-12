@@ -85,7 +85,6 @@ class SelfdriveD(CruiseHelper):
 
     # TODO: de-couple selfdrived with card/conflate on carState without introducing controls mismatches
     self.car_state_sock = messaging.sub_sock('carState', timeout=20)
-    self.car_state_sp_sock = messaging.sub_sock('carStateSP', timeout=20)
 
     ignore = self.sensor_packets + self.gps_packets + ['alertDebug']
     if SIMULATION:
@@ -115,7 +114,6 @@ class SelfdriveD(CruiseHelper):
       self.params.remove("ExperimentalMode")
 
     self.CS_prev = car.CarState.new_message()
-    self.CS_SP_prev = custom.CarStateSP.new_message()
     self.AM = AlertManager()
     self.events = Events()
 
@@ -441,9 +439,7 @@ class SelfdriveD(CruiseHelper):
 
   def data_sample(self):
     _car_state = messaging.recv_one(self.car_state_sock)
-    _car_state_sp = messaging.recv_one(self.car_state_sp_sock)
     CS = _car_state.carState if _car_state else self.CS_prev
-    CS_SP = _car_state_sp.carStateSP if _car_state_sp else self.CS_SP_prev
 
     self.sm.update(0)
 
@@ -486,7 +482,7 @@ class SelfdriveD(CruiseHelper):
            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
 
-    return CS, CS_SP
+    return CS
 
   def update_alerts(self, CS):
     clear_event_types = set()
@@ -505,7 +501,7 @@ class SelfdriveD(CruiseHelper):
     self.AM.add_many(self.sm.frame, alerts + alerts_sp)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
-  def publish_selfdriveState(self, CS, CS_SP):
+  def publish_selfdriveState(self, CS):
     # selfdriveState
     ss_msg = messaging.new_message('selfdriveState')
     ss_msg.valid = True
@@ -556,7 +552,7 @@ class SelfdriveD(CruiseHelper):
     self.events_sp_prev = self.events_sp.names.copy()
 
   def step(self):
-    CS, CS_SP = self.data_sample()
+    CS = self.data_sample()
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
@@ -564,10 +560,9 @@ class SelfdriveD(CruiseHelper):
       self.mads.update(CS)
     self.update_alerts(CS)
 
-    self.publish_selfdriveState(CS, CS_SP)
+    self.publish_selfdriveState(CS)
 
     self.CS_prev = CS
-    self.CS_SP_prev = CS_SP
 
   def params_thread(self, evt):
     while not evt.is_set():
