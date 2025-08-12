@@ -46,7 +46,7 @@ def main():
       for be in sm['carState'].buttonEvents:
         if be.type == ButtonType.lkas:
           btn_pressed =  be.pressed
-    
+
     if btn_pressed:
       if not should_record_audio:
         if params.get_bool("RecordAudioFeedback"):  # Start recording on first press if toggle set
