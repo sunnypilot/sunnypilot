@@ -73,7 +73,6 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     sunnylinkUploaderDesc,
     "", nullptr, true);
   list->addItem(sunnylinkUploaderEnabledBtn);
-  list->addItem(horizontal_line());
 
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
     // resets the description to the default one for the Easter egg
