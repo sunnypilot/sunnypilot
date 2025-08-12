@@ -219,8 +219,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     // Tuning keys
     {"EnableHkgTuningAngleSmoothingFactor", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"HkgTuningAngleMinTorqueReductionGain", {PERSISTENT | BACKUP, INT, "10"}},
-    {"HkgTuningAngleMaxTorqueReductionGain", {PERSISTENT | BACKUP, INT, "60"}},
+    {"HkgTuningAngleMaxTorqueReductionGain", {PERSISTENT | BACKUP, INT, "100"}},
     {"HkgTuningAngleActiveTorqueReductionGain", {PERSISTENT | BACKUP, INT, "100"}},
     {"HkgTuningOverridingCycles", {PERSISTENT | BACKUP, INT, "17"}},
-    {"HkgAngleLiveTuning", {CLEAR_ON_MANAGER_START, BOOL, "0"}}
 };
