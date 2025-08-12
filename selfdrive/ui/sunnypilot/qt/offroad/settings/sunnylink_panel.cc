@@ -66,6 +66,17 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   });
   list->addItem(horizontal_line());
 
+  QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only works for admins)");
+  sunnylinkUploaderEnabledBtn = new ParamControlSP(
+    "EnableSunnylinkUploader",
+    tr("Enable sunnylink uploader"),
+    sunnylinkUploaderDesc,
+    "");
+  list->addItem(sunnylinkUploaderEnabledBtn);
+  list->addItem(horizontal_line());
+
+//EnableSunnylinkUploader  
+
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
     // resets the description to the default one for the Easter egg
     sunnylinkEnabledBtn->setDescription(sunnylinkEnabledBtnDesc);
