@@ -108,7 +108,7 @@ class Parser:
       if self.generation >= 12 and \
         outs['plan'].shape[1] == 2 * SplitModelConstants.IDX_N * SplitModelConstants.PLAN_WIDTH:
         self.parse_mdn('plan', outs, in_N=0, out_N=0,
-                     out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
+                       out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
       else:
         self._parse_plan_mhp(outs)
 
