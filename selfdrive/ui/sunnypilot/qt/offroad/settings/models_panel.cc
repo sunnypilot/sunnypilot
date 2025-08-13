@@ -68,6 +68,14 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
+  refreshAvailableModelsBtn = new ButtonControlSP(tr("Refresh Model List"), tr("REFRESH"), "", this);
+  connect(refreshAvailableModelsBtn, &ButtonControlSP::clicked, this, [=]() {
+    params.put("ModelManager_LastSyncTime", "0");
+    ConfirmationDialog::alert(tr("Fetching Latest Models"), this);
+  });
+
+  list->addItem(refreshAvailableModelsBtn);
+
   clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
   connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
 
@@ -361,10 +369,6 @@ void ModelsPanel::updateLabels() {
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
                    "The Current value is updated automatically when the vehicle is Onroad.");
-  QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
-  if (!current.isEmpty()) {
-    desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
-  }
   lagd_toggle_control->setDescription(desc);
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
