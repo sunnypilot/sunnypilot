@@ -383,7 +383,8 @@ def hardware_thread(end_event, hw_queue) -> None:
     # Offroad power monitoring
     voltage = None if peripheralState.pandaType == log.PandaState.PandaType.unknown else peripheralState.voltage
 
-    # GitHub runner auto off
+    # GitHub runner auto off: 9V is used as the threshold because most desktop runners
+    # will rarely exceed 5V so 9V is set as our buffer between desk use and car use.
     if voltage is not None and voltage > 9000:
       params.put_bool_nonblocking("GithubRunnerVoltage", True)
     else:
