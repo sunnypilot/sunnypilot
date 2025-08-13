@@ -1,7 +1,7 @@
 import numpy as np
 from cereal import car
 from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, apply_deadzone, interp
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -80,8 +80,10 @@ class LongControl:
       self.reset()
 
     else:  # LongCtrlState.pid
+      deadzone = interp(CS.vEgo, self.CP.longitudinalTuning.deadzoneBPDEPRECATED, self.CP.longitudinalTuning.deadzoneVDEPRECATED)
       error = a_target - CS.aEgo
-      output_accel = self.pid.update(error, speed=CS.vEgo,
+      error_deadzone = apply_deadzone(error, deadzone)
+      output_accel = self.pid.update(error_deadzone, speed=CS.vEgo,
                                      feedforward=a_target)
 
     self.last_output_accel = np.clip(output_accel, accel_limits[0], accel_limits[1])
