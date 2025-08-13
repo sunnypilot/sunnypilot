@@ -1,39 +1,37 @@
 #!/usr/bin/env python3
-import bz2
-import datetime
-import io
 import json
 import os
 import random
+import requests
 import threading
 import time
 import traceback
+import datetime
 from collections.abc import Iterator
-from typing import BinaryIO
 
-import requests
+from cereal import log
+import cereal.messaging as messaging
+from sunnypilot.sunnylink.api import SunnylinkApi
+from openpilot.common.file_helpers import get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
-from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
-
-import cereal.messaging as messaging
-from cereal import log
-from sunnypilot.sunnylink.api import SunnylinkApi
+from openpilot.common.swaglog import cloudlog
 
 NetworkType = log.DeviceState.NetworkType
 UPLOAD_ATTR_NAME = 'user.sunny.upload'
-
 UPLOAD_ATTR_VALUE = b'1'
 
-UPLOAD_QLOG_QCAM_MAX_SIZE = 5 * 1e6  # MB
+MAX_UPLOAD_SIZES = {
+  "qlog": 25*1e6,  # can't be too restrictive here since we use qlogs to find
+  # bugs, including ones that can cause massive log sizes
+  "qcam": 5*1e6,
+}
 
 allow_sleep = bool(os.getenv("UPLOADER_SLEEP", "1"))
 force_wifi = os.getenv("FORCEWIFI") is not None
 fake_upload = os.getenv("FAKEUPLOAD") is not None
-
-OFFROAD_TRANSITION_TIMEOUT = 900.  # wait until offroad for 15 minutes before allowing uploads
 
 
 class FakeRequest:
@@ -52,7 +50,6 @@ def get_directory_sort(d: str) -> list[str]:
   o = ["0", ] if d.startswith("2024-") else ["1", ]
   return o + [s.rjust(10, '0') for s in d.rsplit('--', 1)]
 
-
 def listdir_by_creation(d: str) -> list[str]:
   if not os.path.isdir(d):
     return []
@@ -64,7 +61,6 @@ def listdir_by_creation(d: str) -> list[str]:
   except OSError:
     cloudlog.exception("listdir_by_creation failed")
     return []
-
 
 def clear_locks(root: str) -> None:
   for logdir in os.listdir(root):
@@ -89,11 +85,11 @@ class Uploader:
     self.last_filename = ""
 
     self.immediate_folders = ["crash/", "boot/"]
-    self.immediate_priority = {"qlog": 0, "qlog.bz2": 0, "qcamera.ts": 1}
+    self.immediate_priority = {"qlog": 0, "qlog.zst": 0, "qcamera.ts": 1}
 
   def list_upload_files(self, metered: bool) -> Iterator[tuple[str, str, str]]:
     r = self.params.get("AthenadRecentlyViewedRoutes")
-    requested_routes = [] if r is None else r.split(",")
+    requested_routes = [] if r is None else [route for route in r.split(",") if route]
 
     for logdir in listdir_by_creation(self.root):
       path = os.path.join(self.root, logdir)
@@ -137,11 +133,11 @@ class Uploader:
       if any(f in fn for f in self.immediate_folders):
         return name, key, fn
 
-    return next(
-      ((name, key, fn)
-       for name, key, fn in upload_files if name in self.immediate_priority),
-      None,
-    )
+    for name, key, fn in upload_files:
+      if name in self.immediate_priority:
+        return name, key, fn
+
+    return None
 
   def do_upload(self, key: str, fn: str):
     url_resp = self.api.get(
@@ -161,15 +157,15 @@ class Uploader:
     if fake_upload:
       return FakeResponse()
 
-    with open(fn, "rb") as f:
-      data: BinaryIO
-      if key.endswith('.bz2') and not fn.endswith('.bz2'):
-        compressed = bz2.compress(f.read())
-        data = io.BytesIO(compressed)
-      else:
-        data = f
-
-      return requests.put(url, data=data, headers=headers, timeout=10)
+    stream = None
+    try:
+      compress = key.endswith('.zst') and not fn.endswith('.zst')
+      stream, _ = get_upload_stream(fn, compress)
+      response = requests.put(url, data=stream, headers=headers, timeout=10)
+      return response
+    finally:
+      if stream:
+        stream.close()
 
   def upload(self, name: str, key: str, fn: str, network_type: int, metered: bool) -> bool:
     try:
@@ -183,7 +179,7 @@ class Uploader:
     if sz == 0:
       # tag files of 0 size as uploaded
       success = True
-    elif name in self.immediate_priority and sz > UPLOAD_QLOG_QCAM_MAX_SIZE:
+    elif name in MAX_UPLOAD_SIZES and sz > MAX_UPLOAD_SIZES[name]:
       cloudlog.event("uploader_too_large", key=key, fn=fn, sz=sz)
       success = True
     else:
@@ -224,6 +220,7 @@ class Uploader:
 
     return success
 
+
   def step(self, network_type: int, metered: bool) -> bool | None:
     d = self.next_file_to_upload(metered)
     if d is None:
@@ -232,8 +229,8 @@ class Uploader:
     name, key, fn = d
 
     # qlogs and bootlogs need to be compressed before uploading
-    if key.endswith(('qlog', 'rlog')) or (key.startswith('boot/') and not key.endswith('.bz2')):
-      key += ".bz2"
+    if key.endswith(('qlog', 'rlog')) or (key.startswith('boot/') and not key.endswith('.zst')):
+      key += ".zst"
 
     return self.upload(name, key, fn, network_type, metered)
 
@@ -252,9 +249,6 @@ def main(exit_event: threading.Event = None) -> None:
   params = Params()
   dongle_id = params.get("SunnylinkDongleId")
 
-  offroad_transition_prev = 0.
-  offroad_last = False
-
   if dongle_id is None:
     cloudlog.info("uploader missing dongle_id")
     raise Exception("uploader can't start without dongle id")
@@ -265,34 +259,12 @@ def main(exit_event: threading.Event = None) -> None:
   backoff = 0.1
   while not exit_event.is_set():
     sm.update(0)
-
     offroad = params.get_bool("IsOffroad")
-    t = time.monotonic()
-    if offroad and not offroad_last and t > 300.:
-      offroad_transition_prev = time.monotonic()
-    offroad_last = offroad
-
-    network_type = NetworkType.wifi if force_wifi else sm['deviceState'].networkType
+    network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
       if allow_sleep:
         time.sleep(60 if offroad else 5)
       continue
-
-    if params.get_bool("DisableOnroadUploads"):
-      if not offroad or (offroad_transition_prev > 0. and t - offroad_transition_prev < OFFROAD_TRANSITION_TIMEOUT):
-        if not offroad:
-          cloudlog.info("not uploading: onroad uploads disabled")
-        else:
-          wait_minutes = int(OFFROAD_TRANSITION_TIMEOUT / 60)
-          time_left = OFFROAD_TRANSITION_TIMEOUT - (t - offroad_transition_prev)
-          if time_left > 2.0 * 60.0:
-            time_left_str = f"{int(time_left / 60)} minute(s)"
-          else:
-            time_left_str = f"{int(time_left)} seconds(s)"
-          cloudlog.info(f"not uploading: waiting until offroad for {wait_minutes} minutes; {time_left_str} left")
-        if allow_sleep:
-          time.sleep(60)
-        continue
 
     success = uploader.step(sm['deviceState'].networkType.raw, sm['deviceState'].networkMetered)
     if success is None:
@@ -301,7 +273,7 @@ def main(exit_event: threading.Event = None) -> None:
       backoff = 0.1
     else:
       cloudlog.info("upload backoff %r", backoff)
-      backoff = min(backoff * 2, 120)
+      backoff = min(backoff*2, 120)
     if allow_sleep:
       time.sleep(backoff + random.uniform(0, backoff))
 
