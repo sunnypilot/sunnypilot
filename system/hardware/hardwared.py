@@ -382,6 +382,13 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # Offroad power monitoring
     voltage = None if peripheralState.pandaType == log.PandaState.PandaType.unknown else peripheralState.voltage
+
+    # GitHub runner auto off
+    if voltage is not None and voltage > 9000:
+      params.put_bool_nonblocking("GithubRunnerVoltage", True)
+    else:
+      params.put_bool_nonblocking("GithubRunnerVoltage", False)
+
     power_monitor.calculate(voltage, onroad_conditions["ignition"])
     msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
     msg.deviceState.carBatteryCapacityUwh = max(0, power_monitor.get_car_battery_capacity())
