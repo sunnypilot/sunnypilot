@@ -64,7 +64,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `master-new` branch.
+Pull requests should be against the most current `master` branch.
 
 ## 📊 User Data
 
@@ -73,7 +73,7 @@ By default, sunnypilot uploads the driving data to comma servers. You can also a
 sunnypilot is open source software. The user is free to disable data collection if they wish to do so.
 
 sunnypilot logs the road-facing camera, CAN, GPS, IMU, magnetometer, thermal sensors, crashes, and operating system logs.
-The driver-facing camera is only logged if you explicitly opt-in in settings. The microphone is not recorded.
+The driver-facing camera and microphone are only logged if you explicitly opt-in in settings.
 
 By using this software, you understand that use of this software or its related services will generate certain types of user data, which may be logged and stored at the sole discretion of comma. By accepting this agreement, you grant an irrevocable, perpetual, worldwide right to comma for the use of this data.
 
