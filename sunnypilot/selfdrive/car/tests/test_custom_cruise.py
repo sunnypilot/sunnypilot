@@ -2,7 +2,7 @@ import pytest
 from parameterized import parameterized_class
 
 from cereal import car
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.cruise import V_CRUISE_INITIAL
 from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper
@@ -21,8 +21,8 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def reset_custom_params(self) -> None:
     """Reset to default custom ACC parameters"""
     self.params.put_bool("CustomAccIncrementsEnabled", False)
-    self.params.put("CustomAccShortPressIncrement", "1")
-    self.params.put("CustomAccLongPressIncrement", "5")
+    self.params.put("CustomAccShortPressIncrement", 1)
+    self.params.put("CustomAccLongPressIncrement", 5)
     self.v_cruise_helper.read_custom_set_speed_params()
 
   def press_button_short(self, button_type: car.CarState.ButtonEvent.Type) -> None:
@@ -51,8 +51,8 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def set_custom_increments(self, enabled: bool, short_inc: int, long_inc: int) -> None:
     """Set custom ACC increment parameters"""
     self.params.put_bool("CustomAccIncrementsEnabled", enabled)
-    self.params.put("CustomAccShortPressIncrement", str(short_inc))
-    self.params.put("CustomAccLongPressIncrement", str(long_inc))
+    self.params.put("CustomAccShortPressIncrement", short_inc)
+    self.params.put("CustomAccLongPressIncrement", long_inc)
     self.v_cruise_helper.read_custom_set_speed_params()
 
   def test_default_behavior_when_disabled(self):

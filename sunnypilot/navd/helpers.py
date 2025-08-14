@@ -5,7 +5,7 @@ import math
 import numpy as np
 from typing import Any, cast
 
-from openpilot.common.conversions import Conversions
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 
 DIRECTIONS = ('left', 'right', 'straight')
@@ -13,8 +13,8 @@ MODIFIABLE_DIRECTIONS = ('left', 'right')
 
 EARTH_MEAN_RADIUS = 6371007.2
 SPEED_CONVERSIONS = {
-  'km/h': Conversions.KPH_TO_MS,
-  'mph': Conversions.MPH_TO_MS,
+  'km/h': CV.KPH_TO_MS,
+  'mph': CV.MPH_TO_MS,
 }
 
 
@@ -133,7 +133,7 @@ def string_to_direction(direction: str) -> str:
 def maxspeed_to_ms(maxspeed: dict[str, str | float]) -> float:
   unit = cast(str, maxspeed['unit'])
   speed = cast(float, maxspeed['speed'])
-  return SPEED_CONVERSIONS[unit] * speed
+  return float(SPEED_CONVERSIONS[unit] * speed)
 
 
 def field_valid(dat: dict, field: str) -> bool:

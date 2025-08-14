@@ -88,6 +88,9 @@ def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
 
+def mapd_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return bool(os.path.exists(Paths.mapd_root()))
+
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
 
@@ -119,8 +122,8 @@ procs = [
   PythonProcess("dmonitoringmodeld", "selfdrive.modeld.dmonitoringmodeld", driverview, enabled=(WEBCAM or not PC)),
 
   PythonProcess("sensord", "system.sensord.sensord", only_onroad, enabled=not PC),
-  PythonProcess("pyui", "selfdrive.ui.ui", use_raylib, watchdog_max_dt=(5 if not PC else None)),
-  NativeProcess("ui", "selfdrive/ui", ["./ui"], use_qt, watchdog_max_dt=(5 if not PC else None)),
+  NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
+  PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
   NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
@@ -146,6 +149,7 @@ procs = [
   PythonProcess("updated", "system.updated.updated", only_offroad, enabled=not PC),
   PythonProcess("uploader", "system.loggerd.uploader", always_run),
   PythonProcess("statsd", "system.statsd", always_run),
+  PythonProcess("feedbackd", "selfdrive.ui.feedback.feedbackd", only_onroad),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
@@ -169,14 +173,14 @@ procs += [
   PythonProcess("backup_manager", "sunnypilot.sunnylink.backups.manager", and_(only_offroad, sunnylink_ready_shim)),
 
   # mapd
-  NativeProcess("mapd", Paths.mapd_root(), [MAPD_PATH], always_run),
+  NativeProcess("mapd", Paths.mapd_root(), ["bash", "-c", f"{MAPD_PATH} > /dev/null 2>&1"], mapd_ready),
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
-if os.path.exists("../sunnypilot/sunnylink/uploader.py"):
+if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
 
 managed_processes = {p.name: p for p in procs}
