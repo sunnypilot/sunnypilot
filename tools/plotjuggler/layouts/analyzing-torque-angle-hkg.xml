@@ -1,0 +1,209 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="actuator data" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.25;0.25;0.25;0.25" count="4">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-1.050000" top="1.050000" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#17becf" name="/carControl/actuators/torque"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-453.043646" top="538.555487" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#1f77b4" name="/carControl/actuators/steeringAngleDeg"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-0.647461" top="26.545898" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="/carState/vEgoRaw"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-0.209157" top="0.175448" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#f14cc1" name="/carControl/actuators/curvature"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="steering messages (CAN)" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.200218;0.200218;0.199129;0.200218;0.200218" count="5">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-189.000000" top="189.000000" right="723.115449" left="6.371879"/>
+       <limitY/>
+       <curve color="#b6ff00" name="/can/128/LKAS_ALT/LKAS_ANGLE_CMD"/>
+       <curve color="#00fab2" name="/can/0/LKAS_ALT/LKAS_ANGLE_CMD"/>
+       <curve color="#d62728" name="/can/192/LKAS_ALT/LKAS_ANGLE_CMD"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-6.250000" top="256.250000" right="722.420439" left="6.497277"/>
+       <limitY/>
+       <curve color="#00ffe8" name="/can/128/LKAS_ALT/LKAS_ANGLE_MAX_TORQUE"/>
+       <curve color="#e5fd00" name="/can/0/LKAS_ALT/LKAS_ANGLE_MAX_TORQUE"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-4.399729" top="4.056632" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="IMU_LatAccelVal_ms^2_roll_compensated"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-0.025000" top="1.025000" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#d62728" name="/carState/steeringPressed"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-0.025000" top="1.025000" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#f14cc1" name="/can/1/CCNC_0x161/DAW_ICON"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="Understanding Torque" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-6.250000" top="256.250000" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#1f77b4" name="/can/1/LFA_ALT/LKAS_ANGLE_MAX_TORQUE"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range bottom="-42.062501" top="78.162503" right="722.420439" left="0.000000"/>
+       <limitY/>
+       <curve color="#1ac938" name="/carState/steeringTorqueEps"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="1"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default delimiter="0" time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad MCAP"/>
+  <plugin ID="DataLoad Rlog"/>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="Cereal Subscriber"/>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="Fast Fourier Transform"/>
+  <plugin ID="Quaternion to RPY"/>
+  <plugin ID="Reactive Script Editor">
+   <library code="--[[ Helper function to create a series from arrays&#xa;&#xa; new_series: a series previously created with ScatterXY.new(name)&#xa; prefix:     prefix of the timeseries, before the index of the array&#xa; suffix_X:   suffix to complete the name of the series containing the X value. If [nil], use the index of the array.&#xa; suffix_Y:   suffix to complete the name of the series containing the Y value&#xa; timestamp:   usually the tracker_time variable&#xa;              &#xa; Example:&#xa; &#xa; Assuming we have multiple series in the form:&#xa; &#xa;   /trajectory/node.{X}/position/x&#xa;   /trajectory/node.{X}/position/y&#xa;   &#xa; where {N} is the index of the array (integer). We can create a reactive series from the array with:&#xa; &#xa;   new_series = ScatterXY.new(&quot;my_trajectory&quot;) &#xa;   CreateSeriesFromArray( new_series, &quot;/trajectory/node&quot;, &quot;position/x&quot;, &quot;position/y&quot;, tracker_time );&#xa;--]]&#xa;&#xa;function CreateSeriesFromArray( new_series, prefix, suffix_X, suffix_Y, timestamp )&#xa;  &#xa;  --- clear previous values&#xa;  new_series:clear()&#xa;  &#xa;  --- Append points to new_series&#xa;  index = 0&#xa;  while(true) do&#xa;&#xa;    x = index;&#xa;    -- if not nil, get the X coordinate from a series&#xa;    if suffix_X ~= nil then &#xa;      series_x = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_X) )&#xa;      if series_x == nil then break end&#xa;      x = series_x:atTime(timestamp)&#x9; &#xa;    end&#xa;    &#xa;    series_y = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_Y) )&#xa;    if series_y == nil then break end &#xa;    y = series_y:atTime(timestamp)&#xa;    &#xa;    new_series:push_back(x,y)&#xa;    index = index+1&#xa;  end&#xa;end&#xa;&#xa;--[[ Similar to the built-in function GetSeriesNames(), but select only the names with a give prefix. --]]&#xa;&#xa;function GetSeriesNamesByPrefix(prefix)&#xa;  -- GetSeriesNames(9 is a built-in function&#xa;  all_names = GetSeriesNames()&#xa;  filtered_names = {}&#xa;  for i, name in ipairs(all_names)  do&#xa;    -- check the prefix&#xa;    if name:find(prefix, 1, #prefix) then&#xa;      table.insert(filtered_names, name);&#xa;    end&#xa;  end&#xa;  return filtered_names&#xa;end&#xa;&#xa;--[[ Modify an existing series, applying offsets to all their X and Y values&#xa;&#xa; series: an existing timeseries, obtained with TimeseriesView.find(name)&#xa; delta_x: offset to apply to each x value&#xa; delta_y: offset to apply to each y value &#xa;  &#xa;--]]&#xa;&#xa;function ApplyOffsetInPlace(series, delta_x, delta_y)&#xa;  -- use C++ indeces, not Lua indeces&#xa;  for index=0, series:size()-1 do&#xa;    x,y = series:at(index)&#xa;    series:set(index, x + delta_x, y + delta_y)&#xa;  end&#xa;end&#xa;"/>
+   <scripts/>
+  </plugin>
+  <plugin ID="CSV Exporter"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations>
+  <snippet name="Desired lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Actual lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/curvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_ms^2_roll_compensated">
+   <global></global>
+   <function>if (v1 == 0 and v2 == 1) then
+  return  (value * -9.8) - (v3 * 9.81)
+end
+--return 0
+  return  (value * -9.8) - (v3 * 9.81)</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+    <v3>/liveParameters/roll</v3>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_Ms^3">
+   <global></global>
+   <function>return  value * -9.8</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_Ms^2">
+   <global></global>
+   <function>if (v1 == 0 and v2 == 1) then
+  return  value * -9.8
+end
+return 0</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="roll compensated lateral acceleration">
+   <global></global>
+   <function>if (v3 == 0 and v4 == 1) then
+  return  (value * v1 ^ 2) - (v2 * 9.81)
+end
+return 0</function>
+   <linked_source>/controlsState/curvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+    <v3>/carState/steeringPressed</v3>
+    <v4>/carControl/latActive</v4>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_ms^2">
+   <global></global>
+   <function>return  value * -9.8</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+   </additional_sources>
+  </snippet>
+ </customMathEquations>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

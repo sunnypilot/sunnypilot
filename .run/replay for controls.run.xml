@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="replay for controls" type="CLionNativeAppRunConfigurationType" focusToolWindowBeforeRun="true" PROGRAM_PARAMS="&quot;$Prompt$&quot; --block &quot;sendcan,carState,carParams,carOutput,liveTracks,carParamsSP,carStateSP&quot;" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="true" WORKING_DIR="file://$ProjectFileDir$/tools/replay" PASS_PARENT_ENVS_2="true" PROJECT_NAME="openpilot-special" TARGET_NAME="replay" CONFIG_NAME="replay" version="1" RUN_PATH="replay">
+    <method v="2">
+      <option name="CLION.COMPOUND.BUILD" enabled="true" />
+    </method>
+  </configuration>
+</component>
