@@ -385,10 +385,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # GitHub runner auto off: 9V is used as the threshold because most desktop runners
     # will rarely exceed 5V so 9V is set as our buffer between desk use and car use.
-    if voltage is not None and voltage > 9000:
-      params.put_bool_nonblocking("GithubRunnerSufficientVoltage", True)
-    else:
-      params.put_bool_nonblocking("GithubRunnerSufficientVoltage", False)
+    params.put_bool_nonblocking("GithubRunnerSufficientVoltage", ((voltage or 0) and voltage > 9000))
 
     power_monitor.calculate(voltage, onroad_conditions["ignition"])
     msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
