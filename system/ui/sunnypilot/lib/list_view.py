@@ -1,6 +1,6 @@
 import pyray as rl
 
-from openpilot.system.ui.lib.list_view import ToggleAction, ButtonAction, DualButtonAction, TextAction, MultipleButtonAction, ListItem, ItemAction
+from openpilot.system.ui.widgets.list_view import ToggleAction, ButtonAction, DualButtonAction, TextAction, MultipleButtonAction, ListItem, ItemAction
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from collections.abc import Callable
@@ -122,7 +122,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param = param
     if param is not None:
-      self.selected_button = int(Params().get(self.param, encoding="utf8"))
+      self.selected_button = int(Params().get(self.param, return_default = True))
 
   def _render(self, rect: rl.Rectangle) -> bool:
     spacing = 20
@@ -164,7 +164,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
 
     if clicked >= 0:
       self.selected_button = clicked
-      Params().put(self.param, str(self.selected_button))
+      Params().put(self.param, self.selected_button)
       if self.callback:
         self.callback(clicked)
       return True
@@ -175,7 +175,7 @@ class OptionControlActionSP(ItemAction):
   def __init__(self, param: str, min_value: int, max_value: int,
                value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                on_value_changed: Callable[[int], None] | None = None,
-               value_map: dict[str, tuple[str, str]] | None = None,
+               value_map: dict[int, tuple[int, str]] | None = None,
                label_width: int = style.BUTTON_WIDTH,
                use_float_scaling: bool = False,
                label_callback: Callable[[int], str] | None = None):
@@ -232,7 +232,7 @@ def option_item_sp(title: str, param: str,
                    min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
                    value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
-                   icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[str, tuple[str, str]] | None = None,
+                   icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[int, tuple[int, str]] | None = None,
                    use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None) -> ListItem:
   action = OptionControlActionSP(
       param, min_value, max_value, value_change_step,

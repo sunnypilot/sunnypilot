@@ -1,36 +1,36 @@
 from itertools import filterfalse
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
-from openpilot.system.ui.lib.list_view import dual_button_item, DualButtonAction
+from openpilot.system.ui.widgets.list_view import dual_button_item, DualButtonAction
 from openpilot.system.ui.sunnypilot.lib.list_view import option_item_sp, multiple_button_item_sp
 
 offroad_time_options = {
-  "0": ["0", "Always On"],
-  "1": ["5", "5m"],
-  "2": ["10", "10m"],
-  "3": ["15", "15m"],
-  "4": ["30", "30m"],
-  "5": ["60", "1h"],
-  "6": ["120", "2h"],
-  "7": ["180", "3h"],
-  "8": ["300", "5h"],
-  "9": ["600", "10h"],
-  "10": ["1440", "24h"],
-  "11": ["1800", "30h (Default)"]
+  0: [0, "Always On"],
+  1: [5, "5m"],
+  2: [10, "10m"],
+  3: [15, "15m"],
+  4: [30, "30m"],
+  5: [60, "1h"],
+  6: [120, "2h"],
+  7: [180, "3h"],
+  8: [300, "5h"],
+  9: [600, "10h"],
+  10: [1440, "24h"],
+  11: [1800, "30h (Default)"]
 }
 brightness_options = {
-  "0": ["1", "Auto (Dark)"],
-  "1": ["0", "Auto"],
-  "2": ["10", "10"],
-  "3": ["20", "20"],
-  "4": ["30", "30"],
-  "5": ["40", "40"],
-  "6": ["50", "50"],
-  "7": ["60", "60"],
-  "8": ["70", "70"],
-  "9": ["80", "80"],
-  "10": ["90", "90"],
-  "11": ["100", "100"]
+  0: [1, "Auto (Dark)"],
+  1: [0, "Auto"],
+  2: [10, "10"],
+  3: [20, "20"],
+  4: [30, "30"],
+  5: [40, "40"],
+  6: [50, "50"],
+  7: [60, "60"],
+  8: [70, "70"],
+  9: [80, "80"],
+  10: [90, "90"],
+  11: [100, "100"]
 }
 
 class DeviceLayoutSP(DeviceLayout):

@@ -1,7 +1,7 @@
 import pyray as rl
 from collections.abc import Callable
 from openpilot.common.params import Params
-from openpilot.system.ui.lib.widget import Widget
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 import openpilot.system.ui.sunnypilot.lib.styles as styles
@@ -33,7 +33,7 @@ class OptionControlSP(Widget):
     def __init__(self, param: str, min_value: int, max_value: int,
                  value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                  on_value_changed: Callable[[int], None] | None = None,
-                 value_map: dict[str, tuple[str, str]] | None = None,
+                 value_map: dict[int, tuple[int, str]] | None = None,
                  label_width: int = LABEL_WIDTH,
                  use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None):
 
@@ -52,11 +52,11 @@ class OptionControlSP(Widget):
         self.label_callback = label_callback
         if self.value_map:
             for key in self.value_map:
-                if self.value_map[key][0] == self.params.get(self.param_key, encoding="utf8"):
+                if self.value_map[key][0] == self.params.get(self.param_key, return_default = True):
                     self.current_value = int(key)
                     break
         else:
-            self.current_value = int(self.params.get(self.param_key, encoding="utf8"))
+            self.current_value = int(self.params.get(self.param_key, return_default = True))
 
         # Initialize font and button styles
         self._font = gui_app.font(FontWeight.MEDIUM)
@@ -80,9 +80,9 @@ class OptionControlSP(Widget):
         if self.min_value <= value <= self.max_value:
             self.current_value = value
             if self.value_map:
-                self.params.put(self.param_key, str(self.value_map[str(value)][0]))
+                self.params.put(self.param_key, self.value_map[value][0])
             else:
-                self.params.put(self.param_key, str(value))
+                self.params.put(self.param_key, value)
             if self.on_value_changed:
                 self.on_value_changed(value)
 

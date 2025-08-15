@@ -1,6 +1,6 @@
 from openpilot.system.ui.sunnypilot.lib.list_view import button_item_sp, toggle_item_sp
-from openpilot.system.ui.lib.scroller import Scroller
-from openpilot.system.ui.lib.widget import Widget
+from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
 
 

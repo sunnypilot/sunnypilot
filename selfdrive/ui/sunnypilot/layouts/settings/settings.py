@@ -8,10 +8,10 @@ from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
 from openpilot.system.ui.lib.application import gui_app,MousePos
-from openpilot.system.ui.lib.scroller import Scroller
+from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.selfdrive.ui.layouts.network import NetworkLayout
-from openpilot.system.ui.lib.widget import Widget
+from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.sunnylink import SunnylinkLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.osm import OSMLayout
@@ -122,12 +122,12 @@ class SettingsLayoutSP(OP.SettingsLayout):
     close_color = OP.CLOSE_BTN_PRESSED if pressed else OP.CLOSE_BTN_COLOR
     rl.draw_rectangle_rounded(close_btn_rect, 1.0, 20, close_color)
 
-    close_text_size = measure_text_cached(self._font_bold, OP.SETTINGS_CLOSE_TEXT, 140)
+    close_text_size = measure_text_cached(self._font_medium, OP.SETTINGS_CLOSE_TEXT, 140)
     close_text_pos = rl.Vector2(
       close_btn_rect.x + (close_btn_rect.width - close_text_size.x) / 2,
       close_btn_rect.y + (close_btn_rect.height - close_text_size.y) / 2,
       )
-    rl.draw_text_ex(self._font_bold, OP.SETTINGS_CLOSE_TEXT, close_text_pos, 140, 0, OP.TEXT_SELECTED)
+    rl.draw_text_ex(self._font_medium, OP.SETTINGS_CLOSE_TEXT, close_text_pos, 140, 0, OP.TEXT_SELECTED)
 
     # Store close button rect for click detection
     self._close_btn_rect = close_btn_rect

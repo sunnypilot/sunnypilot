@@ -1,5 +1,5 @@
-from openpilot.system.ui.lib.scroller import Scroller
-from openpilot.system.ui.lib.widget import Widget
+from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.sunnypilot.lib.list_view import option_item_sp
 from openpilot.common.params import Params
 
@@ -16,7 +16,7 @@ class CruiseLayout(Widget):
     def on_gap_change(value: int):
       self._params.put("CustomAccLongPressIncrement", str(value))
 
-    current_gap = int(self._params.get("CustomAccLongPressIncrement", encoding="utf8") or "3")
+    current_gap = int(self._params.get("CustomAccLongPressIncrement", return_default = True) or "3")
 
     items = [
     ]
