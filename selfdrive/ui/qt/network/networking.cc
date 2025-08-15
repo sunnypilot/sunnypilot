@@ -137,10 +137,21 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
   ListWidget *list = new ListWidget(this);
+
+  // Auto tethering layout
+  const bool AutoTetheringEnabled = params.getBool("AutoTethering");
+  AutotetheringToggle = new ToggleControl(tr("Auto Tethering"), "", "", AutoTetheringEnabled);
+  list->addItem(AutotetheringToggle);
+
   // Enable tethering layout
   tetheringToggle = new ToggleControl(tr("Enable Tethering"), "", "", wifi->isTetheringEnabled());
   list->addItem(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
+
+  QObject::connect(AutotetheringToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    params.putBool("AutoTethering", state);
+    tetheringToggle->setEnabled(!state);
+  });
 
   // Change tethering password
   ButtonControl *editPasswordButton = new ButtonControl(tr("Tethering Password"), tr("EDIT"));
@@ -254,6 +265,14 @@ void AdvancedNetworking::refresh() {
     MeteredType metered = wifi->currentNetworkMetered();
     wifiMeteredToggle->setEnabled(true);
     wifiMeteredToggle->setCheckedButton(static_cast<int>(metered));
+  }
+
+  bool AutoTethering = params.getBool("AutoTethering");
+  bool AutoTetheringToggle = params.getBool("AutoTetheringToggle");
+  if(AutoTethering) {
+    if(AutoTetheringToggle != !wifi->isTetheringEnabled()){
+      tetheringToggle->setBool(AutoTetheringToggle);
+    }
   }
 
   update();
