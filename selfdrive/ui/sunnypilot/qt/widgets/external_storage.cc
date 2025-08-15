@@ -158,7 +158,11 @@ void ExternalStorageControl::formatStorage() {
               updateState(!uiState()->scene.started);
             }
           });
-  process->start("sh", QStringList() << "-c" << "sudo mkfs.ext4 -F /dev/sdg1");
+  process->start("sh", QStringList() << "-c" <<
+    "sudo wipefs -a /dev/sdg && "
+    "sudo parted -s /dev/sdg mklabel gpt mkpart primary ext4 0% 100% && "
+    "sudo mkfs.ext4 -F /dev/sdg1"
+  );
 }
 
 void ExternalStorageControl::showEvent(QShowEvent *event) {
