@@ -14,10 +14,10 @@ from pathlib import Path
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
-from openpilot.common.time import system_time_valid
+from openpilot.common.time_helpers import system_time_valid
 from openpilot.common.markdown import parse_markdown
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
+from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.hardware import AGNOS, HARDWARE
 from openpilot.system.version import get_build_metadata
 
@@ -31,8 +31,13 @@ FINALIZED = os.path.join(STAGING_ROOT, "finalized")
 
 OVERLAY_INIT = Path(os.path.join(BASEDIR, ".overlay_init"))
 
-DAYS_NO_CONNECTIVITY_MAX = 14     # do not allow to engage after this many days
-DAYS_NO_CONNECTIVITY_PROMPT = 10  # send an offroad prompt after this many days
+# do not allow to engage after this many hours onroad and this many routes
+HOURS_NO_CONNECTIVITY_MAX = 27
+ROUTES_NO_CONNECTIVITY_MAX = 84
+# send an offroad prompt after this many hours onroad and this many routes
+HOURS_NO_CONNECTIVITY_PROMPT = 23
+ROUTES_NO_CONNECTIVITY_PROMPT = 80
+
 
 class UserRequest:
   NONE = 0
@@ -60,16 +65,8 @@ class WaitTimeHelper:
     self.ready_event.wait(timeout=t)
 
 def write_time_to_param(params, param) -> None:
-  t = datetime.datetime.utcnow()
-  params.put(param, t.isoformat().encode('utf8'))
-
-def read_time_from_param(params, param) -> datetime.datetime | None:
-  t = params.get(param, encoding='utf8')
-  try:
-    return datetime.datetime.fromisoformat(t)
-  except (TypeError, ValueError):
-    pass
-  return None
+  t = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
+  params.put(param, t)
 
 def run(cmd: list[str], cwd: str = None) -> str:
   return subprocess.check_output(cmd, cwd=cwd, stderr=subprocess.STDOUT, encoding='utf8')
@@ -86,7 +83,7 @@ def set_consistent_flag(consistent: bool) -> None:
 
 def parse_release_notes(basedir: str) -> bytes:
   try:
-    with open(os.path.join(basedir, "CHANGELOGS.md"), "rb") as f:
+    with open(os.path.join(basedir, "RELEASES.md"), "rb") as f:
       r = f.read().split(b'\n\n', 1)[0]  # Slice latest release notes
     try:
       return bytes(parse_markdown(r.decode("utf-8")), encoding="utf-8")
@@ -172,7 +169,7 @@ def init_overlay() -> None:
   run(["sudo"] + mount_cmd)
   run(["sudo", "chmod", "755", os.path.join(OVERLAY_METADATA, "work")])
 
-  git_diff = run(["git", "diff"], OVERLAY_MERGED)
+  git_diff = run(["git", "diff", "--submodule=diff"], OVERLAY_MERGED)
   params.put("GitDiff", git_diff)
   cloudlog.info(f"git diff output:\n{git_diff}")
 
@@ -242,7 +239,7 @@ class Updater:
 
   @property
   def target_branch(self) -> str:
-    b: str | None = self.params.get("UpdaterTargetBranch", encoding='utf-8')
+    b: str | None = self.params.get("UpdaterTargetBranch")
     if b is None:
       b = self.get_branch(BASEDIR)
     return b
@@ -272,20 +269,22 @@ class Updater:
     return run(["git", "rev-parse", "HEAD"], path).rstrip()
 
   def set_params(self, update_success: bool, failed_count: int, exception: str | None) -> None:
-    self.params.put("UpdateFailedCount", str(failed_count))
+    self.params.put("UpdateFailedCount", failed_count)
     self.params.put("UpdaterTargetBranch", self.target_branch)
 
     self.params.put_bool("UpdaterFetchAvailable", self.update_available)
     if len(self.branches):
       self.params.put("UpdaterAvailableBranches", ','.join(self.branches.keys()))
 
-    last_update = datetime.datetime.utcnow()
+    last_uptime_onroad = self.params.get("UptimeOnroad", return_default=True)
+    last_route_count = self.params.get("RouteCount", return_default=True)
     if update_success:
-      write_time_to_param(self.params, "LastUpdateTime")
+      self.params.put("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None))
+      self.params.put("LastUpdateUptimeOnroad", last_uptime_onroad)
+      self.params.put("LastUpdateRouteCount", last_route_count)
     else:
-      t = read_time_from_param(self.params, "LastUpdateTime")
-      if t is not None:
-        last_update = t
+      last_uptime_onroad = self.params.get("LastUpdateUptimeOnroad") or last_uptime_onroad
+      last_route_count = self.params.get("LastUpdateRouteCount") or last_route_count
 
     if exception is None:
       self.params.remove("LastUpdateException")
@@ -323,8 +322,8 @@ class Updater:
     for alert in ("Offroad_UpdateFailed", "Offroad_ConnectivityNeeded", "Offroad_ConnectivityNeededPrompt"):
       set_offroad_alert(alert, False)
 
-    now = datetime.datetime.utcnow()
-    dt = now - last_update
+    dt_uptime_onroad = (self.params.get("UptimeOnroad", return_default=True) - last_uptime_onroad) / (60*60)
+    dt_route_count = self.params.get("RouteCount", return_default=True) - last_route_count
     build_metadata = get_build_metadata()
     if failed_count > 15 and exception is not None and self.has_internet:
       if build_metadata.tested_channel:
@@ -333,11 +332,11 @@ class Updater:
         extra_text = exception
       set_offroad_alert("Offroad_UpdateFailed", True, extra_text=extra_text)
     elif failed_count > 0:
-      if dt.days > DAYS_NO_CONNECTIVITY_MAX:
+      if dt_uptime_onroad > HOURS_NO_CONNECTIVITY_MAX and dt_route_count > ROUTES_NO_CONNECTIVITY_MAX:
         set_offroad_alert("Offroad_ConnectivityNeeded", True)
-      elif dt.days > DAYS_NO_CONNECTIVITY_PROMPT:
-        remaining = max(DAYS_NO_CONNECTIVITY_MAX - dt.days, 1)
-        set_offroad_alert("Offroad_ConnectivityNeededPrompt", True, extra_text=f"{remaining} day{'' if remaining == 1 else 's'}.")
+      elif dt_uptime_onroad > HOURS_NO_CONNECTIVITY_PROMPT and dt_route_count > ROUTES_NO_CONNECTIVITY_PROMPT:
+        remaining = max(HOURS_NO_CONNECTIVITY_MAX - dt_uptime_onroad, 1)
+        set_offroad_alert("Offroad_ConnectivityNeededPrompt", True, extra_text=f"{remaining} hour{'' if remaining == 1 else 's'}.")
 
   def check_for_update(self) -> None:
     cloudlog.info("checking for updates")
@@ -429,8 +428,8 @@ def main() -> None:
       cloudlog.event("update installed")
 
     if not params.get("InstallDate"):
-      t = datetime.datetime.utcnow().isoformat()
-      params.put("InstallDate", t.encode('utf8'))
+      t = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
+      params.put("InstallDate", t)
 
     updater = Updater()
     update_failed_count = 0 # TODO: Load from param?
@@ -468,8 +467,8 @@ def main() -> None:
         updater.check_for_update()
 
         # download update
-        last_fetch = read_time_from_param(params, "UpdaterLastFetchTime")
-        timed_out = last_fetch is None or (datetime.datetime.utcnow() - last_fetch > datetime.timedelta(days=3))
+        last_fetch = params.get("UpdaterLastFetchTime")
+        timed_out = last_fetch is None or (datetime.datetime.now(datetime.UTC).replace(tzinfo=None) - last_fetch > datetime.timedelta(days=3))
         user_requested_fetch = wait_helper.user_request == UserRequest.FETCH
         if params.get_bool("NetworkMetered") and not timed_out and not user_requested_fetch:
           cloudlog.info("skipping fetch, connection metered")

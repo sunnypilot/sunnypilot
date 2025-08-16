@@ -16,8 +16,8 @@ import openpilot.system.sentry as sentry
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.common.watchdog import WATCHDOG_FN
 
-WATCHDOG_FN = "/dev/shm/wd_"
 ENABLE_WATCHDOG = os.getenv("NO_WATCHDOG") is None
 
 
@@ -30,7 +30,7 @@ def launcher(proc: str, name: str) -> None:
     setproctitle(proc)
 
     # create new context since we forked
-    messaging.context = messaging.Context()
+    messaging.reset_context()
 
     # add daemon name tag to logs
     cloudlog.bind(daemon=name)
@@ -73,7 +73,6 @@ class ManagerProcess(ABC):
 
   last_watchdog_time = 0
   watchdog_max_dt: int | None = None
-  always_watchdog = False
   watchdog_seen = False
   shutting_down = False
 
@@ -96,17 +95,14 @@ class ManagerProcess(ABC):
     try:
       fn = WATCHDOG_FN + str(self.proc.pid)
       with open(fn, "rb") as f:
-        # TODO: why can't pylint find struct.unpack?
         self.last_watchdog_time = struct.unpack('Q', f.read())[0]
     except Exception:
       pass
 
     dt = time.monotonic() - self.last_watchdog_time / 1e9
 
-    always_watchdog = self.always_watchdog and not started and self.proc.exitcode is not None
-
     if dt > self.watchdog_max_dt:
-      if (self.watchdog_seen or always_watchdog) and ENABLE_WATCHDOG:
+      if self.watchdog_seen and ENABLE_WATCHDOG:
         cloudlog.error(f"Watchdog timeout for {self.name} (exitcode {self.proc.exitcode}) restarting ({started=})")
         self.restart()
     else:
@@ -171,7 +167,7 @@ class ManagerProcess(ABC):
 
 
 class NativeProcess(ManagerProcess):
-  def __init__(self, name, cwd, cmdline, should_run, enabled=True, sigkill=False, watchdog_max_dt=None, always_watchdog=False):
+  def __init__(self, name, cwd, cmdline, should_run, enabled=True, sigkill=False, watchdog_max_dt=None):
     self.name = name
     self.cwd = cwd
     self.cmdline = cmdline
@@ -180,7 +176,6 @@ class NativeProcess(ManagerProcess):
     self.sigkill = sigkill
     self.watchdog_max_dt = watchdog_max_dt
     self.launcher = nativelauncher
-    self.always_watchdog = always_watchdog
 
   def prepare(self) -> None:
     pass
@@ -202,7 +197,7 @@ class NativeProcess(ManagerProcess):
 
 
 class PythonProcess(ManagerProcess):
-  def __init__(self, name, module, should_run, enabled=True, sigkill=False, watchdog_max_dt=None, always_watchdog=False):
+  def __init__(self, name, module, should_run, enabled=True, sigkill=False, watchdog_max_dt=None):
     self.name = name
     self.module = module
     self.should_run = should_run
@@ -210,7 +205,6 @@ class PythonProcess(ManagerProcess):
     self.sigkill = sigkill
     self.watchdog_max_dt = watchdog_max_dt
     self.launcher = launcher
-    self.always_watchdog = always_watchdog
 
   def prepare(self) -> None:
     if self.enabled:
@@ -225,8 +219,12 @@ class PythonProcess(ManagerProcess):
     if self.proc is not None:
       return
 
+    # TODO: this is just a workaround for this tinygrad check:
+    # https://github.com/tinygrad/tinygrad/blob/ac9c96dae1656dc220ee4acc39cef4dd449aa850/tinygrad/device.py#L26
+    name = self.name if "modeld" not in self.name else "MainProcess"
+
     cloudlog.info(f"starting python {self.module}")
-    self.proc = Process(name=self.name, target=self.launcher, args=(self.module, self.name))
+    self.proc = Process(name=name, target=self.launcher, args=(self.module, self.name))
     self.proc.start()
     self.watchdog_seen = False
     self.shutting_down = False
@@ -253,7 +251,7 @@ class DaemonProcess(ManagerProcess):
     if self.params is None:
       self.params = Params()
 
-    pid = self.params.get(self.param_name, encoding='utf-8')
+    pid = self.params.get(self.param_name)
     if pid is not None:
       try:
         os.kill(int(pid), 0)
@@ -272,7 +270,7 @@ class DaemonProcess(ManagerProcess):
                                stderr=open('/dev/null', 'w'),
                                preexec_fn=os.setpgrp)
 
-    self.params.put(self.param_name, str(proc.pid))
+    self.params.put(self.param_name, proc.pid)
 
   def stop(self, retry=True, block=True, sig=None) -> None:
     pass

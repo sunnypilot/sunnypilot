@@ -1,192 +1,292 @@
 using Cxx = import "./include/c++.capnp";
 $Cxx.namespace("cereal");
 
-using Car = import "car.capnp";
-
 @0xb526ba661d550a59;
 
 # custom.capnp: a home for empty structs reserved for custom forks
 # These structs are guaranteed to remain reserved and empty in mainline
 # cereal, so use these if you want custom events in your fork.
 
-# you can rename the struct, but don't change the identifier
+# DO rename the structs
+# DON'T change the identifier (e.g. @0x81c2f05a394cf4af)
 
-enum LongitudinalPersonalitySP {
-  aggressive @0;
-  moderate @1;
-  standard @2;
-  relaxed @3;
-}
+struct ModularAssistiveDrivingSystem {
+  state @0 :ModularAssistiveDrivingSystemState;
+  enabled @1 :Bool;
+  active @2 :Bool;
+  available @3 :Bool;
 
-struct ControlsStateSP @0x81c2f05a394cf4af {
-  lateralState @0 :Text;
-  personality @8 :LongitudinalPersonalitySP;
-
-  lateralControlState :union {
-    indiState @1 :LateralINDIState;
-    pidState @2 :LateralPIDState;
-    angleState @3 :LateralAngleState;
-    debugState @4 :LateralDebugState;
-    torqueState @5 :LateralTorqueState;
-    curvatureState @6 :LateralCurvatureState;
-
-    lqrStateDEPRECATED @7 :LateralLQRState;
-  }
-
-  struct LateralINDIState {
-  }
-
-  struct LateralPIDState {
-  }
-
-  struct LateralAngleState {
-  }
-
-  struct LateralDebugState {
-  }
-
-  struct LateralTorqueState {
-    nnLog @0 :List(Float32);
-  }
-
-  struct LateralCurvatureState {
-  }
-
-  struct LateralLQRState {
+  enum ModularAssistiveDrivingSystemState {
+    disabled @0;
+    paused @1;
+    enabled @2;
+    softDisabling @3;
+    overriding @4;
   }
 }
 
-struct LongitudinalPlanSP @0xaedffd8f31e7b55d {
-  visionTurnControllerState @0 :VisionTurnControllerState;
-  visionTurnSpeed @1 :Float32;
-  visionCurrentLatAcc @16 :Float32;
-  visionMaxPredLatAcc @17 :Float32;
+# Same struct as Log.RadarState.LeadData
+struct LeadData {
+  dRel @0 :Float32;
+  yRel @1 :Float32;
+  vRel @2 :Float32;
+  aRel @3 :Float32;
+  vLead @4 :Float32;
+  dPath @6 :Float32;
+  vLat @7 :Float32;
+  vLeadK @8 :Float32;
+  aLeadK @9 :Float32;
+  fcw @10 :Bool;
+  status @11 :Bool;
+  aLeadTau @12 :Float32;
+  modelProb @13 :Float32;
+  radar @14 :Bool;
+  radarTrackId @15 :Int32 = -1;
 
-  speedLimitControlState @2 :SpeedLimitControlState;
-  speedLimit @3 :Float32;
-  speedLimitOffset @4 :Float32;
-  distToSpeedLimit @5 :Float32;
-  isMapSpeedLimit @6 :Bool;
-  speedLimitPercOffset @11 :Bool;
-  speedLimitValueOffset @12 :Float32;
-  desiredTF @13 :Float32;
-  notSpeedLimit @14 :Int16;
-  e2eX @15 :List(Float32);
-  e2eBlended @18 :Text;
-  e2eStatus @22 :Bool;
+  aLeadDEPRECATED @5 :Float32;
+}
 
-  distToTurn @7 :Float32;
-  turnSpeed @8 :Float32;
-  turnSpeedControlState @9 :SpeedLimitControlState;
-  turnSign @10 :Int16;
+struct SelfdriveStateSP @0x81c2f05a394cf4af {
+  mads @0 :ModularAssistiveDrivingSystem;
+}
 
-  events @19 :List(Car.CarEvent);
-  longitudinalPlanSource @20 :LongitudinalPlanSource;
+struct ModelManagerSP @0xaedffd8f31e7b55d {
+  activeBundle @0 :ModelBundle;
+  selectedBundle @1 :ModelBundle;
+  availableBundles @2 :List(ModelBundle);
 
-  personalityDEPRECATED @21 :LongitudinalPersonalitySP;
-
-  enum SpeedLimitControlState {
-    inactive @0; # No speed limit set or not enabled by parameter.
-    tempInactive @1; # User wants to ignore speed limit until it changes.
-    adapting @2; # Reducing speed to match new speed limit.
-    active @3; # Cruising at speed limit.
-    preActive @4;
+  struct DownloadUri {
+    uri @0 :Text;
+    sha256 @1 :Text;
   }
 
-  enum VisionTurnControllerState {
-    disabled @0; # No predicted substantial turn on vision range or feature disabled.
-    entering @1; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
-    turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
-    leaving @3; # Road ahead straightens. Start to allow positive acceleration.
+  enum DownloadStatus {
+    notDownloading @0;
+    downloading @1;
+    downloaded @2;
+    cached @3;
+    failed @4;
   }
 
-  enum LongitudinalPlanSource {
-    cruise @0;
-    lead0 @1;
-    lead1 @2;
-    lead2 @3;
-    e2e @4;
-    turn @5;
-    limit @6;
-    turnlimit @7;
+  struct DownloadProgress {
+    status @0 :DownloadStatus;
+    progress @1 :Float32;
+    eta @2 :UInt32;
+  }
+
+  struct Artifact {
+    fileName @0 :Text;
+    downloadUri @1 :DownloadUri;
+    downloadProgress @2 :DownloadProgress;
+  }
+
+  struct Model {
+    type @0 :Type;
+    artifact @1 :Artifact;  # Main artifact
+    metadata @2 :Artifact;  # Metadata artifact
+
+    enum Type {
+      supercombo @0;
+      navigation @1;
+      vision @2;
+      policy @3;
+    }
+  }
+
+  enum Runner {
+    snpe @0;
+    tinygrad @1;
+    stock @2;
+  }
+
+  struct Override {
+    key @0 :Text;
+    value @1 :Text;
+  }
+
+  struct ModelBundle {
+    index @0 :UInt32;
+    internalName @1 :Text;
+    displayName @2 :Text;
+    models @3 :List(Model);
+    status @4 :DownloadStatus;
+    generation @5 :UInt32;
+    environment @6 :Text;
+    runner @7 :Runner;
+    is20hz @8 :Bool;
+    ref @9 :Text;
+    minimumSelectorVersion @10 :UInt32;
+    overrides @11 :List(Override);
   }
 }
 
-struct LateralPlanSP @0xf35cc4560bbf6ec2 {
-  laneWidth @0 :Float32;
-  lProb @1 :Float32;
-  rProb @2 :Float32;
+struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
+  dec @0 :DynamicExperimentalControl;
 
-  dProb @3 :Float32;
+  struct DynamicExperimentalControl {
+    state @0 :DynamicExperimentalControlState;
+    enabled @1 :Bool;
+    active @2 :Bool;
 
-  dynamicLaneProfile @4 :Int8;
-  standstillElapsed @5 :Float32;
-  dynamicLaneProfileStatus @9 :Bool;
-
-  dPathWLinesXDEPRECATED @6 :List(Float32);
-  dPathWLinesYDEPRECATED @7 :List(Float32);
-  laneChangePrevDEPRECATED @8 :Bool;
-  laneChangeEdgeBlockDEPRECATED @10 :Bool;
-}
-
-struct DriverMonitoringStateSP @0xda96579883444c35 {
-  handsOnWheelState @0 :HandsOnWheelState;
-  notModified @1 :Float32;
-
-  enum HandsOnWheelState {
-    none @0;          # hand on wheel monitoring inactive
-    ok @1;            # driver has hands on steering wheel
-    minor @2;         # hands off steering wheel for acceptable period
-    warning @3;       # hands off steering wheel for warning period
-    critical @4;      # # hands off steering wheel for critical period
-    terminal @5;      # # hands off steering wheel for terminal period
+    enum DynamicExperimentalControlState {
+      acc @0;
+      blended @1;
+    }
   }
 }
 
-struct LiveMapDataSP @0x80ae746ee2596b11 {
+struct OnroadEventSP @0xda96579883444c35 {
+  events @0 :List(Event);
+
+  struct Event {
+    name @0 :EventName;
+
+    # event types
+    enable @1 :Bool;
+    noEntry @2 :Bool;
+    warning @3 :Bool;   # alerts presented only when  enabled or soft disabling
+    userDisable @4 :Bool;
+    softDisable @5 :Bool;
+    immediateDisable @6 :Bool;
+    preEnable @7 :Bool;
+    permanent @8 :Bool; # alerts presented regardless of openpilot state
+    overrideLateral @10 :Bool;
+    overrideLongitudinal @9 :Bool;
+  }
+
+  enum EventName {
+    lkasEnable @0;
+    lkasDisable @1;
+    manualSteeringRequired @2;
+    manualLongitudinalRequired @3;
+    silentLkasEnable @4;
+    silentLkasDisable @5;
+    silentBrakeHold @6;
+    silentWrongGear @7;
+    silentReverseGear @8;
+    silentDoorOpen @9;
+    silentSeatbeltNotLatched @10;
+    silentParkBrake @11;
+    controlsMismatchLateral @12;
+    hyundaiRadarTracksConfirmed @13;
+    experimentalModeSwitched @14;
+    wrongCarModeAlertOnly @15;
+    pedalPressedAlertOnly @16;
+  }
+}
+
+struct CarParamsSP @0x80ae746ee2596b11 {
+  flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
+  safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
+
+  neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
+
+  struct NeuralNetworkLateralControl {
+    model @0 :Model;
+    fuzzyFingerprint @1 :Bool;
+
+    struct Model {
+      path @0 :Text;
+      name @1 :Text;
+    }
+  }
+}
+
+struct CarControlSP @0xa5cd762cd951a455 {
+  mads @0 :ModularAssistiveDrivingSystem;
+  params @1 :List(Param);
+  leadOne @2 :LeadData;
+  leadTwo @3 :LeadData;
+
+  struct Param {
+    key @0 :Text;
+    value @1 :Text;
+  }
+}
+
+struct BackupManagerSP @0xf98d843bfd7004a3 {
+  backupStatus @0 :Status;
+  restoreStatus @1 :Status;
+  backupProgress @2 :Float32;
+  restoreProgress @3 :Float32;
+  lastError @4 :Text;
+  currentBackup @5 :BackupInfo;
+  backupHistory @6 :List(BackupInfo);
+
+  enum Status {
+    idle @0;
+    inProgress @1;
+    completed @2;
+    failed @3;
+  }
+
+  struct Version {
+    major @0 :UInt16;
+    minor @1 :UInt16;
+    patch @2 :UInt16;
+    build @3 :UInt16;
+    branch @4 :Text;
+  }
+
+  struct MetadataEntry {
+    key @0 :Text;
+    value @1 :Text;
+    tags @2 :List(Text);
+  }
+
+  struct BackupInfo {
+    deviceId @0 :Text;
+    version @1 :UInt32;
+    config @2 :Text;
+    isEncrypted @3 :Bool;
+    createdAt @4 :Text;  # ISO timestamp
+    updatedAt @5 :Text;  # ISO timestamp
+    sunnypilotVersion @6 :Version;
+    backupMetadata @7 :List(MetadataEntry);
+  }
+}
+
+struct CarStateSP @0xb86e6369214c01c8 {
+}
+
+struct LiveMapDataSP @0xf416ec09499d9d19 {
   speedLimitValid @0 :Bool;
   speedLimit @1 :Float32;
   speedLimitAheadValid @2 :Bool;
   speedLimitAhead @3 :Float32;
   speedLimitAheadDistance @4 :Float32;
-  turnSpeedLimitValid @5 :Bool;
-  turnSpeedLimit @6 :Float32;
-  turnSpeedLimitEndDistance @7 :Float32;
-  turnSpeedLimitSign @8 :Int16;
-  turnSpeedLimitsAhead @9 :List(Float32);
-  turnSpeedLimitsAheadDistances @10 :List(Float32);
-  turnSpeedLimitsAheadSigns @11 :List(Int16);
-  lastGpsTimestamp @12 :Int64;  # Milliseconds since January 1, 1970.
-  currentRoadName @13 :Text;
-  lastGpsLatitude @14 :Float64;
-  lastGpsLongitude @15 :Float64;
-  lastGpsSpeed @16 :Float32;
-  lastGpsBearingDeg @17 :Float32;
-  lastGpsAccuracy @18 :Float32;
-  lastGpsBearingAccuracyDeg @19 :Float32;
-  dataType @20 :DataType;
-
-  enum DataType {
-    default @0;
-    offline @1;
-    online @2;
-  }
-}
-
-struct E2eLongStateSP @0xa5cd762cd951a455 {
-  status @0 :UInt16;
-}
-
-struct ModelDataV2SP @0xf98d843bfd7004a3 {
-  laneChangePrev @0 :Bool;
-  laneChangeEdgeBlock @1 :Bool;
-}
-
-struct CustomReserved7 @0xb86e6369214c01c8 {
-}
-
-struct CustomReserved8 @0xf416ec09499d9d19 {
+  roadName @5 :Text;
 }
 
 struct CustomReserved9 @0xa1680744031fdb2d {
+}
+
+struct CustomReserved10 @0xcb9fd56c7057593a {
+}
+
+struct CustomReserved11 @0xc2243c65e0340384 {
+}
+
+struct CustomReserved12 @0x9ccdc8676701b412 {
+}
+
+struct CustomReserved13 @0xcd96dafb67a082d0 {
+}
+
+struct CustomReserved14 @0xb057204d7deadf3f {
+}
+
+struct CustomReserved15 @0xbd443b539493bc68 {
+}
+
+struct CustomReserved16 @0xfc6241ed8877b611 {
+}
+
+struct CustomReserved17 @0xa30662f84033036c {
+}
+
+struct CustomReserved18 @0xc86a3d38d13eb3ef {
+}
+
+struct CustomReserved19 @0xa4f1eb3323f5f582 {
 }

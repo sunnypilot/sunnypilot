@@ -3,8 +3,8 @@
 import os
 import usb1
 import time
+import signal
 import subprocess
-from typing import NoReturn
 
 from panda import Panda, PandaDFU, PandaProtocolMismatch, FW_PATH
 from openpilot.common.basedir import BASEDIR
@@ -36,6 +36,12 @@ def flash_panda(panda_serial: str) -> Panda:
   panda_signature = b"" if panda.bootstub else panda.get_signature()
   cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
 
+  # skip flashing if the detected device is deprecated from upstream
+  hw_type = panda.get_type()
+  if hw_type in Panda.DEPRECATED_DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is deprecated (hw_type: {hw_type}), skipping flash...")
+    return panda
+
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
     panda.flash()
@@ -61,13 +67,25 @@ def flash_panda(panda_serial: str) -> Panda:
   return panda
 
 
-def main() -> NoReturn:
+def main() -> None:
+  # signal pandad to close the relay and exit
+  def signal_handler(signum, frame):
+    cloudlog.info(f"Caught signal {signum}, exiting")
+    nonlocal do_exit
+    do_exit = True
+    if process is not None:
+      process.send_signal(signal.SIGINT)
+
+  process = None
+  do_exit = False
+  signal.signal(signal.SIGINT, signal_handler)
+
   count = 0
   first_run = True
   params = Params()
   no_internal_panda_count = 0
 
-  while True:
+  while not do_exit:
     try:
       count += 1
       cloudlog.event("pandad.flash_and_connect", count=count)
@@ -75,7 +93,7 @@ def main() -> NoReturn:
 
       # TODO: remove this in the next AGNOS
       # wait until USB is up before counting
-      if time.monotonic() < 25.:
+      if time.monotonic() < 35.:
         no_internal_panda_count = 0
 
       # Handle missing internal panda
@@ -159,8 +177,9 @@ def main() -> NoReturn:
 
     # run pandad with all connected serials as arguments
     os.environ['MANAGER_DAEMON'] = 'pandad'
-    os.chdir(os.path.join(BASEDIR, "selfdrive/pandad"))
-    subprocess.run(["./pandad", *panda_serials], check=True)
+    process = subprocess.Popen(["./pandad", *panda_serials], cwd=os.path.join(BASEDIR, "selfdrive/pandad"))
+    process.wait()
+
 
 if __name__ == "__main__":
   main()

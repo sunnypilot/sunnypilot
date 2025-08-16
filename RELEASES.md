@@ -1,17 +1,59 @@
-Version 0.9.8 (2024-XX-XX)
+Version 0.10.1 (2025-09-08)
 ========================
-* Always on driver monitoring toggle
 
-Version 0.9.7 (2024-06-11)
+Version 0.10.0 (2025-08-05)
+========================
+* New driving model
+  * New training architecture
+     * Architecture outlined in CVPR paper: "Learning to Drive from a World Model"
+     * Longitudinal MPC replaced by E2E planning from worldmodel in experimental mode
+     * Action from lateral MPC as training objective replaced by E2E planning from worldmodel
+  * Low-speed lead car ground-truth fixes
+
+* Enable live-learned steering actuation delay
+* Record driving feedback using LKAS button when MADS is disabled
+* Opt-in audio recording for dashcam video
+
+Version 0.9.9 (2025-05-23)
+========================
+* New driving model
+  * New training architecture using parts from MLSIM
+* Steering actuation delay is now learned online
+* Ford Escape 2023-24 support thanks to incognitojam!
+* Ford Kuga 2024 support thanks to incognitojam!
+* Hyundai Nexo 2021 support thanks to sunnyhaibin!
+* Tesla Model 3 and Y support thanks to lukasloetkolben!
+* Lexus RC 2023 support thanks to nelsonjchen!
+
+Version 0.9.8 (2025-02-28)
+========================
+* New driving model
+  * Model now gates applying positive acceleration in Chill mode
+* New driver monitoring model
+  * Reduced false positives related to passengers
+* Image processing pipeline moved to the ISP
+  * More GPU time for bigger driving models
+  * Power draw reduced 0.5W, which means your device runs cooler
+* Added toggle to enable driver monitoring even when openpilot is not engaged
+* Localizer rewritten to remove GPS dependency at runtime
+* Firehose Mode for maximizing your training data uploads
+* Enable openpilot longitudinal control for Ford Q3 vehicles
+* New Toyota TSS2 longitudinal tune
+* Rivian R1S and R1T support thanks to lukasloetkolben!
+* Ford F-150, F-150 Hybrid, Mach-E, and Ranger support
+
+Version 0.9.7 (2024-06-13)
 ========================
 * New driving model
   * Inputs the past curvature for smoother and more accurate lateral control
   * Simplified neural network architecture in the model's last layers
   * Minor fixes to desire augmentation and weight decay
+* New driver monitoring model
+  * Improved end-to-end bit for phone detection
 * Adjust driving personality with the follow distance button
-* Added toggle to enable driver monitoring even when openpilot is not engaged
 * Support for hybrid variants of supported Ford models
 * Fingerprinting without the OBD-II port on all cars
+* Improved fuzzy fingerprinting for Ford and Volkswagen
 
 Version 0.9.6 (2024-02-27)
 ========================

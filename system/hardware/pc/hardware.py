@@ -1,11 +1,10 @@
 import random
 
 from cereal import log
-from openpilot.system.hardware.base import HardwareBase, ThermalConfig
+from openpilot.system.hardware.base import HardwareBase, LPABase
 
 NetworkType = log.DeviceState.NetworkType
 NetworkStrength = log.DeviceState.NetworkStrength
-
 
 class Pc(HardwareBase):
   def get_os_version(self):
@@ -14,9 +13,6 @@ class Pc(HardwareBase):
   def get_device_type(self):
     return "pc"
 
-  def get_sound_card_online(self):
-    return True
-
   def reboot(self, reason=None):
     print("REBOOT!")
 
@@ -24,7 +20,7 @@ class Pc(HardwareBase):
     print("uninstall")
 
   def get_imei(self, slot):
-    return "%015d" % random.randint(0, 1 << 32)
+    return f"{random.randint(0, 1 << 32):015d}"
 
   def get_serial(self):
     return "cccccccc"
@@ -44,6 +40,9 @@ class Pc(HardwareBase):
       'data_connected': False
     }
 
+  def get_sim_lpa(self) -> LPABase:
+    raise NotImplementedError("SIM LPA not implemented for PC")
+
   def get_network_strength(self, network_type):
     return NetworkStrength.unknown
 
@@ -55,9 +54,6 @@ class Pc(HardwareBase):
 
   def shutdown(self):
     print("SHUTDOWN!")
-
-  def get_thermal_config(self):
-    return ThermalConfig(cpu=((None,), 1), gpu=((None,), 1), mem=(None, 1), bat=(None, 1), pmic=((None,), 1))
 
   def set_screen_brightness(self, percentage):
     pass
@@ -74,8 +70,6 @@ class Pc(HardwareBase):
   def get_modem_temperatures(self):
     return []
 
-  def get_nvme_temperatures(self):
-    return []
 
   def initialize_hardware(self):
     pass

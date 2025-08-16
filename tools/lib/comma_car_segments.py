@@ -8,13 +8,14 @@ COMMA_CAR_SEGMENTS_BRANCH = os.environ.get("COMMA_CAR_SEGMENTS_BRANCH", "main")
 COMMA_CAR_SEGMENTS_LFS_INSTANCE = os.environ.get("COMMA_CAR_SEGMENTS_LFS_INSTANCE", COMMA_CAR_SEGMENTS_REPO)
 
 def get_comma_car_segments_database():
-  from openpilot.selfdrive.car.fingerprints import MIGRATION
+  from opendbc.car.fingerprints import MIGRATION
 
   database = requests.get(get_repo_raw_url("database.json")).json()
 
   ret = {}
   for platform in database:
-    ret[MIGRATION.get(platform, platform)] = database[platform]
+    # TODO: remove this when commaCarSegments is updated to remove selector
+    ret[MIGRATION.get(platform, platform)] = [s.rstrip('/s') for s in database[platform]]
 
   return ret
 
@@ -86,5 +87,5 @@ def get_repo_url(path):
     return get_repo_raw_url(path)
 
 
-def get_url(route, segment, file="rlog.bz2"):
+def get_url(route, segment, file="rlog.zst"):
   return get_repo_url(f"segments/{route.replace('|', '/')}/{segment}/{file}")

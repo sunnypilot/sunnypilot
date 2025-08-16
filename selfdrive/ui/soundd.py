@@ -7,18 +7,19 @@ import wave
 from cereal import car, messaging
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.retry import retry
 from openpilot.common.swaglog import cloudlog
 
 from openpilot.system import micd
 
+from openpilot.selfdrive.ui.sunnypilot.quiet_mode import QuietMode
+
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
 MIN_VOLUME = 0.1
-CONTROLS_TIMEOUT = 5 # 5 seconds
+SELFDRIVE_STATE_TIMEOUT = 5 # 5 seconds
 FILTER_DT = 1. / (micd.SAMPLE_RATE / micd.FFT_SAMPLES)
 
 AMBIENT_DB = 30 # DB where MIN_VOLUME is applied
@@ -34,53 +35,36 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.refuse: ("refuse.wav", 1, MAX_VOLUME),
 
   AudibleAlert.prompt: ("prompt.wav", 1, MAX_VOLUME),
-  AudibleAlert.promptSingleLow: ("prompt_single_low.wav", None, MAX_VOLUME),
-  AudibleAlert.promptSingleHigh: ("prompt_single_high.wav", 1, MAX_VOLUME),
   AudibleAlert.promptRepeat: ("prompt.wav", None, MAX_VOLUME),
-  AudibleAlert.promptStarting: ("prompt.wav", 1, MAX_VOLUME),
   AudibleAlert.promptDistracted: ("prompt_distracted.wav", None, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("warning_soft.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("warning_immediate.wav", None, MAX_VOLUME),
 }
 
-def check_controls_timeout_alert(sm):
-  controls_missing = time.monotonic() - sm.recv_time['controlsState']
+def check_selfdrive_timeout_alert(sm):
+  ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
 
-  if controls_missing > CONTROLS_TIMEOUT:
-    if sm['controlsState'].enabled and (controls_missing - CONTROLS_TIMEOUT) < 10:
+  if ss_missing > SELFDRIVE_STATE_TIMEOUT:
+    if sm['selfdriveState'].enabled and (ss_missing - SELFDRIVE_STATE_TIMEOUT) < 10:
       return True
 
   return False
 
 
-class Soundd:
+class Soundd(QuietMode):
   def __init__(self):
+    super().__init__()
+
     self.load_sounds()
 
     self.current_alert = AudibleAlert.none
     self.current_volume = MIN_VOLUME
     self.current_sound_frame = 0
 
-    self.controls_timeout_alert = False
+    self.selfdrive_timeout_alert = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
-
-    self.param_s = Params()
-    self.quiet_drive = self.param_s.get_bool("QuietDrive")
-
-    self._frame = 0
-
-  def load_param(self):
-    self._frame += 1
-    if self._frame == 50:
-      self.quiet_drive = self.param_s.get_bool("QuietDrive")
-
-  def should_play_sound(self):
-    return (self.current_alert == AudibleAlert.warningSoft or self.current_alert == AudibleAlert.warningImmediate or
-      self.current_alert == AudibleAlert.promptDistracted or self.current_alert == AudibleAlert.promptRepeat or
-      self.current_alert == AudibleAlert.promptStarting or self.current_alert == AudibleAlert.promptSingleLow or
-      self.current_alert == AudibleAlert.promptSingleHigh) or (not self.quiet_drive and self.current_alert != AudibleAlert.none)
 
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
@@ -89,20 +73,19 @@ class Soundd:
     for sound in sound_list:
       filename, play_count, volume = sound_list[sound]
 
-      wavefile = wave.open(BASEDIR + "/selfdrive/assets/sounds/" + filename, 'r')
+      with wave.open(BASEDIR + "/selfdrive/assets/sounds/" + filename, 'r') as wavefile:
+        assert wavefile.getnchannels() == 1
+        assert wavefile.getsampwidth() == 2
+        assert wavefile.getframerate() == SAMPLE_RATE
 
-      assert wavefile.getnchannels() == 1
-      assert wavefile.getsampwidth() == 2
-      assert wavefile.getframerate() == SAMPLE_RATE
-
-      length = wavefile.getnframes()
-      self.loaded_sounds[sound] = np.frombuffer(wavefile.readframes(length), dtype=np.int16).astype(np.float32) / (2**16/2)
+        length = wavefile.getnframes()
+        self.loaded_sounds[sound] = np.frombuffer(wavefile.readframes(length), dtype=np.int16).astype(np.float32) / (2**16/2)
 
   def get_sound_data(self, frames): # get "frames" worth of data from the current alert sound, looping when required
 
     ret = np.zeros(frames, dtype=np.float32)
 
-    if self.should_play_sound():
+    if self.should_play_sound(self.current_alert):
       num_loops = sound_list[self.current_alert][1]
       sound_data = self.loaded_sounds[self.current_alert]
       written_frames = 0
@@ -131,15 +114,15 @@ class Soundd:
       self.current_sound_frame = 0
 
   def get_audible_alert(self, sm):
-    if sm.updated['controlsState']:
-      new_alert = sm['controlsState'].alertSound.raw
+    if sm.updated['selfdriveState']:
+      new_alert = sm['selfdriveState'].alertSound.raw
       self.update_alert(new_alert)
-    elif check_controls_timeout_alert(sm):
+    elif check_selfdrive_timeout_alert(sm):
       self.update_alert(AudibleAlert.warningImmediate)
-      self.controls_timeout_alert = True
-    elif self.controls_timeout_alert:
+      self.selfdrive_timeout_alert = True
+    elif self.selfdrive_timeout_alert:
       self.update_alert(AudibleAlert.none)
-      self.controls_timeout_alert = False
+      self.selfdrive_timeout_alert = False
 
   def calculate_volume(self, weighted_db):
     volume = ((weighted_db - AMBIENT_DB) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
@@ -156,18 +139,19 @@ class Soundd:
     # sounddevice must be imported after forking processes
     import sounddevice as sd
 
-    sm = messaging.SubMaster(['controlsState', 'microphone'])
+    sm = messaging.SubMaster(['selfdriveState', 'soundPressure'])
 
     with self.get_stream(sd) as stream:
       rk = Ratekeeper(20)
 
       cloudlog.info(f"soundd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
       while True:
-        self.load_param()
         sm.update(0)
 
-        if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
-          self.spl_filter_weighted.update(sm["microphone"].soundPressureWeightedDb)
+        self.load_param()
+
+        if sm.updated['soundPressure'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
+          self.spl_filter_weighted.update(sm["soundPressure"].soundPressureWeightedDb)
           self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
 
         self.get_audible_alert(sm)

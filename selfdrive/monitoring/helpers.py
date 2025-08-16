@@ -1,16 +1,16 @@
 from math import atan2
+import numpy as np
 
-from cereal import car
+from cereal import car, log
 import cereal.messaging as messaging
-from openpilot.selfdrive.controls.lib.events import Events
-from openpilot.selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
-from openpilot.common.numpy_fast import interp
+from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.common.realtime import DT_DMON
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.params import Params
 from openpilot.common.stat_live import RunningStatFilter
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 
-EventName = car.CarEvent.EventName
+EventName = log.OnroadEvent.EventName
 
 # ******************************************************************************************
 #  NOTE: To fork maintainers.
@@ -34,8 +34,8 @@ class DRIVER_MONITOR_SETTINGS:
     self._SG_THRESHOLD = 0.9
     self._BLINK_THRESHOLD = 0.865
 
-    self._EE_THRESH11 = 0.25
-    self._EE_THRESH12 = 7.5
+    self._EE_THRESH11 = 0.4
+    self._EE_THRESH12 = 15.0
     self._EE_MAX_OFFSET1 = 0.06
     self._EE_MIN_OFFSET1 = 0.025
     self._EE_THRESH21 = 0.01
@@ -58,7 +58,7 @@ class DRIVER_MONITOR_SETTINGS:
     self._POSESTD_THRESHOLD = 0.3
     self._HI_STD_FALLBACK_TIME = int(10  / self._DT_DMON)  # fall back to wheel touch if model is uncertain for 10s
     self._DISTRACTED_FILTER_TS = 0.25  # 0.6Hz
-    self._ALWAYS_ON_ALERT_MIN_SPEED = 7
+    self._ALWAYS_ON_ALERT_MIN_SPEED = 11
 
     self._POSE_CALIB_MIN_SPEED = 13  # 30 mph
     self._POSE_OFFSET_MIN_COUNT = int(60 / self._DT_DMON)  # valid data counts before calibration completes, 1min cumulative
@@ -126,7 +126,7 @@ def face_orientation_from_net(angles_desc, pos_desc, rpy_calib):
 
 
 class DriverMonitoring:
-  def __init__(self, rhd_saved=False, settings=None, always_on=False, hands_on_wheel_monitoring=False):
+  def __init__(self, rhd_saved=False, settings=None, always_on=False):
     if settings is None:
       settings = DRIVER_MONITOR_SETTINGS()
     # init policy settings
@@ -160,12 +160,12 @@ class DriverMonitoring:
     self.threshold_pre = self.settings._DISTRACTED_PRE_TIME_TILL_TERMINAL / self.settings._DISTRACTED_TIME
     self.threshold_prompt = self.settings._DISTRACTED_PROMPT_TIME_TILL_TERMINAL / self.settings._DISTRACTED_TIME
 
+    self.params = Params()
+    self.too_distracted = self.params.get_bool("DriverTooDistracted")
+
     self._reset_awareness()
     self._set_timers(active_monitoring=True)
     self._reset_events()
-
-    self.hands_on_wheel_status = HandsOnWheelStatus()
-    self.hands_on_wheel_monitoring = hands_on_wheel_monitoring
 
   def _reset_awareness(self):
     self.awareness = 1.
@@ -209,10 +209,10 @@ class DriverMonitoring:
     bp = model_data.meta.disengagePredictions.brakeDisengageProbs[0] # brake disengage prob in next 2s
     k1 = max(-0.00156*((car_speed-16)**2)+0.6, 0.2)
     bp_normal = max(min(bp / k1, 0.5),0)
-    self.pose.cfactor_pitch = interp(bp_normal, [0, 0.5],
+    self.pose.cfactor_pitch = np.interp(bp_normal, [0, 0.5],
                                            [self.settings._POSE_PITCH_THRESHOLD_SLACK,
                                             self.settings._POSE_PITCH_THRESHOLD_STRICT]) / self.settings._POSE_PITCH_THRESHOLD
-    self.pose.cfactor_yaw = interp(bp_normal, [0, 0.5],
+    self.pose.cfactor_yaw = np.interp(bp_normal, [0, 0.5],
                                            [self.settings._POSE_YAW_THRESHOLD_SLACK,
                                             self.settings._POSE_YAW_THRESHOLD_STRICT]) / self.settings._POSE_YAW_THRESHOLD
 
@@ -307,19 +307,20 @@ class DriverMonitoring:
     elif self.face_detected and self.pose.low_std:
       self.hi_stds = 0
 
-  def _update_events(self, driver_engaged, op_engaged, standstill, wrong_gear, car_speed, steering_wheel_engaged):
+  def _update_events(self, driver_engaged, op_engaged, standstill, wrong_gear, car_speed):
     self._reset_events()
-    # Block engaging after max number of distrations or when alert active
+    # Block engaging until ignition cycle after max number or time of distractions
     if self.terminal_alert_cnt >= self.settings._MAX_TERMINAL_ALERTS or \
-       self.terminal_time >= self.settings._MAX_TERMINAL_DURATION or \
-       self.always_on and self.awareness <= self.threshold_prompt:
+       self.terminal_time >= self.settings._MAX_TERMINAL_DURATION:
+      if not self.too_distracted:
+        self.params.put_bool_nonblocking("DriverTooDistracted", True)
+      self.too_distracted = True
+
+    # Always-on distraction lockout is temporary
+    if self.too_distracted or (self.always_on and self.awareness <= self.threshold_prompt):
       self.current_events.add(EventName.tooDistracted)
 
     always_on_valid = self.always_on and not wrong_gear
-
-    # Update events and state from hands on wheel monitoring status
-    self.hands_on_wheel_status.update(self.current_events, steering_wheel_engaged, op_engaged, car_speed, always_on_valid, self.hands_on_wheel_monitoring)
-
     if (driver_engaged and self.awareness > 0 and not self.active_monitoring_mode) or \
        (not always_on_valid and not op_engaged) or \
        (always_on_valid and not op_engaged and self.awareness <= 0):
@@ -345,9 +346,9 @@ class DriverMonitoring:
 
     _reaching_audible = self.awareness - self.step_change <= self.threshold_prompt
     _reaching_terminal = self.awareness - self.step_change <= 0
-    standstill_exemption = standstill and _reaching_audible
+    standstill_orange_exemption = standstill and _reaching_audible
     always_on_red_exemption = always_on_valid and not op_engaged and _reaching_terminal
-    always_on_lowspeed_exemption = always_on_valid and not op_engaged and car_speed < self.settings._ALWAYS_ON_ALERT_MIN_SPEED and _reaching_audible
+    always_on_lowspeed_exemption = always_on_valid and not op_engaged and car_speed < self.settings._ALWAYS_ON_ALERT_MIN_SPEED
 
     certainly_distracted = self.driver_distraction_filter.x > 0.63 and self.driver_distracted and self.face_detected
     maybe_distracted = self.hi_stds > self.settings._HI_STD_FALLBACK_TIME or not self.face_detected
@@ -355,7 +356,7 @@ class DriverMonitoring:
     if certainly_distracted or maybe_distracted:
       # should always be counting if distracted unless at standstill (lowspeed for always-on) and reaching orange
       # also will not be reaching 0 if DM is active when not engaged
-      if not (standstill_exemption or always_on_red_exemption or always_on_lowspeed_exemption):
+      if not (standstill_orange_exemption or always_on_red_exemption or (always_on_lowspeed_exemption and _reaching_audible)):
         self.awareness = max(self.awareness - self.step_change, -0.1)
 
     alert = None
@@ -368,7 +369,7 @@ class DriverMonitoring:
     elif self.awareness <= self.threshold_prompt:
       # prompt orange alert
       alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
-    elif self.awareness <= self.threshold_pre:
+    elif self.awareness <= self.threshold_pre and not always_on_lowspeed_exemption:
       # pre green alert
       alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
 
@@ -399,13 +400,6 @@ class DriverMonitoring:
     }
     return dat
 
-  def get_sp_state_packet(self, valid=True):
-    dat = messaging.new_message('driverMonitoringStateSP', valid=valid)
-    dat.driverMonitoringStateSP = {
-      "handsOnWheelState": self.hands_on_wheel_status.hands_on_wheel_state,
-    }
-    return dat
-
   def run_step(self, sm):
     # Set strictness
     self._set_policy(
@@ -418,15 +412,14 @@ class DriverMonitoring:
       driver_state=sm['driverStateV2'],
       cal_rpy=sm['liveCalibration'].rpyCalib,
       car_speed=sm['carState'].vEgo,
-      op_engaged=sm['controlsState'].enabled
+      op_engaged=sm['selfdriveState'].enabled or sm['carControl'].latActive
     )
 
     # Update distraction events
     self._update_events(
       driver_engaged=sm['carState'].steeringPressed or sm['carState'].gasPressed,
-      op_engaged=sm['controlsState'].enabled,
+      op_engaged=sm['selfdriveState'].enabled or sm['carControl'].latActive,
       standstill=sm['carState'].standstill,
       wrong_gear=sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park],
-      car_speed=sm['carState'].vEgo,
-      steering_wheel_engaged=sm['carState'].steeringPressed
+      car_speed=sm['carState'].vEgo
     )

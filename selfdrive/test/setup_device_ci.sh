@@ -1,6 +1,7 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 set -e
+set -x
 
 if [ -z "$SOURCE_DIR" ]; then
   echo "SOURCE_DIR must be set"
@@ -17,13 +18,18 @@ if [ -z "$TEST_DIR" ]; then
   exit 1
 fi
 
-umount /data/safe_staging/merged/ || true
-sudo umount /data/safe_staging/merged/ || true
-rm -rf /data/safe_staging/* || true
+# prevent storage from filling up
+rm -rf /data/media/0/realdata/*
+
+rm -rf /data/safe_staging/ || true
+if [ -d /data/safe_staging/ ]; then
+  sudo umount /data/safe_staging/merged/ || true
+  rm -rf /data/safe_staging/ || true
+fi
 
 CONTINUE_PATH="/data/continue.sh"
 tee $CONTINUE_PATH << EOF
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 sudo abctl --set_success
 
@@ -48,6 +54,7 @@ while true; do
   #  /data/ciui.py &
   #fi
 
+  awk '{print \$1}' /proc/uptime > /var/tmp/power_watchdog
   sleep 5s
 done
 
@@ -83,7 +90,7 @@ safe_checkout() {
   rsync -a --delete $SOURCE_DIR $TEST_DIR
 }
 
-unsafe_checkout() {
+unsafe_checkout() {( set -e
   # checkout directly in test dir, leave old build products
 
   cd $TEST_DIR
@@ -94,7 +101,7 @@ unsafe_checkout() {
   git fetch --no-tags --no-recurse-submodules -j8 --verbose --depth 1 origin $GIT_COMMIT
   git checkout --force --no-recurse-submodules $GIT_COMMIT
   git reset --hard $GIT_COMMIT
-  git clean -df
+  git clean -dff
   git submodule sync
   git submodule foreach --recursive "git reset --hard && git clean -df"
   git submodule update --init --recursive
@@ -102,7 +109,7 @@ unsafe_checkout() {
 
   git lfs pull
   (ulimit -n 65535 && git lfs prune)
-}
+)}
 
 export GIT_PACK_THREADS=8
 
@@ -112,8 +119,13 @@ if [ ! -d "$SOURCE_DIR" ]; then
 fi
 
 if [ ! -z "$UNSAFE" ]; then
-  echo "doing unsafe checkout"
+  echo "trying unsafe checkout"
+  set +e
   unsafe_checkout
+  if [[ "$?" -ne 0 ]]; then
+    safe_checkout
+  fi
+  set -e
 else
   echo "doing safe checkout"
   safe_checkout

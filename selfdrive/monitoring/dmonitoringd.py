@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
-import gc
-
 import cereal.messaging as messaging
 from openpilot.common.params import Params
-from openpilot.common.realtime import set_realtime_priority
+from openpilot.common.realtime import config_realtime_process
 from openpilot.selfdrive.monitoring.helpers import DriverMonitoring
 
 
 def dmonitoringd_thread():
-  gc.disable()
-  set_realtime_priority(2)
+  config_realtime_process([0, 1, 2, 3], 5)
 
   params = Params()
-  pm = messaging.PubMaster(['driverMonitoringState', 'driverMonitoringStateSP'])
-  sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'controlsState', 'modelV2'], poll='driverStateV2')
+  pm = messaging.PubMaster(['driverMonitoringState'])
+  sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'selfdriveState', 'modelV2',
+                            'carControl'], poll='driverStateV2')
 
-  DM = DriverMonitoring(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"), hands_on_wheel_monitoring=params.get_bool("HandsOnWheelMonitoring"))
+  DM = DriverMonitoring(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"))
 
   # 20Hz <- dmonitoringmodeld
   while True:
@@ -32,13 +30,9 @@ def dmonitoringd_thread():
     dat = DM.get_state_packet(valid=valid)
     pm.send('driverMonitoringState', dat)
 
-    sp_dat = DM.get_sp_state_packet(valid=valid)
-    pm.send('driverMonitoringStateSP', sp_dat)
-
     # load live always-on toggle
     if sm['driverStateV2'].frameId % 40 == 1:
       DM.always_on = params.get_bool("AlwaysOnDM")
-      DM.hands_on_wheel_monitoring = params.get_bool("HandsOnWheelMonitoring")
 
     # save rhd virtual toggle every 5 mins
     if (sm['driverStateV2'].frameId % 6000 == 0 and

@@ -37,6 +37,8 @@ const double MS_TO_MPH = MS_TO_KPH * KM_TO_MILE;
 const double METER_TO_MILE = KM_TO_MILE / 1000.0;
 const double METER_TO_FOOT = 3.28084;
 
+#define ALIGNED_SIZE(x, align) (((x) + (align)-1) & ~((align)-1))
+
 namespace util {
 
 void set_thread_name(const char* name);
@@ -72,6 +74,7 @@ float getenv(const char* key, float default_val);
 std::string hexdump(const uint8_t* in, const size_t size);
 bool starts_with(const std::string &s1, const std::string &s2);
 bool ends_with(const std::string &s, const std::string &suffix);
+std::string strip(const std::string &str);
 
 // ***** random helpers *****
 int random_int(int min, int max);
@@ -85,13 +88,15 @@ int write_file(const char* path, const void* data, size_t size, int flags = O_WR
 FILE* safe_fopen(const char* filename, const char* mode);
 size_t safe_fwrite(const void * ptr, size_t size, size_t count, FILE * stream);
 int safe_fflush(FILE *stream);
-int safe_ioctl(int fd, unsigned long request, void *argp);
+int safe_ioctl(int fd, unsigned long request, void *argp, const char* exception_msg = nullptr);
 
 std::string readlink(const std::string& path);
 bool file_exists(const std::string& fn);
 bool create_directories(const std::string &dir, mode_t mode);
 
 std::string check_output(const std::string& command);
+
+bool system_time_valid();
 
 inline void sleep_for(const int milliseconds) {
   if (milliseconds > 0) {

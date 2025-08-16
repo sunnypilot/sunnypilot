@@ -13,7 +13,11 @@ venv/
 model2.png
 a.out
 .hypothesis
+.cache/
 
+/docs_site/
+
+*.mp4
 *.dylib
 *.DSYM
 *.d
@@ -34,6 +38,7 @@ a.out
 *.pyxbldc
 *.vcd
 *.qm
+*_pyx.cpp
 config.json
 clcache
 compile_commands.json
@@ -43,19 +48,14 @@ persist
 selfdrive/pandad/pandad
 cereal/services.h
 cereal/gen
-selfdrive/logcatd/logcatd
+cereal/messaging/bridge
 selfdrive/mapd/default_speeds_by_region.json
 system/proclogd/proclogd
-selfdrive/ui/translations/alerts_generated.h
 selfdrive/ui/translations/tmp
 selfdrive/test/longitudinal_maneuvers/out
 selfdrive/car/tests/cars_dump
 system/camerad/camerad
 system/camerad/test/ae_gray_test
-selfdrive/modeld/_modeld
-selfdrive/modeld/_navmodeld
-selfdrive/modeld/_dmonitoringmodeld
-/src/
 
 notebooks
 hyperthneed
@@ -72,11 +72,13 @@ flycheck_*
 cppcheck_report.txt
 comma*.sh
 
-selfdrive/modeld/thneed/compile
-selfdrive/modeld/models/*.thneed
 selfdrive/modeld/models/*.pkl
+sunnypilot/modeld*/thneed/compile
+sunnypilot/modeld*/models/*.thneed
+sunnypilot/modeld*/models/*.pkl
 
 *.bz2
+*.zst
 
 build/
 
@@ -84,3 +86,27 @@ build/
 
 poetry.toml
 Pipfile
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
+### JetBrains ###
+!.idea/customTargets.xml
+!.idea/tools/*
+!.run/*

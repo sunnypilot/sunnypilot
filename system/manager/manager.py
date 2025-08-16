@@ -3,23 +3,22 @@ import datetime
 import os
 import signal
 import sys
+import time
 import traceback
 
-from cereal import custom
+from cereal import log
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
-from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.common.params import Params, ParamKeyType
+from openpilot.common.params import Params, ParamKeyFlag
 from openpilot.common.text_window import TextWindow
-from openpilot.system.hardware import HARDWARE, PC
+from openpilot.system.hardware import HARDWARE
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
-from openpilot.system.manager.mapd_installer import VERSION
 from openpilot.system.manager.process import ensure_running
 from openpilot.system.manager.process_config import managed_processes
-from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
+from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID
 from openpilot.common.swaglog import cloudlog, add_file_handler
+from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
-from openpilot.system.version import get_build_metadata, terms_version, terms_version_sp, training_version
 
 
 def manager_init() -> None:
@@ -28,139 +27,54 @@ def manager_init() -> None:
   build_metadata = get_build_metadata()
 
   params = Params()
-  params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
-  params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
-  params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
+  params.clear_all(ParamKeyFlag.CLEAR_ON_MANAGER_START)
+  params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
+  params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
+  params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
   if build_metadata.release_channel:
-    params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
+    params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
 
-  default_params: list[tuple[str, str | bytes]] = [
-    ("CompletedTrainingVersion", "0"),
-    ("DisengageOnAccelerator", "0"),
-    ("GsmMetered", "1"),
-    ("HasAcceptedTerms", "0"),
-    ("LanguageSetting", "main_en"),
-    ("OpenpilotEnabledToggle", "1"),
-    ("LongitudinalPersonality", str(custom.LongitudinalPersonalitySP.standard)),
-
-    ("AccMadsCombo", "1"),
-    ("AutoLaneChangeTimer", "0"),
-    ("AutoLaneChangeBsmDelay", "1"),
-    ("BelowSpeedPause", "0"),
-    ("BrakeLights", "0"),
-    ("BrightnessControl", "0"),
-    ("CustomTorqueLateral", "0"),
-    ("CameraControl", "2"),
-    ("CameraControlToggle", "0"),
-    ("CameraOffset", "4"),
-    ("CarModel", ""),
-    ("CarModelText", ""),
-    ("ChevronInfo", "1"),
-    ("MadsCruiseMain", "1"),
-    ("CustomBootScreen", "0"),
-    ("CustomOffsets", "0"),
-    ("DevUIInfo", "0"),
-    ("DisableOnroadUploads", "0"),
-    ("DisengageLateralOnBrake", "0"),
-    ("DrivingModelGeneration", "0"),
-    ("DynamicLaneProfile", "1"),
-    ("EnableMads", "1"),
-    ("EnhancedScc", "0"),
-    ("FeatureStatus", "1"),
-    ("HandsOnWheelMonitoring", "0"),
-    ("HasAcceptedTermsSP", "0"),
-    ("HideVEgoUi", "0"),
-    ("LastSpeedLimitSignTap", "0"),
-    ("LkasToggle", "0"),
-    ("MadsIconToggle", "1"),
-    ("MapdVersion", f"{VERSION}"),
-    ("MaxTimeOffroad", "9"),
-    ("NNFF", "0"),
-    ("OnroadScreenOff", "-2"),
-    ("OnroadScreenOffBrightness", "50"),
-    ("OnroadScreenOffEvent", "1"),
-    ("OnroadSettings", "1"),
-    ("PathOffset", "0"),
-    ("PauseLateralSpeed", "0"),
-    ("ReverseAccChange", "0"),
-    ("ScreenRecorder", "1"),
-    ("ShowDebugUI", "1"),
-    ("SpeedLimitControlPolicy", "3"),
-    ("SpeedLimitEngageType", "0"),
-    ("SpeedLimitValueOffset", "0"),
-    ("SpeedLimitOffsetType", "0"),
-    ("SpeedLimitWarningType", "0"),
-    ("SpeedLimitWarningValueOffset", "0"),
-    ("SpeedLimitWarningOffsetType", "0"),
-    ("StandStillTimer", "0"),
-    ("StockLongToyota", "0"),
-    ("TorqueDeadzoneDeg", "0"),
-    ("TorqueFriction", "1"),
-    ("TorqueMaxLatAccel", "250"),
-    ("TrueVEgoUi", "0"),
-    ("TurnSpeedControl", "0"),
-    ("TurnVisionControl", "0"),
-    ("VisionCurveLaneless", "0"),
-    ("VwAccType", "0"),
-    ("OsmDbUpdatesCheck", "0"),
-    ("OsmDownloadedDate", "0"),
-    ("OSMDownloadProgress", "{}"),
-    ("SidebarTemperatureOptions", "0"),
-    ("SunnylinkEnabled", "0" if (build_metadata.release_channel or build_metadata.release_sp_channel) else "1"),
-    ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
-    ("CustomDrivingModel", "0"),
-    ("DrivingModelGeneration", "4"),
-    ("LastSunnylinkPingTime", "0"),
-  ]
-  if not PC:
-    default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
+  # device boot mode
+  if params.get("DeviceBootMode") == 1:  # start in Always Offroad mode
+    params.put_bool("OffroadMode", True)
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
-  # set unset params
-  for k, v in default_params:
-    if params.get(k) is None:
-      params.put(k, v)
-
-  # parameters set by Environment Variables
-  if os.getenv("HANDSMONITORING") is not None:
-    params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING", "0"))))
+  # set unset params to their default value
+  for k in params.all_keys():
+    default_value = params.get_default_value(k)
+    if default_value and params.get(k) is None:
+      params.put(k, default_value)
 
   # Create folders needed for msgq
   try:
-    os.mkdir("/dev/shm")
+    os.mkdir(Paths.shm_path())
   except FileExistsError:
     pass
   except PermissionError:
-    print("WARNING: failed to make /dev/shm")
+    print(f"WARNING: failed to make {Paths.shm_path()}")
 
-  # set version params
+  # set params
+  serial = HARDWARE.get_serial()
   params.put("Version", build_metadata.openpilot.version)
   params.put("TermsVersion", terms_version)
-  params.put("TermsVersionSunnypilot", terms_version_sp)
   params.put("TrainingVersion", training_version)
   params.put("GitCommit", build_metadata.openpilot.git_commit)
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
   params.put("GitBranch", build_metadata.channel)
   params.put("GitRemote", build_metadata.openpilot.git_origin)
+  params.put_bool("IsDevelopmentBranch", build_metadata.development_channel)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
-  params.put_bool("IsReleaseSPBranch", build_metadata.release_sp_channel)
+  params.put("HardwareSerial", serial)
 
   # set dongle id
   reg_res = register(show_spinner=True)
   if reg_res:
     dongle_id = reg_res
   else:
-    serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
-  if params.get("HardwareSerial") is None:
-    try:
-      serial = HARDWARE.get_serial()
-      params.put("HardwareSerial", serial)
-    except Exception:
-      cloudlog.exception("Error getting serial for device")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
   os.environ['GIT_ORIGIN'] = build_metadata.openpilot.git_normalized_origin # Needed for swaglog
   os.environ['GIT_BRANCH'] = build_metadata.channel # Needed for swaglog
@@ -178,13 +92,6 @@ def manager_init() -> None:
                        commit=build_metadata.openpilot.git_commit,
                        dirty=build_metadata.openpilot.is_dirty,
                        device=HARDWARE.get_device_type())
-
-  if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
-    os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
-
-  models_dir = Paths.model_root()
-  if not os.path.exists(models_dir):
-    os.makedirs(models_dir)
 
   # preimport all processes
   for p in managed_processes.values():
@@ -211,21 +118,20 @@ def manager_thread() -> None:
   params = Params()
 
   ignore: list[str] = []
-  if params.get("DongleId", encoding='utf8') in (None, UNREGISTERED_DONGLE_ID):
+  if params.get("DongleId") in (None, UNREGISTERED_DONGLE_ID):
     ignore += ["manage_athenad", "uploader"]
   if os.getenv("NOBOARD") is not None:
     ignore.append("pandad")
   ignore += [x for x in os.getenv("BLOCK", "").split(",") if len(x) > 0]
-  if params.get("DriverCameraHardwareMissing") and not is_registered_device():
-    ignore += ["dmonitoringd", "dmonitoringmodeld"]
 
-  sm = messaging.SubMaster(['deviceState', 'carParams'], poll='deviceState')
+  sm = messaging.SubMaster(['deviceState', 'carParams', 'pandaStates'], poll='deviceState')
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
   ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore)
 
   started_prev = False
+  ignition_prev = False
 
   while True:
     sm.update(1000)
@@ -233,15 +139,20 @@ def manager_thread() -> None:
     started = sm['deviceState'].started
 
     if started and not started_prev:
-      params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
+      params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
     elif not started and started_prev:
-      params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
+      params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
+
+    ignition = any(ps.ignitionLine or ps.ignitionCan for ps in sm['pandaStates'] if ps.pandaType != log.PandaState.PandaType.unknown)
+    if ignition and not ignition_prev:
+      params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
 
     # update onroad params, which drives pandad's safety setter thread
     if started != started_prev:
       write_onroad_params(started, params)
 
     started_prev = started
+    ignition_prev = ignition
 
     ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore)
 
@@ -254,6 +165,14 @@ def manager_thread() -> None:
     msg = messaging.new_message('managerState', valid=True)
     msg.managerState.processes = [p.get_process_state_msg() for p in managed_processes.values()]
     pm.send('managerState', msg)
+
+    # kick AGNOS power monitoring watchdog
+    try:
+      if sm.all_checks(['deviceState']):
+        with open("/var/tmp/power_watchdog", "w") as f:
+          f.write(str(time.monotonic()))
+    except Exception:
+      pass
 
     # Exit main loop when uninstall/shutdown/reboot is needed
     shutdown = False

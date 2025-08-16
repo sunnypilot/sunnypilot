@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
+from functools import cache
+import threading
 
 from cereal import messaging
 from openpilot.common.realtime import Ratekeeper
@@ -7,10 +9,19 @@ from openpilot.common.retry import retry
 from openpilot.common.swaglog import cloudlog
 
 RATE = 10
-FFT_SAMPLES = 4096
+FFT_SAMPLES = 1600 # 100ms
 REFERENCE_SPL = 2e-5  # newtons/m^2
-SAMPLE_RATE = 44100
-SAMPLE_BUFFER = 4096 # (approx 100ms)
+SAMPLE_RATE = 16000
+SAMPLE_BUFFER = 800  # 50ms
+
+
+@cache
+def get_a_weighting_filter():
+  # Calculate the A-weighting filter
+  # https://en.wikipedia.org/wiki/A-weighting
+  freqs = np.fft.fftfreq(FFT_SAMPLES, d=1 / SAMPLE_RATE)
+  A = 12194 ** 2 * freqs ** 4 / ((freqs ** 2 + 20.6 ** 2) * (freqs ** 2 + 12194 ** 2) * np.sqrt((freqs ** 2 + 107.7 ** 2) * (freqs ** 2 + 737.9 ** 2)))
+  return A / np.max(A)
 
 
 def calculate_spl(measurements):
@@ -27,22 +38,14 @@ def apply_a_weighting(measurements: np.ndarray) -> np.ndarray:
   # Generate a Hanning window of the same length as the audio measurements
   measurements_windowed = measurements * np.hanning(len(measurements))
 
-  # Calculate the frequency axis for the signal
-  freqs = np.fft.fftfreq(measurements_windowed.size, d=1 / SAMPLE_RATE)
-
-  # Calculate the A-weighting filter
-  # https://en.wikipedia.org/wiki/A-weighting
-  A = 12194 ** 2 * freqs ** 4 / ((freqs ** 2 + 20.6 ** 2) * (freqs ** 2 + 12194 ** 2) * np.sqrt((freqs ** 2 + 107.7 ** 2) * (freqs ** 2 + 737.9 ** 2)))
-  A /= np.max(A)  # Normalize the filter
-
   # Apply the A-weighting filter to the signal
-  return np.abs(np.fft.ifft(np.fft.fft(measurements_windowed) * A))
+  return np.abs(np.fft.ifft(np.fft.fft(measurements_windowed) * get_a_weighting_filter()))
 
 
 class Mic:
   def __init__(self):
     self.rk = Ratekeeper(RATE)
-    self.pm = messaging.PubMaster(['microphone'])
+    self.pm = messaging.PubMaster(['soundPressure', 'rawAudioData'])
 
     self.measurements = np.empty(0)
 
@@ -50,14 +53,20 @@ class Mic:
     self.sound_pressure_weighted = 0
     self.sound_pressure_level_weighted = 0
 
+    self.lock = threading.Lock()
+
   def update(self):
-    msg = messaging.new_message('microphone', valid=True)
-    msg.microphone.soundPressure = float(self.sound_pressure)
-    msg.microphone.soundPressureWeighted = float(self.sound_pressure_weighted)
+    with self.lock:
+      sound_pressure = self.sound_pressure
+      sound_pressure_weighted = self.sound_pressure_weighted
+      sound_pressure_level_weighted = self.sound_pressure_level_weighted
 
-    msg.microphone.soundPressureWeightedDb = float(self.sound_pressure_level_weighted)
+    msg = messaging.new_message('soundPressure', valid=True)
+    msg.soundPressure.soundPressure = float(sound_pressure)
+    msg.soundPressure.soundPressureWeighted = float(sound_pressure_weighted)
+    msg.soundPressure.soundPressureWeightedDb = float(sound_pressure_level_weighted)
 
-    self.pm.send('microphone', msg)
+    self.pm.send('soundPressure', msg)
     self.rk.keep_time()
 
   def callback(self, indata, frames, time, status):
@@ -67,17 +76,23 @@ class Mic:
 
     Logged A-weighted equivalents are rough approximations of the human-perceived loudness.
     """
+    msg = messaging.new_message('rawAudioData', valid=True)
+    audio_data_int_16 = (indata[:, 0] * 32767).astype(np.int16)
+    msg.rawAudioData.data = audio_data_int_16.tobytes()
+    msg.rawAudioData.sampleRate = SAMPLE_RATE
+    self.pm.send('rawAudioData', msg)
 
-    self.measurements = np.concatenate((self.measurements, indata[:, 0]))
+    with self.lock:
+      self.measurements = np.concatenate((self.measurements, indata[:, 0]))
 
-    while self.measurements.size >= FFT_SAMPLES:
-      measurements = self.measurements[:FFT_SAMPLES]
+      while self.measurements.size >= FFT_SAMPLES:
+        measurements = self.measurements[:FFT_SAMPLES]
 
-      self.sound_pressure, _ = calculate_spl(measurements)
-      measurements_weighted = apply_a_weighting(measurements)
-      self.sound_pressure_weighted, self.sound_pressure_level_weighted = calculate_spl(measurements_weighted)
+        self.sound_pressure, _ = calculate_spl(measurements)
+        measurements_weighted = apply_a_weighting(measurements)
+        self.sound_pressure_weighted, self.sound_pressure_level_weighted = calculate_spl(measurements_weighted)
 
-      self.measurements = self.measurements[FFT_SAMPLES:]
+        self.measurements = self.measurements[FFT_SAMPLES:]
 
   @retry(attempts=7, delay=3)
   def get_stream(self, sd):

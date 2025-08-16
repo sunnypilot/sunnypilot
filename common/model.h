@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "North Dakota (April 29, 2024)"
+#define DEFAULT_MODEL "Down To Ride (Default)"

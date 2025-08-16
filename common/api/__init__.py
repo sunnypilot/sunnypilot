@@ -1,13 +1,9 @@
-from .comma_connect import CommaConnectApi
-from .sunnylink import SunnylinkApi
+from openpilot.common.api.comma_connect import CommaConnectApi
 
 
 class Api:
-  def __init__(self, dongle_id, use_sunnylink=False):
-    if use_sunnylink:
-      self.service = SunnylinkApi(dongle_id)
-    else:
-      self.service = CommaConnectApi(dongle_id)
+  def __init__(self, dongle_id):
+    self.service = CommaConnectApi(dongle_id)
 
   def request(self, method, endpoint, **params):
     return self.service.request(method, endpoint, **params)
@@ -22,6 +18,5 @@ class Api:
     return self.service.get_token(expiry_hours)
 
 
-def api_get(endpoint, method='GET', timeout=None, access_token=None, use_sunnylink=False, **params):
-    return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, **params) if not use_sunnylink else \
-           SunnylinkApi(None).api_get(endpoint, method, timeout, access_token, **params)
+def api_get(endpoint, method='GET', timeout=None, access_token=None, **params):
+  return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, **params)

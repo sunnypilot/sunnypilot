@@ -21,12 +21,13 @@ cdef extern from "msgq/visionipc/visionbuf.h":
 
   cdef cppclass VisionBuf:
     void * addr
-    bool rgb
+    int fd
     size_t len
     size_t width
     size_t height
     size_t stride
     size_t uv_offset
+    size_t idx
     cl_mem buf_cl
     void set_frame_id(uint64_t id)
 
@@ -42,8 +43,8 @@ cdef extern from "msgq/visionipc/visionipc_server.h":
 
   cdef cppclass VisionIpcServer:
     VisionIpcServer(string, void*, void*)
-    void create_buffers(VisionStreamType, size_t, bool, size_t, size_t)
-    void create_buffers_with_sizes(VisionStreamType, size_t, bool, size_t, size_t, size_t, size_t, size_t)
+    void create_buffers(VisionStreamType, size_t, size_t, size_t)
+    void create_buffers_with_sizes(VisionStreamType, size_t, size_t, size_t, size_t, size_t, size_t)
     VisionBuf * get_buffer(VisionStreamType)
     void send(VisionBuf *, VisionIpcBufExtra *, bool)
     void start_listener()

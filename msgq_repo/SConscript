@@ -26,10 +26,7 @@ if arch == "larch64":
 else:
   vipc_sources += [f'{visionipc_dir.abspath}/visionbuf_cl.cc']
 
-print(f'Building Vision IPC with {vipc_sources}')
 vipc_objects = env.SharedObject(vipc_sources)
-print(f'Building Vision IPC with {vipc_objects}')
-
 visionipc = env.Library('visionipc', vipc_objects)
 
 

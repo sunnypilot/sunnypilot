@@ -37,10 +37,6 @@ namespace Path {
     return Hardware::PC() ? Path::comma_home() + "/persist/comma/id_rsa" : "/persist/comma/id_rsa";
   }
 
-  inline std::string rsa_pub_file() {
-    return Hardware::PC() ? Path::comma_home() + "/persist/comma/id_rsa.pub" : "/persist/comma/id_rsa.pub";
-  }
-
   inline std::string swaglog_ipc() {
     return "ipc:///tmp/logmessage" + Path::openpilot_prefix();
   }
@@ -50,5 +46,17 @@ namespace Path {
       return env;
     }
     return "/tmp/comma_download_cache" + Path::openpilot_prefix() + "/";
+  }
+
+ inline std::string shm_path() {
+    #ifdef __APPLE__
+     return"/tmp";
+    #else
+     return "/dev/shm";
+    #endif
+ }
+
+  inline std::string model_root() {
+    return Hardware::PC() ? Path::comma_home() + "/media/0/models" : "/data/media/0/models";
   }
 }  // namespace Path

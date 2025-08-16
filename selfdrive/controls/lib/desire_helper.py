@@ -1,10 +1,7 @@
 from cereal import log
-from openpilot.common.conversions import Conversions as CV
-from openpilot.common.params import Params
+from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.drive_helpers import get_road_edge
-from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
-from openpilot.selfdrive.sunnypilot import get_model_generation
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode
 
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
@@ -33,20 +30,6 @@ DESIRES = {
   },
 }
 
-AUTO_LANE_CHANGE_TIMER = {
-  -1: 0.0,
-  0: 0.0,
-  1: 0.1,
-  2: 0.5,
-  3: 1.0,
-  4: 1.5,
-}
-
-
-def get_min_lateral_speed(value: int, is_metric: bool, default: float = LANE_CHANGE_SPEED_MIN):
-  speed: float = default if value == 0 else value * CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS
-  return speed
-
 
 class DesireHelper:
   def __init__(self):
@@ -57,55 +40,24 @@ class DesireHelper:
     self.keep_pulse_timer = 0.0
     self.prev_one_blinker = False
     self.desire = log.Desire.none
+    self.alc = AutoLaneChangeController(self)
 
-    self.param_s = Params()
-    self.lane_change_wait_timer = 0
-    self.prev_lane_change = False
-    self.prev_brake_pressed = False
-    self.road_edge = False
-    self.param_read_counter = 0
-    self.read_param()
-    self.edge_toggle = self.param_s.get_bool("RoadEdge")
-    self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
-    self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
-
-    self.custom_model, self.model_gen = get_model_generation(self.param_s)
-    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
-    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
-
-  def read_param(self):
-    self.edge_toggle = self.param_s.get_bool("RoadEdge")
-    self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
-    self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
-
-  def update(self, carstate, lateral_active, lane_change_prob, model_data=None, lat_plan_sp=None):
-    if self.param_read_counter % 50 == 0:
-      self.read_param()
-    self.param_read_counter += 1
-    lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer, 2.0)
+  def update(self, carstate, lateral_active, lane_change_prob):
+    self.alc.update_params()
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    # TODO: SP: !659: User-defined minimum lane change speed
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    if self.model_use_lateral_planner:
-      self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
-
-    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.lane_change_set_timer == -1:
+    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
-      self.prev_lane_change = False
-      self.prev_brake_pressed = False
     else:
       # LaneChangeState.off
       if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
-        self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
-      elif self.lane_change_state == LaneChangeState.preLaneChange and (self.road_edge if self.model_use_lateral_planner else lat_plan_sp.laneChangeEdgeBlockDEPRECATED):
-        self.lane_change_direction = LaneChangeDirection.none
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if \
@@ -118,28 +70,13 @@ class DesireHelper:
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
-        self.lane_change_wait_timer += DT_MDL
-
-        if self.lane_change_bsm_delay and blindspot_detected and lane_change_auto_timer:
-          if lane_change_auto_timer == 0.1:
-            self.lane_change_wait_timer = -1
-          else:
-            self.lane_change_wait_timer = lane_change_auto_timer - 1
-
-        auto_lane_change_allowed = lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer
-
-        if carstate.brakePressed and not self.prev_brake_pressed:
-          self.prev_brake_pressed = carstate.brakePressed
+        self.alc.update_lane_change(blindspot_detected, carstate.brakePressed)
 
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
           self.lane_change_direction = LaneChangeDirection.none
-          self.prev_lane_change = False
-          self.prev_brake_pressed = False
-        elif (torque_applied or (auto_lane_change_allowed and not self.prev_lane_change and not self.prev_brake_pressed)) and \
-          not blindspot_detected:
+        elif (torque_applied or self.alc.auto_lane_change_allowed) and not blindspot_detected:
           self.lane_change_state = LaneChangeState.laneChangeStarting
-          self.prev_lane_change = True
 
       # LaneChangeState.laneChangeStarting
       elif self.lane_change_state == LaneChangeState.laneChangeStarting:
@@ -161,8 +98,6 @@ class DesireHelper:
             self.lane_change_state = LaneChangeState.preLaneChange
           else:
             self.lane_change_state = LaneChangeState.off
-            self.prev_lane_change = False
-            self.prev_brake_pressed = False
 
     if self.lane_change_state in (LaneChangeState.off, LaneChangeState.preLaneChange):
       self.lane_change_timer = 0.0
@@ -182,3 +117,5 @@ class DesireHelper:
         self.keep_pulse_timer = 0.0
       elif self.desire in (log.Desire.keepLeft, log.Desire.keepRight):
         self.desire = log.Desire.none
+
+    self.alc.update_state()

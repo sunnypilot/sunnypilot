@@ -1,0 +1,31 @@
+ci:
+  - changed-files:
+    - any-glob-to-all-files: "{.github/**,**/test_*,**/test/**,Jenkinsfile}"
+
+chore:
+  - changed-files:
+      - any-glob-to-all-files: "{.github/**}"
+
+car:
+  - changed-files:
+    - any-glob-to-all-files: '{selfdrive/car/**,opendbc_repo}'
+
+simulation:
+  - changed-files:
+    - any-glob-to-all-files: 'tools/sim/**'
+
+ui:
+  - changed-files:
+    - any-glob-to-all-files: '{selfdrive/ui/**,system/ui/**}'
+
+tools:
+  - changed-files:
+    - any-glob-to-all-files: 'tools/**'
+
+multilanguage:
+  - changed-files:
+    - any-glob-to-all-files: 'selfdrive/ui/translations/**'
+
+autonomy:
+  - changed-files:
+    - any-glob-to-all-files: "{selfdrive/modeld/models/**,selfdrive/test/process_replay/model_replay_ref_commit,sunnypilot/modeld*/models/**}"
