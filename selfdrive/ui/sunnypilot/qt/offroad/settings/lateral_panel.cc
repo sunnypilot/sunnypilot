@@ -46,20 +46,41 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   list->addItem(horizontal_line());
   list->addItem(vertical_space());
 
-  // Lane Change Settings
-  laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"));
+
+  // Inline lagd toggle and lane change buttons
+  QHBoxLayout *inlineBtnLayout = new QHBoxLayout();
+  inlineBtnLayout->setSpacing(15);
+
+  lagdSettingsButton = new PushButtonSP(tr("Customize Live Delay"), 740);
+  lagdSettingsButton->setObjectName("lagd_btn");
+  connect(lagdSettingsButton, &QPushButton::clicked, [=]() {
+    lagdToggleSettings->refresh();
+    main_layout->setCurrentWidget(lagdToggleSettings);
+  });
+  inlineBtnLayout->addWidget(lagdSettingsButton);
+
+  lagdToggleSettings = new LagdToggleSettings(this);
+  connect(lagdToggleSettings, &LagdToggleSettings::backPress, [=]() {
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
+  laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"), 740);
   laneChangeSettingsButton->setObjectName("lane_change_btn");
   connect(laneChangeSettingsButton, &QPushButton::clicked, [=]() {
     sunnypilotScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(laneChangeWidget);
   });
+  inlineBtnLayout->addWidget(laneChangeSettingsButton);
 
   laneChangeWidget = new LaneChangeSettings(this);
   connect(laneChangeWidget, &LaneChangeSettings::backPress, [=]() {
     sunnypilotScroller->restoreScrollPosition();
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
-  list->addItem(laneChangeSettingsButton);
+
+  QWidget *inlineBtnWidget = new QWidget();
+  inlineBtnWidget->setLayout(inlineBtnLayout);
+  list->addItem(inlineBtnWidget);
 
   list->addItem(vertical_space(0));
   list->addItem(horizontal_line());
@@ -94,11 +115,16 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, [=]() {
+    updateToggles(offroad);
+  });
+
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
 
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
+  main_layout->addWidget(lagdToggleSettings);
   main_layout->addWidget(laneChangeWidget);
 
   setStyleSheet(R"(
@@ -151,6 +177,7 @@ void LateralPanel::updateToggles(bool _offroad) {
   madsSettingsButton->setEnabled(madsToggle->isToggled());
 
   blinkerPauseLateralSettings->refresh();
+  lagdToggleSettings->refresh();
 
   offroad = _offroad;
 }

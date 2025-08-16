@@ -14,6 +14,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/blinker_pause_lateral_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/mads_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/lagd_toggle_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/lane_change_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
@@ -41,6 +42,8 @@ private:
   ParamControl *madsToggle;
   PushButtonSP *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
+  PushButtonSP *lagdSettingsButton = nullptr;
+  LagdToggleSettings *lagdToggleSettings = nullptr;
   PushButtonSP *laneChangeSettingsButton;
   LaneChangeSettings *laneChangeWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;

@@ -67,8 +67,6 @@ private:
   bool is_onroad = false;
 
   ButtonControlSP *currentModelLblBtn;
-  ParamControlSP *lagd_toggle_control;
-  OptionControlSP *delay_control;
   QProgressBar *supercomboProgressBar;
   QFrame *supercomboFrame;
   QProgressBar *navigationProgressBar;
