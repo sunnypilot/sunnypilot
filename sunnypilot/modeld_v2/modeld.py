@@ -77,7 +77,8 @@ class ModelState(ModelStateBase):
     if self.model_runner.is_20hz_3d:  # split models
       self.full_features_buffer = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN,  self.constants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+      if not self.no_action_head:
+        self.full_prev_desired_curv = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
       self.temporal_idxs = slice(-1-(self.constants.TEMPORAL_SKIP*(self.constants.INPUT_HISTORY_BUFFER_LEN-1)), None, self.constants.TEMPORAL_SKIP)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((self.constants.FULL_HISTORY_BUFFER_LEN + 1, self.constants.FEATURE_LEN), dtype=np.float32)
@@ -91,6 +92,10 @@ class ModelState(ModelStateBase):
   @property
   def mlsim(self) -> bool:
     return bool(self.generation is not None and self.generation >= 11)
+
+  @property
+  def no_action_head(self) -> bool:
+    return bool(self.generation is not None and self.generation >= 13)
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -143,10 +148,11 @@ class ModelState(ModelStateBase):
     if "desired_curvature" in outputs:
       input_name_prev = None
 
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
+      if not self.no_action_head:
+        if "prev_desired_curvs" in self.numpy_inputs.keys():
+          input_name_prev = 'prev_desired_curvs'
+        elif "prev_desired_curv" in self.numpy_inputs.keys():
+          input_name_prev = 'prev_desired_curv'
 
       if input_name_prev is not None:
         self.process_desired_curvature(outputs, input_name_prev)
@@ -326,7 +332,7 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    if "lateral_control_params" in model.numpy_inputs.keys():
+    if "lateral_control_params" in model.numpy_inputs.keys() and model.no_action_head:
       inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
