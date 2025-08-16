@@ -332,7 +332,7 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    if "lateral_control_params" in model.numpy_inputs.keys() and model.no_action_head:
+    if "lateral_control_params" in model.numpy_inputs.keys() and not model.no_action_head:
       inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
