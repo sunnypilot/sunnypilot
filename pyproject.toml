@@ -58,7 +58,7 @@ dependencies = [
   "future-fstrings",
 
   # joystickd
-  "pygame",
+  "inputs",
 
   # these should be removed
   "psutil",
@@ -107,6 +107,7 @@ dev = [
   "opencv-python-headless",
   "parameterized >=0.8, <0.9",
   "pyautogui",
+  "pygame",
   "pyopencl; platform_machine != 'aarch64'", # broken on arm64
   "pytools < 2024.1.11; platform_machine != 'aarch64'", # pyopencl use a broken version
   "pywinctl",
