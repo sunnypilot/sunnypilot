@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <QTreeWidget>
 
+#include "common/params.h"
 #include "selfdrive/ui/qt/widgets/keyboard.h"
 
 
@@ -75,11 +76,19 @@ class TreeOptionDialog : public DialogBase {
   Q_OBJECT
 
 public:
-  explicit TreeOptionDialog(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, QWidget *parent = nullptr);
-  static QString getSelection(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, QWidget *parent = nullptr);
+  explicit TreeOptionDialog(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, const QString &favParam, QWidget *parent = nullptr);
+  static QString getSelection(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, const QString &favParam, QWidget *parent = nullptr);
+  void handleFavorites(const QString& item, QPushButton* btn);
+  QTreeWidgetItem* addChildItem(const QString& item, QTreeWidgetItem* folderItem, QPushButton* btn = nullptr);
   QString selection;
 
 private:
   QTreeWidget *treeWidget;
   QPushButton *confirm_btn;
+  Params params;
+  QList<QString> *lstFavs;
+  QTreeWidgetItem *favorites;
+
+  QIcon iconBlank;
+  QIcon iconFilled;
 };

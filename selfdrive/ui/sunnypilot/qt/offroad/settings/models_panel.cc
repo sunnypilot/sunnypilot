@@ -335,10 +335,14 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
 
   items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
 
+  const QString favs = QString::fromStdString(params.get("ModelManager_Favs"));
+  QStringList lstFavs = favs.split(";", Qt::SkipEmptyParts);
+  items.insert(1, qMakePair(tr("Favorites"), lstFavs));
+
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
   const QString selectedBundleName = TreeOptionDialog::getSelection(
-    tr("Select a Model"), items, GetActiveModelName(), this);
+    tr("Select a Model"), items, GetActiveModelName(), QString("ModelManager_Favs"), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
