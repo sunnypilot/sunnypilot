@@ -119,7 +119,7 @@ procs = [
   PythonProcess("sensord", "system.sensord.sensord", only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
-  PythonProcess("soundd", "selfdrive.ui.soundd", and_(only_onroad, not_joystick)),
+  PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
   NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
   PythonProcess("calibrationd", "selfdrive.locationd.calibrationd", only_onroad),
