@@ -15,7 +15,6 @@ sudo docker buildx build -f Dockerfile.sunnypilot_agnos -t test1 .
 * Currently the binary output will fail when you enable MADS because dmonitoringmodeld can't find `dmonitoring_model_tinygrad.pkl` et al. The [default model binaries](https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai3/-/tree/main/models/recompiled2/model-Space%20Lab%202%20v2%20(July%2026,%202025)-78?ref_type=heads) must be built separately and copied into the build.
 * The build output must be commit to a git branch for it to work on the device. Replicate how the prebuilt commit looks as if it came from the github workflow.
 * Cleaner and still correct: Get rid of the build flag by instead detecting QCOM && missing kgsl device.
-* Would be ideal if it checked before build that the current build environment is in fact the expected AGNOS version. If it is not it should error out. That way you know the `agnos-system` base docker image needs to be updated.
 
 # Regarding `/dev/kgsl-3d0` during build-time
 Builds within dockerized-agnos fail when tinygrad tries to use `/dev/kgsl-3d0` to compile and test the default model.
