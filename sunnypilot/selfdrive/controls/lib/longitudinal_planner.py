@@ -34,7 +34,7 @@ class LongitudinalPlannerSP:
 
   def transition_init(self) -> None:
     self._transition_counter = 0
-    self._transition_steps = 40
+    self._transition_steps = 20
     self._last_mode = 'acc'
 
   def handle_mode_transition(self, mode: str) -> None:
@@ -49,13 +49,12 @@ class LongitudinalPlannerSP:
         self._transition_counter += 1
         progress = self._transition_counter / self._transition_steps
         if v_ego > 5.0 and e2e_accel < 0.0:
-          # use k2.0 and normalize midpoint at 0.5
-          sigmoid = 1.0 / (1.0 + math.exp(-2.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
+          if mpc_accel < 0.0 and e2e_accel > mpc_accel:
+            return mpc_accel
+          # use k3.0 and normalize midpoint at 0.5
+          sigmoid = 1.0 / (1.0 + math.exp(-3.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
           blend_factor = 1.0 - (1.0 - progress) * (1.0 - sigmoid)
           blended = mpc_accel + (e2e_accel - mpc_accel) * blend_factor
-          return blended
-        else:
-          blended = mpc_accel + (e2e_accel - mpc_accel) * progress
           return blended
     return min(mpc_accel, e2e_accel)
 
