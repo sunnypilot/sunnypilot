@@ -15,7 +15,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim
+  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
 
@@ -47,7 +47,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
               threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
-              # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
+              threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
               # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
               # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
             ] + [
