@@ -16,6 +16,9 @@ WORKDIR ${OPENPILOT_PATH}
 
 COPY . ${OPENPILOT_PATH}/
 
+# Verify agnos-system matches expected AGNOS version of the source tree
+RUN tools/dockerize-agnos/check-agnos-version.sh
+
 USER root
 # Launch build with the same environment as the comma user on the device
 RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc) --skip-model-compile"
