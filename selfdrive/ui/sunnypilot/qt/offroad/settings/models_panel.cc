@@ -393,7 +393,7 @@ void ModelsPanel::updateLabels() {
         auto liveDelay = event.getLiveDelay();
         float lateralDelay = liveDelay.getLateralDelay();
         desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
-                .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 2));
+                .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 3));
       }
     }
   } else {
