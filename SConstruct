@@ -67,12 +67,6 @@ AddOption('--stock-ui',
           default=False,
           help='Build stock openpilot UI instead of sunnypilot UI')
 
-AddOption('--skip-model-compile',
-          action='store_true',
-          dest='skip_model_compile',
-          default=False,
-          help='Skip compilation of default tinygrad model')
-
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
 ## - aarch64: linux pc aarch64
