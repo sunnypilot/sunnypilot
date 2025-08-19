@@ -272,34 +272,30 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
-  struct ModelEntry {
-    QString folder;
-    QString displayName;
-    int index;
-  };
-  QList<ModelEntry> sortedModels;
+  QList<TreeNode> sortedModels;
   QSet<QString> modelFolders;
   const auto bundles = model_manager.getAvailableBundles();
 
   for (const auto &bundle : bundles) {
     auto overrides = bundle.getOverrides();
-    QString gen;
+    QString folder;
     for (const auto &override : overrides) {
       if (override.getKey() == "folder") {
-        gen = QString::fromStdString(override.getValue().cStr());
+        folder = QString::fromStdString(override.getValue().cStr());
       }
     }
 
-    modelFolders.insert(gen);
-    sortedModels.append(ModelEntry{
-      gen,
+    modelFolders.insert(folder);
+    sortedModels.append(TreeNode{
+      folder,
       QString::fromStdString(bundle.getDisplayName()),
+      QString::fromStdString(bundle.getRef()),
       static_cast<int>(bundle.getIndex())
     });
   }
 
   std::sort(sortedModels.begin(), sortedModels.end(),
-    [](const ModelEntry &a, const ModelEntry &b) {
+    [](const TreeNode &a, const TreeNode &b) {
       return a.index > b.index;
     });
 
@@ -322,37 +318,63 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
       });
 
   // Create the final items list using sorted folders
-  QList<QPair<QString, QStringList>> items;
+  QList<TreeFolder> items;
   for (const auto &folderPair : folderMaxIndices) {
-    QStringList folderModels;
+    QList<TreeNode> folderModels;
     for (const auto &model : sortedModels) {
       if (model.folder == folderPair.first) {
-        folderModels.append(model.displayName);
+        folderModels.append(model);
       }
     }
-    items.append(qMakePair(folderPair.first, folderModels));
+    items.append(TreeFolder{folderPair.first, folderModels});
   }
 
-  items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
+  items.insert(0, TreeFolder{"", {
+    TreeNode{"", DEFAULT_MODEL, DEFAULT_MODEL, -1}
+  }});
+
+  /*const QString favs = QString::fromStdString(params.get("ModelManager_Favs"));
+  QStringList favRefs = favs.split(";");
+  QList<TreeFolder> lstFavs;
+  for (const auto &fav : favRefs) {
+    if (fav.isEmpty()) continue;
+    TreeFolder favModel;
+    for (const auto &model : sortedModels) {
+      if (model.ref == fav) {
+        favModel.displayName = model.displayName;
+        favModel.ref = model.ref;
+        favModel.index = model.index;
+        favModel.folder = tr("Favorites");
+        break;
+      }
+    }
+    if (!favModel.ref.isEmpty()) {
+      lstFavs.append(favModel);
+    }
+  }
+  QList<TreeFolder>::iterator it = sortedModels.begin() + 1;
+  for (auto it_fav = lstFavs.begin(); it_fav != lstFavs.end(); ++it_fav) {
+    it = items.insert(it, *it_fav) + 1;
+  }*/
 
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  const QString selectedBundleName = TreeOptionDialog::getSelection(
+  const QString selectedBundleRef = TreeOptionDialog::getSelection(
     tr("Select a Model"), items, GetActiveModelName(), QString("ModelManager_Favs"), this);
 
-  if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
+  if (selectedBundleRef.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == DEFAULT_MODEL) {
+  if (selectedBundleRef == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();
   } else {
     // Find selected bundle and initiate download
     for (const auto &bundle: bundles) {
-      if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
+      if (QString::fromStdString(bundle.getRef()) == selectedBundleRef) {
         params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
         if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
           showResetParamsDialog();
