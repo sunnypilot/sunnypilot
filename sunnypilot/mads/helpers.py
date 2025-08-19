@@ -27,16 +27,16 @@ def get_mads_limited_brands(CP: structs.CarParams, CP_SP: structs.CarParamsSP) -
   return False
 
 
-def read_steering_mode_param(CP: structs.CarParams, params: Params):
-  if get_mads_limited_brands(CP):
+def read_steering_mode_param(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params):
+  if get_mads_limited_brands(CP, CP_SP):
     return MadsSteeringModeOnBrake.DISENGAGE
 
   return params.get("MadsSteeringMode", return_default=True)
 
 
-def set_alternative_experience(CP: structs.CarParams, params: Params):
+def set_alternative_experience(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params):
   enabled = params.get_bool("Mads")
-  steering_mode = read_steering_mode_param(CP, params)
+  steering_mode = read_steering_mode_param(CP, CP_SP, params)
 
   if enabled:
     CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS

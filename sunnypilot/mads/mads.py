@@ -27,6 +27,7 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
     self.CP = selfdrive.CP
+    self.CP_SP = selfdrive.CP_SP
     self.params = selfdrive.params
 
     self.enabled = False
@@ -44,7 +45,7 @@ class ModularAssistiveDrivingSystem:
       if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
-    if get_mads_limited_brands(self.CP):
+    if get_mads_limited_brands(self.CP, self.CP_SP):
       self.no_main_cruise = True
 
     # read params on init
