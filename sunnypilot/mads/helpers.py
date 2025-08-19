@@ -9,6 +9,7 @@ from openpilot.common.params import Params
 from opendbc.car import structs
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP, HyundaiSafetyFlagsSP
+from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 
 
 class MadsSteeringModeOnBrake:
@@ -17,8 +18,13 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
-def get_mads_limited_brands(CP: structs.CarParams) -> bool:
-  return CP.brand in ("rivian", "tesla")
+def get_mads_limited_brands(CP: structs.CarParams, CP_SP: structs.CarParamsSP) -> bool:
+  if CP.brand == 'rivian':
+    return True
+  if CP.brand == 'tesla':
+    return not CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS
+
+  return False
 
 
 def read_steering_mode_param(CP: structs.CarParams, params: Params):
@@ -53,8 +59,8 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   # MADS Partial Support
   # MADS is currently partially supported for these platforms due to lack of consistent states to engage controls
   # Only MadsSteeringModeOnBrake.DISENGAGE is supported for these platforms
-  # TODO-SP: To enable MADS full support for Rivian/Tesla, identify consistent signals for MADS toggling
-  mads_partial_support = get_mads_limited_brands(CP)
+  # TODO-SP: To enable MADS full support for Rivian and most Tesla, identify consistent signals for MADS toggling
+  mads_partial_support = get_mads_limited_brands(CP, CP_SP)
   if mads_partial_support:
     params.put("MadsSteeringMode", 2)
     params.put_bool("MadsUnifiedEngagementMode", True)
