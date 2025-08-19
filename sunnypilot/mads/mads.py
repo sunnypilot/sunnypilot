@@ -45,7 +45,7 @@ class ModularAssistiveDrivingSystem:
       if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
-    if self.CP.brands in MADS_NO_ACC_MAIN_BUTTON:
+    if self.CP.brand in MADS_NO_ACC_MAIN_BUTTON:
       self.no_main_cruise = True
 
     # read params on init
