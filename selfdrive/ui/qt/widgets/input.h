@@ -91,7 +91,7 @@ public:
   explicit TreeOptionDialog(const QString &prompt_text, const QList<TreeFolder> &items, const QString &current, const QString &favParam, QWidget *parent = nullptr);
   static QString getSelection(const QString &prompt_text, const QList<TreeFolder> &items, const QString &current, const QString &favParam, QWidget *parent = nullptr);
   void handleFavorites(const QString &displayName, const QString &ref, QPushButton* btn);
-  QTreeWidgetItem* addChildItem(const QString &displayName, const QString &ref, QTreeWidgetItem* folderItem, QPushButton* btn = nullptr);
+  QTreeWidgetItem* addChildItem(const QString &displayName, const QString &ref, QTreeWidgetItem* folderItem, QPushButton* btn = nullptr, bool addAtTop = false);
   QString selection;
 
 private:
@@ -99,6 +99,7 @@ private:
   QPushButton *confirm_btn;
   Params params;
   QMap<QString, QList<QPushButton*>> *mapFavs;
+  QStringList *favRefs;
   QTreeWidgetItem *favorites;
 
   QIcon iconBlank;
