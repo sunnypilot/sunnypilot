@@ -12,6 +12,9 @@ from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP, HyundaiSafetyF
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 
 
+MADS_NO_ACC_MAIN_BUTTON = ("rivian", "tesla")
+
+
 class MadsSteeringModeOnBrake:
   REMAIN_ACTIVE = 0
   PAUSE = 1
@@ -66,5 +69,5 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
     params.put_bool("MadsUnifiedEngagementMode", True)
 
   # no ACC MAIN button for these brands
-  if CP.brand in ("rivian", "tesla"):
+  if CP.brand in MADS_NO_ACC_MAIN_BUTTON:
     params.remove("MadsMainCruiseAllowed")
