@@ -586,6 +586,7 @@ QTreeWidgetItem* TreeOptionDialog::addChildItem(const QString &displayName, cons
     btn->setIcon(iconBlank);
   }
   btn->setIconSize(QSize(100, 100));
+  btn->setStyleSheet("QPushButton { border: 2px solid #BDBDBD; border-radius: 20px; background: transparent; } QPushButton:pressed { background: #444444; }");
   QWidget *buttonContainer = new QWidget();
   QHBoxLayout *layout = new QHBoxLayout(buttonContainer);
   layout->addWidget(btn, 0, Qt::AlignRight);
