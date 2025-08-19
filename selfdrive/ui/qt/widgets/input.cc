@@ -399,13 +399,13 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<TreeF
 
   QScroller::grabGesture(treeWidget->viewport(), QScroller::LeftMouseButtonGesture);
 
+  // Create initial list of favorites from param
   const QString favs = QString::fromStdString(params.get(favParam.toStdString()));
   mapFavs = new QMap<QString, QList<QPushButton*>>();
   favRefs = new QStringList(favs.split(";"));
   for (const QString &item : *favRefs)
   {
     mapFavs->insert( item, {});
-    printf("adding fav from param: %s\n", item.toStdString().c_str());
   }
 
   // Populate tree
@@ -449,15 +449,16 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<TreeF
     }
   }
 
+  // Create favorites folder
   favorites = new QTreeWidgetItem();
   favorites->setIcon(0, QIcon(QPixmap("../assets/icons/menu.png")));
   favorites->setText(0, "  " + tr("Favorites"));
   favorites->setFlags(favorites->flags() | Qt::ItemIsAutoTristate);
   favorites->setFlags(favorites->flags() & ~Qt::ItemIsSelectable);
 
+  // Create favorite nodes
   for (int i = favRefs->size() - 1; i >= 0; --i) {
     QString item = favRefs->at(i);
-    printf("trying to add %s to fav folder\n", item.toStdString().c_str());
     if (item.isEmpty()) continue;
 
     QTreeWidgetItemIterator treeIt(treeWidget);
@@ -524,9 +525,21 @@ QString TreeOptionDialog::getSelection(const QString &prompt_text, const QList<T
   return "";
 }
 
+/**
+ * Handles the addition or removal of items from the "favorites" list based on the provided reference identifier.
+ *
+ * @param displayName The text label associated with the item to be added or removed in the favorites.
+ * @param ref A unique reference key identifying the item.
+ * @param btn A pointer to the QPushButton associated with the item. The button's icon is updated to indicate
+ *            whether the item is currently favorited or not.
+ *
+ * If the item is already in the favorites, it is removed from the list, its associated buttons have their
+ * icons reset, and the favorites tree is updated accordingly. If the item is not in the favorites, it is
+ * added to the list, a new associated button is created, and the favorites tree is updated. The current
+ * state of the favorites is stored in the Params object as a semicolon-separated string.
+ */
 void TreeOptionDialog::handleFavorites(const QString &displayName, const QString &ref, QPushButton *btn) {
-  printf("setting fav for %s\n", ref.toStdString().c_str());
-  if (mapFavs->keys().contains(ref)) {
+  if (mapFavs->keys().contains(ref)) { // Remove from favorites
     for (auto *itemBtn:mapFavs->value(ref))
     {
       itemBtn->setIcon(iconBlank);
@@ -539,7 +552,7 @@ void TreeOptionDialog::handleFavorites(const QString &displayName, const QString
         favorites->removeChild(child);
       }
     }
-  } else {
+  } else { // Add to favorites
     QPushButton *favBtn = new QPushButton();
     btn->setIcon(iconFilled);
     mapFavs->insert(ref, {btn, favBtn});
@@ -551,6 +564,16 @@ void TreeOptionDialog::handleFavorites(const QString &displayName, const QString
   params.put("ModelManager_Favs", favs.toStdString());
 }
 
+/**
+ * Adds a child item to a given folder item within the QTreeWidget.
+ *
+ * @param displayName The text to display for the child item.
+ * @param ref A reference string that uniquely identifies the child item.
+ * @param folderItem The parent folder item to which the child item will be added.
+ * @param btn A pointer to a QPushButton associated with the child item. If nullptr, a new button will be created.
+ * @param addAtTop If true, the child item is added as the first child of the folder item; otherwise, it is appended to the end.
+ * @return A pointer to the created QTreeWidgetItem representing the child item.
+ */
 QTreeWidgetItem* TreeOptionDialog::addChildItem(const QString &displayName, const QString &ref, QTreeWidgetItem *folderItem, QPushButton *btn, bool addAtTop) {
   QTreeWidgetItem *childItem = new QTreeWidgetItem();
   if (btn == nullptr) {
@@ -562,7 +585,7 @@ QTreeWidgetItem* TreeOptionDialog::addChildItem(const QString &displayName, cons
   } else {
     btn->setIcon(iconBlank);
   }
-  btn->setIconSize(QSize(80, 80));
+  btn->setIconSize(QSize(100, 100));
   QWidget *buttonContainer = new QWidget();
   QHBoxLayout *layout = new QHBoxLayout(buttonContainer);
   layout->addWidget(btn, 0, Qt::AlignRight);
