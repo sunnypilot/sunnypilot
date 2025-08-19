@@ -455,6 +455,7 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<TreeF
   favorites->setText(0, "  " + tr("Favorites"));
   favorites->setFlags(favorites->flags() | Qt::ItemIsAutoTristate);
   favorites->setFlags(favorites->flags() & ~Qt::ItemIsSelectable);
+  treeWidget->insertTopLevelItem(1, favorites);
 
   // Create favorite nodes
   for (int i = favRefs->size() - 1; i >= 0; --i) {
@@ -480,7 +481,6 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<TreeF
       favorites->setExpanded(true);
     }
   }
-  treeWidget->insertTopLevelItem(1, favorites);
 
   confirm_btn = new QPushButton(tr("Select"));
   confirm_btn->setObjectName("confirm_btn");

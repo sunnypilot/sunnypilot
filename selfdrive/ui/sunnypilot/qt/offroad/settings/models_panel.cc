@@ -259,6 +259,18 @@ QString ModelsPanel::GetActiveModelInternalName() {
   return DEFAULT_MODEL;
 }
 
+/**
+ * @brief Gets the ref of the currently selected model bundle
+ * @return ref of the selected bundle or default model name
+ */
+QString ModelsPanel::GetActiveModelRef() {
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getRef());
+  }
+
+  return DEFAULT_MODEL;
+}
+
 void ModelsPanel::updateModelManagerState() {
   const SubMaster &sm = *(uiStateSP()->sm);
   model_manager = sm["modelManagerSP"].getModelManagerSP();
@@ -333,34 +345,10 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     TreeNode{"", DEFAULT_MODEL, DEFAULT_MODEL, -1}
   }});
 
-  /*const QString favs = QString::fromStdString(params.get("ModelManager_Favs"));
-  QStringList favRefs = favs.split(";");
-  QList<TreeFolder> lstFavs;
-  for (const auto &fav : favRefs) {
-    if (fav.isEmpty()) continue;
-    TreeFolder favModel;
-    for (const auto &model : sortedModels) {
-      if (model.ref == fav) {
-        favModel.displayName = model.displayName;
-        favModel.ref = model.ref;
-        favModel.index = model.index;
-        favModel.folder = tr("Favorites");
-        break;
-      }
-    }
-    if (!favModel.ref.isEmpty()) {
-      lstFavs.append(favModel);
-    }
-  }
-  QList<TreeFolder>::iterator it = sortedModels.begin() + 1;
-  for (auto it_fav = lstFavs.begin(); it_fav != lstFavs.end(); ++it_fav) {
-    it = items.insert(it, *it_fav) + 1;
-  }*/
-
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
   const QString selectedBundleRef = TreeOptionDialog::getSelection(
-    tr("Select a Model"), items, GetActiveModelName(), QString("ModelManager_Favs"), this);
+    tr("Select a Model"), items, GetActiveModelRef(), QString("ModelManager_Favs"), this);
 
   if (selectedBundleRef.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
