@@ -30,5 +30,5 @@ Builds within dockerized-agnos fail when tinygrad tries to use `/dev/kgsl-3d0` t
 33.30 scons: *** [selfdrive/modeld/models/driving_policy_tinygrad.pkl] Error 1
 ```
 
-Note: `dockerize-agnos` added `--skip-model-compile` to avoid this build failure.
+Note: `selfdrive/modeld/SConscript` skips model compilation when it detects you want QCOM2 native builds but it can't.
 
