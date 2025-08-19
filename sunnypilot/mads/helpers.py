@@ -64,4 +64,7 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   if mads_partial_support:
     params.put("MadsSteeringMode", 2)
     params.put_bool("MadsUnifiedEngagementMode", True)
+
+  # no ACC MAIN button for these brands
+  if CP.brand in ("rivian", "tesla"):
     params.remove("MadsMainCruiseAllowed")
