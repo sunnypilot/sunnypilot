@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Space Lab 2 (Default)"
+#define DEFAULT_MODEL "Down To Ride (Default)"
