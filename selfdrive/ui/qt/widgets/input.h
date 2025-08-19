@@ -86,7 +86,7 @@ private:
   QTreeWidget *treeWidget;
   QPushButton *confirm_btn;
   Params params;
-  QList<QString> *lstFavs;
+  QMap<QString, QList<QPushButton*>> *mapFavs;
   QTreeWidgetItem *favorites;
 
   QIcon iconBlank;
