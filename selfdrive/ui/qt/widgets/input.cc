@@ -447,6 +447,7 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
 
   for (const QString &item : favList)
   {
+    if (item.isEmpty()) continue;
     QTreeWidgetItem *childItem = addChildItem(item, favorites);
     if (item == current) {
       treeWidget->collapseAll();
