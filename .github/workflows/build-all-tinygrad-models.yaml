@@ -127,7 +127,7 @@ jobs:
   retry_failed_models:
     needs: [setup, get_and_build]
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.result != 'failure' && (failure() && !cancelled()) }}
+    if: ${{ needs.setup.result != 'failure' && !cancelled() }}
     outputs:
       retry_matrix: ${{ steps.set-retry-matrix.outputs.retry_matrix }}
     steps:
