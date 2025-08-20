@@ -1053,8 +1053,16 @@ FW_VERSIONS = {
     ],
   },
   CAR.HYUNDAI_IONIQ_5: {
+    (Ecu.combinationMeter, 0x7c6, None): [
+      b'\xf1\x00421',
+      b'\xf1\x10',
+    ],
+    (Ecu.eps, 0x730, None): [
+      b'\xf1\x00NEaPFBL5 1.00 1.00 240813',
+    ],
     (Ecu.fwdRadar, 0x7d0, None): [
       b'\xf1\x00NE1_ RDR -----      1.00 1.00 99110-GI000         ',
+      b'\xf1\x00NE__ RDR -----      1.00 1.00 99110-PI000         ',
     ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00NE1 MFC  AT CAN LHD 1.00 1.01 99211-GI010 211007',
@@ -1081,6 +1089,7 @@ FW_VERSIONS = {
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.03 99211-GI010 220401',
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.05 99211-GI010 220614',
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.06 99211-GI010 230110',
+      b'\xf1\x00NE  MFC  AT USA LHD 1.00 1.01 99211-PI000 240905',
     ],
   },
   CAR.HYUNDAI_IONIQ_5_PE: {
