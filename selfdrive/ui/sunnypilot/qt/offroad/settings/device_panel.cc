@@ -80,6 +80,30 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
   addItem(maxTimeOffroad);
 
+    toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
+  addItem(toggleDeviceBootMode);
+
+  connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonClicked, this, [=](int index) {
+    params.put("DeviceBootMode", QString::number(index).toStdString());
+    updateState();
+  });
+
+  interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
+                                     tr("Apply a custom timeout for settings UI."
+                                        "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
+                                     "", {0, 120}, 10, true, nullptr, false);
+
+  connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
+    updateState();
+  });
+
+  addItem(interactivityTimeout);
+  
+  // Brightness
+  brightness = new Brightness();
+  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
+  addItem(brightness);
+
   addItem(device_grid_layout);
 
   // offroad mode and power buttons
@@ -179,4 +203,17 @@ void DevicePanelSP::updateState() {
   bool offroad_mode_param = params.getBool("OffroadMode");
   offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Always Offroad"));
   offroadBtn->setStyleSheet(offroad_mode_param ? alwaysOffroadStyle : autoOffroadStyle);
+
+  DeviceSleepModeStatus currStatus = DeviceSleepModeStatus::DEFAULT;
+  if (params.get("DeviceBootMode") == "1") {
+    currStatus = DeviceSleepModeStatus::OFFROAD;
+  }
+  toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
+
+  QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
+  if (timeoutValue == "0" || timeoutValue.isEmpty()) {
+    interactivityTimeout->setLabel("Default");
+  } else {
+    interactivityTimeout->setLabel(timeoutValue + "s");
+  }
 }

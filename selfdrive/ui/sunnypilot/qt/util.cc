@@ -78,3 +78,35 @@ QMap<QString, QVariantMap> loadPlatformList() {
 
   return _platforms;
 }
+
+/**
+ * @brief Searches a list of strings for elements containing all search terms in a query.
+ *
+ * The search is case-insensitive and normalizes both the query and the list elements
+ * using Unicode KD normalization before comparison.  Non-alphanumeric characters are
+ * removed from the search terms before comparison.
+ *
+ * @param query The search query string.  Multiple words can be separated by spaces.
+ * @param list The source list of strings to search.
+ * @return A list of strings from the input list that contain all of the search terms.
+ */
+QStringList searchFromList(const QString &query, const QStringList &list) {
+  if (query.isEmpty()) {
+    return list;
+  }
+
+  QStringList search_terms = query.simplified().toLower().split(" ", QString::SkipEmptyParts);
+  QStringList search_results;
+
+  for (const QString &element : list) {
+    if (std::all_of(search_terms.begin(), search_terms.end(), [&](const QString &term) {
+          QString normalized_term = term.normalized(QString::NormalizationForm_KD).toLower();
+          normalized_term.remove(QRegularExpression("[^a-zA-Z0-9\\s]"));
+          QString normalized_element = element.normalized(QString::NormalizationForm_KD).toLower();
+          return normalized_element.contains(normalized_term, Qt::CaseInsensitive);
+        })) {
+      search_results << element;
+    }
+  }
+  return search_results;
+}

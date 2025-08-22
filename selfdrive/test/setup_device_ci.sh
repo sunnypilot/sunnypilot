@@ -18,6 +18,9 @@ if [ -z "$TEST_DIR" ]; then
   exit 1
 fi
 
+# prevent storage from filling up
+rm -rf /data/media/0/realdata/*
+
 rm -rf /data/safe_staging/ || true
 if [ -d /data/safe_staging/ ]; then
   sudo umount /data/safe_staging/merged/ || true
@@ -51,6 +54,7 @@ while true; do
   #  /data/ciui.py &
   #fi
 
+  awk '{print \$1}' /proc/uptime > /var/tmp/power_watchdog
   sleep 5s
 done
 

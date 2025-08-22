@@ -231,7 +231,7 @@ function op_setup() {
 
   echo "Getting git submodules..."
   st="$(date +%s)"
-  if ! git submodule update --filter=blob:none --jobs 4 --init --recursive; then
+  if ! git submodule update --jobs 4 --init --recursive; then
     echo -e " ↳ [${RED}✗${NC}] Getting git submodules failed!"
     loge "ERROR_GIT_SUBMODULES"
     return 1
@@ -254,7 +254,7 @@ function op_setup() {
 
 function op_auth() {
   op_before_cmd
-  op_run_command tools/lib/auth.py
+  op_run_command tools/lib/auth.py "$@"
 }
 
 function op_activate_venv() {
@@ -287,10 +287,20 @@ function op_adb() {
   op_run_command tools/scripts/adb_ssh.sh
 }
 
+function op_ssh() {
+  op_before_cmd
+  op_run_command tools/scripts/ssh.py "$@"
+}
+
 function op_check() {
   VERBOSE=1
   op_before_cmd
   unset VERBOSE
+}
+
+function op_esim() {
+  op_before_cmd
+  op_run_command system/hardware/esim.py "$@"
 }
 
 function op_build() {
@@ -392,6 +402,7 @@ function op_default() {
   echo -e "${BOLD}${UNDERLINE}Commands [System]:${NC}"
   echo -e "  ${BOLD}auth${NC}         Authenticate yourself for API use"
   echo -e "  ${BOLD}check${NC}        Check the development environment (git, os, python) to start using openpilot"
+  echo -e "  ${BOLD}esim${NC}         Manage eSIM profiles on your comma device"
   echo -e "  ${BOLD}venv${NC}         Activate the python virtual environment"
   echo -e "  ${BOLD}setup${NC}        Install openpilot dependencies"
   echo -e "  ${BOLD}build${NC}        Run the openpilot build system in the current working directory"
@@ -406,6 +417,7 @@ function op_default() {
   echo -e "  ${BOLD}cabana${NC}       Run Cabana"
   echo -e "  ${BOLD}clip${NC}         Run clip (linux only)"
   echo -e "  ${BOLD}adb${NC}          Run adb shell"
+  echo -e "  ${BOLD}ssh${NC}          comma prime SSH helper"
   echo ""
   echo -e "${BOLD}${UNDERLINE}Commands [Testing]:${NC}"
   echo -e "  ${BOLD}sim${NC}          Run openpilot in a simulator"
@@ -448,6 +460,7 @@ function _op() {
     auth )          shift 1; op_auth "$@" ;;
     venv )          shift 1; op_venv "$@" ;;
     check )         shift 1; op_check "$@" ;;
+    esim )          shift 1; op_esim "$@" ;;
     setup )         shift 1; op_setup "$@" ;;
     build )         shift 1; op_build "$@" ;;
     juggle )        shift 1; op_juggle "$@" ;;
@@ -464,6 +477,7 @@ function _op() {
     restart )       shift 1; op_restart "$@" ;;
     post-commit )   shift 1; op_install_post_commit "$@" ;;
     adb )           shift 1; op_adb "$@" ;;
+    ssh )           shift 1; op_ssh "$@" ;;
     * ) op_default "$@" ;;
   esac
 }

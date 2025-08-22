@@ -122,10 +122,6 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Controls Mismatch: Lateral"),
   },
 
-  EventNameSP.hyundaiRadarTracksConfirmed: {
-    ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
-  },
-
   EventNameSP.experimentalModeSwitched: {
     ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
   },

@@ -30,7 +30,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
 
   // Steering Mode On Brake
   madsSteeringMode = new ButtonParamControl("MadsSteeringMode", tr("Steering Mode on Brake Pedal"), "", "", madsSteeringModeTexts(), 500);
-  QObject::connect(madsSteeringMode, &ButtonParamControl::buttonToggled, [=] {
+  QObject::connect(madsSteeringMode, &ButtonParamControl::buttonClicked, [=] {
     updateToggles(offroad);
   });
   list->addItem(madsSteeringMode);

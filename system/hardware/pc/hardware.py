@@ -1,11 +1,10 @@
 import random
 
 from cereal import log
-from openpilot.system.hardware.base import HardwareBase
+from openpilot.system.hardware.base import HardwareBase, LPABase
 
 NetworkType = log.DeviceState.NetworkType
 NetworkStrength = log.DeviceState.NetworkStrength
-
 
 class Pc(HardwareBase):
   def get_os_version(self):
@@ -41,6 +40,9 @@ class Pc(HardwareBase):
       'data_connected': False
     }
 
+  def get_sim_lpa(self) -> LPABase:
+    raise NotImplementedError("SIM LPA not implemented for PC")
+
   def get_network_strength(self, network_type):
     return NetworkStrength.unknown
 
@@ -68,8 +70,6 @@ class Pc(HardwareBase):
   def get_modem_temperatures(self):
     return []
 
-  def get_nvme_temperatures(self):
-    return []
 
   def initialize_hardware(self):
     pass

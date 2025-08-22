@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import fcntl
 import os
-import json
 import queue
 import struct
 import threading
@@ -34,10 +33,11 @@ CURRENT_TAU = 15.   # 15s time constant
 TEMP_TAU = 5.   # 5s time constant
 DISCONNECT_TIMEOUT = 5.  # wait 5 seconds before going offroad after disconnect so you get an alert
 PANDA_STATES_TIMEOUT = round(1000 / SERVICE_LIST['pandaStates'].frequency * 1.5)  # 1.5x the expected pandaState frequency
+ONROAD_CYCLE_TIME = 1  # seconds to wait offroad after requesting an onroad cycle
 
 ThermalBand = namedtuple("ThermalBand", ['min_temp', 'max_temp'])
 HardwareState = namedtuple("HardwareState", ['network_type', 'network_info', 'network_strength', 'network_stats',
-                                             'network_metered', 'nvme_temps', 'modem_temps'])
+                                             'network_metered', 'modem_temps'])
 
 # List of thermal bands. We will stay within this region as long as we are within the bounds.
 # When exiting the bounds, we'll jump to the lower or higher band. Bands are ordered in the dict.
@@ -140,7 +140,6 @@ def hw_state_thread(end_event, hw_queue):
           network_strength=HARDWARE.get_network_strength(network_type),
           network_stats={'wwanTx': tx, 'wwanRx': rx},
           network_metered=HARDWARE.get_network_metered(network_type),
-          nvme_temps=HARDWARE.get_nvme_temperatures(),
           modem_temps=modem_temps,
         )
 
@@ -170,6 +169,8 @@ def hardware_thread(end_event, hw_queue) -> None:
 
   onroad_conditions: dict[str, bool] = {
     "ignition": False,
+    "not_onroad_cycle": True,
+    "device_temp_good": True,
   }
   startup_conditions: dict[str, bool] = {}
   startup_conditions_prev: dict[str, bool] = {}
@@ -186,7 +187,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     network_metered=False,
     network_strength=NetworkStrength.unknown,
     network_stats={'wwanTx': -1, 'wwanRx': -1},
-    nvme_temps=[],
     modem_temps=[],
   )
 
@@ -195,9 +195,14 @@ def hardware_thread(end_event, hw_queue) -> None:
   should_start_prev = False
   in_car = False
   engaged_prev = False
+  offroad_cycle_count = 0
 
   params = Params()
   power_monitor = PowerMonitoring()
+
+  uptime_offroad: float = params.get("UptimeOffroad", return_default=True)
+  uptime_onroad: float = params.get("UptimeOnroad", return_default=True)
+  last_uptime_ts: float = time.monotonic()
 
   HARDWARE.initialize_hardware()
   thermal_config = HARDWARE.get_thermal_config()
@@ -210,6 +215,12 @@ def hardware_thread(end_event, hw_queue) -> None:
     pandaStates = sm['pandaStates']
     peripheralState = sm['peripheralState']
     peripheral_panda_present = peripheralState.pandaType != log.PandaState.PandaType.unknown
+
+    # handle requests to cycle system started state
+    if params.get_bool("OnroadCycleRequested"):
+      params.put_bool("OnroadCycleRequested", False)
+      offroad_cycle_count = sm.frame
+    onroad_conditions["not_onroad_cycle"] = (sm.frame - offroad_cycle_count) >= ONROAD_CYCLE_TIME * SERVICE_LIST['pandaStates'].frequency
 
     if sm.updated['pandaStates'] and len(pandaStates) > 0:
 
@@ -231,7 +242,7 @@ def hardware_thread(end_event, hw_queue) -> None:
         cloudlog.error("panda timed out onroad")
 
     # Run at 2Hz, plus either edge of ignition
-    ign_edge = (started_ts is not None) != onroad_conditions["ignition"]
+    ign_edge = (started_ts is not None) != all(onroad_conditions.values())
     if (sm.frame % round(SERVICE_LIST['pandaStates'].frequency * DT_HW) != 0) and not ign_edge:
       continue
 
@@ -258,7 +269,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     if last_hw_state.network_info is not None:
       msg.deviceState.networkInfo = last_hw_state.network_info
 
-    msg.deviceState.nvmeTempC = last_hw_state.nvme_temps
     msg.deviceState.modemTempC = last_hw_state.modem_temps
 
     msg.deviceState.screenBrightnessPercent = HARDWARE.get_screen_brightness()
@@ -295,6 +305,7 @@ def hardware_thread(end_event, hw_queue) -> None:
     # **** starting logic ****
 
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get_bool("DisableUpdates") or params.get_bool("SnoozeUpdate")
+    startup_conditions["no_excessive_actuation"] = params.get("Offroad_ExcessiveActuation") is None
     startup_conditions["not_uninstalling"] = not params.get_bool("DoUninstall")
     startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
 
@@ -314,7 +325,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     offroad_mode = params.get_bool("OffroadMode")
     startup_conditions["not_always_offroad"] = not offroad_mode
     onroad_conditions["not_always_offroad"] = not offroad_mode
-    set_offroad_alert("OffroadMode_Status", offroad_mode)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
@@ -327,16 +337,6 @@ def hardware_thread(end_event, hw_queue) -> None:
       if not os.path.isfile("/persist/comma/living-in-the-moment"):
         if not Path("/data/media").is_mount():
           set_offroad_alert_if_changed("Offroad_StorageMissing", True)
-        else:
-          # check for bad NVMe
-          try:
-            with open("/sys/block/nvme0n1/device/model") as f:
-              model = f.read().strip()
-            if not model.startswith("Samsung SSD 980") and params.get("Offroad_BadNvme") is None:
-              set_offroad_alert_if_changed("Offroad_BadNvme", True)
-              cloudlog.event("Unsupported NVMe", model=model, error=True)
-          except Exception:
-            pass
 
     # Handle offroad/onroad transition
     should_start = all(onroad_conditions.values())
@@ -382,6 +382,11 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # Offroad power monitoring
     voltage = None if peripheralState.pandaType == log.PandaState.PandaType.unknown else peripheralState.voltage
+
+    # GitHub runner auto off: 9V is used as the threshold because most desktop runners
+    # will rarely exceed 5V so 9V is set as our buffer between desk use and car use.
+    params.put_bool_nonblocking("GithubRunnerSufficientVoltage", ((voltage or 0) and voltage > 9000))
+
     power_monitor.calculate(voltage, onroad_conditions["ignition"])
     msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
     msg.deviceState.carBatteryCapacityUwh = max(0, power_monitor.get_car_battery_capacity())
@@ -403,7 +408,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     last_ping = params.get("LastAthenaPingTime")
     if last_ping is not None:
-      msg.deviceState.lastAthenaPingTime = int(last_ping)
+      msg.deviceState.lastAthenaPingTime = last_ping
 
     msg.deviceState.thermalStatus = thermal_status
     pm.send("deviceState", msg)
@@ -421,8 +426,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     statlog.gauge("memory_temperature", msg.deviceState.memoryTempC)
     for i, temp in enumerate(msg.deviceState.pmicTempC):
       statlog.gauge(f"pmic{i}_temperature", temp)
-    for i, temp in enumerate(last_hw_state.nvme_temps):
-      statlog.gauge(f"nvme_temperature{i}", temp)
     for i, temp in enumerate(last_hw_state.modem_temps):
       statlog.gauge(f"modem_temperature{i}", temp)
     statlog.gauge("fan_speed_percent_desired", msg.deviceState.fanSpeedPercentDesired)
@@ -443,11 +446,22 @@ def hardware_thread(end_event, hw_queue) -> None:
       # save last one before going onroad
       if rising_edge_started:
         try:
-          params.put("LastOffroadStatusPacket", json.dumps(dat))
+          params.put("LastOffroadStatusPacket", dat)
         except Exception:
           cloudlog.exception("failed to save offroad status")
 
     params.put_bool_nonblocking("NetworkMetered", msg.deviceState.networkMetered)
+
+    now_ts = time.monotonic()
+    if off_ts:
+      uptime_offroad += now_ts - max(last_uptime_ts, off_ts)
+    elif started_ts:
+      uptime_onroad += now_ts - max(last_uptime_ts, started_ts)
+    last_uptime_ts = now_ts
+
+    if (count % int(60. / DT_HW)) == 0:
+      params.put("UptimeOffroad", uptime_offroad)
+      params.put("UptimeOnroad", uptime_onroad)
 
     count += 1
     should_start_prev = should_start

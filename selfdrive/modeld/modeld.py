@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
+os.environ['DEV'] = 'QCOM' if TICI else 'LLVM'
+USBGPU = "USBGPU" in os.environ
+if USBGPU:
+  os.environ['DEV'] = 'AMD'
+  os.environ['AMD_IFACE'] = 'USB'
 from tinygrad.tensor import Tensor
 from tinygrad.dtype import dtypes
-if TICI:
-  from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-  os.environ['QCOM'] = '1'
-else:
-  os.environ['LLVM'] = '1'
 import time
 import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
 from pathlib import Path
-from setproctitle import setproctitle
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
@@ -24,13 +23,16 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
-from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value, get_curvature_from_plan
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -78,17 +80,29 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-class ModelState:
+class ModelState(ModelStateBase):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.frames = {
-      'input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP),
-      'big_input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP)
-    }
+    ModelStateBase.__init__(self)
+    self.LAT_SMOOTH_SECONDS = LAT_SMOOTH_SECONDS
+    with open(VISION_METADATA_PATH, 'rb') as f:
+      vision_metadata = pickle.load(f)
+      self.vision_input_shapes =  vision_metadata['input_shapes']
+      self.vision_input_names = list(self.vision_input_shapes.keys())
+      self.vision_output_slices = vision_metadata['output_slices']
+      vision_output_size = vision_metadata['output_shapes']['outputs'][1]
+
+    with open(POLICY_METADATA_PATH, 'rb') as f:
+      policy_metadata = pickle.load(f)
+      self.policy_input_shapes =  policy_metadata['input_shapes']
+      self.policy_output_slices = policy_metadata['output_slices']
+      policy_output_size = policy_metadata['output_shapes']['outputs'][1]
+
+    self.frames = {name: DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP) for name in self.vision_input_names}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
 
     self.full_features_buffer = np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32)
@@ -104,18 +118,6 @@ class ModelState:
       'prev_desired_curv': np.zeros((1, ModelConstants.INPUT_HISTORY_BUFFER_LEN, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
       'features_buffer': np.zeros((1, ModelConstants.INPUT_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
     }
-
-    with open(VISION_METADATA_PATH, 'rb') as f:
-      vision_metadata = pickle.load(f)
-      self.vision_input_shapes =  vision_metadata['input_shapes']
-      self.vision_output_slices = vision_metadata['output_slices']
-      vision_output_size = vision_metadata['output_shapes']['outputs'][1]
-
-    with open(POLICY_METADATA_PATH, 'rb') as f:
-      policy_metadata = pickle.load(f)
-      self.policy_input_shapes =  policy_metadata['input_shapes']
-      self.policy_output_slices = policy_metadata['output_slices']
-      policy_output_size = policy_metadata['output_shapes']['outputs'][1]
 
     # img buffers are managed in openCL transform code
     self.vision_inputs: dict[str, Tensor] = {}
@@ -134,7 +136,7 @@ class ModelState:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in output_slices.items()}
     return parsed_model_outputs
 
-  def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
+  def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
@@ -147,10 +149,9 @@ class ModelState:
 
     self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
     self.numpy_inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
-               'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
+    imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.vision_input_names}
 
-    if TICI:
+    if TICI and not USBGPU:
       # The imgs tensors are backed by opencl memory, only need init once
       for key in imgs_cl:
         if key not in self.vision_inputs:
@@ -163,14 +164,14 @@ class ModelState:
     if prepare_only:
       return None
 
-    self.vision_output = self.vision_run(**self.vision_inputs).numpy().flatten()
+    self.vision_output = self.vision_run(**self.vision_inputs).contiguous().realize().uop.base.buffer.numpy()
     vision_outputs_dict = self.parser.parse_vision_outputs(self.slice_outputs(self.vision_output, self.vision_output_slices))
 
     self.full_features_buffer[0,:-1] = self.full_features_buffer[0,1:]
     self.full_features_buffer[0,-1] = vision_outputs_dict['hidden_state'][0, :]
     self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[0, self.temporal_idxs]
 
-    self.policy_output = self.policy_run(**self.policy_inputs).numpy().flatten()
+    self.policy_output = self.policy_run(**self.policy_inputs).contiguous().realize().uop.base.buffer.numpy()
     policy_outputs_dict = self.parser.parse_policy_outputs(self.slice_outputs(self.policy_output, self.policy_output_slices))
 
     # TODO model only uses last value now
@@ -188,16 +189,17 @@ class ModelState:
 def main(demo=False):
   cloudlog.warning("modeld init")
 
-  sentry.set_tag("daemon", PROCESS_NAME)
-  cloudlog.bind(daemon=PROCESS_NAME)
-  setproctitle(PROCESS_NAME)
-  config_realtime_process(7, 54)
+  if not USBGPU:
+    # USB GPU currently saturates a core so can't do this yet,
+    # also need to move the aux USB interrupts for good timings
+    config_realtime_process(7, 54)
 
+  st = time.monotonic()
   cloudlog.warning("setting up CL context")
   cl_context = CLContext()
   cloudlog.warning("CL context ready; loading model")
   model = ModelState(cl_context)
-  cloudlog.warning("models loaded, modeld starting")
+  cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # visionipc clients
   while True:
@@ -294,7 +296,9 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    lat_delay = sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
+    if sm.frame % 60 == 0:
+      model.lat_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay)
+    lat_delay = model.lat_delay + LAT_SMOOTH_SECONDS
     lateral_control_params = np.array([v_ego, lat_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
@@ -323,14 +327,16 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
+    transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
       'lateral_control_params': lateral_control_params,
-      }
+    }
 
     mt1 = time.perf_counter()
-    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
+    model_output = model.run(bufs, transforms, inputs, prepare_only)
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
@@ -370,7 +376,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(demo=args.demo)
   except KeyboardInterrupt:
-    cloudlog.warning(f"child {PROCESS_NAME} got SIGINT")
-  except Exception:
-    sentry.capture_exception()
-    raise
+    cloudlog.warning("got SIGINT")

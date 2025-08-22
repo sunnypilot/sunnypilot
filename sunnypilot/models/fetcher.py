@@ -5,7 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import json
 import time
 
 import requests
@@ -44,6 +43,16 @@ class ModelParser:
     return model
 
   @staticmethod
+  def _parse_overrides(overrides_data: dict[str, str]) -> list[custom.ModelManagerSP.Override]:
+    overrides = []
+    for key, value in overrides_data.items():
+      override = custom.ModelManagerSP.Override()
+      override.key = key
+      override.value = value
+      overrides.append(override)
+    return overrides
+
+  @staticmethod
   def _parse_bundle(bundle) -> custom.ModelManagerSP.ModelBundle:
     model_bundle = custom.ModelManagerSP.ModelBundle()
     model_bundle.index = int(bundle["index"])
@@ -56,6 +65,7 @@ class ModelParser:
     model_bundle.runner = bundle.get("runner", custom.ModelManagerSP.Runner.snpe)
     model_bundle.is20hz = bundle.get("is_20hz", False)
     model_bundle.minimumSelectorVersion = int(bundle["minimum_selector_version"])
+    model_bundle.overrides = ModelParser._parse_overrides(bundle.get("overrides", {}))
 
     return model_bundle
 
@@ -77,8 +87,8 @@ class ModelCache:
   def _is_expired(self) -> bool:
     """Checks if the cache has expired"""
     current_time = int(time.monotonic() * 1e9)
-    last_sync = int(self.params.get(self._LAST_SYNC_KEY, encoding="utf-8") or 0)
-    return last_sync == 0 or (current_time - last_sync) >= self.cache_timeout
+    last_sync = self.params.get(self._LAST_SYNC_KEY) or 0
+    return bool(last_sync == 0) or (current_time - last_sync) >= self.cache_timeout
 
   def get(self) -> tuple[dict, bool]:
     """
@@ -87,24 +97,24 @@ class ModelCache:
     If no cached data exists or on error, returns an empty dict
     """
     try:
-      cached_data = self.params.get(self._CACHE_KEY, encoding="utf-8")
+      cached_data = self.params.get(self._CACHE_KEY)
       if not cached_data:
         cloudlog.warning("No cached model data available")
         return {}, True
-      return json.loads(cached_data), self._is_expired()
+      return cached_data, self._is_expired()
     except Exception as e:
       cloudlog.exception(f"Error retrieving cached model data: {str(e)}")
       return {}, True
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""
-    self.params.put(self._CACHE_KEY, json.dumps(data))
-    self.params.put(self._LAST_SYNC_KEY, str(int(time.monotonic() * 1e9)))
+    self.params.put(self._CACHE_KEY, data)
+    self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9))
 
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://docs.sunnypilot.ai/driving_models_v3.json"
+  MODEL_URL = "https://docs.sunnypilot.ai/driving_models_v7.json"
 
   def __init__(self, params: Params):
     self.params = params
@@ -149,8 +159,9 @@ if __name__ == "__main__":
   bundles = model_fetcher.get_available_bundles()
   for bundle in bundles:
     for model in bundle.models:
+      model_overrides = {override.key: override.value for override in bundle.overrides}
       # Print model details
-      print(f"Bundle: {bundle.internalName}, Type: {model.type}, Status: {bundle.status}")
+      print(f"Bundle: {bundle.internalName}, Type: {model.type}, Status: {bundle.status}, Overrides: {model_overrides}")
       # Print artifact details
       print(f"Artifact: {model.artifact.fileName}, Download URI: {model.artifact.downloadUri.uri}")
       # Print metadata details

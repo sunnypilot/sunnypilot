@@ -36,6 +36,12 @@ def flash_panda(panda_serial: str) -> Panda:
   panda_signature = b"" if panda.bootstub else panda.get_signature()
   cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
 
+  # skip flashing if the detected device is deprecated from upstream
+  hw_type = panda.get_type()
+  if hw_type in Panda.DEPRECATED_DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is deprecated (hw_type: {hw_type}), skipping flash...")
+    return panda
+
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
     panda.flash()
@@ -87,7 +93,7 @@ def main() -> None:
 
       # TODO: remove this in the next AGNOS
       # wait until USB is up before counting
-      if time.monotonic() < 25.:
+      if time.monotonic() < 35.:
         no_internal_panda_count = 0
 
       # Handle missing internal panda

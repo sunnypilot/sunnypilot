@@ -40,14 +40,14 @@ PROCS = {
   "selfdrive.selfdrived.selfdrived": 16.0,
   "selfdrive.car.card": 26.0,
   "./loggerd": 14.0,
-  "./encoderd": 17.0,
+  "./encoderd": 13.0,
   "./camerad": 10.0,
-  "selfdrive.controls.plannerd": 9.0,
+  "selfdrive.controls.plannerd": 8.0,
   "./ui": 18.0,
-  "./sensord": 7.0,
+  "system.sensord.sensord": 13.0,
   "selfdrive.controls.radard": 2.0,
   "selfdrive.modeld.modeld": 22.0,
-  "selfdrive.modeld.dmonitoringmodeld": 21.0,
+  "selfdrive.modeld.dmonitoringmodeld": 18.0,
   "system.hardware.hardwared": 4.0,
   "selfdrive.locationd.calibrationd": 2.0,
   "selfdrive.locationd.torqued": 5.0,
@@ -55,6 +55,7 @@ PROCS = {
   "selfdrive.locationd.paramsd": 9.0,
   "selfdrive.locationd.lagd": 11.0,
   "selfdrive.ui.soundd": 3.0,
+  "selfdrive.ui.feedback.feedbackd": 1.0,
   "selfdrive.monitoring.dmonitoringd": 4.0,
   "./proclogd": 2.0,
   "system.logmessaged": 1.0,
@@ -147,7 +148,7 @@ class TestOnroad:
         while not sm.seen['carState']:
           sm.update(1000)
 
-      route = params.get("CurrentRoute", encoding="utf-8")
+      route = params.get("CurrentRoute")
       assert route is not None
 
       segs = list(Path(Paths.log_root()).glob(f"{route}--*"))
@@ -398,7 +399,7 @@ class TestOnroad:
       ("modelV2", 0.06, 0.040),
 
       # can miss cycles here and there, just important the avg frequency is 20Hz
-      ("driverStateV2", 0.2, 0.05),
+      ("driverStateV2", 0.3, 0.05),
     ]
     for (s, instant_max, avg_max) in cfgs:
       ts = [getattr(m, s).modelExecutionTime for m in self.msgs[s]]

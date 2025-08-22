@@ -23,12 +23,6 @@ class CarSpecificEventsSP:
     self.params = params
 
     self.low_speed_alert = False
-    self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
-    self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
-
-  def read_params(self):
-    self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
-    self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
 
   def update(self, CS: structs.CarState, events: Events):
     events_sp = EventsSP()
@@ -47,9 +41,5 @@ class CarSpecificEventsSP:
           self.low_speed_alert = True
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
-
-    if self.CP.brand == 'hyundai':
-      if self.hyundai_radar_tracks and not self.hyundai_radar_tracks_confirmed:
-        events_sp.add(EventNameSP.hyundaiRadarTracksConfirmed)
 
     return events_sp

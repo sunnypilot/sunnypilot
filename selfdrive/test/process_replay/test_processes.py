@@ -19,7 +19,6 @@ from openpilot.tools.lib.logreader import LogReader, save_log
 IS_AZURE_TOKEN_DEFINED = os.getenv("AZURE_TOKEN")
 
 source_segments = [
-  ("BODY", "937ccb7243511b65|2022-05-24--16-03-09--1"),        # COMMA.COMMA_BODY
   ("HYUNDAI", "02c45f73a2e5c6e9|2021-01-01--19-08-22--1"),     # HYUNDAI.HYUNDAI_SONATA
   ("HYUNDAI2", "d545129f3ca90f28|2022-11-07--20-43-08--3"),    # HYUNDAI.HYUNDAI_KIA_EV6 (+ QCOM GPS)
   ("TOYOTA", "0982d79ebb0de295|2021-01-04--17-13-21--13"),     # TOYOTA.TOYOTA_PRIUS
@@ -37,13 +36,13 @@ source_segments = [
   ("MAZDA", "bd6a637565e91581|2021-10-30--15-14-53--4"),       # MAZDA.MAZDA_CX9_2021
   ("FORD", "54827bf84c38b14f|2023-01-26--21-59-07--4"),        # FORD.FORD_BRONCO_SPORT_MK1
   ("RIVIAN", "bc095dc92e101734|000000db--ee9fe46e57--1"),      # RIVIAN.RIVIAN_R1_GEN1
+  ("TESLA", "2c912ca5de3b1ee9|0000025d--6eb6bcbca4--4"),       # TESLA.TESLA_MODEL_Y
 
   # Enable when port is tested and dashcamOnly is no longer set
   #("VOLKSWAGEN2", "3cfdec54aa035f3f|2022-07-19--23-45-10--2"),  # VOLKSWAGEN.VOLKSWAGEN_PASSAT_NMS
 ]
 
 segments = [
-  ("BODY", "regen2F3C7259F1B|2025-04-08--23-00-23--0"),
   ("HYUNDAI", "regenAA0FC4ED71E|2025-04-08--22-57-50--0"),
   ("HYUNDAI2", "regenAFB9780D823|2025-04-08--23-00-34--0"),
   ("TOYOTA", "regen218A4DCFAA1|2025-04-08--22-57-51--0"),
@@ -60,10 +59,11 @@ segments = [
   ("MAZDA", "regenACF84CCF482|2024-08-30--03-21-55--0"),
   ("FORD", "regen755D8CB1E1F|2025-04-08--23-13-43--0"),
   ("RIVIAN", "regen5FCAC896BBE|2025-04-08--23-13-35--0"),
+  ("TESLA", "2c912ca5de3b1ee9|0000025d--6eb6bcbca4--4"),
 ]
 
 # dashcamOnly makes don't need to be tested until a full port is done
-excluded_interfaces = ["mock", "tesla"]
+excluded_interfaces = ["mock", "body"]
 
 BASE_URL = "https://commadataci.blob.core.windows.net/openpilotci/"
 REF_COMMIT_FN = os.path.join(PROC_REPLAY_DIR, "ref_commit")
@@ -251,7 +251,7 @@ if __name__ == "__main__":
           continue
 
         # to speed things up, we only test all segments on card
-        if cfg.proc_name != 'card' and car_brand not in ('HYUNDAI', 'TOYOTA', 'HONDA', 'SUBARU', 'FORD', 'RIVIAN'):
+        if cfg.proc_name not in ('card', 'controlsd', 'lagd') and car_brand not in ('HYUNDAI', 'TOYOTA'):
           continue
 
         cur_log_fn = os.path.join(FAKEDATA, f"{segment}_{cfg.proc_name}_{cur_commit}.zst")

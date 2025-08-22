@@ -6,6 +6,19 @@ from cereal import log
 
 NetworkType = log.DeviceState.NetworkType
 
+class LPAError(RuntimeError):
+  pass
+
+class LPAProfileNotFoundError(LPAError):
+  pass
+
+@dataclass
+class Profile:
+  iccid: str
+  nickname: str
+  enabled: bool
+  provider: str
+
 @dataclass
 class ThermalZone:
   # a zone from /sys/class/thermal/thermal_zone*
@@ -33,6 +46,7 @@ class ThermalZone:
 class ThermalConfig:
   cpu: list[ThermalZone] | None = None
   gpu: list[ThermalZone] | None = None
+  dsp: ThermalZone | None = None
   pmic: list[ThermalZone] | None = None
   memory: ThermalZone | None = None
   intake: ThermalZone | None = None
@@ -49,6 +63,31 @@ class ThermalConfig:
         else:
           ret[f.name + "TempC"] = v.read()
     return ret
+
+class LPABase(ABC):
+  @abstractmethod
+  def list_profiles(self) -> list[Profile]:
+    pass
+
+  @abstractmethod
+  def get_active_profile(self) -> Profile | None:
+    pass
+
+  @abstractmethod
+  def delete_profile(self, iccid: str) -> None:
+    pass
+
+  @abstractmethod
+  def download_profile(self, qr: str, nickname: str | None = None) -> None:
+    pass
+
+  @abstractmethod
+  def nickname_profile(self, iccid: str, nickname: str) -> None:
+    pass
+
+  @abstractmethod
+  def switch_profile(self, iccid: str) -> None:
+    pass
 
 class HardwareBase(ABC):
   @staticmethod
@@ -105,6 +144,10 @@ class HardwareBase(ABC):
     pass
 
   @abstractmethod
+  def get_sim_lpa(self) -> LPABase:
+    pass
+
+  @abstractmethod
   def get_network_strength(self, network_type):
     pass
 
@@ -156,15 +199,15 @@ class HardwareBase(ABC):
   def get_modem_temperatures(self):
     pass
 
-  @abstractmethod
-  def get_nvme_temperatures(self):
-    pass
 
   @abstractmethod
   def initialize_hardware(self):
     pass
 
   def configure_modem(self):
+    pass
+
+  def reboot_modem(self):
     pass
 
   @abstractmethod

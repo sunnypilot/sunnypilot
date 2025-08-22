@@ -17,7 +17,7 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
     tuning_texts,
     500
   );
-  QObject::connect(longitudinalTuningToggle, &ButtonParamControlSP::buttonToggled, this, &HyundaiSettings::updateSettings);
+  QObject::connect(longitudinalTuningToggle, &ButtonParamControlSP::buttonClicked, this, &HyundaiSettings::updateSettings);
   list->addItem(longitudinalTuningToggle);
   longitudinalTuningToggle->showDescription();
 }

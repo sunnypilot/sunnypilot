@@ -64,6 +64,17 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   list->addItem(vertical_space(0));
   list->addItem(horizontal_line());
 
+  // Blinker Pause Lateral Control
+  blinkerPauseLateralSettings = new BlinkerPauseLateralSettings(
+    "BlinkerPauseLateralControl",
+    tr("Pause Lateral Control with Blinker"),
+    tr("Pause lateral control with blinker when traveling below the desired speed selected."),
+    "",
+    this);
+  list->addItem(blinkerPauseLateralSettings);
+
+  list->addItem(horizontal_line());
+
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
@@ -138,6 +149,8 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+
+  blinkerPauseLateralSettings->refresh();
 
   offroad = _offroad;
 }
