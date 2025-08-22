@@ -86,7 +86,7 @@ def get_expected_indices(shape, constants, mode, key=None):
 @pytest.mark.parametrize("shapes,mode", [
   ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
   ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 25, 1)}, 'non20hz'),
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
 ], indirect=["shapes"])
 
 def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
