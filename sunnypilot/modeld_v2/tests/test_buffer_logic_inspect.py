@@ -85,7 +85,7 @@ def get_expected_indices(shape, constants, mode, key=None):
 # This is the extracted shapes directly from the model onnx
 @pytest.mark.parametrize("shapes,mode", [
   ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
-  ({'desire': (1, 24, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 24, 1)}, '20hz'),
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 24, 1)}, '20hz'),
   ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
 ], indirect=["shapes"])
 
