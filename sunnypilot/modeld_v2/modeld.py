@@ -80,13 +80,13 @@ class ModelState(ModelStateBase):
           buffer_history_len = max(100, (shape[1] * 4 if shape[1] < 100 else shape[1]))   # Allow for higher history buffers in the future
           feature_len = shape[2]
           self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
-          if shape[1] == 25:  # split
+          features_buffer_shape = self.model_runner.input_shapes.get('features_buffer')
+          if shape[1] in (24, 25) and features_buffer_shape is not None and features_buffer_shape[1] == 24:  # 20Hz
+            step = int(-buffer_history_len / shape[1])
+            self.temporal_idxs_map[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
+          elif shape[1] == 25:  # Split
             skip = buffer_history_len // shape[1]
-            start = -1 - (skip * (shape[1] - 1))
-            self.temporal_idxs_map[key] = np.arange(buffer_history_len)[start::skip]
-          elif shape[1] == 24:  # 20hz
-            step_size = int(-buffer_history_len / shape[1])
-            self.temporal_idxs_map[key] = np.arange(step_size, step_size * (shape[1] + 1), step_size)[::-1]
+            self.temporal_idxs_map[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
           elif shape[1] == buffer_history_len:  # non20hz
             self.temporal_idxs_map[key] = np.arange(buffer_history_len)
 
