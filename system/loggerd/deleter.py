@@ -80,19 +80,6 @@ def deleter_thread(exit_event: threading.Event):
               except OSError:
                 cloudlog.exception(f"issue deleting {delete_path_external}")
 
-            # re-check external space; if still low, delete internal here and skip move
-            out_of_bytes_external = get_available_bytes(default=MIN_BYTES + 1, path_type="external") < MIN_BYTES
-            out_of_percent_external = get_available_percent(default=MIN_PERCENT + 1, path_type="external") < MIN_PERCENT
-
-            if out_of_percent_external or out_of_bytes_external:
-              try:
-                cloudlog.warning(f"deleting {delete_path}")
-                shutil.rmtree(delete_path)
-                break
-              except OSError:
-                cloudlog.exception(f"issue deleting {delete_path}")
-                continue
-
           # move directory from internal to external
           path_external = os.path.join(Paths.log_root_external(), delete_dir)
           try:
@@ -103,6 +90,12 @@ def deleter_thread(exit_event: threading.Event):
             break
           except Exception as e:
             cloudlog.exception(f"issue moving {delete_path} to {path_external}: {str(e)}")
+            try:
+              cloudlog.warning(f"deleting {delete_path}")
+              shutil.rmtree(delete_path)
+              break
+            except OSError:
+              cloudlog.exception(f"issue deleting {delete_path}")
           continue
 
         try:
