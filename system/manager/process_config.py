@@ -62,7 +62,8 @@ def only_offroad(started: bool, params: Params, CP: car.CarParams) -> bool:
   return not started
 
 def use_github_runner(started, params, CP: car.CarParams) -> bool:
-  return not PC and params.get_bool("EnableGithubRunner") and not params.get_bool("NetworkMetered")
+  return not PC and params.get_bool("EnableGithubRunner") and (
+    not params.get_bool("NetworkMetered") and not params.get_bool("GithubRunnerSufficientVoltage"))
 
 def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for sunnylink_ready to match the process manager signature."""
@@ -174,7 +175,7 @@ procs += [
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
-if os.path.exists("../sunnypilot/sunnylink/uploader.py"):
+if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
 
 managed_processes = {p.name: p for p in procs}
