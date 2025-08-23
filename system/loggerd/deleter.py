@@ -89,7 +89,7 @@ def deleter_thread(exit_event: threading.Event):
             cloudlog.warning(f"moved {delete_path} to {path_external} in {time.monotonic() - start:.2f}s")
             break
           except Exception:
-            cloudlog.exception(f"issue moving {delete_path} to {path_external}")
+            cloudlog.error(f"issue moving {delete_path} to {path_external}")
             try:
               cloudlog.warning(f"deleting {delete_path}")
               shutil.rmtree(delete_path)
