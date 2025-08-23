@@ -151,7 +151,6 @@ void ExternalStorageControl::formatStorage() {
             process->deleteLater();
             formatting = false;
             if (exitCode == 0 && status == QProcess::NormalExit) {
-              QProcess::execute("sh", QStringList() << "-c" << "sudo e2label /dev/sdg1 openpilot");
               mountStorage();
             } else {
               setValue(tr("needs format"));
@@ -161,7 +160,7 @@ void ExternalStorageControl::formatStorage() {
   process->start("sh", QStringList() << "-c" <<
     "sudo wipefs -a /dev/sdg && "
     "sudo parted -s /dev/sdg mklabel gpt mkpart primary ext4 0% 100% && "
-    "sudo mkfs.ext4 -F /dev/sdg1"
+    "sudo mkfs.ext4 -F -L openpilot /dev/sdg1"
   );
 }
 
