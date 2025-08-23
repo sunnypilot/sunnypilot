@@ -963,10 +963,6 @@ The default software delay value is 0.2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Model download has started in the background.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1008,6 +1004,38 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Refresh Model List</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>REFRESH</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fetching Latest Models</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Live Steer Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Actuator Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Software Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Total Delay:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2039,6 +2067,14 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>Not Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>[Don&apos;t use] Enable sunnylink uploader</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
