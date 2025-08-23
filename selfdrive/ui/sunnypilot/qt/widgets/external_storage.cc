@@ -63,7 +63,7 @@ void ExternalStorageControl::refresh() {
     };
 
     bool isMounted = run("findmnt -n /mnt/external_realdata");
-    bool hasDrive = run("lsblk -f /dev/sdg1");
+    bool hasDrive = run("lsblk -f /dev/sdg");
     bool hasFs = run("lsblk -f /dev/sdg1 | grep -q ext4");
     bool hasLabel = run("sudo blkid /dev/sdg1 | grep -q 'LABEL=\"openpilot\"'");
 
