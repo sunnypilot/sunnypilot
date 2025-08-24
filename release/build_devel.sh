@@ -33,7 +33,7 @@ git clean -xdff
 git lfs uninstall
 
 # remove everything except .git
-echo "[-] erasing old openpilot T=$SECONDS"
+echo "[-] erasing old sunnypilot T=$SECONDS"
 find . -maxdepth 1 -not -path './.git' -not -name '.' -not -name '..' -exec rm -rf '{}' \;
 
 # reset source tree
@@ -61,7 +61,7 @@ echo -n "$GIT_COMMIT_DATE" > git_src_commit_date
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git status
-git commit -a -m "openpilot v$VERSION release
+git commit -a -m "sunnypilot v$VERSION release
 
 date: $DATETIME
 master commit: $GIT_HASH

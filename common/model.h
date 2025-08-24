@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Tomb Raider 14 (Default)"
+#define DEFAULT_MODEL "Down To Ride (Default)"

@@ -15,7 +15,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim
+  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
 
@@ -31,7 +31,7 @@ SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require 
 DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
-sunnylink_dongle_id = params.get("SunnylinkDongleId", encoding='utf-8')
+sunnylink_dongle_id = params.get("SunnylinkDongleId")
 sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
 
 
@@ -47,7 +47,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
               threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
-              # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
+              threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
               # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
               # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
             ] + [
@@ -68,7 +68,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
         end_event.set()
         comma_prime_cellular_end_event.set()
 
-      prime_type = params.get("PrimeType", encoding='utf-8') or 0
+      prime_type = params.get("PrimeType") or 0
       metered = sm['deviceState'].networkMetered
 
       if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
@@ -103,7 +103,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
         cloudlog.debug("sunnylinkd.ws_recv.pong")
         last_ping = int(time.monotonic() * 1e9)
-        Params().put("LastSunnylinkPingTime", str(last_ping))
+        Params().put("LastSunnylinkPingTime", last_ping)
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > SUNNYLINK_RECONNECT_TIMEOUT_S * 1e9:

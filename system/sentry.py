@@ -106,10 +106,10 @@ def set_user() -> None:
 
 def get_properties() -> tuple[str, str, str]:
   params = Params()
-  hardware_serial: str = params.get("HardwareSerial", encoding='utf-8') or ""
-  git_username: str = params.get("GithubUsername", encoding='utf-8') or ""
-  dongle_id: str = params.get("DongleId", encoding='utf-8') or f"{UNREGISTERED_DONGLE_ID}-{hardware_serial}"
-  sunnylink_dongle_id: str = params.get("SunnylinkDongleId", encoding='utf-8') or UNREGISTERED_SUNNYLINK_DONGLE_ID
+  hardware_serial: str = params.get("HardwareSerial") or ""
+  git_username: str = params.get("GithubUsername") or ""
+  dongle_id: str = params.get("DongleId") or f"{UNREGISTERED_DONGLE_ID}-{hardware_serial}"
+  sunnylink_dongle_id: str = params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
 
   return dongle_id, git_username, sunnylink_dongle_id
 
