@@ -1,5 +1,5 @@
 import pyray as rl
-from openpilot.system.ui.lib.toggle import Toggle
+from openpilot.system.ui.widgets.toggle import Toggle
 import openpilot.system.ui.sunnypilot.lib.styles as styles
 
 style = styles.Default

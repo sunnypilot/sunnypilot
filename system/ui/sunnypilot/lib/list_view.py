@@ -1,6 +1,6 @@
 import pyray as rl
 
-from openpilot.system.ui.lib.list_view import ToggleAction, ListItem, ItemAction
+from openpilot.system.ui.widgets.list_view import ToggleAction, ListItem, ItemAction
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from collections.abc import Callable
