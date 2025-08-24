@@ -216,26 +216,7 @@ class VibePersonalityController:
     except (KeyError, IndexError):
       return None
 
-  def get_personality_info(self) -> dict:
-    """Get comprehensive info about current personalities and settings"""
-    self._update_from_params()
 
-    accel_names = {AccelPersonality.eco: "Eco", AccelPersonality.normal: "Normal", AccelPersonality.sport: "Sport"}
-    long_names = {LongPersonality.relaxed: "Relaxed", LongPersonality.standard: "Standard", LongPersonality.aggressive: "Aggressive"}
-
-    info = {
-      "accel_personality": accel_names.get(self.accel_personality, "Unknown"),
-      "accel_personality_int": self.accel_personality,
-      "long_personality": long_names.get(self.long_personality, "Unknown"),
-      "long_personality_int": self.long_personality,
-      "enabled": self._get_toggle_state('enabled'),
-      "accel_enabled": self._get_toggle_state('accel_enabled'),
-      "follow_enabled": self._get_toggle_state('follow_enabled'),
-      "accel_description": f"Acceleration: {accel_names.get(self.accel_personality, 'Unknown')}",
-      "long_description": f"Following/Braking: {long_names.get(self.long_personality, 'Unknown')}",
-    }
-
-    return info
 
   def get_min_accel(self, v_ego: float) -> float | None:
     """Get minimum acceleration (braking) from distance mode"""
@@ -255,4 +236,4 @@ class VibePersonalityController:
 
   def update(self):
     """Update frame counter"""
-    self.frame = (self.frame + 1) % 1000000
+    self.frame += 1
