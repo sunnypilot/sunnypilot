@@ -1,5 +1,4 @@
 from itertools import filterfalse
-from openpilot.common.params import Params
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
 from openpilot.system.ui.widgets.list_view import dual_button_item, DualButtonAction
 from openpilot.system.ui.sunnypilot.lib.list_view import option_item_sp, multiple_button_item_sp
@@ -71,8 +70,9 @@ class DeviceLayoutSP(DeviceLayout):
 
     self.interactivity_timeout = option_item_sp(
       title="Interactivity Timeout",
-      description="Apply a custom timeout for settings UI.\n"
-                  "This is the time after which settings UI closes automatically if user is not interacting with the screen.",
+      description="""Apply a custom timeout for settings UI.\n
+                  This is the time after which settings UI closes automatically
+                  if user is not interacting with the screen.""",
       param="InteractivityTimeout",
       min_value=0,
       max_value=120,

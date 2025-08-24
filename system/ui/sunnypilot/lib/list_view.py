@@ -118,11 +118,11 @@ class ListItemSP(ListItem):
       )
 
 class MultipleButtonActionSP(MultipleButtonAction):
-  def __init__(self, param: str, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
+  def __init__(self, param: str | None, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param_key = param
     self.params = Params()
-    if param is not None:
+    if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default = True))
 
   def _render(self, rect: rl.Rectangle) -> bool:
@@ -225,8 +225,9 @@ def dual_button_item_sp(left_text: str, right_text: str, left_callback: Callable
   action = DualButtonAction(left_text, right_text, left_callback, right_callback, enabled)
   return ListItemSP(title="", description=description, action_item=action)
 
-def multiple_button_item_sp(title: str, description: str| Callable[[], str], buttons: list[str], selected_index: int = 0, param: str | None = None,
-                         button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = "") -> ListItem:
+def multiple_button_item_sp(title: str, description: str| Callable[[], str], buttons: list[str], selected_index: int = 0,
+                         button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = "",
+                         param: str | None = None) -> ListItem:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
 

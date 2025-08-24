@@ -5,8 +5,7 @@ from openpilot.system.ui.widgets.list_view import toggle_item
 from openpilot.system.ui.widgets.scroller import Scroller
 
 if Params().get_bool("sunnypilot_ui"):
-  from openpilot.system.ui.sunnypilot.lib.list_view import (multiple_button_item_sp as multiple_button_item,
-                                                            toggle_item_sp as toggle_item)
+  from openpilot.system.ui.sunnypilot.lib.list_view import (toggle_item_sp as toggle_item)
 
 # Description constants
 DESCRIPTIONS = {
