@@ -3,12 +3,11 @@ import cereal.messaging as messaging
 from enum import Enum
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from cereal import car, custom
+from cereal import car
 from openpilot.system.micd import SAMPLE_RATE, SAMPLE_BUFFER
 
 FEEDBACK_MAX_DURATION = 10.0
 ButtonType = car.CarState.ButtonEvent.Type
-ButtonTypeSP = custom.CarStateSP.ButtonEvent.Type
 
 # TODO-SP: Use common python enum when we move to raylib?
 CUSTOM_MAPPING_BOOKMARK = 1  # Custom button mapping value for bookmark action
@@ -22,7 +21,7 @@ class ButtonPressType(Enum):
 def main():
   params = Params()
   pm = messaging.PubMaster(['userBookmark', 'audioFeedback'])
-  sm = messaging.SubMaster(['rawAudioData', 'bookmarkButton', 'carState', 'selfdriveStateSP', 'carStateSP'])
+  sm = messaging.SubMaster(['rawAudioData', 'bookmarkButton', 'carState', 'selfdriveStateSP'])
   should_record_audio = False
   block_num = 0
   waiting_for_release = False
@@ -81,17 +80,15 @@ def get_button_event(sm, params):
   btn_pressed = ButtonPressType.NONE
 
   # use custom button mapping if available
-  use_custom = custom_mapped and sm.updated['carStateSP']
+  use_custom = custom_mapped and sm.updated['carState']
   # only allow the LKAS button to record feedback when MADS is disabled & custom button mapping is not set
   use_lkas = sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available
 
-  if use_custom:
-    for be in sm['carStateSP'].buttonEvents:
-      if be.type == ButtonTypeSP.customButton:
-        btn_pressed = ButtonPressType.CUSTOM if be.pressed else ButtonPressType.NONE
-  if use_lkas:
+  if use_custom or use_lkas:
     for be in sm['carState'].buttonEvents:
-      if be.type == ButtonType.lkas:
+      if be.type == ButtonType.altButton2:
+        btn_pressed = ButtonPressType.CUSTOM if be.pressed else ButtonPressType.NONE
+      elif be.type == ButtonType.lkas:
         btn_pressed = ButtonPressType.LKAS if be.pressed else ButtonPressType.NONE
 
   return btn_pressed
