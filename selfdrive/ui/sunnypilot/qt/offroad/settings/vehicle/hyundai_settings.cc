@@ -56,7 +56,7 @@ void HyundaiSettings::updateSettings() {
     cereal::CarParamsSP::Reader CP_SP = cmsg.getRoot<cereal::CarParamsSP>();
 
     // TODO-SP: Better way to get the flag value in qt?
-    has_custom_button = CP_SP.getFlags() & 64;
+    has_custom_button = CP_SP.getFlags() & 512; // 512 = HAS_CUSTOM_BUTTON (2 ** 9)
   } else {
     has_custom_button = false;
   }
