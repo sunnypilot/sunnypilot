@@ -93,8 +93,8 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
   state = ModelState(None)
   constants = DummyModelRunner(shapes).constants # because you can't run the dang thing locally
   for key in shapes:
-    buf = getattr(state, f"full_{key}", None)
-    idxs = getattr(state, f"{key}_idxs", None)
+    buf = state.temporal_buffers.get(key, None)
+    idxs = state.temporal_idxs_map.get(key, None)
     # Buffer shape logic
     if mode == 'split':
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])

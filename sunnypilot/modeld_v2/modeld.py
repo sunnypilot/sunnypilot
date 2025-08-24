@@ -90,12 +90,6 @@ class ModelState(ModelStateBase):
           elif shape[1] == buffer_history_len:  # non20hz
             self.temporal_idxs_map[key] = np.arange(buffer_history_len)
 
-    # Set buffer and idx attributes for all temporal buffers
-    for key in self.temporal_buffers:
-      setattr(self, f"full_{key}", self.temporal_buffers[key])
-      idxs = self.temporal_idxs_map.get(key, None)
-      setattr(self, f"{key}_idxs", idxs)
-
   @property
   def mlsim(self) -> bool:
     return bool(self.generation is not None and self.generation >= 11)
