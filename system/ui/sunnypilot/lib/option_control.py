@@ -149,9 +149,8 @@ class OptionControlSP(Widget):
 
         if self.value_map:
             # Use the value map to get the display string
-            str_value = str(value)
-            if str_value in self.value_map:
-                return self.value_map[str_value][1]  # Return the display string
+            if value in self.value_map:
+                return self.value_map[value][1]  # Return the display string
 
         # If using float scaling, format as float
         if self.use_float_scaling:
