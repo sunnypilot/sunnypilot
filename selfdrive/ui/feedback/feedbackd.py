@@ -22,8 +22,9 @@ def main():
     sm.update()
     should_send_bookmark = False
 
+    # TODO: https://github.com/commaai/openpilot/issues/36015
     # only allow the LKAS button to record feedback when MADS is disabled
-    if sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available:
+    if False and sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available:
       for be in sm['carState'].buttonEvents:
         if be.type == ButtonType.lkas:
           if be.pressed:
