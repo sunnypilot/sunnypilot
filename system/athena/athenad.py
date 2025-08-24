@@ -381,7 +381,9 @@ def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str = N
   return {"success": 1}
 
 
-def scan_dir(path: str, prefix: str, base: str) -> list[str]:
+def scan_dir(path: str, prefix: str, base: str | None = None) -> list[str]:
+  if base is None:
+    base = path
   files = []
   # only walk directories that match the prefix
   # (glob and friends traverse entire dir tree)
