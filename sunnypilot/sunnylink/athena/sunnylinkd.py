@@ -169,11 +169,20 @@ def getParamsAllKeys() -> list[str]:
   return keys
 
 
+def as_bytes(value):
+  if isinstance(value, bytes):
+    return value
+  elif isinstance(value, str):
+    return value.encode('utf-8')
+  else:
+    return str(value).encode('utf-8')
+
+
 @dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
   try:
     params = Params()
-    params_dict: dict[str, bytes] = {key: params.get(key) or b'' for key in params_keys}
+    params_dict: dict[str, bytes] = {key: as_bytes(params.get(key)) or b'' for key in params_keys}
 
     # Compress the values before encoding to base64 as output from params.get is bytes and same for compression
     if compression:
