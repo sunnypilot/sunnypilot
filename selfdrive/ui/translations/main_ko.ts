@@ -975,10 +975,6 @@ The default software delay value is 0.2</source>
         <translation>기본값</translation>
     </message>
     <message>
-        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
-        <translation>이 기능을 켜면 차량이 스스로 핸들 반응 속도를 학습하고 맞춥니다. 끄면 고정된 핸들 반응 속도를 사용합니다. 이 기능을 켜두는 것이 기본 openpilot 경험을 제공합니다. 차량이 주행 중일 때 현재 값이 자동으로 업데이트됩니다.</translation>
-    </message>
-    <message>
         <source>Model download has started in the background.</source>
         <translation>모델 다운로드가 백그라운드에서 시작되었습니다.</translation>
     </message>
@@ -1021,6 +1017,38 @@ The default software delay value is 0.2</source>
     <message>
         <source>Cancel</source>
         <translation>취소</translation>
+    </message>
+    <message>
+        <source>Refresh Model List</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>REFRESH</source>
+        <translation type="unfinished">새로 고침</translation>
+    </message>
+    <message>
+        <source>Fetching Latest Models</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Live Steer Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Actuator Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Software Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Total Delay:</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2059,6 +2087,14 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Not Paired</source>
         <translation>페어링되지 않음</translation>
+    </message>
+    <message>
+        <source>Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>[Don&apos;t use] Enable sunnylink uploader</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
