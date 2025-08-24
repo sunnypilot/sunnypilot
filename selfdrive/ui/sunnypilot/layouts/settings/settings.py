@@ -21,7 +21,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import Steering
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 
-OP.PANEL_COLOR = rl.BLACK
+OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
 OP.PanelType = IntEnum( # type: ignore
