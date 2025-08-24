@@ -1,11 +1,7 @@
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.widgets.ssh_key import ssh_key_item
-from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.list_view import toggle_item
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
 
-if Params().get_bool("sunnypilot_ui"):
-  from openpilot.system.ui.sunnypilot.lib.list_view import (toggle_item_sp as toggle_item)
+from openpilot.system.ui.sunnypilot.lib.list_view import toggle_item_sp
 
 # Description constants
 DESCRIPTIONS = {
@@ -21,11 +17,11 @@ DESCRIPTIONS = {
 }
 
 
-class DeveloperLayout(Widget):
+class DeveloperLayoutSP(DeveloperLayout):
   def __init__(self):
     super().__init__()
     self._params = Params()
-    items = [
+    items += [
       toggle_item(
         "Enable ADB",
         description=DESCRIPTIONS["enable_adb"],
@@ -51,21 +47,4 @@ class DeveloperLayout(Widget):
         initial_state=self._params.get_bool("AlphaLongitudinalEnabled"),
         callback=self._on_alpha_long_enabled,
       ),
-      toggle_item(
-        "Use Raylib UI",
-        description="Enables or disables the use of Raylib for UI rendering. Changing this will trigger a UI restart.",
-        initial_state=self._params.get_bool("UseRaylib"),
-        callback=None,
-        param="UseRaylib"
-      ),
     ]
-
-    self._scroller = Scroller(items, line_separator=True, spacing=0)
-
-  def _render(self, rect):
-    self._scroller.render(rect)
-
-  def _on_enable_adb(self): pass
-  def _on_joystick_debug_mode(self): pass
-  def _on_long_maneuver_mode(self): pass
-  def _on_alpha_long_enabled(self): pass
