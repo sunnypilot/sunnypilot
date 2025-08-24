@@ -158,6 +158,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"SteeringCustomButtonMapping", {PERSISTENT | BACKUP, INT, "0"}},
     {"VisionTurnSpeedControl", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"sunnypilot_ui", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"UseRaylib", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},

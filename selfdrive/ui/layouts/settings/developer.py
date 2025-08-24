@@ -4,6 +4,9 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import toggle_item
 from openpilot.system.ui.widgets.scroller import Scroller
 
+if Params().get_bool("sunnypilot_ui"):
+  from openpilot.system.ui.sunnypilot.lib.list_view import (toggle_item_sp as toggle_item)
+
 # Description constants
 DESCRIPTIONS = {
   'enable_adb': (
@@ -47,6 +50,13 @@ class DeveloperLayout(Widget):
         description="",
         initial_state=self._params.get_bool("AlphaLongitudinalEnabled"),
         callback=self._on_alpha_long_enabled,
+      ),
+      toggle_item(
+        "Use Raylib UI",
+        description="Enables or disables the use of Raylib for UI rendering. Changing this will trigger a UI restart.",
+        initial_state=self._params.get_bool("UseRaylib"),
+        callback=None,
+        param="UseRaylib"
       ),
     ]
 
