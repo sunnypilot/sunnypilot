@@ -1,12 +1,23 @@
 import pyray as rl
+from openpilot.common.params import Params
+from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.widgets.toggle import Toggle
 import openpilot.system.ui.sunnypilot.lib.styles as styles
 
 style = styles.Default
 
 class ToggleSP(Toggle):
-  def __init__(self, initial_state=False):
+  def __init__(self, initial_state=False, param: str | None = None):
+    self.param_key = param
+    self.params = Params()
+    if self.param_key:
+        initial_state = self.params.get_bool(self.param_key)
     Toggle.__init__(self, initial_state)
+
+  def _handle_mouse_release(self, mouse_pos: MousePos):
+      super()._handle_mouse_release(mouse_pos)
+      if self._enabled and self.param_key:
+        self.params.put_bool(self.param_key, self._state)
 
   def _render(self, rect: rl.Rectangle):
     self.update()
