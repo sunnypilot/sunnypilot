@@ -120,9 +120,10 @@ class ListItemSP(ListItem):
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, param: str, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
-    self.param = param
+    self.param_key = param
+    self.params = Params()
     if param is not None:
-      self.selected_button = int(Params().get(self.param, return_default = True))
+      self.selected_button = int(self.params.get(self.param_key, return_default = True))
 
   def _render(self, rect: rl.Rectangle) -> bool:
     spacing = 20
@@ -164,7 +165,8 @@ class MultipleButtonActionSP(MultipleButtonAction):
 
     if clicked >= 0:
       self.selected_button = clicked
-      Params().put(self.param, self.selected_button)
+      if self.param_key:
+        self.params.put(self.param_key, self.selected_button)
       if self.callback:
         self.callback(clicked)
       return True
