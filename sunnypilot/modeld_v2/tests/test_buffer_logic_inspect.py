@@ -13,7 +13,7 @@ ModelState = modeld_module.ModelState
 SHAPE_MODE_PARAMS = [
   ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
   ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1,100,1)}, 'non20hz'),
 ]
 
 
@@ -241,6 +241,8 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
   state = ModelState(None)
+  if key not in state.numpy_inputs:
+    pytest.skip(f"{key} not in state.numpy_inputs")
   constants = DummyModelRunner(shapes).constants
   buf = state.temporal_buffers.get(key, None)
   idxs = state.temporal_idxs_map.get(key, None)

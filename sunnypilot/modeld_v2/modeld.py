@@ -313,6 +313,15 @@ def main(demo=False):
     if "lateral_control_params" in model.numpy_inputs.keys():
       inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
+    if "driving_style" in model.inputs.keys():
+      inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
+
+    if "nav_features" in model.inputs.keys():
+      inputs['nav_features'] = np.zeros(model.constants.NAV_FEATURE_LEN, dtype=np.float32)
+
+    if "nav_instructions" in model.inputs.keys():
+      inputs['nav_instructions'] = np.zeros(model.constants.NAV_INSTRUCTION_LEN, dtype=np.float32)
+
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
     mt2 = time.perf_counter()
