@@ -97,20 +97,15 @@ class Parser:
 
   def parse_dynamic_outputs(self, outs: dict[str, np.ndarray]) -> None:
     if 'lead' in outs:
-      lead_mhp = self.is_mhp(outs, 'lead', SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH)
-      if lead_mhp:
-        lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION)
-        lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
-      else:
-        lead_in_N, lead_out_N = (0, 0)
-        lead_out_shape = (SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
+      lead_mhp = self.is_mhp(outs, 'lead',
+                             SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH)
+      lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION) if lead_mhp else (0, 0)
+      lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH) if lead_mhp else \
+        (SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
       self.parse_mdn('lead', outs, in_N=lead_in_N, out_N=lead_out_N, out_shape=lead_out_shape)
     if 'plan' in outs:
       plan_mhp = self.is_mhp(outs, 'plan', SplitModelConstants.IDX_N * SplitModelConstants.PLAN_WIDTH)
-      if plan_mhp:
-        plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION)
-      else:
-        plan_in_N, plan_out_N = (0, 0)
+      plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
       self.parse_mdn('plan', outs, in_N=plan_in_N, out_N=plan_out_N,
                      out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
 
