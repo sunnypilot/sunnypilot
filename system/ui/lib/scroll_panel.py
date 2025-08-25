@@ -127,7 +127,8 @@ class GuiScrollPanel:
 
     # Handle mouse wheel
     wheel_move = rl.get_mouse_wheel_move()
-    if wheel_move != 0:
+    mouse_pos = rl.get_mouse_position()
+    if wheel_move != 0 and rl.check_collision_point_rec(mouse_pos, bounds):
       self._velocity_y = 0.0
 
       if self._show_vertical_scroll_bar:

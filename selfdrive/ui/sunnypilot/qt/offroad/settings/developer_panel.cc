@@ -33,6 +33,15 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   });
   prebuiltToggle->setVisible(false);
 
+  // Raylib Toggle
+  useRaylib = new ParamControlSP("UseRaylib",
+    tr("Use Raylib UI"),
+    tr("Enables or disables the use of Raylib for UI rendering. Changing this will trigger a UI restart."),
+    "",
+    this,
+    true);
+  addItem(useRaylib);
+
   // Error log button
   errorLogBtn = new ButtonControlSP(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
   connect(errorLogBtn, &ButtonControlSP::clicked, [=]() {
@@ -71,6 +80,7 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
   showAdvancedControls->setEnabled(true);
+  useRaylib->setEnabled(offroad);
 }
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
