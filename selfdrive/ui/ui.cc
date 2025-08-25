@@ -64,6 +64,7 @@ void update_state(UIState *s) {
 
   auto params = Params();
   scene.recording_audio = params.getBool("RecordAudio") && scene.started;
+  params.putBool("AutoTetheringToggle", scene.started);
 }
 
 void ui_update_params(UIState *s) {

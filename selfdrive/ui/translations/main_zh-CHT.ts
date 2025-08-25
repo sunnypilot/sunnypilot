@@ -19,6 +19,10 @@
         <translation>回上頁</translation>
     </message>
     <message>
+        <source>Auto Tethering</source>
+        <translation>自動網路分享</translation>
+    </message>
+    <message>
         <source>Enable Tethering</source>
         <translation>啟用網路分享</translation>
     </message>

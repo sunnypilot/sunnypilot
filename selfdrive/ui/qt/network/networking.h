@@ -73,6 +73,7 @@ public:
 
 private:
   LabelControl* ipLabel;
+  ToggleControl* AutotetheringToggle;
   ToggleControl* tetheringToggle;
   ToggleControl* roamingToggle;
   ButtonControl* editApnButton;
