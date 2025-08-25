@@ -24,7 +24,7 @@ class StateMachine:
       if events_sp.has(EventNameSP.speedLimitAdapting):
         self.state = State.adapting
       elif events_sp.has(EventNameSP.speedLimitActive):
-        self.state = State.activ
+        self.state = State.active
 
     # ACTIVE
     elif self.state == State.active:

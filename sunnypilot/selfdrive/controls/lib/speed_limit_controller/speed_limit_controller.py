@@ -211,7 +211,6 @@ class SpeedLimitController:
 
   def transition_state_from_pre_active(self) -> None:
     """ Make state transition from preActive state """
-    pass
 
   def transition_state_from_adapting(self) -> None:
     """ Make state transition from adapting state """
