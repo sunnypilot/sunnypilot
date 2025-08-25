@@ -17,7 +17,6 @@ class Policy(IntEnum):
 
 class Engage(IntEnum):
   auto = 0
-  user_confirm = 1
 
 
 class OffsetType(IntEnum):

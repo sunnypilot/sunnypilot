@@ -1,9 +1,8 @@
-from collections.abc import Callable
 import numpy as np
 import time
 
 from cereal import messaging, custom
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
   PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState
@@ -29,14 +28,14 @@ class SpeedLimitController:
   _v_offset: float
 
   def __init__(self, CP):
-    self._params = Params()
+    self.params = Params()
     self._CP = CP
-    self._policy = self._read_policy_param()
+    self._policy = self.params.get("SpeedLimitControlPolicy", return_default=True)
     self._resolver = SpeedLimitResolver(self._policy)
     self._last_params_update = 0.0
     self._last_op_engaged_time = 0.0
-    self._is_metric = self._params.get_bool("IsMetric")
-    self._enabled = self._params.get_bool("SpeedLimitControl")
+    self._is_metric = self.params.get_bool("IsMetric")
+    self._enabled = self.params.get_bool("SpeedLimitControl")
     self._op_engaged = False
     self._op_engaged_prev = False
     self._v_ego = 0.
@@ -55,11 +54,11 @@ class SpeedLimitController:
     self._gas_pressed = False
     self._pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
-    self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
-    self._offset_value = self._read_int_param("SpeedLimitValueOffset")
-    self._warning_type = self._read_int_param("SpeedLimitWarningType")
-    self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
-    self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
+    self._offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
+    self._offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+    self._warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
+    self._warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
+    self._warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
     self._engage_type = self._read_engage_type_param()
     self._current_time = 0.
     self._v_cruise_rounded = 0.
@@ -152,41 +151,25 @@ class SpeedLimitController:
 
   def _update_params(self) -> None:
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
-      self._enabled = self._params.get_bool("SpeedLimitControl")
-      self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
-      self._offset_value = self._read_int_param("SpeedLimitValueOffset")
-      self._warning_type = self._read_int_param("SpeedLimitWarningType")
-      self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
-      self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
-      self._policy = self._read_policy_param()
-      self._is_metric = self._params.get_bool("IsMetric")
+      self._enabled = self.params.get_bool("SpeedLimitControl")
+      self._offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
+      self._offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+      self._warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
+      self._warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
+      self._warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
+      self._policy = Policy(self.params.get("SpeedLimitControlPolicy", return_default=True))
+      self._is_metric = self.params.get_bool("IsMetric")
       self._speed_factor = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
       self._engage_type = self._read_engage_type_param()
 
       self._last_params_update = self._current_time
 
-  def _read_policy_param(self) -> Policy:
-    try:
-      return Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
-    except (ValueError, TypeError):
-      return Policy.car_state_priority
-
   def _read_engage_type_param(self) -> Engage:
     if self._pcm_cruise_op_long:
       return Engage.auto
 
-    return Engage(self._read_int_param("SpeedLimitEngageType", validator=lambda x: np.clip(x, Engage.auto, Engage.user_confirm)))
-
-  def _read_int_param(self, key: str, default: int = 0, validator: Callable[[int], int] = None) -> int:
-    try:
-      val = int(self._params.get(key, encoding='utf8'))
-
-      if validator is not None:
-        return validator(val)
-      return val
-    except (ValueError, TypeError):
-      return default
+    return Engage.auto
 
   def _update_calculations(self) -> None:
     # Update current velocity offset (error)
@@ -203,8 +186,7 @@ class SpeedLimitController:
     self._speed_limit_changed = self._speed_limit != self._speed_limit_prev
     self._v_cruise_setpoint_changed = self._v_cruise_setpoint != self._v_cruise_setpoint_prev
     self._speed_limit_prev = self._speed_limit
-    if self._engage_type != Engage.user_confirm:
-      self._update_v_cruise_setpoint_prev()
+    self._update_v_cruise_setpoint_prev()  # always for Engage.auto
     self._op_engaged_prev = self._op_engaged
 
     self._v_cruise_rounded = int(round(self._v_cruise_setpoint * self._speed_factor))
@@ -215,13 +197,7 @@ class SpeedLimitController:
 
   def transition_state_from_inactive(self) -> None:
     """ Make state transition from inactive state """
-    if self._engage_type == Engage.user_confirm:
-      if (((self._last_op_engaged_time + 7.) >= self._current_time >= (self._last_op_engaged_time + 2.)) or
-            self._speed_limit_changed):
-        if self._speed_limit_changed:
-          self._last_op_engaged_time = self._current_time - 2.  # immediately prompt confirmation
-        self.state = SpeedLimitControlState.preActive
-    elif self._engage_type == Engage.auto:
+    if self._engage_type == Engage.auto:
       if self._v_offset < LIMIT_SPEED_OFFSET_TH:
         self.state = SpeedLimitControlState.adapting
       else:
@@ -230,27 +206,12 @@ class SpeedLimitController:
   def transition_state_from_temp_inactive(self) -> None:
     """ Make state transition from temporary inactive state """
     if self._speed_limit_changed:
-      if self._engage_type == Engage.user_confirm:
-        self._last_op_engaged_time = self._current_time - 2.  # immediately prompt confirmation
-        self.state = SpeedLimitControlState.preActive
-      elif self._engage_type == Engage.auto:
+      if self._engage_type == Engage.auto:
         self.state = SpeedLimitControlState.inactive
 
   def transition_state_from_pre_active(self) -> None:
     """ Make state transition from preActive state """
-    if self._current_time >= (self._last_op_engaged_time + 7.):
-      self.state = SpeedLimitControlState.inactive
-    elif (self._last_op_engaged_time + 7.) > self._current_time > (self._last_op_engaged_time + 2.):
-      if self._speed_limit_changed:
-        self._last_op_engaged_time = self._current_time - 2.  # immediately prompt confirmation
-      elif self._v_cruise_prev_rounded < self._speed_limit_offsetted_rounded:
-        if self._v_cruise_setpoint > self._v_cruise_setpoint_prev:
-          self.state = SpeedLimitControlState.active
-      elif self._v_cruise_prev_rounded > self._speed_limit_offsetted_rounded:
-        if self._v_cruise_setpoint < self._v_cruise_setpoint_prev:
-          self.state = SpeedLimitControlState.active
-      elif self._v_cruise_prev_rounded == self._speed_limit_offsetted_rounded:
-        self.state = SpeedLimitControlState.active
+    pass
 
   def transition_state_from_adapting(self) -> None:
     """ Make state transition from adapting state """
@@ -259,14 +220,7 @@ class SpeedLimitController:
 
   def transition_state_from_active(self) -> None:
     """ Make state transition from active state """
-    if self._engage_type == Engage.user_confirm:
-      if self._state_prev == SpeedLimitControlState.active:
-        if self._v_cruise_setpoint_changed and self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
-          self.state = SpeedLimitControlState.tempInactive
-        elif self._speed_limit_changed:
-          self._last_op_engaged_time = self._current_time - 2.  # immediately prompt confirmation
-          self.state = SpeedLimitControlState.preActive
-    elif self._engage_type == Engage.auto:
+    if self._engage_type == Engage.auto:
       if self._v_offset < LIMIT_SPEED_OFFSET_TH:
         self.state = SpeedLimitControlState.adapting
 
@@ -289,8 +243,7 @@ class SpeedLimitController:
 
     self.state_transition_strategy[self.state]()
 
-    if self._engage_type == Engage.user_confirm:
-      self._update_v_cruise_setpoint_prev()
+    self._update_v_cruise_setpoint_prev()  # always for Engage.auto
 
   def get_current_acceleration_as_target(self) -> float:
     """ When state is inactive or tempInactive, preserve current acceleration """
@@ -308,20 +261,8 @@ class SpeedLimitController:
     return self._v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
   def _update_events(self, events_sp: EventsSP) -> None:
-    if self._speed_limit > 0 and self._warning_type == 2 and \
-          self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._speed_factor)):
-      events_sp.add(EventNameSP.speedLimitPreActive)
-
-    if not self.is_active:
-      if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
-            self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
-        events_sp.add(EventNameSP.speedLimitPreActive)
-    else:
-      if self._engage_type == Engage.user_confirm:
-        if self._state_prev == SpeedLimitControlState.preActive:
-          events_sp.add(EventNameSP.speedLimitConfirmed)
-          events_sp.add(EventNameSP.speedLimitActive)
-      elif self._engage_type == Engage.auto:
+    if self.is_active:
+      if self._engage_type == Engage.auto:
         if self._state_prev not in ACTIVE_STATES:
           events_sp.add(EventNameSP.speedLimitActive)
         elif self._speed_limit_changed != 0:

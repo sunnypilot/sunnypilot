@@ -1,6 +1,6 @@
 import cereal.messaging as messaging
 from cereal import log, car, custom
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 
@@ -147,28 +147,12 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: NoEntryAlert("Pedal Pressed")
   },
 
-  EventNameSP.speedLimitPreActive: {
-    ET.WARNING: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),  # TODO-SP: AudibleAlert.promptSingleLow
-  },
-
   EventNameSP.speedLimitActive: {
     ET.WARNING: Alert(
       "Set speed changed to match posted speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
-  },
-
-  EventNameSP.speedLimitConfirmed: {
-    ET.WARNING: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),  # TODO-SP: AudibleAlert.promptSingleHigh
   },
 
   EventNameSP.speedLimitValueChange: {
