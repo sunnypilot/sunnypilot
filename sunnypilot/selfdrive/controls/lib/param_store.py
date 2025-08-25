@@ -24,11 +24,16 @@ class ParamStore:
     self.values = {}
     self.cached_params_list: list[capnp.lib.capnp._DynamicStructBuilder] | None = None
 
+    self.frame = 0
+
   def update(self, params: Params) -> None:
-    old_values = dict(self.values)
-    self.values = {k: params.get(k) or "0" for k in self.keys}
-    if old_values != self.values:
-      self.cached_params_list = None
+    if self.frame % 300 == 0:
+      old_values = dict(self.values)
+      self.values = {k: params.get(k) or "0" for k in self.keys}
+      if old_values != self.values:
+        self.cached_params_list = None
+
+    self.frame += 1
 
   def publish(self) -> list[capnp.lib.capnp._DynamicStructBuilder]:
     if self.cached_params_list is None:
