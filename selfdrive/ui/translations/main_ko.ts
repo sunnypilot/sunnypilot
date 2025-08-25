@@ -975,10 +975,6 @@ The default software delay value is 0.2</source>
         <translation>기본값</translation>
     </message>
     <message>
-        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
-        <translation>이 기능을 켜면 차량이 스스로 핸들 반응 속도를 학습하고 맞춥니다. 끄면 고정된 핸들 반응 속도를 사용합니다. 이 기능을 켜두는 것이 기본 openpilot 경험을 제공합니다. 차량이 주행 중일 때 현재 값이 자동으로 업데이트됩니다.</translation>
-    </message>
-    <message>
         <source>Model download has started in the background.</source>
         <translation>모델 다운로드가 백그라운드에서 시작되었습니다.</translation>
     </message>
@@ -1021,6 +1017,38 @@ The default software delay value is 0.2</source>
     <message>
         <source>Cancel</source>
         <translation>취소</translation>
+    </message>
+    <message>
+        <source>Refresh Model List</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>REFRESH</source>
+        <translation type="unfinished">새로 고침</translation>
+    </message>
+    <message>
+        <source>Fetching Latest Models</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Live Steer Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Actuator Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Software Delay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Total Delay:</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2060,6 +2088,14 @@ Warning: You are on a metered connection!</source>
         <source>Not Paired</source>
         <translation>페어링되지 않음</translation>
     </message>
+    <message>
+        <source>Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>[Don&apos;t use] Enable sunnylink uploader</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
@@ -2204,18 +2240,6 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.</source>
         <translation>운전 중 마이크 오디오를 녹음하고 저장합니다. 이 오디오는 comma connect의 대시캠 영상에 포함됩니다.</translation>
-    </message>
-    <message>
-        <source>Record Audio Feedback with LKAS button</source>
-        <translation>LKAS 버튼으로 오디오 피드백 녹음</translation>
-    </message>
-    <message>
-        <source>Press the LKAS button to record and share driving feedback with the openpilot team. When this toggle is disabled, the button acts as a bookmark button. The event will be highlighted in comma connect and the segment will be preserved on your device&apos;s storage.
-
-Note that this feature is only compatible with select cars.</source>
-        <translation>LKAS 버튼을 눌러 openpilot 팀과 주행 피드백을 녹음하고 공유하세요. 이 기능을 비활성화하면, 해당 버튼은 북마크 버튼 역할을 합니다. 이 이벤트는 comma connect에서 강조되며, 해당 구간 영상은 기기 저장소에 보존됩니다.
-
-참고: 이 기능은 일부 차량에서만 호환됩니다.</translation>
     </message>
     <message>
         <source>Enable sunnypilot</source>
