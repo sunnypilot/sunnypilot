@@ -12,6 +12,8 @@ from opendbc.car.interfaces import ACCEL_MIN
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -19,10 +21,13 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
+    self.events_sp = EventsSP()
+
     self.dec = DynamicExperimentalController(CP, mpc)
     self.v_tsc = VisionTurnController(CP)
     self.transition_init()
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
+    self.slc = SpeedLimitController(CP)
 
   @property
   def mlsim(self) -> bool:
@@ -36,11 +41,16 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
+    self.events_sp.clear()
+    self.slc.update(sm, v_ego, a_ego, v_cruise, self.events_sp)
     self.v_tsc.update(sm, sm['carControl'].enabled, v_ego, a_ego, v_cruise)
 
     v_cruise_v_tsc = self.v_tsc.v_turn if self.v_tsc.is_active else V_CRUISE_UNSET
+    v_cruise_slc = self.slc.speed_limit_offseted if self.slc.is_active else V_CRUISE_UNSET
 
-    return min(v_cruise, v_cruise_v_tsc)
+    v_cruise_final = min(v_cruise, v_cruise_v_tsc, v_cruise_slc)
+
+    return v_cruise_final
 
   def transition_init(self) -> None:
     self._transition_counter = 0
@@ -77,6 +87,7 @@ class LongitudinalPlannerSP:
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+    longitudinalPlanSP.events = self.events_sp.to_msg()
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
@@ -90,5 +101,14 @@ class LongitudinalPlannerSP:
     visionTurnSpeedControl.velocity = float(self.v_tsc.v_turn)
     visionTurnSpeedControl.currentLateralAccel = float(self.v_tsc.current_lat_acc)
     visionTurnSpeedControl.maxPredictedLateralAccel = float(self.v_tsc.max_pred_lat_acc)
+
+    # Speed Limit Control
+    slc = longitudinalPlanSP.slc
+    slc.state = self.slc.state
+    slc.enabled = self.slc.is_enabled
+    slc.active = self.slc.is_active
+    slc.speedLimit = float(self.slc.speed_limit)
+    slc.speedLimitOffset = float(self.slc.speed_limit_offset)
+    slc.distToSpeedLimit = float(self.slc.distance)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
