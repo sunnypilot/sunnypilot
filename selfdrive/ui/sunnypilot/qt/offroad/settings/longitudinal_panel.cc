@@ -70,8 +70,29 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     main_layout->setCurrentWidget(cruisePanelScreen);
   });
 
+  slcControl = new SpeedLimitControl(
+    "SpeedLimitControl",
+    tr("Speed Limit Control (SLC)"),
+    tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
+      "The maximum cruising speed will always be the MAX set speed."),
+    "",
+    this);
+  list->addItem(slcControl);
+
+  connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
+    cruisePanelScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(slcScreen);
+  });
+
+  slcScreen = new SpeedLimitControlSubpanel(this);
+  connect(slcScreen, &SpeedLimitControlSubpanel::backPress, [=]() {
+    cruisePanelScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(cruisePanelScreen);
+  });
+
   main_layout->addWidget(cruisePanelScreen);
   main_layout->addWidget(decScreen);
+  main_layout->addWidget(slcScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);
 }
