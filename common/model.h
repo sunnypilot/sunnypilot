@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Down To Ride (Default)"
+#define DEFAULT_MODEL "Steam Powered (Default)"
