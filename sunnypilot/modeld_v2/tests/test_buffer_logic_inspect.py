@@ -6,6 +6,16 @@ import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.models.runners.helpers as runner_helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 
+ModelState = modeld_module.ModelState
+
+
+# These are the shapes extracted/loaded from the model onnx
+SHAPE_MODE_PARAMS = [
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
+]
+
 
 # This creates a dummy runner, override, and bundle instance for the tests to run, without actually trying to load a physical model.
 class DummyOverride:
@@ -13,10 +23,12 @@ class DummyOverride:
     self.key = key
     self.value = value
 
+
 class DummyBundle:
   def __init__(self) -> None:
     self.overrides = [DummyOverride('lat', '.1'), DummyOverride('long', '.3')]
     self.generation = 10  # default to non-mlsim for buffer-update tests, as raising to 11 here will zero curvature buffer
+
 
 class DummyModelRunner:
   def __init__(self, input_shapes: dict[str, tuple[int, int, int]], constants: Any = None) -> None:
@@ -36,7 +48,7 @@ class DummyModelRunner:
     else:
       self.is_20hz = False
 
-  # Minimal prepare/run methods so ModelState can be ran without actually running the model
+  # Minimal prepare/run methods so ModelState can be run without actually running the model
   def prepare_inputs(self, imgs_cl, numpy_inputs, frames):
     return None
 
@@ -46,18 +58,21 @@ class DummyModelRunner:
       'desired_curvature': np.zeros((1, 1), dtype=np.float32),
     }
 
-ModelState = modeld_module.ModelState
+
 @pytest.fixture
 def shapes(request):
   return request.param
+
 
 @pytest.fixture
 def bundle() -> DummyBundle:
   return DummyBundle()
 
+
 @pytest.fixture
 def runner(shapes) -> DummyModelRunner:
   return DummyModelRunner(shapes)
+
 
 @pytest.fixture
 def apply_patches(monkeypatch: pytest.MonkeyPatch, bundle: DummyBundle, runner: DummyModelRunner):
@@ -65,6 +80,7 @@ def apply_patches(monkeypatch: pytest.MonkeyPatch, bundle: DummyBundle, runner: 
   monkeypatch.setattr(runner_helpers, 'get_model_runner', lambda: runner, raising=False)
   monkeypatch.setattr(modeld_module, 'get_model_runner', lambda: runner, raising=False)
   monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle, raising=False)
+
 
 # These are expected shapes and indices based on the time the model was presented
 def get_expected_indices(shape, constants, mode, key=None):
@@ -82,13 +98,8 @@ def get_expected_indices(shape, constants, mode, key=None):
     if key and shape[1] == constants.FULL_HISTORY_BUFFER_LEN:
       return np.arange(constants.FULL_HISTORY_BUFFER_LEN)
     return None
+  return None
 
-# These are the shapes extracted/loaded from the model onnx
-SHAPE_MODE_PARAMS = [
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
-]
 
 @pytest.mark.parametrize("shapes,mode", SHAPE_MODE_PARAMS, indirect=["shapes"])
 def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
@@ -117,6 +128,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
       assert np.all(idxs == expected_idxs), f"{key}: buffer idxs {idxs} != expected {expected_idxs}"
     else:
       assert idxs is None or idxs.size == 0, f"{key}: buffer idxs should be None or empty"
+
 
 def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
   # This is what we compare the new dynamic logic to, to ensure it does the same thing
@@ -177,6 +189,7 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
       return buf[0]
   return None
 
+
 def dynamic_buffer_update(state, key, new_val, mode):
   if key == 'desire':
     state.temporal_buffers['desire'][0,:-1] = state.temporal_buffers['desire'][0,1:]
@@ -222,6 +235,7 @@ def dynamic_buffer_update(state, key, new_val, mode):
     state.run({}, {}, inputs, prepare_only=False)
     return state.numpy_inputs['prev_desired_curv'][0]
   return None
+
 
 @pytest.mark.parametrize("shapes,mode", SHAPE_MODE_PARAMS, indirect=["shapes"])
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
