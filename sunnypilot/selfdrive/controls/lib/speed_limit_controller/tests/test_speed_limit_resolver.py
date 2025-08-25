@@ -38,7 +38,7 @@ def setup_sm_mock(mocker: MockerFixture):
     'speedLimitAheadDistance': 0.,
   }, mocker)
   gps_data = create_mock({
-    'unixTimestampMillis': time.time() * 1e3,
+    'unixTimestampMillis': time.monotonic() * 1e3,
   }, mocker)
   sm_mock = mocker.MagicMock()
   sm_mock.__getitem__.side_effect = lambda key: {
@@ -124,7 +124,7 @@ class TestSpeedLimitResolverValidation:
   def test_old_map_data_ignored(self, resolver_class, policy, mocker: MockerFixture):
     resolver = resolver_class(policy)
     sm_mock = mocker.MagicMock()
-    sm_mock['gpsLocation'].unixTimestampMillis = (time.time() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
+    sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
     resolver._get_from_map_data(sm_mock)
     assert resolver._limit_solutions[Source.map_data] == 0.
     assert resolver._distance_solutions[Source.map_data] == 0.
