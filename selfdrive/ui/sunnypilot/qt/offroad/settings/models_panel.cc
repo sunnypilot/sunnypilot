@@ -286,6 +286,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
 
   QList<TreeNode> sortedModels;
   QSet<QString> modelFolders;
+  QRegularExpression re("\\(([^)]*)\\)[^(]*$");
   const auto bundles = model_manager.getAvailableBundles();
 
   for (const auto &bundle : bundles) {
@@ -333,12 +334,19 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   QList<TreeFolder> items;
   for (const auto &folderPair : folderMaxIndices) {
     QList<TreeNode> folderModels;
+    QString folder = folderPair.first;
     for (const auto &model : sortedModels) {
       if (model.folder == folderPair.first) {
+        if (model.index == folderPair.second) {
+          QRegularExpressionMatch match = re.match(model.displayName);
+          if (match.hasMatch()) {
+            folder.append(" - (Updated: ").append(match.captured(1)).append(")");
+          }
+        }
         folderModels.append(model);
       }
     }
-    items.append(TreeFolder{folderPair.first, folderModels});
+    items.append(TreeFolder{folder, folderModels});
   }
 
   items.insert(0, TreeFolder{"", {
