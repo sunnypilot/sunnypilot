@@ -29,14 +29,14 @@ class SpeedLimitController:
   _v_offset: float
 
   def __init__(self, CP):
-    self._params = Params()
+    self.params = Params()
     self._CP = CP
     self._policy = self._read_policy_param()
     self._resolver = SpeedLimitResolver(self._policy)
     self._last_params_update = 0.0
     self._last_op_engaged_time = 0.0
-    self._is_metric = self._params.get_bool("IsMetric")
-    self._enabled = self._params.get_bool("SpeedLimitControl")
+    self._is_metric = self.params.get_bool("IsMetric")
+    self._enabled = self.params.get_bool("SpeedLimitControl")
     self._op_engaged = False
     self._op_engaged_prev = False
     self._v_ego = 0.
@@ -152,14 +152,14 @@ class SpeedLimitController:
 
   def _update_params(self) -> None:
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
-      self._enabled = self._params.get_bool("SpeedLimitControl")
+      self._enabled = self.params.get_bool("SpeedLimitControl")
       self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
       self._offset_value = self._read_int_param("SpeedLimitValueOffset")
       self._warning_type = self._read_int_param("SpeedLimitWarningType")
       self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
       self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
       self._policy = self._read_policy_param()
-      self._is_metric = self._params.get_bool("IsMetric")
+      self._is_metric = self.params.get_bool("IsMetric")
       self._speed_factor = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
       self._engage_type = self._read_engage_type_param()
@@ -168,7 +168,7 @@ class SpeedLimitController:
 
   def _read_policy_param(self) -> Policy:
     try:
-      return Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+      return Policy(int(self.params.get("SpeedLimitControlPolicy", encoding='utf8')))
     except (ValueError, TypeError):
       return Policy.car_state_priority
 
@@ -180,7 +180,7 @@ class SpeedLimitController:
 
   def _read_int_param(self, key: str, default: int = 0, validator: Callable[[int], int] = None) -> int:
     try:
-      val = int(self._params.get(key, encoding='utf8'))
+      val = int(self.params.get(key, encoding='utf8'))
 
       if validator is not None:
         return validator(val)
