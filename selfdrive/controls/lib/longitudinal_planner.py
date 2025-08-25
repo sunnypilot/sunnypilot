@@ -4,7 +4,7 @@ import numpy as np
 
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
@@ -21,7 +21,7 @@ LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
 A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
-ALLOW_THROTTLE_THRESHOLD = 0.5
+ALLOW_THROTTLE_THRESHOLD = 0.4
 MIN_ALLOW_THROTTLE_SPEED = 2.5
 
 # Lookup table for turns
@@ -93,12 +93,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
+    mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
     if not self.mlsim:
-      self.mpc.mode = self.mode
+      self.mpc.mode = mode
     LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
-      self.mode = dec_mpc_mode
+      mode = dec_mpc_mode
       if not self.mlsim:
         self.mpc.mode = dec_mpc_mode
 
@@ -123,7 +123,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     # No change cost when user is controlling the speed, or when standstill
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
-    if self.mode == 'acc':
+    if mode == 'acc':
       accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
       steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
       accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
@@ -176,7 +176,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.mode == 'acc' or not self.mlsim:
+    if mode == 'acc' or not self.mlsim:
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
     else:
@@ -191,7 +191,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
   def publish(self, sm, pm):
     plan_send = messaging.new_message('longitudinalPlan')
 
-    plan_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'selfdriveState'])
+    plan_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'selfdriveState', 'radarState'])
 
     longitudinalPlan = plan_send.longitudinalPlan
     longitudinalPlan.modelMonoTime = sm.logMonoTime['modelV2']
