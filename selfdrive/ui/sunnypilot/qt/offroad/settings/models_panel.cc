@@ -259,6 +259,18 @@ QString ModelsPanel::GetActiveModelInternalName() {
   return DEFAULT_MODEL;
 }
 
+/**
+ * @brief Gets the ref of the currently selected model bundle
+ * @return ref of the selected bundle or default model name
+ */
+QString ModelsPanel::GetActiveModelRef() {
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getRef());
+  }
+
+  return DEFAULT_MODEL;
+}
+
 void ModelsPanel::updateModelManagerState() {
   const SubMaster &sm = *(uiStateSP()->sm);
   model_manager = sm["modelManagerSP"].getModelManagerSP();
@@ -272,34 +284,31 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
-  struct ModelEntry {
-    QString folder;
-    QString displayName;
-    int index;
-  };
-  QList<ModelEntry> sortedModels;
+  QList<TreeNode> sortedModels;
   QSet<QString> modelFolders;
+  QRegularExpression re("\\(([^)]*)\\)[^(]*$");
   const auto bundles = model_manager.getAvailableBundles();
 
   for (const auto &bundle : bundles) {
     auto overrides = bundle.getOverrides();
-    QString gen;
+    QString folder;
     for (const auto &override : overrides) {
       if (override.getKey() == "folder") {
-        gen = QString::fromStdString(override.getValue().cStr());
+        folder = QString::fromStdString(override.getValue().cStr());
       }
     }
 
-    modelFolders.insert(gen);
-    sortedModels.append(ModelEntry{
-      gen,
+    modelFolders.insert(folder);
+    sortedModels.append(TreeNode{
+      folder,
       QString::fromStdString(bundle.getDisplayName()),
+      QString::fromStdString(bundle.getRef()),
       static_cast<int>(bundle.getIndex())
     });
   }
 
   std::sort(sortedModels.begin(), sortedModels.end(),
-    [](const ModelEntry &a, const ModelEntry &b) {
+    [](const TreeNode &a, const TreeNode &b) {
       return a.index > b.index;
     });
 
@@ -322,37 +331,46 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
       });
 
   // Create the final items list using sorted folders
-  QList<QPair<QString, QStringList>> items;
+  QList<TreeFolder> items;
   for (const auto &folderPair : folderMaxIndices) {
-    QStringList folderModels;
+    QList<TreeNode> folderModels;
+    QString folder = folderPair.first;
     for (const auto &model : sortedModels) {
       if (model.folder == folderPair.first) {
-        folderModels.append(model.displayName);
+        if (model.index == folderPair.second) {
+          QRegularExpressionMatch match = re.match(model.displayName);
+          if (match.hasMatch()) {
+            folder.append(" - (Updated: ").append(match.captured(1)).append(")");
+          }
+        }
+        folderModels.append(model);
       }
     }
-    items.append(qMakePair(folderPair.first, folderModels));
+    items.append(TreeFolder{folder, folderModels});
   }
 
-  items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
+  items.insert(0, TreeFolder{"", {
+    TreeNode{"", DEFAULT_MODEL, DEFAULT_MODEL, -1}
+  }});
 
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  const QString selectedBundleName = TreeOptionDialog::getSelection(
-    tr("Select a Model"), items, GetActiveModelName(), this);
+  const QString selectedBundleRef = TreeOptionDialog::getSelection(
+    tr("Select a Model"), items, GetActiveModelRef(), QString("ModelManager_Favs"), this);
 
-  if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
+  if (selectedBundleRef.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == DEFAULT_MODEL) {
+  if (selectedBundleRef == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();
   } else {
     // Find selected bundle and initiate download
     for (const auto &bundle: bundles) {
-      if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
+      if (QString::fromStdString(bundle.getRef()) == selectedBundleRef) {
         params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
         if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
           showResetParamsDialog();
