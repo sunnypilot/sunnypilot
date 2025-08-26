@@ -80,5 +80,7 @@ private:
   Params params;
   ButtonControlSP *clearModelCacheBtn;
   ButtonControlSP *refreshAvailableModelsBtn;
+  ParamControlSP *lane_turn_desire_toggle;
+  OptionControlSP *lane_turn_value_control;
 
 };
