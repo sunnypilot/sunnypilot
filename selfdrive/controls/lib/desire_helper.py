@@ -63,7 +63,6 @@ class DesireHelper:
                                                left_blinker=carstate.leftBlinker, right_blinker=carstate.rightBlinker, v_ego=v_ego)
     self.lane_turn_direction = self.lane_turn_controller.get_turn_direction()
 
-    # LaneChangeState.preLaneChange
     if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
@@ -73,6 +72,7 @@ class DesireHelper:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
 
+      # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if \
