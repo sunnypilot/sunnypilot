@@ -63,7 +63,7 @@ class SpeedLimitResolver:
     gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    gps_fix_age = time.time() - gps_data.unixTimestampMillis * 1e-3
+    gps_fix_age = time.monotonic() - gps_data.unixTimestampMillis * 1e-3
     if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
       debug(f'SL: Ignoring map data as is too old. Age: {gps_fix_age}')
       return
@@ -77,7 +77,7 @@ class SpeedLimitResolver:
     gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    distance_since_fix = self._v_ego * (time.time() - gps_data.unixTimestampMillis * 1e-3)
+    distance_since_fix = self._v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
     distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
 
     self._limit_solutions[Source.map_data] = speed_limit
