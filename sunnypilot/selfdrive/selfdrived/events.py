@@ -146,7 +146,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: Alert(
       "Turning Right",
       "",
-      AlertStatus.normal, AlertSize.mid,
+      AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   }
 }
