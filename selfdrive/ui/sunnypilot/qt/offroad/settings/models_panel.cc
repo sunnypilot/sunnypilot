@@ -453,7 +453,6 @@ void ModelsPanel::updateLabels() {
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   }
 
-
   // Update lane turn desire label and visibility
   refreshLaneTurnValueControl();
 
