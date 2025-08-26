@@ -23,7 +23,7 @@ class TurnDirection:
     (True, True, 5, False, False, TurnDirection.none),
 ])
 def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindspot_left, blindspot_right, expected):
-    dh = object()
+    dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
@@ -33,7 +33,7 @@ def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindsp
 
 
 def test_lane_turn_desire_disabled():
-    dh = object()
+    dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
@@ -43,7 +43,7 @@ def test_lane_turn_desire_disabled():
 
 
 def test_lane_turn_overrides_lane_change():
-    dh = object()
+    dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
@@ -65,7 +65,7 @@ def test_lane_turn_overrides_lane_change():
     (8.95, TurnDirection.none),       # just above threshold
 ])
 def test_lane_turn_desire_speed_boundary(v_ego, expected):
-    dh = object()
+    dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
