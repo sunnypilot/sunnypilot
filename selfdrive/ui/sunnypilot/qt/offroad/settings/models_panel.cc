@@ -108,25 +108,20 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lane_turn_desire_toggle);
 
   // Lane Turn Value control
-  bool is_metric = params.getBool("IsMetric");
-  int max_value = is_metric ? 32 : 20;
-  QString unit = is_metric ? "km/h" : "mph";
+  int max_value_mph = 20;
+  bool is_metric_initial = params.getBool("IsMetric");
+  const float K = 1.609344f;
+  int per_value_change_scaled = is_metric_initial ? static_cast<int>(std::round((1.0f / K) * 100.0f)) : 100; // 100 -> 1 mph
   lane_turn_value_control = new OptionControlSP("LaneTurnValue", tr("Adjust Lane Turn Speed"),
-    tr("Set the maximum speed for lane turn desires. Default is 19 %1.").arg(unit),
-    "", {5, max_value}, 1, false, nullptr, false, true);
+    tr("Set the maximum speed for lane turn desires. Default is 19 %1.").arg(is_metric_initial ? "km/h" : "mph"),
+    "", {5 * 100, max_value_mph * 100}, per_value_change_scaled, false, nullptr, true, true);
   lane_turn_value_control->showDescription();
   list->addItem(lane_turn_value_control);
 
   // Show based on toggle
-  lane_turn_value_control->setVisible(params.getBool("LaneTurnDesire"));
-  connect(lane_turn_desire_toggle, &ParamControlSP::toggleFlipped, [=](bool state) {
-    lane_turn_value_control->setVisible(state);
-  });
-
-  connect(lane_turn_value_control, &OptionControlSP::updateLabels, [=]() {
-    float value = QString::fromStdString(params.get("LaneTurnValue")).toFloat();
-    lane_turn_value_control->setLabel(QString::number(value, 'f', 1) + " " + unit);
-  });
+  refreshLaneTurnValueControl();
+  connect(lane_turn_desire_toggle, &ParamControlSP::toggleFlipped, this, &ModelsPanel::refreshLaneTurnValueControl);
+  connect(lane_turn_value_control, &OptionControlSP::updateLabels, this, &ModelsPanel::refreshLaneTurnValueControl);
 
   // LiveDelay toggle
   lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
@@ -181,6 +176,19 @@ QFrame* ModelsPanel::createModelDetailFrame(QWidget *parent, QString &typeName, 
   layout->addWidget(progressBar);
   frame->setVisible(false);
   return frame;
+}
+
+void ModelsPanel::refreshLaneTurnValueControl() {
+  if (!lane_turn_value_control) return;
+  float stored_mph = QString::fromStdString(params.get("LaneTurnValue")).toFloat();
+  bool is_metric = params.getBool("IsMetric");
+  QString unit = is_metric ? "km/h" : "mph";
+  float display_value = stored_mph;
+  if (is_metric) {
+    display_value = stored_mph * 1.609344f;
+  }
+  lane_turn_value_control->setLabel(QString::number(static_cast<int>(std::round(display_value))) + " " + unit);
+  lane_turn_value_control->setVisible(params.getBool("LaneTurnDesire"));
 }
 
 /**
@@ -447,14 +455,7 @@ void ModelsPanel::updateLabels() {
 
 
   // Update lane turn desire label and visibility
-  bool laneTurnEnabled = params.getBool("LaneTurnDesire");
-  lane_turn_value_control->setVisible(laneTurnEnabled);
-  if (lane_turn_value_control->isVisible()) {
-    float value = QString::fromStdString(params.get("LaneTurnValue")).toFloat();
-    bool is_metric = params.getBool("IsMetric");
-    QString unit = is_metric ? "km/h" : "mph";
-    lane_turn_value_control->setLabel(QString::number(value, 'f', 1) + " " + unit);
-  }
+  refreshLaneTurnValueControl();
 
   clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
