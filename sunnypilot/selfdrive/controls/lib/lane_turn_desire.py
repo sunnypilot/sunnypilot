@@ -24,7 +24,7 @@ class LaneTurnController:
   def read_params(self):
     self.enabled = self.params.get_bool("LaneTurnDesire")
     value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
-    self.lane_turn_value = max(float(LANE_CHANGE_SPEED_MIN), value)
+    self.lane_turn_value = min(float(LANE_CHANGE_SPEED_MIN), value)
 
   def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
