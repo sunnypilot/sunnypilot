@@ -58,14 +58,9 @@ class DesireHelper:
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    # Lane turn logic
-    self.lane_turn_controller.update_lane_turn(
-      blindspot_left=carstate.leftBlindspot,
-      blindspot_right=carstate.rightBlindspot,
-      left_blinker=carstate.leftBlinker,
-      right_blinker=carstate.rightBlinker,
-      v_ego=v_ego
-    )
+    # Lane turn controller update
+    self.lane_turn_controller.update_lane_turn(blindspot_left=carstate.leftBlindspot, blindspot_right=carstate.rightBlindspot,
+                                               left_blinker=carstate.leftBlinker, right_blinker=carstate.rightBlinker, v_ego=v_ego)
     self.lane_turn_direction = self.lane_turn_controller.get_turn_direction()
 
     # LaneChangeState.preLaneChange
@@ -78,7 +73,6 @@ class DesireHelper:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
 
-      # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if \
