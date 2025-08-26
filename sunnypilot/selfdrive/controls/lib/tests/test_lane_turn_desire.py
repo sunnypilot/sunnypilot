@@ -108,6 +108,6 @@ def set_lane_turn_params():
 def test_desire_helper_integration(carstate, lateral_active, lane_change_prob, expected_desire, set_lane_turn_params):
     dh = DesireHelper()
     dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
-    for _ in range(2):
+    for _ in range(10):
         dh.update(carstate, lateral_active, lane_change_prob)
     assert dh.desire == expected_desire  # The first four tests were unit tests to test the controller, where this tests the integration in desire helpers
