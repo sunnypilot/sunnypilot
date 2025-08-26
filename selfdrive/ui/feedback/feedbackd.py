@@ -82,13 +82,14 @@ def get_button_event(sm, params):
   # use custom button mapping if available
   use_custom = custom_mapped and sm.updated['carState']
   # only allow the LKAS button to record feedback when MADS is disabled & custom button mapping is not set
-  use_lkas = sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available
+  # TODO: https://github.com/commaai/openpilot/issues/36015
+  use_lkas = False #sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available
 
   if use_custom or use_lkas:
     for be in sm['carState'].buttonEvents:
-      if be.type == ButtonType.altButton2:
+      if use_custom and be.type == ButtonType.altButton2:
         btn_pressed = ButtonPressType.CUSTOM if be.pressed else ButtonPressType.NONE
-      elif be.type == ButtonType.lkas:
+      elif use_lkas and be.type == ButtonType.lkas:
         btn_pressed = ButtonPressType.LKAS if be.pressed else ButtonPressType.NONE
 
   return btn_pressed
