@@ -27,7 +27,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 class FrameMeta:
