@@ -126,6 +126,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
 
   events @2 :List(OnroadEventSP.Event);
   slc @3 :SpeedLimitControl;
+  accelPersonality @4 :AccelerationPersonality;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -136,6 +137,12 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       acc @0;
       blended @1;
     }
+  }
+
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
   }
 
   struct VisionTurnSpeedControl {
