@@ -20,6 +20,7 @@ public:
 private:
   QString GetActiveModelName();
   QString GetActiveModelInternalName();
+  QString GetActiveModelRef();
   void updateModelManagerState();
   void showEvent(QShowEvent *event) override;
 
