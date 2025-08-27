@@ -170,7 +170,11 @@ class SpeedLimitController:
 
     return Engage.auto
 
-  def _update_calculations(self) -> None:
+  def _update_calculations(self, v_ego: float, a_ego: float, v_cruise_setpoint: float) -> None:
+    self._v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
+    self._v_ego = v_ego
+    self._a_ego = a_ego
+
     # Update current velocity offset (error)
     self._v_offset = self.speed_limit_offseted - self._v_ego
 
@@ -268,17 +272,13 @@ class SpeedLimitController:
           events_sp.add(EventNameSP.speedLimitValueChange)
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float, events_sp: EventsSP) -> float:
-    _car_state = sm['carState']
     self._op_engaged = sm['carControl'].longActive
-    self._v_ego = v_ego
-    self._a_ego = a_ego
-    self._v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
     self._current_time = time.monotonic()
 
     self._speed_limit, self._distance, self._source = self._resolver.resolve(v_ego, self.speed_limit, sm)
 
     self._update_params()
-    self._update_calculations()
+    self._update_calculations(v_ego, a_ego, v_cruise_setpoint)
     self._state_transition()
     self._update_events(events_sp)
 
