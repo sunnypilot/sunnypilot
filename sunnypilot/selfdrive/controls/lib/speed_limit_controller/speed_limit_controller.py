@@ -51,7 +51,6 @@ class SpeedLimitController:
     self._source = Source.none
     self._state = SpeedLimitControlState.inactive
     self._state_prev = SpeedLimitControlState.inactive
-    self._gas_pressed = False
     self._pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     self._offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
@@ -274,7 +273,6 @@ class SpeedLimitController:
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
-    self._gas_pressed = _car_state.gasPressed
     self._current_time = time.monotonic()
 
     self._speed_limit, self._distance, self._source = self._resolver.resolve(v_ego, self.speed_limit, sm)
