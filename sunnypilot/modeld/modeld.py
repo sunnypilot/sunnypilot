@@ -27,7 +27,7 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"

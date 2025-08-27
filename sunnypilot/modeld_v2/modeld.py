@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
