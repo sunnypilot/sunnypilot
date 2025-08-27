@@ -268,7 +268,7 @@ class SpeedLimitController:
         elif self._speed_limit_changed != 0:
           events_sp.add(EventNameSP.speedLimitValueChange)
 
-  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float, events_sp: EventsSP) -> None:
+  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float, events_sp: EventsSP) -> float:
     _car_state = sm['carState']
     self._op_engaged = sm['carControl'].longActive
     self._v_ego = v_ego
@@ -283,3 +283,5 @@ class SpeedLimitController:
     self._update_calculations()
     self._state_transition()
     self._update_events(events_sp)
+
+    return self.speed_limit_offseted
