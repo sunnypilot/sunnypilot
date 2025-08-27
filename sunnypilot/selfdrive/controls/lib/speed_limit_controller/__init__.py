@@ -1,8 +1,10 @@
 from cereal import custom
 
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+
 DEBUG = True
-PARAMS_UPDATE_PERIOD = 2.  # secs. Time between parameter updates.
-TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before considering temp deactivation signal.
+PARAMS_UPDATE_PERIOD = 3.  # secs. Time between parameter updates.
+PRE_ACTIVE_GUARD_PERIOD = 5.  # secs. Time to wait after activation before considering temp deactivation signal.
 
 # Lookup table for speed limit percent offset depending on speed.
 LIMIT_PERC_OFFSET_V = [0.1, 0.05, 0.038]  # 55, 105, 135 km/h
@@ -16,4 +18,7 @@ LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on lim
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
 LIMIT_MAX_MAP_DATA_AGE = 10.  # s Maximum time to hold to map data, then consider it invalid inside limits controllers.
 
-SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+# Speed Limit Control Auto mode constants
+REQUIRED_INITIAL_CRUISE_SPEED = 35.7632  # m/s 80 MPH  # TODO-SP: customizable with params
+CRUISE_SPEED_TOLERANCE = 0.44704  # m/s ±1 MPH tolerance  # TODO-SP: metric vs imperial
+FALLBACK_CRUISE_SPEED = 255.0  # m/s fallback when no speed limit available
