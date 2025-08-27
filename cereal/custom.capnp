@@ -148,6 +148,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   speedLimit @3 :SpeedLimit;
   vTarget @4 :Float32;
   aTarget @5 :Float32;
+  accelPersonality @6 :AccelerationPersonality;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -225,6 +226,12 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     cruise @0;
     sccVision @1;
     sccMap @2;
+  }
+
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
   }
 }
 
