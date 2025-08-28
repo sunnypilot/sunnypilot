@@ -35,7 +35,7 @@ class LatControlTorque(LatControl):
     self.update_limits()
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
 
-    self.extension = LatControlTorqueExt(self, CP, CP_SP)
+    self.extension = LatControlTorqueExt(self, CP, CP_SP, CI)
 
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor

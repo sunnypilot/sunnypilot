@@ -32,8 +32,8 @@ def roll_pitch_adjust(roll, pitch):
 
 
 class NeuralNetworkLateralControl(LatControlTorqueExtBase):
-  def __init__(self, lac_torque, CP, CP_SP):
-    super().__init__(lac_torque, CP, CP_SP)
+  def __init__(self, lac_torque, CP, CP_SP, CI):
+    super().__init__(lac_torque, CP, CP_SP, CI)
     self.params = Params()
     self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
     self.has_nn_model = CP_SP.neuralNetworkLateralControl.model.path != MOCK_MODEL_PATH

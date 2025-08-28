@@ -44,7 +44,7 @@ def get_lookahead_value(future_vals, current_val):
 
 
 class LatControlTorqueExtBase:
-  def __init__(self, lac_torque, CP, CP_SP):
+  def __init__(self, lac_torque, CP, CP_SP, CI):
     self.model_v2 = None
     self.model_valid = False
     self.lac_torque = lac_torque
@@ -55,7 +55,7 @@ class LatControlTorqueExtBase:
     self.lateral_jerk_measurement: float = 0.0
     self.lookahead_lateral_jerk: float = 0.0
 
-    self.torque_from_lateral_accel_in_torque_space = lac_torque.torque_from_lateral_accel_in_torque_space
+    self.torque_from_lateral_accel_in_torque_space = CI.torque_from_lateral_accel_in_torque_space()
 
     self._ff = 0.0
     self._pid = PIDController(0.0, 0.0, k_f=0.0)
