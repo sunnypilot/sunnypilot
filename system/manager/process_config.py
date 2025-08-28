@@ -78,7 +78,7 @@ def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
   return use_sunnylink_uploader(params)
 
 def is_tinygrad_model(started, params, CP: car.CarParams) -> bool:
-  """Check if the active model runner is SNPE."""
+  """Check if the active model runner is tinygrad."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.tinygrad)
 
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
