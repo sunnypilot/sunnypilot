@@ -27,7 +27,7 @@ from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 class FrameMeta:
@@ -94,25 +94,34 @@ class ModelState(ModelStateBase):
   def mlsim(self) -> bool:
     return bool(self.generation is not None and self.generation >= 11)
 
+  @property
+  def desire_key(self) -> str:
+    return next(key for key in self.numpy_inputs if key.startswith('desire'))
+
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
-    inputs['desire'][0] = 0
-    new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
-    self.prev_desire[:] = inputs['desire']
-    self.temporal_buffers['desire'][0,:-1] = self.temporal_buffers['desire'][0,1:]
-    self.temporal_buffers['desire'][0,-1] = new_desire
+    inputs[self.desire_key][0] = 0
+    new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
+    self.prev_desire[:] = inputs[self.desire_key]
+    if self.numpy_inputs[self.desire_key].shape[1] == self.temporal_buffers[self.desire_key].shape[1]:
+      desire_len = inputs[self.desire_key].shape[-1]
+      self.temporal_buffers[self.desire_key][0][:-desire_len] = self.temporal_buffers[self.desire_key][0][desire_len:]
+      self.temporal_buffers[self.desire_key][0][-desire_len:] = new_desire
+    else:
+      self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
+      self.temporal_buffers[self.desire_key][0,-1] = new_desire
 
     # Roll buffer and assign based on desire.shape[1] value
-    if self.temporal_buffers['desire'].shape[1] > self.numpy_inputs['desire'].shape[1]:
-      skip = self.temporal_buffers['desire'].shape[1] // self.numpy_inputs['desire'].shape[1]
-      self.numpy_inputs['desire'][:] = (
-        self.temporal_buffers['desire'][0].reshape(self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], skip, -1).max(axis=2))
+    if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
+      skip = self.temporal_buffers[self.desire_key].shape[1] // self.numpy_inputs[self.desire_key].shape[1]
+      self.numpy_inputs[self.desire_key][:] = (self.temporal_buffers[self.desire_key][0].reshape(
+                                               self.numpy_inputs[self.desire_key].shape[0], self.numpy_inputs[self.desire_key].shape[1], skip, -1).max(axis=2))
     else:
-      self.numpy_inputs['desire'][:] = self.temporal_buffers['desire'][0, self.temporal_idxs_map['desire']]
+      self.numpy_inputs[self.desire_key][:] = self.temporal_buffers[self.desire_key][0, self.temporal_idxs_map[self.desire_key]]
 
     for key in self.numpy_inputs:
-      if key in inputs and key not in ['desire']:
+      if key in inputs and key not in [self.desire_key]:
         self.numpy_inputs[key][:] = inputs[key]
 
     imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
@@ -129,7 +138,10 @@ class ModelState(ModelStateBase):
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
-    self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
+    if 'features_buffer' in self.temporal_idxs_map:
+      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
+    else:
+      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, -self.numpy_inputs['features_buffer'].shape[1]:]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
@@ -207,19 +219,13 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-
-  # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
-  frame_id = 0
-  last_vipc_frame_id = 0
-  run_count = 0
+  frame_id = last_vipc_frame_id = run_count = 0
 
-  model_transform_main = np.zeros((3, 3), dtype=np.float32)
-  model_transform_extra = np.zeros((3, 3), dtype=np.float32)
+  model_transform_main = model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  buf_main, buf_extra = None, None
-  meta_main = FrameMeta()
-  meta_extra = FrameMeta()
+  buf_main = buf_extra = None
+  meta_main = meta_extra = FrameMeta()
 
 
   if demo:
@@ -306,12 +312,19 @@ def main(demo=False):
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
+      model.desire_key: vec_desire,
       'traffic_convention': traffic_convention,
     }
 
-    if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
+    conditional_inputs = {
+      "lateral_control_params": lambda v_ego=v_ego, lat_delay=lat_delay: np.array([v_ego, lat_delay], dtype=np.float32),
+      "driving_style": lambda: np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32),
+      "nav_features": lambda: np.zeros(model.model_runner.input_shapes.get('nav_features')[1], dtype=np.float32),
+      "nav_instructions": lambda: np.zeros(model.model_runner.input_shapes.get('nav_instructions')[1], dtype=np.float32),
+    }
+    for key, value in conditional_inputs.items():
+      if key in model.numpy_inputs:
+        inputs[key] = value()
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
