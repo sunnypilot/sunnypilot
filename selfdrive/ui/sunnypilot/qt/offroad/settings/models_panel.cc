@@ -87,11 +87,6 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   supercomboFrame = createModelDetailFrame(this, supercomboType, supercomboProgressBar);
   list->addItem(supercomboFrame);
 
-  navigationProgressBar = createProgressBar(this);
-  QString navigationType = tr("Navigation Model");
-  navigationFrame = createModelDetailFrame(this, navigationType, navigationProgressBar);
-  list->addItem(navigationFrame);
-
   visionProgressBar = createProgressBar(this);
   QString visionType = tr("Vision Model");
   visionFrame = createModelDetailFrame(this, visionType, visionProgressBar);
@@ -167,7 +162,6 @@ void ModelsPanel::handleBundleDownloadProgress() {
   supercomboFrame->setVisible(false);
   visionFrame->setVisible(false);
   policyFrame->setVisible(false);
-  navigationFrame->setVisible(false);
 
   using DS = cereal::ModelManagerSP::DownloadStatus;
   if (!model_manager.hasSelectedBundle() && !model_manager.hasActiveBundle()) {
@@ -194,9 +188,7 @@ void ModelsPanel::handleBundleDownloadProgress() {
         modelFrame = supercomboFrame;
         break;
       case cereal::ModelManagerSP::Model::Type::NAVIGATION:
-        progressBar = navigationProgressBar;
-        modelFrame = navigationFrame;
-        break;
+        continue;
       case cereal::ModelManagerSP::Model::Type::VISION:
         progressBar = visionProgressBar;
         modelFrame = visionFrame;
@@ -228,10 +220,7 @@ void ModelsPanel::handleBundleDownloadProgress() {
       progressBar->setStyleSheet(progressStyleInactive);
       progressBar->setFormat(tr("  pending - %1").arg(modelName));
     }
-    // keep navigation hidden for now to avoid confusion
-    if (model.getType() != cereal::ModelManagerSP::Model::Type::NAVIGATION) {
-      modelFrame->setVisible(true);
-    }
+    modelFrame->setVisible(true);
   }
   prev_download_status = download_status;
 }
