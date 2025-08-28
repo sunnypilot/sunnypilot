@@ -95,6 +95,8 @@ class Controls(ControlsExt, ModelStateBase):
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
+        self.LaC.extension.update_limits()
+
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
 
       self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
