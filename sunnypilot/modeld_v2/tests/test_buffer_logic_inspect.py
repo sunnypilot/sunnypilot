@@ -5,16 +5,26 @@ from typing import Any
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.models.runners.helpers as runner_helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
+from openpilot.sunnypilot.modeld_v2.model_metadata_lookup import MODEL_METADATA
 
 ModelState = modeld_module.ModelState
+SHAPE_MODE_PARAMS = []
+for _, meta in MODEL_METADATA.items():
+  mode = ''
+  if isinstance(meta, dict):
+    if meta.get('split'):
+      mode = 'split'
+    elif meta.get('non20hz'):
+      mode = 'non20hz'
+    elif meta.get('20hz'):
+      mode = '20hz'
 
-
-# These are the shapes extracted/loaded from the model onnx
-SHAPE_MODE_PARAMS = [
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
-]
+    input_shapes = {}
+    for k, v in meta.get('input_shapes', {}).items():
+      if k not in ["input_imgs", "big_input_imgs"]:
+        input_shapes[k] = v
+    if input_shapes:
+      SHAPE_MODE_PARAMS.append((input_shapes, mode))
 
 
 # This creates a dummy runner, override, and bundle instance for the tests to run, without actually trying to load a physical model.
@@ -108,6 +118,8 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
   for key in shapes:
     buf = state.temporal_buffers.get(key, None)
     idxs = state.temporal_idxs_map.get(key, None)
+    if buf is None:
+      continue    # not all shapes are 3d, and the non 3d are not buffered
     # Buffer shape logic
     if mode == 'split':
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])
@@ -130,7 +142,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
       assert idxs is None or idxs.size == 0, f"{key}: buffer idxs should be None or empty"
 
 
-def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
+def legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, prev_desire=None):
   # This is what we compare the new dynamic logic to, to ensure it does the same thing
   if mode == 'split':
     if key == 'desire':
@@ -173,15 +185,23 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
       return legacy_buf[idxs]
   elif mode == 'non20hz':
     if key == 'desire':
-      length = new_val.shape[0]
-      buf[0,:-1,:length] = buf[0,1:,:length]
-      buf[0,-1,:length] = new_val[:length]
+      desire_len = constants.DESIRE_LEN
+      if prev_desire is None:
+        prev_desire = np.zeros(desire_len, dtype=np.float32)
+      # Set first element to zero
+      new_val = new_val.copy()
+      new_val[0] = 0
+      # Shift buffer by desire len
+      buf[0][:-desire_len] = buf[0][desire_len:]
+      # Only insert new desire if rising edge
+      buf[0][-desire_len:] = np.where(new_val - prev_desire > 0.99, new_val, 0)
+      prev_desire[:] = new_val
       return buf[0]
     elif key == 'features_buffer':
-      feature_len = new_val.shape[0]
-      buf[0,:-1,:feature_len] = buf[0,1:,:feature_len]
-      buf[0,-1,:feature_len] = new_val[:feature_len]
-      return buf[0]
+      feature_len = constants.FEATURE_LEN
+      buf[0, :-feature_len] = buf[0, feature_len:]
+      buf[0, -feature_len:] = new_val
+      return buf[0, -input_shape[1]:]
     elif key == 'prev_desired_curv':
       length = new_val.shape[0]
       buf[0,:-length,0] = buf[0,length:,0]
@@ -192,31 +212,17 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
 
 def dynamic_buffer_update(state, key, new_val, mode):
   if key == 'desire':
-    state.temporal_buffers['desire'][0,:-1] = state.temporal_buffers['desire'][0,1:]
-    state.temporal_buffers['desire'][0,-1] = new_val
-    if state.temporal_buffers['desire'].shape[1] > state.numpy_inputs['desire'].shape[1]:
-      skip = state.temporal_buffers['desire'].shape[1] // state.numpy_inputs['desire'].shape[1]
-      return state.temporal_buffers['desire'][0].reshape(
-        state.numpy_inputs['desire'].shape[0], state.numpy_inputs['desire'].shape[1], skip, -1
-      ).max(axis=2)
-    else:
-      return state.temporal_buffers['desire'][0, state.temporal_idxs_map['desire']]
-
-  inputs = {'desire': np.zeros((1, state.constants.DESIRE_LEN), dtype=np.float32)}
-  for k, tb in state.temporal_buffers.items():
-    if k in state.temporal_idxs_map:
-      continue
-    buf_len = tb.shape[1]
-    if k in state.numpy_inputs:
-      out_len = state.numpy_inputs[k].shape[1]
-      if out_len <= buf_len:
-        state.temporal_idxs_map[k] = np.arange(buf_len)[-out_len:]
-      else:
-        state.temporal_idxs_map[k] = np.arange(buf_len)
-    else:
-      state.temporal_idxs_map[k] = np.arange(buf_len)
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != 'desire'}
+    inputs['desire'] = new_val.copy()
+    # ModelState.run expects desire as a pulse, so we zero the first element.
+    inputs['desire'][0] = 0
+    state.run({}, {}, inputs, prepare_only=False)
+    return state.numpy_inputs['desire'][0]
 
   if key == 'features_buffer':
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != 'features_buffer'}
     def run_model_stub():
       return {
         'hidden_state': np.asarray(new_val, dtype=np.float32).reshape(1, -1),
@@ -226,6 +232,8 @@ def dynamic_buffer_update(state, key, new_val, mode):
     return state.numpy_inputs['features_buffer'][0]
 
   if key == 'prev_desired_curv':
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != 'prev_desired_curv'}
     def run_model_stub():
       return {
         'hidden_state': np.zeros((1, state.constants.FEATURE_LEN), dtype=np.float32),
@@ -241,13 +249,16 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
   state = ModelState(None)
+  if key not in state.numpy_inputs:
+    pytest.skip(f"{key} not in state.numpy_inputs")
   constants = DummyModelRunner(shapes).constants
   buf = state.temporal_buffers.get(key, None)
   idxs = state.temporal_idxs_map.get(key, None)
   input_shape = shapes[key]
+  prev_desire = np.zeros(constants.DESIRE_LEN, dtype=np.float32) if key == 'desire' else None
   for step in range(20):    # multiple steps to ensure history is built up
     new_val = np.full((input_shape[2],), step, dtype=np.float32)
-    expected = legacy_buffer_update(buf, new_val, mode, key, constants, idxs)
+    expected = legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, prev_desire)
     actual = dynamic_buffer_update(state, key, new_val, mode)
     # Model returns the reduced numpy_inputs history, compare the last n entries so the test is checking the same slices.
     if expected is not None and actual is not None and expected.shape != actual.shape:

@@ -27,7 +27,7 @@ from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 class FrameMeta:
@@ -100,8 +100,13 @@ class ModelState(ModelStateBase):
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
-    self.temporal_buffers['desire'][0,:-1] = self.temporal_buffers['desire'][0,1:]
-    self.temporal_buffers['desire'][0,-1] = new_desire
+    if self.numpy_inputs['desire'].shape[1] == self.temporal_buffers['desire'].shape[1]:
+      desire_len = inputs['desire'].shape[-1]
+      self.temporal_buffers['desire'][0][:-desire_len] = self.temporal_buffers['desire'][0][desire_len:]
+      self.temporal_buffers['desire'][0][-desire_len:] = new_desire
+    else:
+      self.temporal_buffers['desire'][0,:-1] = self.temporal_buffers['desire'][0,1:]
+      self.temporal_buffers['desire'][0,-1] = new_desire
 
     # Roll buffer and assign based on desire.shape[1] value
     if self.temporal_buffers['desire'].shape[1] > self.numpy_inputs['desire'].shape[1]:
@@ -126,10 +131,19 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
+    if "lat_planner_solution" in outputs and "lat_planner_state" in self.numpy_inputs:
+      idx_n = outputs['lat_planner_solution'].shape[1]    # Reshaped by parse_mdn from slice(5990, 6254)= 264= 1,264/2 = 1,1,132/4 == 1,33,4
+      t_idxs = [10.0 * ((i / (idx_n - 1))**2) for i in range(idx_n)]
+      self.numpy_inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
+      self.numpy_inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
+
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
-    self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
+    if 'features_buffer' in self.temporal_idxs_map:
+      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
+    else:
+      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, -self.numpy_inputs['features_buffer'].shape[1]:]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
@@ -312,6 +326,17 @@ def main(demo=False):
 
     if "lateral_control_params" in model.numpy_inputs.keys():
       inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
+
+    if "driving_style" in model.numpy_inputs.keys():
+      inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
+
+    if "nav_features" in model.numpy_inputs.keys():
+      nav_features_shape = model.model_runner.input_shapes.get('nav_features')
+      inputs['nav_features'] = np.zeros(nav_features_shape[1], dtype=np.float32)
+
+    if "nav_instructions" in model.numpy_inputs.keys():
+      nav_instructions_shape = model.model_runner.input_shapes.get('nav_instructions')
+      inputs['nav_instructions'] = np.zeros(nav_instructions_shape[1], dtype=np.float32)
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)

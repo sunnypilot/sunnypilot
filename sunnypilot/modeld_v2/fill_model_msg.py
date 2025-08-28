@@ -4,6 +4,7 @@ import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.selfdrive.controls.lib.drive_helpers import get_curvature_from_plan
+from openpilot.sunnypilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_lag_adjusted_curvature, MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -12,8 +13,16 @@ ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
 def get_curvature_from_output(output, vego, lat_action_t, mlsim):
   if not mlsim:
-    if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
-      return float(desired_curv[0, 0])
+    if 'lat_planner_solution' in output:
+      x, y, yaw, yawRate = [output['lat_planner_solution'][0, :, i].tolist() for i in range(4)]
+      x_sol = np.column_stack([x, y, yaw, yawRate])
+      v_ego = max(MIN_SPEED, vego)
+      psis = x_sol[0:CONTROL_N, 2].tolist()
+      curvatures = (x_sol[0:CONTROL_N, 3] / v_ego).tolist()
+      desired_curvature = get_lag_adjusted_curvature(lat_action_t, v_ego, psis, curvatures)
+    else:
+      desired_curvature = float(output.get['desired_curvature'][0, 0])
+    return desired_curvature
 
   plan_output = output['plan'][0]
   return float(get_curvature_from_plan(plan_output[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan_output[:, Plan.ORIENTATION_RATE][:, 2],
@@ -118,14 +127,31 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   # action (includes lateral planning now)
   modelV2.action = action
 
-  # times at X_IDXS of edges and lines aren't used
-  LINE_T_IDXS: list[float] = []
+  # times at X_IDXS according to model plan
+  PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N
+  PLAN_T_IDXS[0] = 0.0
+  plan_x = net_output_data['plan'][0, :, Plan.POSITION][:, 0].tolist()
+  for xidx in range(1, ModelConstants.IDX_N):
+    tidx = 0
+    # increment tidx until we find an element that's further away than the current xidx
+    while tidx < ModelConstants.IDX_N - 1 and plan_x[tidx + 1] < ModelConstants.X_IDXS[xidx]:
+      tidx += 1
+    if tidx == ModelConstants.IDX_N - 1:
+      # if the Plan doesn't extend far enough, set plan_t to the max value (10s), then break
+      PLAN_T_IDXS[xidx] = ModelConstants.T_IDXS[ModelConstants.IDX_N - 1]
+      break
+    # interpolate to find `t` for the current xidx
+    current_x_val = plan_x[tidx]
+    next_x_val = plan_x[tidx + 1]
+    p = (ModelConstants.X_IDXS[xidx] - current_x_val) / (next_x_val - current_x_val) if abs(
+      next_x_val - current_x_val) > 1e-9 else float('nan')
+    PLAN_T_IDXS[xidx] = p * ModelConstants.T_IDXS[tidx + 1] + (1 - p) * ModelConstants.T_IDXS[tidx]
 
   # lane lines
   modelV2.init('laneLines', 4)
   for i in range(4):
     lane_line = modelV2.laneLines[i]
-    fill_xyzt(lane_line, LINE_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['lane_lines'][0,i,:,0], net_output_data['lane_lines'][0,i,:,1])
+    fill_xyzt(lane_line, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['lane_lines'][0,i,:,0], net_output_data['lane_lines'][0,i,:,1])
   modelV2.laneLineStds = net_output_data['lane_lines_stds'][0,:,0,0].tolist()
   modelV2.laneLineProbs = net_output_data['lane_lines_prob'][0,1::2].tolist()
 
@@ -135,7 +161,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.init('roadEdges', 2)
   for i in range(2):
     road_edge = modelV2.roadEdges[i]
-    fill_xyzt(road_edge, LINE_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['road_edges'][0,i,:,0], net_output_data['road_edges'][0,i,:,1])
+    fill_xyzt(road_edge, PLAN_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['road_edges'][0,i,:,0], net_output_data['road_edges'][0,i,:,1])
   modelV2.roadEdgeStds = net_output_data['road_edges_stds'][0,:,0,0].tolist()
 
   # leads
