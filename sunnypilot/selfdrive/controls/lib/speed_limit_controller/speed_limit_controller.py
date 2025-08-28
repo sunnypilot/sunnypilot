@@ -252,7 +252,7 @@ class SpeedLimitController:
     elif self._speed_limit > 0 and self._v_offset < LIMIT_SPEED_OFFSET_TH:
       self.state = SpeedLimitControlState.adapting
 
-  def _state_transition(self) -> None:
+  def _state_control(self) -> None:
     self._state_prev = self._state
 
     # If op is disabled or SLC is disabled, go inactive
@@ -292,7 +292,7 @@ class SpeedLimitController:
 
     self._update_params()
     self._update_calculations(v_ego, a_ego, v_cruise_setpoint)
-    self._state_transition()
+    self._state_control()
     self._update_events(events_sp)
 
     return self.speed_limit_offseted
