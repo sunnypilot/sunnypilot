@@ -16,15 +16,27 @@ function agnos_init {
   sudo chgrp gpu /dev/adsprpc-smd /dev/ion /dev/kgsl-3d0
   sudo chmod 660 /dev/adsprpc-smd /dev/ion /dev/kgsl-3d0
 
+  # Find the device we are running on
+  MODEL=$(tr -d '\0' < /sys/firmware/devicetree/base/model)
   # Check if AGNOS update is required
-  if [ $(< /VERSION) != "$AGNOS_VERSION" ]; then
-    AGNOS_PY="$DIR/system/hardware/tici/agnos.py"
-    MANIFEST="$DIR/system/hardware/tici/agnos.json"
-    if $AGNOS_PY --verify $MANIFEST; then
-      sudo reboot
-    fi
-    $DIR/system/hardware/tici/updater $AGNOS_PY $MANIFEST
-  fi
+  case "$MODEL" in
+    # Skip if model ends with "tici"
+    *tici) 
+      # Do nothing
+      echo "Skipping AGNOS update on tici for now" >> /data/community/crashes/error.log
+      ;;
+    *)
+      if [ $(< /VERSION) != "$AGNOS_VERSION" ]; then
+        AGNOS_PY="$DIR/system/hardware/tici/agnos.py"
+        MANIFEST="$DIR/system/hardware/tici/agnos.json"
+        if $AGNOS_PY --verify $MANIFEST; then
+          sudo reboot
+        fi
+        $DIR/system/hardware/tici/updater $AGNOS_PY $MANIFEST
+      fi
+      ;;
+  esac
+  
 }
 
 function launch {
