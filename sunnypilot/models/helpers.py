@@ -13,15 +13,12 @@ import numpy as np
 from openpilot.common.params import Params
 from cereal import custom
 from openpilot.sunnypilot.modeld_v2.constants import Meta, MetaTombRaider, MetaSimPose
-from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
 
 # see the README.md for more details on the model selector versioning
 CURRENT_SELECTOR_VERSION = 10
 REQUIRED_MIN_SELECTOR_VERSION = 10
-
-USE_ONNX = os.getenv('USE_ONNX', PC)
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
