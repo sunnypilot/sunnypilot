@@ -128,12 +128,37 @@ class Soundd(QuietMode):
     volume = ((weighted_db - AMBIENT_DB) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
     return math.pow(10, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1))
 
-  @retry(attempts=7, delay=3)
+  @retry(attempts=60, delay=3)
   def get_stream(self, sd):
     # reload sounddevice to reinitialize portaudio
     sd._terminate()
     sd._initialize()
-    return sd.OutputStream(channels=1, samplerate=SAMPLE_RATE, callback=self.callback, blocksize=SAMPLE_BUFFER)
+    # Wait for a valid default output device before opening the stream to avoid
+    # transient PortAudio "Error querying device -1" during boot.
+    deadline = time.monotonic() + 30.0
+    output_device_index = None
+    while time.monotonic() < deadline:
+      try:
+        default = sd.default.device
+        if isinstance(default, (list, tuple)) and len(default) >= 2 and default[1] is not None and default[1] != -1:
+          output_device_index = default[1]
+          break
+        # fall back to ALSA host API default if available
+        for ha in sd.query_hostapis():
+          if ha.get('name') == 'ALSA' and ha.get('default_output_device', -1) != -1:
+            output_device_index = ha['default_output_device']
+            break
+        if output_device_index is not None:
+          break
+      except Exception:
+        # keep waiting until deadline
+        pass
+      time.sleep(0.5)
+
+    if output_device_index is None:
+      raise RuntimeError("Audio output default device not available")
+
+    return sd.OutputStream(device=output_device_index, channels=1, samplerate=SAMPLE_RATE, callback=self.callback, blocksize=SAMPLE_BUFFER)
 
   def soundd_thread(self):
     # sounddevice must be imported after forking processes

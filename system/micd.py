@@ -2,6 +2,7 @@
 import numpy as np
 from functools import cache
 import threading
+import time
 
 from cereal import messaging
 from openpilot.common.realtime import Ratekeeper
@@ -94,12 +95,37 @@ class Mic:
 
         self.measurements = self.measurements[FFT_SAMPLES:]
 
-  @retry(attempts=7, delay=3)
+  @retry(attempts=60, delay=3)
   def get_stream(self, sd):
     # reload sounddevice to reinitialize portaudio
     sd._terminate()
     sd._initialize()
-    return sd.InputStream(channels=1, samplerate=SAMPLE_RATE, callback=self.callback, blocksize=SAMPLE_BUFFER)
+    # Wait for a valid default input device before opening the stream to avoid
+    # transient PortAudio "Error querying device -1" during boot.
+    deadline = time.monotonic() + 30.0
+    input_device_index = None
+    while time.monotonic() < deadline:
+      try:
+        default = sd.default.device
+        if isinstance(default, (list, tuple)) and len(default) >= 1 and default[0] is not None and default[0] != -1:
+          input_device_index = default[0]
+          break
+        # fall back to ALSA host API default if available
+        for ha in sd.query_hostapis():
+          if ha.get('name') == 'ALSA' and ha.get('default_input_device', -1) != -1:
+            input_device_index = ha['default_input_device']
+            break
+        if input_device_index is not None:
+          break
+      except Exception:
+        # keep waiting until deadline
+        pass
+      time.sleep(0.5)
+
+    if input_device_index is None:
+      raise RuntimeError("Audio input default device not available")
+
+    return sd.InputStream(device=input_device_index, channels=1, samplerate=SAMPLE_RATE, callback=self.callback, blocksize=SAMPLE_BUFFER)
 
   def micd_thread(self):
     # sounddevice must be imported after forking processes
