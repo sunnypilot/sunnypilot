@@ -3,6 +3,7 @@ from parameterized import parameterized
 
 from cereal import car, log, messaging
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.gm.values import CAR as GM
 from opendbc.car.honda.values import CAR as HONDA
 from opendbc.car.hyundai.values import CAR as HYUNDAI
 from opendbc.car.toyota.values import CAR as TOYOTA
@@ -41,7 +42,7 @@ def generate_modelV2():
 
 class TestNeuralNetworkLateralControl:
 
-  @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN])
+  @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN, GM.CHEVROLET_BOLT_EUV])
   def test_saturation(self, car_name):
     params = Params()
     params.put_bool("NeuralNetworkLateralControl", True)
