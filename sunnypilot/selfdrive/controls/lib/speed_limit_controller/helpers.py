@@ -11,9 +11,13 @@ def debug(msg):
 def description_for_state(speed_limit_control_state):
   if speed_limit_control_state == SpeedLimitControlState.inactive:
     return 'INACTIVE'
-  if speed_limit_control_state == SpeedLimitControlState.tempInactive:
-    return 'TEMP_INACTIVE'
+  if speed_limit_control_state == SpeedLimitControlState.preActive:
+    return 'PRE_ACTIVE'
+  if speed_limit_control_state == SpeedLimitControlState.pending:
+    return 'PENDING'
   if speed_limit_control_state == SpeedLimitControlState.adapting:
     return 'ADAPTING'
   if speed_limit_control_state == SpeedLimitControlState.active:
     return 'ACTIVE'
+
+  return ''

@@ -44,19 +44,16 @@ class LongitudinalPlannerSP:
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
     self.events_sp.clear()
 
-    self.slc.update(sm, v_ego, a_ego, v_cruise, self.events_sp)
-
-    v_cruise_slc = self.slc.speed_limit_offseted if self.slc.is_active else V_CRUISE_UNSET
+    v_cruise_slc = self.slc.update(sm, v_ego, a_ego, v_cruise, self.events_sp)
+    v_cruise_slc_final = min(v_cruise, v_cruise_slc)
 
     self.v_tsc.update(sm, sm['carControl'].enabled, v_ego, a_ego, v_cruise)
     v_cruise_v_tsc = self.v_tsc.v_turn if self.v_tsc.is_active else V_CRUISE_UNSET
 
-    cruise_speeds = [v_cruise]
+    cruise_speeds = [v_cruise_slc_final]
 
     if self.v_tsc.is_active and v_cruise_v_tsc != V_CRUISE_UNSET:
       cruise_speeds.append(v_cruise_v_tsc)
-    if self.slc.is_active and v_cruise_slc != V_CRUISE_UNSET:
-      cruise_speeds.append(v_cruise_slc)
 
     v_cruise_final = min(cruise_speeds)
     return v_cruise_final
