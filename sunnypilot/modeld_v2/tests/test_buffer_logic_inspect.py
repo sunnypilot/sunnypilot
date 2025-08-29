@@ -249,10 +249,7 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
   state = ModelState(None)
-  
-  # Dynamically map desire keys to their actual names in the model
   if key == "desire":
-    # Find any key in shapes that starts with 'desire'
     desire_keys = [k for k in shapes.keys() if k.startswith('desire')]
     if desire_keys:
       actual_key = desire_keys[0]  # Use the first (and likely only) desire key
@@ -263,13 +260,13 @@ def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
 
   if actual_key not in state.numpy_inputs:
     pytest.skip(f"{actual_key} not in state.numpy_inputs")
-  
+
   constants = DummyModelRunner(shapes).constants
   buf = state.input_queues.buffers.get(actual_key, None)
   idxs = state.input_queues.indices.get(actual_key, None)
   input_shape = shapes[actual_key]
   prev_desire = np.zeros(constants.DESIRE_LEN, dtype=np.float32) if key == 'desire' else None
-  
+
   for step in range(20):    # multiple steps to ensure history is built up
     new_val = np.full((input_shape[2],), step, dtype=np.float32)
     expected = legacy_buffer_update(buf, new_val, mode, actual_key, constants, idxs, input_shape, prev_desire)
