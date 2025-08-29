@@ -128,9 +128,6 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   events @1 :List(OnroadEventSP.Event);
   slc @2 :SpeedLimitControl;
 
-  events @1 :List(OnroadEventSP.Event);
-  slc @2 :SpeedLimitControl;
-
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
