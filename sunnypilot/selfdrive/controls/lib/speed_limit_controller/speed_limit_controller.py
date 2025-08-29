@@ -52,8 +52,8 @@ class SpeedLimitController:
     self.last_valid_speed_limit_offsetted = 0.
     self._distance = 0.
     self._source = Source.none
-    self.state = SpeedLimitControlState.inactive
-    self.state_prev = SpeedLimitControlState.inactive
+    self._state = SpeedLimitControlState.inactive
+    self._state_prev = SpeedLimitControlState.inactive
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
@@ -70,7 +70,7 @@ class SpeedLimitController:
     self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
 
     # Mapping functions to state transitions
-    self.state_transition_strategy = {
+    self._state_transition_strategy = {
       SpeedLimitControlState.inactive: self.transition_state_from_inactive,
       SpeedLimitControlState.preActive: self.transition_state_from_preactive,
       SpeedLimitControlState.pending: self.transition_state_from_pending,
@@ -89,21 +89,21 @@ class SpeedLimitController:
 
   @property
   def state(self) -> SpeedLimitControlState:
-    return self.state
+    return self._state
 
   @state.setter
   def state(self, value) -> None:
-    if value != self.state:
+    if value != self._state:
       debug(f'Speed Limit Controller state: {description_for_state(value)}')
-    self.state = value
+    self._state = value
 
   @property
   def is_enabled(self) -> bool:
-    return self.state in ENABLED_STATES and self.enabled
+    return self._state in ENABLED_STATES and self.enabled
 
   @property
   def is_active(self) -> bool:
-    return self.state in ACTIVE_STATES and self.enabled
+    return self._state in ACTIVE_STATES and self.enabled
 
   @property
   def speed_limit_offseted(self) -> float:
@@ -216,7 +216,7 @@ class SpeedLimitController:
                                                   int(round((self._speed_limit + self.speed_limit_warning_offset) * self.speed_factor))
 
   def transition_state_from_inactive(self) -> None:
-    self.state = SpeedLimitControlState.preActive
+    self._state = SpeedLimitControlState.preActive
     self.initial_max_set = False
 
   def transition_state_from_preactive(self) -> None:
@@ -224,44 +224,44 @@ class SpeedLimitController:
       self.initial_max_set = True
       if self._speed_limit > 0:
         if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-          self.state = SpeedLimitControlState.adapting
+          self._state = SpeedLimitControlState.adapting
         else:
-          self.state = SpeedLimitControlState.active
+          self._state = SpeedLimitControlState.active
       else:
-        self.state = SpeedLimitControlState.pending
+        self._state = SpeedLimitControlState.pending
     elif self.v_cruise_setpoint_changed and self.current_time > (self.last_op_engaged_time + PRE_ACTIVE_GUARD_PERIOD):
       # User set cruise to something other than 80 MPH, permanently disable for this session
-      self.state = SpeedLimitControlState.inactive
+      self._state = SpeedLimitControlState.inactive
 
   def transition_state_from_pending(self) -> None:
     if self._speed_limit > 0:
       if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-        self.state = SpeedLimitControlState.adapting
+        self._state = SpeedLimitControlState.adapting
       else:
-        self.state = SpeedLimitControlState.active
+        self._state = SpeedLimitControlState.active
 
   def transition_state_from_adapting(self) -> None:
     if self.detect_manual_cruise_change():
-      self.state = SpeedLimitControlState.inactive
+      self._state = SpeedLimitControlState.inactive
     elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
-      self.state = SpeedLimitControlState.active
+      self._state = SpeedLimitControlState.active
 
   def transition_state_from_active(self) -> None:
     if self.detect_manual_cruise_change():
-      self.state = SpeedLimitControlState.inactive
+      self._state = SpeedLimitControlState.inactive
     elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
-      self.state = SpeedLimitControlState.adapting
+      self._state = SpeedLimitControlState.adapting
 
   def state_control(self) -> None:
-    self.state_prev = self.state
+    self._state_prev = self._state
 
     # If op is disabled or SLC is disabled, go inactive
     if not self.op_engaged or not self.enabled:
-      self.state = SpeedLimitControlState.inactive
+      self._state = SpeedLimitControlState.inactive
       self.initial_max_set = False
       return
 
-    self.state_transition_strategy[self.state]()
+    self._state_transition_strategy[self._state]()
 
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego
@@ -277,9 +277,9 @@ class SpeedLimitController:
 
   def update_events(self, events_sp: EventsSP) -> None:
     if self.is_active:
-      if self.state == SpeedLimitControlState.preActive:
+      if self._state == SpeedLimitControlState.preActive:
         events_sp.add(EventNameSP.speedLimitPreActive)
-      elif self.state_prev not in ACTIVE_STATES:
+      elif self._state_prev not in ACTIVE_STATES:
         events_sp.add(EventNameSP.speedLimitActive)
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitValueChange)
