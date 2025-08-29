@@ -119,7 +119,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
     buf = state.input_queues.buffers.get(key, None)
     idxs = state.input_queues.indices.get(key, None)
     if buf is None:
-      continue    # not all shapes are 3d, and the non 3d are not buffered
+      continue    # not all shapes are 3D, and the non-3D ones are not buffered
     # Buffer shape logic
     if mode == 'split':
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])
