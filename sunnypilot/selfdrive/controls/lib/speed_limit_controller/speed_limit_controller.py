@@ -4,9 +4,10 @@ import time
 from cereal import messaging, custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
   PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_CRUISE_SPEED, \
-  CRUISE_SPEED_TOLERANCE, FALLBACK_CRUISE_SPEED
+  CRUISE_SPEED_TOLERANCE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy, Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
@@ -118,7 +119,7 @@ class SpeedLimitController:
       return self.last_valid_speed_limit_offsetted
 
     # Fallback
-    return FALLBACK_CRUISE_SPEED
+    return V_CRUISE_UNSET
 
   @property
   def speed_limit_offset(self) -> float:
