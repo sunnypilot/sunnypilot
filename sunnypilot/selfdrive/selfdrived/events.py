@@ -173,12 +173,12 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
-  }
+  },
   EventNameSP.speedLimitPreActive: {
     ET.WARNING: Alert(
       "Auto Speed Limit Control: Activation Required",
       "Manually change set speed to 80 MPH to activate",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
-  },
+  }
 }
