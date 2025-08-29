@@ -145,27 +145,6 @@ MODEL_METADATA = {
       "pad": slice(-2, None),
     },
   },
-  "driving_vision_steam_powered": {
-    "metadata_path": "selfdrive/modeld/models/driving_vision_metadata.pkl",
-    "model_checkpoint": "2454c1c0-faac-47a7-b0a4-244fa0aeb474/500",
-    "split": True,
-    "input_shapes": {"img": (1, 12, 128, 256), "big_img": (1, 12, 128, 256)},
-    "output_shapes": {"outputs": (1, 1576)},
-    "output_slices": {
-      "meta": slice(0, 55),
-      "desire_pred": slice(55, 87),
-      "pose": slice(87, 99),
-      "wide_from_device_euler": slice(99, 105),
-      "road_transform": slice(105, 117),
-      "lane_lines": slice(117, 645),
-      "lane_lines_prob": slice(645, 653),
-      "road_edges": slice(653, 917),
-      "lead": slice(917, 1061),
-      "lead_prob": slice(1061, 1064),
-      "hidden_state": slice(1064, 1576),
-      "pad": slice(0, None),
-    },
-  },
   "supercombo_op": {
     "metadata_path": "/Users/james/Downloads/model-Optimus Prime (September 21, 2023)-559/supercombo_op_metadata.pkl",
     "model_checkpoint": None,
@@ -261,6 +240,59 @@ MODEL_METADATA = {
       "pad": slice(-3, None)
     },
     "20hz": True
+  },
+  "driving_policy_renamed_desire": {
+    "metadata_path": "/Users/james/Downloads/model-ugh (August 27, 2025)-575/driving_policy_ugh_metadata.pkl",
+    "model_checkpoint": "a8f96b93-bde2-4e28-a732-4df21ebba968/400",
+    "split": True,
+    "input_shapes": {
+      "desire_pulse": (1, 25, 8),
+      "traffic_convention": (1, 2),
+      "features_buffer": (1, 25, 512)
+    },
+    "output_shapes": {
+      "outputs": (1, 1000)
+    },
+    "output_slices": {
+      "plan": slice(0, 990),
+      "desire_state": slice(990, 998),
+      "pad": slice(-2, None)
+    }
+  },
+  "supercombo_nts": {   # released in January of this year, so its not 20hz, but it is modern logic..
+    "metadata_path": "/Users/james/Downloads/supercombo_nts_metadata.pkl",
+    "model_checkpoint": None,
+    "non20hz": True,
+    "input_shapes": {
+      "input_imgs": (1, 12, 128, 256),
+      "big_input_imgs": (1, 12, 128, 256),
+      "desire": (1, 100, 8),
+      "traffic_convention": (1, 2),
+      "lateral_control_params": (1, 2),
+      "prev_desired_curv": (1, 100, 1),
+      "features_buffer": (1, 99, 512)
+    },
+    "output_shapes": {
+      "outputs": (1, 6512)
+    },
+    "output_slices": {
+      "plan": slice(0, 4955),
+      "lane_lines": slice(4955, 5483),
+      "lane_lines_prob": slice(5483, 5491),
+      "road_edges": slice(5491, 5755),
+      "lead": slice(5755, 5857),
+      "lead_prob": slice(5857, 5860),
+      "desire_state": slice(5860, 5868),
+      "meta": slice(5868, 5923),
+      "desire_pred": slice(5923, 5955),
+      "pose": slice(5955, 5967),
+      "wide_from_device_euler": slice(5967, 5973),
+      "sim_pose": slice(5973, 5985),
+      "road_transform": slice(5985, 5997),
+      "desired_curvature": slice(5997, 5999),
+      "hidden_state": slice(5999, -1),
+      "pad": slice(-1, None)
+    }
   },
 }
 

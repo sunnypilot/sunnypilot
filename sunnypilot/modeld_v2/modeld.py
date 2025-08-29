@@ -40,11 +40,76 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
+class InputQueues:
+  def __init__(self, input_shapes: dict, input_dtypes: dict):
+    self.input_shapes = input_shapes
+    self.input_dtypes = input_dtypes
+    self.buffers: dict[str, np.ndarray | None] = {}
+    self.indices: dict[str, np.ndarray | None] = {}
+    for key, shape in input_shapes.items():
+      self._setup_buffer_for_key(key, shape, input_dtypes[key])
+
+  def _setup_buffer_for_key(self, key, shape, dtype):
+    # Temporal input: shape is [batch, history, features]
+    if len(shape) == 3 and shape[1] > 1:
+      buffer_history_len = max(100, shape[1] * 4 if shape[1] < 100 else shape[1])
+      self.buffers[key] = np.zeros((1, buffer_history_len, shape[2]), dtype=dtype)
+      features_buffer_shape = self.input_shapes.get('features_buffer')
+      if shape[1] in (24, 25) and features_buffer_shape and features_buffer_shape[1] == 24:
+        step = int(-buffer_history_len / shape[1])
+        self.indices[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
+      elif shape[1] == 25:
+        skip = buffer_history_len // shape[1]
+        self.indices[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
+      elif shape[1] == buffer_history_len:
+        self.indices[key] = np.arange(buffer_history_len)
+      else:
+        self.indices[key] = None
+
+  def update_dtypes_and_shapes(self, input_dtypes: dict, input_shapes: dict) -> None:
+    self.input_dtypes.update(input_dtypes)
+    self.input_shapes.update(input_shapes)
+    for key in input_dtypes:
+      if key in self.buffers and self.buffers[key] is not None:
+        shape = input_shapes[key]
+        self._setup_buffer_for_key(key, shape, input_dtypes[key])
+
+  def enqueue(self, inputs: dict[str, np.ndarray]) -> None:
+    for key, new_val in inputs.items():
+      if key not in self.buffers or self.buffers[key] is None:
+        continue
+      if new_val.dtype != self.input_dtypes[key]:
+        raise ValueError(f'Input {key} has wrong dtype {new_val.dtype}, expected {self.input_dtypes[key]}')
+      buf = self.buffers[key]
+      if buf is not None:
+        if buf.shape[1] == new_val.shape[0]:
+          buf[0, -new_val.shape[0]:] = new_val
+          buf[0, :-new_val.shape[0]] = buf[0, new_val.shape[0]:]
+        else:
+          buf[0, :-1] = buf[0, 1:]
+          buf[0, -1] = new_val
+
+  def get(self, *names) -> dict[str, np.ndarray]:
+    result: dict[str, np.ndarray] = {}
+    for key in names:
+      buf = self.buffers.get(key, None)
+      if buf is not None:
+        out_shape = self.input_shapes.get(key)
+        # Roll buffer and assign based on desire.shape[1] value
+        if out_shape is not None and key.startswith('desire') and buf.shape[1] > out_shape[1]:
+          skip = buf.shape[1] // out_shape[1]
+          result[key] = buf.reshape((out_shape[0], out_shape[1], skip, -1)).max(axis=2)
+        elif self.indices[key] is not None and buf.shape[1] > 1:
+          result[key] = buf[0, self.indices[key]]
+        elif out_shape is not None and buf.shape[1] >= out_shape[1]:
+          result[key] = buf[0, -out_shape[1]:]
+    return result
+
+
 class ModelState(ModelStateBase):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
-  temporal_idxs: slice | np.ndarray
 
   def __init__(self, context: CLContext):
     ModelStateBase.__init__(self)
@@ -56,68 +121,47 @@ class ModelState(ModelStateBase):
       raise
 
     model_bundle = get_active_bundle()
-    self.generation = model_bundle.generation if model_bundle is not None else None
-    overrides = {override.key: override.value for override in model_bundle.overrides}
+    self.generation = model_bundle.generation if model_bundle else None
+    overrides = {override.key: override.value for override in model_bundle.overrides} if model_bundle else {}
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
-    buffer_length = 5 if self.model_runner.is_20hz else 2
+    buffer_length = 4 if self.model_runner.is_20hz else 2
     self.frames = {name: DrivingModelFrame(context, buffer_length) for name in self.model_runner.vision_input_names}
-    self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
-    # img buffers are managed in openCL transform code
-    self.numpy_inputs = {}
-    self.temporal_buffers = {}
-    self.temporal_idxs_map = {}
+    input_dtypes = dict.fromkeys(self.model_runner.input_shapes, np.float32)
+    self.numpy_inputs = {k: np.zeros(shape, dtype=input_dtypes[k]) for k, shape in self.model_runner.input_shapes.items() if k not in self.frames}
 
-    for key, shape in self.model_runner.input_shapes.items():
-      if key not in self.frames: # Managed by opencl
-        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
-        # Temporal input: shape is [batch, history, features]
-        if len(shape) == 3 and shape[1] > 1:
-          buffer_history_len = max(100, (shape[1] * 4 if shape[1] < 100 else shape[1]))   # Allow for higher history buffers in the future
-          feature_len = shape[2]
-          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
-          features_buffer_shape = self.model_runner.input_shapes.get('features_buffer')
-          if shape[1] in (24, 25) and features_buffer_shape is not None and features_buffer_shape[1] == 24:  # 20Hz
-            step = int(-buffer_history_len / shape[1])
-            self.temporal_idxs_map[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
-          elif shape[1] == 25:  # Split
-            skip = buffer_history_len // shape[1]
-            self.temporal_idxs_map[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
-          elif shape[1] == buffer_history_len:  # non20hz
-            self.temporal_idxs_map[key] = np.arange(buffer_history_len)
+    temporal_inputs = {k: v for k, v in self.model_runner.input_shapes.items() if len(v) == 3 and v[1] > 1}
+    self.input_queues = InputQueues(temporal_inputs, dict.fromkeys(temporal_inputs, np.float32))
+    self.prev_desire = np.zeros(self.numpy_inputs[self.desire_key].shape[2], dtype=np.float32)
 
   @property
   def mlsim(self) -> bool:
     return bool(self.generation is not None and self.generation >= 11)
 
+  @property
+  def desire_key(self) -> str:
+    return next(key for key in self.numpy_inputs if key.startswith('desire'))
+
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
-    inputs['desire'][0] = 0
-    new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
-    self.prev_desire[:] = inputs['desire']
-    if self.numpy_inputs['desire'].shape[1] == self.temporal_buffers['desire'].shape[1]:
-      desire_len = inputs['desire'].shape[-1]
-      self.temporal_buffers['desire'][0][:-desire_len] = self.temporal_buffers['desire'][0][desire_len:]
-      self.temporal_buffers['desire'][0][-desire_len:] = new_desire
-    else:
-      self.temporal_buffers['desire'][0,:-1] = self.temporal_buffers['desire'][0,1:]
-      self.temporal_buffers['desire'][0,-1] = new_desire
+    inputs[self.desire_key][0] = 0
+    new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
+    self.prev_desire[:] = inputs[self.desire_key]
 
-    # Roll buffer and assign based on desire.shape[1] value
-    if self.temporal_buffers['desire'].shape[1] > self.numpy_inputs['desire'].shape[1]:
-      skip = self.temporal_buffers['desire'].shape[1] // self.numpy_inputs['desire'].shape[1]
-      self.numpy_inputs['desire'][:] = (
-        self.temporal_buffers['desire'][0].reshape(self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], skip, -1).max(axis=2))
-    else:
-      self.numpy_inputs['desire'][:] = self.temporal_buffers['desire'][0, self.temporal_idxs_map['desire']]
+    batch_inputs = {key: (new_desire if key == self.desire_key else inputs[key])
+                    for key in self.input_queues.buffers
+                    if not (key == 'features_buffer' and 'hidden_state' in self.numpy_inputs) and (key == self.desire_key or key in inputs)}
+    self.input_queues.enqueue(batch_inputs)
 
     for key in self.numpy_inputs:
-      if key in inputs and key not in ['desire']:
+      if key in self.input_queues.buffers:
+        self.numpy_inputs[key][:] = self.input_queues.get(key)[key]
+      elif key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
     imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
@@ -132,35 +176,26 @@ class ModelState(ModelStateBase):
     outputs = self.model_runner.run_model()
 
     if "lat_planner_solution" in outputs and "lat_planner_state" in self.numpy_inputs:
-      idx_n = outputs['lat_planner_solution'].shape[1]    # Reshaped by parse_mdn from slice(5990, 6254)= 264= 1,264/2 = 1,1,132/4 == 1,33,4
+      idx_n = outputs['lat_planner_solution'].shape[1]
       t_idxs = [10.0 * ((i / (idx_n - 1))**2) for i in range(idx_n)]
       self.numpy_inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
       self.numpy_inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
 
-    # Update features_buffer
-    self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
-    self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
-    if 'features_buffer' in self.temporal_idxs_map:
-      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
-    else:
-      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, -self.numpy_inputs['features_buffer'].shape[1]:]
+    # Enqueue features buffer
+    self.input_queues.enqueue({'features_buffer': outputs['hidden_state'][0, :]})
+    self.numpy_inputs['features_buffer'][:] = self.input_queues.get('features_buffer')['features_buffer']
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-      if input_name_prev and input_name_prev in self.temporal_buffers:
-        self.process_desired_curvature(outputs, input_name_prev)
+    if "desired_curvature" in outputs and "prev_desired_curv" in self.numpy_inputs:
+      self.process_desired_curvature(outputs, 'prev_desired_curv')
+
     return outputs
 
-  def process_desired_curvature(self, outputs, input_name_prev):
-    self.temporal_buffers[input_name_prev][0,:-1] = self.temporal_buffers[input_name_prev][0,1:]
-    self.temporal_buffers[input_name_prev][0,-1,:] = outputs['desired_curvature'][0, :]
-    self.numpy_inputs[input_name_prev][:] = self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+  def process_desired_curvature(self, outputs, input_name):
+    self.input_queues.enqueue({input_name: outputs['desired_curvature'][0, :]})
+    self.numpy_inputs[input_name][:] = self.input_queues.get(input_name)[input_name]
     if self.mlsim:
-      self.numpy_inputs[input_name_prev][:] = 0*self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+      self.numpy_inputs[input_name][:] = 0 * self.input_queues.get(input_name)[input_name]
+
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
@@ -221,19 +256,13 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-
-  # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
-  frame_id = 0
-  last_vipc_frame_id = 0
-  run_count = 0
+  frame_id = last_vipc_frame_id = run_count = 0
 
-  model_transform_main = np.zeros((3, 3), dtype=np.float32)
-  model_transform_extra = np.zeros((3, 3), dtype=np.float32)
+  model_transform_main = model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  buf_main, buf_extra = None, None
-  meta_main = FrameMeta()
-  meta_extra = FrameMeta()
+  buf_main = buf_extra = None
+  meta_main = meta_extra = FrameMeta()
 
 
   if demo:
@@ -320,7 +349,7 @@ def main(demo=False):
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
+      model.desire_key: vec_desire,
       'traffic_convention': traffic_convention,
     }
 
