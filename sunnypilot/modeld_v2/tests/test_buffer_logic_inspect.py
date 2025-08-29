@@ -116,8 +116,8 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
   state = ModelState(None)
   constants = DummyModelRunner(shapes).constants
   for key in shapes:
-    buf = state.temporal_buffers.get(key, None)
-    idxs = state.temporal_idxs_map.get(key, None)
+    buf = state.input_queues.buffers.get(key, None)
+    idxs = state.input_queues.indices.get(key, None)
     if buf is None:
       continue    # not all shapes are 3d, and the non 3d are not buffered
     # Buffer shape logic
@@ -145,7 +145,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
 def legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, prev_desire=None):
   # This is what we compare the new dynamic logic to, to ensure it does the same thing
   if mode == 'split':
-    if key == 'desire':
+    if key == 'desire' or key.startswith('desire'):
       buf[0,:-1] = buf[0,1:]
       buf[0,-1] = new_val
       return buf.reshape((1, constants.INPUT_HISTORY_BUFFER_LEN, constants.TEMPORAL_SKIP, -1)).max(axis=2)
@@ -211,14 +211,14 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, 
 
 
 def dynamic_buffer_update(state, key, new_val, mode):
-  if key == 'desire':
+  if key == 'desire' or key.startswith('desire'):
     inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
-              for k, v in state.model_runner.input_shapes.items() if k != 'desire'}
-    inputs['desire'] = new_val.copy()
+              for k, v in state.model_runner.input_shapes.items() if k != key}
+    inputs[key] = new_val.copy()
     # ModelState.run expects desire as a pulse, so we zero the first element.
-    inputs['desire'][0] = 0
+    inputs[key][0] = 0
     state.run({}, {}, inputs, prepare_only=False)
-    return state.numpy_inputs['desire'][0]
+    return state.numpy_inputs[key]
 
   if key == 'features_buffer':
     inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
@@ -249,19 +249,33 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
   state = ModelState(None)
-  if key not in state.numpy_inputs:
-    pytest.skip(f"{key} not in state.numpy_inputs")
+  
+  # Dynamically map desire keys to their actual names in the model
+  if key == "desire":
+    # Find any key in shapes that starts with 'desire'
+    desire_keys = [k for k in shapes.keys() if k.startswith('desire')]
+    if desire_keys:
+      actual_key = desire_keys[0]  # Use the first (and likely only) desire key
+    else:
+      pytest.skip("No desire key found in model inputs")
+  else:
+    actual_key = key
+
+  if actual_key not in state.numpy_inputs:
+    pytest.skip(f"{actual_key} not in state.numpy_inputs")
+  
   constants = DummyModelRunner(shapes).constants
-  buf = state.temporal_buffers.get(key, None)
-  idxs = state.temporal_idxs_map.get(key, None)
-  input_shape = shapes[key]
+  buf = state.input_queues.buffers.get(actual_key, None)
+  idxs = state.input_queues.indices.get(actual_key, None)
+  input_shape = shapes[actual_key]
   prev_desire = np.zeros(constants.DESIRE_LEN, dtype=np.float32) if key == 'desire' else None
+  
   for step in range(20):    # multiple steps to ensure history is built up
     new_val = np.full((input_shape[2],), step, dtype=np.float32)
-    expected = legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, prev_desire)
-    actual = dynamic_buffer_update(state, key, new_val, mode)
+    expected = legacy_buffer_update(buf, new_val, mode, actual_key, constants, idxs, input_shape, prev_desire)
+    actual = dynamic_buffer_update(state, actual_key, new_val, mode)
     # Model returns the reduced numpy_inputs history, compare the last n entries so the test is checking the same slices.
     if expected is not None and actual is not None and expected.shape != actual.shape:
       if expected.ndim == 2 and actual.ndim == 2 and expected.shape[1] == actual.shape[1]:
         expected = expected[-actual.shape[0]:]
-    assert np.allclose(actual, expected), f"{mode} {key}: dynamic buffer update does not match legacy logic"
+    assert np.allclose(actual, expected), f"{mode} {actual_key}: dynamic buffer update does not match legacy logic"
