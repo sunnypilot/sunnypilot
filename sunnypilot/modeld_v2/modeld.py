@@ -65,8 +65,6 @@ class InputQueues:
         self.indices[key] = np.arange(buffer_history_len)
       else:
         self.indices[key] = None
-    else:
-      self.buffers[key] = self.indices[key] = None
 
   def update_dtypes_and_shapes(self, input_dtypes: dict, input_shapes: dict) -> None:
     self.input_dtypes.update(input_dtypes)
@@ -75,10 +73,6 @@ class InputQueues:
       if key in self.buffers and self.buffers[key] is not None:
         shape = input_shapes[key]
         self._setup_buffer_for_key(key, shape, input_dtypes[key])
-
-  def reset(self) -> None:
-    for key, shape in self.input_shapes.items():
-      self._setup_buffer_for_key(key, shape, self.input_dtypes[key])
 
   def enqueue(self, inputs: dict[str, np.ndarray]) -> None:
     for key, new_val in inputs.items():
@@ -109,8 +103,6 @@ class InputQueues:
           result[key] = buf[0, self.indices[key]]
         elif out_shape is not None and buf.shape[1] >= out_shape[1]:
           result[key] = buf[0, -out_shape[1]:]
-        else:
-          result[key] = buf[0]
     return result
 
 
@@ -167,7 +159,7 @@ class ModelState(ModelStateBase):
     self.input_queues.enqueue(batch_inputs)
 
     for key in self.numpy_inputs:
-      if key in self.input_queues.buffers and self.input_queues.buffers[key] is not None:
+      if key in self.input_queues.buffers:
         self.numpy_inputs[key][:] = self.input_queues.get(key)[key]
       elif key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
@@ -193,21 +185,16 @@ class ModelState(ModelStateBase):
     self.input_queues.enqueue({'features_buffer': outputs['hidden_state'][0, :]})
     self.numpy_inputs['features_buffer'][:] = self.input_queues.get('features_buffer')['features_buffer']
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-      if input_name_prev and input_name_prev in self.input_queues.buffers:
-        self.process_desired_curvature(outputs, input_name_prev)
+    if "desired_curvature" in outputs and "prev_desired_curv" in self.numpy_inputs:
+      self.process_desired_curvature(outputs, 'prev_desired_curv')
+
     return outputs
 
-  def process_desired_curvature(self, outputs, input_name_prev):
-    self.input_queues.enqueue({input_name_prev: outputs['desired_curvature'][0, :]})
-    self.numpy_inputs[input_name_prev][:] = self.input_queues.get(input_name_prev)[input_name_prev]
+  def process_desired_curvature(self, outputs, input_name):
+    self.input_queues.enqueue({input_name: outputs['desired_curvature'][0, :]})
+    self.numpy_inputs[input_name][:] = self.input_queues.get(input_name)[input_name]
     if self.mlsim:
-      self.numpy_inputs[input_name_prev][:] = 0 * self.input_queues.get(input_name_prev)[input_name_prev]
+      self.numpy_inputs[input_name][:] = 0 * self.input_queues.get(input_name)[input_name]
 
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,

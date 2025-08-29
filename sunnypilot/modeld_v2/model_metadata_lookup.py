@@ -259,6 +259,41 @@ MODEL_METADATA = {
       "pad": slice(-2, None)
     }
   },
+  "supercombo_nts": {   # released in January of this year, so its not 20hz, but it is modern logic..
+    "metadata_path": "/Users/james/Downloads/supercombo_nts_metadata.pkl",
+    "model_checkpoint": None,
+    "non20hz": True,
+    "input_shapes": {
+      "input_imgs": (1, 12, 128, 256),
+      "big_input_imgs": (1, 12, 128, 256),
+      "desire": (1, 100, 8),
+      "traffic_convention": (1, 2),
+      "lateral_control_params": (1, 2),
+      "prev_desired_curv": (1, 100, 1),
+      "features_buffer": (1, 99, 512)
+    },
+    "output_shapes": {
+      "outputs": (1, 6512)
+    },
+    "output_slices": {
+      "plan": slice(0, 4955),
+      "lane_lines": slice(4955, 5483),
+      "lane_lines_prob": slice(5483, 5491),
+      "road_edges": slice(5491, 5755),
+      "lead": slice(5755, 5857),
+      "lead_prob": slice(5857, 5860),
+      "desire_state": slice(5860, 5868),
+      "meta": slice(5868, 5923),
+      "desire_pred": slice(5923, 5955),
+      "pose": slice(5955, 5967),
+      "wide_from_device_euler": slice(5967, 5973),
+      "sim_pose": slice(5973, 5985),
+      "road_transform": slice(5985, 5997),
+      "desired_curvature": slice(5997, 5999),
+      "hidden_state": slice(5999, -1),
+      "pad": slice(-1, None)
+    }
+  },
 }
 
 

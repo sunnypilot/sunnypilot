@@ -253,13 +253,11 @@ def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
     desire_keys = [k for k in shapes.keys() if k.startswith('desire')]
     if desire_keys:
       actual_key = desire_keys[0]  # Use the first (and likely only) desire key
-    else:
-      pytest.skip("No desire key found in model inputs")
   else:
     actual_key = key
 
   if actual_key not in state.numpy_inputs:
-    pytest.skip(f"{actual_key} not in state.numpy_inputs")
+    pytest.skip()
 
   constants = DummyModelRunner(shapes).constants
   buf = state.input_queues.buffers.get(actual_key, None)
@@ -271,7 +269,6 @@ def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
     new_val = np.full((input_shape[2],), step, dtype=np.float32)
     expected = legacy_buffer_update(buf, new_val, mode, actual_key, constants, idxs, input_shape, prev_desire)
     actual = dynamic_buffer_update(state, actual_key, new_val, mode)
-    # Model returns the reduced numpy_inputs history, compare the last n entries so the test is checking the same slices.
     if expected is not None and actual is not None and expected.shape != actual.shape:
       if expected.ndim == 2 and actual.ndim == 2 and expected.shape[1] == actual.shape[1]:
         expected = expected[-actual.shape[0]:]
