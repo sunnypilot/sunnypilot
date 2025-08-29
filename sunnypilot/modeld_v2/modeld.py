@@ -256,7 +256,7 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_RUN_FREQ)
+  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
   frame_id = last_vipc_frame_id = run_count = 0
 
   model_transform_main = model_transform_extra = np.zeros((3, 3), dtype=np.float32)
