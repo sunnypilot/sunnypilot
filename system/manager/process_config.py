@@ -98,6 +98,12 @@ def or_(*fns):
 def and_(*fns):
   return lambda *args: operator.and_(*(fn(*args) for fn in fns))
 
+def use_raylib(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return bool(params.get_bool("UseRaylib"))
+
+def use_qt(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return not params.get_bool("UseRaylib")
+
 procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
@@ -117,8 +123,8 @@ procs = [
   PythonProcess("dmonitoringmodeld", "selfdrive.modeld.dmonitoringmodeld", driverview, enabled=(WEBCAM or not PC)),
 
   PythonProcess("sensord", "system.sensord.sensord", only_onroad, enabled=not PC),
-  NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
-  PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
+  NativeProcess("ui", "selfdrive/ui", ["./ui"], use_qt, watchdog_max_dt=(5 if not PC else None)),
+  PythonProcess("raylib_ui", "selfdrive.ui.ui", use_raylib, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
   NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
