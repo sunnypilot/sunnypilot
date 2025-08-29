@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import math
 import numpy as np
 
+from openpilot.common.pid import PIDController
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -43,9 +44,10 @@ def get_lookahead_value(future_vals, current_val):
 
 
 class LatControlTorqueExtBase:
-  def __init__(self, lac_torque, CP, CP_SP):
+  def __init__(self, lac_torque, CP, CP_SP, CI):
     self.model_v2 = None
     self.model_valid = False
+    self.lac_torque = lac_torque
     self.torque_params = lac_torque.torque_params
 
     self.actual_lateral_jerk: float = 0.0
@@ -53,17 +55,22 @@ class LatControlTorqueExtBase:
     self.lateral_jerk_measurement: float = 0.0
     self.lookahead_lateral_jerk: float = 0.0
 
-    self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
+    self.torque_from_lateral_accel_in_torque_space = CI.torque_from_lateral_accel_in_torque_space()
 
     self._ff = 0.0
+    self._pid = PIDController(0.0, 0.0, k_f=0.0)
     self._pid_log = None
     self._setpoint = 0.0
     self._measurement = 0.0
+    self._roll_compensation = 0.0
     self._lateral_accel_deadzone = 0.0
     self._desired_lateral_accel = 0.0
     self._actual_lateral_accel = 0.0
     self._desired_curvature = 0.0
     self._actual_curvature = 0.0
+    self._gravity_adjusted_lateral_accel = 0.0
+    self._steer_limited_by_safety = False
+    self._output_torque = 0.0
 
     # twilsonco's Lateral Neural Network Feedforward
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
