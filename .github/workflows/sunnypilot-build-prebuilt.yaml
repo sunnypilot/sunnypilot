@@ -296,7 +296,7 @@ jobs:
           echo "3. Update as needed (JSON array with no spaces)"
       
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
-        if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' }}
+        if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
         run: |
             TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.prepare_strategy.outputs.build }}"
             git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.build.outputs.build }}."
