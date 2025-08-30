@@ -354,7 +354,7 @@ def main(demo=False):
     }
 
     conditional_inputs = {
-      "lateral_control_params": lambda: np.array([v_ego, lat_delay], dtype=np.float32),
+      "lateral_control_params": lambda v_ego=v_ego, lat_delay=lat_delay: np.array([v_ego, lat_delay], dtype=np.float32),
       "driving_style": lambda: np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32),
       "nav_features": lambda: np.zeros(model.model_runner.input_shapes.get('nav_features')[1], dtype=np.float32),
       "nav_instructions": lambda: np.zeros(model.model_runner.input_shapes.get('nav_instructions')[1], dtype=np.float32),
