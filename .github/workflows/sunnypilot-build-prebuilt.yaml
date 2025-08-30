@@ -217,7 +217,7 @@ jobs:
   publish:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build, prepare_strategy ]
     runs-on: ubuntu-24.04
