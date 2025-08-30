@@ -175,7 +175,6 @@ jobs:
   prepare_strategy:
     runs-on: ubuntu-24.04
     outputs:
-      prebuilt: ${{ steps.strategy.outputs.prebuilt }}
       environment: ${{ steps.strategy.outputs.environment }}
       new_branch: ${{ steps.strategy.outputs.new_branch }}
       extra_version_identifier: ${{ steps.strategy.outputs.extra_version_identifier }}
@@ -202,7 +201,6 @@ jobs:
             NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
             VERSION="$(date '+%Y.%m.%d')-${{ github.run_number }}"
   
-            echo "prebuilt=true" >> $GITHUB_OUTPUT
             echo "environment=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -210,7 +208,6 @@ jobs:
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
-            echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
             echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
             echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
             echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
