@@ -336,8 +336,8 @@ QString MultiOptionDialog::getSelection(const QString &prompt_text, const QStrin
   return "";
 }
 
-TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items,
-                                   const QString &current, QWidget *parent) : DialogBase(parent) {
+TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<TreeFolder> &items,
+                                   const QString &current, const QString &favParam, QWidget *parent) : DialogBase(parent) {
   QFrame *container = new QFrame(this);
   container->setStyleSheet(R"(
     QFrame { background-color: #1B1B1B; }
@@ -375,6 +375,9 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
   main_layout->addWidget(title, 0, Qt::AlignLeft | Qt::AlignTop);
   main_layout->addSpacing(25);
 
+  iconBlank = QIcon("../../sunnypilot/selfdrive/assets/icons/star-empty.png");
+  iconFilled = QIcon ("../../sunnypilot/selfdrive/assets/icons/star-filled.png");
+
   treeWidget = new QTreeWidget(this);
   treeWidget->setHeaderHidden(true);
   treeWidget->setIndentation(50);
@@ -396,38 +399,86 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
 
   QScroller::grabGesture(treeWidget->viewport(), QScroller::LeftMouseButtonGesture);
 
+  // Create initial list of favorites from param
+  const QString favs = QString::fromStdString(params.get(favParam.toStdString()));
+  mapFavs = new QMap<QString, QList<QPushButton*>>();
+  favRefs = new QStringList(favs.split(";"));
+  for (const QString &item : *favRefs)
+  {
+    mapFavs->insert( item, {});
+  }
+
   // Populate tree
-  QListIterator<QPair<QString, QStringList>> iter(items);
+  QListIterator<TreeFolder> iter(items);
   while (iter.hasNext()) {
-    QPair currItem = iter.next();
-    if (currItem.first.isEmpty()) {
-      for (const QString &item : currItem.second) {
+    TreeFolder currItem = iter.next();
+    QString prevFolder;
+    QString currentFolder;
+    if (currItem.folder.isEmpty()) {
+      for (const TreeNode &item : currItem.items) {
         QTreeWidgetItem *topLevel = new QTreeWidgetItem();
-        topLevel->setText(0, item);
+        topLevel->setText(0, item.displayName);
+        topLevel->setData(0, Qt::UserRole, item.ref);
         topLevel->setFlags(topLevel->flags() | Qt::ItemIsSelectable);
         treeWidget->addTopLevelItem(topLevel);
-        if (item == current) {
+        if (item.ref == current) {
           topLevel->setSelected(true);
         }
       }
     } else {
-      QTreeWidgetItem *folderItem = new QTreeWidgetItem(treeWidget);
+      QList<QTreeWidgetItem*> folders = treeWidget->findItems(currItem.folder, Qt::MatchExactly, 0);
+      QTreeWidgetItem *folderItem = nullptr;
+      if (folders.isEmpty()) {
+        folderItem = new QTreeWidgetItem(treeWidget);
+      } else {
+        folderItem = folders.first();
+      }
       folderItem->setIcon(0, QIcon(QPixmap("../assets/icons/menu.png")));
-      folderItem->setText(0, "  " + currItem.first);
+      folderItem->setText(0, "  " + currItem.folder);
       folderItem->setFlags(folderItem->flags() | Qt::ItemIsAutoTristate);
       folderItem->setFlags(folderItem->flags() & ~Qt::ItemIsSelectable);
 
-      for (const QString &item : currItem.second)
+      for (const TreeNode item : currItem.items)
       {
-        QTreeWidgetItem *childItem = new QTreeWidgetItem(folderItem);
-        childItem->setText(0, item);
-        childItem->setFlags(childItem->flags() | Qt::ItemIsSelectable);
-
-        if (item == current) {
+        QTreeWidgetItem *childItem = addChildItem(item.displayName, item.ref, folderItem);
+        if (item.ref == current) {
           childItem->setSelected(true);
           folderItem->setExpanded(true);
         }
       }
+    }
+  }
+
+  // Create favorites folder
+  favorites = new QTreeWidgetItem();
+  favorites->setIcon(0, QIcon(QPixmap("../assets/icons/menu.png")));
+  favorites->setText(0, "  " + tr("Favorites"));
+  favorites->setFlags(favorites->flags() | Qt::ItemIsAutoTristate);
+  favorites->setFlags(favorites->flags() & ~Qt::ItemIsSelectable);
+  treeWidget->insertTopLevelItem(1, favorites);
+
+  // Create favorite nodes
+  for (int i = favRefs->size() - 1; i >= 0; --i) {
+    QString item = favRefs->at(i);
+    if (item.isEmpty()) continue;
+
+    QTreeWidgetItemIterator treeIt(treeWidget);
+    QTreeWidgetItem *nodeItem = nullptr;
+    while (*treeIt) {
+      if (item == (*treeIt)->data(0, Qt::UserRole).toString()) {
+        nodeItem = (*treeIt);
+        break;
+      }
+      ++treeIt;
+    }
+    if (nodeItem == nullptr) continue;
+
+    QTreeWidgetItem *childItem = addChildItem(nodeItem->text(0),
+      nodeItem->data(0, Qt::UserRole).toString(), favorites);
+    if (item == current) {
+      treeWidget->collapseAll();
+      childItem->setSelected(true);
+      favorites->setExpanded(true);
     }
   }
 
@@ -438,7 +489,7 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
   QObject::connect(treeWidget, &QTreeWidget::itemSelectionChanged, [=]() {
     QList<QTreeWidgetItem*> selectedItems = treeWidget->selectedItems();
     if (!selectedItems.isEmpty()) {
-      selection = selectedItems.first()->text(0);
+      selection = selectedItems.first()->data(0, Qt::UserRole).toString();
       confirm_btn->setEnabled(selection != current);
     }
   });
@@ -465,11 +516,91 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
   outer_layout->addWidget(container);
 }
 
-QString TreeOptionDialog::getSelection(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items,
-                                     const QString &current, QWidget *parent) {
-  TreeOptionDialog d(prompt_text, items, current, parent);
+QString TreeOptionDialog::getSelection(const QString &prompt_text, const QList<TreeFolder> &items,
+                                     const QString &current, const QString &favParam, QWidget *parent) {
+  TreeOptionDialog d(prompt_text, items, current, favParam, parent);
   if (d.exec()) {
     return d.selection;
   }
   return "";
+}
+
+/**
+ * Handles the addition or removal of items from the "favorites" list based on the provided reference identifier.
+ *
+ * @param displayName The text label associated with the item to be added or removed in the favorites.
+ * @param ref A unique reference key identifying the item.
+ * @param btn A pointer to the QPushButton associated with the item. The button's icon is updated to indicate
+ *            whether the item is currently favorited or not.
+ *
+ * If the item is already in the favorites, it is removed from the list, its associated buttons have their
+ * icons reset, and the favorites tree is updated accordingly. If the item is not in the favorites, it is
+ * added to the list, a new associated button is created, and the favorites tree is updated. The current
+ * state of the favorites is stored in the Params object as a semicolon-separated string.
+ */
+void TreeOptionDialog::handleFavorites(const QString &displayName, const QString &ref, QPushButton *btn) {
+  if (mapFavs->keys().contains(ref)) { // Remove from favorites
+    for (auto *itemBtn:mapFavs->value(ref))
+    {
+      itemBtn->setIcon(iconBlank);
+    }
+    mapFavs->remove(ref);
+    favRefs->removeAll(ref);
+    for (int i = 0; i < favorites->childCount(); ++i) {
+      QTreeWidgetItem* child = favorites->child(i);
+      if (child && child->data(0, Qt::UserRole).toString() == ref) {
+        favorites->removeChild(child);
+      }
+    }
+  } else { // Add to favorites
+    QPushButton *favBtn = new QPushButton();
+    btn->setIcon(iconFilled);
+    mapFavs->insert(ref, {btn, favBtn});
+    favRefs->append(ref);
+    addChildItem(displayName, ref, favorites, favBtn, true);
+  }
+
+  const QString favs =favRefs->join(";");
+  params.put("ModelManager_Favs", favs.toStdString());
+}
+
+/**
+ * Adds a child item to a given folder item within the QTreeWidget.
+ *
+ * @param displayName The text to display for the child item.
+ * @param ref A reference string that uniquely identifies the child item.
+ * @param folderItem The parent folder item to which the child item will be added.
+ * @param btn A pointer to a QPushButton associated with the child item. If nullptr, a new button will be created.
+ * @param addAtTop If true, the child item is added as the first child of the folder item; otherwise, it is appended to the end.
+ * @return A pointer to the created QTreeWidgetItem representing the child item.
+ */
+QTreeWidgetItem* TreeOptionDialog::addChildItem(const QString &displayName, const QString &ref, QTreeWidgetItem *folderItem, QPushButton *btn, bool addAtTop) {
+  QTreeWidgetItem *childItem = new QTreeWidgetItem();
+  if (btn == nullptr) {
+    btn = new QPushButton();
+  }
+  if (mapFavs->keys().contains(ref)) {
+    btn->setIcon(iconFilled);
+    (*mapFavs)[ref].append(btn);
+  } else {
+    btn->setIcon(iconBlank);
+  }
+  btn->setIconSize(QSize(100, 100));
+  QWidget *buttonContainer = new QWidget();
+  QHBoxLayout *layout = new QHBoxLayout(buttonContainer);
+  layout->addWidget(btn, 0, Qt::AlignRight);
+  childItem->setText(0, displayName);
+  childItem->setData(0, Qt::UserRole, ref);
+  childItem->setFlags(childItem->flags() | Qt::ItemIsSelectable);
+  if (addAtTop) {
+    folderItem->insertChild(0, childItem);
+  } else {
+    folderItem->addChild(childItem);
+  }
+  treeWidget->setItemWidget(childItem, 0, buttonContainer);
+
+  connect(btn, &QPushButton::clicked, btn, [=]() {
+    handleFavorites(displayName, ref, btn);
+  });
+  return childItem;
 }
