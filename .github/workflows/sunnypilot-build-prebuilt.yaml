@@ -214,6 +214,7 @@ jobs:
             echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress // true')" >> $GITHUB_OUTPUT
           fi
+          echo publish-${{ github.head_ref || github.ref_name }}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha || '' }}
   
   
   publish:
