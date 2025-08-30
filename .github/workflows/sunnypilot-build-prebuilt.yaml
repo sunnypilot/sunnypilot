@@ -180,7 +180,7 @@ jobs:
       new_branch: ${{ steps.strategy.outputs.new_branch }}
       extra_version_identifier: ${{ steps.strategy.outputs.extra_version_identifier }}
       version: ${{ steps.strategy.outputs.version }}
-      cancel_publish_in_progress": ${{ steps.strategy.outputs.cancel_publish_in_progress }}
+      cancel_publish_in_progress: ${{ steps.strategy.outputs.cancel_publish_in_progress }}
     steps:
       - name: Extract deploy strategy
         id: strategy
