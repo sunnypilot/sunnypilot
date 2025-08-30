@@ -64,13 +64,18 @@ jobs:
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
-            echo "environment=$(echo "$CONFIG" | jq -r '.environment')" >> $GITHUB_OUTPUT
+            environment=$(echo "$CONFIG" | jq -r '.environment')
+            echo "environment=$environment" >> $GITHUB_OUTPUT
             echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
-            echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
             cancel="$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress')";
             echo "cancel_publish_in_progress=$( [ "$cancel" = "null" ] && echo "true" || echo $cancel)" >> $GITHUB_OUTPUT
-            echo "publish_concurrency_group=publish-${BRANCH}$( [ "$cancel" = "null" ] || [ "$cancel" = "true" ] || echo "${{ github.sha }}" )" >> $GITHUB_OUTPUT 
+            echo "publish_concurrency_group=publish-${BRANCH}$( [ "$cancel" = "null" ] || [ "$cancel" = "true" ] || echo "${{ github.sha }}" )" >> $GITHUB_OUTPUT
+          
+            stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
+            stable_version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')-$environment;
+            unstable_version=$(date '+%Y.%m.%d')-${{ github.run_number }};
+            echo "version=$([ "$stable_branch" = "true" ] && echo "$stable_version" || echo "$unstable_version")" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
   
