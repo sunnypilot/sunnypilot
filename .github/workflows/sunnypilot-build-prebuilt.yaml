@@ -15,7 +15,7 @@ env:
 
 on:
   push:
-    branches: [ master, master-dev-c3-new ]
+    branches: [ master, master-dev-c3-new, validate-test-on-staging-c3 ]
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
@@ -38,6 +38,7 @@ jobs:
       version: ${{ steps.strategy.outputs.version }}
       cancel_publish_in_progress: ${{ steps.strategy.outputs.cancel_publish_in_progress }}
       publish_concurrency_group: ${{ steps.strategy.outputs.publish_concurrency_group }}
+      is_stable_branch: ${{ steps.strategy.outputs.is_stable_branch }}
     steps:
       - uses: actions/checkout@v4
       - name: Extract deploy strategy
@@ -73,19 +74,26 @@ jobs:
             echo "cancel_publish_in_progress=$( [ "$cancel" = "null" ] && echo "true" || echo $cancel)" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}$( [ "$cancel" = "null" ] || [ "$cancel" = "true" ] || echo "${{ github.sha }}" )" >> $GITHUB_OUTPUT
           
-            stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
+            is_stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
+            echo "is_stable_branch=$is_stable_branch" >> $GITHUB_OUTPUT
+
             stable_version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g');
             unstable_version=$(date '+%Y.%m.%d')-${{ github.run_number }};
-            echo "version=$([ "$stable_branch" = "true" ] && echo "$stable_version" || echo "$unstable_version")" >> $GITHUB_OUTPUT
+            echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$unstable_version")" >> $GITHUB_OUTPUT
             
-            extra_version_identifier=$( [ "$stable_branch" = "true" ] && echo "-${environment}" || echo "" );
+            extra_version_identifier=$( [ "$is_stable_branch" = "true" ] && echo "-${environment}" || echo "" );
             echo "extra_version_identifier=$extra_version_identifier" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
   
   validate_tests:
     runs-on: ubuntu-24.04
-    if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+    needs: [ prepare_strategy ]
+    if: ${{
+      ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) ||
+      (github.event_name == 'push' && needs.prepare_strategy.outputs.is_stable_branch == 'true') ||
+      contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+      }}
     steps:
       - uses: actions/checkout@v4
       - name: Wait for Tests
