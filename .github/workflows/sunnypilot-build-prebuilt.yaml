@@ -97,7 +97,7 @@ jobs:
       extra_version_identifier: ${{ needs.prepare_strategy.outputs.extra_version_identifier }}
       commit_sha: ${{ github.sha }}
     if: ${{
-      always() && !failure() &&
+      (always() && !cancelled() && !failure()) &&
       needs.prepare_strategy.result == 'success' &&
       (needs.validate_tests.result == 'success' || needs.validate_tests.result == 'skipped') &&
       (!contains(github.event_name, 'pull_request') ||
@@ -232,7 +232,7 @@ jobs:
       # Otherwise, if a job is waiting to be published due to environment wait time, it would be canceled by a new commit and restart the wait time.
       group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}
       cancel-in-progress: ${{ needs.prepare_strategy.outputs.cancel_publish_in_progress == 'true' }}
-    if: ${{ needs.build.result == 'success' && needs.prepare_strategy.result == 'success' && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
+    if: ${{ (always() && !cancelled() && !failure()) && needs.build.result == 'success' && needs.prepare_strategy.result == 'success' && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build, prepare_strategy ]
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
@@ -279,7 +279,7 @@ jobs:
   notify:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
-    if: ${{ needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
+    if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Alpine Linux environment
