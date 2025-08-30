@@ -30,6 +30,7 @@ on:
 jobs:
   prepare_strategy:
     runs-on: ubuntu-24.04
+    if: (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
     outputs:
       environment: ${{ steps.strategy.outputs.environment }}
       new_branch: ${{ steps.strategy.outputs.new_branch }}
