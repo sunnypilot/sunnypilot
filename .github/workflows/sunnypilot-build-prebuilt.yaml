@@ -101,6 +101,7 @@ jobs:
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          should-wait-for-start: ${{ github.event_name == 'push' && 'true' || 'false' }}
 
   build:
     needs: [ validate_tests, prepare_strategy ]
