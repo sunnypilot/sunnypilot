@@ -284,7 +284,7 @@ jobs:
             "${{ needs.build.outputs.new_branch }}" \
             "${{ needs.build.outputs.version }}" \
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "-${{ needs.build.outputs.extra_version_identifier }}"
+            "${{ needs.build.outputs.extra_version_identifier }}"
 
           echo ""
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"

@@ -61,8 +61,8 @@ SP_VERSION=$(cat $SOURCE_DIR/common/version.h | awk -F\" '{print $2}')
 
 # Add built files to git
 git add -f .
-if [ "$EXTRA_VERSION_IDENTIFIER" = "-release" ] || [ "$EXTRA_VERSION_IDENTIFIER" = "-staging" ]; then
-  export VERSION=${VERSION%"$EXTRA_VERSION_IDENTIFIER"}
+if [ "$EXTRA_VERSION_IDENTIFIER" = "release" ] || [ "$EXTRA_VERSION_IDENTIFIER" = "staging" ]; then
+  export VERSION=${VERSION%"-$EXTRA_VERSION_IDENTIFIER"}
   git commit --amend -m "sunnypilot v$VERSION"
 else
   git commit --amend -m "sunnypilot v$VERSION
