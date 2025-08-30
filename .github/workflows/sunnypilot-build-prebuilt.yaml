@@ -65,7 +65,7 @@ jobs:
             echo "version=$BUILD" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
-            echo "environment=feature-branch >> $GITHUB_OUTPUT
+            echo "environment=feature-branch" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=feature-branch" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
