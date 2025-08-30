@@ -65,6 +65,9 @@ def use_github_runner(started, params, CP: car.CarParams) -> bool:
   return not PC and params.get_bool("EnableGithubRunner") and (
     not params.get_bool("NetworkMetered") and not params.get_bool("GithubRunnerSufficientVoltage"))
 
+def use_copyparty(started, params, CP: car.CarParams) -> bool:
+  return bool(params.get_bool("EnableCopyparty"))
+
 def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for sunnylink_ready to match the process manager signature."""
   return sunnylink_ready(params)
@@ -177,5 +180,16 @@ if os.path.exists("./github_runner.sh"):
 
 if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
+
+if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
+  sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+  copyparty_args = [f"-v{Paths.crash_log_root()}:/swaglogs:r"]
+  copyparty_args += [f"-v{Paths.log_root()}:/routes:r"]
+  copyparty_args += [f"-v{Paths.model_root()}:/models:rw"]
+  copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw"]
+  copyparty_args += ["-p8080"]
+  copyparty_args += ["-z"]
+  copyparty_args += ["-q"]
+  procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}
