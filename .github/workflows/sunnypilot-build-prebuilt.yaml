@@ -206,6 +206,8 @@ jobs:
             echo "environment=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
+            echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
             echo "prebuilt=$(echo "$CONFIG" | jq -r '.prebuilt')" >> $GITHUB_OUTPUT
@@ -214,7 +216,7 @@ jobs:
             echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress // true')" >> $GITHUB_OUTPUT
-            echo "publish_concurrency_group=publish-${{ github.head_ref || github.ref_name }}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha || '' }}" >> $GITHUB_OUTPUT 
+            echo "publish_concurrency_group=publish-${BRANCH}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha }}" >> $GITHUB_OUTPUT 
           fi
   
   
@@ -223,11 +225,10 @@ jobs:
       # We do a bit of a hack here to avoid cancelling the publishing job if a new commit comes in while we're publishing by adding the sha to the group name.
       # This means that if multiple commits come in while we're publishing, they will be queued up and publish one after the other.
       # Otherwise, if a job is waiting to be published due to environment wait time, it would be canceled by a new commit and restart the wait time. 
-      group: publish-${{ github.head_ref || github.ref_name }}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha || '' }}
+      group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}
       cancel-in-progress: ${{ needs.prepare_strategy.outputs.cancel_publish_in_progress == 'true' }}
     if: ${{ (always() && !failure() && !cancelled()) && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     needs: [ build, prepare_strategy ]
-    name: publish-${{ github.head_ref || github.ref_name }}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha || '' }}
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
