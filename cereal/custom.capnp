@@ -94,7 +94,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
   }
 
   enum Runner {
-    snpe @0;
+    snpeDEPRECATED @0;
     tinygrad @1;
     stock @2;
   }

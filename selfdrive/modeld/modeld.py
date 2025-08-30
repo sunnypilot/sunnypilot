@@ -32,7 +32,7 @@ from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame,
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
