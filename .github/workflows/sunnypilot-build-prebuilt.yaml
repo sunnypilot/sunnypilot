@@ -81,7 +81,7 @@ jobs:
             unstable_version=$(date '+%Y.%m.%d')-${{ github.run_number }};
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$unstable_version")" >> $GITHUB_OUTPUT
             
-            extra_version_identifier=$( [ "$is_stable_branch" = "true" ] && echo "-${environment}" || echo "" );
+            extra_version_identifier=$( [ "$is_stable_branch" = "true" ] && echo "${environment}" || echo "" );
             echo "extra_version_identifier=$extra_version_identifier" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
