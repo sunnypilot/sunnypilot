@@ -39,6 +39,7 @@ jobs:
       cancel_publish_in_progress: ${{ steps.strategy.outputs.cancel_publish_in_progress }}
       publish_concurrency_group: ${{ steps.strategy.outputs.publish_concurrency_group }}
       is_stable_branch: ${{ steps.strategy.outputs.is_stable_branch }}
+      build: ${{ steps.strategy.outputs.build }}
     steps:
       - uses: actions/checkout@v4
       - name: Extract deploy strategy
@@ -53,16 +54,16 @@ jobs:
             .configs[] | select(.branch == $branch)
           ')
 
+          BUILD="$(date '+%Y.%m.%d')-${{ github.run_number }}"
           if [[ -z "$CONFIG" || "$CONFIG" == "null" ]]; then
             echo "No exact strategy match found. Falling back to feature/fork logic."
             IS_FORK="${{ github.event.pull_request.head.repo.fork && 'true' || 'false' }}"
             FORK_SUFFIX=$( [[ "$IS_FORK" == "true" ]] && echo "-fork" || echo "" )
             NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
-            VERSION="$(date '+%Y.%m.%d')-${{ github.run_number }}"
 
             echo "environment=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "version=$BUILD" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
           else
@@ -78,12 +79,12 @@ jobs:
             echo "is_stable_branch=$is_stable_branch" >> $GITHUB_OUTPUT
 
             stable_version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g');
-            unstable_version=$(date '+%Y.%m.%d')-${{ github.run_number }};
-            echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$unstable_version")" >> $GITHUB_OUTPUT
+            echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
             
             extra_version_identifier=$( [ "$is_stable_branch" = "true" ] && echo "${environment}" || echo "" );
             echo "extra_version_identifier=$extra_version_identifier" >> $GITHUB_OUTPUT
           fi
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
   
   validate_tests:
@@ -293,6 +294,13 @@ jobs:
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
           echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
+      
+      - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
+        if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' }}
+        run: |
+            TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.build.outputs.build }}"
+            git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.build.outputs.build }}."
+            git push -f origin ${TAG}
 
   notify:
     needs: [ build, publish ]
