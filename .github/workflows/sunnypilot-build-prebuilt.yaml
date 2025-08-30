@@ -16,7 +16,7 @@ env:
 on:
   push:
     branches: [ master, master-dev-c3-new ]
-    tags: [ '*' ]
+    tags: [ 'release/*' ]
   pull_request_target:
     types: [ labeled ]
   workflow_dispatch:
