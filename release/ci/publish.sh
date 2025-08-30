@@ -51,26 +51,19 @@ git fetch origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --all
 
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
-git commit -a -m "sunnypilot v$VERSION release"
-git branch --set-upstream-to=origin/$DEV_BRANCH
 
 # include source commit hash and build date in commit
 GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse HEAD)
 DATETIME=$(date '+%Y-%m-%dT%H:%M:%S')
-SP_VERSION=$(cat $SOURCE_DIR/common/version.h | awk -F\" '{print $2}')
+SP_VERSION=$(awk -F\" '{print $2}' $SOURCE_DIR/common/version.h)
 
-# Add built files to git
-git add -f .
-if [ "$EXTRA_VERSION_IDENTIFIER" = "-release" ] || [ "$EXTRA_VERSION_IDENTIFIER" = "-staging" ]; then
-  export VERSION=${VERSION%"$EXTRA_VERSION_IDENTIFIER"}
-  git commit --amend -m "sunnypilot v$VERSION"
-else
-  git commit --amend -m "sunnypilot v$VERSION
-  version: sunnypilot v$SP_VERSION release
-  date: $DATETIME
-  master commit: $GIT_HASH
-  "
-fi
+# Commit with detailed message
+git commit -a -m "sunnypilot v$VERSION
+version: sunnypilot v$SP_VERSION (${EXTRA_VERSION_IDENTIFIER})
+date: $DATETIME
+master commit: $GIT_HASH
+"
+git branch --set-upstream-to=origin/$DEV_BRANCH
 git branch -m $DEV_BRANCH
 
 # Push!
