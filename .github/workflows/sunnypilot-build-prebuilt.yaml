@@ -61,12 +61,12 @@ jobs:
             FORK_SUFFIX=$( [[ "$IS_FORK" == "true" ]] && echo "-fork" || echo "" )
             NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
 
-            echo "environment=${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}" >> $GITHUB_OUTPUT
             echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
             echo "version=$BUILD" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=$BRANCH" >> $GITHUB_OUTPUT
+            echo "environment=feature-branch >> $GITHUB_OUTPUT
+            echo "extra_version_identifier=feature-branch" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
             environment=$(echo "$CONFIG" | jq -r '.environment')
@@ -81,9 +81,7 @@ jobs:
 
             stable_version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g');
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
-            
-            extra_version_identifier=$( [ "$is_stable_branch" = "true" ] && echo "${environment}" || echo "" );
-            echo "extra_version_identifier=$extra_version_identifier" >> $GITHUB_OUTPUT
+            echo "extra_version_identifier=${environment}" >> $GITHUB_OUTPUT
           fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
