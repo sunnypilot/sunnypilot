@@ -3,7 +3,6 @@
 #include <QVBoxLayout>
 #include <memory>
 #include "selfdrive/ui/qt/onroad/driver_monitoring.h"
-#include "selfdrive/ui/qt/onroad/model.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 
 #ifdef SUNNYPILOT
@@ -12,9 +11,11 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/model.h"
 #define ExperimentalButton ExperimentalButtonSP
 #define ModelRenderer ModelRendererSP
+#define HudRenderer HudRendererSP
 #else
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/onroad/hud.h"
+#include "selfdrive/ui/qt/onroad/model.h"
 #endif
 
 class AnnotatedCameraWidget : public CameraWidget {

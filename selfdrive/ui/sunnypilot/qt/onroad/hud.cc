@@ -7,7 +7,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/hud.h"
 
-HudRendererSP::HudRendererSP() {}
+HudRendererSP::HudRendererSP() : HudRenderer() {}
 
 void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
