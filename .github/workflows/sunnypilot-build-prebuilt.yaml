@@ -235,7 +235,7 @@ jobs:
   
   publish:
     concurrency:
-      # We do a bit of a hack here to avoid cancelling the publishing job if a new commit comes in while we're publishing by adding the sha to the group name.
+      # We do a bit of a hack here to avoid canceling the publishing job if a new commit comes in while we're publishing by adding the sha to the group name.
       # This means that if multiple commits come in while we're publishing, they will be queued up and publish one after the other.
       # Otherwise, if a job is waiting to be published due to environment wait time, it would be canceled by a new commit and restart the wait time.
       group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}
