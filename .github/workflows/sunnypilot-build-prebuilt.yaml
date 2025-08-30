@@ -15,7 +15,7 @@ env:
 
 on:
   push:
-    branches: [ master, master-dev-c3-new, validate-test-on-staging-c3 ]
+    branches: [ master, master-dev-c3-new ]
     tags: [ '*' ]
   pull_request_target:
     types: [ labeled ]
