@@ -66,6 +66,7 @@ jobs:
             echo "version=$BUILD" >> $GITHUB_OUTPUT
             echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
+            echo "extra_version_identifier=$BRANCH" >> $GITHUB_OUTPUT
           else
           echo "Matched config: $CONFIG"
             environment=$(echo "$CONFIG" | jq -r '.environment')
