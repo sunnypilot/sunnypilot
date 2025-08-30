@@ -212,8 +212,9 @@ jobs:
             echo "new_branch=$(echo "$CONFIG" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
             echo "version=$(echo "$CONFIG" | jq -r '.version_prefix // ""')$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=$(echo "$CONFIG" | jq -r '.extra_version_identifier // ""')" >> $GITHUB_OUTPUT
-            echo "cancel_publish_in_progress=$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress // true')" >> $GITHUB_OUTPUT
-            echo "publish_concurrency_group=publish-${BRANCH}${{ needs.prepare_strategy.outputs.cancel_publish_in_progress != 'true' && github.sha }}" >> $GITHUB_OUTPUT 
+            cancel="$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress')";
+            echo "cancel_publish_in_progress=$( [ "$cancel" = "null" ] && echo "true" || echo $cancel)" >> $GITHUB_OUTPUT
+            echo "publish_concurrency_group=publish-${BRANCH}$( [ "$cancel" = "null" ] || [ "$cancel" = "true" ] || echo "${{ github.sha }}" )" >> $GITHUB_OUTPUT 
           fi
           cat $GITHUB_OUTPUT
   
