@@ -38,6 +38,7 @@ jobs:
       cancel_publish_in_progress: ${{ steps.strategy.outputs.cancel_publish_in_progress }}
       publish_concurrency_group: ${{ steps.strategy.outputs.publish_concurrency_group }}
     steps:
+      - uses: actions/checkout@v4
       - name: Extract deploy strategy
         id: strategy
         run: |
