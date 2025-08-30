@@ -298,7 +298,7 @@ jobs:
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' }}
         run: |
-            TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.build.outputs.build }}"
+            TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.prepare_strategy.outputs.build }}"
             git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.build.outputs.build }}."
             git push -f origin ${TAG}
 
