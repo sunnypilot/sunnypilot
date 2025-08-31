@@ -130,6 +130,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"Version", {PERSISTENT, STRING}},
 
     // --- sunnypilot params --- //
+    {"AccelPersonality", {PERSISTENT | BACKUP, INT, std::to_string(static_cast<int>(cereal::LongitudinalPlanSP::AccelerationPersonality::NORMAL))}},
     {"ApiCache_DriveStats", {PERSISTENT, JSON}},
     {"AutoLaneChangeBsmDelay", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"AutoLaneChangeTimer", {PERSISTENT | BACKUP, INT, "0"}},
@@ -162,6 +163,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibePersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibeAccelPersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VibeFollowPersonalityEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // toyota specific params
     {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "0"}},
