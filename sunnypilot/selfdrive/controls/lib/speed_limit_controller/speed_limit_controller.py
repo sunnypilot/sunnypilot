@@ -289,9 +289,9 @@ class SpeedLimitController:
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitValueChange)
 
-  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float,
+  def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
-    self.op_engaged = sm['carControl'].longActive
+    self.op_engaged = long_active
     self.current_time = time.monotonic()
 
     self._speed_limit = speed_limit
