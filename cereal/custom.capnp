@@ -143,6 +143,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+  accelPersonality @3 :AccelerationPersonality;
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
   speedLimit @3 :SpeedLimit;
@@ -159,7 +160,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       blended @1;
     }
   }
-
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
+  }
   struct SmartCruiseControl {
     vision @0 :Vision;
     map @1 :Map;
