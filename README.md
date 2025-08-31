@@ -51,14 +51,17 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 > [!TIP]
 > You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
 
+> [!NOTE]
+> Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+
 
 <details>
 
-<summary>Older legacy branches (*not recommended*)</summary>
+<summary>Older legacy branches</summary>
 
 ### If you want to use our older legacy branches (*not recommended*)
 
-> [!IMPORTANT]
+> [**IMPORTANT**]
 > It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
 > You can still restore the latest sunnylink backup made on the old branches.
 
@@ -70,9 +73,6 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 
 </details>
 
-
-> [!NOTE]
-> Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
