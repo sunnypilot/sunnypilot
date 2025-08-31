@@ -72,7 +72,7 @@ class TestSpeedLimitController:
 
     for source in (Source.car_state, Source.map_data):
       self.reset_state()
-      for _ in range(int(2. / DT_MDL)):
+      for _ in range(int(10. / DT_MDL)):
         v_cruise_slc = self.slc.update(True, 40 * CV.MPH_TO_MS, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limit, 0, source, self.events_sp)
         offset = self.slc.get_offset(self.slc.offset_type, self.slc.offset_value)
       assert self.slc.state in ACTIVE_STATES

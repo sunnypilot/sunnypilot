@@ -217,7 +217,7 @@ class SpeedLimitController:
                                                   int(round((self._speed_limit + self.speed_limit_warning_offset) * self.speed_factor))
 
   def transition_state_from_inactive(self) -> None:
-    # if new session, wait for
+    # if it's a new session, wait for 2 seconds after long engaged before transitioning ot preActive
     if (self.frame - self.last_op_engaged_frame) * DT_MDL > 2. and not self._session_ended:
       self._state = SpeedLimitControlState.preActive
       self.initial_max_set = False
