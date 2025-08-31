@@ -51,6 +51,8 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 > [!TIP]
 > You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'. 
 
+### If you want to use our older legacy branches (*not recommended*)
+
 > [!IMPORTANT]
 > It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
 > You can still restore the latest sunnylink backup made on the old branches.
