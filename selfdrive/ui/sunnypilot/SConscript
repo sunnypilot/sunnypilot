@@ -42,6 +42,7 @@ qt_src = [
   "sunnypilot/qt/onroad/hud.cc",
   "sunnypilot/qt/onroad/model.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
+  "sunnypilot/qt/onroad/turnsignal_ui.cc",
 ]
 
 lateral_panel_qt_src = [
