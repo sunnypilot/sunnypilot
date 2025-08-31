@@ -66,6 +66,13 @@ class TestSpeedLimitController:
         assert v_cruise_slc == V_CRUISE_UNSET
         assert self.slc.state not in ACTIVE_STATES
 
+  def test_long_disabled(self):
+    for v_ego in np.linspace(0, 100, 101):
+      for _ in range(int(10. / DT_MDL)):
+        v_cruise_slc = self.slc.update(False, v_ego, 0, 50 * CV.MPH_TO_MS, 50 * CV.MPH_TO_MS, 0, Source.none, self.events_sp)
+        assert v_cruise_slc == V_CRUISE_UNSET
+      assert self.slc.state == SpeedLimitControlState.inactive
+
   def test_speed_limit_at_initial_max_set_speed(self):
     v_cruise_slc = V_CRUISE_UNSET
     speed_limit = 50 * CV.MPH_TO_MS
