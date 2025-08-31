@@ -58,6 +58,7 @@ class SpeedLimitController:
     self._source = Source.none
     self._state = SpeedLimitControlState.inactive
     self._state_prev = SpeedLimitControlState.inactive
+    self._session_ended = False
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
@@ -219,8 +220,9 @@ class SpeedLimitController:
                                                   int(round((self._speed_limit + self.speed_limit_warning_offset) * self.speed_factor))
 
   def transition_state_from_inactive(self) -> None:
-    self._state = SpeedLimitControlState.preActive
-    self.initial_max_set = False
+    if not self._session_ended:
+      self._state = SpeedLimitControlState.preActive
+      self.initial_max_set = False
 
   def transition_state_from_preactive(self) -> None:
     if self.initial_max_set_confirmed():
@@ -232,9 +234,10 @@ class SpeedLimitController:
           self._state = SpeedLimitControlState.active
       else:
         self._state = SpeedLimitControlState.pending
-    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD:
+    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD and not self._session_ended:
       # # If the initial max set speed isn't reached within the allocated period, permanently disable for this session
       self._state = SpeedLimitControlState.inactive
+      self._session_ended = True
 
   def transition_state_from_pending(self) -> None:
     if self._speed_limit > 0:
@@ -258,10 +261,11 @@ class SpeedLimitController:
   def state_control(self) -> None:
     self._state_prev = self._state
 
-    # If op is disabled or SLC is disabled, go inactive
+    # If op is disabled or SLC is disabled, go inactive and reset session tracker
     if not self.op_engaged or not self.enabled:
       self._state = SpeedLimitControlState.inactive
       self.initial_max_set = False
+      self._session_ended = False
       return
 
     self._state_transition_strategy[self._state]()
