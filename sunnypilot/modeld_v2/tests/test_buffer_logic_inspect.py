@@ -116,8 +116,8 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
   state = ModelState(None)
   constants = DummyModelRunner(shapes).constants
   for key in shapes:
-    buf = state.input_queues.buffers.get(key, None)
-    idxs = state.input_queues.indices.get(key, None)
+    buf = state.temporal_buffers.get(key, None)
+    idxs = state.temporal_idxs_map.get(key, None)
     if buf is None:
       continue    # not all shapes are 3D, and the non-3D ones are not buffered
     # Buffer shape logic
@@ -260,8 +260,8 @@ def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
     pytest.skip()
 
   constants = DummyModelRunner(shapes).constants
-  buf = state.input_queues.buffers.get(actual_key, None)
-  idxs = state.input_queues.indices.get(actual_key, None)
+  buf = state.temporal_buffers.get(actual_key, None)
+  idxs = state.temporal_idxs_map.get(actual_key, None)
   input_shape = shapes[actual_key]
   prev_desire = np.zeros(constants.DESIRE_LEN, dtype=np.float32) if key == 'desire' else None
 
