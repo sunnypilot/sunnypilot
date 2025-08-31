@@ -10,6 +10,7 @@ import time
 from cereal import messaging, custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
   PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_CRUISE_SPEED, \
@@ -40,7 +41,7 @@ class SpeedLimitController:
     self.CP = CP
     self.policy = self.params.get("SpeedLimitControlPolicy", return_default=True)
     self.resolver = SpeedLimitResolver(self.policy)
-    self.last_params_update = 0.0
+    self.frame = -1
     self.last_op_engaged_time = 0.0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitControl")
@@ -165,7 +166,7 @@ class SpeedLimitController:
     self.v_cruise_setpoint_prev = self.v_cruise_setpoint
 
   def update_params(self) -> None:
-    if self.current_time > self.last_params_update + PARAMS_UPDATE_PERIOD:
+    if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SpeedLimitControl")
       self.offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
@@ -177,8 +178,6 @@ class SpeedLimitController:
       self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
       self.resolver.change_policy(self.policy)
       self.engage_type = self.read_engage_type_param()
-
-      self.last_params_update = self.current_time
 
   @staticmethod
   def read_engage_type_param() -> Engage:
@@ -305,5 +304,7 @@ class SpeedLimitController:
     self.update_calculations(v_ego, a_ego, v_cruise_setpoint)
     self.state_control()
     self.update_events(events_sp)
+
+    self.frame += 1
 
     return self.final_cruise_speed
