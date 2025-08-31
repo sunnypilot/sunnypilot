@@ -49,7 +49,12 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 | `release-c3-new` |            **Not yet available**.             |
 
 > [!TIP]
-> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'. 
+> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
+
+
+<details>
+
+<summary>Older legacy branches (*not recommended*)</summary>
 
 ### If you want to use our older legacy branches (*not recommended*)
 
@@ -63,7 +68,10 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 | `staging-c3` | https://staging-c3.sunnypilot.ai |
 |   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
 
-> [!TIP]
+</details>
+
+
+> [!NOTE]
 > Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
 ## 🎆 Pull Requests
