@@ -13,7 +13,6 @@ class SpeedLimitResolver:
   _limit_solutions: dict[Source, float]  # Store for speed limit solutions from different sources
   _distance_solutions: dict[Source, float]  # Store for distance to current speed limit start for different sources
   _v_ego: float
-  _current_speed_limit: float
 
   def __init__(self, policy: Policy):
     self._gps_location_service = get_gps_location_service(Params())
@@ -38,9 +37,8 @@ class SpeedLimitResolver:
     self._limit_solutions[source] = 0.
     self._distance_solutions[source] = 0.
 
-  def resolve(self, v_ego: float, current_speed_limit: float, sm: messaging.SubMaster) -> tuple[float, float, Source]:
+  def resolve(self, v_ego: float, sm: messaging.SubMaster) -> tuple[float, float, Source]:
     self._v_ego = v_ego
-    self._current_speed_limit = current_speed_limit
 
     self._resolve_limit_sources(sm)
     return self._consolidate()

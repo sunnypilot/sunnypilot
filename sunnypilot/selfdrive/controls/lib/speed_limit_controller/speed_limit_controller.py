@@ -16,9 +16,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import L
   PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_CRUISE_SPEED, \
   CRUISE_SPEED_TOLERANCE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy, Engage, OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -39,8 +38,6 @@ class SpeedLimitController:
   def __init__(self, CP):
     self.params = Params()
     self.CP = CP
-    self.policy = self.params.get("SpeedLimitControlPolicy", return_default=True)
-    self.resolver = SpeedLimitResolver(self.policy)
     self.frame = -1
     self.last_op_engaged_time = 0.0
     self.is_metric = self.params.get_bool("IsMetric")
@@ -173,10 +170,8 @@ class SpeedLimitController:
       self.warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
       self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
       self.warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
-      self.policy = Policy(self.params.get("SpeedLimitControlPolicy", return_default=True))
       self.is_metric = self.params.get_bool("IsMetric")
       self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
-      self.resolver.change_policy(self.policy)
       self.engage_type = self.read_engage_type_param()
 
   @staticmethod
@@ -294,11 +289,14 @@ class SpeedLimitController:
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitValueChange)
 
-  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float, events_sp: EventsSP) -> float:
+  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float,
+             speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
     self.op_engaged = sm['carControl'].longActive
     self.current_time = time.monotonic()
 
-    self._speed_limit, self._distance, self._source = self.resolver.resolve(v_ego, self._speed_limit, sm)
+    self._speed_limit = speed_limit
+    self._distance = distance
+    self._source = source
 
     self.update_params()
     self.update_calculations(v_ego, a_ego, v_cruise_setpoint)

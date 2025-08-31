@@ -79,7 +79,7 @@ class TestSpeedLimitResolverValidation:
     source_speed_limit = sm_mock[sm_key].speedLimit
 
     # Assert the resolver
-    speed_limit, _, source = resolver.resolve(source_speed_limit, 0, sm_mock)
+    speed_limit, _, source = resolver.resolve(source_speed_limit, sm_mock)
     assert speed_limit == source_speed_limit
     assert source == Source[function_key]
 
@@ -92,7 +92,7 @@ class TestSpeedLimitResolverValidation:
        socket_to_source.keys()), key=lambda x: x[1])
 
     # Assert the resolver
-    speed_limit, _, source = resolver.resolve(minimum_speed_limit, 0, sm_mock)
+    speed_limit, _, source = resolver.resolve(minimum_speed_limit, sm_mock)
     assert speed_limit == minimum_speed_limit
     assert source == socket_to_source[minimum_key]
 
@@ -103,7 +103,7 @@ class TestSpeedLimitResolverValidation:
     source_speed_limit = sm_mock[sm_key].speedLimit
 
     # Assert the parsing
-    speed_limit, _, source = resolver.resolve(source_speed_limit, 0, sm_mock)
+    speed_limit, _, source = resolver.resolve(source_speed_limit, sm_mock)
     assert resolver._limit_solutions[Source[function_key]] == source_speed_limit
     assert resolver._distance_solutions[Source[function_key]] == 0.
 
@@ -113,7 +113,7 @@ class TestSpeedLimitResolverValidation:
     resolver = resolver_class(policy)
 
     sm_mock = setup_sm_mock(mocker)
-    _speed_limit, _distance, _source = resolver.resolve(v_ego, 0, sm_mock)
+    _speed_limit, _distance, _source = resolver.resolve(v_ego, sm_mock)
 
     # After resolution
     assert _speed_limit is not None
