@@ -230,8 +230,8 @@ class SelfdriveD(CruiseHelper):
 
       # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
       if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
-        (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
-        (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
+            (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
+            (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
         self.events.add(EventName.pedalPressed)
 
     # Create events for temperature, disk space, and memory
@@ -307,7 +307,7 @@ class SelfdriveD(CruiseHelper):
         else:
           self.events.add(EventName.preLaneChangeRight)
     elif self.sm['modelV2'].meta.laneChangeState in (LaneChangeState.laneChangeStarting,
-                                                    LaneChangeState.laneChangeFinishing):
+                                                     LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)
 
     # Handle lane turn
@@ -502,7 +502,7 @@ class SelfdriveD(CruiseHelper):
 
     # All pandas not in silent mode must have controlsAllowed when openpilot is enabled
     if self.enabled and any(not ps.controlsAllowed for ps in self.sm['pandaStates']
-           if ps.safetyModel not in IGNORED_SAFETY_MODES):
+                            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
 
     return CS
