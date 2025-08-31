@@ -5,26 +5,17 @@ from typing import Any
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.models.runners.helpers as runner_helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
-from openpilot.sunnypilot.modeld_v2.model_metadata_lookup import MODEL_METADATA
 
 ModelState = modeld_module.ModelState
-SHAPE_MODE_PARAMS = []
-for _, meta in MODEL_METADATA.items():
-  mode = ''
-  if isinstance(meta, dict):
-    if meta.get('split'):
-      mode = 'split'
-    elif meta.get('non20hz'):
-      mode = 'non20hz'
-    elif meta.get('20hz'):
-      mode = '20hz'
 
-    input_shapes = {}
-    for k, v in meta.get('input_shapes', {}).items():
-      if k not in ["input_imgs", "big_input_imgs"]:
-        input_shapes[k] = v
-    if input_shapes:
-      SHAPE_MODE_PARAMS.append((input_shapes, mode))
+# These are the shapes extracted/loaded from the model onnx
+SHAPE_MODE_PARAMS = [
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # Steam Powered v2
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512)}, '20hz'), # NPR
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1), "lateral_control_params": (1, 2),}, 'non20hz'), # NTS
+  ({'desire_pulse': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # desire rename
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "nav_features": (1, 256), "nav_instructions": (1, 150)}, 'non20hz'), # Optimus Prime
+]
 
 
 # This creates a dummy runner, override, and bundle instance for the tests to run, without actually trying to load a physical model.
