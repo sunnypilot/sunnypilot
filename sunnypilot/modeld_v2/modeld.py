@@ -175,11 +175,18 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if "lat_planner_solution" in outputs and "lat_planner_state" in self.numpy_inputs:
-      idx_n = outputs['lat_planner_solution'].shape[1]
-      t_idxs = [10.0 * ((i / (idx_n - 1))**2) for i in range(idx_n)]
-      self.numpy_inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
-      self.numpy_inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
+    lat_solution = outputs.get('lat_planner_solution')
+    lat_planner_state = self.numpy_inputs.get('lat_planner_state')
+    if lat_solution is not None and lat_planner_state is not None and lat_solution.ndim >= 3 and lat_solution.shape[0] > 0 and lat_solution.shape[2] > 3:
+      interp_val_col2 = np.interp(DT_MDL, self.constants.T_IDXS, lat_solution[0, :, 2])
+      interp_val_col3 = np.interp(DT_MDL, self.constants.T_IDXS, lat_solution[0, :, 3])
+      # write into last axis so shapes like (1,4) or (4,) both work.. kind of annoying but whatever
+      if lat_planner_state.shape[-1] > 3:
+        lat_planner_state[..., 2], lat_planner_state[..., 3] = interp_val_col2, interp_val_col3
+      elif lat_planner_state.size > 3:
+        flat = lat_planner_state.ravel()
+        flat[2], flat[3] = interp_val_col2, interp_val_col3
+        self.numpy_inputs['lat_planner_state'][...] = flat.reshape(lat_planner_state.shape)
 
     # Enqueue features buffer
     self.input_queues.enqueue({'features_buffer': outputs['hidden_state'][0, :]})
