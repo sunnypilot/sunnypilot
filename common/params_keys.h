@@ -181,6 +181,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaEnhancedBsm", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaTSS2Long", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaStockLongitudinal", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaDriveMode", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
