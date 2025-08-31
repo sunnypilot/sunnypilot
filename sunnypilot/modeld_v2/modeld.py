@@ -219,13 +219,19 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
-  frame_id = last_vipc_frame_id = run_count = 0
 
-  model_transform_main = model_transform_extra = np.zeros((3, 3), dtype=np.float32)
+  # setup filter to track dropped frames
+  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
+  frame_id = 0
+  last_vipc_frame_id = 0
+  run_count = 0
+
+  model_transform_main = np.zeros((3, 3), dtype=np.float32)
+  model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  buf_main = buf_extra = None
-  meta_main = meta_extra = FrameMeta()
+  buf_main, buf_extra = None, None
+  meta_main = FrameMeta()
+  meta_extra = FrameMeta()
 
 
   if demo:
