@@ -28,6 +28,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "../assets/offroad/icon_monitoring.png",
       false,
     },
+    {
+      "RainbowMode",
+      tr("Enable Tesla Rainbow Mode"),
+      RainbowizeWords(tr("A beautiful rainbow effect on the path the model wants to take.")) + "<br/><i>" + tr("It")+ " <b>" + tr("does not") + "</b> " + tr("affect driving in any way.") + "</i>",
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
   };
 
   // Add regular toggles first
