@@ -108,18 +108,7 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offseted(self) -> float:
-    # If we have a current valid speed limit, use it
-    if self._speed_limit > 0:
-      current_offsetted = self._speed_limit + self.speed_limit_offset
-      self.last_valid_speed_limit_offsetted = current_offsetted
-      return current_offsetted
-
-    # If no current speed limit but we have a last valid one, use that
-    if self.last_valid_speed_limit_offsetted > 0:
-      return self.last_valid_speed_limit_offsetted
-
-    # Fallback
-    return V_CRUISE_UNSET
+    return self._speed_limit + self.speed_limit_offset
 
   @property
   def speed_limit_offset(self) -> float:
@@ -140,6 +129,21 @@ class SpeedLimitController:
   @property
   def source(self) -> Source:
     return self._source
+
+  @property
+  def final_cruise_speed(self) -> float:
+    if self.is_active:
+      # If we have a current valid speed limit, use it
+      if self._speed_limit > 0:
+        self.last_valid_speed_limit_offsetted = self.speed_limit_offseted
+        return self.speed_limit_offseted
+
+      # If no current speed limit but we have a last valid one, use that
+      if self.last_valid_speed_limit_offsetted > 0:
+        return self.last_valid_speed_limit_offsetted
+
+    # Fallback
+    return V_CRUISE_UNSET
 
   def get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
     if offset_type == OffsetType.default:
@@ -296,4 +300,4 @@ class SpeedLimitController:
     self.state_control()
     self.update_events(events_sp)
 
-    return self.speed_limit_offseted
+    return self.final_cruise_speed
