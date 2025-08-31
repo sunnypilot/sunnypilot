@@ -5,9 +5,8 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
-import time
 
-from cereal import messaging, custom
+from cereal import custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
@@ -39,7 +38,7 @@ class SpeedLimitController:
     self.params = Params()
     self.CP = CP
     self.frame = -1
-    self.last_op_engaged_time = 0.0
+    self.last_op_engaged_frame = 0.0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitControl")
     self.op_engaged = False
@@ -67,7 +66,6 @@ class SpeedLimitController:
     self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
     self.warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
     self.engage_type = self.read_engage_type_param()
-    self.current_time = 0.
     self.v_cruise_rounded = 0.
     self.v_cruise_prev_rounded = 0.
     self.speed_limit_offsetted_rounded = 0.
@@ -205,7 +203,7 @@ class SpeedLimitController:
     # cause a temp inactive transition if the controller is updated before controlsd sets actual cruise
     # speed.
     if not self.op_engaged_prev and self.op_engaged:
-      self.last_op_engaged_time = self.current_time
+      self.last_op_engaged_frame = self.frame
 
     # Update change tracking variables
     self.speed_limit_changed = self._speed_limit != self.speed_limit_prev
@@ -234,7 +232,7 @@ class SpeedLimitController:
           self._state = SpeedLimitControlState.active
       else:
         self._state = SpeedLimitControlState.pending
-    elif self.current_time > (self.last_op_engaged_time + PRE_ACTIVE_GUARD_PERIOD):
+    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD:
       # # If the initial max set speed isn't reached within the allocated period, permanently disable for this session
       self._state = SpeedLimitControlState.inactive
 
@@ -292,7 +290,6 @@ class SpeedLimitController:
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
-    self.current_time = time.monotonic()
 
     self._speed_limit = speed_limit
     self._distance = distance
