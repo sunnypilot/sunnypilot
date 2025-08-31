@@ -181,9 +181,6 @@ class SpeedLimitController:
     return abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE
 
   def detect_manual_cruise_change(self) -> bool:
-    if not self.is_active:
-      return False
-
     # If cruise speed changed and it's not what SLC would set
     if self.v_cruise_setpoint_changed:
       expected_cruise = self.speed_limit_offseted
@@ -220,7 +217,8 @@ class SpeedLimitController:
                                                   int(round((self._speed_limit + self.speed_limit_warning_offset) * self.speed_factor))
 
   def transition_state_from_inactive(self) -> None:
-    if not self._session_ended:
+    # if new session, wait for
+    if (self.frame - self.last_op_engaged_frame) * DT_MDL > 2. and not self._session_ended:
       self._state = SpeedLimitControlState.preActive
       self.initial_max_set = False
 
