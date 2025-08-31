@@ -10,11 +10,14 @@ ModelState = modeld_module.ModelState
 
 # These are the shapes extracted/loaded from the model onnx
 SHAPE_MODE_PARAMS = [
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # Steam Powered v2
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "nav_features": (1, 256), "nav_instructions": (1, 150)}, 'non20hz'), # Optimus Prime
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "lat_planner_state": (1, 4),}, 'non20hz'), # farmville
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "lateral_control_params": (1, 2), "prev_desired_curv": (1, 100, 1)}, 'non20hz'), # wd40
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1), "lateral_control_params": (1, 2),}, 'non20hz'), # NTS
   ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512)}, '20hz'), # NPR
   ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1), "lateral_control_params": (1, 2),}, 'non20hz'), # NTS
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # Steam Powered v2
   ({'desire_pulse': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # desire rename
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "nav_features": (1, 256), "nav_instructions": (1, 150)}, 'non20hz'), # Optimus Prime
 ]
 
 
