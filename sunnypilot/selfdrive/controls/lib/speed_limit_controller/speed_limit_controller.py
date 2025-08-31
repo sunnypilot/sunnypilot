@@ -12,7 +12,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
-  PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_CRUISE_SPEED, \
+  PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, \
   CRUISE_SPEED_TOLERANCE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Engage, OffsetType
@@ -178,7 +178,7 @@ class SpeedLimitController:
     return Engage.auto
 
   def initial_max_set_confirmed(self) -> bool:
-    return abs(self.v_cruise_setpoint - REQUIRED_INITIAL_CRUISE_SPEED) <= CRUISE_SPEED_TOLERANCE
+    return abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE
 
   def detect_manual_cruise_change(self) -> bool:
     if not self.is_active:
