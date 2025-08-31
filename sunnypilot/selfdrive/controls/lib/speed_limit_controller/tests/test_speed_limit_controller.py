@@ -32,7 +32,7 @@ class TestSpeedLimitController:
     return CI
 
   def reset_state(self):
-    self.slc.state = SpeedLimitControlState.inactive
+    self.slc.state = SpeedLimitControlState.disabled
     self.slc.frame = -1
 
   def setup_method(self):
@@ -54,7 +54,7 @@ class TestSpeedLimitController:
       for _ in range(int(10. / DT_MDL)):
         v_cruise_slc = self.slc.update(True, v_ego, 0, 50 * CV.MPH_TO_MS, 50 * CV.MPH_TO_MS, 0, Source.none, self.events_sp)
         assert v_cruise_slc == V_CRUISE_UNSET
-      assert self.slc.state == SpeedLimitControlState.inactive
+      assert self.slc.state == SpeedLimitControlState.disabled
 
   def test_no_speed_limit(self):
     for v_ego in np.linspace(0, 100, 101):
@@ -68,7 +68,7 @@ class TestSpeedLimitController:
       for _ in range(int(10. / DT_MDL)):
         v_cruise_slc = self.slc.update(False, v_ego, 0, 50 * CV.MPH_TO_MS, 50 * CV.MPH_TO_MS, 0, Source.none, self.events_sp)
         assert v_cruise_slc == V_CRUISE_UNSET
-      assert self.slc.state == SpeedLimitControlState.inactive
+      assert self.slc.state == SpeedLimitControlState.disabled
 
   def test_speed_limit_at_initial_max_set_speed(self):
     v_cruise_slc = V_CRUISE_UNSET
