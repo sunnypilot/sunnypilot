@@ -22,7 +22,12 @@ public:
   virtual void updateSettings() = 0;
 
 protected:
+  QLabel *title;
   ListWidget *list = nullptr;
   Params params;
   bool offroad = false;
+
+  std::map<QString, ParamControl*> ListToggles;
+  //(param,title,desc,icon,restart needed)
+  void SetToggles(const std::vector<std::tuple<QString, QString, QString, QString, bool>>& toggle_defs);
 };
