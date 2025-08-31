@@ -6,11 +6,11 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import json
-import time
 import platform
 import os
 import glob
 import shutil
+from datetime import datetime
 
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper, config_realtime_process
@@ -56,7 +56,7 @@ def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
 
 
 def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
-  params.put("OsmDownloadedDate", str(time.monotonic()))
+  params.put("OsmDownloadedDate", str(datetime.now().timestamp()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
   osm_download_locations = {
