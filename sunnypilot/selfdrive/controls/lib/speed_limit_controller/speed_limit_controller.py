@@ -178,10 +178,6 @@ class SpeedLimitController:
     # Update current velocity offset (error)
     self.v_offset = self.speed_limit_offseted - self.v_ego
 
-    # Track the time op becomes active to prevent going to tempInactive right away after
-    # op enabling since controlsd will change the cruise speed every time on enabling and this will
-    # cause a temp inactive transition if the controller is updated before controlsd sets actual cruise
-    # speed.
     if not self.op_engaged_prev and self.op_engaged:
       self.last_op_engaged_frame = self.frame
 
@@ -189,7 +185,7 @@ class SpeedLimitController:
     self.speed_limit_changed = self._speed_limit != self.speed_limit_prev
     self.v_cruise_setpoint_changed = self.v_cruise_setpoint != self.v_cruise_setpoint_prev
     self.speed_limit_prev = self._speed_limit
-    self.update_v_cruise_setpoint_prev()  # always for Engage.auto
+    self.update_v_cruise_setpoint_prev()
     self.op_engaged_prev = self.op_engaged
 
   def transition_state_from_inactive(self) -> None:
