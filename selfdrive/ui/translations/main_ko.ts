@@ -2096,6 +2096,22 @@ Warning: You are on a metered connection!</source>
         <source>[Don&apos;t use] Enable sunnylink uploader</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>🚀 sunnylink 🚀</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>For secure backup, restore, and remote configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sponsorship isn&apos;t required for basic backup/restore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Click the sponsor button for more details</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
@@ -2240,18 +2256,6 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Record and store microphone audio while driving. The audio will be included in the dashcam video in comma connect.</source>
         <translation>운전 중 마이크 오디오를 녹음하고 저장합니다. 이 오디오는 comma connect의 대시캠 영상에 포함됩니다.</translation>
-    </message>
-    <message>
-        <source>Record Audio Feedback with LKAS button</source>
-        <translation>LKAS 버튼으로 오디오 피드백 녹음</translation>
-    </message>
-    <message>
-        <source>Press the LKAS button to record and share driving feedback with the openpilot team. When this toggle is disabled, the button acts as a bookmark button. The event will be highlighted in comma connect and the segment will be preserved on your device&apos;s storage.
-
-Note that this feature is only compatible with select cars.</source>
-        <translation>LKAS 버튼을 눌러 openpilot 팀과 주행 피드백을 녹음하고 공유하세요. 이 기능을 비활성화하면, 해당 버튼은 북마크 버튼 역할을 합니다. 이 이벤트는 comma connect에서 강조되며, 해당 구간 영상은 기기 저장소에 보존됩니다.
-
-참고: 이 기능은 일부 차량에서만 호환됩니다.</translation>
     </message>
     <message>
         <source>Enable sunnypilot</source>
