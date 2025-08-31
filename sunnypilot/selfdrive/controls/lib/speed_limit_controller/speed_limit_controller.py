@@ -247,12 +247,14 @@ class SpeedLimitController:
   def transition_state_from_adapting(self) -> None:
     if self.detect_manual_cruise_change():
       self._state = SpeedLimitControlState.inactive
+      self._session_ended = True
     elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
       self._state = SpeedLimitControlState.active
 
   def transition_state_from_active(self) -> None:
     if self.detect_manual_cruise_change():
       self._state = SpeedLimitControlState.inactive
+      self._session_ended = True
     elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
       self._state = SpeedLimitControlState.adapting
 
