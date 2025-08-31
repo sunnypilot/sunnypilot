@@ -61,7 +61,7 @@ class SpeedLimitController:
     self._state_prev = SpeedLimitControlState.inactive
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
-    self.offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
+    self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
     self.warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
     self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
@@ -165,7 +165,7 @@ class SpeedLimitController:
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SpeedLimitControl")
-      self.offset_type = OffsetType(self.params.get("SpeedLimitWarningValueOffset", return_default=True))
+      self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
       self.warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
       self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
