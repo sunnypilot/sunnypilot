@@ -234,8 +234,8 @@ class SpeedLimitController:
           self._state = SpeedLimitControlState.active
       else:
         self._state = SpeedLimitControlState.pending
-    elif self.v_cruise_setpoint_changed and self.current_time > (self.last_op_engaged_time + PRE_ACTIVE_GUARD_PERIOD):
-      # User set cruise to something other than 80 MPH, permanently disable for this session
+    elif self.current_time > (self.last_op_engaged_time + PRE_ACTIVE_GUARD_PERIOD):
+      # # If the initial max set speed isn't reached within the allocated period, permanently disable for this session
       self._state = SpeedLimitControlState.inactive
 
   def transition_state_from_pending(self) -> None:
