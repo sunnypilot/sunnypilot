@@ -21,7 +21,7 @@ class LongitudinalPlannerSP:
 
     self.dec = DynamicExperimentalController(CP, mpc)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
-    self.slc = SpeedLimitController()
+    self.slc = SpeedLimitController(CP)
 
   @property
   def mlsim(self) -> bool:
