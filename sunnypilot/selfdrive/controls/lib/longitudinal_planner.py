@@ -12,6 +12,7 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from opendbc.car.interfaces import ACCEL_MIN
+from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
