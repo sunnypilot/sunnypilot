@@ -32,6 +32,7 @@ class TestSpeedLimitController:
     return CI
 
   def reset_state(self):
+    self.slc.state = SpeedLimitControlState.inactive
     self.slc.frame = -1
 
   def setup_method(self):
