@@ -92,7 +92,7 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
   }
 }
 
-void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height) {
+void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width) {
   QLinearGradient bg(0, height, 0, 0);
   if (experimental_mode) {
     // The first half of track_vertices are the points for the right side of the path
@@ -127,6 +127,9 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
 
   painter.setBrush(bg);
   painter.drawPolygon(track_vertices);
+
+  LongFuel(painter,height, width);
+  LateralFuel(painter, height, width);
 }
 
 void ModelRenderer::updatePathGradient(QLinearGradient &bg) {
@@ -173,6 +176,195 @@ QColor ModelRenderer::blendColors(const QColor &start, const QColor &end, float 
       (1 - t) * start.alphaF() + t * end.alphaF());
 }
 
+void ModelRenderer::drawGaugeBackground(QPainter &painter, qreal centerX, qreal centerY) {
+    const qreal backgroundSize = GAUGE_SIZE * BACKGROUND_SIZE_MULTIPLIER;
+
+    // Draw circular background
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(BACKGROUND_COLOR);
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2, backgroundSize / 2);
+
+    // Draw border
+    QPen borderPen(BORDER_COLOR);
+    borderPen.setWidth(BORDER_PEN_WIDTH);
+    painter.setPen(borderPen);
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2 + 1, backgroundSize / 2 + 1);
+
+    // Draw background semicircle
+    QPen semicirclePen(GAUGE_BACKGROUND_COLOR);
+    semicirclePen.setWidth(GAUGE_PEN_WIDTH);
+    semicirclePen.setCapStyle(Qt::RoundCap);
+    painter.setPen(semicirclePen);
+    painter.drawArc(QRectF(centerX - GAUGE_SIZE / 2, centerY - GAUGE_SIZE / 2,
+                          GAUGE_SIZE, GAUGE_SIZE), 0, SEMICIRCLE_SPAN);
+}
+
+QColor ModelRenderer::getIndicatorColor(float absoluteValue, float lowThreshold, float highThreshold) {
+    if (absoluteValue < lowThreshold) {
+        return LOW_INDICATOR_COLOR;
+    } else if (absoluteValue < highThreshold) {
+        return MODERATE_INDICATOR_COLOR;
+    } else {
+        return HIGH_INDICATOR_COLOR;
+    }
+}
+
+int ModelRenderer::calculateSpanAngle(float absoluteValue, float maxValue) {
+    const int spanAngle = static_cast<int>(QUARTER_CIRCLE_SPAN * (absoluteValue / maxValue));
+    return std::clamp(spanAngle, 0, QUARTER_CIRCLE_SPAN);
+}
+
+void ModelRenderer::drawGaugeArc(QPainter &painter, qreal centerX, qreal centerY,
+                                float value, bool isPositive, const QString &label) {
+    const float absoluteValue = std::abs(value);
+
+    if (absoluteValue <= MIN_THRESHOLD) {
+        return; // Skip drawing if value is too small
+    }
+
+    // Set up the arc rectangle
+    const QRectF arcRect(centerX - GAUGE_SIZE / 2, centerY - GAUGE_SIZE / 2,
+                        GAUGE_SIZE, GAUGE_SIZE);
+
+    // Configure pen for the indicator arc
+    QPen indicatorPen;
+    indicatorPen.setWidth(GAUGE_PEN_WIDTH);
+    indicatorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(indicatorPen);
+
+    // Draw the arc based on direction
+    const int spanAngle = calculateSpanAngle(absoluteValue, 1.0f); // Adjust max value as needed
+    if (isPositive) {
+        painter.drawArc(arcRect, STARTING_ANGLE, spanAngle);
+    } else {
+        painter.drawArc(arcRect, STARTING_ANGLE, -spanAngle);
+    }
+
+    // Draw center label
+    painter.setPen(Qt::white);
+    QFont font = painter.font();
+    font.setPixelSize(20);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, label);
+}
+
+void ModelRenderer::LongFuel(QPainter &painter, int height, int width) {
+    const qreal rectWidth = static_cast<qreal>(width);
+    const qreal rectHeight = static_cast<qreal>(height);
+
+    UIState *s = uiState();
+    if (!s || !s->sm) {
+        return; // Safety check
+    }
+
+    // Get current acceleration
+    const float currentAcceleration = (*s->sm)["carControl"].getCarControl().getActuators().getAccel();
+    const float absoluteAcceleration = std::abs(currentAcceleration);
+
+    // Calculate gauge position
+    const qreal centerX = rectWidth / 17;
+    const qreal centerY = rectHeight / 2 + 120;
+
+    // Draw gauge background
+    drawGaugeBackground(painter, centerX, centerY);
+
+    // Skip drawing arc if acceleration is too small
+    if (absoluteAcceleration <= MIN_THRESHOLD) {
+        drawGaugeArc(painter, centerX, centerY, 0.0f, true, "LONG");
+        return;
+    }
+
+    // Determine indicator color based on acceleration magnitude
+    const QColor indicatorColor = getIndicatorColor(absoluteAcceleration, 0.3f, 0.6f);
+
+    // Calculate span angle (scale for better visibility)
+    const int spanAngle = static_cast<int>(QUARTER_CIRCLE_SPAN * absoluteAcceleration);
+    const int clampedSpanAngle = std::clamp(spanAngle, 0, QUARTER_CIRCLE_SPAN);
+
+    // Draw the acceleration arc
+    QPen indicatorPen(indicatorColor);
+    indicatorPen.setWidth(GAUGE_PEN_WIDTH);
+    indicatorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(indicatorPen);
+
+    const QRectF arcRect(centerX - GAUGE_SIZE / 2, centerY - GAUGE_SIZE / 2,
+                        GAUGE_SIZE, GAUGE_SIZE);
+
+    // Draw arc based on acceleration direction
+    if (currentAcceleration > 0) {
+        painter.drawArc(arcRect, STARTING_ANGLE, -clampedSpanAngle); // Left side for positive
+    } else {
+        painter.drawArc(arcRect, STARTING_ANGLE, clampedSpanAngle);  // Right side for negative
+    }
+
+    // Draw center label
+    painter.setPen(Qt::white);
+    QFont font = painter.font();
+    font.setPixelSize(20);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LONG");
+}
+
+void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
+    const qreal rectWidth = static_cast<qreal>(width);
+    const qreal rectHeight = static_cast<qreal>(height);
+
+    UIState *s = uiState();
+    if (!s || !s->sm) {
+        return; // Safety check
+    }
+
+    // Get current steering angle
+    const float currentLateral = (*s->sm)["carState"].getCarState().getSteeringAngleDeg();
+    const float absoluteLateral = std::abs(currentLateral);
+
+    // Calculate gauge position
+    const qreal centerX = rectWidth / 17;
+    const qreal centerY = rectHeight / 2 - 120;
+
+    // Draw gauge background
+    drawGaugeBackground(painter, centerX, centerY);
+
+    // Skip drawing arc if lateral force is too small
+    if (absoluteLateral <= 0.1f) {
+        drawGaugeArc(painter, centerX, centerY, 0.0f, true, "LAT");
+        return;
+    }
+
+    // Determine indicator color based on lateral force magnitude
+    const QColor indicatorColor = getIndicatorColor(absoluteLateral, 5.0f, 15.0f);
+
+    // Calculate span angle (normalized to max expected steering angle)
+    const float maxSteeringAngle = 15.0f; // Adjust based on your vehicle's characteristics
+    const int spanAngle = static_cast<int>(QUARTER_CIRCLE_SPAN * (absoluteLateral / maxSteeringAngle));
+    const int clampedSpanAngle = std::clamp(spanAngle, 0, QUARTER_CIRCLE_SPAN);
+
+    // Draw the lateral arc
+    QPen indicatorPen(indicatorColor);
+    indicatorPen.setWidth(GAUGE_PEN_WIDTH);
+    indicatorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(indicatorPen);
+
+    const QRectF arcRect(centerX - GAUGE_SIZE / 2, centerY - GAUGE_SIZE / 2,
+                        GAUGE_SIZE, GAUGE_SIZE);
+
+    // Draw arc based on steering direction
+    if (currentLateral < 0) {
+        painter.drawArc(arcRect, STARTING_ANGLE, -clampedSpanAngle); // Left turn
+    } else {
+        painter.drawArc(arcRect, STARTING_ANGLE, clampedSpanAngle);  // Right turn
+    }
+
+    // Draw center label
+    painter.setPen(Qt::white);
+    QFont font = painter.font();
+    font.setPixelSize(20);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
+}
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
                              const QPointF &vd, const QRect &surface_rect) {
   const float speedBuff = 10.;
