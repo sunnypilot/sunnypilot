@@ -63,14 +63,7 @@ class SpeedLimitController:
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
-    self.warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
-    self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
-    self.warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
     self.engage_type = self.read_engage_type_param()
-    self.v_cruise_rounded = 0.
-    self.v_cruise_prev_rounded = 0.
-    self.speed_limit_offsetted_rounded = 0.
-    self.speed_limit_warning_offsetted_rounded = 0.
     self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
 
     # Mapping functions to state transitions
@@ -118,10 +111,6 @@ class SpeedLimitController:
     return self.get_offset(self.offset_type, self.offset_value)
 
   @property
-  def speed_limit_warning_offset(self) -> float:
-    return self.get_offset(self.warning_offset_type, self.warning_offset_value)
-
-  @property
   def speed_limit(self) -> float:
     return self._speed_limit
 
@@ -166,9 +155,6 @@ class SpeedLimitController:
       self.enabled = self.params.get_bool("SpeedLimitControl")
       self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
-      self.warning_type = self.params.get("SpeedLimitWarningType", return_default=True)
-      self.warning_offset_type = OffsetType(self.params.get("SpeedLimitWarningOffsetType", return_default=True))
-      self.warning_offset_value = self.params.get("SpeedLimitWarningValueOffset", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
       self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
       self.engage_type = self.read_engage_type_param()
@@ -209,12 +195,6 @@ class SpeedLimitController:
     self.speed_limit_prev = self._speed_limit
     self.update_v_cruise_setpoint_prev()  # always for Engage.auto
     self.op_engaged_prev = self.op_engaged
-
-    self.v_cruise_rounded = int(round(self.v_cruise_setpoint * self.speed_factor))
-    self.v_cruise_prev_rounded = int(round(self.v_cruise_setpoint_prev * self.speed_factor))
-    self.speed_limit_offsetted_rounded = 0 if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_offset) * self.speed_factor))
-    self.speed_limit_warning_offsetted_rounded = 0 if self._speed_limit == 0 else \
-                                                  int(round((self._speed_limit + self.speed_limit_warning_offset) * self.speed_factor))
 
   def transition_state_from_inactive(self) -> None:
     # if it's a new session, wait for 2 seconds after long engaged before transitioning ot preActive

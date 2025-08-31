@@ -47,9 +47,6 @@ class TestSpeedLimitController:
     self.params.put_bool("IsMetric", False)
     self.params.put("SpeedLimitOffsetType", 0)
     self.params.put("SpeedLimitValueOffset", 0)
-    self.params.put("SpeedLimitWarningType", 0)
-    self.params.put("SpeedLimitWarningOffsetType", 0)
-    self.params.put("SpeedLimitWarningValueOffset", 0)
 
   def test_disabled(self):
     self.params.put_bool("SpeedLimitControl", False)
