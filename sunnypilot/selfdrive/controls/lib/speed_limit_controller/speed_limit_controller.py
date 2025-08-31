@@ -94,11 +94,11 @@ class SpeedLimitController:
 
   @property
   def is_enabled(self) -> bool:
-    return self._state in ENABLED_STATES and self.enabled
+    return self._state in ENABLED_STATES
 
   @property
   def is_active(self) -> bool:
-    return self._state in ACTIVE_STATES and self.enabled
+    return self._state in ACTIVE_STATES
 
   @property
   def speed_limit_offseted(self) -> float:
