@@ -15,7 +15,7 @@ class HudRendererSP : public HudRenderer {
   Q_OBJECT
 
 public:
-  explicit HudRendererSP();
+  explicit HudRendererSP() = default;
   void updateState(const UIState &s) override;
   void draw(QPainter &p, const QRect &surface_rect) override;
 };
