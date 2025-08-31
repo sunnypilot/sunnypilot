@@ -7,7 +7,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTur
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
-LANE_CHANGE_SPEED_MIN = 2 * CV.MPH_TO_MS
+LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
 
 DESIRES = {
