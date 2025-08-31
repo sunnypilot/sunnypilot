@@ -63,8 +63,6 @@ class SpeedLimitController:
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
-    self.engage_type = self.read_engage_type_param()
-    self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
 
     # Mapping functions to state transitions
     self._state_transition_strategy = {
@@ -156,8 +154,6 @@ class SpeedLimitController:
       self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
-      self.speed_factor = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
-      self.engage_type = self.read_engage_type_param()
 
   @staticmethod
   def read_engage_type_param() -> Engage:
