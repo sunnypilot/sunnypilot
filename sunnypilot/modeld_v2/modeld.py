@@ -135,11 +135,11 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if "lat_planner_solution" in outputs and "lat_planner_state" in self.numpy_inputs:
-      idx_n = outputs['lat_planner_solution'].shape[1]    # Reshaped by parse_mdn from slice(5990, 6254)= 264= 1,264/2 = 1,1,132/4 == 1,33,4
+    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs:
+      idx_n = outputs['lat_planner_solution'].shape[1]    # Reshaped by parse_mdn from slice(5990, 6254)= (1,33,4)
       t_idxs = [10.0 * ((i / (idx_n - 1))**2) for i in range(idx_n)]
-      self.numpy_inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
-      self.numpy_inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
+      inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
+      inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
 
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
