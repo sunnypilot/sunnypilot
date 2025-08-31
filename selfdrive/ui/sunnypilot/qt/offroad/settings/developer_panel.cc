@@ -27,6 +27,10 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "", this, true);
   addItem(enableGithubRunner);
 
+  // Copyparty Toggle
+  enableCopyparty = new ParamControlSP("EnableCopyparty", tr("Enable Copyparty service"), tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs and even make some edits on some files from your browser. Requires you to connect to your comma locally via it's IP."), "", this, false);
+  addItem(enableCopyparty);
+
   // Quickboot Mode Toggle
   prebuiltToggle = new ParamControlSP("QuickBootToggle", tr("Enable Quickboot Mode"), tr(""), "", this, true);
   addItem(prebuiltToggle);
