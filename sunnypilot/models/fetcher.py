@@ -66,6 +66,7 @@ class ModelParser:
     model_bundle.is20hz = bundle.get("is_20hz", False)
     model_bundle.minimumSelectorVersion = int(bundle["minimum_selector_version"])
     model_bundle.overrides = ModelParser._parse_overrides(bundle.get("overrides", {}))
+    model_bundle.ref = bundle.get("ref")
 
     return model_bundle
 
