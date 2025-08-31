@@ -56,9 +56,8 @@ class SpeedLimitController:
     self.last_valid_speed_limit_offsetted = 0.
     self._distance = 0.
     self._source = Source.none
-    self._state = SpeedLimitControlState.inactive
-    self._state_prev = SpeedLimitControlState.inactive
-    self._session_ended = False
+    self._state = SpeedLimitControlState.disabled
+    self._state_prev = SpeedLimitControlState.disabled
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
@@ -66,6 +65,7 @@ class SpeedLimitController:
 
     # Mapping functions to state transitions
     self._state_transition_strategy = {
+      SpeedLimitControlState.disabled: self.transition_state_from_disabled,
       SpeedLimitControlState.inactive: self.transition_state_from_inactive,
       SpeedLimitControlState.preActive: self.transition_state_from_preactive,
       SpeedLimitControlState.pending: self.transition_state_from_pending,
@@ -75,6 +75,7 @@ class SpeedLimitController:
 
     # Solution functions mapped to respective states  
     self.acceleration_solutions = {
+      SpeedLimitControlState.disabled: self.get_current_acceleration_as_target,
       SpeedLimitControlState.inactive: self.get_current_acceleration_as_target,
       SpeedLimitControlState.preActive: self.get_current_acceleration_as_target,
       SpeedLimitControlState.pending: self.get_current_acceleration_as_target,
@@ -188,11 +189,14 @@ class SpeedLimitController:
     self.update_v_cruise_setpoint_prev()
     self.op_engaged_prev = self.op_engaged
 
-  def transition_state_from_inactive(self) -> None:
-    # if it's a new session, wait for 2 seconds after long engaged before transitioning ot preActive
-    if (self.frame - self.last_op_engaged_frame) * DT_MDL > 2. and not self._session_ended:
+  def transition_state_from_disabled(self) -> None:
+    # Wait 2 seconds after long engaged before starting fresh session
+    if (self.frame - self.last_op_engaged_frame) * DT_MDL > 2.:
       self._state = SpeedLimitControlState.preActive
       self.initial_max_set = False
+
+  def transition_state_from_inactive(self) -> None:
+    pass
 
   def transition_state_from_preactive(self) -> None:
     if self.initial_max_set_confirmed():
@@ -204,10 +208,9 @@ class SpeedLimitController:
           self._state = SpeedLimitControlState.active
       else:
         self._state = SpeedLimitControlState.pending
-    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD and not self._session_ended:
-      # # If the initial max set speed isn't reached within the allocated period, permanently disable for this session
+    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD:
+      # Timeout - session ended
       self._state = SpeedLimitControlState.inactive
-      self._session_ended = True
 
   def transition_state_from_pending(self) -> None:
     if self._speed_limit > 0:
@@ -219,25 +222,22 @@ class SpeedLimitController:
   def transition_state_from_adapting(self) -> None:
     if self.detect_manual_cruise_change():
       self._state = SpeedLimitControlState.inactive
-      self._session_ended = True
     elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
       self._state = SpeedLimitControlState.active
 
   def transition_state_from_active(self) -> None:
     if self.detect_manual_cruise_change():
       self._state = SpeedLimitControlState.inactive
-      self._session_ended = True
     elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
       self._state = SpeedLimitControlState.adapting
 
   def state_control(self) -> None:
     self._state_prev = self._state
 
-    # If op is disabled or SLC is disabled, go inactive and reset session tracker
+    # If op is disabled or SLC is disabled, go to disabled state (not inactive)
     if not self.op_engaged or not self.enabled:
-      self._state = SpeedLimitControlState.inactive
+      self._state = SpeedLimitControlState.disabled  # Changed from inactive
       self.initial_max_set = False
-      self._session_ended = False
       return
 
     self._state_transition_strategy[self._state]()
