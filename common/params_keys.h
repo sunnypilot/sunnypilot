@@ -146,6 +146,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"CustomAccLongPressIncrement", {PERSISTENT | BACKUP, INT, "5"}},
     {"CustomAccShortPressIncrement", {PERSISTENT | BACKUP, INT, "1"}},
     {"DeviceBootMode", {PERSISTENT | BACKUP, INT, "0"}},
+    {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
     {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
@@ -155,6 +156,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"OffroadMode", {CLEAR_ON_MANAGER_START, BOOL}},
     {"QuickBootToggle", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
@@ -167,6 +169,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ModelManager_ActiveBundle", {PERSISTENT, JSON}},
     {"ModelManager_ClearCache", {CLEAR_ON_MANAGER_START, BOOL}},
     {"ModelManager_DownloadIndex", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, INT, "0"}},
+    {"ModelManager_Favs", {PERSISTENT | BACKUP, STRING}},
     {"ModelManager_LastSyncTime", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, INT, "0"}},
     {"ModelManager_ModelsCache", {PERSISTENT | BACKUP, JSON}},
 
