@@ -54,6 +54,11 @@ SYSTEMRAW="${SYSTEMIMG%.img}.raw.img"
 echo "SYSTEMURL=$SYSTEMURL"
 echo "HASH=$HASH"
 
+# KEEP downloaded img.xz if it already existed, or KEEP=1
+if [ -f "$SYSTEMIMGXZ" ] || [ -n "$KEEP" ]; then
+    KEEP=1
+fi
+
 # Download system image
 echo "Download system image from $SYSTEMURL"
 curl -C - $SYSTEMURL -o $SYSTEMIMGXZ
@@ -105,4 +110,9 @@ rm -f "$SYSTEMIMG"
 # CLEANUP: Remove raw.img
 rm -f "$SYSTEMRAW"
 # CLEANUP: Remove .img.xz
-rm -f "$SYSTEMIMGXZ"
+if [ -n "$KEEP" ]; then
+    echo "KEEPING $SYSTEMIMGXZ"
+else
+    echo "Deleting $SYSTEMIMGXZ"
+    rm -f "$SYSTEMIMGXZ"
+fi
