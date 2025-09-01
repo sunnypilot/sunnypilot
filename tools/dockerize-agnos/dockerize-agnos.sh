@@ -87,24 +87,17 @@ set -e
 # quickly unmount and get rid of reference to previous tmp mount (even if it's busy), ignore errors
 umount -l -q tmp/rootfs-img-mount/ >/dev/null 2>&1 || :
 rm -rf tmp/rootfs-img-mount/
-rm -rf tmp/rootfs-tmp-docker/
 mkdir -p tmp/rootfs-img-mount/
-mkdir -p tmp/rootfs-tmp-docker/
 echo "Mounting '$SYSTEMRAW' at tmp/rootfs-img-mount/"
 mount -o loop,ro "$SYSTEMRAW" tmp/rootfs-img-mount/
-echo "Copying contents of tmp/rootfs-img-mount/ to tmp/rootfs-tmp-docker/"
-cp -a tmp/rootfs-img-mount/. tmp/rootfs-tmp-docker/
-echo "Unmounting tmp/rootfs-img-mount/"
-umount -l tmp/rootfs-img-mount
-
 
 echo "Building Dockerfile.agnos-system"
 docker buildx build -f Dockerfile.agnos-system -t agnos-system .
+echo "Unmounting tmp/rootfs-img-mount/"
+umount -l tmp/rootfs-img-mount
 
 # CLEANUP: Remove temporary agnos system mountpoint
 rmdir tmp/rootfs-img-mount/ 
-# CLEANUP: Remove temporary docker rootfs
-rm -rf tmp/rootfs-tmp-docker/
 # CLEANUP: Remove the intermediate .img
 rm -f "$SYSTEMIMG"
 # CLEANUP: Remove raw.img

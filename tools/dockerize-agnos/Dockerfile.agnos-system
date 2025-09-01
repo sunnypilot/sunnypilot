@@ -1,2 +1,2 @@
 FROM scratch
-COPY tmp/rootfs-tmp-docker/ /
+COPY tmp/rootfs-img-mount/ /
