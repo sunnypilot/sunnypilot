@@ -179,8 +179,13 @@ class Controls(ControlsExt, ModelStateBase):
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
     hudControl.leadDistanceBars = self.sm['selfdriveState'].personality.raw + 1
     hudControl.visualAlert = self.sm['selfdriveState'].alertHudVisual
-    hudControl.leftLaneVisible  = model_v2.laneLineProbs[1] > 0.5
-    hudControl.rightLaneVisible = model_v2.laneLineProbs[2] > 0.5
+
+    if len(model_v2.laneLineProbs) >= 4:
+      hudControl.leftLaneVisible  = model_v2.laneLineProbs[1] > 0.5
+      hudControl.rightLaneVisible = model_v2.laneLineProbs[2] > 0.5
+    else:
+      hudControl.leftLaneVisible  = False
+      hudControl.rightLaneVisible = False
 
     if self.sm.valid['driverAssistance']:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
