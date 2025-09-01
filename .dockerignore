@@ -37,3 +37,6 @@ xx/projects
 !xx/projects/map3d
 xx/ops
 xx/junk
+
+# dockerize-agnos
+tools/dockerize-agnos/tmp/
