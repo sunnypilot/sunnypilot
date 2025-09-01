@@ -99,9 +99,7 @@ def get_expected_indices(shape, constants, mode, key=None):
     idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
     return idxs
   elif mode == 'non20hz':
-    if key and shape[1] == constants.FULL_HISTORY_BUFFER_LEN:
-      return np.arange(constants.FULL_HISTORY_BUFFER_LEN)
-    return None
+    return np.arange(shape[1])
   return None
 
 
@@ -122,10 +120,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])
       expected_idxs = get_expected_indices(shapes[key], constants, '20hz', key)
     elif mode == 'non20hz':
-      if key == 'features_buffer':
-        expected_shape = (1, shapes[key][1]*4, shapes[key][2])
-      else:
-        expected_shape = (1, shapes[key][1], shapes[key][2])
+      expected_shape = (1, shapes[key][1], shapes[key][2])
       expected_idxs = get_expected_indices(shapes[key], constants, 'non20hz', key)
 
     assert buf is not None, f"{key}: buffer not found"
@@ -192,10 +187,9 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, 
       prev_desire[:] = new_val
       return buf[0]
     elif key == 'features_buffer':
-      feature_len = constants.FEATURE_LEN
-      buf[0, :-feature_len] = buf[0, feature_len:]
-      buf[0, -feature_len:] = new_val
-      return buf[0, -input_shape[1]:]
+      buf[0, :-1] = buf[0, 1:]
+      buf[0, -1] = new_val
+      return buf[0, -input_shape[1]:]  # (99, 512)
     elif key == 'prev_desired_curv':
       length = new_val.shape[0]
       buf[0,:-length,0] = buf[0,length:,0]
