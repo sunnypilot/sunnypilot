@@ -181,11 +181,8 @@ class Controls(ControlsExt, ModelStateBase):
     hudControl.visualAlert = self.sm['selfdriveState'].alertHudVisual
 
     if len(model_v2.laneLineProbs) >= 4:
-      hudControl.leftLaneVisible  = model_v2.laneLineProbs[1] > 0.5
+      hudControl.leftLaneVisible = model_v2.laneLineProbs[1] > 0.5
       hudControl.rightLaneVisible = model_v2.laneLineProbs[2] > 0.5
-    else:
-      hudControl.leftLaneVisible  = False
-      hudControl.rightLaneVisible = False
 
     if self.sm.valid['driverAssistance']:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
