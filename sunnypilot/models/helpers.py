@@ -12,17 +12,13 @@ import numpy as np
 
 from openpilot.common.params import Params
 from cereal import custom
-from openpilot.sunnypilot.modeld.constants import Meta, MetaTombRaider, MetaSimPose
-from openpilot.sunnypilot.modeld.runners import ModelRunner
-from openpilot.system.hardware import PC
+from openpilot.sunnypilot.modeld_v2.constants import Meta, MetaTombRaider, MetaSimPose
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
 
 # see the README.md for more details on the model selector versioning
-CURRENT_SELECTOR_VERSION = 9
-REQUIRED_MIN_SELECTOR_VERSION = 9
-
-USE_ONNX = os.getenv('USE_ONNX', PC)
+CURRENT_SELECTOR_VERSION = 10
+REQUIRED_MIN_SELECTOR_VERSION = 10
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
@@ -121,15 +117,6 @@ def _get_model():
     return drive_model
 
   return None
-
-def get_model_path():
-  if USE_ONNX:
-    return {ModelRunner.ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
-
-  if model := _get_model():
-    return {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/{model.artifact.fileName}"}
-
-  return {ModelRunner.THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
 
 
 def load_metadata():
