@@ -184,3 +184,31 @@ class TestSpeedLimitController:
     v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, 0, 0, Source.car_state, self.events_sp)
     assert self.slc.state in ACTIVE_STATES
     assert v_cruise_slc == old_speed_limit
+
+  def test_different_speed_limit_sources(self):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+
+    for source in (Source.car_state, Source.map_data):
+      v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, source, self.events_sp)
+      assert v_cruise_slc != V_CRUISE_UNSET
+
+  def test_distance_based_adapting(self):
+    self.slc.state = SpeedLimitControlState.adapting
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+
+    distance = 100.0
+    current_speed = SPEED_LIMITS['highway']
+    target_speed = SPEED_LIMITS['city']
+
+    v_cruise_slc = self.slc.update(True, current_speed, 0, REQUIRED_INITIAL_MAX_SET_SPEED, target_speed, distance, Source.map_data, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.adapting
+    assert v_cruise_slc == target_speed  # TODO-SP: assert expected accel, need to enable self.acceleration_solutions
+
+  def test_long_disengaged_to_disabled(self):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+
+    v_cruise_slc = self.slc.update(False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.disabled
+    assert v_cruise_slc == V_CRUISE_UNSET
