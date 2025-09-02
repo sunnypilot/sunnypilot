@@ -28,9 +28,10 @@ class SpeedLimitController:
   _speed_limit: float
   _distance: float
   _source: Source
-  _v_ego: float
-  _a_ego: float
-  _v_offset: float
+  v_ego: float
+  a_ego: float
+  v_offset: float
+  last_valid_speed_limit_final: float
 
   def __init__(self, CP):
     self.params = Params()
@@ -50,7 +51,7 @@ class SpeedLimitController:
     self.initial_max_set = False
     self._speed_limit = 0.
     self.speed_limit_prev = 0.
-    self.last_valid_speed_limit_offsetted = 0.
+    self.last_valid_speed_limit_final = 0.
     self._distance = 0.
     self._source = Source.none
     self.state = SpeedLimitControlState.disabled
@@ -113,23 +114,23 @@ class SpeedLimitController:
     if self.is_active:
       # If we have a current valid speed limit, use it
       if self._speed_limit > 0:
-        self.last_valid_speed_limit_offsetted = self.speed_limit_final
+        self.last_valid_speed_limit_final = self.speed_limit_final
         return self.speed_limit_final
 
       # If no current speed limit but we have a last valid one, use that
-      if self.last_valid_speed_limit_offsetted > 0:
-        return self.last_valid_speed_limit_offsetted
+      if self.last_valid_speed_limit_final > 0:
+        return self.last_valid_speed_limit_final
 
     # Fallback
     return V_CRUISE_UNSET
 
   @property
   def v_cruise_setpoint_changed(self) -> bool:
-    return self.v_cruise_setpoint != self.v_cruise_setpoint_prev
+    return bool(self.v_cruise_setpoint != self.v_cruise_setpoint_prev)
 
   @property
   def speed_limit_changed(self) -> bool:
-    return self._speed_limit != self.speed_limit_prev
+    return bool(self._speed_limit != self.speed_limit_prev)
 
   def get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
     if offset_type == OffsetType.off:
@@ -153,13 +154,13 @@ class SpeedLimitController:
     return Engage.auto
 
   def initial_max_set_confirmed(self) -> bool:
-    return abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE
+    return bool(abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
 
   def detect_manual_cruise_change(self) -> bool:
     # If cruise speed changed and it's not what SLC would set
     if self.v_cruise_setpoint_changed:
       expected_cruise = self.speed_limit_final
-      return abs(self.v_cruise_setpoint - expected_cruise) > CRUISE_SPEED_TOLERANCE
+      return bool(abs(self.v_cruise_setpoint - expected_cruise) > CRUISE_SPEED_TOLERANCE)
 
     return False
 

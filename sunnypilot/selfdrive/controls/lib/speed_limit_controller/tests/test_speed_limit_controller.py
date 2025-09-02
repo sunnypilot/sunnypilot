@@ -51,7 +51,7 @@ class TestSpeedLimitController:
     self.slc.initial_max_set = False
     self.slc._speed_limit = 0.
     self.slc.speed_limit_prev = 0.
-    self.slc.last_valid_speed_limit_offsetted = 0.
+    self.slc.last_valid_speed_limit_final = 0.
     self.slc._distance = 0.
     self.slc._source = Source.none
     self.events_sp.clear()
@@ -166,7 +166,7 @@ class TestSpeedLimitController:
   def test_invalid_speed_limits_handling(self):
     self.slc.state = SpeedLimitControlState.active
     self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
-    self.slc.last_valid_speed_limit_offsetted = SPEED_LIMITS['city']
+    self.slc.last_valid_speed_limit_final = SPEED_LIMITS['city']
 
     invalid_limits = [-10, 0, 200 * CV.MPH_TO_MS]
 
@@ -179,7 +179,7 @@ class TestSpeedLimitController:
     self.slc.state = SpeedLimitControlState.active
     self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
     old_speed_limit = SPEED_LIMITS['city']
-    self.slc.last_valid_speed_limit_offsetted = old_speed_limit
+    self.slc.last_valid_speed_limit_final = old_speed_limit
 
     v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, 0, 0, Source.car_state, self.events_sp)
     assert self.slc.state in ACTIVE_STATES
