@@ -20,7 +20,7 @@ def get_curvature_from_output(output, vego, lat_action_t, mlsim):
       psis = x_sol[0:CONTROL_N, 2].tolist()
       curvatures = (x_sol[0:CONTROL_N, 3] / v_ego).tolist()
       return get_lag_adjusted_curvature(lat_action_t, v_ego, psis, curvatures)
-    elif desired_curvature := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
+    elif desired_curvature := output['desired_curvature']:  # If the model outputs the desired curvature, use that directly
       return float(desired_curvature[0, 0])
 
   plan_output = output['plan'][0]

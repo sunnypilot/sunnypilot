@@ -77,18 +77,19 @@ class ModelState(ModelStateBase):
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
         # Temporal input: shape is [batch, history, features]
         if len(shape) == 3 and shape[1] > 1:
-          buffer_history_len = max(100, (shape[1] * 4 if shape[1] < 100 else shape[1]))   # Allow for higher history buffers in the future
+          buffer_history_len = shape[1] * 4 if shape[1] < 99 else shape[1]  # Allow for higher history buffers in the future
           feature_len = shape[2]
-          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
           features_buffer_shape = self.model_runner.input_shapes.get('features_buffer')
           if shape[1] in (24, 25) and features_buffer_shape is not None and features_buffer_shape[1] == 24:  # 20Hz
+            buffer_history_len = (features_buffer_shape[1] + 1) * 4
             step = int(-buffer_history_len / shape[1])
             self.temporal_idxs_map[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
           elif shape[1] == 25:  # Split
             skip = buffer_history_len // shape[1]
             self.temporal_idxs_map[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
-          elif shape[1] == buffer_history_len:  # non20hz
-            self.temporal_idxs_map[key] = np.arange(buffer_history_len)
+          elif shape[1] >= 99:  # non20hz
+            self.temporal_idxs_map[key] = np.arange(shape[1])
+          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
 
   @property
   def mlsim(self) -> bool:
@@ -144,10 +145,7 @@ class ModelState(ModelStateBase):
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
-    if 'features_buffer' in self.temporal_idxs_map:
-      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
-    else:
-      self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, -self.numpy_inputs['features_buffer'].shape[1]:]
+    self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
@@ -174,10 +172,11 @@ class ModelState(ModelStateBase):
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
     desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.mlsim)
-    if v_ego > self.MIN_LAT_CONTROL_SPEED:
-      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
-    else:
-      desired_curvature = prev_action.desiredCurvature
+    if self.generation is not None and self.generation >= 10: # smooth curvature for post FOF models
+      if v_ego > self.MIN_LAT_CONTROL_SPEED:
+        desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
+      else:
+        desired_curvature = prev_action.desiredCurvature
 
     return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
@@ -225,13 +224,19 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
-  frame_id = last_vipc_frame_id = run_count = 0
 
-  model_transform_main = model_transform_extra = np.zeros((3, 3), dtype=np.float32)
+  # setup filter to track dropped frames
+  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
+  frame_id = 0
+  last_vipc_frame_id = 0
+  run_count = 0
+
+  model_transform_main = np.zeros((3, 3), dtype=np.float32)
+  model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  buf_main = buf_extra = None
-  meta_main = meta_extra = FrameMeta()
+  buf_main, buf_extra = None, None
+  meta_main = FrameMeta()
+  meta_extra = FrameMeta()
 
 
   if demo:
