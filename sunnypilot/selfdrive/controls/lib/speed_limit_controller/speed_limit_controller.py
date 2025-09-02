@@ -15,7 +15,6 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import P
   SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Engage, OffsetType
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -71,7 +70,7 @@ class SpeedLimitController:
       SpeedLimitControlState.active: self.transition_state_from_active,
     }
 
-    # Solution functions mapped to respective states  
+    # Solution functions mapped to respective states
     self.acceleration_solutions = {
       SpeedLimitControlState.disabled: self.get_current_acceleration_as_target,
       SpeedLimitControlState.inactive: self.get_current_acceleration_as_target,
