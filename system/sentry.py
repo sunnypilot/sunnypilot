@@ -19,9 +19,9 @@ from openpilot.system.version import get_build_metadata, get_version
 
 class SentryProject(Enum):
   # python project
-  SELFDRIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE = "https://3e25e235efe389b74cde72fb0e115aef@o1138119.ingest.us.sentry.io/4509950385979397"
   # native project
-  SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE_NATIVE = "https://3e25e235efe389b74cde72fb0e115aef@o1138119.ingest.us.sentry.io/4509950385979397"
 
 
 CRASHES_DIR = Paths.community_crash_root()
