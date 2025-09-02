@@ -93,7 +93,6 @@ class SpeedLimitResolver:
     self.distance = self._distance_solutions[source] if source else 0.
     self.source = source or Source.none
 
-    debug(f'SL: *** Speed Limit set: {self.speed_limit}, distance: {self.distance}, source: {self.source}')
     return self.speed_limit, self.distance, self.source
 
   def _get_source_solution_according_to_policy(self) -> Source | None:
