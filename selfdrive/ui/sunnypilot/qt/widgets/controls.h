@@ -750,3 +750,24 @@ public:
     setFixedSize(400, 100);
   }
 };
+
+inline QString RainbowizeWords(const QString &text) {
+  const QStringList colors = {
+    "#FF6F61",  // soft coral red
+    "#FFA177",  // warm peach
+    "#FFD966",  // soft golden yellow
+    "#88D498",  // mint green
+    "#6EC6FF",  // sky blue
+    "#A78BFA",  // soft lavender
+    "#F78FB3"   // rose pink
+  };
+    
+    QString result;
+    QStringList words = text.split(' ');
+    
+    for (int i = 0; i < words.size(); ++i) {
+      result += QString("<font color='%1'>%2</font> ").arg(colors[i % colors.size()]).arg(words[i].toHtmlEscaped());
+    }
+    
+    return result.trimmed();
+  }
