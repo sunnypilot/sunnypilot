@@ -6,7 +6,6 @@ from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import debug
 
 
 class SpeedLimitResolver:
@@ -63,7 +62,6 @@ class SpeedLimitResolver:
 
     gps_fix_age = time.monotonic() - gps_data.unixTimestampMillis * 1e-3
     if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
-      debug(f'SL: Ignoring map data as is too old. Age: {gps_fix_age}')
       return
 
     speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
