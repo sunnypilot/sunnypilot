@@ -38,6 +38,7 @@ class SpeedLimitController:
     self.CP = CP
     self.frame = -1
     self.last_op_engaged_frame = 0.0
+    self.last_preactive_frame = 0.0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitControl")
     self.op_engaged = False
@@ -47,11 +48,9 @@ class SpeedLimitController:
     self.v_offset = 0.
     self.v_cruise_setpoint = 0.
     self.v_cruise_setpoint_prev = 0.
-    self.v_cruise_setpoint_changed = False
     self.initial_max_set = False
     self._speed_limit = 0.
     self.speed_limit_prev = 0.
-    self.speed_limit_changed = False
     self.last_valid_speed_limit_offsetted = 0.
     self._distance = 0.
     self._source = Source.none
@@ -125,6 +124,14 @@ class SpeedLimitController:
     # Fallback
     return V_CRUISE_UNSET
 
+  @property
+  def v_cruise_setpoint_changed(self) -> bool:
+    return self.v_cruise_setpoint != self.v_cruise_setpoint_prev
+
+  @property
+  def speed_limit_changed(self) -> bool:
+    return self._speed_limit != self.speed_limit_prev
+
   def get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
     if offset_type == OffsetType.off:
       return 0
@@ -134,9 +141,6 @@ class SpeedLimitController:
       return offset_value * 0.01 * self._speed_limit
     else:
       raise NotImplementedError("Offset not supported")
-
-  def update_v_cruise_setpoint_prev(self) -> None:
-    self.v_cruise_setpoint_prev = self.v_cruise_setpoint
 
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -171,16 +175,12 @@ class SpeedLimitController:
     if not self.op_engaged_prev and self.op_engaged:
       self.last_op_engaged_frame = self.frame
 
-    # Update change tracking variables
-    self.speed_limit_changed = self._speed_limit != self.speed_limit_prev
-    self.v_cruise_setpoint_changed = self.v_cruise_setpoint != self.v_cruise_setpoint_prev
-    self.speed_limit_prev = self._speed_limit
-    self.update_v_cruise_setpoint_prev()
-    self.op_engaged_prev = self.op_engaged
+    if not self._state_prev == SpeedLimitControlState.preActive and self.state == SpeedLimitControlState.preActive:
+      self.last_preactive_frame = self.frame
 
   def transition_state_from_disabled(self) -> None:
     # Wait 2 seconds after long engaged before starting fresh session
-    if (self.frame - self.last_op_engaged_frame) * DT_MDL > 2.:
+    if (self.frame - self.last_op_engaged_frame) * DT_MDL >= 2.:
       self.state = SpeedLimitControlState.preActive
       self.initial_max_set = False
 
@@ -197,7 +197,7 @@ class SpeedLimitController:
           self.state = SpeedLimitControlState.active
       else:
         self.state = SpeedLimitControlState.pending
-    elif (self.frame - self.last_op_engaged_frame) * DT_MDL > PRE_ACTIVE_GUARD_PERIOD:
+    elif (self.frame - self.last_preactive_frame) * DT_MDL >= PRE_ACTIVE_GUARD_PERIOD:
       # Timeout - session ended
       self.state = SpeedLimitControlState.inactive
 
@@ -264,6 +264,11 @@ class SpeedLimitController:
     self.update_calculations(v_ego, a_ego, v_cruise_setpoint)
     self.state_control()
     self.update_events(events_sp)
+
+    # Update change tracking variablesZ
+    self.speed_limit_prev = self._speed_limit
+    self.v_cruise_setpoint_prev = self.v_cruise_setpoint
+    self.op_engaged_prev = self.op_engaged
 
     self.frame += 1
 

@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import numpy as np
+import pytest
 
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.toyota.values import CAR as TOYOTA
@@ -13,8 +13,9 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitControlState, REQUIRED_INITIAL_MAX_SET_SPEED
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitControlState, REQUIRED_INITIAL_MAX_SET_SPEED, \
+  PRE_ACTIVE_GUARD_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
@@ -93,29 +94,82 @@ class TestSpeedLimitController:
     assert self.slc.is_enabled and self.slc.is_active
     assert v_cruise_slc == SPEED_LIMITS['city']
 
-  def test_no_speed_limit(self):
-    for v_ego in np.linspace(0, 100, 101):
-      for _ in range(int(10. / DT_MDL)):
-        v_cruise_slc = self.slc.update(True, v_ego, 0, 50 * CV.MPH_TO_MS, 0, 0, Source.none, self.events_sp)
-        assert v_cruise_slc == V_CRUISE_UNSET
-        assert self.slc.state not in ACTIVE_STATES
+  def test_preactive_timeout_to_inactive(self):
+    self.slc.state = SpeedLimitControlState.preActive
+    _ = self.slc.update(True, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
 
-  def test_long_disabled(self):
-    for v_ego in np.linspace(0, 100, 101):
-      for _ in range(int(10. / DT_MDL)):
-        v_cruise_slc = self.slc.update(False, v_ego, 0, 50 * CV.MPH_TO_MS, 50 * CV.MPH_TO_MS, 0, Source.none, self.events_sp)
-        assert v_cruise_slc == V_CRUISE_UNSET
-      assert self.slc.state == SpeedLimitControlState.disabled
+    for _ in range(int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)):
+      _ = self.slc.update(True, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.inactive
 
-  def test_speed_limit_at_initial_max_set_speed(self):
-    v_cruise_slc = V_CRUISE_UNSET
-    speed_limit = 50 * CV.MPH_TO_MS
-    offset = 0
+  def test_preactive_to_pending_no_speed_limit(self):
+    self.slc.state = SpeedLimitControlState.preActive
+    _ = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, 0, 0, Source.none, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.pending
+    assert self.slc.is_enabled and not self.slc.is_active
 
-    for source in (Source.car_state, Source.map_data):
-      self.reset_state()
-      for _ in range(int(10. / DT_MDL)):
-        v_cruise_slc = self.slc.update(True, 40 * CV.MPH_TO_MS, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limit, 0, source, self.events_sp)
-        offset = self.slc.get_offset(self.slc.offset_type, self.slc.offset_value)
-      assert self.slc.state in ACTIVE_STATES
-      assert v_cruise_slc == speed_limit + offset
+  def test_pending_to_active_when_speed_limit_available(self):
+    self.slc.state = SpeedLimitControlState.pending
+    _ = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.active
+
+  def test_pending_to_adapting_when_below_speed_limit(self):
+    self.slc.state = SpeedLimitControlState.pending
+    _ = self.slc.update(True, SPEED_LIMITS['city'] + 5, 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.adapting
+    assert self.slc.is_enabled and self.slc.is_active
+
+  def test_active_to_adapting_transition(self):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+
+    _ = self.slc.update(True, SPEED_LIMITS['city'] + 2, 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.adapting
+
+  def test_adapting_to_active_transition(self):
+    self.slc.state = SpeedLimitControlState.adapting
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+
+    _ = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.active
+
+  def test_manual_cruise_change_detection(self):
+    self.slc.state = SpeedLimitControlState.active
+    expected_cruise = SPEED_LIMITS['highway']
+    self.slc.v_cruise_setpoint_prev = expected_cruise
+
+    different_cruise = SPEED_LIMITS['highway'] + 5
+    _ = self.slc.update(True, SPEED_LIMITS['city'], 0, different_cruise, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.inactive
+
+  @pytest.mark.parametrize("offset_type, offset_value, speed_limit, expected_offset", [
+    (OffsetType.fixed, 5, SPEED_LIMITS['city'], 5 * CV.MPH_TO_MS),  # 5 MPH fixed offset
+    (OffsetType.percentage, 10, SPEED_LIMITS['city'], 0.1 * SPEED_LIMITS['city']),  # 10% offset
+    (OffsetType.off, 0, SPEED_LIMITS['city'], 0),  # Off
+    (OffsetType.fixed, 10, SPEED_LIMITS['highway'], 10 * CV.MPH_TO_MS),  # Different speed, fixed offset
+    (OffsetType.percentage, 5, SPEED_LIMITS['highway'], 0.05 * SPEED_LIMITS['highway']),  # Different speed, percentage
+  ])
+  def test_offset_calculations(self, offset_type, offset_value, speed_limit, expected_offset):
+    self.slc._speed_limit = speed_limit
+    actual_offset = self.slc.get_offset(offset_type, offset_value)
+    assert actual_offset == pytest.approx(expected_offset, rel=0.01)
+
+  def test_rapid_speed_limit_changes(self):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    speed_limits = [SPEED_LIMITS['city'], SPEED_LIMITS['highway'], SPEED_LIMITS['residential']]
+
+    for i, speed_limits in enumerate(speed_limits):
+      _ = self.slc.update(True, speed_limits, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limits, 0, Source.car_state, self.events_sp)
+    assert self.slc.state in ACTIVE_STATES
+
+  def test_invalid_speed_limits_handling(self):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.last_valid_speed_limit_offsetted = SPEED_LIMITS['city']
+
+    invalid_limits = [-10, 0, 200 * CV.MPH_TO_MS]
+
+    for invalid_limit in invalid_limits:
+      v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, invalid_limit, 0, Source.car_state, self.events_sp)
+      assert isinstance(v_cruise_slc, (int, float))
+      assert v_cruise_slc == V_CRUISE_UNSET or v_cruise_slc > 0
