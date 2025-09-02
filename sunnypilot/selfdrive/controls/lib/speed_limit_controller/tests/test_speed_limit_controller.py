@@ -69,6 +69,10 @@ class TestSpeedLimitController:
     self.params.put("SpeedLimitOffsetType", 0)
     self.params.put("SpeedLimitValueOffset", 0)
 
+  def initialize_active_state(self, v_cruise_setpoint):
+    self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint_prev = v_cruise_setpoint
+
   def test_initial_state(self):
     assert self.slc.state == SpeedLimitControlState.disabled
     assert not self.slc.is_enabled
@@ -120,8 +124,7 @@ class TestSpeedLimitController:
     assert self.slc.is_enabled and self.slc.is_active
 
   def test_active_to_adapting_transition(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
 
     _ = self.slc.update(True, SPEED_LIMITS['city'] + 2, 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
     assert self.slc.state == SpeedLimitControlState.adapting
@@ -155,8 +158,7 @@ class TestSpeedLimitController:
     assert actual_offset == pytest.approx(expected_offset, rel=0.01)
 
   def test_rapid_speed_limit_changes(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
     speed_limits = [SPEED_LIMITS['city'], SPEED_LIMITS['highway'], SPEED_LIMITS['residential']]
 
     for _, speed_limit in enumerate(speed_limits):
@@ -164,8 +166,7 @@ class TestSpeedLimitController:
     assert self.slc.state in ACTIVE_STATES
 
   def test_invalid_speed_limits_handling(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
     self.slc.last_valid_speed_limit_final = SPEED_LIMITS['city']
 
     invalid_limits = [-10, 0, 200 * CV.MPH_TO_MS]
@@ -176,8 +177,7 @@ class TestSpeedLimitController:
       assert v_cruise_slc == V_CRUISE_UNSET or v_cruise_slc > 0
 
   def test_stale_data_handling(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
     old_speed_limit = SPEED_LIMITS['city']
     self.slc.last_valid_speed_limit_final = old_speed_limit
 
@@ -186,8 +186,7 @@ class TestSpeedLimitController:
     assert v_cruise_slc == old_speed_limit
 
   def test_different_speed_limit_sources(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
 
     for source in (Source.car_state, Source.map_data):
       v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, source, self.events_sp)
@@ -206,8 +205,7 @@ class TestSpeedLimitController:
     assert v_cruise_slc == target_speed  # TODO-SP: assert expected accel, need to enable self.acceleration_solutions
 
   def test_long_disengaged_to_disabled(self):
-    self.slc.state = SpeedLimitControlState.active
-    self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
 
     v_cruise_slc = self.slc.update(False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
     assert self.slc.state == SpeedLimitControlState.disabled
