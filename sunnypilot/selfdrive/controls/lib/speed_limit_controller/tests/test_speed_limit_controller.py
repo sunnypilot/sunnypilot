@@ -18,6 +18,13 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import S
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
+SPEED_LIMITS = {
+  'residential': 25 * CV.MPH_TO_MS,  # 25 mph
+  'city': 35 * CV.MPH_TO_MS,         # 35 mph
+  'highway': 65 * CV.MPH_TO_MS,      # 65 mph
+  'freeway': 80 * CV.MPH_TO_MS,      # 80 mph
+}
+
 
 class TestSpeedLimitController:
 
@@ -30,10 +37,23 @@ class TestSpeedLimitController:
     sunnypilot_interfaces.setup_interfaces(CI, self.params)
 
     return CI
+  def teardown_method(self, method):
+    self.reset_state()
 
   def reset_state(self):
+    self.reset_custom_params()
     self.slc.state = SpeedLimitControlState.disabled
     self.slc.frame = -1
+    self.slc.last_op_engaged_frame = 0.0
+    self.slc.op_engaged = False
+    self.slc.op_engaged_prev = False
+    self.slc.initial_max_set = False
+    self.slc._speed_limit = 0.
+    self.slc.speed_limit_prev = 0.
+    self.slc.last_valid_speed_limit_offsetted = 0.
+    self.slc._distance = 0.
+    self.slc._source = Source.none
+    self.events_sp.clear()
 
   def setup_method(self):
     self.params = Params()
@@ -48,13 +68,30 @@ class TestSpeedLimitController:
     self.params.put("SpeedLimitOffsetType", 0)
     self.params.put("SpeedLimitValueOffset", 0)
 
+  def test_initial_state(self):
+    assert self.slc.state == SpeedLimitControlState.disabled
+    assert not self.slc.is_enabled
+    assert not self.slc.is_active
+    assert self.slc.final_cruise_speed == V_CRUISE_UNSET
+
   def test_disabled(self):
     self.params.put_bool("SpeedLimitControl", False)
-    for v_ego in np.linspace(0, 100, 101):
-      for _ in range(int(10. / DT_MDL)):
-        v_cruise_slc = self.slc.update(True, v_ego, 0, 50 * CV.MPH_TO_MS, 50 * CV.MPH_TO_MS, 0, Source.none, self.events_sp)
-        assert v_cruise_slc == V_CRUISE_UNSET
-      assert self.slc.state == SpeedLimitControlState.disabled
+    for _ in range(int(10. / DT_MDL)):
+      _ = self.slc.update(True, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.disabled
+
+  def test_transition_disabled_to_preactive(self):
+    for _ in range(int(3. / DT_MDL)):
+      _ = self.slc.update(True, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.preActive
+    assert self.slc.is_enabled and not self.slc.is_active
+
+  def test_preactive_to_active_with_max_speed_confirmation(self):
+    self.slc.state = SpeedLimitControlState.preActive
+    v_cruise_slc = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+    assert self.slc.state == SpeedLimitControlState.active
+    assert self.slc.is_enabled and self.slc.is_active
+    assert v_cruise_slc == SPEED_LIMITS['city']
 
   def test_no_speed_limit(self):
     for v_ego in np.linspace(0, 100, 101):

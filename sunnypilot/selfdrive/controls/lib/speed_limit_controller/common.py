@@ -20,6 +20,6 @@ class Engage(IntEnum):
 
 
 class OffsetType(IntEnum):
-  default = 0
+  off = 0
   fixed = 1
   percentage = 2
