@@ -159,8 +159,8 @@ class TestSpeedLimitController:
     self.slc.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
     speed_limits = [SPEED_LIMITS['city'], SPEED_LIMITS['highway'], SPEED_LIMITS['residential']]
 
-    for i, speed_limits in enumerate(speed_limits):
-      _ = self.slc.update(True, speed_limits, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limits, 0, Source.car_state, self.events_sp)
+    for _, speed_limit in enumerate(speed_limits):
+      _ = self.slc.update(True, speed_limit, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limit, 0, Source.car_state, self.events_sp)
     assert self.slc.state in ACTIVE_STATES
 
   def test_invalid_speed_limits_handling(self):
