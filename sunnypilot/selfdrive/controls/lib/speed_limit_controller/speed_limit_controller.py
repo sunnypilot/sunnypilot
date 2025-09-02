@@ -92,7 +92,7 @@ class SpeedLimitController:
     return self.state in ACTIVE_STATES
 
   @property
-  def speed_limit_offseted(self) -> float:
+  def speed_limit_final(self) -> float:
     return self._speed_limit + self.speed_limit_offset
 
   @property
@@ -116,8 +116,8 @@ class SpeedLimitController:
     if self.is_active:
       # If we have a current valid speed limit, use it
       if self._speed_limit > 0:
-        self.last_valid_speed_limit_offsetted = self.speed_limit_offseted
-        return self.speed_limit_offseted
+        self.last_valid_speed_limit_offsetted = self.speed_limit_final
+        return self.speed_limit_final
 
       # If no current speed limit but we have a last valid one, use that
       if self.last_valid_speed_limit_offsetted > 0:
@@ -156,7 +156,7 @@ class SpeedLimitController:
   def detect_manual_cruise_change(self) -> bool:
     # If cruise speed changed and it's not what SLC would set
     if self.v_cruise_setpoint_changed:
-      expected_cruise = self.speed_limit_offseted
+      expected_cruise = self.speed_limit_final
       return abs(self.v_cruise_setpoint - expected_cruise) > CRUISE_SPEED_TOLERANCE
 
     return False
@@ -167,7 +167,7 @@ class SpeedLimitController:
     self.a_ego = a_ego
 
     # Update current velocity offset (error)
-    self.v_offset = self.speed_limit_offseted - self.v_ego
+    self.v_offset = self.speed_limit_final - self.v_ego
 
     if not self.op_engaged_prev and self.op_engaged:
       self.last_op_engaged_frame = self.frame
@@ -237,7 +237,7 @@ class SpeedLimitController:
 
   def get_adapting_state_target_acceleration(self) -> float:
     if self._distance > 0:
-      return (self.speed_limit_offseted ** 2 - self.v_ego ** 2) / (2. * self._distance)
+      return (self.speed_limit_final ** 2 - self.v_ego ** 2) / (2. * self._distance)
 
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
