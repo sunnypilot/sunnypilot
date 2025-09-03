@@ -29,33 +29,6 @@ SPEED_LIMITS = {
 
 class TestSpeedLimitController:
 
-  def _setup_platform(self, car_name):
-    CarInterface = interfaces[car_name]
-    CP = CarInterface.get_non_essential_params(car_name)
-    CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
-    CI = CarInterface(CP, CP_SP)
-
-    sunnypilot_interfaces.setup_interfaces(CI, self.params)
-
-    return CI
-  def teardown_method(self, method):
-    self.reset_state()
-
-  def reset_state(self):
-    self.reset_custom_params()
-    self.slc.state = SpeedLimitControlState.disabled
-    self.slc.frame = -1
-    self.slc.last_op_engaged_frame = 0.0
-    self.slc.op_engaged = False
-    self.slc.op_engaged_prev = False
-    self.slc.initial_max_set = False
-    self.slc._speed_limit = 0.
-    self.slc.speed_limit_prev = 0.
-    self.slc.last_valid_speed_limit_final = 0.
-    self.slc._distance = 0.
-    self.slc._source = Source.none
-    self.events_sp.clear()
-
   def setup_method(self):
     self.params = Params()
     self.reset_custom_params()
@@ -63,14 +36,42 @@ class TestSpeedLimitController:
     CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2_2022)
     self.slc = SpeedLimitController(CI.CP)
 
+  def teardown_method(self, method):
+    self.reset_state()
+
+  def _setup_platform(self, car_name):
+    CarInterface = interfaces[car_name]
+    CP = CarInterface.get_non_essential_params(car_name)
+    CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
+    CI = CarInterface(CP, CP_SP)
+    sunnypilot_interfaces.setup_interfaces(CI, self.params)
+    return CI
+
   def reset_custom_params(self):
     self.params.put_bool("SpeedLimitControl", True)
     self.params.put_bool("IsMetric", False)
     self.params.put("SpeedLimitOffsetType", 0)
     self.params.put("SpeedLimitValueOffset", 0)
 
+  def reset_state(self):
+    self.slc.state = SpeedLimitControlState.disabled
+    self.slc.frame = -1
+    self.slc.last_op_engaged_frame = 0
+    self.slc.op_engaged = False
+    self.slc.op_engaged_prev = False
+    self.slc.initial_max_set = False
+    self.slc._speed_limit = 0.
+    self.slc.speed_limit_prev = 0.
+    self.slc.last_valid_speed_limit_offsetted = 0.
+    self.slc._distance = 0.
+    self.slc._source = Source.none
+    self.slc.v_cruise_setpoint = 0.
+    self.slc.v_cruise_setpoint_prev = 0.
+    self.events_sp.clear()
+
   def initialize_active_state(self, v_cruise_setpoint):
     self.slc.state = SpeedLimitControlState.active
+    self.slc.v_cruise_setpoint = v_cruise_setpoint
     self.slc.v_cruise_setpoint_prev = v_cruise_setpoint
 
   def test_initial_state(self):
@@ -210,3 +211,14 @@ class TestSpeedLimitController:
     v_cruise_slc = self.slc.update(False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
     assert self.slc.state == SpeedLimitControlState.disabled
     assert v_cruise_slc == V_CRUISE_UNSET
+
+  def test_maintain_states_with_no_changes(self):
+    test_states = [
+      SpeedLimitControlState.preActive,
+      SpeedLimitControlState.pending,
+      SpeedLimitControlState.active,
+      SpeedLimitControlState.adapting
+    ]
+
+    for state in test_states:
+      self.slc.state = state
