@@ -19,6 +19,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import S
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
+ALL_STATES = tuple(SpeedLimitControlState.schema.enumerants.values())
+
 SPEED_LIMITS = {
   'residential': 25 * CV.MPH_TO_MS,  # 25 mph
   'city': 35 * CV.MPH_TO_MS,         # 35 mph
@@ -213,6 +215,7 @@ class TestSpeedLimitController:
     assert v_cruise_slc == V_CRUISE_UNSET
 
   def test_maintain_states_with_no_changes(self):
+    """Test that states are maintained when no significant changes occur"""
     test_states = [
       SpeedLimitControlState.preActive,
       SpeedLimitControlState.pending,
@@ -222,3 +225,17 @@ class TestSpeedLimitController:
 
     for state in test_states:
       self.slc.state = state
+      self.slc.op_engaged = True
+      if state in [SpeedLimitControlState.pending, SpeedLimitControlState.active, SpeedLimitControlState.adapting]:
+        self.slc.initial_max_set = True
+
+      initial_state = state
+
+      _ = self.slc.update(True, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED,SPEED_LIMITS['city'], 0, Source.car_state, self.events_sp)
+
+      assert self.slc.state in ALL_STATES  # Sanity check
+
+      if initial_state == SpeedLimitControlState.preActive:
+        assert self.slc.state in [SpeedLimitControlState.preActive, SpeedLimitControlState.active]
+      elif initial_state in ACTIVE_STATES:
+        assert self.slc.state in ACTIVE_STATES
