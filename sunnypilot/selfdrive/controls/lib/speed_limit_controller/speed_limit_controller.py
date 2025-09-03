@@ -223,9 +223,9 @@ class SpeedLimitController:
   def state_control(self) -> None:
     self._state_prev = self.state
 
-    # If op is disabled or SLC is disabled, go to disabled state (not inactive)
+    # If op is disabled or SLC is disabled, go to disabled state
     if not self.op_engaged or not self.enabled:
-      self.state = SpeedLimitControlState.disabled  # Changed from inactive
+      self.state = SpeedLimitControlState.disabled
       self.initial_max_set = False
       return
 
