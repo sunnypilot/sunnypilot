@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import errno
 import gzip
 import os
 import ssl
@@ -259,14 +260,19 @@ def main(exit_event: threading.Event = None):
       handle_long_poll(ws, exit_event)
     except (KeyboardInterrupt, SystemExit):
       break
-    except (ConnectionError, TimeoutError, WebSocketException):
+    except Exception as e:
       conn_retries += 1
       params.remove("LastSunnylinkPingTime")
-    except Exception:
-      cloudlog.exception("sunnylinkd.main.exception")
 
-      conn_retries += 1
-      params.remove("LastSunnylinkPingTime")
+      if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
+        cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
+      elif isinstance(e, OSError):
+        name = errno.errorcode.get(e.errno, "UNKNOWN")
+        msg = f"sunnylinkd.main.OSError.{name} ({e.errno})"
+        is_expected_error = e.errno in (errno.ENETDOWN, errno.ENETRESET, errno.ENETUNREACH)
+        cloudlog.warning(msg) if is_expected_error else cloudlog.exception(msg)
+      else:
+        cloudlog.exception("sunnylinkd.main.exception")
 
     time.sleep(backoff(conn_retries))
 
