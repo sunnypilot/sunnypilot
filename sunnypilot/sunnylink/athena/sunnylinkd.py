@@ -10,10 +10,9 @@ import ssl
 import threading
 import time
 
-from common.params_pyx import ParamKeyType
 from jsonrpc import dispatcher
 from functools import partial
-from openpilot.common.params import Params
+from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
@@ -194,7 +193,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
         "is_compressed": compression
       } for key in param_keys_validated
     ]}
-    
+
     # TODO-SP: Make the server support the entire dict so we can return more metadata
     # Last step is to encode the values to base64 and decode to utf-8 for JSON serialization
     return {param.get('key'): base64.b64encode(param.get('value')).decode('utf-8') for param in params_dict.get("params")}
