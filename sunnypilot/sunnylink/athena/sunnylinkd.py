@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import errno
 import gzip
+import json
 import os
 import ssl
 import threading
@@ -22,7 +23,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
 
 import cereal.messaging as messaging
 from sunnypilot.sunnylink.api import SunnylinkApi
-from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready
+from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -179,16 +180,22 @@ def getParamsAllKeys() -> list[str]:
 
 @dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
+  params = Params()
+
   try:
-    params = Params()
-    params_dict: dict[str, bytes] = {key: params.get(key) or b'' for key in params_keys}
+    param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
+    params_dict:  dict[str, list[dict[str, str | bool | int ]]] = {"params": [
+      {
+        "key": key,
+        "value": base64.b64encode(gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key)).decode('utf-8'),
+        "type": int(params.get_type(key).value),
+        "is_compressed": compression
+      } for key in param_keys_validated
+    ]}
 
-    # Compress the values before encoding to base64 as output from params.get is bytes and same for compression
-    if compression:
-      params_dict = {key: gzip.compress(value) for key, value in params_dict.items()}
-
-    # Last step is to encode the values to base64 and decode to utf-8 for JSON serialization
-    return {key: base64.b64encode(value).decode('utf-8') for key, value in params_dict.items()}
+    response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
+    response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
+    return response
 
   except Exception as e:
     cloudlog.exception("sunnylinkd.getParams.exception", e)
