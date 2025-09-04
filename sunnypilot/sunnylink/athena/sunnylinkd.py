@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import errno
 import gzip
+import json
 import os
 import ssl
 import threading
@@ -17,11 +19,11 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
-                       create_connection)
+                       create_connection, WebSocketConnectionClosedException)
 
 import cereal.messaging as messaging
 from sunnypilot.sunnylink.api import SunnylinkApi
-from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready
+from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -107,10 +109,13 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > SUNNYLINK_RECONNECT_TIMEOUT_S * 1e9:
-        cloudlog.exception("sunnylinkd.ws_recv.timeout")
+        cloudlog.warning("sunnylinkd.ws_recv.timeout")
         end_event.set()
-    except Exception:
-      cloudlog.exception("sunnylinkd.ws_recv.exception")
+    except Exception as e:
+      if isinstance(e, WebSocketConnectionClosedException):
+        cloudlog.warning(f"sunnylinkd.ws_recv.{type(e).__name__}")
+      else:
+        cloudlog.exception("sunnylinkd.ws_recv.exception")
       end_event.set()
 
 
@@ -137,11 +142,15 @@ def ws_queue(end_event: threading.Event) -> None:
         sunnylink_api.resume_queued(timeout=29)
         resume_requested = True
         tries = 0
-    except Exception:
-      cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
+    except Exception as e:
+      if isinstance(e, (ConnectionError, TimeoutError)):
+        cloudlog.warning(f"sunnylinkd.ws_queue.resume_queued.{type(e).__name__}")
+      else:
+        cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
+
       resume_requested = False
       tries += 1
-      time.sleep(backoff(tries))  # Wait for the backoff time before the next attempt
+      time.sleep(backoff(tries))
 
   if end_event.is_set():
     cloudlog.debug("end_event is set, exiting ws_queue thread")
@@ -171,16 +180,22 @@ def getParamsAllKeys() -> list[str]:
 
 @dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
+  params = Params()
+
   try:
-    params = Params()
-    params_dict: dict[str, bytes] = {key: params.get(key) or b'' for key in params_keys}
+    param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
+    params_dict:  dict[str, list[dict[str, str | bool | int ]]] = {"params": [
+      {
+        "key": key,
+        "value": base64.b64encode(gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key)).decode('utf-8'),
+        "type": int(params.get_type(key).value),
+        "is_compressed": compression
+      } for key in param_keys_validated
+    ]}
 
-    # Compress the values before encoding to base64 as output from params.get is bytes and same for compression
-    if compression:
-      params_dict = {key: gzip.compress(value) for key, value in params_dict.items()}
-
-    # Last step is to encode the values to base64 and decode to utf-8 for JSON serialization
-    return {key: base64.b64encode(value).decode('utf-8') for key, value in params_dict.items()}
+    response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
+    response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
+    return response
 
   except Exception as e:
     cloudlog.exception("sunnylinkd.getParams.exception", e)
@@ -252,14 +267,19 @@ def main(exit_event: threading.Event = None):
       handle_long_poll(ws, exit_event)
     except (KeyboardInterrupt, SystemExit):
       break
-    except (ConnectionError, TimeoutError, WebSocketException):
+    except Exception as e:
       conn_retries += 1
       params.remove("LastSunnylinkPingTime")
-    except Exception:
-      cloudlog.exception("sunnylinkd.main.exception")
 
-      conn_retries += 1
-      params.remove("LastSunnylinkPingTime")
+      if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
+        cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
+      elif isinstance(e, OSError):
+        name = errno.errorcode.get(e.errno or -1, "UNKNOWN")
+        msg = f"sunnylinkd.main.OSError.{name} ({e.errno})"
+        is_expected_error = e.errno in (errno.ENETDOWN, errno.ENETRESET, errno.ENETUNREACH)
+        cloudlog.warning(msg) if is_expected_error else cloudlog.exception(msg)
+      else:
+        cloudlog.exception("sunnylinkd.main.exception")
 
     time.sleep(backoff(conn_retries))
 
