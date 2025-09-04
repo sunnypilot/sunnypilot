@@ -48,6 +48,25 @@ static const QString progressStyleError = progressStyleActive +
     "  background-color: transparent;"
     "}";
 
+std::optional<cereal::Event::Reader> safeParamEventLoad(Params& params, const std::string& paramName) {
+  std::string raw = params.get(paramName);
+  if (raw.empty()) {
+    return std::nullopt;
+  }
+
+  try {
+    AlignedBuffer alignedBuf;
+    auto buf = alignedBuf.align(raw.data(), raw.size());
+
+    capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(buf.begin(), buf.size()));
+    return msg.getRoot<cereal::Event>();
+  }
+  catch (const kj::Exception& e) {
+    qInfo() << "Invalid param" << QString::fromStdString(paramName) << ":" << e.getDescription().cStr();
+    return std::nullopt;
+  }
+}
+
 ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(50, 20, 50, 20);
@@ -134,17 +153,10 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
 
   // Software delay control
   int liveDelayMaxInt = 30;
-  std::string liveDelayBytes = params.get("LiveDelay");
-  if (!liveDelayBytes.empty()) {
-    capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-      reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-      liveDelayBytes.size() / sizeof(capnp::word)));
-    auto event = msg.getRoot<cereal::Event>();
-    if (event.hasLiveDelay()) {
-      auto liveDelay = event.getLiveDelay();
-      float lateralDelay = liveDelay.getLateralDelay();
-      liveDelayMaxInt = static_cast<int>(lateralDelay * 100.0f) + 20;
-    }
+  if (const auto event = safeParamEventLoad(params, "LiveDelay"); event && event->hasLiveDelay()) {
+    auto liveDelay = event->getLiveDelay();
+    float lateralDelay = liveDelay.getLateralDelay();
+    liveDelayMaxInt = static_cast<int>(lateralDelay * 100.0f) + 20;
   }
   delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
@@ -437,18 +449,11 @@ void ModelsPanel::updateLabels() {
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
   bool lagdEnabled = params.getBool("LagdToggle");
   if (lagdEnabled) {
-    std::string liveDelayBytes = params.get("LiveDelay");
-    if (!liveDelayBytes.empty()) {
-      capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-        reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-        liveDelayBytes.size() / sizeof(capnp::word)));
-      auto event = msg.getRoot<cereal::Event>();
-      if (event.hasLiveDelay()) {
-        auto liveDelay = event.getLiveDelay();
-        float lateralDelay = liveDelay.getLateralDelay();
-        desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
+    if (const auto event = safeParamEventLoad(params, "LiveDelay"); event && event->hasLiveDelay()) {
+      auto liveDelay = event->getLiveDelay();
+      float lateralDelay = liveDelay.getLateralDelay();
+      desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
                 .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 3));
-      }
     }
   } else {
     std::string carParamsBytes = params.get("CarParamsPersistent");
