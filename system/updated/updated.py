@@ -190,15 +190,6 @@ def finalize_update() -> None:
   run(["git", "reset", "--hard"], FINALIZED)
   run(["git", "submodule", "foreach", "--recursive", "git", "reset", "--hard"], FINALIZED)
 
-  cloudlog.info("Starting git cleanup in finalized update")
-  t = time.monotonic()
-  try:
-    run(["git", "gc"], FINALIZED)
-    run(["git", "lfs", "prune"], FINALIZED)
-    cloudlog.event("Done git cleanup", duration=time.monotonic() - t)
-  except subprocess.CalledProcessError:
-    cloudlog.exception(f"Failed git cleanup, took {time.monotonic() - t:.3f} s")
-
   set_consistent_flag(True)
   cloudlog.info("done finalizing overlay")
 
