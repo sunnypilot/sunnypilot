@@ -8,6 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 import time
 
 import requests
+from requests.exceptions import (SSLError, RequestException, HTTPError)
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from sunnypilot.models.helpers import is_bundle_version_compatible
@@ -122,19 +123,36 @@ class ModelFetcher:
     self.model_cache = ModelCache(params)
     self.model_parser = ModelParser()
 
-  def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle]:
-    """Fetches fresh model data from remote and updates cache"""
+  def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
+    """Fetches fresh model data from remote and updates cache.
+    Returns None on transport errors. Raises on 404 and other fatal HTTP errors.
+    """
     try:
       response = requests.get(self.MODEL_URL, timeout=10)
-      response.raise_for_status()
-      json_data = response.json()
 
+      # Explicitly handle 404 differently
+      if response.status_code == 404:
+        cloudlog.error(f"Models URL returned 404 Not Found: {self.MODEL_URL}")
+        raise HTTPError(f"404 Not Found: {self.MODEL_URL}", response=response)
+
+      # Raise for any other 4xx/5xx
+      response.raise_for_status()
+
+      json_data = response.json()
       self.model_cache.set(json_data)
       cloudlog.debug("Successfully updated models cache")
       return self.model_parser.parse_models(json_data)
-    except Exception:
-      cloudlog.exception("Error fetching models")
-      raise
+
+    except ConnectionError as e:
+      cloudlog.warning(f"DNS/connection error while fetching models: {e}")
+    except SSLError as e:
+      cloudlog.warning(f"SSL error while fetching models: {e}")
+    except RequestException as e:
+      cloudlog.exception(f"Request transport error while fetching models: {e}")
+    except Exception as e:
+      cloudlog.exception(f"Unexpected error fetching models: {e}")
+
+    return None
 
   def get_available_bundles(self) -> list[custom.ModelManagerSP.ModelBundle]:
     """Gets the list of available models, with smart cache handling"""
@@ -144,12 +162,12 @@ class ModelFetcher:
       cloudlog.debug("Using valid cached models data")
       return self.model_parser.parse_models(cached_data)
 
-    try:
-      return self._fetch_and_cache_models()
-    except Exception:
-      if not cached_data:
-        cloudlog.exception("Failed to fetch fresh data and no cache available")
-        raise
+    fetched_bundles = self._fetch_and_cache_models()
+    if fetched_bundles is not None:
+      return fetched_bundles
+
+    if not cached_data:
+      cloudlog.warning("Failed to fetch fresh data and no cache available")
 
     cloudlog.warning("Failed to fetch fresh data. Using expired cache as fallback")
     return self.model_parser.parse_models(cached_data)
