@@ -159,7 +159,6 @@ class ModelFetcher:
 
     return None
 
-  
   def get_available_bundles(self) -> list[custom.ModelManagerSP.ModelBundle]:
     """Gets the list of available models, with smart cache handling"""
     cached_data, is_expired = self.model_cache.get()
