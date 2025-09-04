@@ -114,6 +114,7 @@ class BackupManagerSP:
       payload = json.loads(json.dumps(backup_info.to_dict(), cls=SnakeCaseEncoder))
       self._update_progress(75.0, OperationType.BACKUP)
 
+      cloudlog.debug(f"Uploading backup with payload: {json.dumps(payload)}")
       # Upload to sunnylink
       result = self.api.api_get(
         f"backup/{self.device_id}",
@@ -125,9 +126,11 @@ class BackupManagerSP:
       if result:
         self.backup_status = custom.BackupManagerSP.Status.completed
         self._update_progress(100.0, OperationType.BACKUP)
+        cloudlog.info("Backup successfully created and uploaded")
       else:
         self.backup_status = custom.BackupManagerSP.Status.failed
         self.last_error = "Failed to upload backup"
+        cloudlog.error(result)
         self._report_status()
 
       return bool(self.backup_status == custom.BackupManagerSP.Status.completed)
@@ -265,8 +268,8 @@ class BackupManagerSP:
         # Check for backup command
         if self.params.get_bool("BackupManager_CreateBackup"):
           try:
-            await self.create_backup()
-            reset_progress = True
+            if await self.create_backup():
+              reset_progress = True
           finally:
             self.params.remove("BackupManager_CreateBackup")
 
