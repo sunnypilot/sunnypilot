@@ -38,6 +38,13 @@ ROUTES_NO_CONNECTIVITY_MAX = 84
 HOURS_NO_CONNECTIVITY_PROMPT = 23
 ROUTES_NO_CONNECTIVITY_PROMPT = 80
 
+SP_BRANCH_MIGRATIONS = {
+  ("tici", "staging-c3-new"): "staging-tici",
+  ("tici", "dev-c3-new"): "staging-tici",
+  ("tici", "master"): "master-tici",
+  ("tici", "master-dev-c3-new"): "master-tici",
+}
+
 
 class UserRequest:
   NONE = 0
@@ -242,9 +249,7 @@ class Updater:
     b: str | None = self.params.get("UpdaterTargetBranch")
     if b is None:
       b = self.get_branch(BASEDIR)
-    b = {
-      ("tici", "release3"): "release-tici"
-    }.get((HARDWARE.get_device_type(), b), b)
+    b = SP_BRANCH_MIGRATIONS.get((HARDWARE.get_device_type(), b), b)
     return b
 
   @property
