@@ -8,14 +8,9 @@ See the LICENSE.md file in the root directory for more details.
 import time
 
 import requests
-import socket
-import ssl
-from requests.exceptions import (ConnectionError, SSLError, RequestException, HTTPError)
-from urllib3.exceptions import SSLError as UrllibSSLError
+from requests.exceptions import (SSLError, RequestException, HTTPError)
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from urllib3.exceptions import NameResolutionError
-
 from sunnypilot.models.helpers import is_bundle_version_compatible
 
 from cereal import custom
@@ -147,13 +142,13 @@ class ModelFetcher:
       self.model_cache.set(json_data)
       cloudlog.debug("Successfully updated models cache")
       return self.model_parser.parse_models(json_data)
-  
-    except (ConnectionError, NameResolutionError, socket.gaierror) as e:
+
+    except ConnectionError as e:
       cloudlog.warning(f"DNS/connection error while fetching models: {e}")
-    except (SSLError, UrllibSSLError, ssl.SSLError) as e:
+    except SSLError as e:
       cloudlog.warning(f"SSL error while fetching models: {e}")
     except RequestException as e:
-      cloudlog.warning(f"Request transport error while fetching models: {e}")
+      cloudlog.exception(f"Request transport error while fetching models: {e}")
     except Exception as e:
       cloudlog.exception(f"Unexpected error fetching models: {e}")
 
