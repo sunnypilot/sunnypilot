@@ -17,7 +17,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
-                       create_connection)
+                       create_connection, WebSocketConnectionClosedException)
 
 import cereal.messaging as messaging
 from sunnypilot.sunnylink.api import SunnylinkApi
@@ -107,10 +107,13 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > SUNNYLINK_RECONNECT_TIMEOUT_S * 1e9:
-        cloudlog.exception("sunnylinkd.ws_recv.timeout")
+        cloudlog.warning("sunnylinkd.ws_recv.timeout")
         end_event.set()
-    except Exception:
-      cloudlog.exception("sunnylinkd.ws_recv.exception")
+    except Exception as e:
+      if isinstance(e, WebSocketConnectionClosedException):
+        cloudlog.warning(f"sunnylinkd.ws_recv.{type(e).__name__}")
+      else:
+        cloudlog.exception("sunnylinkd.ws_recv.exception")
       end_event.set()
 
 
@@ -137,11 +140,15 @@ def ws_queue(end_event: threading.Event) -> None:
         sunnylink_api.resume_queued(timeout=29)
         resume_requested = True
         tries = 0
-    except Exception:
-      cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
+    except Exception as e:
+      if isinstance(e, (ConnectionError, TimeoutError)):
+        cloudlog.warning(f"sunnylinkd.ws_queue.resume_queued.{type(e).__name__}")
+      else:
+        cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
+
       resume_requested = False
       tries += 1
-      time.sleep(backoff(tries))  # Wait for the backoff time before the next attempt
+      time.sleep(backoff(tries))
 
   if end_event.is_set():
     cloudlog.debug("end_event is set, exiting ws_queue thread")
