@@ -185,7 +185,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
   try:
     param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
-    params_dict: dict[str, list[dict[str, str]]] = {"params": [
+    params_dict = {"params": [
       {
         "key": key,
         "value": base64.b64encode(gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key)).decode('utf-8'),
