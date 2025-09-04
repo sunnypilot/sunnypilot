@@ -185,17 +185,18 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
   try:
     param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
-    params_dict = {"params": [
+    params_dict:  dict[str, list[dict[str, str | bool]]] = {"params": [
       {
         "key": key,
         "value": base64.b64encode(gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key)).decode('utf-8'),
-        "type": params.get_type(key),
+        "type": int(params.get_type(key).value),
         "is_compressed": compression
       } for key in param_keys_validated
     ]}
 
-    # TODO-SP: Make the server support the entire dict so we can return more metadata
-    return {param.get('key'): param.get('value') for param in params_dict.get("params")}
+    response = {param.get('key'): param.get('value') for param in params_dict.get("params", [])}
+    response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
+    return response
 
   except Exception as e:
     cloudlog.exception("sunnylinkd.getParams.exception", e)
