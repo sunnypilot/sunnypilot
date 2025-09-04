@@ -12,7 +12,7 @@ import time
 
 from jsonrpc import dispatcher
 from functools import partial
-from openpilot.common.params import Params, ParamKeyType
+from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
