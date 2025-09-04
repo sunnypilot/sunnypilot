@@ -24,7 +24,7 @@ from openpilot.system.statsd import statlog
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.power_monitoring import PowerMonitoring
 from openpilot.system.hardware.fan_controller import TiciFanController
-from openpilot.system.version import terms_version, training_version
+from openpilot.system.version import terms_version, training_version, get_build_metadata
 
 ThermalStatus = log.DeviceState.ThermalStatus
 NetworkType = log.DeviceState.NetworkType
@@ -325,6 +325,12 @@ def hardware_thread(end_event, hw_queue) -> None:
     offroad_mode = params.get_bool("OffroadMode")
     startup_conditions["not_always_offroad"] = not offroad_mode
     onroad_conditions["not_always_offroad"] = not offroad_mode
+
+    # if TICI is detected, prevent going onroad and inform users to migrate to a supported branch
+    build_metadata = get_build_metadata()
+    startup_conditions["not_tici"] = not TICI
+    onroad_conditions["not_tici"] = not TICI
+    set_offroad_alert("Offroad_TiciSupport", TICI, extra_text=build_metadata.channel)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger

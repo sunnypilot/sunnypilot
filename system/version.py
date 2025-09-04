@@ -16,6 +16,13 @@ MASTER_SP_BRANCHES = ['master']
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly'] + RELEASE_SP_BRANCHES
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
 
+SP_BRANCH_MIGRATIONS = {
+  ("tici", "staging-c3-new"): "staging-tici",
+  ("tici", "dev-c3-new"): "staging-tici",
+  ("tici", "master"): "master-tici",
+  ("tici", "master-dev-c3-new"): "master-tici",
+}
+
 BUILD_METADATA_FILENAME = "build.json"
 
 training_version: str = "0.2.0"
