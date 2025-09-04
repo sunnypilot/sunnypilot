@@ -131,6 +131,8 @@ class SelfdriveD(CruiseHelper):
     self.not_running_prev = None
     self.experimental_mode = False
     self.personality = self.params.get("LongitudinalPersonality", return_default=True)
+    if self.personality > max(LONGITUDINAL_PERSONALITY_MAP):
+      self.personality = max(LONGITUDINAL_PERSONALITY_MAP)
     self.recalibrating_seen = False
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
