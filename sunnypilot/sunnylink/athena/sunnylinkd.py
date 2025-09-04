@@ -267,7 +267,7 @@ def main(exit_event: threading.Event = None):
       if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
         cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
       elif isinstance(e, OSError):
-        name = errno.errorcode.get(e.errno, "UNKNOWN")
+        name = errno.errorcode.get(e.errno or -1, "UNKNOWN")
         msg = f"sunnylinkd.main.OSError.{name} ({e.errno})"
         is_expected_error = e.errno in (errno.ENETDOWN, errno.ENETRESET, errno.ENETUNREACH)
         cloudlog.warning(msg) if is_expected_error else cloudlog.exception(msg)
