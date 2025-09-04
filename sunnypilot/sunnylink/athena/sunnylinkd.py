@@ -22,7 +22,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
 
 import cereal.messaging as messaging
 from sunnypilot.sunnylink.api import SunnylinkApi
-from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready
+from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -173,15 +173,6 @@ def getParamsAllKeys() -> list[str]:
 @dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
   params = Params()
-  def get_param_as_byte(param_name: str) -> bytes:
-    param = params.get(param_name)
-    param_type = params.get_type(param_name)
-
-    if param_type == ParamKeyType.BYTES:
-      return bytes(param)
-    elif param_type == ParamKeyType.JSON:
-      return json.dumps(param).encode('utf-8')
-    return str(param).encode('utf-8')
 
   try:
     param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
