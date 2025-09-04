@@ -178,7 +178,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
     param_type = params.get_type(param_name)
 
     if param_type == ParamKeyType.BYTES:
-      return param
+      return bytes(param)
     elif param_type == ParamKeyType.JSON:
       return json.dumps(param).encode('utf-8')
     return str(param).encode('utf-8')
@@ -194,7 +194,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
       } for key in param_keys_validated
     ]}
 
-    response = {param.get('key'): param.get('value') for param in params_dict.get("params", [])}
+    response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
     response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
     return response
 
