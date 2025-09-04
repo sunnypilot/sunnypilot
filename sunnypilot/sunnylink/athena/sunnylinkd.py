@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import base64
 import gzip
+import json
 import os
 import ssl
 import threading
 import time
 
+from common.params_pyx import ParamKeyType
 from jsonrpc import dispatcher
 from functools import partial
 from openpilot.common.params import Params
@@ -171,16 +173,30 @@ def getParamsAllKeys() -> list[str]:
 
 @dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
-  try:
-    params = Params()
-    params_dict: dict[str, bytes] = {key: params.get(key) or b'' for key in params_keys}
+  params = Params()
+  def get_param_as_byte(param_name: str) -> bytes:
+    param = params.get(param_name)
+    param_type = params.get_type(param_name)
 
-    # Compress the values before encoding to base64 as output from params.get is bytes and same for compression
-    if compression:
-      params_dict = {key: gzip.compress(value) for key, value in params_dict.items()}
+    if param_type == ParamKeyType.BYTES:
+      return param
+    elif param_type == ParamKeyType.JSON:
+      return json.dumps(param).encode('utf-8')
+    return str(param).encode('utf-8')
+
+  try:
+    param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
+    params_dict: dict[str, list[dict[str, str]]] = {"params": [
+      {
+        "key": key,
+        "value": gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key),
+        "type": params.get_type(key),
+        "is_compressed": compression
+      } for key in param_keys_validated
+    ]}
 
     # Last step is to encode the values to base64 and decode to utf-8 for JSON serialization
-    return {key: base64.b64encode(value).decode('utf-8') for key, value in params_dict.items()}
+    return {param.get('key'): base64.b64encode(param.get('value')).decode('utf-8') for param in params_dict.get("params")}
 
   except Exception as e:
     cloudlog.exception("sunnylinkd.getParams.exception", e)
