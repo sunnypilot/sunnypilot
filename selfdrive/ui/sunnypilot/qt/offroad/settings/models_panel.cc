@@ -134,9 +134,9 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
 
   // Software delay control
   delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
-                                     tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
-                                        "\nThe default software delay value is 0.2"),
-                                     "", {5, 50}, 1, false, nullptr, true, true);
+                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
+                                         "\nThe default software delay value is 0.2"),
+                                      "", {5, 50}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
     float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
