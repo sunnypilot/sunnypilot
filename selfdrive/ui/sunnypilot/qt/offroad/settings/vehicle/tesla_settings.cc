@@ -8,6 +8,15 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/tesla_settings.h"
 
 TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
+	coopSteeringToggle = new ParamControlSP(
+		"TeslaCoopSteering",
+		tr("Cooperative Steering"),
+    // TODO:AMY USE USER METRICS AND GET CORRECT MAX VALUES
+		tr("Allows the driver to provide steering input while openpilot is engaged. Only works between 15 and 60mph"),
+		"",
+		this
+	);
+	list->addItem(coopSteeringToggle);
 }
 
 void TeslaSettings::updateSettings() {
