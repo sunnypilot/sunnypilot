@@ -15,9 +15,9 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
 	Params params;
 	bool is_metric = params.getBool("IsMetric");
   QString unit = is_metric ? "km/h" : "mph";
-  float display_value = stored_mph;
+  float display_value = coopSteeringMinMph;
   if (is_metric) {
-    display_value = stored_mph * MILE_TO_KM;
+    display_value = coopSteeringMinMph * MILE_TO_KM;
   }
 	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
 																.arg(display_value)
