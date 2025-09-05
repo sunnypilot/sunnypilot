@@ -20,6 +20,7 @@ from openpilot.system.version import get_version
 from cereal import messaging, custom
 from sunnypilot.sunnylink.api import SunnylinkApi
 from sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
+from sunnypilot.sunnylink.utils import get_param_as_byte
 
 
 class OperationType(Enum):
@@ -74,7 +75,7 @@ class BackupManagerSP:
     config_data = {}
     params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyFlag.BACKUP)]
     for param in params_to_backup:
-      value = str(self.params.get(param)).encode('utf-8')
+      value = get_param_as_byte(param)
       if value is not None:
         config_data[param] = base64.b64encode(value).decode('utf-8')
     return config_data
@@ -113,6 +114,7 @@ class BackupManagerSP:
       payload = json.loads(json.dumps(backup_info.to_dict(), cls=SnakeCaseEncoder))
       self._update_progress(75.0, OperationType.BACKUP)
 
+      cloudlog.debug(f"Uploading backup with payload: {json.dumps(payload)}")
       # Upload to sunnylink
       result = self.api.api_get(
         f"backup/{self.device_id}",
@@ -124,9 +126,11 @@ class BackupManagerSP:
       if result:
         self.backup_status = custom.BackupManagerSP.Status.completed
         self._update_progress(100.0, OperationType.BACKUP)
+        cloudlog.info("Backup successfully created and uploaded")
       else:
         self.backup_status = custom.BackupManagerSP.Status.failed
         self.last_error = "Failed to upload backup"
+        cloudlog.error(result)
         self._report_status()
 
       return bool(self.backup_status == custom.BackupManagerSP.Status.completed)
@@ -264,8 +268,8 @@ class BackupManagerSP:
         # Check for backup command
         if self.params.get_bool("BackupManager_CreateBackup"):
           try:
-            await self.create_backup()
-            reset_progress = True
+            if await self.create_backup():
+              reset_progress = True
           finally:
             self.params.remove("BackupManager_CreateBackup")
 
