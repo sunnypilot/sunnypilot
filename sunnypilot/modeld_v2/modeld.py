@@ -131,12 +131,6 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs:
-      idx_n = outputs['lat_planner_solution'].shape[1]  # Reshaped by parse_mdn from slice(5990, 6254)= (1,33,4)
-      t_idxs = [10.0 * ((i / (idx_n - 1)) ** 2) for i in range(idx_n)]
-      inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
-      inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
-
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
@@ -322,15 +316,8 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    conditional_inputs = {
-      "lateral_control_params": lambda v_ego=v_ego, lat_delay=lat_delay: np.array([v_ego, lat_delay], dtype=np.float32),
-      "driving_style": lambda: np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32),
-      "nav_features": lambda: np.zeros(model.model_runner.input_shapes.get('nav_features')[1], dtype=np.float32),
-      "nav_instructions": lambda: np.zeros(model.model_runner.input_shapes.get('nav_instructions')[1], dtype=np.float32),
-    }
-    for key, value in conditional_inputs.items():
-      if key in model.numpy_inputs:
-        inputs[key] = value()
+    if "lateral_control_params" in model.numpy_inputs.keys():
+      inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
