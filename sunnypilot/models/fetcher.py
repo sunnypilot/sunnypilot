@@ -148,7 +148,7 @@ class ModelFetcher:
     except SSLError as e:
       cloudlog.warning(f"SSL error while fetching models: {e}")
     except RequestException as e:
-      cloudlog.exception(f"Request transport error while fetching models: {e}")
+      cloudlog.warning(f"Request transport error while fetching models: {e}")
     except Exception as e:
       cloudlog.exception(f"Unexpected error fetching models: {e}")
 
