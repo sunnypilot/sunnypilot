@@ -85,7 +85,8 @@ class OpenpilotMetadata:
 
   @property
   def sunnypilot_remote(self) -> bool:
-    return self.git_normalized_origin == "github.com/sunnypilot/sunnypilot"
+    return self.git_normalized_origin in ("github.com/sunnypilot/sunnypilot",
+                                          "github.com/sunnypilot/openpilot")
 
   @property
   def git_normalized_origin(self) -> str:
