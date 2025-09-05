@@ -11,14 +11,16 @@
 #include "common/util.h"
 
 TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
-	constexpr int coopSteeringMinMph = 15; // minimum speed for cooperative steering (enforced by Tesla firmware)
+	constexpr int coopSteeringMinKmh = 25; // minimum speed for cooperative steering (enforced by Tesla firmware)
 	Params params;
 	bool is_metric = params.getBool("IsMetric");
   QString unit = is_metric ? "km/h" : "mph";
-  float display_value = coopSteeringMinMph;
+  int display_value;
   if (is_metric) {
-    display_value = coopSteeringMinMph * MILE_TO_KM;
-  }
+		display_value = coopSteeringMinKmh;
+	} else {
+    display_value = static_cast<int>(std::round(coopSteeringMinKmh * KM_TO_MILE));
+	}
 	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
 																.arg(display_value)
 																.arg(unit);
