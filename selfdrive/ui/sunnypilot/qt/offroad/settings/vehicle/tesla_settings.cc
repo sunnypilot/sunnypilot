@@ -21,7 +21,7 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
 	} else {
     display_value = static_cast<int>(std::round(coopSteeringMinKmh * KM_TO_MILE));
 	}
-	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
+	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2. Always enabled when in MADS.")
 																.arg(display_value)
 																.arg(unit);
 
