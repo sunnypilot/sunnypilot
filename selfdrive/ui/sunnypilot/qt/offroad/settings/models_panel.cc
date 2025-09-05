@@ -426,19 +426,19 @@ void ModelsPanel::updateLabels() {
   if (lagdEnabled) {
     auto liveDelayBytes = params.get("LiveDelay");
     if (!liveDelayBytes.empty()) {
-      AlignedBuffer aligned_buf;
-      capnp::FlatArrayMessageReader cmsg(aligned_buf.align(liveDelayBytes.data(), liveDelayBytes.size()));
+      AlignedBuffer aligned_buf_ld;
+      capnp::FlatArrayMessageReader cmsg(aligned_buf_ld.align(liveDelayBytes.data(), liveDelayBytes.size()));
       cereal::LiveDelayData::Reader LD = cmsg.getRoot<cereal::LiveDelayData>();
 
-      float lateralDelay = LD.getLateralDelay();
+      auto lateralDelay = LD.getLateralDelay();
       desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
               .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 3));
     }
   } else {
     auto carParamsBytes = params.get("CarParamsPersistent");
     if (!carParamsBytes.empty()) {
-      AlignedBuffer aligned_buf;
-      capnp::FlatArrayMessageReader cmsg(aligned_buf.align(carParamsBytes.data(), carParamsBytes.size()));
+      AlignedBuffer aligned_buf_cp;
+      capnp::FlatArrayMessageReader cmsg(aligned_buf_cp.align(carParamsBytes.data(), carParamsBytes.size()));
       cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
       float steerDelay = CP.getSteerActuatorDelay();
