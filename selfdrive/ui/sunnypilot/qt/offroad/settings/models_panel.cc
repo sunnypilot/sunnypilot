@@ -419,8 +419,6 @@ void ModelsPanel::updateLabels() {
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  AlignedBuffer aligned_buf;
-
   // Update lagdToggle description with current value
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
@@ -428,6 +426,7 @@ void ModelsPanel::updateLabels() {
   if (lagdEnabled) {
     auto liveDelayBytes = params.get("LiveDelay");
     if (!liveDelayBytes.empty()) {
+      AlignedBuffer aligned_buf;
       capnp::FlatArrayMessageReader cmsg(aligned_buf.align(liveDelayBytes.data(), liveDelayBytes.size()));
       cereal::LiveDelayData::Reader LD = cmsg.getRoot<cereal::LiveDelayData>();
 
@@ -438,6 +437,7 @@ void ModelsPanel::updateLabels() {
   } else {
     auto carParamsBytes = params.get("CarParamsPersistent");
     if (!carParamsBytes.empty()) {
+      AlignedBuffer aligned_buf;
       capnp::FlatArrayMessageReader cmsg(aligned_buf.align(carParamsBytes.data(), carParamsBytes.size()));
       cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
