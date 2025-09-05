@@ -51,7 +51,7 @@
     "_comment": "Set extra field to lateral or longitudinal."
   },
   "Offroad_TiciSupport": {
-    "text": "Unsupported branch detected. The latest update on \"%1\" is no longer supported on your comma three. Please go to \"Device\" > \"Software\" and install a supported branch with \"-tici\" in the branch name for your comma three.",
+    "text": "<b>Unsupported branch detected</b> - The current version of <b><u>%1</u></b> branch is no longer supported on the comma three. Please go to <b>[Device > Software]</b> and install a supported branch with <b><u>-tici</u></b> in the branch name for the comma three.",
     "severity": 1,
     "_comment": "Set extra field to the current branch name."
   }
