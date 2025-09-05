@@ -11,7 +11,7 @@
 #include "common/util.h"
 
 TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
-	constexpr int coopSteeringMinKmh = 25; // minimum speed for cooperative steering (enforced by Tesla firmware)
+	constexpr int coopSteeringMinKmh = 23; // minimum speed for cooperative steering (enforced by Tesla firmware)
 	Params params;
 	bool is_metric = params.getBool("IsMetric");
   QString unit = is_metric ? "km/h" : "mph";
