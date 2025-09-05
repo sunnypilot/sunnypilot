@@ -12,11 +12,11 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   QObject::disconnect(targetBranchBtn, nullptr, nullptr, nullptr);
   connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
     InputDialog d(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
-      d.setMinLength(0);
-      const int ret = d.exec();
-      if (ret) {
-        searchBranches(d.text());
-      }
+    d.setMinLength(0);
+    const int ret = d.exec();
+    if (ret) {
+      searchBranches(d.text());
+    }
   });
 
   // Disable Updates toggle
