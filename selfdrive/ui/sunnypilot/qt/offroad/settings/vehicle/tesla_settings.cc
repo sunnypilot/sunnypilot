@@ -7,13 +7,26 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/tesla_settings.h"
 #include "selfdrive/ui/ui.h" // for uiState() signal offroadTransition
+#include "common/params.h"
+#include "common/util.h"
 
 TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
+	constexpr int coopSteeringMinMph = 15; // minimum speed for cooperative steering (enforced by Tesla firmware)
+	Params params;
+	bool is_metric = params.getBool("IsMetric");
+  QString unit = is_metric ? "km/h" : "mph";
+  float display_value = stored_mph;
+  if (is_metric) {
+    display_value = stored_mph * MILE_TO_KM;
+  }
+	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
+																.arg(threshold_display)
+																.arg(unit);
+
 	coopSteeringToggle = new ParamControlSP(
 		"TeslaCoopSteering",
 		tr("Cooperative Steering"),
-    // TODO:AMY USE USER METRICS AND GET CORRECT MAX VALUES
-		tr("Allows the driver to provide steering input while openpilot is engaged. Only works between 15 and 60 mph."),
+		coop_desc,
 		"",
 		this
 	);
