@@ -134,7 +134,9 @@ class BuildMetadata:
 
   @property
   def channel_type(self) -> str:
-    if self.development_channel:
+    if self.channel.endswith("-tici"):
+      return "tici"
+    elif self.development_channel:
       return "development"
     elif self.channel.startswith("staging-"):
       return "staging"

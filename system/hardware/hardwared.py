@@ -326,11 +326,15 @@ def hardware_thread(end_event, hw_queue) -> None:
     startup_conditions["not_always_offroad"] = not offroad_mode
     onroad_conditions["not_always_offroad"] = not offroad_mode
 
-    # if TICI is detected, prevent going onroad and inform users to migrate to a supported branch
+    # if an unsupported device and branch is detected, going onroad is blocked
+    # only allow going onroad when:
+    # - TIZI, or
+    # - TICI and channel_type is "tici"
     build_metadata = get_build_metadata()
-    startup_conditions["not_tici"] = not TICI
-    onroad_conditions["not_tici"] = not TICI
-    set_offroad_alert("Offroad_TiciSupport", TICI, extra_text=build_metadata.channel)
+    is_unsupported_combo = TICI and build_metadata.channel_type != "tici"
+    startup_conditions["not_tici"] = not is_unsupported_combo
+    onroad_conditions["not_tici"] = not is_unsupported_combo
+    set_offroad_alert("Offroad_TiciSupport", is_unsupported_combo, extra_text=build_metadata.channel)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
