@@ -21,7 +21,7 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
         }
       }
 
-      for (QString b : {current.c_str(), "staging-tici", "master-tici"}) {
+      for (QString b : {current.c_str(), "master-tici", "staging-tici", "release-tici"}) {
         auto i = branches.indexOf(b);
         if (i >= 0) {
           branches.removeAt(i);
