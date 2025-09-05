@@ -43,6 +43,7 @@ jobs:
       with:
         submodules: true
     - name: uv lock
+      if: github.repository == 'commaai/openpilot'
       run: |
         python3 -m ensurepip --upgrade
         pip3 install uv
