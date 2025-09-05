@@ -20,7 +20,7 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
     display_value = stored_mph * MILE_TO_KM;
   }
 	const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
-																.arg(threshold_display)
+																.arg(display_value)
 																.arg(unit);
 
 	coopSteeringToggle = new ParamControlSP(
