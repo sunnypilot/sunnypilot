@@ -3,7 +3,7 @@ name: cereal validation
 on:
   push:
     branches:
-      - master
+      - master-tici
   pull_request:
     paths:
       - 'cereal/**'
@@ -16,7 +16,7 @@ on:
         type: string
 
 concurrency:
-  group: cereal-validation-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  group: cereal-validation-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master-tici' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
   cancel-in-progress: true
 
 env:

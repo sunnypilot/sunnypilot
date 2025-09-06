@@ -28,7 +28,7 @@ jobs:
           title: "[bot] Update translations"
           body: "Automatic PR from repo-maintenance -> update_translations"
           branch: "update-translations"
-          base: "master"
+          base: "master-tici"
           delete-branch: true
           labels: bot
 
@@ -68,7 +68,7 @@ jobs:
         commit-message: Update Python packages
         title: '[bot] Update Python packages'
         branch: auto-package-updates
-        base: master
+        base: master-tici
         delete-branch: true
         body: 'Automatic PR from repo-maintenance -> package_updates'
         labels: bot
