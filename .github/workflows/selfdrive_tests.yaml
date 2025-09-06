@@ -19,7 +19,7 @@ concurrency:
 
 env:
   PYTHONWARNINGS: error
-  BASE_IMAGE: sunnypilot-base
+  BASE_IMAGE: sunnypilot-tici-base
   AZURE_TOKEN: ${{ secrets.AZURE_COMMADATACI_OPENPILOTCI_TOKEN }}
 
   DOCKER_LOGIN: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}

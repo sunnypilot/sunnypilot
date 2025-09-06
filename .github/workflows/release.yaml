@@ -10,7 +10,7 @@ jobs:
     env:
       ImageOS: ubuntu24
     container:
-      image: ghcr.io/sunnypilot/sunnypilot-base:latest
+      image: ghcr.io/sunnypilot/sunnypilot-tici-base:latest
     runs-on: ubuntu-latest
     if: github.repository == 'sunnypilot/sunnypilot'
     permissions:
