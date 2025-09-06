@@ -6,7 +6,6 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/tesla_settings.h"
-#include "selfdrive/ui/ui.h" // for uiState() signal offroadTransition
 #include "common/params.h"
 #include "common/util.h"
 
