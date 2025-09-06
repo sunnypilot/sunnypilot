@@ -29,6 +29,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
+      "TurnSignals",
+      tr("Show Turn Signals"),
+      tr("Enabling this feature will display turn signals on the UI."),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
+    {
       "RainbowMode",
       tr("Enable Tesla Rainbow Mode"),
       RainbowizeWords(tr("A beautiful rainbow effect on the path the model wants to take.")) + "<br/><i>" + tr("It")+ " <b>" + tr("does not") + "</b> " + tr("affect driving in any way.") + "</i>",
