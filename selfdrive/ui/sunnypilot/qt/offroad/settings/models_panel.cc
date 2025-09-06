@@ -426,11 +426,8 @@ void ModelsPanel::updateLabels() {
   if (lagdEnabled) {
     auto liveDelayBytes = params.get("LiveDelay");
     if (!liveDelayBytes.empty()) {
-      AlignedBuffer aligned_buf_ld;
-      capnp::FlatArrayMessageReader cmsg(aligned_buf_ld.align(liveDelayBytes.data(), liveDelayBytes.size()));
-      cereal::LiveDelayData::Reader LD = cmsg.getRoot<cereal::LiveDelayData>();
-
-      auto lateralDelay = LD.getLateralDelay();
+      auto LD = loadCerealEvent(params, "LiveDelay");
+      float lateralDelay = LD->getLiveDelay().getLateralDelay();
       desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
               .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 3));
     }
