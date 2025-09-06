@@ -20,6 +20,11 @@ class ParamStore:
     universal_params: list[str] = []
     brand_params: list[str] = []
 
+    if CP.brand == "tesla":
+      brand_params.extend([
+        "TeslaCoopSteering",
+      ])
+
     self.keys = universal_params + brand_params
     self.values = {}
     self.cached_params_list: list[capnp.lib.capnp._DynamicStructBuilder] | None = None
