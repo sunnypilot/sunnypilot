@@ -1,35 +1,35 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
- <tabbed_widget name="Main Window" parent="main_window">
+ <tabbed_widget parent="main_window" name="Main Window">
   <Tab containers="1" tab_name="actuator data">
    <Container>
     <DockSplitter orientation="-" sizes="0.25;0.25;0.25;0.25" count="4">
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="0.100000" right="1089.390562" bottom="-0.100000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.100000" left="301.990881" top="0.100000" right="462.962504"/>
        <limitY/>
-       <curve color="#17becf" name="/carControl/actuators/torque"/>
+       <curve name="/carControl/actuators/torque" color="#17becf"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="-57.706462" right="1089.390562" bottom="-64.261323"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-130.920132" left="301.990881" top="103.993176" right="462.962504"/>
        <limitY/>
-       <curve color="#1f77b4" name="/carControl/actuators/steeringAngleDeg"/>
+       <curve name="/carControl/actuators/steeringAngleDeg" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="13.550727" right="1089.390562" bottom="13.079047"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.604818" left="301.990881" top="24.797527" right="462.962504"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/carState/vEgoRaw"/>
+       <curve name="/carState/vEgoRaw" color="#ff7f0e"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="0.017108" right="1089.390562" bottom="0.015457"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.037812" left="301.990881" top="0.047261" right="462.962504"/>
        <limitY/>
-       <curve color="#f14cc1" name="/carControl/actuators/curvature"/>
+       <curve name="/carControl/actuators/curvature" color="#f14cc1"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -39,55 +39,54 @@
    <Container>
     <DockSplitter orientation="-" sizes="0.142857;0.142857;0.142857;0.142857;0.142857;0.142857;0.142857" count="7">
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="0.618500" right="1089.390562" bottom="0.345500"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#1f77b4" name="/can/128/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal"/>
+       <curve name="/can/128/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="-47.925000" right="1089.390562" bottom="-51.075000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-128.740000" left="301.990881" top="103.940000" right="462.962504"/>
        <limitY/>
-       <curve color="#29d627" name="/can/128/LKAS_ALT/ADAS_StrAnglReqVal"/>
-       <curve color="#b41f32" name="/can/192/LKAS_ALT/ADAS_StrAnglReqVal"/>
+       <curve name="/can/128/LKAS_ALT/ADAS_StrAnglReqVal" color="#29d627"/>
+       <curve name="/can/192/LKAS_ALT/ADAS_StrAnglReqVal" color="#b41f32"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="1.025000" right="1089.390562" bottom="-0.025000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#d62728" name="/carState/steeringPressed"/>
+       <curve name="/carState/steeringPressed" color="#d62728"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="2.100000" right="1089.390562" bottom="1.900000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="0.975000" left="301.990881" top="2.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#1f77b4" name="/sendcan/0/LKAS_ALT/LKAS_ANGLE_ACTIVE"/>
+       <curve name="/sendcan/0/LKAS_ALT/LKAS_ANGLE_ACTIVE" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="1.025000" right="1089.390562" bottom="-0.025000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#d62728" name="/carState/steerFaultTemporary"/>
-       <curve color="#1ac938" name="/carControl/latActive"/>
+       <curve name="/carState/steerFaultTemporary" color="#d62728"/>
+       <curve name="/carControl/latActive" color="#1ac938"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="0.100000" right="1089.390562" bottom="-0.100000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/can/1/MDPS/LKA_ANGLE_FAULT"/>
-       <curve color="#f14cc1" name="/can/1/CCNC_0x161/DAW_ICON"/>
+       <curve name="/can/1/CCNC_0x161/DAW_ICON" color="#f14cc1"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="575.775000" right="1089.390562" bottom="543.225000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-14.375000" left="301.990881" top="589.375000" right="462.962504"/>
        <limitY/>
-       <curve color="#1f77b4" name="/pandaStates/0/safetyTxBlocked"/>
+       <curve name="/pandaStates/0/safetyTxBlocked" color="#1f77b4"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -97,16 +96,16 @@
    <Container>
     <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="429.901019" top="253.175000" right="590.696728" bottom="-6.175000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-6.175000" left="429.901019" top="253.175000" right="590.696728"/>
        <limitY/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="7.607500" right="1089.390562" bottom="-38.907499"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-24.190000" left="301.990881" top="21.590000" right="462.962504"/>
        <limitY/>
-       <curve color="#1ac938" name="/carState/steeringTorqueEps"/>
+       <curve name="/carState/steeringTorqueEps" color="#1ac938"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -114,48 +113,38 @@
   </Tab>
   <Tab containers="1" tab_name="tab2">
    <Container>
-    <DockSplitter orientation="-" sizes="0.2;0.2;0.2;0.2;0.2" count="5">
+    <DockSplitter orientation="-" sizes="0.25;0.25;0.25;0.25" count="4">
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Dots">
-       <range left="1088.568879" top="0.758032" right="1089.390562" bottom="0.089680"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Dots">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#9467bd" name="/sendcan/0/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal"/>
-       <curve color="#17becf" name="/can/1/LFA_ALT/ADAS_ACIAnglTqRedcGainVal"/>
-       <curve color="#1f77b4" name="/can/128/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal"/>
-       <curve color="#d62728" name="/can/192/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal"/>
+       <curve name="/sendcan/0/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal" color="#9467bd"/>
+       <curve name="/can/1/LFA_ALT/ADAS_ACIAnglTqRedcGainVal" color="#17becf"/>
+       <curve name="/can/128/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal" color="#1f77b4"/>
+       <curve name="/can/192/LKAS_ALT/ADAS_ACIAnglTqRedcGainVal" color="#d62728"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Dots">
-       <range left="1088.568879" top="2.050000" right="1089.390562" bottom="-0.050000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Dots">
+       <range bottom="0.975000" left="301.990881" top="2.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#ff0e22" name="/can/1/MDPS/LKA_ANGLE_FAULT"/>
-       <curve color="#b8c91a" name="/can/128/LKAS_ALT/LKAS_ANGLE_ACTIVE"/>
-       <curve color="#ff7f0e" name="/can/192/LKAS_ALT/LKAS_ANGLE_ACTIVE"/>
+       <curve name="/can/128/LKAS_ALT/LKAS_ANGLE_ACTIVE" color="#b8c91a"/>
+       <curve name="/can/192/LKAS_ALT/LKAS_ANGLE_ACTIVE" color="#ff7f0e"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Dots">
-       <range left="1088.568879" top="-44.792500" right="1089.390562" bottom="-53.507499"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-0.025000" left="301.990881" top="1.025000" right="462.962504"/>
        <limitY/>
-       <curve color="#f14cc1" name="/carState/steeringAngleDeg"/>
-       <curve color="#9467bd" name="/carOutput/actuatorsOutput/steeringAngleDeg"/>
-       <curve color="#17becf" name="/can/192/LKAS_ALT/ADAS_StrAnglReqVal"/>
-       <curve color="#bcbd22" name="/can/128/LKAS_ALT/ADAS_StrAnglReqVal"/>
+       <curve name="/can/1/CCNC_0x161/DAW_ICON" color="#f14cc1"/>
+       <curve name="/carState/steerFaultTemporary" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
-       <range left="1088.568879" top="0.100000" right="1089.390562" bottom="-0.100000"/>
+      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Dots">
+       <range bottom="-14.375000" left="301.990881" top="589.375000" right="462.962504"/>
        <limitY/>
-       <curve color="#f14cc1" name="/can/1/CCNC_0x161/DAW_ICON"/>
-      </plot>
-     </DockArea>
-     <DockArea name="...">
-      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Dots">
-       <range left="1088.568879" top="575.775000" right="1089.390562" bottom="543.225000"/>
-       <limitY/>
-       <curve color="#bcbd22" name="/pandaStates/0/safetyTxBlocked"/>
+       <curve name="/pandaStates/0/safetyTxBlocked" color="#bcbd22"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -168,7 +157,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <default time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad Rlog"/>
