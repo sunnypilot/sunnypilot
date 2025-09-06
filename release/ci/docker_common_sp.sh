@@ -1,9 +1,11 @@
 if [ "$1" = "base" ]; then
-  export DOCKER_IMAGE=sunnypilot-tici-base
+  export DOCKER_IMAGE=sunnypilot-base
   export DOCKER_FILE=Dockerfile.sunnypilot_base
+  export NEW_DOCKER_IMAGE=sunnypilot-tici-base
 elif [ "$1" = "prebuilt" ]; then
-  export DOCKER_IMAGE=sunnypilot-tici-prebuilt
+  export DOCKER_IMAGE=sunnypilot-prebuilt
   export DOCKER_FILE=Dockerfile.sunnypilot
+  export NEW_DOCKER_IMAGE=sunnypilot-tici-base
 else
   echo "Invalid docker build image: '$1'"
   exit 1
