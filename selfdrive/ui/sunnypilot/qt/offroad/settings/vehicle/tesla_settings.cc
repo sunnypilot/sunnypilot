@@ -34,14 +34,7 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
 	);
 	list->addItem(coopSteeringToggle);
 	coopSteeringToggle->showDescription();
-
-	QObject::connect(uiState(), &UIState::offroadTransition, this, &TeslaSettings::offroadTransition);
-	offroadTransition(!uiState()->scene.started);
 }
 
 void TeslaSettings::updateSettings() {
-}
-
-void TeslaSettings::offroadTransition(bool offroad) {
-	coopSteeringToggle->setEnabled(offroad);
 }

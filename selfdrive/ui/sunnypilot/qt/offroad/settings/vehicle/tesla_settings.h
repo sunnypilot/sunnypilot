@@ -23,7 +23,4 @@ public:
 
 private:
   ParamControlSP *coopSteeringToggle = nullptr;
-
-private slots:
-  void offroadTransition(bool offroad);
 };
