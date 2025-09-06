@@ -15,7 +15,7 @@ env:
 
 on:
   push:
-    branches: [ master, master-dev-c3-new ]
+    branches: [ master, master-dev ]
     tags: [ 'release/*' ]
   pull_request_target:
     types: [ labeled ]

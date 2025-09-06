@@ -21,6 +21,7 @@ SP_BRANCH_MIGRATIONS = {
   ("tici", "dev-c3-new"): "staging-tici",
   ("tici", "master"): "master-tici",
   ("tici", "master-dev-c3-new"): "master-tici",
+  ("tizi", "master-dev-c3-new"): "master-dev",
 }
 
 BUILD_METADATA_FILENAME = "build.json"
