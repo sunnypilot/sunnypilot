@@ -8,14 +8,14 @@ env:
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
   
   # Branch configurations
-  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master' }} # vars are set on repo settings.
+  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master-tici' }} # vars are set on repo settings.
   
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
 
 on:
   push:
-    branches: [ master, master-dev-c3-new ]
+    branches: [ master-tici ]
     tags: [ 'release/*' ]
   pull_request_target:
     types: [ labeled ]

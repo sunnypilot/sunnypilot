@@ -2,19 +2,19 @@ name: "ui preview"
 on:
   push:
     branches:
-      - master
+      - master-tici
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
     branches:
-      - 'master'
+      - 'master-tici'
     paths:
       - 'selfdrive/ui/**'
   workflow_dispatch:
 
 env:
   UI_JOB_NAME: "Create UI Report"
-  REPORT_NAME: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'master' || github.event.number }}
-  SHA: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.sha || github.event.pull_request.head.sha }}
+  REPORT_NAME: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master-tici' && 'master-tici' || github.event.number }}
+  SHA: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master-tici' && github.sha || github.event.pull_request.head.sha }}
   BRANCH_NAME: "openpilot/pr-${{ github.event.number }}"
 
 jobs:
@@ -55,7 +55,7 @@ jobs:
           name: report-1-${{ env.REPORT_NAME }}
           path: ${{ github.workspace }}/pr_ui
 
-      - name: Getting master ui
+      - name: Getting master-tici ui
         uses: actions/checkout@v4
         with:
           repository: sunnypilot/ci-artifacts
@@ -63,8 +63,8 @@ jobs:
           path: ${{ github.workspace }}/master_ui
           ref: openpilot_master_ui
 
-      - name: Saving new master ui
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      - name: Saving new master-tici ui
+        if: github.ref == 'refs/heads/master-tici' && github.event_name == 'push'
         working-directory: ${{ github.workspace }}/master_ui
         run: |
           git checkout --orphan=new_master_ui
@@ -93,9 +93,9 @@ jobs:
 
           for ((i=0; i<${#A[*]}; i=i+1));
           do
-            # Check if the master file exists
+            # Check if the master-tici file exists
             if [ ! -f "${{ github.workspace }}/master_ui/${A[$i]}.png" ]; then
-              # This is a new file in PR UI that doesn't exist in master
+              # This is a new file in PR UI that doesn't exist in master-tici
               DIFF="${DIFF}<details open>"
               DIFF="${DIFF}<summary>${A[$i]} : \$\${\\color{cyan}\\text{NEW}}\$\$</summary>"
               DIFF="${DIFF}<table>"
@@ -118,7 +118,7 @@ jobs:
               DIFF="${DIFF}<table>"
 
               DIFF="${DIFF}<tr>"
-              DIFF="${DIFF}  <td> master <img src=\"https://raw.githubusercontent.com/sunnypilot/ci-artifacts/${{ env.BRANCH_NAME }}/${A[$i]}_master_ref.png\"> </td>"
+              DIFF="${DIFF}  <td> master-tici <img src=\"https://raw.githubusercontent.com/sunnypilot/ci-artifacts/${{ env.BRANCH_NAME }}/${A[$i]}_master_ref.png\"> </td>"
               DIFF="${DIFF}  <td> proposed <img src=\"https://raw.githubusercontent.com/sunnypilot/ci-artifacts/${{ env.BRANCH_NAME }}/${A[$i]}.png\"> </td>"
               DIFF="${DIFF}</tr>"
 
