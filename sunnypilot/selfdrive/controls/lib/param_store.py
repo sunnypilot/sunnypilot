@@ -34,7 +34,7 @@ class ParamStore:
   def update(self, params: Params) -> None:
     if self.frame % 300 == 0:
       old_values = dict(self.values)
-      self.values = {k: params.get(k) or "0" for k in self.keys}
+      self.values = {k: str(params.get(k) or "0") for k in self.keys}
       if old_values != self.values:
         self.cached_params_list = None
 
