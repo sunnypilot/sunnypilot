@@ -16,11 +16,9 @@ struct ParamConfig {
 // Clipping limits on all tuning params to prevent unsafe values.
 static const std::vector<ParamConfig> PARAM_CONFIGS = {
   {"LongTuningAccelMax", QObject::tr("Acceleration Max"), QObject::tr("Acceleration limit (m/s^2)"), "2.00", 0.5f, 2.0f, 0.1f},
-  {"LongTuningVEgoStopping", QObject::tr("Stopping Threshold"), QObject::tr("Velocity threshold for stopping behavior (m/s)"), "0.25", 0.05f, 0.5f, 0.01f},
-  {"LongTuningStoppingDecelRate", QObject::tr("Stopping Decel Rate"), QObject::tr("Deceleration rate when stopping (m/s^2)"), "0.40", 0.01f, 0.8f, 0.01f},
   {"LongTuningMinUpperJerk", QObject::tr("Min Upper Jerk"), QObject::tr("Minimum accel jerk limit (m/s^3)"), "0.50", 0.5f, 3.0f, 0.1f},
-  {"LongTuningMinLowerJerk", QObject::tr("Min Lower Jerk"), QObject::tr("Minimum braking jerk limit (m/s^3)"), "0.50", 0.5f, 8.0f, 0.1f},
-  {"LongTuningJerkLimits", QObject::tr("Dynamic Tune Jerk Max"), QObject::tr("Maximum lower jerk limit the tune cannot exceed (m/s^3)"), "4.00", 2.0f, 8.0f, 0.1f},
+  {"LongTuningMinLowerJerk", QObject::tr("Min Lower Jerk"), QObject::tr("Minimum braking jerk limit (m/s^3)"), "0.50", 0.5f, 5.0f, 0.1f},
+  {"LongTuningJerkLimits", QObject::tr("Dynamic Tune Jerk Max"), QObject::tr("Maximum lower jerk limit the tune cannot exceed (m/s^3)"), "4.00", 2.0f, 5.0f, 0.1f},
 };
 
 QWidget* createButtonWidget(const QString &text, std::function<void()> callback, bool isPushButton = false) {

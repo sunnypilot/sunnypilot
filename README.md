@@ -22,34 +22,24 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
 ## Installation
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
+Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging-c3-new` branch.
+
+### If you want to use our newest branches (our rewrite)
+> [!TIP]
+>You can see the rewrite state on our [rewrite project board](https://github.com/orgs/sunnypilot/projects/2), and to install the new branches, you can use the following links
 
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```release-c3.sunnypilot.ai```.
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://staging-c3-new.sunnypilot.ai```.
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
   1. On the comma three, go to `Settings` ▶️ `Software`.
   2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
-  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `release-c3`
+  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging-c3-new`
 
-|    Branch    |         Installation URL         |
-|:------------:|:--------------------------------:|
-| `release-c3` | https://release-c3.sunnypilot.ai |
-| `staging-c3` | https://staging-c3.sunnypilot.ai |
-|   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
-
-### If you want to use our newest branches (our rewrite)
-> [!TIP]
->You can see the rewrite state on our [rewrite project board](https://github.com/orgs/sunnypilot/projects/2), and to install the new branches, you can use the following links
-
-
-> [!IMPORTANT]
-> It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
-> You can still restore the latest sunnylink backup made on the old branches.
 
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
@@ -59,12 +49,35 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 | `release-c3-new` |            **Not yet available**.             |
 
 > [!TIP]
+> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
+
+> [!NOTE]
 > Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+
+
+<details>
+
+<summary>Older legacy branches</summary>
+
+### If you want to use our older legacy branches (*not recommended*)
+
+> [**IMPORTANT**]
+> It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
+> You can still restore the latest sunnylink backup made on the old branches.
+
+|    Branch    |         Installation URL         |
+|:------------:|:--------------------------------:|
+| `release-c3` | https://release-c3.sunnypilot.ai |
+| `staging-c3` | https://staging-c3.sunnypilot.ai |
+|   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
+
+</details>
+
 
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `master-new` branch.
+Pull requests should be against the most current `master` branch.
 
 ## 📊 User Data
 
@@ -73,7 +86,7 @@ By default, sunnypilot uploads the driving data to comma servers. You can also a
 sunnypilot is open source software. The user is free to disable data collection if they wish to do so.
 
 sunnypilot logs the road-facing camera, CAN, GPS, IMU, magnetometer, thermal sensors, crashes, and operating system logs.
-The driver-facing camera is only logged if you explicitly opt-in in settings. The microphone is not recorded.
+The driver-facing camera and microphone are only logged if you explicitly opt-in in settings.
 
 By using this software, you understand that use of this software or its related services will generate certain types of user data, which may be logged and stored at the sole discretion of comma. By accepting this agreement, you grant an irrevocable, perpetual, worldwide right to comma for the use of this data.
 

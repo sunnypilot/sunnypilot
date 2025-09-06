@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from typing import Any
 
 from opendbc.car import structs
 from opendbc.car.interfaces import CarInterfaceBase
@@ -49,16 +50,17 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
 
 
-def get_init_params(params) -> list[dict[str, str]]:
-  keys: list = [
+def initialize_params(params) -> list[dict[str, Any]]:
+  keys: list = []
+
+  # hyundai
+  keys.extend([
     "HyundaiLongitudinalTuning",
     "LongTuningCustomToggle",
-    "LongTuningAccelMin",
-    "LongTuningVEgoStopping",
-    "LongTuningStoppingDecelRate",
+    "LongTuningAccelMax",
     "LongTuningMinUpperJerk",
     "LongTuningMinLowerJerk",
     "LongTuningJerkLimits",
-  ]
+  ])
 
-  return [{k: params.get(k, encoding='utf8') or "0"} for k in keys]
+  return [{k: params.get(k, return_default=True)} for k in keys]

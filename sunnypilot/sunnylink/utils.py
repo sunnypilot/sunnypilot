@@ -1,5 +1,6 @@
+import json
 from sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.common.params import Params
+from openpilot.common.params import Params, ParamKeyType
 from openpilot.system.version import is_prebuilt
 
 
@@ -7,7 +8,7 @@ def get_sunnylink_status(params=None) -> tuple[bool, bool]:
   """Get the status of Sunnylink on the device. Returns a tuple of (is_sunnylink_enabled, is_registered)."""
   params = params or Params()
   is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
+  is_registered = params.get("SunnylinkDongleId") not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
   return is_sunnylink_enabled, is_registered
 
 
@@ -51,7 +52,19 @@ def register_sunnylink():
 def get_api_token():
   """Get the API token for the device."""
   params = Params()
-  sunnylink_dongle_id = params.get("SunnylinkDongleId", encoding='utf-8')
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   token = sunnylink_api.get_token()
   print(f"API Token: {token}")
+
+
+def get_param_as_byte(param_name: str) -> bytes:
+  params = Params()
+  param = params.get(param_name)
+  param_type = params.get_type(param_name)
+
+  if param_type == ParamKeyType.BYTES:
+    return bytes(param)
+  elif param_type == ParamKeyType.JSON:
+    return json.dumps(param).encode('utf-8')
+  return str(param).encode('utf-8')

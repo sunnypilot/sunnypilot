@@ -13,17 +13,32 @@ def create_short_name(full_name):
   words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
 
   if len(words) == 1:
-    # If there's only one word, return it as is, lowercased, truncated to 8 characters
-    truncated = words[0][:8]
-    return truncated.lower() if truncated.isupper() else truncated
+    return words[0][:8].upper()
 
   # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1")
   if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
-    first_word = words[0].lower() if words[0].isupper() else words[0]
-    return (first_word + words[1])[:8]
+    return (words[0] + words[1])[:8].upper()
 
-  # Normal case: first letter and trailing numbers from each word
-  result = ''.join(word if word.isdigit() else word[0] + (re.search(r'\d+$', word) or [''])[0] for word in words)
+  result = ""
+  for word in words:
+    # Version or number patterns
+    if (re.match(r'^\d+[a-zA-Z]+$', word) or
+        re.match(r'^\d+[vVbB]\d+$', word) or
+        re.match(r'^[vVbB]\d+$', word) or
+        re.match(r'^\d{4}$', word)):
+      result += word.upper()
+    # All uppercase abbreviations (2-3 letters)
+    elif re.match(r'^[A-Z]{2,3}$', word):
+      result += word
+    # Letters+digits (for example tr15 rev2)
+    elif re.match(r'^[a-zA-Z]+[0-9]+$', word):
+      result += word[0].upper() + ''.join(re.findall(r'\d+', word))
+    elif word.isalpha():
+      result += word[0].upper()
+    elif word.isdigit():
+      result += word
+    else:
+      result += word[0].upper()
   return result[:8]
 
 
@@ -58,14 +73,14 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
     "artifact": {
       "file_name": tinygrad_file.name,
       "download_uri": {
-        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/<FILLME>",
+        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/",
         "sha256": tinygrad_hash
       }
     },
     "metadata": {
       "file_name": metadata_file.name,
       "download_uri": {
-        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/<FILLME>",
+        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/",
         "sha256": metadata_hash
       }
     }
@@ -83,12 +98,12 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "ref": upstream_branch,
     "environment": "development",
     "runner": "tinygrad",
-    "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "models": models,
-    "overrides": {},
     "index": -1,
     "minimum_selector_version": "-1",
     "generation": "-1",
+    "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "overrides": {},
+    "models": models,
   }
 
   # Write metadata to output_dir

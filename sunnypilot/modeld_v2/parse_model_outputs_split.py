@@ -88,37 +88,62 @@ class Parser:
     outs[name] = pred_mu_final.reshape(final_shape)
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
+  def is_mhp(self, outs, name, shape):
+    if self.check_missing(outs, name):
+      return False
+    if outs[name].shape[1] == 2 * shape:
+      return False
+    return True
+
+  def parse_dynamic_outputs(self, outs: dict[str, np.ndarray]) -> None:
+    if 'lead' in outs:
+      lead_mhp = self.is_mhp(outs, 'lead',
+                             SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH)
+      lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION) if lead_mhp else (0, 0)
+      lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH) if lead_mhp else \
+        (SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
+      self.parse_mdn('lead', outs, in_N=lead_in_N, out_N=lead_out_N, out_shape=lead_out_shape)
+    if 'plan' in outs:
+      plan_mhp = self.is_mhp(outs, 'plan', SplitModelConstants.IDX_N * SplitModelConstants.PLAN_WIDTH)
+      plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
+      self.parse_mdn('plan', outs, in_N=plan_in_N, out_N=plan_out_N,
+                     out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
+
   def split_outputs(self, outs: dict[str, np.ndarray]) -> None:
+    if 'desired_curvature' in outs:
+      self.parse_mdn('desired_curvature', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.DESIRED_CURV_WIDTH,))
+    if 'desire_pred' in outs:
+      self.parse_categorical_crossentropy('desire_pred', outs, out_shape=(SplitModelConstants.DESIRE_PRED_LEN,SplitModelConstants.DESIRE_PRED_WIDTH))
+    if 'desire_state' in outs:
+      self.parse_categorical_crossentropy('desire_state', outs, out_shape=(SplitModelConstants.DESIRE_PRED_WIDTH,))
     if 'lane_lines' in outs:
       self.parse_mdn('lane_lines', outs, in_N=0, out_N=0,
-                     out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+                    out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    if 'lane_lines_prob' in outs:
+      self.parse_binary_crossentropy('lane_lines_prob', outs)
+    if 'lead_prob' in outs:
+      self.parse_binary_crossentropy('lead_prob', outs)
+    if 'lat_planner_solution' in outs:
+      self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
+    if 'meta' in outs:
+      self.parse_binary_crossentropy('meta', outs)
+    if 'road_edges' in outs:
       self.parse_mdn('road_edges', outs, in_N=0, out_N=0,
-                     out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
-      self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
-                     out_shape=(SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
-      if 'sim_pose' in outs:
-        self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
-      for k in ['lead_prob', 'lane_lines_prob']:
-        self.parse_binary_crossentropy(k, outs)
+                    out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    if 'sim_pose' in outs:
+      self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
 
   def parse_vision_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     self.parse_mdn('pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
     self.parse_mdn('wide_from_device_euler', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.WIDE_FROM_DEVICE_WIDTH,))
     self.parse_mdn('road_transform', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
+    self.parse_dynamic_outputs(outs)
     self.split_outputs(outs)
-    self.parse_categorical_crossentropy('desire_pred', outs, out_shape=(SplitModelConstants.DESIRE_PRED_LEN,SplitModelConstants.DESIRE_PRED_WIDTH))
-    self.parse_binary_crossentropy('meta', outs)
     return outs
 
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
-                   out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
+    self.parse_dynamic_outputs(outs)
     self.split_outputs(outs)
-    if 'lat_planner_solution' in outs:
-      self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
-    if 'desired_curvature' in outs:
-      self.parse_mdn('desired_curvature', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.DESIRED_CURV_WIDTH,))
-    self.parse_categorical_crossentropy('desire_state', outs, out_shape=(SplitModelConstants.DESIRE_PRED_WIDTH,))
     return outs
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
