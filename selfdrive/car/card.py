@@ -89,7 +89,6 @@ class Car:
 
     is_release = self.params.get_bool("IsReleaseBranch")
 
-
     if CI is None:
       # wait for one pandaState and one CAN packet
       print("Waiting for CAN messages...")
