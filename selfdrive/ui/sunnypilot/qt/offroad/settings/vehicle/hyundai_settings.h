@@ -8,11 +8,13 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brand_settings_interface.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_live_tuning.h"
 
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 
 enum class LongitudinalTuningOption {
   OFF,
@@ -27,9 +29,18 @@ public:
   explicit HyundaiSettings(QWidget *parent = nullptr);
   void updateSettings() override;
 
+signals:
+  void liveTuningOpened();
+  void liveTuningClosed();
+
 private:
   bool has_longitudinal_control = false;
-  ButtonParamControl *longitudinalTuningToggle = nullptr;
+  ButtonParamControlSP *longitudinalTuningToggle = nullptr;
+  ParamControlSP *customTuningToggle = nullptr;
+  HyundaiLiveTuning *liveTuningWidget = nullptr;
+  QStackedLayout *main_layout = nullptr;
+  QWidget *settingsScreen = nullptr;
+  QWidget *customTuningButtonWidget = nullptr;
 
   static QString toggleDisableMsg(bool _offroad, bool _has_longitudinal_control) {
     if (!_has_longitudinal_control) {
@@ -37,10 +48,22 @@ private:
     }
 
     if (!_offroad) {
-      return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select an option.");
+      return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select all available options.");
     }
 
     return QString();
+  }
+
+  static QString customTuningWarningMsg() {
+    return tr("Warning: Deviating from the preset tune can introduce undesirable behavior. Use at your own risk.");
+  }
+
+  static QString customTuningToggleDescription() {
+    return tr("When enabled, custom values override the selected tuning mode. ") + customTuningWarningMsg();
+  }
+
+  static QString customTuningDisabledMsg() {
+    return tr("Custom tuning is only available when longitudinal tuning is set to Dynamic or Predictive mode.");
   }
 
   static QString longitudinalTuningDescription(LongitudinalTuningOption option = LongitudinalTuningOption::OFF) {
