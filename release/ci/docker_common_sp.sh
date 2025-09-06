@@ -1,11 +1,9 @@
 if [ "$1" = "base" ]; then
-  export DOCKER_IMAGE=sunnypilot-base
+  export DOCKER_IMAGE=sunnypilot-tici-base
   export DOCKER_FILE=Dockerfile.sunnypilot_base
-  export NEW_DOCKER_IMAGE=sunnypilot-tici-base
 elif [ "$1" = "prebuilt" ]; then
-  export DOCKER_IMAGE=sunnypilot-prebuilt
+  export DOCKER_IMAGE=sunnypilot-tici-prebuilt
   export DOCKER_FILE=Dockerfile.sunnypilot
-  export NEW_DOCKER_IMAGE=sunnypilot-tici-prebuilt
 else
   echo "Invalid docker build image: '$1'"
   exit 1
@@ -15,6 +13,6 @@ export DOCKER_REGISTRY=ghcr.io/sunnypilot
 export COMMIT_SHA=$(git rev-parse HEAD)
 
 TAG_SUFFIX=$2
-LOCAL_TAG=$NEW_DOCKER_IMAGE$TAG_SUFFIX
+LOCAL_TAG=$DOCKER_IMAGE$TAG_SUFFIX
 REMOTE_TAG=$DOCKER_REGISTRY/$LOCAL_TAG
 REMOTE_SHA_TAG=$DOCKER_REGISTRY/$LOCAL_TAG:$COMMIT_SHA
