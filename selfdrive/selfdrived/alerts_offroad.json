@@ -49,5 +49,10 @@
     "text": "openpilot detected excessive %1 actuation on your last drive. Please contact support at https://comma.ai/support and share your device's Dongle ID for troubleshooting.",
     "severity": 1,
     "_comment": "Set extra field to lateral or longitudinal."
+  },
+  "Offroad_TiciSupport": {
+    "text": "<b>Unsupported branch detected</b> - The current version of <b><u>%1</u></b> branch is no longer supported on the comma three. Please go to <b>[Device > Software]</b> and install a supported branch with <b><u>-tici</u></b> in the branch name for the comma three.",
+    "severity": 1,
+    "_comment": "Set extra field to the current branch name."
   }
 }

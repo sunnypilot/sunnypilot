@@ -16,6 +16,13 @@ MASTER_SP_BRANCHES = ['master']
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly'] + RELEASE_SP_BRANCHES
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
 
+SP_BRANCH_MIGRATIONS = {
+  ("tici", "staging-c3-new"): "staging-tici",
+  ("tici", "dev-c3-new"): "staging-tici",
+  ("tici", "master"): "master-tici",
+  ("tici", "master-dev-c3-new"): "master-tici",
+}
+
 BUILD_METADATA_FILENAME = "build.json"
 
 training_version: str = "0.2.0"
@@ -85,7 +92,8 @@ class OpenpilotMetadata:
 
   @property
   def sunnypilot_remote(self) -> bool:
-    return self.git_normalized_origin == "github.com/sunnypilot/sunnypilot"
+    return self.git_normalized_origin in ("github.com/sunnypilot/sunnypilot",
+                                          "github.com/sunnypilot/openpilot")
 
   @property
   def git_normalized_origin(self) -> str:
@@ -127,7 +135,9 @@ class BuildMetadata:
 
   @property
   def channel_type(self) -> str:
-    if self.development_channel:
+    if self.channel.endswith("-tici"):
+      return "tici"
+    elif self.development_channel:
       return "development"
     elif self.channel.startswith("staging-"):
       return "staging"
