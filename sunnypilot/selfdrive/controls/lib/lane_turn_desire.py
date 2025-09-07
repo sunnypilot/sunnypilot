@@ -19,8 +19,7 @@ TURN_DESIRES = {
 
 
 class LaneTurnController:
-  def __init__(self, desire_helper):
-    self.DH = desire_helper
+  def __init__(self):
     self.turn_direction = custom.TurnDirection.none
     self.params = Params()
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
@@ -64,5 +63,4 @@ class LaneTurnController:
              lane_change_nudge_mode: bool, steering_pressed: bool, steering_torque: float) -> log.Desire:
     self.update_params()
     self.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
-    self.DH.lane_turn_direction = self.turn_direction
     return self.return_desire(lane_change_nudge_mode, steering_pressed, steering_torque)

@@ -1,4 +1,4 @@
-from cereal import log, custom
+from cereal import log
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode
@@ -42,8 +42,7 @@ class DesireHelper:
     self.prev_one_blinker = False
     self.desire = log.Desire.none
     self.alc = AutoLaneChangeController(self)
-    self.lane_turn_controller = LaneTurnController(self)
-    self.lane_turn_direction = custom.TurnDirection.none
+    self.lane_turn_controller = LaneTurnController()
 
   def update(self, carstate, lateral_active, lane_change_prob):
     self.alc.update_params()

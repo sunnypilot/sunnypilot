@@ -19,8 +19,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLan
 ], ids=["left blinker", "right blinker", "no blinkers", "left blindspot w/ left blinker", "right blindspot w/ left blinker",
         "no blinkers", "both blinkers"])
 def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindspot_left, blindspot_right, expected):
-    dh = DesireHelper()
-    controller = LaneTurnController(dh)
+    controller = LaneTurnController()
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
@@ -29,8 +28,7 @@ def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindsp
 
 
 def test_lane_turn_desire_disabled():
-    dh = DesireHelper()
-    controller = LaneTurnController(dh)
+    controller = LaneTurnController()
     controller.enabled = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
@@ -39,8 +37,7 @@ def test_lane_turn_desire_disabled():
 
 
 def test_lane_turn_overrides_lane_change():
-    dh = DesireHelper()
-    controller = LaneTurnController(dh)
+    controller = LaneTurnController()
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
@@ -60,8 +57,7 @@ def test_lane_turn_overrides_lane_change():
     (8.95, custom.TurnDirection.none),       # just above threshold
 ], ids=["below threshold", "above threshold", "just above threshold"])
 def test_lane_turn_desire_speed_boundary(v_ego, expected):
-    dh = DesireHelper()
-    controller = LaneTurnController(dh)
+    controller = LaneTurnController()
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
