@@ -22,7 +22,7 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
 ## Installation
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging-c3-new` branch.
+Please refer to [Recommended Branches](#recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging-c3-new` branch.
 
 ### If you want to use our newest branches (our rewrite)
 > [!TIP]
@@ -31,7 +31,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://staging-c3-new.sunnypilot.ai```.
+  3. Input the installation URL per [Recommended Branches](#recommended-branches). Example: ```https://staging-c3-new.sunnypilot.ai```.
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
