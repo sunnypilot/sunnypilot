@@ -111,7 +111,6 @@ def test_lane_turn_nudgeless(carstate, expected_desire):
     nudgeless_params()
     dh = DesireHelper()
 
-    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
     dh.update(carstate, True, 1.0)
     assert dh.desire == expected_desire
 
