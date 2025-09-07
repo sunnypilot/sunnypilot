@@ -11,12 +11,39 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   // branch selector
   QObject::disconnect(targetBranchBtn, nullptr, nullptr, nullptr);
   connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
-    InputDialog d(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
+    if (Hardware::get_device_type() == cereal::InitData::DeviceType::TICI) {
+      auto current = params.get("GitBranch");
+      QStringList allBranches = QString::fromStdString(params.get("UpdaterAvailableBranches")).split(",");
+      QStringList branches;
+      for (const QString &b : allBranches) {
+        if (b.endsWith("-tici")) {
+          branches.append(b);
+        }
+      }
+
+      for (QString b : {current.c_str(), "master-tici", "staging-tici", "release-tici"}) {
+        auto i = branches.indexOf(b);
+        if (i >= 0) {
+          branches.removeAt(i);
+          branches.insert(0, b);
+        }
+      }
+
+      QString cur = QString::fromStdString(params.get("UpdaterTargetBranch"));
+      QString selection = MultiOptionDialog::getSelection(tr("Select a branch"), branches, cur, this);
+      if (!selection.isEmpty()) {
+        params.put("UpdaterTargetBranch", selection.toStdString());
+        targetBranchBtn->setValue(QString::fromStdString(params.get("UpdaterTargetBranch")));
+        checkForUpdates();
+      }
+    } else {
+      InputDialog d(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
       d.setMinLength(0);
       const int ret = d.exec();
       if (ret) {
         searchBranches(d.text());
       }
+    }
   });
 
   // Disable Updates toggle
