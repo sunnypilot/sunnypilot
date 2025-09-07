@@ -21,7 +21,8 @@ class TurnDirection:
     (False, True, 6, False, True, TurnDirection.none),
     (False, False, 5, False, False, TurnDirection.none),
     (True, True, 5, False, False, TurnDirection.none),
-])
+], ids=["left blinker", "right blinker", "no blinkers", "left blindspot w/ left blinker", "right blindspot w/ left blinker",
+        "no blinkers", "both blinkers"])
 def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindspot_left, blindspot_right, expected):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
@@ -63,7 +64,7 @@ def test_lane_turn_overrides_lane_change():
     (8.93, TurnDirection.turnLeft),   # just below threshold
     (8.96, TurnDirection.none),       # above threshold
     (8.95, TurnDirection.none),       # just above threshold
-])
+], ids=["below threshold", "above threshold", "just above threshold"])
 def test_lane_turn_desire_speed_boundary(v_ego, expected):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
@@ -91,6 +92,7 @@ def set_lane_turn_params():
     params = Params()
     params.put("LaneTurnDesire", True)
     params.put("LaneTurnValue", 20.0)
+    params.put("AutoLaneChangeTimer", 1)
 
 @pytest.mark.parametrize("carstate, lateral_active, lane_change_prob, expected_desire", [
     # Lane turn desire overrides lane change desire
@@ -104,10 +106,15 @@ def set_lane_turn_params():
     # No desire (inactive)
     (DummyCarState(vEgo=9, leftBlinker=False, rightBlinker=False), False, 1.0, log.Desire.none),
     (DummyCarState(vEgo=4, leftBlinker=False, rightBlinker=False), True, 1.0, log.Desire.none),  # No blinkers? no desire!
-])
+], ids=["turn left", "turn right", "lane change left", "lane change right", "inactive", "no blinkers"])
 def test_desire_helper_integration(carstate, lateral_active, lane_change_prob, expected_desire, set_lane_turn_params):
     dh = DesireHelper()
+
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
+    dh.update(carstate, lateral_active, lane_change_prob)
+
     dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
-    for _ in range(10):
-        dh.update(carstate, lateral_active, lane_change_prob)
-    assert dh.desire == expected_desire  # The first four tests were unit tests to test the controller, where this tests the integration in desire helpers
+    for _ in range(20):  # nudge mode requires 20 steps (.05 * 20 = 1 second) to simulate one second to enter true state
+      dh.update(carstate, lateral_active, lane_change_prob)
+
+    assert dh.desire == expected_desire  # This tests the integration in desire helpers

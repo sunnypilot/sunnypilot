@@ -31,12 +31,6 @@ DESIRES = {
   },
 }
 
-TURN_DESIRES = {
-  custom.TurnDirection.none: log.Desire.none,
-  custom.TurnDirection.turnLeft: log.Desire.turnLeft,
-  custom.TurnDirection.turnRight: log.Desire.turnRight,
-}
-
 
 class DesireHelper:
   def __init__(self):
@@ -121,8 +115,10 @@ class DesireHelper:
 
     self.prev_one_blinker = one_blinker
 
-    if self.lane_turn_direction != custom.TurnDirection.none:
-      self.desire = TURN_DESIRES[self.lane_turn_direction]
+    lane_change_nudge_mode = self.alc.lane_change_set_timer == AutoLaneChangeMode.NUDGE
+    turn_desire = self.lane_turn_controller.get_desire(lane_change_nudge_mode)
+    if turn_desire != log.Desire.none:
+      self.desire = turn_desire
     else:
       self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
 
