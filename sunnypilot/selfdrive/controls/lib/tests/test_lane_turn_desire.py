@@ -1,5 +1,6 @@
 import pytest
-from cereal import log
+import numpy as np
+from cereal import custom, log
 from openpilot.common.params import Params
 
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
@@ -7,20 +8,14 @@ from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTur
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
 
 
-class TurnDirection:
-    none = 0
-    turnLeft = 1
-    turnRight = 2
-
-
 @pytest.mark.parametrize("left_blinker,right_blinker,v_ego,blindspot_left,blindspot_right,expected", [
-    (True, False, 5, False, False, TurnDirection.turnLeft),
-    (False, True, 6, False, False, TurnDirection.turnRight),
-    (True, False, 9, False, False, TurnDirection.none),
-    (True, False, 7, True, False, TurnDirection.none),
-    (False, True, 6, False, True, TurnDirection.none),
-    (False, False, 5, False, False, TurnDirection.none),
-    (True, True, 5, False, False, TurnDirection.none),
+    (True, False, 5, False, False, custom.TurnDirection.turnLeft),
+    (False, True, 6, False, False, custom.TurnDirection.turnRight),
+    (True, False, 9, False, False, custom.TurnDirection.none),
+    (True, False, 7, True, False, custom.TurnDirection.none),
+    (False, True, 6, False, True, custom.TurnDirection.none),
+    (False, False, 5, False, False, custom.TurnDirection.none),
+    (True, True, 5, False, False, custom.TurnDirection.none),
 ], ids=["left blinker", "right blinker", "no blinkers", "left blindspot w/ left blinker", "right blindspot w/ left blinker",
         "no blinkers", "both blinkers"])
 def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindspot_left, blindspot_right, expected):
@@ -28,9 +23,9 @@ def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindsp
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
-    controller.turn_direction = TurnDirection.none
+    controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
-    assert controller.get_turn_direction() == expected
+    assert np.equal(controller.turn_direction, expected), f"Expected {expected}, speed {v_ego}, got {controller.turn_direction}"
 
 
 def test_lane_turn_desire_disabled():
@@ -38,9 +33,9 @@ def test_lane_turn_desire_disabled():
     controller = LaneTurnController(dh)
     controller.enabled = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
-    controller.turn_direction = TurnDirection.none
-    controller.update_lane_turn(False, False, True, False, 7)
-    assert controller.get_turn_direction() == TurnDirection.none
+    controller.turn_direction = custom.TurnDirection.none
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert np.equal(controller.turn_direction , custom.TurnDirection.none), f"Expected no turn desire, got {controller.turn_direction}"
 
 
 def test_lane_turn_overrides_lane_change():
@@ -48,31 +43,30 @@ def test_lane_turn_overrides_lane_change():
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
-    controller.turn_direction = TurnDirection.none
-    # left turn desire
+    controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(False, False, True, False, 5)
-    assert controller.get_turn_direction() == TurnDirection.turnLeft
-    # right turn desire
+    assert np.equal(controller.turn_direction, custom.TurnDirection.turnLeft), f"Expected left turn desire, got {controller.turn_direction}"
+
     controller.update_lane_turn(False, False, False, True, 6)
-    assert controller.get_turn_direction() == TurnDirection.turnRight
-    # no turn
+    assert np.equal(controller.turn_direction, custom.TurnDirection.turnRight), f"Expected right turn desire, got {controller.turn_direction}"
+
     controller.update_lane_turn(False, False, False, False, 7)
-    assert controller.get_turn_direction() == TurnDirection.none
+    assert np.equal(controller.turn_direction, custom.TurnDirection.none), f"Expected no turn desire, got {controller.turn_direction}"
 
 
 @pytest.mark.parametrize("v_ego,expected", [
-    (8.93, TurnDirection.turnLeft),   # just below threshold
-    (8.96, TurnDirection.none),       # above threshold
-    (8.95, TurnDirection.none),       # just above threshold
+    (8.93, custom.TurnDirection.turnLeft),   # just below threshold
+    (8.96, custom.TurnDirection.none),       # above threshold
+    (8.95, custom.TurnDirection.none),       # just above threshold
 ], ids=["below threshold", "above threshold", "just above threshold"])
 def test_lane_turn_desire_speed_boundary(v_ego, expected):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
-    controller.turn_direction = TurnDirection.none
+    controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(False, True, True, False, v_ego)
-    assert controller.get_turn_direction() == expected
+    assert np.equal(controller.turn_direction, expected), f"Expected {expected} at speed {v_ego}, got {controller.turn_direction}"
 
 
 class DummyCarState:
@@ -110,9 +104,9 @@ def nudge_params():
 def test_lane_turn_nudgeless(carstate, expected_desire):
     nudgeless_params()
     dh = DesireHelper()
-
     dh.update(carstate, True, 1.0)
-    assert dh.desire == expected_desire
+    assert np.equal(dh.desire, expected_desire), f"Expected {expected_desire}, got {dh.desire}"
+
 
 @pytest.mark.parametrize("carstate, expected_desire", [
     (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False,
@@ -125,6 +119,5 @@ def test_lane_turn_nudgeless(carstate, expected_desire):
 def test_lane_turn_nudge(carstate, expected_desire):
     nudge_params()
     dh = DesireHelper()
-
     dh.update(carstate, True, 1.0)
-    assert dh.desire == expected_desire
+    assert np.equal(dh.desire, expected_desire), f"Expected {expected_desire}, got {dh.desire}"

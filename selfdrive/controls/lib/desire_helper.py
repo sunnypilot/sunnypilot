@@ -47,15 +47,9 @@ class DesireHelper:
 
   def update(self, carstate, lateral_active, lane_change_prob):
     self.alc.update_params()
-    self.lane_turn_controller.update_params()
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
-
-    # Lane turn controller update
-    self.lane_turn_controller.update_lane_turn(blindspot_left=carstate.leftBlindspot, blindspot_right=carstate.rightBlindspot,
-                                               left_blinker=carstate.leftBlinker, right_blinker=carstate.rightBlinker, v_ego=v_ego)
-    self.lane_turn_direction = self.lane_turn_controller.get_turn_direction()
 
     if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
       self.lane_change_state = LaneChangeState.off
@@ -115,8 +109,10 @@ class DesireHelper:
 
     self.prev_one_blinker = one_blinker
 
+    # Lane turn controller update
     lane_change_nudge_mode = self.alc.lane_change_set_timer == AutoLaneChangeMode.NUDGE
-    turn_desire = self.lane_turn_controller.return_desire(lane_change_nudge_mode, carstate.steeringPressed, carstate.steeringTorque)
+    turn_desire = self.lane_turn_controller.update(carstate.leftBlindspot, carstate.rightBlindspot, carstate.leftBlinker, carstate.rightBlinker,
+                                                   carstate.vEgo, lane_change_nudge_mode, carstate.steeringPressed, carstate.steeringTorque)
     if turn_desire != log.Desire.none:
       self.desire = turn_desire
     else:
