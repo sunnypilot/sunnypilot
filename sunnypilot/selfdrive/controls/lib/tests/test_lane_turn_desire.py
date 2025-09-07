@@ -87,34 +87,45 @@ class DummyCarState:
         self.steeringTorque = steeringTorque
         self.brakePressed = brakePressed
 
-@pytest.fixture
-def set_lane_turn_params():
+
+def nudgeless_params():
     params = Params()
     params.put("LaneTurnDesire", True)
     params.put("LaneTurnValue", 20.0)
-    params.put("AutoLaneChangeTimer", 1)
+    params.put("AutoLaneChangeTimer", AutoLaneChangeMode.NUDGELESS)
 
-@pytest.mark.parametrize("carstate, lateral_active, lane_change_prob, expected_desire", [
-    # Lane turn desire overrides lane change desire
-    (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False), True, 1.0, log.Desire.turnLeft),
-    (DummyCarState(vEgo=7, leftBlinker=False, rightBlinker=True, leftBlindspot=False, rightBlindspot=False), True, 1.0, log.Desire.turnRight),
-    # Lane change desire only (no turn desires)
-    (DummyCarState(vEgo=9, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False,
-                   steeringPressed=True, steeringTorque=1), True, 1.0, log.Desire.laneChangeLeft),
-    (DummyCarState(vEgo=9, leftBlinker=False, rightBlinker=True, leftBlindspot=False, rightBlindspot=False,
-                   steeringPressed=True, steeringTorque=-1), True, 1.0, log.Desire.laneChangeRight),
-    # No desire (inactive)
-    (DummyCarState(vEgo=9, leftBlinker=False, rightBlinker=False), False, 1.0, log.Desire.none),
-    (DummyCarState(vEgo=4, leftBlinker=False, rightBlinker=False), True, 1.0, log.Desire.none),  # No blinkers? no desire!
-], ids=["turn left", "turn right", "lane change left", "lane change right", "inactive", "no blinkers"])
-def test_desire_helper_integration(carstate, lateral_active, lane_change_prob, expected_desire, set_lane_turn_params):
+def nudge_params():
+    params = Params()
+    params.put("LaneTurnDesire", True)
+    params.put("LaneTurnValue", 20.0)
+    params.put("AutoLaneChangeTimer", AutoLaneChangeMode.NUDGE)
+
+
+@pytest.mark.parametrize("carstate, expected_desire", [
+    (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False), log.Desire.turnLeft),
+    (DummyCarState(vEgo=7, leftBlinker=False, rightBlinker=True, leftBlindspot=False, rightBlindspot=False), log.Desire.turnRight),
+    (DummyCarState(vEgo=5, leftBlinker=False, rightBlinker=False, leftBlindspot=False, rightBlindspot=False), log.Desire.none),
+    (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=True, leftBlindspot=False, rightBlindspot=False), log.Desire.none),
+], ids=["nudgeless left turn", "nudgeless right turn", "no blinkers", "both blinkers"])
+def test_lane_turn_nudgeless(carstate, expected_desire):
+    nudgeless_params()
     dh = DesireHelper()
 
     dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
-    dh.update(carstate, lateral_active, lane_change_prob)
+    dh.update(carstate, True, 1.0)
+    assert dh.desire == expected_desire
 
-    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
-    for _ in range(20):  # nudge mode requires 20 steps (.05 * 20 = 1 second) to simulate one second to enter true state
-      dh.update(carstate, lateral_active, lane_change_prob)
+@pytest.mark.parametrize("carstate, expected_desire", [
+    (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False,
+                   steeringPressed=True, steeringTorque=1), log.Desire.turnLeft),
+    (DummyCarState(vEgo=7, leftBlinker=False, rightBlinker=True, leftBlindspot=False, rightBlindspot=False,
+                   steeringPressed=True, steeringTorque=-1), log.Desire.turnRight),
+    (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False), log.Desire.none),
+    (DummyCarState(vEgo=7, leftBlinker=False, rightBlinker=True, leftBlindspot=False, rightBlindspot=False), log.Desire.none),
+], ids=["nudge left turn with input", "nudge right turn with input", "nudge left turn no input", "nudge right turn no input"])
+def test_lane_turn_nudge(carstate, expected_desire):
+    nudge_params()
+    dh = DesireHelper()
 
-    assert dh.desire == expected_desire  # This tests the integration in desire helpers
+    dh.update(carstate, True, 1.0)
+    assert dh.desire == expected_desire

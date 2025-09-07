@@ -8,7 +8,6 @@ from cereal import custom, log
 
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 
@@ -27,7 +26,6 @@ class LaneTurnController:
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.param_read_counter = 0
     self.enabled = self.params.get_bool("LaneTurnDesire")
-    self.lane_turn_nudge_timer = 0.0
 
   def read_params(self):
     self.enabled = self.params.get_bool("LaneTurnDesire")
@@ -52,23 +50,17 @@ class LaneTurnController:
       return custom.TurnDirection.none
     return self.turn_direction
 
-  def get_desire(self, nudge_mode: bool) -> log.Desire:
+  def return_desire(self, nudge_mode: bool, steering_pressed: bool, steering_torque: float) -> log.Desire:
     # Return the current Desire for lane-turns.
-    # disabled or no turn -> reset timer and return none
+    # disabled or no turn -> return none
     if not self.enabled or self.turn_direction == custom.TurnDirection.none:
-      self.lane_turn_nudge_timer = 0.0
       return log.Desire.none
 
-    # Normal (non-nudge) behavior: persistent turn desire
-    if not nudge_mode:
-      return TURN_DESIRES[self.turn_direction]
+    if nudge_mode:
+      # In nudge mode, require steering torque for lane turn
+      turn_torque_applied = steering_pressed and ((steering_torque > 0 and self.turn_direction == custom.TurnDirection.turnLeft) or
+                             (steering_torque < 0 and self.turn_direction == custom.TurnDirection.turnRight))
+      if not turn_torque_applied:
+        return log.Desire.none
 
-    # Nudge mode: pulse a turn desire once per second
-    self.lane_turn_nudge_timer += DT_MDL
-    if self.lane_turn_nudge_timer > 1.0:
-      # reset and show the short pulse
-      self.lane_turn_nudge_timer = 0.0
-      return TURN_DESIRES[self.turn_direction]
-
-    # most of the second the desire is cleared
-    return log.Desire.none
+    return TURN_DESIRES[self.turn_direction]
