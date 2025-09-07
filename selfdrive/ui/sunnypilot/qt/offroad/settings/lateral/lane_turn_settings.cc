@@ -60,7 +60,7 @@ void LaneTurnSettings::refreshLaneTurnValueControl() {
   bool is_metric = params.getBool("IsMetric");
   QString unit = is_metric ? "km/h" : "mph";
   float display_value = is_metric ? stored_mph * 1.609344f : stored_mph;
-  laneTurnValueControl->setLabel(QString::number(static_cast<int>(std::round(display_value))) + " " + unit);
+  laneTurnValueControl->setLabel(QString::number(qRound(display_value)) + " " + unit);
 }
 
 // Lane Turn Desire Control
