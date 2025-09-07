@@ -134,7 +134,7 @@ class BuildMetadata:
 
   @property
   def development_channel(self) -> bool:
-    return self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
+    return self.channel == "dev" or self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
 
   @property
   def channel_type(self) -> str:
@@ -142,11 +142,11 @@ class BuildMetadata:
       return "tici"
     elif self.development_channel:
       return "development"
-    elif self.channel.startswith("staging-"):
+    elif self.tested_channel:
       return "staging"
     elif self.master_channel:
       return "master"
-    elif self.tested_channel:
+    elif self.release_channel:
       return "release"
     else:
       return "feature"
