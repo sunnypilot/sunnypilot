@@ -63,7 +63,7 @@ class LaneTurnController:
     if not nudge_mode:
       return TURN_DESIRES[self.turn_direction]
 
-    # Nudge mode: pulse a keep desire once per second
+    # Nudge mode: pulse a turn desire once per second
     self.lane_turn_nudge_timer += DT_MDL
     if self.lane_turn_nudge_timer > 1.0:
       # reset and show the short pulse
