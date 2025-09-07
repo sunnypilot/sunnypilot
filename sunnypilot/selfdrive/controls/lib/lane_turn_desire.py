@@ -11,6 +11,12 @@ from openpilot.common.params import Params
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 
+TURN_STATE = {
+  'OFF': 0,
+  'NUDGE': 1,
+  'NUDGELESS': 2
+}
+
 TURN_DESIRES = {
   custom.TurnDirection.none: log.Desire.none,
   custom.TurnDirection.turnLeft: log.Desire.turnLeft,
@@ -24,10 +30,10 @@ class LaneTurnController:
     self.params = Params()
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.param_read_counter = 0
-    self.enabled = self.params.get_bool("LaneTurnDesire")
+    self.lane_turn_type = int(self.params.get("LaneTurnDesire", return_default=True))
 
   def read_params(self):
-    self.enabled = self.params.get_bool("LaneTurnDesire")
+    self.lane_turn_type = int(self.params.get("LaneTurnDesire", return_default=True))
     value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.lane_turn_value = min(float(LANE_CHANGE_SPEED_MIN), value)
 
@@ -37,21 +43,20 @@ class LaneTurnController:
     self.param_read_counter += 1
 
   def update_lane_turn(self, blindspot_left: bool, blindspot_right: bool, left_blinker: bool, right_blinker: bool, v_ego: float) -> None:
-    if self.enabled and left_blinker and not right_blinker and v_ego < self.lane_turn_value and not blindspot_left:
+    if self.lane_turn_type != TURN_STATE['OFF'] and left_blinker and not right_blinker and v_ego < self.lane_turn_value and not blindspot_left:
       self.turn_direction = custom.TurnDirection.turnLeft
-    elif self.enabled and right_blinker and not left_blinker and v_ego < self.lane_turn_value and not blindspot_right:
+    elif self.lane_turn_type != TURN_STATE['OFF'] and right_blinker and not left_blinker and v_ego < self.lane_turn_value and not blindspot_right:
       self.turn_direction = custom.TurnDirection.turnRight
     else:
       self.turn_direction = custom.TurnDirection.none
 
-  def return_desire(self, nudge_mode: bool, steering_pressed: bool, steering_torque: float) -> log.Desire:
-    # Return the current Desire for lane-turns.
+  def return_desire(self, steering_pressed: bool, steering_torque: float) -> log.Desire:
     # disabled or no turn -> return none
-    if not self.enabled or self.turn_direction == custom.TurnDirection.none:
+    if self.lane_turn_type == TURN_STATE['OFF'] or self.turn_direction == custom.TurnDirection.none:
       return log.Desire.none
 
-    if nudge_mode:
-      # In nudge mode, require steering torque for lane turn
+    if self.lane_turn_type == TURN_STATE['NUDGE']:
+      # In nudge mode, require steering press for turn desire
       turn_torque_applied = steering_pressed and ((steering_torque > 0 and self.turn_direction == custom.TurnDirection.turnLeft) or
                              (steering_torque < 0 and self.turn_direction == custom.TurnDirection.turnRight))
       if not turn_torque_applied:
@@ -60,7 +65,7 @@ class LaneTurnController:
     return TURN_DESIRES[self.turn_direction]
 
   def update(self, blindspot_left: bool, blindspot_right: bool, left_blinker: bool, right_blinker: bool, v_ego: float,
-             lane_change_nudge_mode: bool, steering_pressed: bool, steering_torque: float) -> log.Desire:
+             steering_pressed: bool, steering_torque: float) -> log.Desire:
     self.update_params()
     self.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
-    return self.return_desire(lane_change_nudge_mode, steering_pressed, steering_torque)
+    return self.return_desire(steering_pressed, steering_torque)

@@ -4,7 +4,7 @@ from cereal import custom, log
 from openpilot.common.params import Params
 
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
-from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN
+from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN, TURN_STATE
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
 
 
@@ -20,7 +20,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLan
         "no blinkers", "both blinkers"])
 def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindspot_left, blindspot_right, expected):
     controller = LaneTurnController()
-    controller.enabled = True
+    controller.lane_turn_type = TURN_STATE['NUDGELESS']
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
@@ -29,7 +29,7 @@ def test_lane_turn_desire_conditions(left_blinker, right_blinker, v_ego, blindsp
 
 def test_lane_turn_desire_disabled():
     controller = LaneTurnController()
-    controller.enabled = False
+    controller.lane_turn_type = TURN_STATE['OFF']
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(False, False, True, False, 6)
@@ -38,7 +38,7 @@ def test_lane_turn_desire_disabled():
 
 def test_lane_turn_overrides_lane_change():
     controller = LaneTurnController()
-    controller.enabled = True
+    controller.lane_turn_type = TURN_STATE['NUDGELESS']
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(False, False, True, False, 5)
@@ -58,7 +58,7 @@ def test_lane_turn_overrides_lane_change():
 ], ids=["below threshold", "above threshold", "just above threshold"])
 def test_lane_turn_desire_speed_boundary(v_ego, expected):
     controller = LaneTurnController()
-    controller.enabled = True
+    controller.lane_turn_type = TURN_STATE['NUDGELESS']
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = custom.TurnDirection.none
     controller.update_lane_turn(False, True, True, False, v_ego)
@@ -80,13 +80,13 @@ class DummyCarState:
 
 def nudgeless_params():
     params = Params()
-    params.put("LaneTurnDesire", True)
+    params.put("LaneTurnDesire", TURN_STATE['NUDGELESS'])
     params.put("LaneTurnValue", 20.0)
     params.put("AutoLaneChangeTimer", AutoLaneChangeMode.NUDGELESS)
 
 def nudge_params():
     params = Params()
-    params.put("LaneTurnDesire", True)
+    params.put("LaneTurnDesire", TURN_STATE['NUDGE'])
     params.put("LaneTurnValue", 20.0)
     params.put("AutoLaneChangeTimer", AutoLaneChangeMode.NUDGE)
 

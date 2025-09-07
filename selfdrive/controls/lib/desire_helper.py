@@ -109,9 +109,8 @@ class DesireHelper:
     self.prev_one_blinker = one_blinker
 
     # Lane turn controller update
-    lane_change_nudge_mode = self.alc.lane_change_set_timer == AutoLaneChangeMode.NUDGE
     turn_desire = self.lane_turn_controller.update(carstate.leftBlindspot, carstate.rightBlindspot, carstate.leftBlinker, carstate.rightBlinker,
-                                                   carstate.vEgo, lane_change_nudge_mode, carstate.steeringPressed, carstate.steeringTorque)
+                                                   carstate.vEgo, carstate.steeringPressed, carstate.steeringTorque)
     if turn_desire != log.Desire.none:
       self.desire = turn_desire
     else:
