@@ -40,7 +40,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
   4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging-c3-new`
 
-
+#### Recommended branches
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
 | `staging-c3-new` | `https://staging-c3-new.sunnypilot.ai`        |
