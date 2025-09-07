@@ -21,6 +21,8 @@ SP_BRANCH_MIGRATIONS = {
   ("tici", "dev-c3-new"): "staging-tici",
   ("tici", "master"): "master-tici",
   ("tici", "master-dev-c3-new"): "master-tici",
+  ("tizi", "staging-c3-new"): "staging",
+  ("tizi", "dev-c3-new"): "dev",
   ("tizi", "master-dev-c3-new"): "master-dev",
 }
 
