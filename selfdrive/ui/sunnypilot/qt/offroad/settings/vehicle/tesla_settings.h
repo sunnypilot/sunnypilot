@@ -22,5 +22,5 @@ public:
   void updateSettings() override;
 
 private:
-  bool offroad = false;
+  ParamControlSP *coopSteeringToggle = nullptr;
 };
