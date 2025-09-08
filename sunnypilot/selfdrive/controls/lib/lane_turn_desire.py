@@ -70,6 +70,3 @@ class LaneTurnController:
     self.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
     turn_desire = self.return_desire(steering_pressed, steering_torque)
     return turn_desire
-
-  def get_lane_turn_direction(self) -> custom.TurnDirection:
-    return self.turn_direction
