@@ -1,9 +1,9 @@
-name: Build dev-c3-new
+name: Build dev
 
 env:
   DEFAULT_SOURCE_BRANCH: "master"
-  DEFAULT_TARGET_BRANCH: "master-dev-c3-new"
-  PR_LABEL: "dev-c3"
+  DEFAULT_TARGET_BRANCH: "master-dev"
+  PR_LABEL: "dev"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
@@ -25,7 +25,7 @@ on:
       target_branch:
         description: 'Target branch to reset and squash into'
         required: true
-        default: 'master-dev-c3-new'
+        default: 'master-dev'
         type: string
       cancel_in_progress:
         description: 'Cancel any in-progress runs of this workflow'
@@ -43,7 +43,7 @@ jobs:
     if: (
       (github.event_name == 'workflow_dispatch')
       || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
       )
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
           (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
           )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
