@@ -109,14 +109,14 @@ class DesireHelper:
 
     self.prev_one_blinker = one_blinker
 
+    self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
+
     # Lane turn controller update
     turn_desire = self.lane_turn_controller.update(carstate.leftBlindspot, carstate.rightBlindspot, carstate.leftBlinker, carstate.rightBlinker,
                                                    carstate.vEgo, carstate.steeringPressed, carstate.steeringTorque)
     self.lane_turn_direction = self.lane_turn_controller.get_lane_turn_direction()
     if turn_desire != log.Desire.none:
       self.desire = turn_desire
-    else:
-      self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
 
     # Send keep pulse once per second during LaneChangeStart.preLaneChange
     if self.lane_change_state in (LaneChangeState.off, LaneChangeState.laneChangeStarting):
