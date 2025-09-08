@@ -27,7 +27,7 @@ from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 class FrameMeta:
@@ -77,42 +77,47 @@ class ModelState(ModelStateBase):
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
         # Temporal input: shape is [batch, history, features]
         if len(shape) == 3 and shape[1] > 1:
-          buffer_history_len = max(100, (shape[1] * 4 if shape[1] < 100 else shape[1]))   # Allow for higher history buffers in the future
+          buffer_history_len = shape[1] * 4 if shape[1] < 99 else shape[1]  # Allow for higher history buffers in the future
           feature_len = shape[2]
-          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
           features_buffer_shape = self.model_runner.input_shapes.get('features_buffer')
           if shape[1] in (24, 25) and features_buffer_shape is not None and features_buffer_shape[1] == 24:  # 20Hz
+            buffer_history_len = (features_buffer_shape[1] + 1) * 4
             step = int(-buffer_history_len / shape[1])
             self.temporal_idxs_map[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
           elif shape[1] == 25:  # Split
             skip = buffer_history_len // shape[1]
             self.temporal_idxs_map[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
-          elif shape[1] == buffer_history_len:  # non20hz
-            self.temporal_idxs_map[key] = np.arange(buffer_history_len)
+          elif shape[1] >= 99:  # non20hz
+            self.temporal_idxs_map[key] = np.arange(shape[1])
+          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
 
   @property
   def mlsim(self) -> bool:
     return bool(self.generation is not None and self.generation >= 11)
 
+  @property
+  def desire_key(self) -> str:
+    return next(key for key in self.numpy_inputs if key.startswith('desire'))
+
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
-    inputs['desire'][0] = 0
-    new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
-    self.prev_desire[:] = inputs['desire']
-    self.temporal_buffers['desire'][0,:-1] = self.temporal_buffers['desire'][0,1:]
-    self.temporal_buffers['desire'][0,-1] = new_desire
+    inputs[self.desire_key][0] = 0
+    new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
+    self.prev_desire[:] = inputs[self.desire_key]
+    self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
+    self.temporal_buffers[self.desire_key][0,-1] = new_desire
 
     # Roll buffer and assign based on desire.shape[1] value
-    if self.temporal_buffers['desire'].shape[1] > self.numpy_inputs['desire'].shape[1]:
-      skip = self.temporal_buffers['desire'].shape[1] // self.numpy_inputs['desire'].shape[1]
-      self.numpy_inputs['desire'][:] = (
-        self.temporal_buffers['desire'][0].reshape(self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], skip, -1).max(axis=2))
+    if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
+      skip = self.temporal_buffers[self.desire_key].shape[1] // self.numpy_inputs[self.desire_key].shape[1]
+      self.numpy_inputs[self.desire_key][:] = (self.temporal_buffers[self.desire_key][0].reshape(
+                                               self.numpy_inputs[self.desire_key].shape[0], self.numpy_inputs[self.desire_key].shape[1], skip, -1).max(axis=2))
     else:
-      self.numpy_inputs['desire'][:] = self.temporal_buffers['desire'][0, self.temporal_idxs_map['desire']]
+      self.numpy_inputs[self.desire_key][:] = self.temporal_buffers[self.desire_key][0, self.temporal_idxs_map[self.desire_key]]
 
     for key in self.numpy_inputs:
-      if key in inputs and key not in ['desire']:
+      if key in inputs and key not in [self.desire_key]:
         self.numpy_inputs[key][:] = inputs[key]
 
     imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
@@ -156,10 +161,11 @@ class ModelState(ModelStateBase):
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
     desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.mlsim)
-    if v_ego > self.MIN_LAT_CONTROL_SPEED:
-      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
-    else:
-      desired_curvature = prev_action.desiredCurvature
+    if self.generation is not None and self.generation >= 10: # smooth curvature for post FOF models
+      if v_ego > self.MIN_LAT_CONTROL_SPEED:
+        desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
+      else:
+        desired_curvature = prev_action.desiredCurvature
 
     return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
@@ -202,7 +208,7 @@ def main(demo=False):
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
   # messaging
-  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
+  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
@@ -306,7 +312,7 @@ def main(demo=False):
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
+      model.desire_key: vec_desire,
       'traffic_convention': traffic_convention,
     }
 
@@ -322,6 +328,7 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
+      mdv2sp_send = messaging.new_message('modelDataV2SP')
 
       action = model.get_action_from_model(model_output, prev_action, lat_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
@@ -336,6 +343,7 @@ def main(demo=False):
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
+      mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
@@ -343,6 +351,7 @@ def main(demo=False):
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
+      pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
 
