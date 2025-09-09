@@ -79,8 +79,16 @@ class SpeedLimitController:
     return self._speed_limit + self.speed_limit_offset
 
   @property
+  def speed_limit_changed(self) -> bool:
+    return bool(self._speed_limit != self.speed_limit_prev)
+
+  @property
   def speed_limit_offset(self) -> float:
     return self.get_offset(self.offset_type, self.offset_value)
+
+  @property
+  def v_cruise_setpoint_changed(self) -> bool:
+    return bool(self.v_cruise_setpoint != self.v_cruise_setpoint_prev)
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
@@ -95,14 +103,6 @@ class SpeedLimitController:
 
     # Fallback
     return V_CRUISE_UNSET
-
-  @property
-  def v_cruise_setpoint_changed(self) -> bool:
-    return bool(self.v_cruise_setpoint != self.v_cruise_setpoint_prev)
-
-  @property
-  def speed_limit_changed(self) -> bool:
-    return bool(self._speed_limit != self.speed_limit_prev)
 
   def get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
     if offset_type == OffsetType.off:
@@ -149,15 +149,6 @@ class SpeedLimitController:
 
   def get_active_state_target_acceleration(self) -> float:
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
-
-  def update_events(self, events_sp: EventsSP) -> None:
-    if self.is_active:
-      if self.state == SpeedLimitControlState.preActive:
-        events_sp.add(EventNameSP.speedLimitPreActive)
-      elif self._state_prev not in ACTIVE_STATES:
-        events_sp.add(EventNameSP.speedLimitActive)
-      elif self.speed_limit_changed:
-        events_sp.add(EventNameSP.speedLimitValueChange)
 
   def update_state_machine(self):
     self._state_prev = self.state
@@ -228,6 +219,15 @@ class SpeedLimitController:
     active = self.state in ACTIVE_STATES
 
     return enabled, active
+
+  def update_events(self, events_sp: EventsSP) -> None:
+    if self.is_active:
+      if self.state == SpeedLimitControlState.preActive:
+        events_sp.add(EventNameSP.speedLimitPreActive)
+      elif self._state_prev not in ACTIVE_STATES:
+        events_sp.add(EventNameSP.speedLimitActive)
+      elif self.speed_limit_changed:
+        events_sp.add(EventNameSP.speedLimitValueChange)
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitSource, events_sp: EventsSP) -> float:
