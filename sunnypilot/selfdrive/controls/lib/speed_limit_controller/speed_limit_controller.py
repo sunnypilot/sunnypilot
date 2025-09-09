@@ -61,16 +61,6 @@ class SpeedLimitController:
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
-    # Mapping functions to state transitions
-    self._state_transition_strategy = {
-      SpeedLimitControlState.disabled: self.transition_state_from_disabled,
-      SpeedLimitControlState.inactive: self.transition_state_from_inactive,
-      SpeedLimitControlState.preActive: self.transition_state_from_preactive,
-      SpeedLimitControlState.pending: self.transition_state_from_pending,
-      SpeedLimitControlState.adapting: self.transition_state_from_adapting,
-      SpeedLimitControlState.active: self.transition_state_from_active,
-    }
-
     # Solution functions mapped to respective states
     self.acceleration_solutions = {
       SpeedLimitControlState.disabled: self.get_current_acceleration_as_target,
@@ -178,59 +168,6 @@ class SpeedLimitController:
     if not self._state_prev == SpeedLimitControlState.preActive and self.state == SpeedLimitControlState.preActive:
       self.last_preactive_frame = self.frame
 
-  def transition_state_from_disabled(self) -> None:
-    # Wait 2 seconds after long engaged before starting fresh session
-    if (self.frame - self.last_op_engaged_frame) * DT_MDL >= 2.:
-      self.state = SpeedLimitControlState.preActive
-      self.initial_max_set = False
-
-  def transition_state_from_inactive(self) -> None:
-    pass
-
-  def transition_state_from_preactive(self) -> None:
-    if self.initial_max_set_confirmed():
-      self.initial_max_set = True
-      if self._speed_limit > 0:
-        if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-          self.state = SpeedLimitControlState.adapting
-        else:
-          self.state = SpeedLimitControlState.active
-      else:
-        self.state = SpeedLimitControlState.pending
-    elif (self.frame - self.last_preactive_frame) * DT_MDL >= PRE_ACTIVE_GUARD_PERIOD:
-      # Timeout - session ended
-      self.state = SpeedLimitControlState.inactive
-
-  def transition_state_from_pending(self) -> None:
-    if self._speed_limit > 0:
-      if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-        self.state = SpeedLimitControlState.adapting
-      else:
-        self.state = SpeedLimitControlState.active
-
-  def transition_state_from_adapting(self) -> None:
-    if self.detect_manual_cruise_change():
-      self.state = SpeedLimitControlState.inactive
-    elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
-      self.state = SpeedLimitControlState.active
-
-  def transition_state_from_active(self) -> None:
-    if self.detect_manual_cruise_change():
-      self.state = SpeedLimitControlState.inactive
-    elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
-      self.state = SpeedLimitControlState.adapting
-
-  def state_control(self) -> None:
-    self._state_prev = self.state
-
-    # If op is disabled or SLC is disabled, go to disabled state
-    if not self.op_engaged or not self.enabled:
-      self.state = SpeedLimitControlState.disabled
-      self.initial_max_set = False
-      return
-
-    self._state_transition_strategy[self.state]()
-
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego
 
@@ -252,6 +189,64 @@ class SpeedLimitController:
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitValueChange)
 
+  def update_state_machine(self):
+    self._state_prev = self.state
+
+    if self.state != SpeedLimitControlState.disabled:
+      if not self.op_engaged or not self.enabled:
+        self.state = SpeedLimitControlState.disabled
+        self.initial_max_set = False
+
+      else:
+        # ACTIVE
+        if self.state == SpeedLimitControlState.active:
+          if self.detect_manual_cruise_change():
+            self.state = SpeedLimitControlState.inactive
+          elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
+            self.state = SpeedLimitControlState.adapting
+
+        # ADAPTING
+        elif self.state == SpeedLimitControlState.adapting:
+          if self.detect_manual_cruise_change():
+            self.state = SpeedLimitControlState.inactive
+          elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
+            self.state = SpeedLimitControlState.active
+
+        # PENDING
+        elif self.state == SpeedLimitControlState.pending:
+          if self._speed_limit > 0:
+            if self.v_offset < LIMIT_SPEED_OFFSET_TH:
+              self.state = SpeedLimitControlState.adapting
+            else:
+              self.state = SpeedLimitControlState.active
+
+        # PREACTIVE
+        elif self.state == SpeedLimitControlState.preActive:
+          if self.initial_max_set_confirmed():
+            self.initial_max_set = True
+            if self._speed_limit > 0:
+              if self.v_offset < LIMIT_SPEED_OFFSET_TH:
+                self.state = SpeedLimitControlState.adapting
+              else:
+                self.state = SpeedLimitControlState.active
+            else:
+              self.state = SpeedLimitControlState.pending
+          elif (self.frame - self.last_preactive_frame) * DT_MDL >= PRE_ACTIVE_GUARD_PERIOD:
+            # Timeout - session ended
+            self.state = SpeedLimitControlState.inactive
+
+        # INACTIVE
+        elif self.state == SpeedLimitControlState.inactive:
+          pass
+
+    # DISABLED
+    elif self.state == SpeedLimitControlState.disabled:
+      if self.op_engaged and self.enabled:
+        # Wait 2 seconds after long engaged before starting fresh session
+        if (self.frame - self.last_op_engaged_frame) * DT_MDL >= 2.:
+          self.state = SpeedLimitControlState.preActive
+          self.initial_max_set = False
+
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
@@ -262,7 +257,7 @@ class SpeedLimitController:
 
     self.update_params()
     self.update_calculations(v_ego, a_ego, v_cruise_setpoint)
-    self.state_control()
+    self.update_state_machine()
     self.update_events(events_sp)
 
     # Update change tracking variables
