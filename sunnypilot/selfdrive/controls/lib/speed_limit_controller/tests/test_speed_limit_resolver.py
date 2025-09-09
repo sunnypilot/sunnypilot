@@ -68,7 +68,8 @@ class TestSpeedLimitResolverValidation:
 
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
   def test_initial_state(self, resolver_class, policy):
-    resolver = resolver_class(policy)
+    resolver = resolver_class()
+    resolver.policy = policy
     for source in ALL_SOURCES:
       if source in resolver._limit_solutions:
         assert resolver._limit_solutions[source] == 0.
@@ -76,7 +77,8 @@ class TestSpeedLimitResolverValidation:
 
   @parametrized_policies
   def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
-    resolver = resolver_class(policy)
+    resolver = resolver_class()
+    resolver.policy = policy
     sm_mock = setup_sm_mock(mocker)
     source_speed_limit = sm_mock[sm_key].speedLimit
 
@@ -86,7 +88,8 @@ class TestSpeedLimitResolverValidation:
     assert resolver.source == ALL_SOURCES[function_key]
 
   def test_resolver_combined(self, resolver_class, mocker: MockerFixture):
-    resolver = resolver_class(Policy.combined)
+    resolver = resolver_class()
+    resolver.policy = Policy.combined
     sm_mock = setup_sm_mock(mocker)
     socket_to_source = {'carStateSP': SpeedLimitSource.car, 'liveMapDataSP': SpeedLimitSource.map}
     minimum_key, minimum_speed_limit = min(
@@ -100,7 +103,8 @@ class TestSpeedLimitResolverValidation:
 
   @parametrized_policies
   def test_parser(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
-    resolver = resolver_class(policy)
+    resolver = resolver_class()
+    resolver.policy = policy
     sm_mock = setup_sm_mock(mocker)
     source_speed_limit = sm_mock[sm_key].speedLimit
 
@@ -112,7 +116,8 @@ class TestSpeedLimitResolverValidation:
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
   def test_resolve_interaction_in_update(self, resolver_class, policy, mocker: MockerFixture):
     v_ego = 50
-    resolver = resolver_class(policy)
+    resolver = resolver_class()
+    resolver.policy = policy
 
     sm_mock = setup_sm_mock(mocker)
     resolver.update(v_ego, sm_mock)
@@ -124,7 +129,8 @@ class TestSpeedLimitResolverValidation:
 
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
   def test_old_map_data_ignored(self, resolver_class, policy, mocker: MockerFixture):
-    resolver = resolver_class(policy)
+    resolver = resolver_class()
+    resolver.policy = policy
     sm_mock = mocker.MagicMock()
     sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
     resolver._get_from_map_data(sm_mock)

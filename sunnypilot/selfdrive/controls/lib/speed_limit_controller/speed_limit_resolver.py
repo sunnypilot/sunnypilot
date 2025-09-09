@@ -5,7 +5,8 @@ import cereal.messaging as messaging
 from cereal import custom
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
+from openpilot.common.realtime import DT_MDL
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC, PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
@@ -21,12 +22,15 @@ class SpeedLimitResolver:
   distance: float
   source: SpeedLimitSource
 
-  def __init__(self, policy: Policy):
-    self._gps_location_service = get_gps_location_service(Params())
+  def __init__(self):
+    self.params = Params()
+    self.frame = -1
+
+    self._gps_location_service = get_gps_location_service(self.params)
     self._limit_solutions = {}
     self._distance_solutions = {}
 
-    self._policy = policy
+    self.policy = self.params.get("SpeedLimitControlPolicy", return_default=True)
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.car_state_priority: [SpeedLimitSource.car, SpeedLimitSource.map],
@@ -37,8 +41,13 @@ class SpeedLimitResolver:
     for source in ALL_SOURCES:
       self._reset_limit_sources(source)
 
+  def update_params(self):
+    if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
+      self.policy = Policy(self.params.get("SpeedLimitControlPolicy", return_default=True))
+      self.change_policy(self.policy)
+
   def change_policy(self, policy: Policy) -> None:
-    self._policy = policy
+    self.policy = policy
 
   def _reset_limit_sources(self, source: SpeedLimitSource) -> None:
     self._limit_solutions[source] = 0.
@@ -97,9 +106,9 @@ class SpeedLimitResolver:
     return speed_limit, distance, source
 
   def _get_source_solution_according_to_policy(self) -> SpeedLimitSource:
-    sources_for_policy = self._policy_to_sources_map[self._policy]
+    sources_for_policy = self._policy_to_sources_map[self.policy]
 
-    if self._policy != Policy.combined:
+    if self.policy != Policy.combined:
       # They are ordered in the order of preference, so we pick the first that's non zero
       for source in sources_for_policy:
         if self._limit_solutions[source] > 0.:
@@ -116,6 +125,9 @@ class SpeedLimitResolver:
 
   def update(self, v_ego: float, sm: messaging.SubMaster) -> None:
     self._v_ego = v_ego
+    self.update_params()
     self._resolve_limit_sources(sm)
 
     self.speed_limit, self.distance, self.source = self._consolidate()
+
+    self.frame += 1

@@ -41,8 +41,8 @@ def live_map_data_sp_thread_debug(gps_location_service):
   _sub_master.update()
 
   v_ego = _sub_master['carState'].vEgo
-  _policy = Policy.car_state_priority
-  _resolver = SpeedLimitResolver(_policy)
+  _resolver = SpeedLimitResolver()
+  _resolver.policy = Policy.car_state_priority
   _resolver.update(v_ego, _sub_master)
   print(_resolver.speed_limit, _resolver.distance, _resolver.source)
 
