@@ -221,10 +221,10 @@ class SpeedLimitController:
     return enabled, active
 
   def update_events(self, events_sp: EventsSP) -> None:
-    if self.is_active:
-      if self.state == SpeedLimitControlState.preActive:
-        events_sp.add(EventNameSP.speedLimitPreActive)
-      elif self._state_prev not in ACTIVE_STATES:
+    if self.state == SpeedLimitControlState.preActive:
+      events_sp.add(EventNameSP.speedLimitPreActive)
+    elif self.is_active:
+      if self._state_prev not in ACTIVE_STATES:
         events_sp.add(EventNameSP.speedLimitActive)
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitValueChange)
