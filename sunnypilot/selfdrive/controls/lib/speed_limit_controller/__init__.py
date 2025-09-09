@@ -4,6 +4,7 @@ SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
 DEBUG = True
 PARAMS_UPDATE_PERIOD = 3.  # secs. Time between parameter updates.
+DISABLED_GUARD_PERIOD = 2  # secs.
 PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
 
 # Constants for Limit controllers.

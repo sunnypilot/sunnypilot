@@ -12,7 +12,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
-  SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE
+  SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
@@ -37,7 +37,7 @@ class SpeedLimitController:
     self.params = Params()
     self.CP = CP
     self.frame = -1
-    self.last_op_engaged_frame = 0.0
+    self.long_engaged_timer = 0
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitControl")
@@ -162,9 +162,6 @@ class SpeedLimitController:
     # Update current velocity offset (error)
     self.v_offset = self.speed_limit_final - self.v_ego
 
-    if not self.op_engaged_prev and self.op_engaged:
-      self.last_op_engaged_frame = self.frame
-
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego
 
@@ -189,6 +186,7 @@ class SpeedLimitController:
   def update_state_machine(self):
     self._state_prev = self.state
 
+    self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
     if self.state != SpeedLimitControlState.disabled:
@@ -241,8 +239,10 @@ class SpeedLimitController:
     # DISABLED
     elif self.state == SpeedLimitControlState.disabled:
       if self.op_engaged and self.enabled:
-        # Wait 2 seconds after long engaged before starting fresh session
-        if (self.frame - self.last_op_engaged_frame) * DT_MDL >= 2.:
+        if not self.op_engaged_prev:
+          self.pre_active_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
+
+        elif self.pre_active_timer <= 0:
           self.state = SpeedLimitControlState.preActive
           self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           self.initial_max_set = False
