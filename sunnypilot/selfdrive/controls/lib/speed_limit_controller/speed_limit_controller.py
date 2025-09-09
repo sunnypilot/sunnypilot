@@ -38,7 +38,7 @@ class SpeedLimitController:
     self.CP = CP
     self.frame = -1
     self.last_op_engaged_frame = 0.0
-    self.last_preactive_frame = 0.0
+    self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitControl")
     self.op_engaged = False
@@ -165,9 +165,6 @@ class SpeedLimitController:
     if not self.op_engaged_prev and self.op_engaged:
       self.last_op_engaged_frame = self.frame
 
-    if not self._state_prev == SpeedLimitControlState.preActive and self.state == SpeedLimitControlState.preActive:
-      self.last_preactive_frame = self.frame
-
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego
 
@@ -191,6 +188,8 @@ class SpeedLimitController:
 
   def update_state_machine(self):
     self._state_prev = self.state
+
+    self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
     if self.state != SpeedLimitControlState.disabled:
       if not self.op_engaged or not self.enabled:
@@ -231,7 +230,7 @@ class SpeedLimitController:
                 self.state = SpeedLimitControlState.active
             else:
               self.state = SpeedLimitControlState.pending
-          elif (self.frame - self.last_preactive_frame) * DT_MDL >= PRE_ACTIVE_GUARD_PERIOD:
+          elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
             # Timeout - session ended
             self.state = SpeedLimitControlState.inactive
 
@@ -245,6 +244,7 @@ class SpeedLimitController:
         # Wait 2 seconds after long engaged before starting fresh session
         if (self.frame - self.last_op_engaged_frame) * DT_MDL >= 2.:
           self.state = SpeedLimitControlState.preActive
+          self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           self.initial_max_set = False
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,

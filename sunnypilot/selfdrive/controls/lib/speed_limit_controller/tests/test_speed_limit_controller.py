@@ -37,6 +37,7 @@ class TestSpeedLimitController:
     self.events_sp = EventsSP()
     CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2_2022)
     self.slc = SpeedLimitController(CI.CP)
+    self.slc.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
 
   def teardown_method(self, method):
     self.reset_state()

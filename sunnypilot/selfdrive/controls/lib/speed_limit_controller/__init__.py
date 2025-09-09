@@ -4,7 +4,7 @@ SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
 DEBUG = True
 PARAMS_UPDATE_PERIOD = 3.  # secs. Time between parameter updates.
-PRE_ACTIVE_GUARD_PERIOD = 5.  # secs. Time to wait after activation before considering temp deactivation signal.
+PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
 
 # Constants for Limit controllers.
 LIMIT_ADAPT_ACC = -1.  # m/s^2 Ideal acceleration for the adapting (braking) phase when approaching speed limits.
