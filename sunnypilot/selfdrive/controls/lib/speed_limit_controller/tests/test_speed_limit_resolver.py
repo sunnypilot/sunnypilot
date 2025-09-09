@@ -10,7 +10,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import L
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver, ALL_SOURCES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
 
 
 def create_mock(properties, mocker: MockerFixture):

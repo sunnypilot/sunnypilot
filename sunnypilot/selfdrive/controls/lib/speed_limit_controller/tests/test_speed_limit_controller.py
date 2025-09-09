@@ -21,7 +21,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import S
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
 
 ALL_STATES = tuple(SpeedLimitControlState.schema.enumerants.values())
 

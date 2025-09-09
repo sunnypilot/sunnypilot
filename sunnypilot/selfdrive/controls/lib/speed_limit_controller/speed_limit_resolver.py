@@ -9,26 +9,26 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC, PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
 
 ALL_SOURCES = tuple(SpeedLimitSource.schema.enumerants.values())
 
 
 class SpeedLimitResolver:
-  _limit_solutions: dict[SpeedLimitSource, float]  # Store for speed limit solutions from different sources
-  _distance_solutions: dict[SpeedLimitSource, float]  # Store for distance to current speed limit start for different sources
+  _limit_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, float]
+  _distance_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, float]
   _v_ego: float
   speed_limit: float
   distance: float
-  source: SpeedLimitSource
+  source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
 
   def __init__(self):
     self.params = Params()
     self.frame = -1
 
     self._gps_location_service = get_gps_location_service(self.params)
-    self._limit_solutions = {}
-    self._distance_solutions = {}
+    self._limit_solutions = {}  # Store for speed limit solutions from different sources
+    self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
     self.policy = self.params.get("SpeedLimitControlPolicy", return_default=True)
     self._policy_to_sources_map = {
@@ -49,7 +49,7 @@ class SpeedLimitResolver:
   def change_policy(self, policy: Policy) -> None:
     self.policy = policy
 
-  def _reset_limit_sources(self, source: SpeedLimitSource) -> None:
+  def _reset_limit_sources(self, source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource) -> None:
     self._limit_solutions[source] = 0.
     self._distance_solutions[source] = 0.
 
@@ -98,21 +98,20 @@ class SpeedLimitResolver:
         self._limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self._distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
-  def _consolidate(self) -> tuple[float, float, SpeedLimitSource]:
+  def _consolidate(self) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource]:
     source = self._get_source_solution_according_to_policy()
     speed_limit = self._limit_solutions[source] if source else 0.
     distance = self._distance_solutions[source] if source else 0.
 
     return speed_limit, distance, source
 
-  def _get_source_solution_according_to_policy(self) -> SpeedLimitSource:
+  def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource:
     sources_for_policy = self._policy_to_sources_map[self.policy]
 
     if self.policy != Policy.combined:
       # They are ordered in the order of preference, so we pick the first that's non zero
       for source in sources_for_policy:
-        if self._limit_solutions[source] > 0.:
-          return source
+        return source if self._limit_solutions[source] > 0. else SpeedLimitSource.none
 
     limits = np.array([self._limit_solutions[source] for source in sources_for_policy], dtype=float)
     sources = np.array(sources_for_policy, dtype=int)

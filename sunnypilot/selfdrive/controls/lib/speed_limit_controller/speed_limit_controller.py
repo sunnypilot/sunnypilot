@@ -19,7 +19,7 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 EventNameSP = custom.OnroadEventSP.EventName
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
 
 ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
 ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pending, *ACTIVE_STATES)
@@ -28,7 +28,7 @@ ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pendi
 class SpeedLimitController:
   _speed_limit: float
   _distance: float
-  _source: SpeedLimitSource
+  _source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
   v_ego: float
   a_ego: float
   v_offset: float
@@ -87,7 +87,7 @@ class SpeedLimitController:
     return self._distance
 
   @property
-  def source(self) -> SpeedLimitSource:
+  def source(self) -> custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource:
     return self._source
 
   def get_v_target_from_control(self) -> float:
@@ -244,7 +244,7 @@ class SpeedLimitController:
     return enabled, active
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
-             speed_limit: float, distance: float, source: SpeedLimitSource, events_sp: EventsSP) -> float:
+             speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
 
     self._speed_limit = speed_limit
