@@ -43,6 +43,8 @@ class SpeedLimitController:
     self.enabled = self.params.get_bool("SpeedLimitControl")
     self.op_engaged = False
     self.op_engaged_prev = False
+    self.is_enabled = False
+    self.is_active = False
     self.v_ego = 0.
     self.a_ego = 0.
     self.v_offset = 0.
@@ -70,14 +72,6 @@ class SpeedLimitController:
       SpeedLimitControlState.adapting: self.get_adapting_state_target_acceleration,
       SpeedLimitControlState.active: self.get_active_state_target_acceleration,
     }
-
-  @property
-  def is_enabled(self) -> bool:
-    return self.state in ENABLED_STATES
-
-  @property
-  def is_active(self) -> bool:
-    return self.state in ACTIVE_STATES
 
   @property
   def speed_limit_final(self) -> float:
@@ -247,6 +241,11 @@ class SpeedLimitController:
           self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           self.initial_max_set = False
 
+    enabled = self.state in ENABLED_STATES
+    active = self.state in ACTIVE_STATES
+
+    return enabled, active
+
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
@@ -257,7 +256,7 @@ class SpeedLimitController:
 
     self.update_params()
     self.update_calculations(v_ego, a_ego, v_cruise_setpoint)
-    self.update_state_machine()
+    self.is_enabled, self.is_active = self.update_state_machine()
     self.update_events(events_sp)
 
     # Update change tracking variables
