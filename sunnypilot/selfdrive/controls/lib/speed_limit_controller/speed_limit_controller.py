@@ -83,10 +83,6 @@ class SpeedLimitController:
     return self.get_offset(self.offset_type, self.offset_value)
 
   @property
-  def speed_limit(self) -> float:
-    return self._speed_limit
-
-  @property
   def distance(self) -> float:
     return self._distance
 
