@@ -14,11 +14,12 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
   SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Engage, OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 EventNameSP = custom.OnroadEventSP.EventName
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
 
 ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
 ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pending, *ACTIVE_STATES)
@@ -27,7 +28,7 @@ ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pendi
 class SpeedLimitController:
   _speed_limit: float
   _distance: float
-  _source: Source
+  _source: SpeedLimitSource
   v_ego: float
   a_ego: float
   v_offset: float
@@ -55,7 +56,7 @@ class SpeedLimitController:
     self.speed_limit_prev = 0.
     self.last_valid_speed_limit_final = 0.
     self._distance = 0.
-    self._source = Source.none
+    self._source = SpeedLimitSource.none
     self.state = SpeedLimitControlState.disabled
     self._state_prev = SpeedLimitControlState.disabled
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
@@ -90,7 +91,7 @@ class SpeedLimitController:
     return self._distance
 
   @property
-  def source(self) -> Source:
+  def source(self) -> SpeedLimitSource:
     return self._source
 
   def get_v_target_from_control(self) -> float:
@@ -247,7 +248,7 @@ class SpeedLimitController:
     return enabled, active
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
-             speed_limit: float, distance: float, source: Source, events_sp: EventsSP) -> float:
+             speed_limit: float, distance: float, source: SpeedLimitSource, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
 
     self._speed_limit = speed_limit

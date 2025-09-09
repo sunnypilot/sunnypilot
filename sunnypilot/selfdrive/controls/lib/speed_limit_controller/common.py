@@ -1,12 +1,6 @@
 from enum import IntEnum
 
 
-class Source(IntEnum):
-  none = 0
-  car_state = 1
-  map_data = 2
-
-
 class Policy(IntEnum):
   map_data_only = 0
   car_state_only = 1

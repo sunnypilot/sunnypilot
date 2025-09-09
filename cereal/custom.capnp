@@ -144,6 +144,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     speedLimit @3 :Float32;
     speedLimitOffset @4 :Float32;
     distToSpeedLimit @5 :Float32;
+    source @6 :SpeedLimitSource;
   }
 
   enum SpeedLimitControlState {
@@ -153,6 +154,12 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     pending @3; # Awaiting new speed limit.
     adapting @4; # Reducing speed to match new speed limit.
     active @5; # Cruising at speed limit.
+  }
+
+  enum SpeedLimitSource {
+    none @0;
+    car @1;
+    map @2;
   }
 }
 

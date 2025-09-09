@@ -52,9 +52,9 @@ class LongitudinalPlannerSP:
     self.events_sp.clear()
 
     # Speed Limit Control
-    _speed_limit, _distance, _source = self.resolver.resolve(v_ego, sm)
+    self.resolver.update(v_ego, sm)
     v_cruise_slc = self.slc.update(sm['carControl'].longActive, v_ego, a_ego, sm['carState'].vCruiseCluster,
-                                   _speed_limit, _distance, _source, self.events_sp)
+                                   self.resolver.speed_limit, self.resolver.distance, self.resolver.source, self.events_sp)
 
     v_cruise_final = min(v_cruise, v_cruise_slc)
 
@@ -84,8 +84,9 @@ class LongitudinalPlannerSP:
     slc.state = self.slc.state
     slc.enabled = self.slc.is_enabled
     slc.active = self.slc.is_active
-    slc.speedLimit = float(self.slc.speed_limit)
+    slc.speedLimit = float(self.resolver.speed_limit)
     slc.speedLimitOffset = float(self.slc.speed_limit_offset)
-    slc.distToSpeedLimit = float(self.slc.distance)
+    slc.distToSpeedLimit = float(self.resolver.distance)
+    slc.source = self.resolver.source
 
     pm.send('longitudinalPlanSP', plan_sp_send)
