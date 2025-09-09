@@ -4,7 +4,7 @@
 
 A supported vehicle is one that just works when you install a comma device. All supported cars provide a better experience than any stock system. Supported vehicles reference the US market unless otherwise specified.
 
-# 323 Supported Cars
+# 324 Supported Cars
 
 |Make|Model|Supported Package|ACC|No ACC accel below|No ALC below|Steering Torque|Resume from stop|<a href="##"><img width=2000></a>Hardware Needed<br>&nbsp;|Video|Setup Video|
 |---|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -331,6 +331,7 @@ A supported vehicle is one that just works when you install a comma device. All 
 |Volkswagen|Tiguan 2018-24|Adaptive Cruise Control (ACC) & Lane Assist|openpilot available[<sup>1,16</sup>](#footnotes)|0 mph|0 mph|[![star](assets/icon-star-full.svg)](##)|[![star](assets/icon-star-full.svg)](##)|<details><summary>Parts</summary><sub>- 1 USB-C coupler<br>- 1 VW J533 connector<br>- 1 comma 3X<br>- 1 harness box<br>- 1 long OBD-C cable (9.5 ft)<br>- 1 mount<br>- 1 right angle OBD-C cable (1.5 ft)<br><a href="https://comma.ai/shop/comma-3x?harness=Volkswagen Tiguan 2018-24">Buy Here</a></sub></details>|||
 |Volkswagen|Tiguan eHybrid 2021-23|Adaptive Cruise Control (ACC) & Lane Assist|openpilot available[<sup>1,16</sup>](#footnotes)|0 mph|0 mph|[![star](assets/icon-star-full.svg)](##)|[![star](assets/icon-star-full.svg)](##)|<details><summary>Parts</summary><sub>- 1 USB-C coupler<br>- 1 VW J533 connector<br>- 1 comma 3X<br>- 1 harness box<br>- 1 long OBD-C cable (9.5 ft)<br>- 1 mount<br>- 1 right angle OBD-C cable (1.5 ft)<br><a href="https://comma.ai/shop/comma-3x?harness=Volkswagen Tiguan eHybrid 2021-23">Buy Here</a></sub></details>|||
 |Volkswagen|Touran 2016-23|Adaptive Cruise Control (ACC) & Lane Assist|openpilot available[<sup>1,16</sup>](#footnotes)|0 mph|0 mph|[![star](assets/icon-star-full.svg)](##)|[![star](assets/icon-star-full.svg)](##)|<details><summary>Parts</summary><sub>- 1 USB-C coupler<br>- 1 VW J533 connector<br>- 1 comma 3X<br>- 1 harness box<br>- 1 long OBD-C cable (9.5 ft)<br>- 1 mount<br>- 1 right angle OBD-C cable (1.5 ft)<br><a href="https://comma.ai/shop/comma-3x?harness=Volkswagen Touran 2016-23">Buy Here</a></sub></details>|||
+|Volvo|V60|Adaptive Cruise Control & Lane Keeping Aid|Stock|0 mph|2 mph|[![star](assets/icon-star-full.svg)](##)|[![star](assets/icon-star-full.svg)](##)|<details><summary>Parts</summary><sub>- 1 Developer connector<br>- 1 comma 3X<br>- 1 comma power v3<br>- 1 harness box<br>- 1 mount<br>- 1 right angle OBD-C cable (1.5 ft)<br><a href="https://comma.ai/shop/comma-3x?harness=Volvo V60">Buy Here</a></sub></details>|||
 
 ### Footnotes
 <sup>1</sup>openpilot Longitudinal Control (Alpha) is available behind a toggle; the toggle is only available in non-release branches such as `devel` or `nightly-dev`. <br />
