@@ -93,8 +93,7 @@ class SpeedLimitController:
   def source(self) -> Source:
     return self._source
 
-  @property
-  def final_cruise_speed(self) -> float:
+  def get_v_target_from_control(self) -> float:
     if self.is_active:
       # If we have a current valid speed limit, use it
       if self._speed_limit > 0:
@@ -264,7 +263,8 @@ class SpeedLimitController:
     self.speed_limit_prev = self._speed_limit
     self.v_cruise_setpoint_prev = self.v_cruise_setpoint
     self.op_engaged_prev = self.op_engaged
-
     self.frame += 1
 
-    return self.final_cruise_speed
+    v_target = self.get_v_target_from_control()
+
+    return v_target

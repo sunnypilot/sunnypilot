@@ -81,7 +81,7 @@ class TestSpeedLimitController:
     assert self.slc.state == SpeedLimitControlState.disabled
     assert not self.slc.is_enabled
     assert not self.slc.is_active
-    assert self.slc.final_cruise_speed == V_CRUISE_UNSET
+    assert V_CRUISE_UNSET == self.slc.get_v_target_from_control()
 
   def test_disabled(self):
     self.params.put_bool("SpeedLimitControl", False)
