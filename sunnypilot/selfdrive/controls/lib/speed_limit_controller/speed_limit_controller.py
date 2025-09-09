@@ -14,12 +14,12 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
   SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Engage, OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import OffsetType
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 EventNameSP = custom.OnroadEventSP.EventName
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
 
 ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
 ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pending, *ACTIVE_STATES)
@@ -28,7 +28,7 @@ ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pendi
 class SpeedLimitController:
   _speed_limit: float
   _distance: float
-  _source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
+  _source: custom.LongitudinalPlanSP.SpeedLimitSource
   v_ego: float
   a_ego: float
   v_offset: float
@@ -82,14 +82,6 @@ class SpeedLimitController:
   def speed_limit_offset(self) -> float:
     return self.get_offset(self.offset_type, self.offset_value)
 
-  @property
-  def distance(self) -> float:
-    return self._distance
-
-  @property
-  def source(self) -> custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource:
-    return self._source
-
   def get_v_target_from_control(self) -> float:
     if self.is_active:
       # If we have a current valid speed limit, use it
@@ -129,10 +121,6 @@ class SpeedLimitController:
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
 
-  @staticmethod
-  def read_engage_type_param() -> Engage:
-    return Engage.auto
-
   def initial_max_set_confirmed(self) -> bool:
     return bool(abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
 
@@ -144,10 +132,8 @@ class SpeedLimitController:
 
     return False
 
-  def update_calculations(self, v_ego: float, a_ego: float, v_cruise_setpoint: float) -> None:
+  def update_calculations(self, v_cruise_setpoint: float) -> None:
     self.v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
-    self.v_ego = v_ego
-    self.a_ego = a_ego
 
     # Update current velocity offset (error)
     self.v_offset = self.speed_limit_final - self.v_ego
@@ -244,15 +230,17 @@ class SpeedLimitController:
     return enabled, active
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
-             speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, events_sp: EventsSP) -> float:
+             speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitSource, events_sp: EventsSP) -> float:
     self.op_engaged = long_active
+    self.v_ego = v_ego
+    self.a_ego = a_ego
 
     self._speed_limit = speed_limit
     self._distance = distance
     self._source = source
 
     self.update_params()
-    self.update_calculations(v_ego, a_ego, v_cruise_setpoint)
+    self.update_calculations(v_cruise_setpoint)
     self.is_enabled, self.is_active = self.update_state_machine()
     self.update_events(events_sp)
 

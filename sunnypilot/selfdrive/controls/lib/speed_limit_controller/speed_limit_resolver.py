@@ -9,18 +9,18 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC, PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
 
 ALL_SOURCES = tuple(SpeedLimitSource.schema.enumerants.values())
 
 
 class SpeedLimitResolver:
-  _limit_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, float]
-  _distance_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource, float]
+  _limit_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitSource, float]
+  _distance_solutions: dict[custom.LongitudinalPlanSP.SpeedLimitSource, float]
   _v_ego: float
   speed_limit: float
   distance: float
-  source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource
+  source: custom.LongitudinalPlanSP.SpeedLimitSource
 
   def __init__(self):
     self.params = Params()
@@ -49,7 +49,7 @@ class SpeedLimitResolver:
   def change_policy(self, policy: Policy) -> None:
     self.policy = policy
 
-  def _reset_limit_sources(self, source: custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource) -> None:
+  def _reset_limit_sources(self, source: custom.LongitudinalPlanSP.SpeedLimitSource) -> None:
     self._limit_solutions[source] = 0.
     self._distance_solutions[source] = 0.
 
@@ -98,14 +98,14 @@ class SpeedLimitResolver:
         self._limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self._distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
-  def _consolidate(self) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource]:
+  def _consolidate(self) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimitSource]:
     source = self._get_source_solution_according_to_policy()
     speed_limit = self._limit_solutions[source] if source else 0.
     distance = self._distance_solutions[source] if source else 0.
 
     return speed_limit, distance, source
 
-  def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimitControl.SpeedLimitSource:
+  def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimitSource:
     sources_for_policy = self._policy_to_sources_map[self.policy]
 
     if self.policy != Policy.combined:

@@ -9,10 +9,6 @@ class Policy(IntEnum):
   combined = 4
 
 
-class Engage(IntEnum):
-  auto = 0
-
-
 class OffsetType(IntEnum):
   off = 0
   fixed = 1
