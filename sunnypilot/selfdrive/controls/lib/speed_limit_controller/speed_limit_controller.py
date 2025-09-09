@@ -183,6 +183,7 @@ class SpeedLimitController:
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
+    # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE
     if self.state != SpeedLimitControlState.disabled:
       if not self.op_engaged or not self.enabled:
         self.state = SpeedLimitControlState.disabled
@@ -211,7 +212,7 @@ class SpeedLimitController:
             else:
               self.state = SpeedLimitControlState.active
 
-        # PREACTIVE
+        # PRE_ACTIVE
         elif self.state == SpeedLimitControlState.preActive:
           if self.initial_max_set_confirmed():
             self.initial_max_set = True
