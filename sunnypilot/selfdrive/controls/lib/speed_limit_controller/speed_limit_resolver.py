@@ -115,7 +115,7 @@ class SpeedLimitResolver:
           return source
 
     limits = np.array([self._limit_solutions[source] for source in sources_for_policy], dtype=float)
-    sources = np.array([source for source in sources_for_policy], dtype=int)
+    sources = np.array(sources_for_policy, dtype=int)
 
     if len(limits) > 0:
       min_idx = np.argmin(limits)

@@ -215,7 +215,8 @@ class TestSpeedLimitController:
   def test_long_disengaged_to_disabled(self):
     self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
 
-    v_cruise_slc = self.slc.update(False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, SpeedLimitSource.car, self.events_sp)
+    v_cruise_slc = self.slc.update(False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'],
+                                   0, SpeedLimitSource.car, self.events_sp)
     assert self.slc.state == SpeedLimitControlState.disabled
     assert v_cruise_slc == V_CRUISE_UNSET
 
