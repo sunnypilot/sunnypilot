@@ -265,7 +265,7 @@ class SpeedLimitController:
     self.state_control()
     self.update_events(events_sp)
 
-    # Update change tracking variablesZ
+    # Update change tracking variables
     self.speed_limit_prev = self._speed_limit
     self.v_cruise_setpoint_prev = self.v_cruise_setpoint
     self.op_engaged_prev = self.op_engaged
