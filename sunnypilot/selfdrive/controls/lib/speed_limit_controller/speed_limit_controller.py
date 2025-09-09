@@ -221,13 +221,13 @@ class SpeedLimitController:
     return enabled, active
 
   def update_events(self, events_sp: EventsSP) -> None:
-    if self.state == SpeedLimitControlState.preActive:
+    if self.state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive:
       events_sp.add(EventNameSP.speedLimitPreActive)
     elif self.is_active:
       if self._state_prev not in ACTIVE_STATES:
         events_sp.add(EventNameSP.speedLimitActive)
       elif self.speed_limit_changed:
-        events_sp.add(EventNameSP.speedLimitValueChange)
+        events_sp.add(EventNameSP.speedLimitChanged)
 
   def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitSource, events_sp: EventsSP) -> float:
