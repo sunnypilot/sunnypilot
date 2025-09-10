@@ -15,7 +15,7 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
-VisionTurnSpeedControlState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.VisionTurnSpeedControlState
+VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
 TRAJECTORY_SIZE = 33
 
@@ -80,13 +80,13 @@ def eval_lat_acc(v_ego, x_curv):
   return np.vectorize(lat_acc)(x_curv)
 
 
-class VisionTurnController:
+class SmartCruiseControlVision:
   def __init__(self, CP):
     self._params = Params()
     self.CP = CP
     self.frame = -1
     self.long_active = False
-    self.enabled = self._params.get_bool("VisionTurnSpeedControl")
+    self.enabled = self._params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
     self.v_ego = 0.
     self.a_ego = 0.
@@ -99,7 +99,7 @@ class VisionTurnController:
     self.lat_acc_overshoot_ahead = 0.
     self.v_overshoot_distance = 200.
 
-    self.state = VisionTurnSpeedControlState.disabled
+    self.state = VisionState.disabled
     self.current_lat_acc = 0.
     self.max_pred_lat_acc = 0.
 
@@ -121,7 +121,7 @@ class VisionTurnController:
 
   @property
   def is_active(self):
-    return self.state != VisionTurnSpeedControlState.disabled
+    return self.state != VisionState.disabled
 
   def reset(self):
     self.current_lat_acc = 0.
@@ -132,7 +132,7 @@ class VisionTurnController:
 
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self._params.get_bool("VisionTurnSpeedControl")
+      self.enabled = self._params.get_bool("SmartCruiseControlVision")
 
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.
@@ -202,58 +202,58 @@ class VisionTurnController:
 
   def _update_state_machine(self):
     # ENABLED, ENTERING, TURNING, LEAVING
-    if self.state != VisionTurnSpeedControlState.disabled:
+    if self.state != VisionState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
       if not self.long_active or not self.enabled:
-        self.state = VisionTurnSpeedControlState.disabled
+        self.state = VisionState.disabled
 
       else:
         # ENABLED
-        if self.state == VisionTurnSpeedControlState.enabled:
+        if self.state == VisionState.enabled:
           # Do not enter a turn control cycle if the speed is low.
           if self.v_ego <= _MIN_V:
             pass
           # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
           elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.entering
+            self.state = VisionState.entering
 
         # ENTERING
-        elif self.state == VisionTurnSpeedControlState.entering:
+        elif self.state == VisionState.entering:
           # Transition to Turning if current lateral acceleration is over the threshold.
           if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.turning
+            self.state = VisionState.turning
           # Abort if the predicted lateral acceleration drops
           elif self.max_pred_lat_acc < _ABORT_ENTERING_PRED_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.enabled
+            self.state = VisionState.enabled
 
         # TURNING
-        elif self.state == VisionTurnSpeedControlState.turning:
+        elif self.state == VisionState.turning:
           # Transition to Leaving if current lateral acceleration drops below a threshold.
           if self.current_lat_acc <= _LEAVING_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.leaving
+            self.state = VisionState.leaving
 
         # LEAVING
-        elif self.state == VisionTurnSpeedControlState.leaving:
+        elif self.state == VisionState.leaving:
           # Transition back to Turning if current lateral acceleration goes back over the threshold.
           if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.turning
+            self.state = VisionState.turning
           # Finish if current lateral acceleration goes below a threshold.
           elif self.current_lat_acc < _FINISH_LAT_ACC_TH:
-            self.state = VisionTurnSpeedControlState.enabled
+            self.state = VisionState.enabled
 
     # DISABLED
-    elif self.state == VisionTurnSpeedControlState.disabled:
+    elif self.state == VisionState.disabled:
       if self.long_active and self.enabled:
-        self.state = VisionTurnSpeedControlState.enabled
+        self.state = VisionState.enabled
 
   def _update_solution(self):
     # DISABLED
-    if self.state == VisionTurnSpeedControlState.disabled:
+    if self.state == VisionState.disabled:
       # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
       # the smooth deceleration.
       a_target = self.a_ego
     # ENTERING
-    elif self.state == VisionTurnSpeedControlState.entering:
+    elif self.state == VisionState.entering:
       # when not overshooting, target a smooth deceleration in preparation for a sharp turn to come.
       a_target = np.interp(self.max_pred_lat_acc, _ENTERING_SMOOTH_DECEL_BP, _ENTERING_SMOOTH_DECEL_V)
       if self.lat_acc_overshoot_ahead:
@@ -261,11 +261,11 @@ class VisionTurnController:
         # the required distance
         a_target = min((self.v_overshoot ** 2 - self.v_ego ** 2) / (2 * self.v_overshoot_distance), a_target)
     # TURNING
-    elif self.state == VisionTurnSpeedControlState.turning:
+    elif self.state == VisionState.turning:
       # When turning, we provide a target acceleration that is comfortable for the lateral acceleration felt.
       a_target = np.interp(self.current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
     # LEAVING
-    elif self.state == VisionTurnSpeedControlState.leaving:
+    elif self.state == VisionState.leaving:
       # When leaving, we provide a comfortable acceleration to regain speed.
       a_target = _LEAVING_ACC
     else:

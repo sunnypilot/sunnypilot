@@ -18,6 +18,14 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);
 
+  smartCruiseControlCamera = new ParamControl(
+  "Mads",
+  tr("Modular Assistive Driving System (MADS)"),
+  tr("Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement."),
+  "");
+  smartCruiseControlCamera->setConfirmation(true, false);
+  list->addItem(smartCruiseControlCamera);
+
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 

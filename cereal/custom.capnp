@@ -122,7 +122,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
-  visionTurnSpeedControl @1 :VisionTurnSpeedControl;
+  smartCruiseControl @1 :SmartCruiseControl;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -135,14 +135,18 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     }
   }
 
-  struct VisionTurnSpeedControl {
-    state @0 :VisionTurnSpeedControlState;
-    vTarget @1 :Float32;
-    aTarget @2 :Float32;
-    currentLateralAccel @3 :Float32;
-    maxPredictedLateralAccel @4 :Float32;
+  struct SmartCruiseControl {
+    vision @0 :Vision;
 
-    enum VisionTurnSpeedControlState {
+    struct Vision {
+      state @0 :VisionState;
+      vTarget @1 :Float32;
+      aTarget @2 :Float32;
+      currentLateralAccel @3 :Float32;
+      maxPredictedLateralAccel @4 :Float32;
+    }
+
+    enum VisionState {
       disabled @0; # System disabled or inactive.
       enabled @1; # No predicted substantial turn on vision range.
       entering @2; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.

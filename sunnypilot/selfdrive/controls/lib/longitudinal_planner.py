@@ -8,7 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
-from openpilot.sunnypilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
+from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import SmartCruiseControlVision
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -17,7 +17,7 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
-    self.v_tsc = VisionTurnController(CP)
+    self.scc_v = SmartCruiseControlVision(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
 
   @property
@@ -32,9 +32,9 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
-    self.v_tsc.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
+    self.scc_v.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
 
-    return min(v_cruise, self.v_tsc.output_v_target)
+    return min(v_cruise, self.scc_v.output_v_target)
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
@@ -52,12 +52,14 @@ class LongitudinalPlannerSP:
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
 
+    # Smart Cruise Control
+    smartCruiseControl = longitudinalPlanSP.smartCruiseControl
     # Vision Turn Speed Control
-    visionTurnSpeedControl = longitudinalPlanSP.visionTurnSpeedControl
-    visionTurnSpeedControl.state = self.v_tsc.state
-    visionTurnSpeedControl.vTarget = float(self.v_tsc.output_v_target)
-    visionTurnSpeedControl.aTarget = float(self.v_tsc.output_a_target)
-    visionTurnSpeedControl.currentLateralAccel = float(self.v_tsc.current_lat_acc)
-    visionTurnSpeedControl.maxPredictedLateralAccel = float(self.v_tsc.max_pred_lat_acc)
+    sccVision = smartCruiseControl.vision
+    sccVision.state = self.scc_v.state
+    sccVision.vTarget = float(self.scc_v.output_v_target)
+    sccVision.aTarget = float(self.scc_v.output_a_target)
+    sccVision.currentLateralAccel = float(self.scc_v.current_lat_acc)
+    sccVision.maxPredictedLateralAccel = float(self.scc_v.max_pred_lat_acc)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
