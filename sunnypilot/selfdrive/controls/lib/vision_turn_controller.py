@@ -51,14 +51,6 @@ _LEAVING_ACC = 0.5  # Conformable acceleration to regain speed while leaving a t
 
 _MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
 
-_DEBUG = False
-
-
-def _debug(msg):
-  if not _DEBUG:
-    return
-  print(msg)
-
 
 def eval_curvature(poly, x_vals):
   """
@@ -87,18 +79,6 @@ def eval_lat_acc(v_ego, x_curv):
   return np.vectorize(lat_acc)(x_curv)
 
 
-def _description_for_state(turn_controller_state):
-  if turn_controller_state == VisionTurnSpeedControlState.disabled:
-    return 'DISABLED'
-  if turn_controller_state == VisionTurnSpeedControlState.entering:
-    return 'ENTERING'
-  if turn_controller_state == VisionTurnSpeedControlState.turning:
-    return 'TURNING'
-  if turn_controller_state == VisionTurnSpeedControlState.leaving:
-    return 'LEAVING'
-  return NotImplementedError("v-tsc: state not supported")
-
-
 class VisionTurnController:
   def __init__(self, CP):
     self._params = Params()
@@ -112,21 +92,9 @@ class VisionTurnController:
     self._a_ego = 0.
     self._a_target = 0.
     self._v_overshoot = 0.
-    self._state = VisionTurnSpeedControlState.disabled
+    self.state = VisionTurnSpeedControlState.disabled
 
     self._reset()
-
-  @property
-  def state(self):
-    return self._state
-
-  @state.setter
-  def state(self, value):
-    if value != self._state:
-      _debug(f'TVC: TurnVisionController state: {_description_for_state(value)}')
-      if value == VisionTurnSpeedControlState.disabled:
-        self._reset()
-    self._state = value
 
   def get_a_target_from_control(self) -> float:
     if self.is_active:
@@ -152,7 +120,7 @@ class VisionTurnController:
 
   @property
   def is_active(self):
-    return self._state != VisionTurnSpeedControlState.disabled
+    return self.state != VisionTurnSpeedControlState.disabled
 
   def _reset(self):
     self._current_lat_acc = 0.
@@ -232,7 +200,6 @@ class VisionTurnController:
     if self._lat_acc_overshoot_ahead:
       self._v_overshoot = min(math.sqrt(_A_LAT_REG_MAX / max_pred_curvature), self._v_cruise_setpoint)
       self._v_overshoot_distance = max(float(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START), _EVAL_STEP)
-      _debug(f'TVC: High LatAcc. Dist: {self._v_overshoot_distance:.2f}, v: {self._v_overshoot * CV.MS_TO_KPH:.2f}')
 
   def _state_transition(self):
     # In any case, if a system is disabled or the feature is disabled or gas is pressed, disable.
