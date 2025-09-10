@@ -195,41 +195,47 @@ class VisionTurnController:
       self._v_overshoot = min(math.sqrt(_A_LAT_REG_MAX / max_pred_curvature), self._v_cruise_setpoint)
       self._v_overshoot_distance = max(float(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START), _EVAL_STEP)
 
-  def _state_transition(self):
-    # In any case, if a system is disabled or the feature is disabled or gas is pressed, disable.
-    if not self._op_enabled or not self._is_enabled or self._gas_pressed:
-      self.state = VisionTurnSpeedControlState.disabled
-      return
+  def update_state_machine(self):
+    # ENTERING, TURNING, LEAVING
+    if self.state != VisionTurnSpeedControlState.disabled:
+      # longitudinal and feature disable always have priority in a non-disabled state
+      if not self._op_enabled or not self._is_enabled:
+        self.state = VisionTurnSpeedControlState.disabled
+
+      else:
+        # LEAVING
+        if self.state == VisionTurnSpeedControlState.leaving:
+          # Transition back to Turning if current lateral acceleration goes back over the threshold.
+          if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
+            self.state = VisionTurnSpeedControlState.turning
+          # Finish if current lateral acceleration goes below a threshold.
+          elif self.current_lat_acc < _FINISH_LAT_ACC_TH:
+            self.state = VisionTurnSpeedControlState.disabled
+
+        # TURNING
+        elif self.state == VisionTurnSpeedControlState.turning:
+          # Transition to Leaving if current lateral acceleration drops below a threshold.
+          if self.current_lat_acc <= _LEAVING_LAT_ACC_TH:
+            self.state = VisionTurnSpeedControlState.leaving
+
+        # ENTERING
+        elif self.state == VisionTurnSpeedControlState.entering:
+          # Transition to Turning if current lateral acceleration is over the threshold.
+          if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
+            self.state = VisionTurnSpeedControlState.turning
+          # Abort if the predicted lateral acceleration drops
+          elif self.max_pred_lat_acc < _ABORT_ENTERING_PRED_LAT_ACC_TH:
+            self.state = VisionTurnSpeedControlState.disabled
 
     # DISABLED
-    if self.state == VisionTurnSpeedControlState.disabled:
-      # Do not enter a turn control cycle if the speed is low.
-      if self._v_ego <= _MIN_V:
-        pass
-      # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
-      elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.entering
-    # ENTERING
-    elif self.state == VisionTurnSpeedControlState.entering:
-      # Transition to Turning if current lateral acceleration is over the threshold.
-      if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.turning
-      # Abort if the predicted lateral acceleration drops
-      elif self.max_pred_lat_acc < _ABORT_ENTERING_PRED_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.disabled
-    # TURNING
-    elif self.state == VisionTurnSpeedControlState.turning:
-      # Transition to Leaving if current lateral acceleration drops below a threshold.
-      if self.current_lat_acc <= _LEAVING_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.leaving
-    # LEAVING
-    elif self.state == VisionTurnSpeedControlState.leaving:
-      # Transition back to Turning if current lateral acceleration goes back over the threshold.
-      if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.turning
-      # Finish if current lateral acceleration goes below a threshold.
-      elif self.current_lat_acc < _FINISH_LAT_ACC_TH:
-        self.state = VisionTurnSpeedControlState.disabled
+    elif self.state == VisionTurnSpeedControlState.disabled:
+      if self._op_enabled and self._is_enabled:
+        # Do not enter a turn control cycle if the speed is low.
+        if self._v_ego <= _MIN_V:
+          pass
+        # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
+        elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
+          self.state = VisionTurnSpeedControlState.entering
 
   def _update_solution(self):
     # DISABLED
@@ -266,7 +272,7 @@ class VisionTurnController:
 
     self.update_params()
     self._update_calculations(sm)
-    self._state_transition()
+    self.update_state_machine()
     self._update_solution()
 
     self.frame += 1
