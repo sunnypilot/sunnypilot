@@ -124,7 +124,7 @@ class VisionTurnController:
     self._v_overshoot_distance = 200.
     self._lat_acc_overshoot_ahead = False
 
-  def update_params(self):
+  def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
 
@@ -194,7 +194,7 @@ class VisionTurnController:
       self._v_overshoot = min(math.sqrt(_A_LAT_REG_MAX / max_pred_curvature), self._v_cruise_setpoint)
       self._v_overshoot_distance = max(float(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START), _EVAL_STEP)
 
-  def update_state_machine(self):
+  def _update_state_machine(self):
     # ENABLED, ENTERING, TURNING, LEAVING
     if self.state != VisionTurnSpeedControlState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
@@ -273,9 +273,9 @@ class VisionTurnController:
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
 
-    self.update_params()
+    self._update_params()
     self._update_calculations(sm)
-    self.update_state_machine()
+    self._update_state_machine()
     self._update_solution()
 
     self.frame += 1
