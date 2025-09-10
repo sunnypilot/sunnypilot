@@ -5,10 +5,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
-from openpilot.system.ui.lib.scroll_panel import GuiScrollPanel
-from openpilot.system.ui.lib.wrap_text import wrap_text
-from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.scroll_panel import GuiScrollPanel
+from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.wrap_text import wrap_text
+from openpilot.system.ui.widgets import Widget
+
 
 class AlertColors:
   HIGH_SEVERITY = rl.Color(226, 44, 44, 255)
@@ -40,8 +42,9 @@ class AlertData:
   visible: bool = False
 
 
-class AbstractAlert(ABC):
+class AbstractAlert(Widget, ABC):
   def __init__(self, has_reboot_btn: bool = False):
+    super().__init__()
     self.params = Params()
     self.has_reboot_btn = has_reboot_btn
     self.dismiss_callback: Callable | None = None
@@ -67,8 +70,7 @@ class AbstractAlert(ABC):
     pass
 
   def handle_input(self, mouse_pos: rl.Vector2, mouse_clicked: bool) -> bool:
-    # TODO: fix scroll_panel.is_click_valid()
-    if not mouse_clicked:
+    if not mouse_clicked or not self.scroll_panel.is_touch_valid():
       return False
 
     if rl.check_collision_point_rec(mouse_pos, self.dismiss_btn_rect):
@@ -88,7 +90,7 @@ class AbstractAlert(ABC):
 
     return False
 
-  def render(self, rect: rl.Rectangle):
+  def _render(self, rect: rl.Rectangle):
     rl.draw_rectangle_rounded(rect, AlertConstants.BORDER_RADIUS / rect.width, 10, AlertColors.BACKGROUND)
 
     footer_height = AlertConstants.BUTTON_SIZE[1] + AlertConstants.SPACING
@@ -188,14 +190,10 @@ class OffroadAlert(AbstractAlert):
 
     for alert_data in self.sorted_alerts:
       text = ""
-      bytes_data = self.params.get(alert_data.key)
+      alert_json = self.params.get(alert_data.key)
 
-      if bytes_data:
-        try:
-          alert_json = json.loads(bytes_data)
-          text = alert_json.get("text", "").replace("{}", alert_json.get("extra", ""))
-        except json.JSONDecodeError:
-          text = ""
+      if alert_json:
+        text = alert_json.get("text", "").replace("{}", alert_json.get("extra", ""))
 
       alert_data.text = text
       alert_data.visible = bool(text)
@@ -294,7 +292,7 @@ class UpdateAlert(AbstractAlert):
   def refresh(self) -> bool:
     update_available: bool = self.params.get_bool("UpdateAvailable")
     if update_available:
-      self.release_notes = self.params.get("UpdaterNewReleaseNotes", encoding='utf-8')
+      self.release_notes = self.params.get("UpdaterNewReleaseNotes")
       self._cached_content_height = 0
 
     return update_available

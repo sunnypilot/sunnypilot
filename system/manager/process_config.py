@@ -62,7 +62,11 @@ def only_offroad(started: bool, params: Params, CP: car.CarParams) -> bool:
   return not started
 
 def use_github_runner(started, params, CP: car.CarParams) -> bool:
-  return not PC and params.get_bool("EnableGithubRunner") and not params.get_bool("NetworkMetered")
+  return not PC and params.get_bool("EnableGithubRunner") and (
+    not params.get_bool("NetworkMetered") and not params.get_bool("GithubRunnerSufficientVoltage"))
+
+def use_copyparty(started, params, CP: car.CarParams) -> bool:
+  return bool(params.get_bool("EnableCopyparty"))
 
 def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for sunnylink_ready to match the process manager signature."""
@@ -87,6 +91,9 @@ def is_tinygrad_model(started, params, CP: car.CarParams) -> bool:
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
+
+def mapd_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return bool(os.path.exists(Paths.mapd_root()))
 
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
@@ -114,6 +121,7 @@ procs = [
 
   PythonProcess("sensord", "system.sensord.sensord", only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
+  PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
   NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
@@ -139,6 +147,7 @@ procs = [
   PythonProcess("updated", "system.updated.updated", only_offroad, enabled=not PC),
   PythonProcess("uploader", "system.loggerd.uploader", always_run),
   PythonProcess("statsd", "system.statsd", always_run),
+  PythonProcess("feedbackd", "selfdrive.ui.feedback.feedbackd", only_onroad),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
@@ -162,14 +171,25 @@ procs += [
   PythonProcess("backup_manager", "sunnypilot.sunnylink.backups.manager", and_(only_offroad, sunnylink_ready_shim)),
 
   # mapd
-  NativeProcess("mapd", Paths.mapd_root(), [MAPD_PATH], always_run),
+  NativeProcess("mapd", Paths.mapd_root(), ["bash", "-c", f"{MAPD_PATH} > /dev/null 2>&1"], mapd_ready),
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
-if os.path.exists("../sunnypilot/sunnylink/uploader.py"):
+if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
+
+if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
+  sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+  copyparty_args = [f"-v{Paths.crash_log_root()}:/swaglogs:r"]
+  copyparty_args += [f"-v{Paths.log_root()}:/routes:r"]
+  copyparty_args += [f"-v{Paths.model_root()}:/models:rw"]
+  copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw"]
+  copyparty_args += ["-p8080"]
+  copyparty_args += ["-z"]
+  copyparty_args += ["-q"]
+  procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}

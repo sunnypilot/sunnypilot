@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <QProgressBar>
+
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class ModelsPanel : public QWidget {
@@ -17,7 +20,10 @@ public:
 
 private:
   QString GetActiveModelName();
+  QString GetActiveModelInternalName();
+  QString GetActiveModelRef();
   void updateModelManagerState();
+  void showEvent(QShowEvent *event) override;
 
   bool isDownloading() const {
     if (!model_manager.hasSelectedBundle()) {
@@ -32,10 +38,15 @@ private:
   void updateLabels();
   void handleCurrentModelLblBtnClicked();
   void handleBundleDownloadProgress();
+  void refreshLaneTurnValueControl();
   void showResetParamsDialog();
+  QProgressBar* createProgressBar(QWidget *parent);
+  QFrame* createModelDetailFrame(QWidget *parent, QString &typeName, QProgressBar *progressBar);
   cereal::ModelManagerSP::Reader model_manager;
   cereal::ModelManagerSP::DownloadStatus download_status{};
   cereal::ModelManagerSP::DownloadStatus prev_download_status{};
+  void clearModelCache();
+  double calculateCacheSize();
 
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -59,6 +70,19 @@ private:
   bool is_onroad = false;
 
   ButtonControlSP *currentModelLblBtn;
+  ParamControlSP *lagd_toggle_control;
+  OptionControlSP *delay_control;
+  QProgressBar *supercomboProgressBar;
+  QFrame *supercomboFrame;
+  QProgressBar *navigationProgressBar;
+  QFrame *navigationFrame;
+  QProgressBar *visionProgressBar;
+  QFrame *visionFrame;
+  QProgressBar *policyProgressBar;
+  QFrame *policyFrame;
   Params params;
-
+  ButtonControlSP *clearModelCacheBtn;
+  ButtonControlSP *refreshAvailableModelsBtn;
+  ParamControlSP *lane_turn_desire_toggle;
+  OptionControlSP *lane_turn_value_control;
 };

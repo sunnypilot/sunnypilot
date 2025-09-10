@@ -34,6 +34,27 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   vlayout->setContentsMargins(50, 20, 50, 20);
 
   auto *list = new ListWidget(this, false);
+
+  QVBoxLayout *titleLayout = new QVBoxLayout;
+  QLabel *title = new QLabel(tr("🚀 sunnylink 🚀"));
+  title->setStyleSheet("font-size: 90px; font-weight: 500; font-family: 'Noto Color Emoji';");
+  titleLayout->addWidget(title, 0, Qt::AlignCenter);
+
+  QLabel *sunnylinkDesc = new QLabel("<div align='center'><font color='green'>"+
+    tr("For secure backup, restore, and remote configuration")+ "</font></div>");
+
+  QLabel *sponsorMsg = new QLabel("<div align='center'><font color='orange'>"+
+    tr("Sponsorship isn't required for basic backup/restore") + "<br>" +
+       tr("Click the sponsor button for more details")+ "</font></div>");
+
+  sunnylinkDesc->setStyleSheet("font-size: 40px; font-weight: 100; font-family: 'Noto';");
+  sponsorMsg->setStyleSheet("font-size: 35px; font-weight: 100; font-family: 'Noto';");
+
+  titleLayout->addWidget(sunnylinkDesc, 0, Qt::AlignCenter);
+  titleLayout->addWidget(sponsorMsg, 0, Qt::AlignCenter);
+
+  list->addItem(titleLayout);
+
   QString sunnylinkEnabledBtnDesc = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
   sunnylinkEnabledBtn = new ParamControl(
     "SunnylinkEnabled",
@@ -65,6 +86,14 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     }
   });
   list->addItem(horizontal_line());
+
+  QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)");
+  sunnylinkUploaderEnabledBtn = new ParamControlSP(
+    "EnableSunnylinkUploader",
+    tr("[Don't use] Enable sunnylink uploader"),
+    sunnylinkUploaderDesc,
+    "", nullptr, true);
+  list->addItem(sunnylinkUploaderEnabledBtn);
 
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
     // resets the description to the default one for the Easter egg
@@ -260,6 +289,8 @@ void SunnylinkPanel::updatePanel() {
 
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
+
+  sunnylinkUploaderEnabledBtn->setEnabled(max_current_sponsor_rule.roleTier == SponsorTier::Guardian && is_sunnylink_enabled);
 
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");

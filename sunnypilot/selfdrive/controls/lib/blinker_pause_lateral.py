@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car
 
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 
 
@@ -21,7 +21,7 @@ class BlinkerPauseLateral:
   def get_params(self) -> None:
     self.enabled = self.params.get_bool("BlinkerPauseLateralControl")
     self.is_metric = self.params.get_bool("IsMetric")
-    self.min_speed = int(self.params.get("BlinkerMinLateralControlSpeed", encoding='utf8'))
+    self.min_speed = self.params.get("BlinkerMinLateralControlSpeed")
 
   def update(self, CS: car.CarState) -> bool:
     if not self.enabled:

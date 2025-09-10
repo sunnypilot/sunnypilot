@@ -10,6 +10,7 @@ from opendbc.car import structs
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
+from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 
@@ -18,6 +19,12 @@ class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
     self.v_tsc = VisionTurnController(CP)
+    self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
+
+  @property
+  def mlsim(self) -> bool:
+    # If we don't have a generation set, we assume it's default model. Which as of today are mlsim.
+    return bool(self.generation is None or self.generation >= 11)
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():

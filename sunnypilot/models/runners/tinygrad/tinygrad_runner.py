@@ -54,6 +54,11 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
       self.input_to_dtype[name] = info[2]  # dtype
       self.input_to_device[name] = info[3]  # device
 
+  @property
+  def vision_input_names(self) -> list[str]:
+    """Returns the list of vision input names from the input shapes."""
+    return [name for name in self.input_shapes.keys() if 'img' in name]
+
   def prepare_vision_inputs(self, imgs_cl: CLMemDict, frames: FrameDict):
     """Prepares vision (image) inputs as Tinygrad Tensors."""
     for key in imgs_cl:
@@ -78,7 +83,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
 
   def _run_model(self) -> NumpyDict:
     """Runs the Tinygrad model inference and parses the outputs."""
-    outputs = self.model_run(**self.inputs).numpy().flatten()
+    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy()
     return self._parse_outputs(outputs)
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
@@ -108,6 +113,11 @@ class TinygradSplitRunner(ModelRunner):
     policy_output = self.policy_runner.run_model()
     vision_output = self.vision_runner.run_model()
     return {**policy_output, **vision_output} # Combine results
+
+  @property
+  def vision_input_names(self) -> list[str]:
+    """Returns the list of vision input names from the vision runner."""
+    return list(self.vision_runner.vision_input_names)
 
   @property
   def input_shapes(self) -> ShapeDict:

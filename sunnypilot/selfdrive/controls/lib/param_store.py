@@ -22,14 +22,21 @@ class ParamStore:
 
     self.keys = universal_params + brand_params
     self.values = {}
+    self.cached_params_list: list[capnp.lib.capnp._DynamicStructBuilder] | None = None
+
+    self.frame = 0
 
   def update(self, params: Params) -> None:
-    self.values = {k: params.get(k, encoding='utf8') or "0" for k in self.keys}
+    if self.frame % 300 == 0:
+      old_values = dict(self.values)
+      self.values = {k: params.get(k) or "0" for k in self.keys}
+      if old_values != self.values:
+        self.cached_params_list = None
+
+    self.frame += 1
 
   def publish(self) -> list[capnp.lib.capnp._DynamicStructBuilder]:
-    params_list: list[capnp.lib.capnp._DynamicStructBuilder] = []
-
-    for k in self.keys:
-      params_list.append(custom.CarControlSP.Param(key=k, value=self.values[k]))
-
-    return params_list
+    if self.cached_params_list is None:
+      # TODO-SP: Why are we doing a list instead of a dictionary here?
+      self.cached_params_list = [custom.CarControlSP.Param(key=k, value=self.values[k]) for k in self.keys]
+    return self.cached_params_list

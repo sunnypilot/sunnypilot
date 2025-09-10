@@ -22,11 +22,12 @@ from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.models.modeld_lagd import ModeldLagd
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 class FrameMeta:
@@ -39,13 +40,14 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
-class ModelState:
+class ModelState(ModelStateBase):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   temporal_idxs: slice | np.ndarray
 
   def __init__(self, context: CLContext):
+    ModelStateBase.__init__(self)
     try:
       self.model_runner = get_model_runner()
       self.constants = self.model_runner.constants
@@ -54,64 +56,71 @@ class ModelState:
       raise
 
     model_bundle = get_active_bundle()
-    self.generation = model_bundle.generation
+    self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
-    self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
+    self.frames = {name: DrivingModelFrame(context, buffer_length) for name in self.model_runner.vision_input_names}
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
+    self.temporal_buffers = {}
+    self.temporal_idxs_map = {}
 
     for key, shape in self.model_runner.input_shapes.items():
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+        # Temporal input: shape is [batch, history, features]
+        if len(shape) == 3 and shape[1] > 1:
+          buffer_history_len = shape[1] * 4 if shape[1] < 99 else shape[1]  # Allow for higher history buffers in the future
+          feature_len = shape[2]
+          features_buffer_shape = self.model_runner.input_shapes.get('features_buffer')
+          if shape[1] in (24, 25) and features_buffer_shape is not None and features_buffer_shape[1] == 24:  # 20Hz
+            buffer_history_len = (features_buffer_shape[1] + 1) * 4
+            step = int(-buffer_history_len / shape[1])
+            self.temporal_idxs_map[key] = np.arange(step, step * (shape[1] + 1), step)[::-1]
+          elif shape[1] == 25:  # Split
+            skip = buffer_history_len // shape[1]
+            self.temporal_idxs_map[key] = np.arange(buffer_history_len)[-1 - (skip * (shape[1] - 1))::skip]
+          elif shape[1] >= 99:  # non20hz
+            self.temporal_idxs_map[key] = np.arange(shape[1])
+          self.temporal_buffers[key] = np.zeros((1, buffer_history_len, feature_len), dtype=np.float32)
 
-    if self.model_runner.is_20hz_3d:  # split models
-      self.full_features_buffer = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN,  self.constants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(self.constants.TEMPORAL_SKIP*(self.constants.INPUT_HISTORY_BUFFER_LEN-1)), None, self.constants.TEMPORAL_SKIP)
-    elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((self.constants.FULL_HISTORY_BUFFER_LEN + 1, self.constants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((self.constants.FULL_HISTORY_BUFFER_LEN + 1, self.constants.DESIRE_LEN), dtype=np.float32)
-      num_elements = self.numpy_inputs['features_buffer'].shape[1]
-      step_size = int(-100 / num_elements)
-      self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
-                                  self.numpy_inputs['desire'].shape[2])
+  @property
+  def mlsim(self) -> bool:
+    return bool(self.generation is not None and self.generation >= 11)
 
-  def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
+  @property
+  def desire_key(self) -> str:
+    return next(key for key in self.numpy_inputs if key.startswith('desire'))
+
+  def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
-    inputs['desire'][0] = 0
-    new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
-    self.prev_desire[:] = inputs['desire']
+    inputs[self.desire_key][0] = 0
+    new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
+    self.prev_desire[:] = inputs[self.desire_key]
+    self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
+    self.temporal_buffers[self.desire_key][0,-1] = new_desire
 
-    if self.model_runner.is_20hz_3d:  # split models
-      self.full_desire[0,:-1] = self.full_desire[0,1:]
-      self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1, self.constants.INPUT_HISTORY_BUFFER_LEN, self.constants.TEMPORAL_SKIP, -1)).max(axis=2)
-    elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
-      self.full_desire[:-1] = self.full_desire[1:]
-      self.full_desire[-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
-    else: # not 20hz
-      length = inputs['desire'].shape[0]
-      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
-      self.numpy_inputs['desire'][0, -1, :length] = new_desire[:length]
+    # Roll buffer and assign based on desire.shape[1] value
+    if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
+      skip = self.temporal_buffers[self.desire_key].shape[1] // self.numpy_inputs[self.desire_key].shape[1]
+      self.numpy_inputs[self.desire_key][:] = (self.temporal_buffers[self.desire_key][0].reshape(
+                                               self.numpy_inputs[self.desire_key].shape[0], self.numpy_inputs[self.desire_key].shape[1], skip, -1).max(axis=2))
+    else:
+      self.numpy_inputs[self.desire_key][:] = self.temporal_buffers[self.desire_key][0, self.temporal_idxs_map[self.desire_key]]
 
     for key in self.numpy_inputs:
-      if key in inputs and key not in ['desire']:
+      if key in inputs and key not in [self.desire_key]:
         self.numpy_inputs[key][:] = inputs[key]
 
-    imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
-               'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
+    imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
 
     # Prepare inputs using the model runner
     self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
@@ -122,42 +131,27 @@ class ModelState:
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if self.model_runner.is_20hz_3d: # split models
-      self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
-      self.full_features_buffer[0, -1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[0, self.temporal_idxs]
-    elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
-      self.full_features_buffer[:-1] = self.full_features_buffer[1:]
-      self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.temporal_idxs]
-    else: # not 20hz
-      feature_len = outputs['hidden_state'].shape[1]
-      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
-      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
+    # Update features_buffer
+    self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
+    self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
+    self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
-
       if "prev_desired_curvs" in self.numpy_inputs.keys():
         input_name_prev = 'prev_desired_curvs'
       elif "prev_desired_curv" in self.numpy_inputs.keys():
         input_name_prev = 'prev_desired_curv'
-
-      if input_name_prev is not None:
+      if input_name_prev and input_name_prev in self.temporal_buffers:
         self.process_desired_curvature(outputs, input_name_prev)
     return outputs
 
   def process_desired_curvature(self, outputs, input_name_prev):
-    if self.model_runner.is_20hz_3d:  # split models
-      self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
-      self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
-      self.numpy_inputs[input_name_prev][:] = self.full_prev_desired_curv[0, self.temporal_idxs]
-      if self.generation == 11:
-        self.numpy_inputs[input_name_prev][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
-    else:
-      length = outputs['desired_curvature'][0].size
-      self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
-      self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
+    self.temporal_buffers[input_name_prev][0,:-1] = self.temporal_buffers[input_name_prev][0,1:]
+    self.temporal_buffers[input_name_prev][0,-1,:] = outputs['desired_curvature'][0, :]
+    self.numpy_inputs[input_name_prev][:] = self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+    if self.mlsim:
+      self.numpy_inputs[input_name_prev][:] = 0*self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
@@ -166,11 +160,12 @@ class ModelState:
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.generation)
-    if v_ego > self.MIN_LAT_CONTROL_SPEED:
-      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
-    else:
-      desired_curvature = prev_action.desiredCurvature
+    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.mlsim)
+    if self.generation is not None and self.generation >= 10: # smooth curvature for post FOF models
+      if v_ego > self.MIN_LAT_CONTROL_SPEED:
+        desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
+      else:
+        desired_curvature = prev_action.desiredCurvature
 
     return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
@@ -213,7 +208,7 @@ def main(demo=False):
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
   # messaging
-  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
+  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
@@ -238,9 +233,6 @@ def main(demo=False):
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
-
-
-  modeld_lagd = ModeldLagd()
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
@@ -286,7 +278,9 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    steer_delay = modeld_lagd.lagd_main(CP, sm, model)
+    if sm.frame % 60 == 0:
+      model.lat_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay)
+    lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -315,16 +309,18 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
+    transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
+      model.desire_key: vec_desire,
       'traffic_convention': traffic_convention,
     }
 
     if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
-    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
+    model_output = model.run(bufs, transforms, inputs, prepare_only)
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
@@ -332,8 +328,9 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
+      mdv2sp_send = messaging.new_message('modelDataV2SP')
 
-      action = model.get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
+      action = model.get_action_from_model(model_output, prev_action, lat_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
@@ -346,6 +343,7 @@ def main(demo=False):
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
+      mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
@@ -353,6 +351,7 @@ def main(demo=False):
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
+      pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
 
