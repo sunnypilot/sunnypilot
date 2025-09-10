@@ -86,12 +86,11 @@ class VisionTurnController:
     self._CP = CP
     self.frame = -1
     self._op_enabled = False
-    self._gas_pressed = False
     self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
     self._a_ego = 0.
-    self._a_target = 0.
+    self.a_target = 0.
     self._v_overshoot = 0.
     self.state = VisionTurnSpeedControlState.disabled
 
@@ -102,7 +101,7 @@ class VisionTurnController:
 
   def get_a_target_from_control(self) -> float:
     if self.is_active:
-      return self._a_target
+      return self.a_target
 
     return self._a_ego
 
@@ -110,7 +109,7 @@ class VisionTurnController:
     if self.is_active:
       if self._lat_acc_overshoot_ahead:
         return self._v_overshoot
-      return self._v_ego + self._a_target * _NO_OVERSHOOT_TIME_HORIZON
+      return self._v_ego + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
 
     return V_CRUISE_UNSET
 
@@ -259,13 +258,13 @@ class VisionTurnController:
     elif self.state == VisionTurnSpeedControlState.leaving:
       # When leaving, we provide a comfortable acceleration to regain speed.
       a_target = _LEAVING_ACC
+    else:
+      raise NotImplementedError("V-TSC state not supported")
 
-    # update solution values.
-    self._a_target = a_target
+    self.a_target = a_target
 
   def update(self, sm, enabled, v_ego, a_ego, v_cruise_setpoint):
     self._op_enabled = enabled
-    self._gas_pressed = sm['carState'].gasPressed
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
