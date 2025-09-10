@@ -91,7 +91,7 @@ class SpeedLimitController:
     return bool(self.v_cruise_setpoint != self.v_cruise_setpoint_prev)
 
   def get_v_target_from_control(self) -> float:
-    if self.is_active:
+    if self.is_enabled:
       # If we have a current valid speed limit, use it
       if self._speed_limit > 0:
         self.last_valid_speed_limit_final = self.speed_limit_final
