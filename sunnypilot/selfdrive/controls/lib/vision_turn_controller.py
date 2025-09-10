@@ -10,7 +10,7 @@ import math
 
 from cereal import custom
 from openpilot.common.params import Params
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 
