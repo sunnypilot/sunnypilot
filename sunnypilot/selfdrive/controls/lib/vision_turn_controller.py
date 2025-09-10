@@ -83,17 +83,17 @@ def eval_lat_acc(v_ego, x_curv):
 class VisionTurnController:
   def __init__(self, CP):
     self._params = Params()
-    self._CP = CP
+    self.CP = CP
     self.frame = -1
-    self._op_enabled = False
-    self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
+    self.long_active = False
+    self.enabled = self._params.get_bool("VisionTurnSpeedControl")
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
     self._a_ego = 0.
     self.a_target = 0.
     self._v_overshoot = 0.
-    self.state = VisionTurnSpeedControlState.disabled
 
+    self.state = VisionTurnSpeedControlState.disabled
     self.current_lat_acc = 0.
     self.max_pred_lat_acc = 0.
 
@@ -126,7 +126,7 @@ class VisionTurnController:
 
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
+      self.enabled = self._params.get_bool("VisionTurnSpeedControl")
 
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.
@@ -177,7 +177,7 @@ class VisionTurnController:
       path_poly = np.array([0., 0., 0., 0.])
 
     current_curvature = abs(
-      sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self._CP.steerRatio * self._CP.wheelbase))
+      sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self.CP.steerRatio * self.CP.wheelbase))
     self.current_lat_acc = current_curvature * self._v_ego ** 2
     self._max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 \
         else V_CRUISE_MAX * CV.KPH_TO_MS
@@ -198,7 +198,7 @@ class VisionTurnController:
     # ENABLED, ENTERING, TURNING, LEAVING
     if self.state != VisionTurnSpeedControlState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
-      if not self._op_enabled or not self._is_enabled:
+      if not self.long_active or not self.enabled:
         self.state = VisionTurnSpeedControlState.disabled
 
       else:
@@ -237,7 +237,7 @@ class VisionTurnController:
 
     # DISABLED
     elif self.state == VisionTurnSpeedControlState.disabled:
-      if self._op_enabled and self._is_enabled:
+      if self.long_active and self.enabled:
         self.state = VisionTurnSpeedControlState.enabled
 
   def _update_solution(self):
@@ -267,8 +267,8 @@ class VisionTurnController:
 
     self.a_target = a_target
 
-  def update(self, sm, enabled, v_ego, a_ego, v_cruise_setpoint):
-    self._op_enabled = enabled
+  def update(self, sm, long_active, v_ego, a_ego, v_cruise_setpoint):
+    self.long_active = long_active
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint

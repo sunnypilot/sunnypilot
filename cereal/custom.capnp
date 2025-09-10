@@ -142,8 +142,8 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     maxPredictedLateralAccel @3 :Float32;
 
     enum VisionTurnSpeedControlState {
-      disabled @0; # Feature disabled.
-      enabled @1; # Feature enabled; No predicted substantial turn on vision range.
+      disabled @0; # System disabled or inactive.
+      enabled @1; # No predicted substantial turn on vision range.
       entering @2; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
       turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
       leaving @4; # Road ahead straightens. Start to allow positive acceleration.

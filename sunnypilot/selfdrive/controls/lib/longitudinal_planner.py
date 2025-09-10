@@ -32,7 +32,7 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
-    targets_v_tsc = self.v_tsc.update(sm, sm['carControl'].enabled, v_ego, a_ego, v_cruise)
+    targets_v_tsc = self.v_tsc.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
 
     return min(v_cruise, targets_v_tsc[0])
 
