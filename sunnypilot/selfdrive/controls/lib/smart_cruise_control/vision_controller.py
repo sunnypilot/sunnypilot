@@ -17,6 +17,8 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
+ACTIVE_STATES = [VisionState.entering, VisionState.turning, VisionState.leaving]
+
 TRAJECTORY_SIZE = 33
 
 _MIN_V = 20 * CV.KPH_TO_MS  # Do not operate under 20 km/h
@@ -247,8 +249,8 @@ class SmartCruiseControlVision:
         self.state = VisionState.enabled
 
   def _update_solution(self):
-    # DISABLED
-    if self.state == VisionState.disabled:
+    # DISABLED, ENABLED
+    if self.state not in [ACTIVE_STATES]:
       # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
       # the smooth deceleration.
       a_target = self.a_ego
@@ -269,7 +271,7 @@ class SmartCruiseControlVision:
       # When leaving, we provide a comfortable acceleration to regain speed.
       a_target = _LEAVING_ACC
     else:
-      raise NotImplementedError("V-TSC state not supported")
+      raise NotImplementedError(f"V-TSC state not supported: {self.state}")
 
     self.a_target = a_target
 

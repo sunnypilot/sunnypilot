@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pytest
 
+import cereal.messaging as messaging
 from cereal import custom
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.toyota.values import CAR as TOYOTA
@@ -26,6 +27,7 @@ class TestSmartCruiseControlVision:
     self.reset_params()
     CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2_2022)
     self.scc_v = SmartCruiseControlVision(CI.CP)
+    self.sm = messaging.SubMaster(['modelV2', 'carState'])
 
   def teardown_method(self):
     self.scc_v.reset()
@@ -46,3 +48,22 @@ class TestSmartCruiseControlVision:
     assert not self.scc_v.is_active
     assert self.scc_v.output_v_target == V_CRUISE_UNSET
     assert self.scc_v.output_a_target == 0.
+
+  def test_system_disabled(self):
+    self.params.put_bool("SmartCruiseControlVision", False)
+    self.scc_v.enabled = self.params.get_bool("SmartCruiseControlVision")
+
+    for _ in range(int(10. / DT_MDL)):
+      self.scc_v.update(self.sm, True, 0., 0., 0.)
+    assert self.scc_v.state == VisionState.disabled
+    assert not self.scc_v.is_active
+
+  def test_disabled(self):
+    for _ in range(int(10. / DT_MDL)):
+      self.scc_v.update(self.sm, False, 0., 0., 0.)
+    assert self.scc_v.state == VisionState.disabled
+
+  def test_transition_disabled_to_enabled(self):
+    for _ in range(int(10. / DT_MDL)):
+      self.scc_v.update(self.sm, True, 0., 0., 0.)
+    assert self.scc_v.state == VisionState.enabled
