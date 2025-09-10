@@ -92,7 +92,7 @@ class SmartCruiseControlVision:
     self.a_ego = 0.
     self.v_target = 0.
     self.a_target = 0.
-    self.output_v_target = 0.
+    self.output_v_target = V_CRUISE_UNSET
     self.output_a_target = 0.
     self.v_overshoot = 0.
     self.max_v_for_current_curvature = 0.
