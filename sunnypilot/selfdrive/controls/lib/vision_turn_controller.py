@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import numpy as np
 import time
 import math
@@ -5,7 +11,7 @@ import math
 from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 
 VisionTurnSpeedControlState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.VisionTurnSpeedControlState
@@ -122,16 +128,19 @@ class VisionTurnController:
         self._reset()
     self._state = value
 
-  @property
-  def a_target(self):
-    return self._a_target if self.is_active else self._a_ego
+  def get_a_target_from_control(self) -> float:
+    if self.is_active:
+      return self._a_target
 
-  @property
-  def v_turn(self):
-    if not self.is_active:
-      return self._v_cruise_setpoint
-    return self._v_overshoot if self._lat_acc_overshoot_ahead \
-      else self._v_ego + self._a_target * _NO_OVERSHOOT_TIME_HORIZON
+    return self._a_ego
+
+  def get_v_target_from_control(self) -> float:
+    if self.is_active:
+      if self._lat_acc_overshoot_ahead:
+        return self._v_overshoot
+      return self._v_ego + self._a_target * _NO_OVERSHOOT_TIME_HORIZON
+
+    return V_CRUISE_UNSET
 
   @property
   def current_lat_acc(self):
@@ -275,8 +284,6 @@ class VisionTurnController:
         # when overshooting, target the acceleration needed to achieve the overshoot speed at
         # the required distance
         a_target = min((self._v_overshoot ** 2 - self._v_ego ** 2) / (2 * self._v_overshoot_distance), a_target)
-      _debug(f'TVC Entering: Overshooting: {self._lat_acc_overshoot_ahead}')
-      _debug(f'    Decel: {a_target:.2f}, target v: {self.v_turn * CV.MS_TO_KPH}')
     # TURNING
     elif self.state == VisionTurnSpeedControlState.turning:
       # When turning, we provide a target acceleration that is comfortable for the lateral acceleration felt.
@@ -300,3 +307,8 @@ class VisionTurnController:
     self._update_calculations(sm)
     self._state_transition()
     self._update_solution()
+
+    v_target = self.get_v_target_from_control()
+    a_target = self.get_a_target_from_control()
+
+    return [v_target, a_target]

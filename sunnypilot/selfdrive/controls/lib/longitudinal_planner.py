@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import messaging, custom
 from opendbc.car import structs
-from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -33,11 +32,9 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
-    self.v_tsc.update(sm, sm['carControl'].enabled, v_ego, a_ego, v_cruise)
+    targets_v_tsc = self.v_tsc.update(sm, sm['carControl'].enabled, v_ego, a_ego, v_cruise)
 
-    v_cruise_v_tsc = self.v_tsc.v_turn if self.v_tsc.is_active else V_CRUISE_UNSET
-
-    return min(v_cruise, v_cruise_v_tsc)
+    return min(v_cruise, targets_v_tsc[0])
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
