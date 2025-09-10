@@ -5,14 +5,15 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
-import time
 import math
 
 from cereal import custom
-from openpilot.common.params import Params
 from openpilot.common.constants import CV
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
 VisionTurnSpeedControlState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.VisionTurnSpeedControlState
 
@@ -83,10 +84,10 @@ class VisionTurnController:
   def __init__(self, CP):
     self._params = Params()
     self._CP = CP
+    self.frame = -1
     self._op_enabled = False
     self._gas_pressed = False
     self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
-    self._last_params_update = 0.
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
     self._a_ego = 0.
@@ -129,11 +130,9 @@ class VisionTurnController:
     self._v_overshoot_distance = 200.
     self._lat_acc_overshoot_ahead = False
 
-  def _update_params(self):
-    tm = time.time()
-    if tm > self._last_params_update + 5.0:
+  def update_params(self):
+    if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
-      self._last_params_update = tm
 
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.
@@ -270,10 +269,12 @@ class VisionTurnController:
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
 
-    self._update_params()
+    self.update_params()
     self._update_calculations(sm)
     self._state_transition()
     self._update_solution()
+
+    self.frame += 1
 
     v_target = self.get_v_target_from_control()
     a_target = self.get_a_target_from_control()
