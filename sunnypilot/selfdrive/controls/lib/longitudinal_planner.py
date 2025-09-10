@@ -32,9 +32,9 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
-    targets_v_tsc = self.v_tsc.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
+    self.v_tsc.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
 
-    return min(v_cruise, targets_v_tsc[0])
+    return min(v_cruise, self.v_tsc.output_v_target)
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
@@ -55,7 +55,8 @@ class LongitudinalPlannerSP:
     # Vision Turn Speed Control
     visionTurnSpeedControl = longitudinalPlanSP.visionTurnSpeedControl
     visionTurnSpeedControl.state = self.v_tsc.state
-    visionTurnSpeedControl.velocity = float(self.v_tsc.v_turn)
+    visionTurnSpeedControl.vTarget = float(self.v_tsc.output_v_target)
+    visionTurnSpeedControl.aTarget = float(self.v_tsc.output_a_target)
     visionTurnSpeedControl.currentLateralAccel = float(self.v_tsc.current_lat_acc)
     visionTurnSpeedControl.maxPredictedLateralAccel = float(self.v_tsc.max_pred_lat_acc)
 

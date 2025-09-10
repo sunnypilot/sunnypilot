@@ -137,9 +137,10 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
 
   struct VisionTurnSpeedControl {
     state @0 :VisionTurnSpeedControlState;
-    velocity @1 :Float32;
-    currentLateralAccel @2 :Float32;
-    maxPredictedLateralAccel @3 :Float32;
+    vTarget @1 :Float32;
+    aTarget @2 :Float32;
+    currentLateralAccel @3 :Float32;
+    maxPredictedLateralAccel @4 :Float32;
 
     enum VisionTurnSpeedControlState {
       disabled @0; # System disabled or inactive.

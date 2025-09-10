@@ -90,7 +90,10 @@ class VisionTurnController:
     self.v_cruise_setpoint = 0.
     self.v_ego = 0.
     self.a_ego = 0.
+    self.v_target = 0.
     self.a_target = 0.
+    self.output_v_target = 0.
+    self.output_a_target = 0.
     self.v_overshoot = 0.
     self.max_v_for_current_curvature = 0.
     self.lat_acc_overshoot_ahead = 0.
@@ -283,7 +286,5 @@ class VisionTurnController:
 
     self.frame += 1
 
-    v_target = self.get_v_target_from_control()
-    a_target = self.get_a_target_from_control()
-
-    return [v_target, a_target]
+    self.output_v_target = self.get_v_target_from_control()
+    self.output_a_target = self.get_a_target_from_control()
