@@ -95,6 +95,9 @@ class VisionTurnController:
     self._v_overshoot = 0.
     self.state = VisionTurnSpeedControlState.disabled
 
+    self.current_lat_acc = 0.
+    self.max_pred_lat_acc = 0.
+
     self._reset()
 
   def get_a_target_from_control(self) -> float:
@@ -112,21 +115,13 @@ class VisionTurnController:
     return V_CRUISE_UNSET
 
   @property
-  def current_lat_acc(self):
-    return self._current_lat_acc
-
-  @property
-  def max_pred_lat_acc(self):
-    return self._max_pred_lat_acc
-
-  @property
   def is_active(self):
     return self.state != VisionTurnSpeedControlState.disabled
 
   def _reset(self):
-    self._current_lat_acc = 0.
+    self.current_lat_acc = 0.
     self._max_v_for_current_curvature = 0.
-    self._max_pred_lat_acc = 0.
+    self.max_pred_lat_acc = 0.
     self._v_overshoot_distance = 200.
     self._lat_acc_overshoot_ahead = False
 
@@ -184,13 +179,13 @@ class VisionTurnController:
 
     current_curvature = abs(
       sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self._CP.steerRatio * self._CP.wheelbase))
-    self._current_lat_acc = current_curvature * self._v_ego ** 2
+    self.current_lat_acc = current_curvature * self._v_ego ** 2
     self._max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 \
         else V_CRUISE_MAX * CV.KPH_TO_MS
 
     pred_curvatures = eval_curvature(path_poly, _EVAL_RANGE)
     max_pred_curvature = np.amax(pred_curvatures)
-    self._max_pred_lat_acc = self._v_ego ** 2 * max_pred_curvature
+    self.max_pred_lat_acc = self._v_ego ** 2 * max_pred_curvature
 
     max_curvature_for_vego = _A_LAT_REG_MAX / max(self._v_ego, 0.1) ** 2
     lat_acc_overshoot_idxs = np.nonzero(pred_curvatures >= max_curvature_for_vego)[0]
@@ -212,28 +207,28 @@ class VisionTurnController:
       if self._v_ego <= _MIN_V:
         pass
       # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
-      elif self._max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
+      elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.entering
     # ENTERING
     elif self.state == VisionTurnSpeedControlState.entering:
       # Transition to Turning if current lateral acceleration is over the threshold.
-      if self._current_lat_acc >= _TURNING_LAT_ACC_TH:
+      if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.turning
       # Abort if the predicted lateral acceleration drops
-      elif self._max_pred_lat_acc < _ABORT_ENTERING_PRED_LAT_ACC_TH:
+      elif self.max_pred_lat_acc < _ABORT_ENTERING_PRED_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.disabled
     # TURNING
     elif self.state == VisionTurnSpeedControlState.turning:
       # Transition to Leaving if current lateral acceleration drops below a threshold.
-      if self._current_lat_acc <= _LEAVING_LAT_ACC_TH:
+      if self.current_lat_acc <= _LEAVING_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.leaving
     # LEAVING
     elif self.state == VisionTurnSpeedControlState.leaving:
       # Transition back to Turning if current lateral acceleration goes back over the threshold.
-      if self._current_lat_acc >= _TURNING_LAT_ACC_TH:
+      if self.current_lat_acc >= _TURNING_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.turning
       # Finish if current lateral acceleration goes below a threshold.
-      elif self._current_lat_acc < _FINISH_LAT_ACC_TH:
+      elif self.current_lat_acc < _FINISH_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.disabled
 
   def _update_solution(self):
@@ -245,7 +240,7 @@ class VisionTurnController:
     # ENTERING
     elif self.state == VisionTurnSpeedControlState.entering:
       # when not overshooting, target a smooth deceleration in preparation for a sharp turn to come.
-      a_target = np.interp(self._max_pred_lat_acc, _ENTERING_SMOOTH_DECEL_BP, _ENTERING_SMOOTH_DECEL_V)
+      a_target = np.interp(self.max_pred_lat_acc, _ENTERING_SMOOTH_DECEL_BP, _ENTERING_SMOOTH_DECEL_V)
       if self._lat_acc_overshoot_ahead:
         # when overshooting, target the acceleration needed to achieve the overshoot speed at
         # the required distance
@@ -253,7 +248,7 @@ class VisionTurnController:
     # TURNING
     elif self.state == VisionTurnSpeedControlState.turning:
       # When turning, we provide a target acceleration that is comfortable for the lateral acceleration felt.
-      a_target = np.interp(self._current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
+      a_target = np.interp(self.current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
     # LEAVING
     elif self.state == VisionTurnSpeedControlState.leaving:
       # When leaving, we provide a comfortable acceleration to regain speed.
