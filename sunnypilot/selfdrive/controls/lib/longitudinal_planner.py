@@ -31,7 +31,7 @@ class LongitudinalPlannerSP:
 
     return self.dec.mode()
 
-  def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
+  def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     self.scc_v.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
 
     targets = {
