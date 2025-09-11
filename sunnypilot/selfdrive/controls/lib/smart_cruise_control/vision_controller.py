@@ -83,6 +83,14 @@ def eval_lat_acc(v_ego, x_curv):
 
 
 class SmartCruiseControlVision:
+  v_target: float
+  a_target: float
+  v_ego: float
+  a_ego: float
+  v_overshoot: float
+  output_v_target: float = V_CRUISE_UNSET
+  output_a_target: float
+
   def __init__(self, CP):
     self._params = Params()
     self.CP = CP
@@ -90,13 +98,6 @@ class SmartCruiseControlVision:
     self.long_active = False
     self.enabled = self._params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
-    self.v_ego = 0.
-    self.a_ego = 0.
-    self.v_target = 0.
-    self.a_target = 0.
-    self.output_v_target = V_CRUISE_UNSET
-    self.output_a_target = 0.
-    self.v_overshoot = 0.
     self.max_v_for_current_curvature = 0.
     self.lat_acc_overshoot_ahead = 0.
     self.v_overshoot_distance = 200.
