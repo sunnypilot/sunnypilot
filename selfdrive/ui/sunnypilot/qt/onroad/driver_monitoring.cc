@@ -10,6 +10,7 @@
 DriverMonitorRendererSP::DriverMonitorRendererSP() {}
 
 void DriverMonitorRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
+ // TODO: only apply adjustment if dev ui is enabled
  QRect adjusted_rect = surface_rect.adjusted(0, 0, 0, -50);
  DriverMonitorRenderer::draw(painter, adjusted_rect);
 }
