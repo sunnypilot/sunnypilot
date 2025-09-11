@@ -83,13 +83,13 @@ def eval_lat_acc(v_ego, x_curv):
 
 
 class SmartCruiseControlVision:
-  v_target: float
-  a_target: float
-  v_ego: float
-  a_ego: float
-  v_overshoot: float
+  v_target: float = 0
+  a_target: float = 0.
+  v_ego: float = 0.
+  a_ego: float = 0.
+  v_overshoot: float = 0.
   output_v_target: float = V_CRUISE_UNSET
-  output_a_target: float
+  output_a_target: float = 0.
 
   def __init__(self, CP):
     self._params = Params()
@@ -140,19 +140,19 @@ class SmartCruiseControlVision:
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.
     path_poly = None
-    model_data = sm['modelV2'] if sm.valid.get('modelV2', False) else None
-    lat_planner_data = sm['lateralPlan'] if sm.valid.get('lateralPlan', False) else None
 
     # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
     # on current mode than a driving path.
-    if model_data is not None and len(model_data.laneLines) == 4 and len(model_data.laneLines[0].t) == TRAJECTORY_SIZE:
-      ll_x = model_data.laneLines[1].x  # left and right ll x is the same
-      lll_y = np.array(model_data.laneLines[1].y)
-      rll_y = np.array(model_data.laneLines[2].y)
-      l_prob = model_data.laneLineProbs[1]
-      r_prob = model_data.laneLineProbs[2]
-      lll_std = model_data.laneLineStds[1]
-      rll_std = model_data.laneLineStds[2]
+    model_v2 = sm['modelV2']
+    model_valid = model_v2 is not None and len(model_v2.orientation.x) >= CONTROL_N
+    if model_valid and len(model_v2.laneLines) == 4 and len(model_v2.laneLines[0].t) == TRAJECTORY_SIZE:
+      ll_x = model_v2.laneLines[1].x  # left and right ll x is the same
+      lll_y = np.array(model_v2.laneLines[1].y)
+      rll_y = np.array(model_v2.laneLines[2].y)
+      l_prob = model_v2.laneLineProbs[1]
+      r_prob = model_v2.laneLineProbs[2]
+      lll_std = model_v2.laneLineStds[1]
+      rll_std = model_v2.laneLineStds[2]
 
       # Reduce reliance on lanelines that are too far apart or will be in a few seconds
       width_pts = rll_y - lll_y
@@ -175,11 +175,14 @@ class SmartCruiseControlVision:
         c_y = width_pts / 2 + lll_y
         path_poly = np.polyfit(ll_x, c_y, 3)
 
+    # TODO-SP: uncomment this once we reintroduce models with lateralPlanner
     # 2. If not polynomially derived from lanes, then derive it from a driving path as provided by `lateralPlanner`.
-    if path_poly is None and lat_planner_data is not None and len(lat_planner_data.psis) == CONTROL_N \
-       and lat_planner_data.dPathPoints[0] > 0:
-      yData = list(lat_planner_data.dPathPoints)
-      path_poly = np.polyfit(lat_planner_data.psis, yData[0:CONTROL_N], 3)
+    # lateral_plan = sm['lateralPlan']
+    # lateral_plan_valid = lateral_plan is not None and len(lateral_plan.psis) >= CONTROL_N
+    # if path_poly is None and lateral_plan_valid and len(lateral_plan.psis) == CONTROL_N \
+    #    and lateral_plan.dPathPoints[0] > 0:
+    #   yData = list(lateral_plan.dPathPoints)
+    #   path_poly = np.polyfit(lateral_plan.psis, yData[0:CONTROL_N], 3)
 
     # 3. If no polynomial derived from lanes or driving path, then provide a straight line poly.
     if path_poly is None:
