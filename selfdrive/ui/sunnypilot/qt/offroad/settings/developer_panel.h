@@ -22,6 +22,7 @@ private:
   ParamControlSP *prebuiltToggle;
   Params params;
   ParamControlSP *showAdvancedControls;
+  ParamControlSP *useRaylib;
   bool is_development;
   bool is_release;
   bool is_tested;
