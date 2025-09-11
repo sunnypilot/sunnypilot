@@ -64,3 +64,5 @@ class TestSmartCruiseControlVision:
     for _ in range(int(10. / DT_MDL)):
       self.scc_v.update(self.sm, True, 0., 0., 0.)
     assert self.scc_v.state == VisionState.enabled
+
+  # TODO-SP: mock modelV2 data to test other states
