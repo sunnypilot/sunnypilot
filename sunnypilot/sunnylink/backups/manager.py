@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 from openpilot.common.git import get_branch
-from openpilot.common.params import Params, ParamKeyType, ParamKeyFlag
+from openpilot.common.params import Params, ParamKeyFlag
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version
