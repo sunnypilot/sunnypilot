@@ -98,7 +98,7 @@ def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: 
   elif param_type == ParamKeyType.FLOAT:
     value = float(value)  # type: ignore
   elif param_type == ParamKeyType.TIME:
-    value = str(value)
+    value = str(value)  # type: ignore
   elif param_type == ParamKeyType.JSON:
     value = json.loads(value)
   params.put(param_name, value)
