@@ -10,12 +10,25 @@
 #include <QPainter>
 
 #include "selfdrive/ui/qt/onroad/hud.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/hud/turnsignal_ui.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/hud/CircleWidget.h"
 
 class HudRendererSP : public HudRenderer {
   Q_OBJECT
 
 public:
-  HudRendererSP();
+  explicit HudRendererSP();
   void updateState(const UIState &s) override;
   void draw(QPainter &p, const QRect &surface_rect) override;
+
+protected:
+  TurnSignalWidget *turnSignalWidget;
+  CircleWidget *SteerWidget;
+  CircleWidget *LongWidget;
+
+private:
+  Params params;
+  QString road_name;
+
+  void drawRoadName(QPainter &p, const QRect &surface_rect);
 };

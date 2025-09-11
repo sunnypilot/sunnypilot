@@ -283,6 +283,17 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
     float str_w = 150;  // Width of text area
     float str_h = 45;   // Height per line
 
+    // 解決文字被切邊問題
+    str_h = fm.height();
+    for (int i = 0; i < text_lines.size(); ++i) {
+      if (!text_lines[i].isEmpty()){
+        int lineWidth = fm.horizontalAdvance(text_lines[i]);
+        if (lineWidth > str_w) {
+          str_w = lineWidth;
+        }
+      }
+    }
+
     // Position text below chevron, centered horizontally
     float text_x = chevron_pos.x() - str_w / 2;
     float text_y = chevron_pos.y() + sz + 15;

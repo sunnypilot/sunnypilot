@@ -7,13 +7,10 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
-
 #include <QMap>
-#include <QPainter>
 #include <QRegularExpression>
-#include <QWidget>
+
+#include "selfdrive/ui/qt/util.h"
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 
