@@ -41,6 +41,11 @@ void UIStateSP::update() {
   emit uiUpdate(*this);
 }
 
+void ui_update_params_sp(UIStateSP *s) {
+  auto params = Params();
+  s->scene_sp.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+}
+
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &DeviceSP::update);
   QObject::connect(this, &Device::displayPowerChanged, this, &DeviceSP::handleDisplayPowerChanged);

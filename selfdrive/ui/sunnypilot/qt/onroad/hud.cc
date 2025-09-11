@@ -12,9 +12,9 @@
 
 HudRendererSP::HudRendererSP() {}
 
-void HudRendererSP::updateState(const UIState &s) {
-  HudRenderer::updateState(s);
-
+void HudRendererSP::updateState(const UIState &state) {
+  HudRenderer::updateState(state);
+  const UIStateSP &s = static_cast<const UIStateSP&>(state);
 
   const SubMaster &sm = *(s.sm);
   const bool cs_alive = sm.alive("controlsState");
@@ -51,8 +51,8 @@ void HudRendererSP::updateState(const UIState &s) {
 
   latActive = car_control.getLatActive();
   madsEnabled = selfdrive_state_sp.getMads().getEnabled();
-  // TODO: read from param
-  devUiInfo = 2; //s.scene.dev_ui_info;
+
+  devUiInfo = s.scene_sp.dev_ui_info;
 
   speedUnit = is_metric ? tr("km/h") : tr("mph");
   lead_d_rel = radar_state.getLeadOne().getDRel();
