@@ -274,7 +274,7 @@ class SmartCruiseControlVision:
       # When leaving, we provide a comfortable acceleration to regain speed.
       a_target = _LEAVING_ACC
     else:
-      raise NotImplementedError(f"V-TSC state not supported: {self.state}")
+      raise NotImplementedError(f"SCC-V state not supported: {self.state}")
 
     self.a_target = a_target
 
