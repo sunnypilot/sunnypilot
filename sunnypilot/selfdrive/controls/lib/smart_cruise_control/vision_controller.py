@@ -188,11 +188,10 @@ class SmartCruiseControlVision:
     if path_poly is None:
       path_poly = np.array([0., 0., 0., 0.])
 
-    current_curvature = abs(
-      sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self.CP.steerRatio * self.CP.wheelbase))
+    current_curvature = abs(sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self.CP.steerRatio * self.CP.wheelbase))
     self.current_lat_acc = current_curvature * self.v_ego ** 2
-    self.max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 \
-        else V_CRUISE_MAX * CV.KPH_TO_MS
+    self.max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 else \
+                                       V_CRUISE_MAX * CV.KPH_TO_MS
 
     pred_curvatures = eval_curvature(path_poly, _EVAL_RANGE)
     max_pred_curvature = np.amax(pred_curvatures)

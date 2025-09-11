@@ -31,10 +31,18 @@ class LongitudinalPlannerSP:
 
     return self.dec.mode()
 
-  def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
+  def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     self.scc_v.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
 
-    return min(v_cruise, self.scc_v.output_v_target)
+    targets = {
+      'cruise': (v_cruise, a_ego),
+      'scc_v': (self.scc_v.output_v_target, self.scc_v.output_a_target),
+    }
+
+    src = min(targets, key=lambda k: targets[k][0])
+    v_target, a_target = targets[src]
+
+    return v_target, a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)

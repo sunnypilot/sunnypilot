@@ -147,7 +147,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       accel_clip[1] = min(accel_clip[1], clipped_accel_coast_interp)
 
     # Get new v_cruise from Smart Cruise Control
-    v_cruise = LongitudinalPlannerSP.update_v_cruise(self, sm, self.v_desired_filter.x, self.a_desired, v_cruise)
+    v_cruise, self.a_desired = LongitudinalPlannerSP.update_v_cruise(self, sm, self.v_desired_filter.x, self.a_desired, v_cruise)
 
     if force_slow_decel:
       v_cruise = 0.0
