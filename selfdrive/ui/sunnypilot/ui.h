@@ -13,7 +13,6 @@
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/role_model.h"
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sponsor_role_model.h"
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/util.h"
 
 class UIStateSP : public UIState {
   Q_OBJECT
@@ -74,7 +73,6 @@ private slots:
 private:
   std::vector<RoleModel> sunnylinkRoles = {};
   std::vector<UserModel> sunnylinkUsers = {};
-  ParamWatcher *param_watcher;
 };
 
 UIStateSP *uiStateSP();
@@ -94,5 +92,3 @@ private:
 
 DeviceSP *deviceSP();
 inline DeviceSP *device() { return deviceSP(); }
-
-void ui_update_params_sp(UIStateSP *s);
