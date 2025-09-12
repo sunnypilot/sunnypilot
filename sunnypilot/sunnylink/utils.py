@@ -1,3 +1,5 @@
+import base64
+import gzip
 import json
 from sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params, ParamKeyType
@@ -58,13 +60,45 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def get_param_as_byte(param_name: str) -> bytes:
+def get_param_as_byte(param_name: str) -> bytes | None:
+  """Get a parameter as bytes. Returns None if the parameter does not exist."""
   params = Params()
   param = params.get(param_name)
-  param_type = params.get_type(param_name)
+  if param is None:
+    return None
 
+  param_type = params.get_type(param_name)
   if param_type == ParamKeyType.BYTES:
     return bytes(param)
   elif param_type == ParamKeyType.JSON:
     return json.dumps(param).encode('utf-8')
   return str(param).encode('utf-8')
+
+
+def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: str, is_compressed=False) -> None:
+  """Save a parameter from bytes. Overwrites the parameter if it already exists."""
+  params = Params()
+  # Find real param name (with correct casing)
+  param_type = params.get_type(param_name)
+  value = base64.b64decode(base64_encoded_data)
+
+  if is_compressed:
+    value = gzip.decompress(value)
+
+  # We convert to string anything that isn't bytes first. We later transform further.
+  if param_type != ParamKeyType.BYTES:
+    value = value.decode('utf-8')  # type: ignore
+
+  if param_type == ParamKeyType.STRING:
+    value = value
+  elif param_type == ParamKeyType.BOOL:
+    value = value.lower() in ('true', '1', 'yes')  # type: ignore
+  elif param_type == ParamKeyType.INT:
+    value = int(value)  # type: ignore
+  elif param_type == ParamKeyType.FLOAT:
+    value = float(value)  # type: ignore
+  elif param_type == ParamKeyType.TIME:
+    value = str(value)  # type: ignore
+  elif param_type == ParamKeyType.JSON:
+    value = json.loads(value)
+  params.put(param_name, value)
