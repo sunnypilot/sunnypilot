@@ -14,16 +14,11 @@
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sponsor_role_model.h"
 #include "selfdrive/ui/ui.h"
 
-typedef struct UISceneSP {
-  int dev_ui_info = 0;
-} UISceneSP;
-
 class UIStateSP : public UIState {
   Q_OBJECT
 
 public:
   UIStateSP(QObject *parent = 0);
-  UISceneSP scene_sp = {};
   void updateStatus() override;
   inline bool engaged() const override {
     return scene.started && (

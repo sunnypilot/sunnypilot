@@ -77,7 +77,7 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   QRect r = QRect(0 + margin, height() - h + margin, width() - margin*2, h - margin*2);
 
 #ifdef SUNNYPILOT
-  const int dev_ui_info = uiStateSP()->scene_sp.dev_ui_info;
+  const int dev_ui_info = uiStateSP()->scene.dev_ui_info;
   const int adjustment = dev_ui_info > 1 && alert.size != cereal::SelfdriveState::AlertSize::FULL ? 30 : 0;
   r = QRect(0 + margin, height() - h + margin - adjustment, width() - margin*2, h - margin*2);
 #endif

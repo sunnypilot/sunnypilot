@@ -43,7 +43,7 @@ void UIStateSP::update() {
 
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
-  s->scene_sp.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+  s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {

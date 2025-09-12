@@ -74,7 +74,7 @@ void DriverMonitorRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   float opacity = is_active ? 0.65f : 0.2f;
 
 #ifdef SUNNYPILOT
-  const int dev_ui_info = uiStateSP()->scene_sp.dev_ui_info;
+  const int dev_ui_info = uiStateSP()->scene.dev_ui_info;
   y -= dev_ui_info > 1 ? 50 : 0;
 #endif
 
