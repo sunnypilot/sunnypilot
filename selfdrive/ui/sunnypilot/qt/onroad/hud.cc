@@ -156,11 +156,7 @@ void HudRendererSP::drawRightDevUI(QPainter &p, int x, int y) {
 
   UiElement memoryUsagePercentElement = DeveloperUi::getMemoryUsagePercent(memoryUsagePercent);
   rh += drawRightDevUIElement(p, x, ry, memoryUsagePercentElement.value, memoryUsagePercentElement.label, memoryUsagePercentElement.units, memoryUsagePercentElement.color);
-  ry = y + rh;
 
-  rh += 25;
-  p.setBrush(QColor(0, 0, 0, 0));
-  QRect ldu(x, y, 184, rh);
 }
 
 int HudRendererSP::drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
@@ -170,15 +166,15 @@ int HudRendererSP::drawBottomDevUIElement(QPainter &p, int x, int y, const QStri
   QRect real_rect = fm.boundingRect(init_rect, 0, label + " ");
   real_rect.moveCenter({x, y});
 
-  QRect init_rect3 = fm.boundingRect(units);
-  QRect real_rect3 = fm.boundingRect(init_rect3, 0, units);
-  real_rect3.moveTop(real_rect.top());
-  real_rect3.moveLeft(real_rect.right() + 135);
-
   QRect init_rect2 = fm.boundingRect(value);
   QRect real_rect2 = fm.boundingRect(init_rect2, 0, value);
   real_rect2.moveTop(real_rect.top());
-  real_rect2.moveRight(real_rect.right() + 125);
+  real_rect2.moveLeft(real_rect.right() + 10);
+
+  QRect init_rect3 = fm.boundingRect(units);
+  QRect real_rect3 = fm.boundingRect(init_rect3, 0, units);
+  real_rect3.moveTop(real_rect.top());
+  real_rect3.moveLeft(real_rect2.right() + 10);
 
   p.setPen(QColorConstants::White);
   p.drawText(real_rect, Qt::AlignLeft | Qt::AlignVCenter, label);
