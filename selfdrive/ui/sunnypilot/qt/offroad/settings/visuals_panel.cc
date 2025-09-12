@@ -72,15 +72,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(chevron_info_settings);
   param_watcher->addParam("ChevronInfo");
 
-  // Visuals: Developer UI Info (Dev UI)
-  std::vector<QString> dev_ui_settings_texts{tr("Off"), tr("Right"), tr("Right &&\nBottom")};
-  dev_ui_settings = new ButtonParamControlSP(
-    "DevUIInfo", tr("Developer UI"), tr("Display real-time parameters and metrics from various sources."),
-    "",
-    dev_ui_settings_texts,
-    380);
-  list->addItem(dev_ui_settings);
-
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
 
@@ -98,8 +89,5 @@ void VisualsPanel::paramsRefresh() {
 
   if (chevron_info_settings) {
     chevron_info_settings->refresh();
-  }
-  if (dev_ui_settings) {
-    dev_ui_settings->refresh();
   }
 }
