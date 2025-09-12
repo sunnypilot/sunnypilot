@@ -72,7 +72,7 @@ UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float
   QString value = QString::number(actualLateralAccel, 'f', 2);
   QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
-  return UiElement(value, "LAT ACCEL", "m/s²", color);
+  return UiElement(value, "ACTUAL L.A.", "m/s²", color);
 }
 
 // Add Desired Steering Angle when using PID
@@ -205,12 +205,15 @@ UiElement DeveloperUi::getAltitude(float gps_accuracy, float altitude) {
 // Unit: Degree (angle) or m/s² (torque)
 UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
                                                  cereal::CarControl::Actuators::Reader &actuators, bool lat_active) {
-  QString value = "-";
+  QString label;
+  QString value;
   QString unit;
 
   if (steerControlType == cereal::CarParams::SteerControlType::ANGLE) {
+    label = "DESIRED STEER";
     value = QString("%1%2%3").arg(QString::number(actuators.getSteeringAngleDeg(), 'f', 1)).arg("°").arg("");
   } else {
+    label = "DESIRED L.A.";
     value = QString::number(actuators.getTorque(), 'f', 2);
     unit = "m/s²";
   }
@@ -218,5 +221,5 @@ UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControl
   value = lat_active ? value : "-";
   QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
-  return UiElement(value, "DESIRED STEER", unit, color);
+  return UiElement(value, label, unit, color);
 }
