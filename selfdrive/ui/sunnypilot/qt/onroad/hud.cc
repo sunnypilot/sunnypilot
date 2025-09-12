@@ -49,7 +49,6 @@ void HudRendererSP::updateState(const UIState &s) {
   speed *= is_metric ? MS_TO_KPH : MS_TO_MPH;
 
   latActive = car_control.getLatActive();
-  madsEnabled = selfdrive_state_sp.getMads().getEnabled();
 
   devUiInfo = s.scene.dev_ui_info;
 
@@ -142,7 +141,7 @@ void HudRendererSP::drawRightDevUI(QPainter &p, int x, int y) {
   rh += drawRightDevUIElement(p, x, ry, vRelElement.value, vRelElement.label, vRelElement.units, vRelElement.color);
   ry = y + rh;
 
-  UiElement steeringAngleDegElement = DeveloperUi::getSteeringAngleDeg(angleSteers, madsEnabled, latActive);
+  UiElement steeringAngleDegElement = DeveloperUi::getSteeringAngleDeg(angleSteers, latActive);
   rh += drawRightDevUIElement(p, x, ry, steeringAngleDegElement.value, steeringAngleDegElement.label, steeringAngleDegElement.units, steeringAngleDegElement.color);
   ry = y + rh;
 
@@ -150,7 +149,7 @@ void HudRendererSP::drawRightDevUI(QPainter &p, int x, int y) {
   rh += drawRightDevUIElement(p, x, ry, actuatorsOutputLateralElement.value, actuatorsOutputLateralElement.label, actuatorsOutputLateralElement.units, actuatorsOutputLateralElement.color);
   ry = y + rh;
 
-  UiElement actualLateralAccelElement = DeveloperUi::getActualLateralAccel(curvature, vEgo, roll, madsEnabled, latActive);
+  UiElement actualLateralAccelElement = DeveloperUi::getActualLateralAccel(curvature, vEgo, roll, latActive);
   rh += drawRightDevUIElement(p, x, ry, actualLateralAccelElement.value, actualLateralAccelElement.label, actualLateralAccelElement.units, actualLateralAccelElement.color);
 }
 

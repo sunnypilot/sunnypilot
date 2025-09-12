@@ -49,9 +49,9 @@ UiElement DeveloperUi::getVRel(bool lead_status, float lead_v_rel, bool is_metri
 
 // Add Real Steering Angle
 // Unit: Degrees
-UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool mads_enabled, bool lat_active) {
+UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool lat_active) {
   QString value = QString("%1%2%3").arg(QString::number(angle_steers, 'f', 1)).arg("°").arg("");
-  QColor color = (mads_enabled && lat_active) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
   // Red if large steering angle
   // Orange if moderate steering angle
@@ -66,22 +66,22 @@ UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool mads_enabled
 
 // Add Actual Lateral Acceleration (roll compensated) when using Torque
 // Unit: m/s²
-UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float roll, bool mads_enabled, bool lat_active) {
+UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float roll, bool lat_active) {
   double actualLateralAccel = (curvature * pow(v_ego, 2)) - (roll * 9.81);
 
   QString value = QString::number(actualLateralAccel, 'f', 2);
-  QColor color = (mads_enabled && lat_active) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
   return UiElement(value, "LAT ACCEL", "m/s²", color);
 }
 
 // Add Desired Steering Angle when using PID
 // Unit: Degrees
-UiElement DeveloperUi::getSteeringAngleDesiredDeg(bool mads_enabled, bool lat_active, float steer_angle_desired, float angle_steers) {
-  QString value = (mads_enabled && lat_active) ? QString("%1%2%3").arg(QString::number(steer_angle_desired, 'f', 1)).arg("°").arg("") : "-";
+UiElement DeveloperUi::getSteeringAngleDesiredDeg(bool lat_active, float steer_angle_desired, float angle_steers) {
+  QString value = lat_active ? QString("%1%2%3").arg(QString::number(steer_angle_desired, 'f', 1)).arg("°").arg("") : "-";
   QColor color = QColor(255, 255, 255, 255);
 
-  if (mads_enabled && lat_active) {
+  if (lat_active) {
     // Red if large steering angle
     // Orange if moderate steering angle
     if (std::fabs(angle_steers) > 180) {

@@ -48,7 +48,6 @@ private:
   bool liveValid;
   QString speedUnit;
   bool latActive;
-  bool madsEnabled;
   bool reversing;
   cereal::CarParams::SteerControlType steerControlType;
   cereal::CarControl::Actuators::Reader actuators;
