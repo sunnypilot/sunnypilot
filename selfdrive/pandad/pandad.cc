@@ -84,12 +84,10 @@ Panda *connect(std::string serial="", uint32_t index=0) {
     panda->set_can_fd_auto(i, true);
   }
 
-  bool is_deprecated_panda = std::find(DEPRECATED_PANDA_TYPES.begin(),
-                                       DEPRECATED_PANDA_TYPES.end(),
-                                       panda->hw_type) != DEPRECATED_PANDA_TYPES.end();
+  bool is_supported_panda = std::find(SUPPORTED_PANDA_TYPES.begin(), SUPPORTED_PANDA_TYPES.end(), panda->hw_type) != SUPPORTED_PANDA_TYPES.end();
 
-  if (is_deprecated_panda) {
-    LOGW("panda %s is deprecated (hw_type: %i), skipping firmware check...", panda->hw_serial().c_str(), static_cast<uint16_t>(panda->hw_type));
+  if (!is_supported_panda) {
+    LOGW("panda %s is not supported (hw_type: %i), skipping firmware check...", panda->hw_serial().c_str(), static_cast<uint16_t>(panda->hw_type));
     return panda.release();
   }
 
@@ -175,7 +173,6 @@ void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::Panda
   ps.setHarnessStatus(cereal::PandaState::HarnessStatus(health.car_harness_status_pkt));
   ps.setInterruptLoad(health.interrupt_load_pkt);
   ps.setFanPower(health.fan_power);
-  ps.setFanStallCount(health.fan_stall_count);
   ps.setSafetyRxChecksInvalid((bool)(health.safety_rx_checks_invalid_pkt));
   ps.setSpiErrorCount(health.spi_error_count_pkt);
   ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);
