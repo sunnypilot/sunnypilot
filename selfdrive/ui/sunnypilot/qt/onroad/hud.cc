@@ -171,7 +171,7 @@ int HudRendererSP::drawBottomDevUIElement(QPainter &p, int x, int y, const QStri
   real_rect3.moveTop(real_rect.top());
   real_rect3.moveLeft(real_rect2.right() + 10);
 
-  p.setPen(Qt::white);
+  p.setPen(QColorConstants::White);
   p.drawText(real_rect, Qt::AlignLeft | Qt::AlignVCenter, label);
 
   p.setPen(color);
