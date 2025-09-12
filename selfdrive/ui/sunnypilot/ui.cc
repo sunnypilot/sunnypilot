@@ -27,6 +27,13 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
   timer->start(1000 / UI_FREQ);
+
+  // Param watcher for UIScene param updates
+  param_watcher = new ParamWatcher(this);
+  connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    ui_update_params_sp(this);
+  });
+  param_watcher->addParam("DevUIInfo");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
