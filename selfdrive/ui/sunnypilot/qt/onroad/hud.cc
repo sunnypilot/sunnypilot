@@ -19,7 +19,6 @@ void HudRendererSP::updateState(const UIState &s) {
   const bool cs_alive = sm.alive("controlsState");
   const auto cs = sm["controlsState"].getControlsState();
   const auto car_state = sm["carState"].getCarState();
-  const auto selfdrive_state_sp = sm["selfdriveStateSP"].getSelfdriveStateSP();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
   const auto is_gps_location_external = sm.rcv_frame("gpsLocationExternal") > 1;
