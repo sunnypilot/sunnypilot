@@ -1,17 +1,15 @@
-/*
+/**
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
  *
-  * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
-  *
-  * This file is part of sunnypilot and is licensed under the MIT License.
-  * See the LICENSE.md file in the root directory for more details.
-
+ * This file is part of sunnypilot and is licensed under the MIT License.
+ * See the LICENSE.md file in the root directory for more details.
  */
-
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/ui_elements.h"
 
 class DeveloperUi {
+
 public:
   static UiElement getDRel(bool lead_status, float lead_d_rel);
   static UiElement getVRel(bool lead_status, float lead_v_rel, bool is_metric, const QString &speed_unit);

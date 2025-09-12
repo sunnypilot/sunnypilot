@@ -1,12 +1,9 @@
-/*
+/**
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
  *
-  * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
-  *
-  * This file is part of sunnypilot and is licensed under the MIT License.
-  * See the LICENSE.md file in the root directory for more details.
-
+ * This file is part of sunnypilot and is licensed under the MIT License.
+ * See the LICENSE.md file in the root directory for more details.
  */
-
 #include <cmath>
 
 #include "common/util.h"
@@ -16,19 +13,19 @@
 // Add Relative Distance to Primary Lead Car
 // Unit: Meters
 UiElement DeveloperUi::getDRel(bool lead_status, float lead_d_rel) {
- QString value = lead_status ? QString::number(lead_d_rel, 'f', 0) : "-";
- QColor color = QColor(255, 255, 255, 255);
+  QString value = lead_status ? QString::number(lead_d_rel, 'f', 0) : "-";
+  QColor color = QColor(255, 255, 255, 255);
 
- if (lead_status) {
-  // Orange if close, Red if very close
-  if (lead_d_rel < 5) {
-   color = QColor(255, 0, 0, 255);
-  } else if (lead_d_rel < 15) {
-   color = QColor(255, 188, 0, 255);
+  if (lead_status) {
+    // Orange if close, Red if very close
+    if (lead_d_rel < 5) {
+      color = QColor(255, 0, 0, 255);
+    } else if (lead_d_rel < 15) {
+      color = QColor(255, 188, 0, 255);
+    }
   }
- }
 
- return UiElement(value, "REL DIST", "m", color);
+  return UiElement(value, "REL DIST", "m", color);
 }
 
 // Add Relative Velocity vs Primary Lead Car
