@@ -127,7 +127,7 @@ int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QStrin
     p.restore();
   }
 
-  return 120;
+  return 130;
 }
 
 void HudRendererSP::drawRightDevUI(QPainter &p, int x, int y) {
