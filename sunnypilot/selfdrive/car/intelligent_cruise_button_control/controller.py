@@ -8,7 +8,8 @@ from cereal import car, custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.sunnypilot.selfdrive.car.icbc.helpers import get_set_point, speed_hysteresis, update_manual_button_timers
+from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_control.helpers import get_set_point, \
+  speed_hysteresis, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
 State = custom.IntelligentCruiseButtonControl.IntelligentCruiseButtonControlState
