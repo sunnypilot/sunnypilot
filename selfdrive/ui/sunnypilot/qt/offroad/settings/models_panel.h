@@ -38,7 +38,6 @@ private:
   void updateLabels();
   void handleCurrentModelLblBtnClicked();
   void handleBundleDownloadProgress();
-  void refreshLaneTurnValueControl();
   void showResetParamsDialog();
   QProgressBar* createProgressBar(QWidget *parent);
   QFrame* createModelDetailFrame(QWidget *parent, QString &typeName, QProgressBar *progressBar);
@@ -83,6 +82,4 @@ private:
   Params params;
   ButtonControlSP *clearModelCacheBtn;
   ButtonControlSP *refreshAvailableModelsBtn;
-  ParamControlSP *lane_turn_desire_toggle;
-  OptionControlSP *lane_turn_value_control;
 };
