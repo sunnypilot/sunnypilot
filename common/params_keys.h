@@ -194,6 +194,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", {PERSISTENT | BACKUP, INT, "0"}},
 
+    // Hyundai Longitudinal Tuning Live Parameters
+    {"LongTuningCustomToggle", {PERSISTENT | BACKUP, INT, "0"}},
+    {"LongTuningAccelMax", {PERSISTENT | BACKUP, FLOAT, "2.0"}},
+    {"LongTuningJerkLimits", {PERSISTENT | BACKUP, FLOAT, "4.0"}},
+    {"LongTuningMinUpperJerk", {PERSISTENT | BACKUP, FLOAT, ".5"}},
+    {"LongTuningMinLowerJerk", {PERSISTENT | BACKUP, FLOAT, ".5"}},
+
     {"DynamicExperimentalControl", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"BlindSpot", {PERSISTENT | BACKUP, BOOL, "0"}},
 
