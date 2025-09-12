@@ -72,7 +72,7 @@ UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float
   QString value = QString::number(actualLateralAccel, 'f', 2);
   QColor color = (mads_enabled && lat_active) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
-  return UiElement(value, "ACTUAL LAT", "m/s²", color);
+  return UiElement(value, "LAT ACCEL", "m/s²", color);
 }
 
 // Add Desired Steering Angle when using PID
@@ -218,5 +218,5 @@ UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControl
   value = lat_active ? value : "-";
   QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
 
-  return UiElement(value, "ACT. OUTPUT", unit, color);
+  return UiElement(value, "DESIRED STEER", unit, color);
 }
