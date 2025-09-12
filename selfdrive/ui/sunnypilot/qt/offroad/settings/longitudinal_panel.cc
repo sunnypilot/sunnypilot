@@ -18,6 +18,15 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);
 
+  intelligentCruiseButtonControl = new ParamControlSP(
+    "IntelligentCruiseButtonControl",
+    tr("Intelligent Cruise Button Control (Alpha)"),
+    "",
+    "",
+    this
+  );
+  list->addItem(intelligentCruiseButtonControl);
+
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
@@ -34,17 +43,24 @@ void LongitudinalPanel::showEvent(QShowEvent *event) {
 }
 
 void LongitudinalPanel::refresh(bool _offroad) {
+  auto alpha_longitudinal = params.getBool("AlphaLongitudinalEnabled");
   auto cp_bytes = params.get("CarParamsPersistent");
-  if (!cp_bytes.empty()) {
+  auto cp_sp_bytes = params.get("CarParamsSPPersistent");
+  if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
     AlignedBuffer aligned_buf;
+    AlignedBuffer aligned_buf_sp;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    capnp::FlatArrayMessageReader cmsg_sp(aligned_buf_sp.align(cp_sp_bytes.data(), cp_sp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+    cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
+    intelligent_cruise_button_control_available = CP_SP.getIntelligentCruiseButtonControlAvailable();
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
+    intelligent_cruise_button_control_available = true;
   }
 
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
@@ -70,6 +86,8 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
     }
   }
+
+  intelligentCruiseButtonControl->setEnabled(intelligent_cruise_button_control_available && !alpha_longitudinal && !offroad);
 
   // enable toggle when long is available and is not PCM cruise
   customAccIncrement->setEnabled(has_longitudinal_control && !is_pcm_cruise && !offroad);
