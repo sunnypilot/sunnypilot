@@ -75,6 +75,8 @@ class ControlsExt:
 
     CC_SP.params = self.param_store.publish()
 
+    CC_SP.intelligentCruiseButtonControl = sm['selfdriveStateSP'].intelligentCruiseButtonControl
+
     return CC_SP
 
   @staticmethod
