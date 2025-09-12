@@ -114,6 +114,9 @@ class IntelligentCruiseButtonControl:
     self.is_ready = ready and not button_pressed
 
   def run(self, CS: car.CarState, CC: car.CarControl, is_metric: bool):
+    if self.CP_SP.pcmCruiseSpeed:
+      return
+
     self.is_metric = is_metric
 
     self.update_calculations(CS, CC)
