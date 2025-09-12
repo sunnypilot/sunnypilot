@@ -9,4 +9,8 @@
 
 typedef struct UISceneSP : UIScene {
   int dev_ui_info = 0;
+  int onroadScreenOffBrightness, onroadScreenOffTimer;
+  bool screenTouched = false;
+
+  cereal::ControlsState::Reader controlsState;
 } UISceneSP;

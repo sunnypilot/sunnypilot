@@ -51,6 +51,16 @@ void UIStateSP::update() {
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+
+  // Onroad Screen Brightness
+  int onroadTimer = std::atoi(params.get("OnroadScreenOff").c_str());
+  bool onRoadScreenControl = params.getBool("OnroadScreenOffControl");
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  if (s->scene.onroadScreenOffTimer > 0 and onRoadScreenControl) {
+    s->scene.onroadScreenOffTimer = onroadTimer * 60 * UI_FREQ;
+  } else {
+    s->scene.onroadScreenOffTimer = -1;
+  }
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
