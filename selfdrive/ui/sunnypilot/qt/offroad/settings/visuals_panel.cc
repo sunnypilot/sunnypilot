@@ -80,7 +80,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     dev_ui_settings_texts,
     380);
   list->addItem(dev_ui_settings);
-  param_watcher->addParam("DevUIInfo");
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
