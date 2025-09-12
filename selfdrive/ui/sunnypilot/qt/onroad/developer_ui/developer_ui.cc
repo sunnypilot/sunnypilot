@@ -200,3 +200,23 @@ UiElement DeveloperUi::getAltitude(float gps_accuracy, float altitude) {
 
   return UiElement(value, "ALT.", "m", color);
 }
+
+// Add Actuators Output
+// Unit: Degree (angle) or m/s² (torque)
+UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
+                                                 cereal::CarControl::Actuators::Reader &actuators, bool lat_active) {
+  QString value = "-";
+  QString unit;
+
+  if (steerControlType == cereal::CarParams::SteerControlType::ANGLE) {
+    value = QString("%1%2%3").arg(QString::number(actuators.getSteeringAngleDeg(), 'f', 1)).arg("°").arg("");
+  } else {
+    value = QString::number(actuators.getTorque(), 'f', 2);
+    unit = "m/s²";
+  }
+
+  value = lat_active ? value : "-";
+  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+
+  return UiElement(value, "ACT. OUTPUT", unit, color);
+}

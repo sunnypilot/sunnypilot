@@ -57,9 +57,11 @@ void HudRendererSP::updateState(const UIState &s) {
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
-  torqueLateral = car_params.getSteerControlType() == cereal::CarParams::SteerControlType::TORQUE;
+  steerControlType = car_params.getSteerControlType();
+  actuators = car_control.getActuators();
+  torqueLateral = steerControlType == cereal::CarParams::SteerControlType::TORQUE;
   angleSteers = car_state.getSteeringAngleDeg();
-  steerAngleDesired = (car_params.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) ?
+  steerAngleDesired = (steerControlType == cereal::CarParams::SteerControlType::ANGLE) ?
                         cs.getLateralControlState().getAngleState().getSteeringAngleDesiredDeg() :
                         cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg();
   curvature = cs.getCurvature();
@@ -156,8 +158,8 @@ void HudRendererSP::drawRightDevUI(QPainter &p, int x, int y) {
   }
   ry = y + rh;
 
-  UiElement memoryUsagePercentElement = DeveloperUi::getMemoryUsagePercent(memoryUsagePercent);
-  rh += drawRightDevUIElement(p, x, ry, memoryUsagePercentElement.value, memoryUsagePercentElement.label, memoryUsagePercentElement.units, memoryUsagePercentElement.color);
+  UiElement actuatorsOutputLateralElement = DeveloperUi::getActuatorsOutputLateral(steerControlType, actuators, latActive);
+  rh += drawRightDevUIElement(p, x, ry, actuatorsOutputLateralElement.value, actuatorsOutputLateralElement.label, actuatorsOutputLateralElement.units, actuatorsOutputLateralElement.color);
 
 }
 

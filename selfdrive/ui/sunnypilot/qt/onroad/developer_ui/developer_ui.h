@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/ui_elements.h"
 
 class DeveloperUi {
@@ -24,4 +25,6 @@ public:
   static UiElement getSteeringTorqueEps(float steering_torque_eps);
   static UiElement getBearingDeg(float bearing_accuracy_deg, float bearing_deg);
   static UiElement getAltitude(float gps_accuracy, float altitude);
+  static UiElement getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
+                                             cereal::CarControl::Actuators::Reader &actuators, bool lat_active);
 };
