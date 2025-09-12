@@ -204,7 +204,8 @@ UiElement DeveloperUi::getAltitude(float gps_accuracy, float altitude) {
 // Add Actuators Output
 // Unit: Degree (angle) or m/s² (torque)
 UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
-                                                 cereal::CarControl::Actuators::Reader &actuators, bool lat_active) {
+                                                 cereal::CarControl::Actuators::Reader &actuators,
+                                                 float desiredCurvature, float v_ego, float roll, bool lat_active) {
   QString label;
   QString value;
   QString unit;
@@ -214,7 +215,8 @@ UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControl
     value = QString("%1%2%3").arg(QString::number(actuators.getSteeringAngleDeg(), 'f', 1)).arg("°").arg("");
   } else {
     label = "DESIRED L.A.";
-    value = QString::number(actuators.getTorque(), 'f', 2);
+    double desiredLateralAccel = (desiredCurvature * pow(v_ego, 2)) - (roll * 9.81);
+    value = QString::number(desiredLateralAccel, 'f', 2);
     unit = "m/s²";
   }
 

@@ -31,6 +31,7 @@ private:
   float lead_v_rel;
   bool torqueLateral;
   float angleSteers;
+  float desiredCurvature;
   float curvature;
   float roll;
   int memoryUsagePercent;

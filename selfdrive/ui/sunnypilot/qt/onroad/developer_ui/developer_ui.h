@@ -26,5 +26,6 @@ public:
   static UiElement getBearingDeg(float bearing_accuracy_deg, float bearing_deg);
   static UiElement getAltitude(float gps_accuracy, float altitude);
   static UiElement getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
-                                             cereal::CarControl::Actuators::Reader &actuators, bool lat_active);
+                                             cereal::CarControl::Actuators::Reader &actuators,
+                                             float desiredCurvature, float v_ego, float roll, bool lat_active);
 };
