@@ -3,7 +3,7 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
-from openpilot.sunnypilot.modeld_v2.laneline_helper import plan_x_idxs_helper
+from openpilot.sunnypilot.models.helpers import plan_x_idxs_helper
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
