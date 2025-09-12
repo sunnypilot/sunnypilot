@@ -39,7 +39,8 @@ class IntelligentCruiseButtonControl:
     self.speed_steady = 0
     self.is_metric = False
 
-    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
+    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0,
+                           ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
 
   def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
     v_cruise_kph = CC.vCruise

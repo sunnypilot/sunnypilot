@@ -17,7 +17,9 @@ class ParamStore:
   values: dict[str, str]
 
   def __init__(self, CP: structs.CarParams):
-    universal_params: list[str] = []
+    universal_params: list[str] = [
+      "IsMetric",
+    ]
     brand_params: list[str] = []
 
     self.keys = universal_params + brand_params
