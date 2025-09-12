@@ -15,35 +15,27 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles mapped to AccelPersonality (eco/normal/sport)
 MAX_ACCEL_PROFILES = {
-    AccelPersonality.eco:       [2.00, 2.0,  1.80, 1.23, .52,  .285, .13, .088],  # eco
-    AccelPersonality.normal:    [2.00, 2.0,  1.95, 1.45, .60,  .295, .18, .13],   # normal
-    AccelPersonality.sport:     [2.00, 2.0,  1.99, 1.65, .80,  .333, .24, .2],   # sport
+    AccelPersonality.eco:       [2.0,  2.0,  1.80, 1.23, .523, .288, .13, .088],  # eco
+    AccelPersonality.normal:    [2.0,  2.0,  1.95, 1.40, .600, .299, .17, .12],   # normal
+    AccelPersonality.sport:     [2.0,  2.0,  1.99, 1.65, .800, .333, .24, .2],    # sport
 }
-MAX_ACCEL_BREAKPOINTS =       [0.,   4.,   6.,   9.,   16.,  25., 30., 55.]
+MAX_ACCEL_BREAKPOINTS =         [0.,   4.,   6.,   9.,   16.,  25.,  30., 55.]
 
 # Braking profiles mapped to LongPersonality (relaxed/standard/aggressive)
 MIN_ACCEL_PROFILES = {
-    LongPersonality.relaxed:    [-0.08, -0.08, -1.1, -1.1],  # gentler braking
-    LongPersonality.standard:   [-1.2, -1.2, -1.2, -1.2],  # normal braking
-    LongPersonality.aggressive: [-1.2, -1.2, -1.2, -1.2],  # more aggressive braking
+    LongPersonality.relaxed:    [-.0006, -.0006, -.4, -1.1],  # gentler braking
+    LongPersonality.standard:   [-.0007, -.0007, -.5, -1.2],  # normal braking
+    LongPersonality.aggressive: [-.0008, -.0008, -.6, -1.2],  # more aggressive braking
 }
-MIN_ACCEL_BREAKPOINTS =       [0.,  4.,   5.,  50.]
+MIN_ACCEL_BREAKPOINTS =         [0.,   1.5,    3.,   50.]
 
-
-def get_T_FOLLOW_vibe(personality):
-    """Get base T_FOLLOW value for each personality"""
-    return {
-        LongPersonality.relaxed: 1.75,
-        LongPersonality.standard: 1.45,
-        LongPersonality.aggressive: 1.25
-    }[personality]
-
-
-def get_dynamic_personality(v_ego, personality):
-    """Adjust T_FOLLOW based on vehicle speed"""
-    scale_factor = np.interp(v_ego, [0, 36], [0.75, 1.0])
-    return get_T_FOLLOW_vibe(personality) * scale_factor
-
+# Follow distance profiles mapped to LongPersonality (relaxed/standard/aggressive)
+FOLLOW_PROFILES = {
+    LongPersonality.relaxed:    [1.75, 1.80, 1.75, 1.65, 1.70, 1.80, 1.80],  # more spread out
+    LongPersonality.standard:   [1.45, 1.50, 1.45, 1.45, 1.55, 1.50, 1.50],  # balanced
+    LongPersonality.aggressive: [1.25, 1.30, 1.25, 1.25, 1.35, 1.25, 1.30],  # tighter
+}
+FOLLOW_BREAKPOINTS = [0., 1.5, 3., 6., 12., 16., 36.]
 
 class VibePersonalityController:
     """Controller for acceleration and distance personalities"""
@@ -134,7 +126,7 @@ class VibePersonalityController:
     def get_follow_distance_multiplier(self, v_ego: float) -> float:
         """Get dynamic following distance based on speed and personality"""
         self._update_from_params()
-        return get_dynamic_personality(v_ego, self.long_personality)
+        return float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self.long_personality]))
 
     def get_min_accel(self, v_ego: float) -> float:
         return self.get_accel_limits(v_ego)[0]
