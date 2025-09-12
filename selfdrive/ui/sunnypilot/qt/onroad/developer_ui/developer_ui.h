@@ -15,7 +15,7 @@ public:
   static UiElement getDRel(bool lead_status, float lead_d_rel);
   static UiElement getVRel(bool lead_status, float lead_v_rel, bool is_metric, const QString &speed_unit);
   static UiElement getSteeringAngleDeg(float angle_steers, bool lat_active);
-  static UiElement getActualLateralAccel(float curvature, float v_ego, float roll, bool lat_active);
+  static UiElement getActualLateralAccel(float curvature, float v_ego, float roll, bool lat_active, bool steer_override);
   static UiElement getSteeringAngleDesiredDeg(bool lat_active, float steer_angle_desired, float angle_steers);
   static UiElement getMemoryUsagePercent(int memory_usage_percent);
   static UiElement getAEgo(float a_ego);
@@ -27,5 +27,5 @@ public:
   static UiElement getAltitude(float gps_accuracy, float altitude);
   static UiElement getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
                                              cereal::CarControl::Actuators::Reader &actuators,
-                                             float desiredCurvature, float v_ego, float roll, bool lat_active);
+                                             float desiredCurvature, float v_ego, float roll, bool lat_active, bool steer_override);
 };

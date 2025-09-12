@@ -66,11 +66,11 @@ UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool lat_active) 
 
 // Add Actual Lateral Acceleration (roll compensated) when using Torque
 // Unit: m/s²
-UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float roll, bool lat_active) {
+UiElement DeveloperUi::getActualLateralAccel(float curvature, float v_ego, float roll, bool lat_active, bool steer_override) {
   double actualLateralAccel = (curvature * pow(v_ego, 2)) - (roll * 9.81);
 
   QString value = QString::number(actualLateralAccel, 'f', 2);
-  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+  QColor color = lat_active ? (steer_override ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 255, 0, 255)) : QColor(255, 255, 255, 255);
 
   return UiElement(value, "ACTUAL L.A.", "m/s²", color);
 }
@@ -205,7 +205,7 @@ UiElement DeveloperUi::getAltitude(float gps_accuracy, float altitude) {
 // Unit: Degree (angle) or m/s² (torque)
 UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControlType steerControlType,
                                                  cereal::CarControl::Actuators::Reader &actuators,
-                                                 float desiredCurvature, float v_ego, float roll, bool lat_active) {
+                                                 float desiredCurvature, float v_ego, float roll, bool lat_active, bool steer_override) {
   QString label;
   QString value;
   QString unit;
@@ -221,7 +221,7 @@ UiElement DeveloperUi::getActuatorsOutputLateral(cereal::CarParams::SteerControl
   }
 
   value = lat_active ? value : "-";
-  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+  QColor color = lat_active ? (steer_override ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 255, 0, 255)) : QColor(255, 255, 255, 255);
 
   return UiElement(value, label, unit, color);
 }
