@@ -20,7 +20,7 @@ public:
 
 private:
   Params params;
-  void drawText(QPainter &p, int x, int y, const QString &text, QColor color = QColorConstants::White);
+  void drawText(QPainter &p, int x, int y, const QString &text, QColor color = Qt::white);
   void drawRightDevUI(QPainter &p, int x, int y);
   int drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   int drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
