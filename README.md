@@ -43,10 +43,10 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
-| `staging-c3-new` | `https://staging-c3-new.sunnypilot.ai`        |
-|   `dev-c3-new`   | `https://dev-c3-new.sunnypilot.ai`            |
+| `staging` | `https://staging.sunnypilot.ai`        |
+|   `dev`   | `https://dev.sunnypilot.ai`            |
 | `custom-branch`  | `https://install.sunnypilot.ai/{branch_name}` |
-| `release-c3-new` |            **Not yet available**.             |
+| `release` |            **Not yet available**.             |
 
 > [!TIP]
 > You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
