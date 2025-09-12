@@ -6,8 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car
 
-ButtonType = car.CarState.ButtonEvent.Type
-
 
 def get_set_point(is_metric: bool) -> float:
   return 30 if is_metric else 20
@@ -24,7 +22,7 @@ def speed_hysteresis(controller, speed: float, speed_steady: float, hyst: float)
   return speed_steady
 
 
-def update_manual_button_timers(CS: car.CarState, button_timers: dict[ButtonType, int]) -> None:
+def update_manual_button_timers(CS: car.CarState, button_timers: dict[car.CarState.ButtonEvent.Type, int]) -> None:
   # increment timer for buttons still pressed
   for k in button_timers:
     if button_timers[k] > 0:

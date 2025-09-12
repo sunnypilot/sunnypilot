@@ -26,18 +26,22 @@ struct ModularAssistiveDrivingSystem {
 }
 
 struct IntelligentCruiseButtonControl {
-  state @0 :ButtonControlState;
-  cruiseButton @1 :Int16;
-  finalSpeedKph @2 :Float32;
+  state @0 :IntelligentCruiseButtonControlState;
+  sendButton @1 :SendButtonState;
   vTarget @3 :Float32;
-  vCruiseCluster @4 :Float32;
 
-  enum ButtonControlState {
+  enum IntelligentCruiseButtonControlState {
     inactive @0;      # No button press or default state
-    loading @1;       # Loading state before transitioning to accelerating or decelerating
-    accelerating @2;  # Increasing speed
-    decelerating @3;  # Decreasing speed
+    preActive @1;     # Pre-active state before transitioning to increasing or decreasing
+    increasing @2;    # Increasing speed
+    decreasing @3;    # Decreasing speed
     holding @4;       # Holding steady speed
+  }
+
+  enum SendButtonState {
+    none @0;
+    increase @1;
+    decrease @2;
   }
 }
 

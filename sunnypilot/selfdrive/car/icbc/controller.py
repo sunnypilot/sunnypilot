@@ -4,129 +4,120 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from abc import abstractmethod, ABC
-
 from cereal import car, custom
 from openpilot.common.constants import CV
-from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.states import InactiveState, \
-  LoadingState, AcceleratingState, DeceleratingState, HoldingState
-from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.helpers import get_set_point, \
-  speed_hysteresis, update_manual_button_timers
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_CTRL
+from openpilot.sunnypilot.selfdrive.car.icbc.helpers import get_set_point, speed_hysteresis, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
-ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
-SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
-TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
-VisionTurnControllerState = custom.LongitudinalPlanSP.VisionTurnControllerState
+State = custom.IntelligentCruiseButtonControl.IntelligentCruiseButtonControlState
+SendButtonState = custom.IntelligentCruiseButtonControl.SendButton
 
 SendCan = tuple[int, bytes, int]
 
+INACTIVE_TIMER = 0.4
+RESET_COUNT = 5
+HOLD_TIME = 7
 
-class ICBC_NAME(ABC):
-  def __init__(self, car, car_controller, car_state, CP):
-    self.car = car
-    self.car_controller = car_controller
-    self.car_state = car_state
+
+class IntelligentCruiseButtonControl:
+  def __init__(self, CP, CP_SP):
     self.CP = CP
+    self.CP_SP = CP_SP
 
     self.v_target = 0
     self.v_cruise_cluster = 0
     self.v_cruise_min = 0
-    self.cruise_button = None
-    self.button_state = ButtonControlState.inactive
-
-    self.v_tsc_state = VisionTurnControllerState.disabled
-    self.slc_state = SpeedLimitControlState.inactive
-    self.m_tsc_state = TurnSpeedControlState.inactive
-    self.v_tsc = 0
-    self.speed_limit_offseted = 0
-    self.m_tsc = 0
+    self.cruise_button = SendButtonState.none
+    self.state = State.inactive
+    self.button_count = 0
+    self.pre_active_timer = 0
 
     self.is_ready = False
     self.is_ready_prev = False
     self.speed_steady = 0
+    self.is_metric = False
 
-    self.accel_button = None
-    self.decel_button = None
-    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
-
-    self.button_states = {
-      ButtonControlState.inactive: InactiveState(self),
-      ButtonControlState.loading: LoadingState(self),
-      ButtonControlState.accelerating: AcceleratingState(self),
-      ButtonControlState.decelerating: DeceleratingState(self),
-      ButtonControlState.holding: HoldingState(self),
-    }
-
-  @abstractmethod
-  def create_mock_button_messages(self) -> list[SendCan]:
-    pass
-
-  def state_publish(self) -> custom.CarControlSP.CustomStockLongitudinalControl:
-    customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
-    customStockLongitudinalControl.state = self.button_state
-    customStockLongitudinalControl.cruiseButton = 0 if self.cruise_button is None else int(self.cruise_button)
-    customStockLongitudinalControl.vTarget = float(self.v_target)
-    customStockLongitudinalControl.vCruiseCluster = float(self.v_cruise_cluster)
-    return customStockLongitudinalControl
-
-  def update_msgs(self) -> None:
-    if self.car.sm.updated['longitudinalPlanSP']:
-      self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
-      self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
-      self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
-      self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
-
-      speed_limit = self.car.sm['longitudinalPlanSP'].speedLimit
-      speed_limit_offset = self.car.sm['longitudinalPlanSP'].speedLimitOffset
-      self.speed_limit_offseted = speed_limit + speed_limit_offset
-
-      self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
+    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
 
   def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
-    is_metric = self.car_state.params_list.is_metric
     v_cruise_kph = CC.vCruise
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
-    self.v_cruise_min = get_set_point(is_metric)
-    self.v_cruise_cluster = round(CS.cruiseState.speed * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
+    self.v_cruise_min = get_set_point(self.is_metric)
+    self.v_cruise_cluster = round(CS.cruiseState.speed * (CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH))
 
     v_targets = {'cruise': CC.vCruise}
 
-    # if self.v_tsc_state != VisionTurnControllerState.disabled:
-    #   v_targets['v_tsc'] = self.v_tsc
-
-    # if self.slc_state in ACTIVE_STATES:
-    #   v_targets['slc'] = self.speed_limit_offseted
-
-    # if self.m_tsc_state > TurnSpeedControlState.tempInactive:
-    #   v_targets['m_tsc'] = self.m_tsc
-
     source = min(v_targets, key=v_targets.get)
 
-    v_target = speed_hysteresis(self, v_targets[source], self.speed_steady, 1.5 * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS))
+    v_target = speed_hysteresis(self, v_targets[source], self.speed_steady, 1.5 * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
     v_target = min(v_target, v_cruise)
-    v_target = round(v_target * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
+    v_target = round(v_target * (CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH))
 
     self.v_target = v_target
 
-  def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
-    update_manual_button_timers(CS, self.cruise_buttons)
+  def update_state_machine(self):
+    self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
+    # HOLDING, ACCELERATING, DECELERATING, PRE_ACTIVE
+    if self.state != State.inactive:
+      if not self.is_ready:
+        self.button_count = 0
+        self.state = State.inactive
+
+      else:
+        # PRE_ACTIVE
+        if self.state == State.preActive:
+          if self.v_target > self.v_cruise_cluster:
+            self.state = State.increasing
+          elif self.v_target < self.v_cruise_cluster and self.v_cruise_cluster > self.v_cruise_min:
+            self.state = State.decreasing
+          else:
+            self.state = State.holding
+
+        # HOLDING
+        elif self.state == State.holding:
+          self.button_count += 1
+          if self.button_count >= HOLD_TIME:
+            self.button_count = 0
+            self.state = State.preActive
+
+        # ACCELERATING
+        elif self.state == State.increasing:
+          self.button_count += 1
+          if self.v_target <= self.v_cruise_cluster or self.button_count > RESET_COUNT:
+            self.button_count = 0
+            self.state = State.holding
+
+        # DECELERATING
+        elif self.state == State.decreasing:
+          self.button_count += 1
+          if self.v_target >= self.v_cruise_cluster or self.v_cruise_cluster <= self.v_cruise_min or self.button_count > RESET_COUNT:
+            self.button_count = 0
+            self.state = State.holding
+
+    # INACTIVE
+    elif self.state == State.inactive:
+      if self.is_ready:
+        if not self.is_ready_prev:
+          self.pre_active_timer = int(INACTIVE_TIMER / DT_CTRL)
+
+        elif self.pre_active_timer <= 0:
+          self.state = State.preActive
+
+  def update_readiness(self, CS: car.CarState, CC: car.CarControl) -> None:
+    update_manual_button_timers(CS, self.cruise_buttons)
     ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     button_pressed = any(self.cruise_buttons[k] > 0 for k in self.cruise_buttons)
+
     self.is_ready = ready and not button_pressed
 
-    self.cruise_button = self.button_states[self.button_state]()
-
-    self.is_ready_prev = self.is_ready
-
-  def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
-    self.update_msgs()
+  def run(self, CS: car.CarState, CC: car.CarControl, is_metric: bool):
+    self.is_metric = is_metric
 
     self.update_calculations(CS, CC)
+    self.update_readiness(CS, CC)
+    self.update_state_machine()
 
-    self.update_state(CS, CC)
-
-    can_sends = self.create_mock_button_messages()
-
-    return can_sends
+    self.is_ready_prev = self.is_ready
