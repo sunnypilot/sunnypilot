@@ -49,9 +49,9 @@ UiElement DeveloperUi::getVRel(bool lead_status, float lead_v_rel, bool is_metri
 
 // Add Real Steering Angle
 // Unit: Degrees
-UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool lat_active) {
+UiElement DeveloperUi::getSteeringAngleDeg(float angle_steers, bool lat_active, bool steer_override) {
   QString value = QString("%1%2%3").arg(QString::number(angle_steers, 'f', 1)).arg("°").arg("");
-  QColor color = lat_active ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+  QColor color = lat_active ? (steer_override ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 255, 0, 255)) : QColor(255, 255, 255, 255);
 
   // Red if large steering angle
   // Orange if moderate steering angle
