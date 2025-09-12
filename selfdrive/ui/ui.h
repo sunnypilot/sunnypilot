@@ -66,11 +66,6 @@ typedef struct UIScene {
   uint64_t started_frame;
 } UIScene;
 
-#ifdef SUNNYPILOT
-#include "sunnypilot/ui_scene.h"
-#define UIScene UISceneSP
-#endif
-
 class UIState : public QObject {
   Q_OBJECT
 
