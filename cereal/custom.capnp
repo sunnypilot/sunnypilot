@@ -25,6 +25,22 @@ struct ModularAssistiveDrivingSystem {
   }
 }
 
+struct IntelligentCruiseButtonControl {
+  state @0 :ButtonControlState;
+  cruiseButton @1 :Int16;
+  finalSpeedKph @2 :Float32;
+  vTarget @3 :Float32;
+  vCruiseCluster @4 :Float32;
+
+  enum ButtonControlState {
+    inactive @0;      # No button press or default state
+    loading @1;       # Loading state before transitioning to accelerating or decelerating
+    accelerating @2;  # Increasing speed
+    decelerating @3;  # Decreasing speed
+    holding @4;       # Holding steady speed
+  }
+}
+
 # Same struct as Log.RadarState.LeadData
 struct LeadData {
   dRel @0 :Float32;
@@ -48,6 +64,7 @@ struct LeadData {
 
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
+  intelligentCruiseButtonControl @1 :IntelligentCruiseButtonControl;
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -199,6 +216,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   params @1 :List(Param);
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
+  intelligentCruiseButtonControl @4 :IntelligentCruiseButtonControl;
 
   struct Param {
     key @0 :Text;
