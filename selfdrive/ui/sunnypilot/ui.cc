@@ -18,13 +18,22 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
-    "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP"
+    "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
+    "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
+    "carStateSP", "liveParameters"
   });
 
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
   timer->start(1000 / UI_FREQ);
+
+  // Param watcher for UIScene param updates
+  param_watcher = new ParamWatcher(this);
+  connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    ui_update_params_sp(this);
+  });
+  param_watcher->addParam("DevUIInfo");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -37,6 +46,11 @@ void UIStateSP::update() {
     watchdog_kick(nanos_since_boot());
   }
   emit uiUpdate(*this);
+}
+
+void ui_update_params_sp(UIStateSP *s) {
+  auto params = Params();
+  s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
