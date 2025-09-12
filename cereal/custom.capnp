@@ -28,7 +28,7 @@ struct ModularAssistiveDrivingSystem {
 struct IntelligentCruiseButtonControl {
   state @0 :IntelligentCruiseButtonControlState;
   sendButton @1 :SendButtonState;
-  vTarget @3 :Float32;
+  vTarget @2 :Float32;
 
   enum IntelligentCruiseButtonControlState {
     inactive @0;      # No button press or default state
@@ -202,6 +202,7 @@ struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
   pcmCruiseSpeed @3 :Bool = true;
+  intelligentCruiseButtonControlAvailable @4 :Bool;
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
 
