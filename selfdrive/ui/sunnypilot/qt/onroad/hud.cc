@@ -63,7 +63,7 @@ void HudRendererSP::updateState(const UIState &s) {
   curvature = cs.getCurvature();
   roll = sm["liveParameters"].getLiveParameters().getRoll();
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
-  gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0; //External reports accuracy, internal does not.
+  gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0;  // External reports accuracy, internal does not.
   altitude = gpsLocation.getAltitude();
   vEgo = car_state.getVEgo();
   aEgo = car_state.getAEgo();
@@ -78,8 +78,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
-  if (!reversing)
-  {
+  if (!reversing) {
     // Bottom Dev UI
     if (devUiInfo == 2) {
       QRect rect_bottom(surface_rect.left(), surface_rect.bottom() - 60, surface_rect.width(), 61);

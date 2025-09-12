@@ -13,6 +13,11 @@
 class HudRendererSP : public HudRenderer {
   Q_OBJECT
 
+public:
+  HudRendererSP();
+  void updateState(const UIState &s) override;
+  void draw(QPainter &p, const QRect &surface_rect) override;
+
 private:
   Params params;
   void drawText(QPainter &p, int x, int y, const QString &text, QColor color = QColorConstants::White);
@@ -46,9 +51,4 @@ private:
   bool latActive;
   bool madsEnabled;
   bool reversing;
-
-public:
-  HudRendererSP();
-  void updateState(const UIState &s) override;
-  void draw(QPainter &p, const QRect &surface_rect) override;
 };
