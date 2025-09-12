@@ -8,7 +8,7 @@ import numpy as np
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 
 
-def plan_x_idxs_helper(plan_output)->list[float]:
+def plan_x_idxs_helper(plan_output) -> list[float]:
   # times at X_IDXS according to plan.
   LINE_T_IDXS = [np.nan] * ModelConstants.IDX_N
   LINE_T_IDXS[0] = 0.0
