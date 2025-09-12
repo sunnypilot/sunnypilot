@@ -14,3 +14,8 @@ AnnotatedCameraWidgetSP::AnnotatedCameraWidgetSP(VisionStreamType type, QWidget 
 void AnnotatedCameraWidgetSP::updateState(const UIState &s) {
   AnnotatedCameraWidget::updateState(s);
 }
+
+void AnnotatedCameraWidgetSP::showEvent(QShowEvent *event) {
+  AnnotatedCameraWidget::showEvent(event);
+  ui_update_params_sp(uiState());
+}
