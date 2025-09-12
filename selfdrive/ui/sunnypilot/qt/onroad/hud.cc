@@ -57,9 +57,11 @@ void HudRendererSP::updateState(const UIState &s) {
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
-  torqueLateral = car_params.getLateralTuning().hasTorque();
+  torqueLateral = car_params.getSteerControlType() == cereal::CarParams::SteerControlType::TORQUE;
   angleSteers = car_state.getSteeringAngleDeg();
-  steerAngleDesired = cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg();
+  steerAngleDesired = (car_params.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) ?
+                        cs.getLateralControlState().getAngleState().getSteeringAngleDesiredDeg() :
+                        cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg();
   curvature = cs.getCurvature();
   roll = sm["liveParameters"].getLiveParameters().getRoll();
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
@@ -198,7 +200,7 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
   UiElement vEgoLeadElement = DeveloperUi::getVEgoLead(lead_status, lead_v_rel, vEgo, is_metric, speedUnit);
   rw += drawBottomDevUIElement(p, rw, y, vEgoLeadElement.value, vEgoLeadElement.label, vEgoLeadElement.units, vEgoLeadElement.color);
 
-  if (torquedUseParams) {
+  if (torqueLateral && torquedUseParams) {
     UiElement frictionCoefficientFilteredElement = DeveloperUi::getFrictionCoefficientFiltered(frictionCoefficientFiltered, liveValid);
     rw += drawBottomDevUIElement(p, rw, y, frictionCoefficientFilteredElement.value, frictionCoefficientFilteredElement.label, frictionCoefficientFilteredElement.units, frictionCoefficientFilteredElement.color);
 
