@@ -13,7 +13,7 @@ from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.hel
 
 ButtonType = car.CarState.ButtonEvent.Type
 State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
-SendButtonState = custom.IntelligentCruiseButtonManagement.SendButton
+SendButtonState = custom.IntelligentCruiseButtonManagement.SendButtonState
 
 SendCan = tuple[int, bytes, int]
 
