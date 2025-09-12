@@ -8,12 +8,12 @@ from cereal import car, custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_control.helpers import get_set_point, \
+from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_set_point, \
   speed_hysteresis, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
-State = custom.IntelligentCruiseButtonControl.IntelligentCruiseButtonControlState
-SendButtonState = custom.IntelligentCruiseButtonControl.SendButton
+State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
+SendButtonState = custom.IntelligentCruiseButtonManagement.SendButton
 
 SendCan = tuple[int, bytes, int]
 
@@ -22,7 +22,7 @@ RESET_COUNT = 5
 HOLD_TIME = 7
 
 
-class IntelligentCruiseButtonControl:
+class IntelligentCruiseButtonManagement:
   def __init__(self, CP, CP_SP):
     self.CP = CP
     self.CP_SP = CP_SP

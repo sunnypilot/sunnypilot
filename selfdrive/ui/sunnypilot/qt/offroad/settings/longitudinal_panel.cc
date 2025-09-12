@@ -18,14 +18,14 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);
 
-  intelligentCruiseButtonControl = new ParamControlSP(
-    "IntelligentCruiseButtonControl",
+  intelligentCruiseButtonManagement = new ParamControlSP(
+    "IntelligentCruiseButtonManagement",
     tr("Intelligent Cruise Button Control (Alpha)"),
     "",
     "",
     this
   );
-  list->addItem(intelligentCruiseButtonControl);
+  list->addItem(intelligentCruiseButtonManagement);
 
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
@@ -56,11 +56,11 @@ void LongitudinalPanel::refresh(bool _offroad) {
 
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
-    intelligent_cruise_button_control_available = CP_SP.getIntelligentCruiseButtonControlAvailable();
+    intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
-    intelligent_cruise_button_control_available = true;
+    intelligent_cruise_button_management_available = true;
   }
 
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
@@ -87,7 +87,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  intelligentCruiseButtonControl->setEnabled(intelligent_cruise_button_control_available && !alpha_longitudinal && !offroad);
+  intelligentCruiseButtonManagement->setEnabled(intelligent_cruise_button_management_available && !alpha_longitudinal && !offroad);
 
   // enable toggle when long is available and is not PCM cruise
   customAccIncrement->setEnabled(has_longitudinal_control && !is_pcm_cruise && !offroad);
