@@ -9,6 +9,7 @@
 
 #include <QProgressBar>
 
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class ModelsPanel : public QWidget {

@@ -14,7 +14,7 @@ def setup_argument_parser():
   parser.add_argument('--pr-data', type=str, help='PR data in JSON format')
   parser.add_argument('--source-branch', type=str, default='master',
                       help='Source branch for merging')
-  parser.add_argument('--target-branch', type=str, default='master-dev-c3-new-test',
+  parser.add_argument('--target-branch', type=str, default='master-dev-test',
                       help='Target branch for merging')
   parser.add_argument('--squash-script-path', type=str, required=True,
                       help='Path to the squash_and_merge.py script')

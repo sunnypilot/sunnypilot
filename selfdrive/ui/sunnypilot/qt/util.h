@@ -15,8 +15,11 @@
 #include <QRegularExpression>
 #include <QWidget>
 
+#include "selfdrive/ui/sunnypilot/ui.h"
+
 QString getUserAgent(bool sunnylink = false);
 std::optional<QString> getSunnylinkDongleId();
 std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
 QMap<QString, QVariantMap> loadPlatformList();
 QStringList searchFromList(const QString &query, const QStringList &list);
+std::optional<cereal::Event::Reader> loadCerealEvent(Params& params, const std::string& _param);
