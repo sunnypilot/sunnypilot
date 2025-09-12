@@ -12,7 +12,6 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/model.h"
 #define ExperimentalButton ExperimentalButtonSP
 #define ModelRenderer ModelRendererSP
-#define HudRenderer HudRendererSP
 #else
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/onroad/hud.h"
