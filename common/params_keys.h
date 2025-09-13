@@ -160,8 +160,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"PersistTetheringAcrossReboot", PERSISTENT | BACKUP},
-    {"TetheringEnabled", PERSISTENT | BACKUP},
+    {"PersistTetheringAcrossReboot", {PERSISTENT | BACKUP, BOOL}},
+    {"TetheringEnabled", {PERSISTENT | BACKUP, BOOL}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
