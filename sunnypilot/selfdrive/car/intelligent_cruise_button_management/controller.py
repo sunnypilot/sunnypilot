@@ -113,7 +113,7 @@ class IntelligentCruiseButtonManagement:
         elif self.pre_active_timer <= 0:
           self.state = State.preActive
 
-    send_button = SEND_BUTTONS[self.state]
+    send_button = SEND_BUTTONS.get(self.state, SendButtonState.none)
 
     return send_button
 
