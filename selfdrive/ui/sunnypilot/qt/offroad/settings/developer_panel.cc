@@ -29,7 +29,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(enableGithubRunner);
 
   // Copyparty Toggle
-  enableCopyparty = new ParamControlSP("EnableCopyparty", tr("Enable Copyparty service"), tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs and even make some edits on some files from your browser. Requires you to connect to your comma locally via it's IP."), "", this, false);
+  enableCopyparty = new ParamControlSP("EnableCopyparty", tr("Enable Copyparty service"), tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs and even make some edits on some files from your browser. Requires you to connect to your comma locally via it's IP on port 8080."), "", this, false);
   addItem(enableCopyparty);
 
   // Copyparty Password
@@ -45,7 +45,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
       updateCopypartyPasswordButton();
 
       // Ask user if they want to reboot now to apply changes
-      if (ConfirmationDialog::alert(tr("Password saved. Reboot now to apply changes?"), this)) {
+      if (ConfirmationDialog::confirm(tr("Password saved. Reboot now to apply changes?"), tr("Reboot"), this)) {
         params.putBool("DoReboot", true);
       }
     }
