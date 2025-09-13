@@ -87,10 +87,12 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  intelligentCruiseButtonManagement->setEnabled(intelligent_cruise_button_management_available && !alpha_longitudinal && offroad);
+  bool icbm_allowed = intelligent_cruise_button_management_available && !alpha_longitudinal;
+  intelligentCruiseButtonManagement->setEnabled(icbm_allowed && offroad);
 
   // enable toggle when long is available and is not PCM cruise
-  customAccIncrement->setEnabled(has_longitudinal_control && !is_pcm_cruise && !offroad);
+  bool cai_allowed = (has_longitudinal_control && !is_pcm_cruise) || icbm_allowed;
+  customAccIncrement->setEnabled(cai_allowed && !offroad);
   customAccIncrement->refresh();
 
   offroad = _offroad;
