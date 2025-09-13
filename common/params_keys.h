@@ -150,6 +150,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
     {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
+    {"IntelligentCruiseButtonManagement", {PERSISTENT | BACKUP , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
     {"MaxTimeOffroad", {PERSISTENT | BACKUP, INT, "1800"}},

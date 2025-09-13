@@ -25,6 +25,26 @@ struct ModularAssistiveDrivingSystem {
   }
 }
 
+struct IntelligentCruiseButtonManagement {
+  state @0 :IntelligentCruiseButtonManagementState;
+  sendButton @1 :SendButtonState;
+  vTarget @2 :Float32;
+
+  enum IntelligentCruiseButtonManagementState {
+    inactive @0;      # No button press or default state
+    preActive @1;     # Pre-active state before transitioning to increasing or decreasing
+    increasing @2;    # Increasing speed
+    decreasing @3;    # Decreasing speed
+    holding @4;       # Holding steady speed
+  }
+
+  enum SendButtonState {
+    none @0;
+    increase @1;
+    decrease @2;
+  }
+}
+
 # Same struct as Log.RadarState.LeadData
 struct LeadData {
   dRel @0 :Float32;
@@ -48,6 +68,7 @@ struct LeadData {
 
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
+  intelligentCruiseButtonManagement @1 :IntelligentCruiseButtonManagement;
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -180,6 +201,8 @@ struct OnroadEventSP @0xda96579883444c35 {
 struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
+  pcmCruiseSpeed @3 :Bool = true;
+  intelligentCruiseButtonManagementAvailable @4 :Bool;
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
 
@@ -199,6 +222,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   params @1 :List(Param);
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
+  intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
 
   struct Param {
     key @0 :Text;
