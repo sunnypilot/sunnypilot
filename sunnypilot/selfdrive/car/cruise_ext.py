@@ -58,6 +58,6 @@ class VCruiseHelperSP:
       return
 
     if is_metric != self.is_metric_prev:
-      if self.CP.carName == "hyundai":
+      if self.CP.brand == "hyundai":
         self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric

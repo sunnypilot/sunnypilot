@@ -44,12 +44,12 @@ class IntelligentCruiseButtonManagement:
                            ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
 
   def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
-    v_cruise_kph = CC.vCruise
+    v_cruise_kph = CS.vCruise
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
     self.v_cruise_min = get_set_point(self.is_metric)
     self.v_cruise_cluster = round(CS.cruiseState.speed * (CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH))
 
-    v_targets = {'cruise': CC.vCruise}
+    v_targets = {'cruise': CS.vCruise}
 
     source = min(v_targets, key=v_targets.get)
 
