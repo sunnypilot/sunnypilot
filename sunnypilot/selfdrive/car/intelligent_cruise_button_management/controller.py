@@ -21,6 +21,11 @@ INACTIVE_TIMER = 0.4
 RESET_COUNT = 5
 HOLD_TIME = 7
 
+SEND_BUTTONS = {
+  State.increasing: SendButtonState.increase,
+  State.decreasing: SendButtonState.decrease,
+}
+
 
 class IntelligentCruiseButtonManagement:
   def __init__(self, CP, CP_SP):
@@ -88,14 +93,14 @@ class IntelligentCruiseButtonManagement:
         # ACCELERATING
         elif self.state == State.increasing:
           self.button_count += 1
-          if self.v_target <= self.v_cruise_cluster or self.button_count > RESET_COUNT:
+          if self.v_target <= self.v_cruise_cluster or self.button_count >= RESET_COUNT:
             self.button_count = 0
             self.state = State.holding
 
         # DECELERATING
         elif self.state == State.decreasing:
           self.button_count += 1
-          if self.v_target >= self.v_cruise_cluster or self.v_cruise_cluster <= self.v_cruise_min or self.button_count > RESET_COUNT:
+          if self.v_target >= self.v_cruise_cluster or self.v_cruise_cluster <= self.v_cruise_min or self.button_count >= RESET_COUNT:
             self.button_count = 0
             self.state = State.holding
 
@@ -107,6 +112,10 @@ class IntelligentCruiseButtonManagement:
 
         elif self.pre_active_timer <= 0:
           self.state = State.preActive
+
+    send_button = SEND_BUTTONS[self.state]
+
+    return send_button
 
   def update_readiness(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_buttons)
@@ -123,6 +132,7 @@ class IntelligentCruiseButtonManagement:
 
     self.update_calculations(CS, CC)
     self.update_readiness(CS, CC)
-    self.update_state_machine()
+
+    self.cruise_button = self.update_state_machine()
 
     self.is_ready_prev = self.is_ready
