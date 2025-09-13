@@ -3,6 +3,7 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
+from openpilot.sunnypilot.models.helpers import plan_x_idxs_helper
 from openpilot.sunnypilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_lag_adjusted_curvature, MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -120,23 +121,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2_action.desiredCurvature = desired_curvature
 
   # times at X_IDXS according to model plan
-  PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N
-  PLAN_T_IDXS[0] = 0.0
-  plan_x = net_output_data['plan'][0,:,Plan.POSITION][:,0].tolist()
-  for xidx in range(1, ModelConstants.IDX_N):
-    tidx = 0
-    # increment tidx until we find an element that's further away than the current xidx
-    while tidx < ModelConstants.IDX_N - 1 and plan_x[tidx+1] < ModelConstants.X_IDXS[xidx]:
-      tidx += 1
-    if tidx == ModelConstants.IDX_N - 1:
-      # if the Plan doesn't extend far enough, set plan_t to the max value (10s), then break
-      PLAN_T_IDXS[xidx] = ModelConstants.T_IDXS[ModelConstants.IDX_N - 1]
-      break
-    # interpolate to find `t` for the current xidx
-    current_x_val = plan_x[tidx]
-    next_x_val = plan_x[tidx+1]
-    p = (ModelConstants.X_IDXS[xidx] - current_x_val) / (next_x_val - current_x_val) if abs(next_x_val - current_x_val) > 1e-9 else float('nan')
-    PLAN_T_IDXS[xidx] = p * ModelConstants.T_IDXS[tidx+1] + (1 - p) * ModelConstants.T_IDXS[tidx]
+  PLAN_T_IDXS: list[float] = plan_x_idxs_helper(ModelConstants, Plan, net_output_data)
 
   # lane lines
   modelV2.init('laneLines', 4)
