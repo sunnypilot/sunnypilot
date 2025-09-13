@@ -33,15 +33,21 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(enableCopyparty);
 
   // Copyparty Password
-  copypartyPasswordBtn = new ButtonControlSP(tr("Copyparty Password"), tr("SET"), tr("Set a password to secure access to your Copyparty file server. Leave empty for no password protection."));
+  copypartyPasswordBtn = new ButtonControlSP(tr("Copyparty Password"), tr("SET"), tr("Set a password to secure access to your Copyparty file server. Leave empty for no password protection. Reboot required to apply changes."));
+
   connect(copypartyPasswordBtn, &ButtonControlSP::clicked, [=]() {
     QString current_password = QString::fromStdString(params.get("CopypartyPassword"));
     QString new_password = InputDialog::getText(tr("Set Copyparty Password"), this,
                                                tr("Enter a password to protect your Copyparty server.\nLeave empty to disable password protection."),
                                                true, -1, current_password);
-    if (!new_password.isNull()) {
+    if (!new_password.isNull() && new_password != current_password) {
       params.put("CopypartyPassword", new_password.toStdString());
       updateCopypartyPasswordButton();
+
+      // Ask user if they want to reboot now to apply changes
+      if (ConfirmationDialog::alert(tr("Password saved. Reboot now to apply changes?"), this)) {
+        params.putBool("DoReboot", true);
+      }
     }
   });
   addItem(copypartyPasswordBtn);
