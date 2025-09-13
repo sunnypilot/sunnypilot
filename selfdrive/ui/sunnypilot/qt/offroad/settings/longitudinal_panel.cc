@@ -60,7 +60,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
-    intelligent_cruise_button_management_available = true;
+    intelligent_cruise_button_management_available = false;
   }
 
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
@@ -87,7 +87,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  intelligentCruiseButtonManagement->setEnabled(intelligent_cruise_button_management_available && !alpha_longitudinal && !offroad);
+  intelligentCruiseButtonManagement->setEnabled(intelligent_cruise_button_management_available && !alpha_longitudinal && offroad);
 
   // enable toggle when long is available and is not PCM cruise
   customAccIncrement->setEnabled(has_longitudinal_control && !is_pcm_cruise && !offroad);
