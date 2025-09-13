@@ -6,6 +6,7 @@
  */
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/external_storage.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 
 DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(parent) {
 
@@ -30,6 +31,20 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   // Copyparty Toggle
   enableCopyparty = new ParamControlSP("EnableCopyparty", tr("Enable Copyparty service"), tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs and even make some edits on some files from your browser. Requires you to connect to your comma locally via it's IP."), "", this, false);
   addItem(enableCopyparty);
+
+  // Copyparty Password
+  copypartyPasswordBtn = new ButtonControlSP(tr("Copyparty Password"), tr("SET"), tr("Set a password to secure access to your Copyparty file server. Leave empty for no password protection."));
+  connect(copypartyPasswordBtn, &ButtonControlSP::clicked, [=]() {
+    QString current_password = QString::fromStdString(params.get("CopypartyPassword"));
+    QString new_password = InputDialog::getText(tr("Set Copyparty Password"), this,
+                                               tr("Enter a password to protect your Copyparty server.\nLeave empty to disable password protection."),
+                                               true, -1, current_password);
+    if (!new_password.isNull()) {
+      params.put("CopypartyPassword", new_password.toStdString());
+      updateCopypartyPasswordButton();
+    }
+  });
+  addItem(copypartyPasswordBtn);
 
   // Quickboot Mode Toggle
   prebuiltToggle = new ParamControlSP("QuickBootToggle", tr("Enable Quickboot Mode"), tr(""), "", this, true);
@@ -60,6 +75,8 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   is_release = params.getBool("IsReleaseBranch");
   is_tested = params.getBool("IsTestedBranch");
   is_development = params.getBool("IsDevelopmentBranch");
+
+  updateCopypartyPasswordButton();
 }
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
@@ -82,8 +99,20 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
   showAdvancedControls->setEnabled(true);
 }
 
+void DeveloperPanelSP::updateCopypartyPasswordButton() {
+  QString password = QString::fromStdString(params.get("CopypartyPassword"));
+  if (password.isEmpty()) {
+    copypartyPasswordBtn->setValue(tr("Not Set"));
+    copypartyPasswordBtn->setText(tr("SET"));
+  } else {
+    copypartyPasswordBtn->setValue(tr("••••••••"));
+    copypartyPasswordBtn->setText(tr("CHANGE"));
+  }
+}
+
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
   AbstractControlSP::UpdateAllAdvancedControls();
   updateToggles(!uiState()->scene.started);
+  updateCopypartyPasswordButton();
 }
