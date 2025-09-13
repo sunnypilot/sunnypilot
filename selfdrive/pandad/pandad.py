@@ -36,10 +36,10 @@ def flash_panda(panda_serial: str) -> Panda:
   panda_signature = b"" if panda.bootstub else panda.get_signature()
   cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
 
-  # skip flashing if the detected device is deprecated from upstream
+  # skip flashing if the detected device is not supported from upstream
   hw_type = panda.get_type()
-  if hw_type in Panda.DEPRECATED_DEVICES:
-    cloudlog.warning(f"Panda {panda_serial} is deprecated (hw_type: {hw_type}), skipping flash...")
+  if hw_type not in Panda.SUPPORTED_DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {hw_type}), skipping flash...")
     return panda
 
   if panda.bootstub or panda_signature != fw_signature:
@@ -90,11 +90,6 @@ def main() -> None:
       count += 1
       cloudlog.event("pandad.flash_and_connect", count=count)
       params.remove("PandaSignatures")
-
-      # TODO: remove this in the next AGNOS
-      # wait until USB is up before counting
-      if time.monotonic() < 60.:
-        no_internal_panda_count = 0
 
       # Handle missing internal panda
       if no_internal_panda_count > 0:
