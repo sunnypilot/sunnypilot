@@ -185,8 +185,7 @@ if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
   # Check if authentication is configured
-  params_instance = Params()
-  password = params_instance.get("CopypartyPassword")
+  password = Params.get("CopypartyPassword")
   auth_suffix = ",admin" if password else ""
 
   # Build volume arguments with conditional authentication
