@@ -14,7 +14,6 @@ from openpilot.common.params import Params
 from cereal import custom
 from openpilot.sunnypilot.modeld.constants import Meta, MetaTombRaider, MetaSimPose
 from openpilot.sunnypilot.modeld.runners import ModelRunner
-from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
@@ -189,24 +188,24 @@ def load_meta_constants(model_metadata):
 
 
 # The following method(s) are modeld helper methods
-def plan_x_idxs_helper(plan_output) -> list[float]:
+def plan_x_idxs_helper(constants, plan, model_output) -> list[float]:
   # times at X_IDXS according to plan.
-  LINE_T_IDXS = [np.nan] * ModelConstants.IDX_N
+  LINE_T_IDXS = [np.nan] * constants.IDX_N
   LINE_T_IDXS[0] = 0.0
-  plan_x = plan_output['plan'][0, :, Plan.POSITION][:, 0].tolist()
-  for xidx in range(1, ModelConstants.IDX_N):
+  plan_x = model_output['plan'][0, :, plan.POSITION][:, 0].tolist()
+  for xidx in range(1, constants.IDX_N):
     tidx = 0
     # increment tidx until we find an element that's further away than the current xidx
-    while tidx < ModelConstants.IDX_N - 1 and plan_x[tidx + 1] < ModelConstants.X_IDXS[xidx]:
+    while tidx < constants.IDX_N - 1 and plan_x[tidx + 1] < constants.X_IDXS[xidx]:
       tidx += 1
-    if tidx == ModelConstants.IDX_N - 1:
-      # if the Plan doesn't extend far enough, set plan_t to the max value (10s), then break
-      LINE_T_IDXS[xidx] = ModelConstants.T_IDXS[ModelConstants.IDX_N - 1]
+    if tidx == constants.IDX_N - 1:
+      # if the plan doesn't extend far enough, set plan_t to the max value (10s), then break
+      LINE_T_IDXS[xidx] = constants.T_IDXS[constants.IDX_N - 1]
       break
     # interpolate to find `t` for the current xidx
     current_x_val = plan_x[tidx]
     next_x_val = plan_x[tidx + 1]
-    p = (ModelConstants.X_IDXS[xidx] - current_x_val) / (next_x_val - current_x_val) if abs(
+    p = (constants.X_IDXS[xidx] - current_x_val) / (next_x_val - current_x_val) if abs(
       next_x_val - current_x_val) > 1e-9 else float('nan')
-    LINE_T_IDXS[xidx] = p * ModelConstants.T_IDXS[tidx + 1] + (1 - p) * ModelConstants.T_IDXS[tidx]
+    LINE_T_IDXS[xidx] = p * constants.T_IDXS[tidx + 1] + (1 - p) * constants.T_IDXS[tidx]
   return LINE_T_IDXS

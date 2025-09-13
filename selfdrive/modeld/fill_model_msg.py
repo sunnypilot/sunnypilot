@@ -97,7 +97,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.action = action
 
   # times at X_IDXS of edges and lines
-  LINE_T_IDXS: list[float] = plan_x_idxs_helper(net_output_data)
+  LINE_T_IDXS: list[float] = plan_x_idxs_helper(ModelConstants, Plan, net_output_data)
 
   # lane lines
   modelV2.init('laneLines', 4)
