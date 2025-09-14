@@ -47,8 +47,8 @@ def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_S
   if params is None:
     params = Params()
 
-  icbc_enabled = params.get_bool("IntelligentCruiseButtonManagement")
-  if icbc_enabled and CP_SP.intelligentCruiseButtonManagementAvailable and not CP.openpilotLongitudinalControl:
+  icbm_enabled = params.get_bool("IntelligentCruiseButtonManagement")
+  if icbm_enabled and CP_SP.intelligentCruiseButtonManagementAvailable and not CP.openpilotLongitudinalControl:
     CP_SP.pcmCruiseSpeed = False
 
 
