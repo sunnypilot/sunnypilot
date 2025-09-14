@@ -129,14 +129,11 @@ class VCruiseHelper(VCruiseHelperSP):
 
   def initialize_v_cruise(self, CS, experimental_mode: bool, dynamic_experimental_control: bool) -> None:
     # initializing is handled by the PCM
-    if self.CP.pcmCruise and self.CP_SP.pcmCruiseSpeed:
+    if self.CP.pcmCruise:
       return
 
     initial_experimental_mode = experimental_mode and not dynamic_experimental_control
     initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if initial_experimental_mode else V_CRUISE_INITIAL
-
-    if not self.CP_SP.pcmCruiseSpeed:
-      initial = self.v_cruise_min
 
     if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_initialized:
       self.v_cruise_kph = self.v_cruise_kph_last
