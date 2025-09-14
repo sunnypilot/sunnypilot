@@ -68,7 +68,7 @@ class IntelligentCruiseButtonManagement:
     v_target = round(v_target_ms * speed_conv)
 
     self.v_cruise_min = get_set_point(self.is_metric)
-    self.v_cruise_cluster = round(CS.cruiseState.speed * speed_conv)
+    self.v_cruise_cluster = round(CS.cruiseState.speedCluster * speed_conv)
     self.v_target = v_target
 
   def update_state_machine(self):
