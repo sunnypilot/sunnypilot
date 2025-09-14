@@ -1,0 +1,125 @@
+BO_ 203 ADAS_CMD_35_10ms: 24 CGW_CCU
+ SG_ ADAS_CMD_Crc35Val : 0|16@1+ (1,0) [0|0] "0" FCU_C,GW_RGW,MDPS,SFA
+ SG_ ADAS_CMD_AlvCnt35Val : 16|8@1+ (1,0) [0|0] "0" FCU_C,GW_RGW,MDPS,SFA
+ SG_ ADAS_ActvACISta : 24|4@1+ (1,0) [0|0] "" GW_RGW,MDPS,SFA
+ SG_ ADAS_ActvACILvl2Sta : 28|4@1+ (1,0) [0|0] "" ESC,FCU_C,GW_RGW,MDPS,SFA,VPC_C
+ SG_ ADAS_StrAnglReqVal : 32|14@1- (0.1,0) [0|0] "Deg" GW_RGW,MDPS,SFA
+ SG_ ADAS_ACIAnglTqRedcGainVal : 48|8@1+ (0.004,0) [0|0] "" GW_RGW,MDPS,SFA
+ SG_ FCA_ESA_ActvSta : 56|2@1+ (1,0) [0|0] "" GW_RGW,MDPS,SFA
+ SG_ FCA_ESA_TqBstGainVal : 64|8@1+ (0.004,0) [0|0] "" GW_RGW,MDPS,SFA
+
+BO_ 272 ESC_06_200ms: 32 XXX
+ SG_ ESC_Crc6Val : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ ESC_AlvCnt6Val : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ IEB_BrkMod_Sta : 24|3@1+ (1,0) [0|7] "" XXX
+ SG_ IEB_BrkMod_Type : 27|2@1+ (1,0) [0|255] "" XXX
+ SG_ LFA2_USING_LEAD_MAYBE : 30|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKA_WARNING : 32|1@1+ (1,0) [0|1] "" XXX
+ SG_ LKA_SysIndReq : 38|3@1+ (1,0) [0|7] "" CLU,RR_C_RDR,CGW
+ SG_ ADAS_StrTqReqVal : 41|11@1+ (0.0078125,-8) [-8|7.9921875] "Nm" CGW
+ SG_ ADAS_ActToiSta : 52|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ ADAS_ToiFltSta : 54|2@1+ (1,0) [0|3] "" CGW
+ SG_ LFA_BUTTON : 56|1@1+ (1,0) [0|255] "" XXX
+ SG_ LKA_ASSIST : 62|1@1+ (1,0) [0|1] "" XXX
+ SG_ STEER_MODE : 65|3@1+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 70|2@0+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_3_LDW_UNK : 72|2@1+ (1,0) [0|3] "" XXX
+ SG_ LKAS_ANGLE_ACTIVE : 77|2@0+ (1,0) [0|3] "" XXX
+ SG_ HAS_LANE_SAFETY : 80|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKAS_ANGLE_CMD : 82|14@1- (0.1,0) [0|511] "" XXX
+ SG_ LKAS_ANGLE_MAX_TORQUE : 96|8@1+ (1,0) [0|255] "" XXX
+ SG_ LDW_SHAKE_STEERING : 105|2@0+ (1,0) [0|255] "" XXX
+ SG_ FCA_ESA_CtrlSta : 107|1@0+ (1,0) [0|1] "" XXX
+ SG_ CAR_IN_DRIVE_MAYBE : 232|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 298 ADAS_CMD_30_10ms: 16 FR_CMR
+ SG_ ADAS_CMD_Crc30Val : 0|16@1+ (1,0) [0|65535] "" CLU,CGW
+ SG_ ADAS_CMD_AlvCnt30Val : 16|8@1+ (1,0) [0|255] "" CLU,CGW
+ SG_ LKA_OptUsmSta : 24|3@1+ (1,0) [0|7] "" CLU,CGW
+ SG_ LKA_RcgSta : 27|3@1+ (1,0) [0|7] "" CLU,CGW
+ SG_ LKA_LHLnWrnSta : 30|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ LKA_RHLnWrnSta : 32|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ LKA_HndsoffSnd : 34|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ LKA_StrSnd : 36|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ LKA_SysIndReq : 38|3@1+ (1,0) [0|7] "" CLU,RR_C_RDR,CGW
+ SG_ ADAS_StrTqReqVal : 41|11@1+ (0.0078125,-8) [-8|7.9921875] "Nm" CGW
+ SG_ ADAS_ActToiSta : 52|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ ADAS_ToiFltSta : 54|2@1+ (1,0) [0|3] "" CGW
+ SG_ LFA_BUTTON : 56|1@0+ (1,0) [0|1] "" XXX
+ SG_ BCA_Rear_WrnSta : 57|3@1+ (1,0) [0|255] "" ADRV
+ SG_ LKA_SysWrn : 60|4@1+ (1,0) [0|15] "" CLU,CGW
+ SG_ FCA_LO_WrnSta : 64|1@1+ (1,0) [0|1] "" ADRV
+ SG_ STEER_MODE : 65|3@1+ (1,0) [0|1] "" ADRV
+ SG_ FCA_LS_WrnSta : 68|2@1+ (1,0) [0|3] "" ADRV
+ SG_ NEW_SIGNAL_2 : 70|1@0+ (1,0) [0|3] "" ADRV
+ SG_ SCC_TakeoverReq_CLU_AMP_PE_02_Warn_Sound : 72|2@1+ (1,0) [0|255] "" ADRV
+ SG_ NEW_SIGNAL_1 : 79|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKA_UsmMod : 80|2@1+ (1,0) [0|3] "" CLU,CGW
+ SG_ LDW_SHAKE_STEERING : 82|2@1+ (1,0) [0|3] "" XXX
+ SG_ ELK_SysFlrSta : 85|5@1+ (1,0) [0|31] "" ADRV
+ SG_ ELK_SymbDisp : 90|3@1+ (1,0) [0|7] "" ADRV
+ SG_ FCA_ESA_CtrlSta : 98|1@0+ (1,0) [0|1] "" XXX
+ SG_ ADAS_Damping_Gain : 104|8@1+ (1,0) [0|255] "" CGW
+
+CM_ BO_ 203 "[P] Periodic";
+CM_ SG_ 203 ADAS_CMD_Crc35Val "ADAS_CMD_CyclicRedundancyCheck35Value";
+CM_ SG_ 203 ADAS_CMD_AlvCnt35Val "ADAS_CMD_AliveCounter35Value";
+CM_ SG_ 203 ADAS_ActvACISta "ADAS Active AngleControlInterface State";
+CM_ SG_ 203 ADAS_ActvACILvl2Sta "ADAS Active AngleControlInterface Level 2 State";
+CM_ SG_ 203 ADAS_StrAnglReqVal "ADAS Steering Angle Request Value";
+CM_ SG_ 203 ADAS_ACIAnglTqRedcGainVal "ADAS AngleControlInterface Angle Torque Reduction Gain Value";
+CM_ SG_ 203 FCA_ESA_ActvSta "State for FCA w/ESA";
+CM_ SG_ 203 FCA_ESA_TqBstGainVal "FCA w/ESA Torque boost Gain";
+CM_ SG_ 272 IEB_BrkMod_Sta "Brake Mode State";
+CM_ SG_ 272 IEB_BrkMod_Type "Brake Mode Type";
+CM_ SG_ 272 LFA2_USING_LEAD_MAYBE "I don't know about this signal much. But I noticed that it flipped to 1 when the lane was dubious but we had a lead in front";
+CM_ SG_ 272 LKA_SysIndReq "LKA_SystemIndicatorRequest ##2G##LDW_LKA - LKA11 - CF_LKA_SymbolState";
+CM_ SG_ 272 NEW_SIGNAL_3_LDW_UNK "I don't know what this signal is meant to do or convery. I just know it the 2 bits changed together when I manually disabled LKAS. ";
+CM_ SG_ 272 LDW_SHAKE_STEERING "I am not 100% sure on this signal. I believe that when this happens, the steering vibrates. Same as ADAS_CMD_30_10ms";
+CM_ SG_ 272 FCA_ESA_CtrlSta "Signal is a best guess. It went \"off\" when I disabled LKAS on a route. Same as ADAS_CMD_30_10ms";
+CM_ SG_ 272 CAR_IN_DRIVE_MAYBE "This seems to indicate when the car is on D maybe. I am not sure. I saw it twice on a route on hoth times I do remember stopping completely and in one instance I remember putting park. ";
+CM_ BO_ 298 "[P] Periodic";
+CM_ SG_ 298 ADAS_CMD_Crc30Val "ADAS_CMD_CyclicRedundancyCheck30Value";
+CM_ SG_ 298 ADAS_CMD_AlvCnt30Val "ADAS_CMD_AliveCounter30Value";
+CM_ SG_ 298 LKA_OptUsmSta "LKA_OptionUsmStatus ##2G##LDW_LKA - LKA11 - CF_LKA_Opt_USM";
+CM_ SG_ 298 LKA_RcgSta "LKA_RecognitionStatus ##2G##LDW_LKA - LKA11 - CF_LKA_LaneRecogState";
+CM_ SG_ 298 LKA_LHLnWrnSta "LKA_LHLaneWarningStatus ##2G##LDW_LKA - LKA11 - CF_LKA_LHWarning";
+CM_ SG_ 298 LKA_RHLnWrnSta "LKA_RHLaneWarningStatus ##2G##LDW_LKA - LKA11 - CF_LKA_RHWarning";
+CM_ SG_ 298 LKA_HndsoffSnd "LKA_HandsoffSound ##2G##LDW_LKA - LKA11 - CF_LKA_HandsOff_Snd";
+CM_ SG_ 298 LKA_StrSnd "LKA_SteeringSound ##2G##LDW_LKA - LKA11 - CF_LKA_Steer_Snd";
+CM_ SG_ 298 LKA_SysIndReq "LKA_SystemIndicatorRequest ##2G##LDW_LKA - LKA11 - CF_LKA_SymbolState";
+CM_ SG_ 298 ADAS_StrTqReqVal "LKA_SteeringTorqueRequestValue ##2G##LDW_LKA - LKA11 - CR_LKA_StrToqReq";
+CM_ SG_ 298 ADAS_ActToiSta "ADAS_ActiveTorqueOverlayInterfaceStatus ##2G##LDW_LKA - LKA11 - CF_LKA_ActToi";
+CM_ SG_ 298 ADAS_ToiFltSta "ADAS_TorqueOverlayInterfaceFaultStatus ##2G##LDW_LKA - LKA11 - CF_LKA_ToiFlt";
+CM_ SG_ 298 BCA_Rear_WrnSta "best-guess";
+CM_ SG_ 298 LKA_SysWrn "LKA_Additional_Info";
+CM_ SG_ 298 LKA_UsmMod "LKA_USM Mode ##2G##LDW_LKA-LKA11-CF_LKA_USM_Mode";
+CM_ SG_ 298 LDW_SHAKE_STEERING "I am not 100% sure on this signal. I believe that when this happens, the steering vibrates. Same as ESC_06_200ms";
+CM_ SG_ 298 FCA_ESA_CtrlSta "Signal is a best guess. It went \"off\" when I disabled LKAS on a route. Same as ESC_06_200ms";
+CM_ SG_ 298 ADAS_Damping_Gain "ADAS_Damping_Gain";
+VAL_ 203 ADAS_CMD_Crc35Val 0 "0x0x0~0xFFFF:CRCValue" 65535 "0x0x0~0xFFFF:CRCValue";
+VAL_ 203 ADAS_CMD_AlvCnt35Val 0 "0x0x0~0xFF:AlvCntValue" 255 "0x0x0~0xFF:AlvCntValue";
+VAL_ 203 ADAS_ActvACISta 0 "INIT" 1 "INACTIVE" 2 "ACTIVE35(ACTIVE)" 3 "ACTIVE33(Redundancy)" 4 "RESERVED" 5 "RESERVED" 6 "RESERVED" 7 "RESERVED" 8 "RESERVED" 9 "RESERVED" 10 "RESERVED" 11 "RESERVED" 12 "RESERVED" 13 "RESERVED" 14 "RESERVED" 15 "RESERVED";
+VAL_ 203 ADAS_ActvACILvl2Sta 0 "INIT" 1 "INACTIVE" 2 "ACTIVE35(ACTIVE)" 3 "RESERVED" 4 "RESERVED" 5 "RESERVED" 6 "RESERVED" 7 "RESERVED" 8 "RESERVED" 9 "RESERVED" 10 "RESERVED" 11 "RESERVED" 12 "RESERVED" 13 "RESERVED" 14 "RESERVED" 15 "RESERVED";
+VAL_ 203 ADAS_StrAnglReqVal 0 "0x0x000~0x3FFF:Real Values" 16383 "0x0x000~0x3FFF:Real Values";
+VAL_ 203 ADAS_ACIAnglTqRedcGainVal 0 "0x0x00~0xFA:Real Values" 250 "0x0x00~0xFA:Real Values" 251 "RESERVED" 252 "RESERVED" 253 "RESERVED" 254 "RESERVED" 255 "RESERVED";
+VAL_ 203 FCA_ESA_ActvSta 0 "Inactive" 1 "Active" 2 "RESERVED" 3 "RESERVED";
+VAL_ 203 FCA_ESA_TqBstGainVal 0 "0x0x00~0xFA:Real Values" 250 "0x0x00~0xFA:Real Values" 251 "RESERVED" 252 "RESERVED" 253 "RESERVED" 254 "RESERVED" 255 "RESERVED";
+VAL_ 272 IEB_BrkMod_Sta 0 "0x0: Not Applied" 1 "Normal" 2 "Sport" 3 "Chauffeur" 7 "Failure";
+VAL_ 272 IEB_BrkMod_Type 0 "type1 (Normal/Sport)" 1 "type2 (Normal/Sport/Chauffeur)";
+VAL_ 272 LKA_SysIndReq 0 "Off" 1 "Unavailable_(Grey On)" 2 "Lane Recognized_(Green On)" 3 "Lane Departure_(Green Blink)" 4 "System Fail_(Orange On)" 5 "Not Calibrated_(Orange Blink)" 6 "Regulation_(Orange On)" 7 "Reserved";
+VAL_ 272 FCA_ESA_CtrlSta 0 "Off" 1 "On";
+VAL_ 298 LKA_OptUsmSta 0 "None LKA/LDW Option (Default)" 1 "LDW" 2 "LKA" 3 "Reserved" 4 "LDW Only (None LKA)" 5 "LDW only OFF (None LKA)" 6 "LDW/LKA OFF" 7 "Invalid";
+VAL_ 298 LKA_RcgSta 0 "Not Recognized" 1 "Left Lane Recognition" 2 "Right Lane Recognition" 3 "Full Lane Recognition" 4 "Reserved" 5 "Reserved" 6 "Reserved" 7 "Reserved";
+VAL_ 298 LKA_LHLnWrnSta 0 "No Warning" 1 "Lane Departure Warning" 2 "Reserved" 3 "Reserved";
+VAL_ 298 LKA_RHLnWrnSta 0 "No Warning" 1 "Lane Departure Warning" 2 "Reserved" 3 "Reserved";
+VAL_ 298 LKA_HndsoffSnd 0 "Off" 1 "Hands-off Sound Warning" 2 "Reserved" 3 "Reserved";
+VAL_ 298 LKA_StrSnd 0 "Off" 1 "Warning" 2 "Reserved" 3 "Reserved";
+VAL_ 298 LKA_SysIndReq 0 "Off" 1 "Unavailable_(Grey On)" 2 "Lane Recognized_(Green On)" 3 "Lane Departure_(Green Blink)" 4 "System Fail_(Orange On)" 5 "Not Calibrated_(Orange Blink)" 6 "Regulation_(Orange On)" 7 "Reserved";
+VAL_ 298 ADAS_StrTqReqVal 2046 "Reserved" 2047 "Invalid";
+VAL_ 298 ADAS_ActToiSta 0 "De-activate TOI" 1 "Activate TOI" 2 "Reserved" 3 "Error indicator";
+VAL_ 298 ADAS_ToiFltSta 0 "No Fault" 1 "Fault" 2 "Reserved" 3 "Error indicatorr";
+VAL_ 298 LKA_SysWrn 0 "No Info" 1 "Reserved" 2 "Reserved" 3 "Reserved" 4 "Hands-Off Warning 1" 5 "Hands-Off Warning 2" 6 "Hands-Off Warning 3" 7 "Reserved" 8 "Reserved" 9 "System Automatic off" 10 "Reserved" 11 "Reserved" 12 "Reserved" 13 "Reserved" 14 "Reserved" 15 "System Fail";
+VAL_ 298 LKA_UsmMod 0 "NONE" 1 "LKA 1 mode" 2 "Reserved" 3 "LDW";
+VAL_ 298 FCA_ESA_CtrlSta 0 "Off";
+VAL_ 298 ADAS_Damping_Gain 0 "Reserved" 1 "Reserved" 2 "Reserved" 0 "Reserved" 202 "Reserved" 203 "Reserved" 204 "Reserved" 205 "Reserved" 206 "Reserved" 207 "Reserved" 208 "Reserved" 209 "Reserved" 210 "Reserved" 211 "Reserved" 212 "Reserved" 213 "Reserved" 214 "Reserved" 215 "Reserved" 216 "Reserved" 217 "Reserved" 218 "Reserved" 219 "Reserved" 220 "Reserved" 221 "Reserved" 222 "Reserved" 223 "Reserved" 224 "Reserved" 225 "Reserved" 226 "Reserved" 227 "Reserved" 228 "Reserved" 229 "Reserved" 230 "Reserved" 231 "Reserved" 232 "Reserved" 233 "Reserved" 234 "Reserved" 235 "Reserved" 236 "Reserved" 237 "Reserved" 238 "Reserved" 239 "Reserved" 240 "Reserved" 241 "Reserved" 242 "Reserved" 243 "Reserved" 244 "Reserved" 245 "Reserved" 246 "Reserved" 247 "Reserved" 248 "Reserved" 249 "Reserved" 250 "Reserved" 251 "Reserved" 252 "Reserved" 253 "Reserved" 254 "Reserved" 255 "Reserved";

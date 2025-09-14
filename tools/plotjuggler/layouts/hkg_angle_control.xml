@@ -1,0 +1,281 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget name="Main Window" parent="main_window">
+  <Tab containers="1" tab_name="tab1">
+   <Container>
+    <DockSplitter sizes="0.500397;0.499603" count="2" orientation="-">
+     <DockArea name="...">
+      <plot flip_x="false" flip_y="false" mode="TimeSeries" style="Lines">
+       <range top="256.250000" left="0.000000" right="421.102293" bottom="-6.250000"/>
+       <limitY/>
+       <curve color="#1ac938" name="/can/1/LFA_ALT/LKAS_ANGLE_MAX_TORQUE"/>
+       <curve color="#17becf" name="max torque(calc)">
+        <transform name="Moving Average" alias="max torque(calc)[Moving Average]">
+         <options compensate_offset="true" value="10"/>
+        </transform>
+       </curve>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot flip_x="false" flip_y="false" mode="TimeSeries" style="Lines">
+       <range top="2.776497" left="0.000000" right="421.102293" bottom="-2.918548"/>
+       <limitY/>
+       <curve color="#f14cc1" name="desired lat accel"/>
+       <curve color="#888888" name="zero"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis="" delimiter="0"/>
+  </plugin>
+  <plugin ID="DataLoad MCAP"/>
+  <plugin ID="DataLoad Rlog"/>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="Cereal Subscriber"/>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="Fast Fourier Transform"/>
+  <plugin ID="Quaternion to RPY"/>
+  <plugin ID="Reactive Script Editor">
+   <library code="--[[ Helper function to create a series from arrays&#xa;&#xa; new_series: a series previously created with ScatterXY.new(name)&#xa; prefix:     prefix of the timeseries, before the index of the array&#xa; suffix_X:   suffix to complete the name of the series containing the X value. If [nil], use the index of the array.&#xa; suffix_Y:   suffix to complete the name of the series containing the Y value&#xa; timestamp:   usually the tracker_time variable&#xa;              &#xa; Example:&#xa; &#xa; Assuming we have multiple series in the form:&#xa; &#xa;   /trajectory/node.{X}/position/x&#xa;   /trajectory/node.{X}/position/y&#xa;   &#xa; where {N} is the index of the array (integer). We can create a reactive series from the array with:&#xa; &#xa;   new_series = ScatterXY.new(&quot;my_trajectory&quot;) &#xa;   CreateSeriesFromArray( new_series, &quot;/trajectory/node&quot;, &quot;position/x&quot;, &quot;position/y&quot;, tracker_time );&#xa;--]]&#xa;&#xa;function CreateSeriesFromArray( new_series, prefix, suffix_X, suffix_Y, timestamp )&#xa;  &#xa;  --- clear previous values&#xa;  new_series:clear()&#xa;  &#xa;  --- Append points to new_series&#xa;  index = 0&#xa;  while(true) do&#xa;&#xa;    x = index;&#xa;    -- if not nil, get the X coordinate from a series&#xa;    if suffix_X ~= nil then &#xa;      series_x = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_X) )&#xa;      if series_x == nil then break end&#xa;      x = series_x:atTime(timestamp)&#x9; &#xa;    end&#xa;    &#xa;    series_y = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_Y) )&#xa;    if series_y == nil then break end &#xa;    y = series_y:atTime(timestamp)&#xa;    &#xa;    new_series:push_back(x,y)&#xa;    index = index+1&#xa;  end&#xa;end&#xa;&#xa;--[[ Similar to the built-in function GetSeriesNames(), but select only the names with a give prefix. --]]&#xa;&#xa;function GetSeriesNamesByPrefix(prefix)&#xa;  -- GetSeriesNames(9 is a built-in function&#xa;  all_names = GetSeriesNames()&#xa;  filtered_names = {}&#xa;  for i, name in ipairs(all_names)  do&#xa;    -- check the prefix&#xa;    if name:find(prefix, 1, #prefix) then&#xa;      table.insert(filtered_names, name);&#xa;    end&#xa;  end&#xa;  return filtered_names&#xa;end&#xa;&#xa;--[[ Modify an existing series, applying offsets to all their X and Y values&#xa;&#xa; series: an existing timeseries, obtained with TimeseriesView.find(name)&#xa; delta_x: offset to apply to each x value&#xa; delta_y: offset to apply to each y value &#xa;  &#xa;--]]&#xa;&#xa;function ApplyOffsetInPlace(series, delta_x, delta_y)&#xa;  -- use C++ indeces, not Lua indeces&#xa;  for index=0, series:size()-1 do&#xa;    x,y = series:at(index)&#xa;    series:set(index, x + delta_x, y + delta_y)&#xa;  end&#xa;end&#xa;"/>
+   <scripts/>
+  </plugin>
+  <plugin ID="CSV Exporter"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles>
+  <fileInfo prefix="" filename="../tmpa_e8kwpj.rlog">
+   <selected_datasources value=""/>
+  </fileInfo>
+ </previouslyLoaded_Datafiles>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations>
+  <snippet name="zero">
+   <global>min=0
+max=250
+max_from_speed=96
+
+rate_lim = 500
+
+la_deadzone = 0.38
+
+k1=200
+k2=20
+k3=1.0
+k4=1
+k5=10
+
+old = 0
+
+function sign(number)
+    return number > 0 and 1 or (number == 0 and 0 or -1)
+end
+
+function apply_rate_limit(old, new, limit)
+    return math.min(math.max(new, old - limit), old + limit)
+end
+
+function apply_deadzone(val, deadzone)
+    if math.abs(val) &lt;= deadzone then
+        return 0.0
+    elseif val &lt; 0.0 then
+        return val + deadzone
+    else
+        return val - deadzone
+    end
+end</global>
+   <function>return 0</function>
+   <linked_source>/carState/aEgo</linked_source>
+  </snippet>
+  <snippet name="max torque lj adj">
+   <global>min=0
+max=250
+max_from_speed=96
+
+k1=200
+k2=30
+k3=1    
+k4=1
+k5=10
+
+function sign(number)
+    return number > 0 and 1 or (number == 0 and 0 or -1)
+end</global>
+   <function>return 250 - value * 20</function>
+   <linked_source>desired lateral jark</linked_source>
+  </snippet>
+  <snippet name="ang_cmd rate">
+   <global>firstX = 0
+firstY = 0
+is_first = true
+secondX = 0
+secondY = 0
+is_second = false</global>
+   <function>-- Wait for initial values
+if (is_first) then
+  is_first = false
+  is_second = true
+  firstX = time
+  firstY = value
+end
+
+if (is_second) then
+  is_second = false
+  secondX = time
+  secondY = value
+end
+
+-- Central derivative: dy/dx ~= f(x+delta_x)-f(x-delta_x)/(2*delta_x)
+dx = time - firstX
+dy = value - firstY
+-- Increment
+firstX = secondX
+firstY = secondY
+secondX = time
+secondY = value
+
+return dy/dx</function>
+   <linked_source>/can/1/LFA_ALT/LKAS_ANGLE_CMD</linked_source>
+  </snippet>
+  <snippet name="max torque(calc)">
+   <global>min=0
+max=250
+max_from_speed=96
+
+rate_lim = 500
+
+la_deadzone = 0.38
+
+k1=200
+k2=20
+k3=1.0
+k4=1
+k5=10
+
+old = 0
+
+function sign(number)
+    return number > 0 and 1 or (number == 0 and 0 or -1)
+end
+
+function apply_rate_limit(old, new, limit)
+    return math.min(math.max(new, old - limit), old + limit)
+end
+
+function apply_deadzone(val, deadzone)
+    if math.abs(val) &lt;= deadzone then
+        return 0.0
+    elseif val &lt; 0.0 then
+        return val + deadzone
+    else
+        return val - deadzone
+    end
+end</global>
+   <function>la = apply_deadzone(v2, la_deadzone)
+lj = v3
+
+if la == 0.0 then
+    lj = 0.0
+end
+
+fla = math.min(math.abs(k1 * la)^k3, max)
+flj = math.min(math.abs(k2 * lj)^k4, max)
+
+out = fla
+
+flv = math.min(max_from_speed, k5 * v4)
+
+out = out + flv
+
+out = math.max(math.min(out, max), min)
+
+if sign(la) == sign(lj) then
+    out = out - flj
+else
+    out = out + flj
+end
+
+
+if v5 == 1.0 then
+    out = 0.0
+end
+
+out = math.max(math.min(out, max), min)
+out = apply_rate_limit(old, out, rate_lim)
+old = out
+
+return out</function>
+   <linked_source>/can/1/LFA_ALT/LKAS_ANGLE_CMD</linked_source>
+   <additional_sources>
+    <v1>ang_cmd rate</v1>
+    <v2>desired lat accel</v2>
+    <v3>desired lateral jark</v3>
+    <v4>/carState/vEgo</v4>
+    <v5>/can/1/LFA_ALT/LKAS_ANGLE_ACTIVE</v5>
+   </additional_sources>
+  </snippet>
+  <snippet name="desired lateral jark">
+   <global>firstX = 0
+firstY = 0
+is_first = true
+secondX = 0
+secondY = 0
+is_second = false</global>
+   <function>-- Wait for initial values
+if (is_first) then
+  is_first = false
+  is_second = true
+  firstX = time
+  firstY = value
+end
+
+if (is_second) then
+  is_second = false
+  secondX = time
+  secondY = value
+end
+
+-- Central derivative: dy/dx ~= f(x+delta_x)-f(x-delta_x)/(2*delta_x)
+dx = time - firstX
+dy = value - firstY
+-- Increment
+firstX = secondX
+firstY = secondY
+secondX = time
+secondY = value
+
+return dy/dx</function>
+   <linked_source>desired lat accel</linked_source>
+  </snippet>
+  <snippet name="abs(des la accel)">
+   <global></global>
+   <function>return math.abs(value)</function>
+   <linked_source>desired lat accel</linked_source>
+  </snippet>
+  <snippet name="desired lat accel">
+   <global></global>
+   <function>return value * v1^2</function>
+   <linked_source>/controlsState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="abs(ang_cmd)">
+   <global></global>
+   <function>return math.abs(value)</function>
+   <linked_source>/can/1/LFA_ALT/LKAS_ANGLE_CMD</linked_source>
+  </snippet>
+ </customMathEquations>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+
