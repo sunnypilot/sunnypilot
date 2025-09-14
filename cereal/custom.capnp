@@ -226,7 +226,20 @@ struct CarControlSP @0xa5cd762cd951a455 {
 
   struct Param {
     key @0 :Text;
-    value @1 :Text;
+    type @2 :ParamType;
+    value @3 :Data;
+
+    valueDEPRECATED @1 :Text; # The data type change may cause issues with backwards compatibility.
+  }
+  
+  enum ParamType {
+    string @0;
+    bool @1;
+    int @2;
+    float @3;
+    time @4;
+    json @5;
+    bytes @6;
   }
 }
 
