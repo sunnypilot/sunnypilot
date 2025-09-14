@@ -52,21 +52,23 @@ class IntelligentCruiseButtonManagement:
   def v_cruise_equal(self):
     return self.v_target == self.v_cruise_cluster
 
-  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
-    v_cruise_kph = CS.vCruise
-    v_cruise = v_cruise_kph * CV.KPH_TO_MS
-    self.v_cruise_min = get_set_point(self.is_metric)
-    self.v_cruise_cluster = round(CS.cruiseState.speed * (CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH))
+  def update_calculations(self, CS: car.CarState) -> None:
+    speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
+    v_cruise_ms = CS.vCruise * CV.KPH_TO_MS
 
-    v_targets = {'cruise': CS.vCruise}
-
+    # all targets in m/s
+    v_targets = {'cruise': v_cruise_ms}
     source = min(v_targets, key=v_targets.get)
+    v_target_ms = v_targets[source]
 
     hyst_gap = 1.5 * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
-    v_target = apply_hysteresis(v_targets[source], self.speed_steady, hyst_gap)
-    v_target = min(v_target, v_cruise)
-    v_target = round(v_target * (CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH))
+    self.speed_steady = apply_hysteresis(v_target_ms, self.speed_steady, hyst_gap)
 
+    v_target_ms = min(self.speed_steady, v_cruise_ms)
+    v_target = round(v_target_ms * speed_conv)
+
+    self.v_cruise_min = get_set_point(self.is_metric)
+    self.v_cruise_cluster = round(CS.cruiseState.speed * speed_conv)
     self.v_target = v_target
 
   def update_state_machine(self):
@@ -128,7 +130,7 @@ class IntelligentCruiseButtonManagement:
 
     self.is_metric = is_metric
 
-    self.update_calculations(CS, CC)
+    self.update_calculations(CS)
     self.update_readiness(CS, CC)
 
     self.cruise_button = self.update_state_machine()
