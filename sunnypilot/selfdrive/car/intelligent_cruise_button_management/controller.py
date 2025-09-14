@@ -37,7 +37,6 @@ class IntelligentCruiseButtonManagement:
     self.v_cruise_min = 0
     self.cruise_button = SendButtonState.none
     self.state = State.inactive
-    self.button_count = 0
     self.pre_active_timer = 0
 
     self.is_ready = False
@@ -47,6 +46,10 @@ class IntelligentCruiseButtonManagement:
 
     self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0,
                            ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
+
+  @property
+  def v_cruise_equal(self):
+    return self.v_target == self.v_cruise_cluster
 
   def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
     v_cruise_kph = CS.vCruise
@@ -70,48 +73,41 @@ class IntelligentCruiseButtonManagement:
     # HOLDING, ACCELERATING, DECELERATING, PRE_ACTIVE
     if self.state != State.inactive:
       if not self.is_ready:
-        self.button_count = 0
         self.state = State.inactive
 
       else:
         # PRE_ACTIVE
         if self.state == State.preActive:
-          if self.v_target > self.v_cruise_cluster:
-            self.state = State.increasing
-          elif self.v_target < self.v_cruise_cluster and self.v_cruise_cluster > self.v_cruise_min:
-            self.state = State.decreasing
-          else:
-            self.state = State.holding
+          if self.pre_active_timer <= 0:
+            if self.v_cruise_equal:
+              self.state = State.holding
+
+            elif self.v_target > self.v_cruise_cluster:
+              self.state = State.increasing
+
+            elif self.v_target < self.v_cruise_cluster and self.v_cruise_cluster > self.v_cruise_min:
+              self.state = State.decreasing
 
         # HOLDING
         elif self.state == State.holding:
-          self.button_count += 1
-          if self.button_count >= HOLD_TIME:
-            self.button_count = 0
+          if not self.v_cruise_equal:
             self.state = State.preActive
 
         # ACCELERATING
         elif self.state == State.increasing:
-          self.button_count += 1
-          if self.v_target <= self.v_cruise_cluster or self.button_count >= RESET_COUNT:
-            self.button_count = 0
+          if self.v_target <= self.v_cruise_cluster:
             self.state = State.holding
 
         # DECELERATING
         elif self.state == State.decreasing:
-          self.button_count += 1
-          if self.v_target >= self.v_cruise_cluster or self.v_cruise_cluster <= self.v_cruise_min or self.button_count >= RESET_COUNT:
-            self.button_count = 0
+          if self.v_target >= self.v_cruise_cluster or self.v_cruise_cluster <= self.v_cruise_min:
             self.state = State.holding
 
     # INACTIVE
     elif self.state == State.inactive:
-      if self.is_ready:
-        if not self.is_ready_prev:
-          self.pre_active_timer = int(INACTIVE_TIMER / DT_CTRL)
-
-        elif self.pre_active_timer <= 0:
-          self.state = State.preActive
+      if self.is_ready and not self.is_ready_prev:
+        self.pre_active_timer = int(INACTIVE_TIMER / DT_CTRL)
+        self.state = State.preActive
 
     send_button = SEND_BUTTONS.get(self.state, SendButtonState.none)
 
