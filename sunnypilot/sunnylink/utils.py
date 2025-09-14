@@ -60,9 +60,9 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def get_param_as_byte(param_name: str) -> bytes | None:
+def get_param_as_byte(param_name: str, params=None) -> bytes | None:
   """Get a parameter as bytes. Returns None if the parameter does not exist."""
-  params = Params()
+  params = params or Params() # Use existing Params instance if provided
   param = params.get(param_name)
   if param is None:
     return None
@@ -86,6 +86,17 @@ def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: 
     value = gzip.decompress(value)
 
   # We convert to string anything that isn't bytes first. We later transform further.
+  param_value = _convert_param_to_type(value, param_type)
+  params.put(param_name, param_value)
+
+
+def _convert_param_to_type(value: bytes, param_type: ParamKeyType) -> bytes | str | int | float | bool | dict | None:
+  """
+  Convert a byte value to the specified param type. Used internally when getting a Param to convert it to the right type.
+  If this method looks familiar, it's because on SP we have a similar one in openpilot/sunnypilot/car/__init__.py.
+  """
+
+  # We convert to string anything that isn't bytes first. We later transform further.
   if param_type != ParamKeyType.BYTES:
     value = value.decode('utf-8')  # type: ignore
 
@@ -101,4 +112,5 @@ def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: 
     value = str(value)  # type: ignore
   elif param_type == ParamKeyType.JSON:
     value = json.loads(value)
-  params.put(param_name, value)
+
+  return value
