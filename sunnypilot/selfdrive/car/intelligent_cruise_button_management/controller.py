@@ -9,8 +9,8 @@ from opendbc.car import apply_hysteresis
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_set_point, \
-  update_manual_button_timers
+from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_set_point
+from openpilot.sunnypilot.selfdrive.car.cruise_ext import CRUISE_BUTTON_TIMER, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
 State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
@@ -45,8 +45,7 @@ class IntelligentCruiseButtonManagement:
     self.speed_steady = 0
     self.is_metric = False
 
-    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0,
-                           ButtonType.setCruise: 0, ButtonType.resumeCruise: 0}
+    self.cruise_button_timers = CRUISE_BUTTON_TIMER
 
   @property
   def v_cruise_equal(self):
@@ -118,9 +117,9 @@ class IntelligentCruiseButtonManagement:
     return send_button
 
   def update_readiness(self, CS: car.CarState, CC: car.CarControl) -> None:
-    update_manual_button_timers(CS, self.cruise_buttons)
+    update_manual_button_timers(CS, self.cruise_button_timers)
     ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
-    button_pressed = any(self.cruise_buttons[k] > 0 for k in self.cruise_buttons)
+    button_pressed = any(self.cruise_button_timers[k] > 0 for k in self.cruise_button_timers)
 
     self.is_ready = ready and not button_pressed
 

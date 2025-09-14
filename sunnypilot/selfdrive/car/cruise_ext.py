@@ -12,12 +12,29 @@ from openpilot.common.params import Params
 
 ButtonType = car.CarState.ButtonEvent.Type
 
+CRUISE_BUTTON_TIMER = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0,
+                       ButtonType.setCruise: 0, ButtonType.resumeCruise: 0,
+                       ButtonType.cancel: 0, ButtonType.mainCruise: 0}
+
 V_CRUISE_MIN = 8
 
 HYUNDAI_V_CRUISE_MIN = {
   True: 30,
   False: int(20 * CV.MPH_TO_KPH),
 }
+
+
+def update_manual_button_timers(CS: car.CarState, button_timers: dict[car.CarState.ButtonEvent.Type, int]) -> None:
+  # increment timer for buttons still pressed
+  for k in button_timers:
+    if button_timers[k] > 0:
+      button_timers[k] += 1
+
+  for b in CS.buttonEvents:
+    if b.type.raw in button_timers:
+      # Start/end timer and store current state on change of button pressed
+      button_timers[b.type.raw] = 1 if b.pressed else 0
+
 
 
 class VCruiseHelperSP:
@@ -27,10 +44,13 @@ class VCruiseHelperSP:
     self.params = Params()
     self.is_metric_prev = False
     self.v_cruise_min = 0
+    self.enabled_prev = False
 
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
     self.short_increment = self.params.get("CustomAccShortPressIncrement", return_default=True)
     self.long_increment = self.params.get("CustomAccLongPressIncrement", return_default=True)
+
+    self.enable_button_timers = CRUISE_BUTTON_TIMER
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
@@ -61,3 +81,19 @@ class VCruiseHelperSP:
       if self.CP.brand == "hyundai":
         self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
+
+  def update_enabled_state(self, CS, enabled):
+    # special enabled state for non pcmCruiseSpeed, unchanged for non pcmCruise
+    if not self.CP_SP.pcmCruiseSpeed:
+      update_manual_button_timers(CS, self.enable_button_timers)
+      button_pressed = any(self.enable_button_timers[k] > 0 for k in self.enable_button_timers)
+
+      if enabled and not self.enabled_prev:
+        self.enabled_prev = not button_pressed
+        enabled = False
+      elif not enabled:
+        self.enabled_prev = enabled
+
+      enabled = enabled and self.enabled_prev
+
+    return enabled
