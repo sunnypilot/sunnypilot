@@ -12,6 +12,6 @@ concurrency:
 
 jobs:
   selfdrive_tests:
-    uses: sunnypilot/sunnypilot/.github/workflows/selfdrive_tests.yaml@master
+    uses: sunnypilot/sunnypilot/.github/workflows/selfdrive_tests.yaml@master-tici
     with:
       run_number: ${{ inputs.run_number }}

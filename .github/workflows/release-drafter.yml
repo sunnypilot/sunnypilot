@@ -19,6 +19,7 @@ jobs:
       contents: write
       pull-requests: write
     runs-on: ubuntu-latest
+    if: False
     steps:
       - uses: release-drafter/release-drafter@v6
         with:

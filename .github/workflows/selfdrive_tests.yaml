@@ -3,7 +3,7 @@ name: selfdrive
 on:
   push:
     branches:
-      - master
+      - master-tici
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -14,12 +14,12 @@ on:
         type: string
 
 concurrency:
-  group: selfdrive-tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  group: selfdrive-tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master-tici' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
   cancel-in-progress: true
 
 env:
   PYTHONWARNINGS: error
-  BASE_IMAGE: sunnypilot-base
+  BASE_IMAGE: sunnypilot-tici-base
   AZURE_TOKEN: ${{ secrets.AZURE_COMMADATACI_OPENPILOTCI_TOKEN }}
 
   DOCKER_LOGIN: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
@@ -68,10 +68,10 @@ jobs:
       if: github.repository == 'sunnypilot/sunnypilot'
       timeout-minutes: 3
       run: |
-        if [ "${{ github.ref }}" != "refs/heads/master" ]; then
-          git fetch  origin master:refs/remotes/origin/master
+        if [ "${{ github.ref }}" != "refs/heads/master-tici" ]; then
+          git fetch  origin master-tici:refs/remotes/origin/master-tici
 
-          SUBMODULE_PATHS=$(git diff origin/master HEAD --name-only | grep -E '^[^/]+$' | while read path; do
+          SUBMODULE_PATHS=$(git diff origin/master-tici HEAD --name-only | grep -E '^[^/]+$' | while read path; do
             if git ls-files --stage "$path" | grep -q "^160000"; then
               echo "$path"
             fi
@@ -97,7 +97,7 @@ jobs:
       with:
         submodules: true
     - name: Setup docker push
-      if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && github.repository == 'sunnypilot/sunnypilot'
+      if: github.ref == 'refs/heads/master-tici' && github.event_name != 'pull_request' && github.repository == 'sunnypilot/sunnypilot'
       run: |
         echo "PUSH_IMAGE=true" >> "$GITHUB_ENV"
         $DOCKER_LOGIN
@@ -129,7 +129,7 @@ jobs:
         PYTHONWARNINGS: default
     - name: Save Homebrew cache
       uses: actions/cache/save@v4
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master-tici'
       with:
         path: ~/Library/Caches/Homebrew
         key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
@@ -146,7 +146,7 @@ jobs:
       run: . .venv/bin/activate && scons -j$(nproc)
     - name: Save scons cache
       uses: actions/cache/save@v4
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master-tici'
       with:
         path: /tmp/scons_cache
         key: scons-${{ runner.arch }}-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
@@ -305,5 +305,5 @@ jobs:
       - name: Upload Test Report
         uses: actions/upload-artifact@v4
         with:
-          name: report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'master' || github.event.number }}
+          name: report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master-tici' && 'master-tici' || github.event.number }}
           path: selfdrive/ui/tests/test_ui/report_1/screenshots

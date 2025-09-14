@@ -14,7 +14,7 @@ on:
       upstream_branch:
         description: 'Upstream branch to build from'
         required: true
-        default: 'master'
+        default: 'master-tici'
         type: string
       custom_name:
         description: 'Custom name for the model (no date, only name)'
@@ -35,7 +35,7 @@ on:
       upstream_branch:
         description: 'Upstream branch to build from'
         required: true
-        default: 'master'
+        default: 'master-tici'
         type: string
       custom_name:
         description: 'Custom name for the model (no date, only name)'

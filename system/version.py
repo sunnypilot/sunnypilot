@@ -10,8 +10,8 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.git import get_commit, get_origin, get_branch, get_short_branch, get_commit_date
 
-RELEASE_SP_BRANCHES = ['release-c3', 'release']
-TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
+RELEASE_SP_BRANCHES = ['release-c3']
+TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging-tici']
 MASTER_SP_BRANCHES = ['master']
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly'] + RELEASE_SP_BRANCHES
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
@@ -21,9 +21,6 @@ SP_BRANCH_MIGRATIONS = {
   ("tici", "dev-c3-new"): "staging-tici",
   ("tici", "master"): "master-tici",
   ("tici", "master-dev-c3-new"): "master-tici",
-  ("tizi", "staging-c3-new"): "staging",
-  ("tizi", "dev-c3-new"): "dev",
-  ("tizi", "master-dev-c3-new"): "master-dev",
   ("tici", "hkg-angle-steering-2025"): "hkg-angle-steering-2025-tici",
   ("tici", "hkg-angle-steering-2025-prebuilt"): "hkg-angle-steering-2025-tici-prebuilt"
 }
@@ -136,7 +133,7 @@ class BuildMetadata:
 
   @property
   def development_channel(self) -> bool:
-    return self.channel == "dev" or self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
+    return self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
 
   @property
   def channel_type(self) -> str:
@@ -144,11 +141,11 @@ class BuildMetadata:
       return "tici"
     elif self.development_channel:
       return "development"
-    elif self.tested_channel:
+    elif self.channel.startswith("staging-"):
       return "staging"
     elif self.master_channel:
       return "master"
-    elif self.release_channel:
+    elif self.tested_channel:
       return "release"
     else:
       return "feature"
