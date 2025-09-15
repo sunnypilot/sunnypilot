@@ -8,7 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
-from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import SmartCruiseControlVision
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -17,7 +16,6 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
-    self.scc_v = SmartCruiseControlVision(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
 
   @property
@@ -32,11 +30,11 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
-    self.scc_v.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
+    # decoupled from carControl.longActive, so we allow ICBM to use this state
+    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed
 
     targets = {
       'cruise': (v_cruise, a_ego),
-      'scc_v': (self.scc_v.output_v_target, self.scc_v.output_a_target),
     }
 
     src = min(targets, key=lambda k: targets[k][0])
@@ -62,12 +60,5 @@ class LongitudinalPlannerSP:
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl
-    # Vision Turn Speed Control
-    sccVision = smartCruiseControl.vision
-    sccVision.state = self.scc_v.state
-    sccVision.vTarget = float(self.scc_v.output_v_target)
-    sccVision.aTarget = float(self.scc_v.output_a_target)
-    sccVision.currentLateralAccel = float(self.scc_v.current_lat_acc)
-    sccVision.maxPredictedLateralAccel = float(self.scc_v.max_pred_lat_acc)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
