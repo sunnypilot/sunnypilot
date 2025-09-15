@@ -29,9 +29,9 @@ def flash_panda(panda_serial: str) -> Panda:
     HARDWARE.recover_internal_panda()
     raise
 
-  # skip flashing if the detected device is not supported from upstream
-  supported_hardware = check_panda_support(panda)
-  if not supported_hardware:
+  # skip flashing if the detected panda is not supported
+  supported_panda = check_panda_support(panda)
+  if not supported_panda:
     cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {panda.get_type()}), skipping flash...")
     return panda
 
@@ -148,7 +148,7 @@ def main() -> None:
       params.put("PandaSignatures", b','.join(p.get_signature() for p in pandas))
 
       for panda in pandas:
-        # skip health check if the detected device is not supported from upstream
+        # skip health check if the detected panda is not supported
         supported_panda = check_panda_support(panda)
         if not supported_panda:
           cloudlog.warning(f"Panda {panda.get_usb_serial()} is not supported (hw_type: {panda.get_type()}), skipping health check...")
