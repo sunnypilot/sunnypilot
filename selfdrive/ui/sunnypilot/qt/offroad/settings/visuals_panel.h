@@ -19,6 +19,7 @@ public:
  explicit VisualsPanel(QWidget *parent = nullptr);
 
  void paramsRefresh();
+ void refreshLongitudinalStatus(bool _offroad);
 
 protected:
  QStackedLayout* main_layout = nullptr;
@@ -29,4 +30,8 @@ protected:
  ParamWatcher * param_watcher;
  ButtonParamControlSP *chevron_info_settings;
  ButtonParamControlSP *dev_ui_settings;
+
+ bool has_longitudinal_control = false;
+ bool is_pcm_cruise = false;
+ bool offroad = true;
 };

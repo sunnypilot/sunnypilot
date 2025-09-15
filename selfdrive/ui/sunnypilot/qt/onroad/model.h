@@ -20,10 +20,10 @@ private:
   // Lead status display methods
   void drawLeadStatus(QPainter &painter, int height, int width);
   void drawLeadStatusAtPosition(QPainter &painter,
-                               const cereal::RadarState::LeadData::Reader &lead_data,
-                               const QPointF &chevron_pos,
-                               int height, int width,
-                               const QString &label);
+                                const cereal::RadarState::LeadData::Reader &lead_data,
+                                const QPointF &chevron_pos,
+                                int height, int width,
+                                const QString &label);
 
   QPolygonF left_blindspot_vertices;
   QPolygonF right_blindspot_vertices;
