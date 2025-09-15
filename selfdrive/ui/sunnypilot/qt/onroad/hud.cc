@@ -19,6 +19,7 @@ void HudRendererSP::updateState(const UIState &s) {
   const bool cs_alive = sm.alive("controlsState");
   const auto cs = sm["controlsState"].getControlsState();
   const auto car_state = sm["carState"].getCarState();
+  const auto car_state_sp = sm["carStateSP"].getCarStateSP();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
   const auto is_gps_location_external = sm.rcv_frame("gpsLocationExternal") > 1;
@@ -75,6 +76,10 @@ void HudRendererSP::updateState(const UIState &s) {
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
+
+  enableStandStillTimer = s.scene.enable_standstill_timer;
+  isOnStandStill = car_state.getStandstill();
+  standstillElapsedTime = car_state_sp.getStandStill().getElapsedSeconds();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -93,6 +98,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     if (devUiInfo != 0) {
       QRect rect_right(surface_rect.right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 170);
       drawRightDevUI(p, surface_rect.right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rect_right.height());
+    }
+
+    // Standstill Timer
+    if (enableStandStillTimer && isOnStandStill) {
+      drawStandstillTimer(p, ((surface_rect.right()/12)*9), ((surface_rect.bottom()/12)*1.9));
     }
   }
 }
@@ -206,3 +216,29 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
   UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
 }
+
+void HudRendererSP::drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color) {
+  QRect real_rect = p.fontMetrics().boundingRect(text);
+  real_rect.moveCenter({x, y - real_rect.height() / 2});
+
+  p.setPen(color);
+  p.drawText(real_rect.x(), real_rect.bottom(), text);
+}
+
+void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
+  char lab_str[16];
+  char val_str[16];
+  int minute = (int)(standstillElapsedTime / 60);
+  int second = (int)((standstillElapsedTime) - (minute * 60));
+
+  if (isOnStandStill) {
+    snprintf(lab_str, sizeof(lab_str), "STOP");
+    snprintf(val_str, sizeof(val_str), "%01d:%02d", minute, second);
+  }
+
+  p.setFont(InterFont(100, QFont::DemiBold));
+  drawColoredText(p, x, y, QString(lab_str), QColor(255, 175, 3, 240));
+  p.setFont(InterFont(125, QFont::DemiBold));
+  drawColoredText(p, x, y + 125, QString(val_str), QColor(255, 255, 255, 240));
+}
+
