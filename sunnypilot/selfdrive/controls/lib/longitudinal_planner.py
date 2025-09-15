@@ -61,6 +61,6 @@ class LongitudinalPlannerSP:
     dec.active = self.dec.active()
 
     # Smart Cruise Control
-    smartCruiseControl = longitudinalPlanSP.smartCruiseControl
+    smartCruiseControl = longitudinalPlanSP.smartCruiseControl  # noqa: F841
 
     pm.send('longitudinalPlanSP', plan_sp_send)

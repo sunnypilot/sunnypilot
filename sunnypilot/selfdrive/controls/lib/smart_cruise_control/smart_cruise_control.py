@@ -9,7 +9,7 @@ See the LICENSE.md file in the root directory for more details.
 class SmartCruiseControl:
   def update(self, sm, v_ego, a_ego, v_cruise):
     # decoupled from carControl.longActive, so we allow ICBM to use this state
-    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed
+    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed  # noqa: F841
 
     targets = {
       # FIXME-SP: remove cruise once we have additional sources
