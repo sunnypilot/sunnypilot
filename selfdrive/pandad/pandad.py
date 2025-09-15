@@ -29,18 +29,18 @@ def flash_panda(panda_serial: str) -> Panda:
     HARDWARE.recover_internal_panda()
     raise
 
+  # skip flashing if the detected device is not supported from upstream
+  hw_type = panda.get_type()
+  if hw_type not in Panda.SUPPORTED_DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {hw_type}), skipping flash...")
+    return panda
+
   fw_signature = get_expected_signature(panda)
   internal_panda = panda.is_internal()
 
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
   panda_signature = b"" if panda.bootstub else panda.get_signature()
   cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
-
-  # skip flashing if the detected device is not supported from upstream
-  hw_type = panda.get_type()
-  if hw_type not in Panda.SUPPORTED_DEVICES:
-    cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {hw_type}), skipping flash...")
-    return panda
 
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
