@@ -15,25 +15,25 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles mapped to AccelPersonality (eco/normal/sport)
 MAX_ACCEL_PROFILES = {
-    AccelPersonality.eco:       [2.0,  2.0,  1.80, 1.23, .523, .288, .13, .088],  # eco
-    AccelPersonality.normal:    [2.0,  2.0,  1.95, 1.40, .600, .299, .17, .12],   # normal
-    AccelPersonality.sport:     [2.0,  2.0,  1.99, 1.65, .800, .333, .24, .2],    # sport
+    AccelPersonality.eco:       [2.0,  1.90,  1.60, 1.15, .500, .292, .13, .09],  # eco
+    AccelPersonality.normal:    [2.0,  1.95,  1.85, 1.30, .650, .310, .17, .12],   # normal
+    AccelPersonality.sport:     [2.0,  2.00,  1.99, 1.65, .800, .333, .24, .2],    # sport
 }
 MAX_ACCEL_BREAKPOINTS =         [0.,   4.,   6.,   9.,   16.,  25.,  30., 55.]
 
 # Braking profiles mapped to LongPersonality (relaxed/standard/aggressive)
 MIN_ACCEL_PROFILES = {
-    LongPersonality.relaxed:    [-.0006, -.0006, -.4, -1.1],  # gentler braking
-    LongPersonality.standard:   [-.0007, -.0007, -.5, -1.2],  # normal braking
-    LongPersonality.aggressive: [-.0008, -.0008, -.6, -1.2],  # more aggressive braking
+    LongPersonality.relaxed:    [-.0008, -.0008, -.2,  -.40, -1.1],  # gentler braking
+    LongPersonality.standard:   [-.0012, -.0012, -.3,  -.50, -1.2],  # normal braking
+    LongPersonality.aggressive: [-.0030, -.0030, -1.2, -1.2, -1.2],  # more aggressive braking
 }
-MIN_ACCEL_BREAKPOINTS =         [0.,   1.5,    3.,   50.]
+MIN_ACCEL_BREAKPOINTS =         [0.,   1.5,    3.,   15.,  50.]
 
 # Follow distance profiles mapped to LongPersonality (relaxed/standard/aggressive)
 FOLLOW_PROFILES = {
     LongPersonality.relaxed:    [1.75, 1.80, 1.75, 1.65, 1.70, 1.80, 1.80],  # more spread out
-    LongPersonality.standard:   [1.45, 1.50, 1.45, 1.45, 1.55, 1.50, 1.50],  # balanced
-    LongPersonality.aggressive: [1.25, 1.30, 1.25, 1.25, 1.35, 1.25, 1.30],  # tighter
+    LongPersonality.standard:   [1.35, 1.40, 1.35, 1.35, 1.50, 1.50, 1.50],  # balanced
+    LongPersonality.aggressive: [1.05, 1.10, 1.05, 1.05, 1.25, 1.25, 1.27],  # tighter
 }
 FOLLOW_BREAKPOINTS = [0., 1.5, 3., 6., 12., 16., 36.]
 
