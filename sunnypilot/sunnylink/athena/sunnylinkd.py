@@ -23,7 +23,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
 
 import cereal.messaging as messaging
 from sunnypilot.sunnylink.api import SunnylinkApi
-from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte
+from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -184,14 +184,18 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
   try:
     param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
-    params_dict:  dict[str, list[dict[str, str | bool | int ]]] = {"params": [
-      {
+    params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
+    for key in param_keys_validated:
+      value = get_param_as_byte(key)
+      if value is None:
+        continue
+
+      params_dict["params"].append({
         "key": key,
-        "value": base64.b64encode(gzip.compress(get_param_as_byte(key)) if compression else get_param_as_byte(key)).decode('utf-8'),
+        "value": base64.b64encode(gzip.compress(value) if compression else value).decode('utf-8'),
         "type": int(params.get_type(key).value),
         "is_compressed": compression
-      } for key in param_keys_validated
-    ]}
+      })
 
     response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
     response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
@@ -204,15 +208,9 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
-  params = Params()
-  params_dict = {key: base64.b64decode(value) for key, value in params_to_update.items()}
-
-  if compression:
-    params_dict = {key: gzip.decompress(value) for key, value in params_dict.items()}
-
-  for key, value in params_dict.items():
+  for key, value in params_to_update.items():
     try:
-      params.put(key, value)
+      save_param_from_base64_encoded_string(key, value, compression)
     except Exception as e:
       cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
 

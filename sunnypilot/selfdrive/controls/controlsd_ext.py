@@ -73,7 +73,7 @@ class ControlsExt:
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads
 
-    CC_SP.params = self.param_store.publish()
+    CC_SP.params = self.param_store.param_list
 
     return CC_SP
 
