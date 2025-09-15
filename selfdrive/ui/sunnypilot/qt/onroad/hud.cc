@@ -102,7 +102,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     // Standstill Timer
     if (enableStandStillTimer && isOnStandStill) {
-      drawStandstillTimer(p, ((surface_rect.right()/12)*9), ((surface_rect.bottom()/12)*1.9));
+      drawStandstillTimer(p, ((surface_rect.right()/12)*10), ((surface_rect.bottom()/12)*1.53));
     }
   }
 }
@@ -236,9 +236,30 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
     snprintf(val_str, sizeof(val_str), "%01d:%02d", minute, second);
   }
 
-  p.setFont(InterFont(100, QFont::DemiBold));
-  drawColoredText(p, x, y, QString(lab_str), QColor(255, 175, 3, 240));
-  p.setFont(InterFont(125, QFont::DemiBold));
-  drawColoredText(p, x, y + 125, QString(val_str), QColor(255, 255, 255, 240));
+  // stop sign for standstill timer
+  const int size = 190;  // size
+  const float angle = M_PI / 8.0;
+
+  p.save();
+
+  QPolygon octagon;
+  for (int i = 0; i < 8; i++) {
+    float curr_angle = angle + i * M_PI / 4.0;
+    int point_x = x + size / 2 * cos(curr_angle);
+    int point_y = y + size / 2 * sin(curr_angle);
+    octagon << QPoint(point_x, point_y);
+  }
+
+  p.setPen(QPen(Qt::white, 6));
+  p.setBrush(QColor(255, 90, 81, 200)); // red pastel
+  p.drawPolygon(octagon);
+
+  p.setFont(InterFont(55, QFont::Bold));
+  p.setPen(Qt::white);
+  QRect timerTextRect = p.fontMetrics().boundingRect(QString(val_str));
+  timerTextRect.moveCenter({x, y});
+  p.drawText(timerTextRect, Qt::AlignCenter, QString(val_str));
+
+  p.restore();
 }
 
