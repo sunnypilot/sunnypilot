@@ -42,7 +42,6 @@ class VCruiseHelperSP:
     self.CP = CP
     self.CP_SP = CP_SP
     self.params = Params()
-    self.is_metric_prev = False
     self.v_cruise_min = 0
     self.enabled_prev = False
 
@@ -77,12 +76,10 @@ class VCruiseHelperSP:
       self.v_cruise_min = V_CRUISE_MIN
       return
 
-    if is_metric != self.is_metric_prev:
-      if self.CP.brand == "hyundai":
-        self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
-    self.is_metric_prev = is_metric
+    if self.CP.brand == "hyundai":
+      self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
 
-  def update_enabled_state(self, CS, enabled):
+  def update_enabled_state(self, CS, enabled) -> bool:
     # special enabled state for non pcmCruiseSpeed, unchanged for non pcmCruise
     if not self.CP_SP.pcmCruiseSpeed:
       update_manual_button_timers(CS, self.enable_button_timers)
@@ -94,6 +91,6 @@ class VCruiseHelperSP:
       elif not enabled:
         self.enabled_prev = enabled
 
-      enabled = enabled and self.enabled_prev
+      return enabled and self.enabled_prev
 
     return enabled
