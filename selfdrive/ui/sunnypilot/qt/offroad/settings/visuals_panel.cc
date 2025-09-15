@@ -99,6 +99,57 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   vlayout->addWidget(sunnypilotScroller);
 
   main_layout->addWidget(sunnypilotScreen);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &VisualsPanel::refreshLongitudinalStatus);
+
+  refreshLongitudinalStatus(offroad);
+}
+
+void VisualsPanel::refreshLongitudinalStatus(bool _offroad) {
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    has_longitudinal_control = hasLongitudinalControl(CP);
+    is_pcm_cruise = CP.getPcmCruise();
+  } else {
+    has_longitudinal_control = false;
+    is_pcm_cruise = false;
+  }
+
+  if (chevron_info_settings) {
+    QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).");
+    QString chevronNoLongDescription = tr("This feature requires openpilot longitudinal control to be available.");
+    QString chevronPcmCruiseDisabledDescription = tr("This feature is not supported on this platform due to vehicle limitations.");
+    QString onroadOnlyDescription = tr("Start the vehicle to check vehicle compatibility.");
+
+    if (_offroad) {
+      chevron_info_settings->setDescription(onroadOnlyDescription);
+      chevron_info_settings->showDescription();
+    } else {
+      if (has_longitudinal_control) {
+        if (is_pcm_cruise) {
+          chevron_info_settings->setDescription(chevronPcmCruiseDisabledDescription);
+          chevron_info_settings->showDescription();
+        } else {
+          chevron_info_settings->setDescription(chevronEnabledDescription);
+        }
+      } else {
+        // Reset to "Off" when longitudinal not available
+        params.put("ChevronInfo", "0");
+        chevron_info_settings->setDescription(chevronNoLongDescription);
+        chevron_info_settings->showDescription();
+      }
+    }
+
+    // Enable only when longitudinal is available and not PCM cruise and not offroad
+    chevron_info_settings->setEnabled(has_longitudinal_control && !is_pcm_cruise && !_offroad);
+    chevron_info_settings->refresh();
+  }
+
+  offroad = _offroad;
 }
 
 void VisualsPanel::paramsRefresh() {
