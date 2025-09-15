@@ -160,7 +160,6 @@ class Controls(ControlsExt, ModelStateBase):
 
   def publish(self, CC, lac_log):
     CS = self.sm['carState']
-    model_v2 = self.sm['modelV2']
 
     # Orientation and angle rates can be useful for carcontroller
     # Only calibrated (car) frame is relevant for the carcontroller
@@ -181,9 +180,8 @@ class Controls(ControlsExt, ModelStateBase):
     hudControl.leadDistanceBars = self.sm['selfdriveState'].personality.raw + 1
     hudControl.visualAlert = self.sm['selfdriveState'].alertHudVisual
 
-    laneVisible = len(model_v2.laneLines) > 2 and len(model_v2.laneLineProbs) > 2
-    hudControl.leftLaneVisible  = bool(laneVisible and len(model_v2.laneLines[1].x) > 0 and model_v2.laneLineProbs[1] > 0.5)
-    hudControl.rightLaneVisible = bool(laneVisible and len(model_v2.laneLines[2].x) > 0 and model_v2.laneLineProbs[2] > 0.5)
+    hudControl.rightLaneVisible = True
+    hudControl.leftLaneVisible = True
     if self.sm.valid['driverAssistance']:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
