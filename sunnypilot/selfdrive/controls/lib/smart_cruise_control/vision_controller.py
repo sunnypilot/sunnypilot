@@ -124,7 +124,7 @@ class SmartCruiseControlVision:
 
   @property
   def is_active(self):
-    return self.state != VisionState.disabled
+    return self.state in ACTIVE_STATES
 
   def reset(self):
     self.current_lat_acc = 0.
