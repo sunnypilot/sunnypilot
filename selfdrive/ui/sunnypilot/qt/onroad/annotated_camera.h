@@ -15,4 +15,7 @@ class AnnotatedCameraWidgetSP : public AnnotatedCameraWidget {
 public:
   explicit AnnotatedCameraWidgetSP(VisionStreamType type, QWidget *parent = nullptr);
   void updateState(const UIState &s) override;
+
+protected:
+  void showEvent(QShowEvent *event) override;
 };
