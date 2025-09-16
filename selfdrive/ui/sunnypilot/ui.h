@@ -96,3 +96,4 @@ DeviceSP *deviceSP();
 inline DeviceSP *device() { return deviceSP(); }
 
 void ui_update_params_sp(UIStateSP *s);
+void reset_onroad_sleep_timer(UIStateSP *s);

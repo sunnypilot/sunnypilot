@@ -204,6 +204,13 @@ void Device::updateBrightness(const UIState &s) {
     brightness = 0;
   }
 
+  // Onroad Brightness Control
+#ifdef SUNNYPILOT
+  if (awake && s.scene.started && s.scene.onroadScreenOffTimer == 0 && s.scene.onroadScreenOffControl) {
+    brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
+  }
+#endif
+
   if (brightness != last_brightness) {
     if (!brightness_future.isRunning()) {
       brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
