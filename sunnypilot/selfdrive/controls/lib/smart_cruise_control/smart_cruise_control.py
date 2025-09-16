@@ -4,13 +4,15 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from cereal import messaging
+from opendbc.car import structs
 
 
 class SmartCruiseControl:
-  def __init__(self, CP):
+  def __init__(self, CP: structs.CarParams):
     self.CP = CP
 
-  def update(self, sm, v_ego, a_ego, v_cruise):
+  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     # decoupled from carControl.longActive, so we allow ICBM to use this state
     long_active = sm['carControl'].enabled and not sm['carState'].gasPressed and self.CP.openpilotLongitudinalControl  # noqa: F841
 
