@@ -75,6 +75,9 @@ void HudRendererSP::updateState(const UIState &s) {
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
+
+  standstillTimer = s.scene.standstill_timer;
+  isStandstill = car_state.getStandstill();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -93,6 +96,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     if (devUiInfo != 0) {
       QRect rect_right(surface_rect.right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 170);
       drawRightDevUI(p, surface_rect.right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rect_right.height());
+    }
+
+    // Standstill Timer
+    if (standstillTimer) {
+      drawStandstillTimer(p, surface_rect.right() / 12 * 10, surface_rect.bottom() / 12 * 1.53);
     }
   }
 }
@@ -205,4 +213,38 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
 
   UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
+}
+
+void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
+  if (isStandstill) {
+    standstillElapsedTime += 1.0 / UI_FREQ;
+
+    int minute = static_cast<int>(standstillElapsedTime / 60);
+    int second = static_cast<int>(standstillElapsedTime - (minute * 60));
+
+    // stop sign for standstill timer
+    const int size = 190;  // size
+    const float angle = M_PI / 8.0;
+
+    QPolygon octagon;
+    for (int i = 0; i < 8; i++) {
+      float curr_angle = angle + i * M_PI / 4.0;
+      int point_x = x + size / 2 * cos(curr_angle);
+      int point_y = y + size / 2 * sin(curr_angle);
+      octagon << QPoint(point_x, point_y);
+    }
+
+    p.setPen(QPen(Qt::white, 6));
+    p.setBrush(QColor(255, 90, 81, 200)); // red pastel
+    p.drawPolygon(octagon);
+
+    QString time_str = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
+    p.setFont(InterFont(55, QFont::Bold));
+    p.setPen(Qt::white);
+    QRect timerTextRect = p.fontMetrics().boundingRect(QString(time_str));
+    timerTextRect.moveCenter({x, y});
+    p.drawText(timerTextRect, Qt::AlignCenter, QString(time_str));
+  } else {
+    standstillElapsedTime = 0.0;
+  }
 }
