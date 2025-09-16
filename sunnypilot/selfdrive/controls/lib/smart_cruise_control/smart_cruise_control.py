@@ -5,7 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import messaging
-from opendbc.car import structs
 
 
 class SmartCruiseControl:
