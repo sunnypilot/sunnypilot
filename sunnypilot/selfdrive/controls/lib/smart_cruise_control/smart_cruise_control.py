@@ -9,11 +9,12 @@ from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_con
 
 class SmartCruiseControl:
   def __init__(self, CP):
+    self.CP = CP
     self.vision = SmartCruiseControlVision(CP)
 
   def update(self, sm, v_ego, a_ego, v_cruise):
     # decoupled from carControl.longActive, so we allow ICBM to use this state
-    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed
+    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed and self.CP.openpilotLongitudinalControl
 
     self.vision.update(sm, long_active, v_ego, a_ego, v_cruise)
 
