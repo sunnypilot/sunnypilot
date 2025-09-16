@@ -253,7 +253,7 @@ class SmartCruiseControlVision:
 
   def _update_solution(self):
     # DISABLED, ENABLED
-    if self.state not in [ACTIVE_STATES]:
+    if self.state not in ACTIVE_STATES:
       # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
       # the smooth deceleration.
       a_target = self.a_ego
