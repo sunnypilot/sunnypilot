@@ -9,8 +9,6 @@ from opendbc.car import structs
 
 
 class SmartCruiseControl:
-  def __init__(self, CP: structs.CarParams):
-    self.CP = CP
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     targets = {
