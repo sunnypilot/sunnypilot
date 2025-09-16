@@ -11,6 +11,19 @@
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
+  if (scene.started && scene.onroadScreenOffControl) {
+    auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
+    if (scene.screenTouched) {
+      reset_onroad_sleep_timer(this);
+    } else if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE &&
+                   selfdriveState.getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL) {
+        reset_onroad_sleep_timer(this);
+    } else if (scene.onroadScreenOffTimer > 0) {
+      scene.onroadScreenOffTimer--;
+    } else if (scene.onroadScreenOffTimer < 0) {
+      reset_onroad_sleep_timer(this);
+    }
+  }
 }
 
 UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
@@ -51,6 +64,21 @@ void UIStateSP::update() {
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+
+  // Onroad Screen Brightness
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
+  reset_onroad_sleep_timer(s);
+}
+
+void reset_onroad_sleep_timer(UIStateSP *s) {
+  auto params = Params();
+  int onroadTimer = std::atoi(params.get("OnroadScreenOffTimer").c_str());
+  if (onroadTimer >= 0 and s->scene.onroadScreenOffControl) {
+    s->scene.onroadScreenOffTimer = onroadTimer * UI_FREQ;
+  } else {
+    s->scene.onroadScreenOffTimer = -1;
+  }
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
