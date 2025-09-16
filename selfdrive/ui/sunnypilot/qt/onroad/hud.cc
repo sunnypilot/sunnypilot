@@ -215,14 +215,6 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
 }
 
-void HudRendererSP::drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color) {
-  QRect real_rect = p.fontMetrics().boundingRect(text);
-  real_rect.moveCenter({x, y - real_rect.height() / 2});
-
-  p.setPen(color);
-  p.drawText(real_rect.x(), real_rect.bottom(), text);
-}
-
 void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
   if (isStandstill) {
     standstillElapsedTime += 1.0 / UI_FREQ;
