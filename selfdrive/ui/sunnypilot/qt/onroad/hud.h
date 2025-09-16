@@ -26,6 +26,8 @@ private:
   int drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawBottomDevUI(QPainter &p, int x, int y);
   void drawStandstillTimer(QPainter &p, int x, int y);
+  void drawSmartCruiseVision(QPainter &p, int x, int y);
+  void drawWindingRoadSign(QPainter &p, int x, int y, int size);
 
   bool lead_status;
   float lead_d_rel;
@@ -57,4 +59,7 @@ private:
   bool standstillTimer;
   bool isStandstill;
   float standstillElapsedTime;
+
+  bool smartCruiseVisionActive = false;
+  int visionState = 0;  // 0=disabled, 1=enabled, 2=entering, 3=turning, 4=leaving
 };

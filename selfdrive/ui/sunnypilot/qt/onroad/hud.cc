@@ -8,7 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/hud.h"
 
 #include "selfdrive/ui/qt/util.h"
-
+#include <QPainterPath>
 
 HudRendererSP::HudRendererSP() {}
 
@@ -78,11 +78,31 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
+
+  if (sm.alive("longitudinalPlanSP")) {
+    const auto scc_vision = sm["longitudinalPlanSP"]
+                               .getLongitudinalPlanSP()
+                               .getSmartCruiseControl()
+                               .getVision();
+    visionState = static_cast<int>(scc_vision.getState());
+    smartCruiseVisionActive = (visionState == 2 || visionState == 3);
+  } else {
+    smartCruiseVisionActive = false;
+    visionState = 0;
+  }
+
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
   if (!reversing) {
+
+    if (smartCruiseVisionActive) {
+      int vision_x = surface_rect.center().x();
+      int vision_y = surface_rect.height() / 4;
+      drawSmartCruiseVision(p, vision_x, vision_y);
+    }
+
     // Bottom Dev UI
     if (devUiInfo == 2) {
       QRect rect_bottom(surface_rect.left(), surface_rect.bottom() - 60, surface_rect.width(), 61);
@@ -110,6 +130,51 @@ void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QCo
   real_rect.moveCenter({x, y - real_rect.height() / 2});
   p.setPen(color);
   p.drawText(real_rect.x(), real_rect.bottom(), text);
+}
+
+void HudRendererSP::drawSmartCruiseVision(QPainter &p, int x, int y) {
+  if (!smartCruiseVisionActive) return;
+
+  p.save();
+
+  bool blink_on = (static_cast<int>(QTime::currentTime().msec() / 500) % 2) == 0;
+
+  QString text = "SCC-V";
+  QFont font = InterFont(32, QFont::Bold);
+  p.setFont(font);
+
+  QFontMetrics fm(font);
+  int text_width  = fm.horizontalAdvance(text);
+  int text_height = fm.height();
+
+  int padding_h = 20;
+  int padding_v = 10;
+
+  int x_offset = -240;
+  int y_offset = -100;
+
+  QRectF bg_rect(
+      x - (text_width / 2) - padding_h + x_offset,
+      y - (text_height / 2) - padding_v + y_offset,
+      text_width + 2 * padding_h,
+      text_height + 2 * padding_v
+  );
+
+  QPainterPath boxPath;
+  boxPath.addRoundedRect(bg_rect, 10, 10);
+
+  if (blink_on) {
+    QPainterPath textPath;
+    QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
+    textPath.addText(textPos, font, text);
+    boxPath = boxPath.subtracted(textPath);
+  }
+
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(39, 214, 115, 200));
+  p.drawPath(boxPath);
+
+  p.restore();
 }
 
 int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
