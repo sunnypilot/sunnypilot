@@ -76,8 +76,8 @@ void HudRendererSP::updateState(const UIState &s) {
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
 
-  enableStandStillTimer = s.scene.enable_standstill_timer;
-  isOnStandStill = car_state.getStandstill();
+  standstillTimer = s.scene.standstill_timer;
+  isStandstill = car_state.getStandstill();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -99,8 +99,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Standstill Timer
-    if (enableStandStillTimer) {
-      drawStandstillTimer(p, ((surface_rect.right()/12)*10), ((surface_rect.bottom()/12)*1.53));
+    if (standstillTimer) {
+      drawStandstillTimer(p, surface_rect.right() / 12 * 10, surface_rect.bottom() / 12 * 1.53);
     }
   }
 }
@@ -224,9 +224,7 @@ void HudRendererSP::drawColoredText(QPainter &p, int x, int y, const QString &te
 }
 
 void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
-  char val_str[16];
-
-  if (isOnStandStill) {
+  if (isStandstill) {
     standstillElapsedTime += 1.0 / UI_FREQ;
 
     int minute = static_cast<int>(standstillElapsedTime / 60);
@@ -248,12 +246,12 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
     p.setBrush(QColor(255, 90, 81, 200)); // red pastel
     p.drawPolygon(octagon);
 
-    snprintf(val_str, sizeof(val_str), "%01d:%02d", minute, second);
+    QString time_str = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
     p.setFont(InterFont(55, QFont::Bold));
     p.setPen(Qt::white);
-    QRect timerTextRect = p.fontMetrics().boundingRect(QString(val_str));
+    QRect timerTextRect = p.fontMetrics().boundingRect(QString(time_str));
     timerTextRect.moveCenter({x, y});
-    p.drawText(timerTextRect, Qt::AlignCenter, QString(val_str));
+    p.drawText(timerTextRect, Qt::AlignCenter, QString(time_str));
   } else {
     standstillElapsedTime = 0.0;
   }

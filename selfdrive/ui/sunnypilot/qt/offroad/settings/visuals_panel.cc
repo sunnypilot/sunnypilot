@@ -36,7 +36,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "EnableStandstillTimer",
+      "StandstillTimer",
       tr("Enable Standstill Timer"),
       tr("Show a timer on the HUD when the car is at a standstill."),
       "../assets/offroad/icon_monitoring.png",

@@ -148,7 +148,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"DevUIInfo", {PERSISTENT | BACKUP, INT, "0"}},
     {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
-    {"EnableStandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
@@ -160,6 +159,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},

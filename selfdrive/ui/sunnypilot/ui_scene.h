@@ -9,5 +9,5 @@
 
 typedef struct UISceneSP : UIScene {
   int dev_ui_info = 0;
-  bool enable_standstill_timer = false;
+  bool standstill_timer = false;
 } UISceneSP;
