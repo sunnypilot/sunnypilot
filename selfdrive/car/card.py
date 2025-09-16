@@ -183,7 +183,6 @@ class Car:
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
-    self.standstill_elapsed = self.update_standstill(False)
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -225,8 +224,6 @@ class Car:
     # TODO: mirror the carState.cruiseState struct?
     CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
     CS.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
-
-    CS_SP.standStill.elapsedSeconds = self.update_standstill(CS.standstill)
 
     return CS, CS_SP, RD
 
@@ -314,14 +311,6 @@ class Car:
       self.v_cruise_helper.read_custom_set_speed_params()
 
       time.sleep(0.1)
-
-  def update_standstill(self, standstill: bool):
-    if standstill:
-      self.standstill_elapsed += DT_CTRL
-    else:
-      self.standstill_elapsed = 0.0
-    return self.standstill_elapsed
-
 
   def card_thread(self):
     e = threading.Event()
