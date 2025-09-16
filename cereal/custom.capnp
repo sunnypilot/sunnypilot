@@ -144,6 +144,8 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       aTarget @2 :Float32;
       currentLateralAccel @3 :Float32;
       maxPredictedLateralAccel @4 :Float32;
+      enabled @5 :Bool;
+      active @6 :Bool;
     }
 
     enum VisionState {

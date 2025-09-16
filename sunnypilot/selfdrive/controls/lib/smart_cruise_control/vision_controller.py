@@ -17,7 +17,8 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
-ACTIVE_STATES = [VisionState.entering, VisionState.turning, VisionState.leaving]
+ACTIVE_STATES = (VisionState.entering, VisionState.turning, VisionState.leaving)
+ENABLED_STATES = (VisionState.enabled, *ACTIVE_STATES)
 
 TRAJECTORY_SIZE = 33
 
@@ -96,6 +97,8 @@ class SmartCruiseControlVision:
     self.CP = CP
     self.frame = -1
     self.long_active = False
+    self.is_enabled = False
+    self.is_active = False
     self.enabled = self._params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
     self.max_v_for_current_curvature = 0.
@@ -121,10 +124,6 @@ class SmartCruiseControlVision:
       return self.v_ego + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
 
     return V_CRUISE_UNSET
-
-  @property
-  def is_active(self):
-    return self.state in ACTIVE_STATES
 
   def reset(self):
     self.current_lat_acc = 0.
@@ -251,6 +250,11 @@ class SmartCruiseControlVision:
       if self.long_active and self.enabled:
         self.state = VisionState.enabled
 
+    enabled = self.state in ENABLED_STATES
+    active = self.state in ACTIVE_STATES
+
+    return enabled, active
+
   def _update_solution(self):
     # DISABLED, ENABLED
     if self.state not in ACTIVE_STATES:
@@ -286,7 +290,7 @@ class SmartCruiseControlVision:
 
     self._update_params()
     self._update_calculations(sm)
-    self._update_state_machine()
+    self.is_enabled, self.is_active = self._update_state_machine()
     self._update_solution()
 
     self.frame += 1
