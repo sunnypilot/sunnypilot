@@ -32,6 +32,5 @@ protected:
  ButtonParamControlSP *dev_ui_settings;
 
  bool has_longitudinal_control = false;
- bool is_pcm_cruise = false;
  bool offroad = true;
 };
