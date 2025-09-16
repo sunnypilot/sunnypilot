@@ -12,6 +12,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_crui
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
+Source = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 
 class LongitudinalPlannerSP:
@@ -19,6 +20,7 @@ class LongitudinalPlannerSP:
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
+    self.source = Source.cruise
 
   @property
   def mlsim(self) -> bool:
@@ -32,15 +34,14 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
-    scc_output_v_target, scc_output_a_target = self.scc.update(sm, v_ego, a_ego, v_cruise)
+    self.scc.update(sm, v_ego, a_ego, v_cruise)
 
     targets = {
-      'cruise': (v_cruise, a_ego),
-      'scc': (scc_output_v_target, scc_output_a_target),
+      Source.cruise : (v_cruise, a_ego),
     }
 
-    src = min(targets, key=lambda k: targets[k][0])
-    v_target, a_target = targets[src]
+    self.source = min(targets, key=lambda k: targets[k][0])
+    v_target, a_target = targets[self.source]
 
     return v_target, a_target
 
@@ -53,6 +54,7 @@ class LongitudinalPlannerSP:
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+    longitudinalPlanSP.longitudinalPlanSource = self.source
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec

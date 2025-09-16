@@ -122,7 +122,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
-  smartCruiseControl @1 :SmartCruiseControl;
+  longitudinalPlanSource @1 :LongitudinalPlanSourceSP;
+  smartCruiseControl @2 :SmartCruiseControl;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -136,6 +137,10 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   }
 
   struct SmartCruiseControl {
+  }
+
+  enum LongitudinalPlanSourceSP {
+    cruise @0;
   }
 }
 
