@@ -13,9 +13,6 @@ class SmartCruiseControl:
     self.CP = CP
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
-    # decoupled from carControl.longActive, so we allow ICBM to use this state
-    long_active = sm['carControl'].enabled and not sm['carState'].gasPressed and self.CP.openpilotLongitudinalControl  # noqa: F841
-
     targets = {
       # FIXME-SP: remove cruise once we have additional sources
       'cruise': (v_cruise, a_ego),
