@@ -130,43 +130,41 @@ bool HudRendererSP::pulseElement(int frame) {
 void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect) {
   bool active_pulse = pulseElement(smartCruiseControlVisionFrame);
 
-  if (smartCruiseControlVisionEnabled) {
-    int x = surface_rect.center().x();
-    int y = surface_rect.height() / 4;
+  int x = surface_rect.center().x();
+  int y = surface_rect.height() / 4;
 
-    // bool blink_on = (static_cast<int>(QTime::currentTime().msec() / 500) % 2) == 0;
+  QString text = "SCC-V";
+  QFont font = InterFont(32, QFont::Bold);
+  p.setFont(font);
 
-    QString text = "SCC-V";
-    QFont font = InterFont(32, QFont::Bold);
-    p.setFont(font);
+  QFontMetrics fm(font);
+  int text_width  = fm.horizontalAdvance(text);
+  int text_height = fm.height();
 
-    QFontMetrics fm(font);
-    int text_width  = fm.horizontalAdvance(text);
-    int text_height = fm.height();
+  int padding_h = 20;
+  int padding_v = 10;
 
-    int padding_h = 20;
-    int padding_v = 10;
+  int x_offset = -240;
+  int y_offset = -100;
 
-    int x_offset = -240;
-    int y_offset = -100;
+  if (smartCruiseControlVisionEnabled || (smartCruiseControlVisionActive && active_pulse)) {
+    QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
+                   text_width + 2 * padding_h, text_height + 2 * padding_v);
 
-    if (smartCruiseControlVisionActive && active_pulse) {
-      QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
-                     text_width + 2 * padding_h, text_height + 2 * padding_v);
+    QPainterPath boxPath;
+    boxPath.addRoundedRect(bg_rect, 10, 10);
 
-      QPainterPath boxPath;
-      boxPath.addRoundedRect(bg_rect, 10, 10);
+    QPainterPath textPath;
+    QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
+    textPath.addText(textPos, font, text);
+    boxPath = boxPath.subtracted(textPath);
 
-      QPainterPath textPath;
-      QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
-      textPath.addText(textPos, font, text);
-      boxPath = boxPath.subtracted(textPath);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(39, 214, 115, 200));
+    p.drawPath(boxPath);
+  }
 
-      p.setPen(Qt::NoPen);
-      p.setBrush(QColor(39, 214, 115, 200));
-      p.drawPath(boxPath);
-    }
-
+  if (smartCruiseControlVisionActive) {
     smartCruiseControlVisionFrame++;
   } else {
     smartCruiseControlVisionFrame = 0;
