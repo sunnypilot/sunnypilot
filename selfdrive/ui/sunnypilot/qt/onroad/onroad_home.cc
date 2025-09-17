@@ -25,12 +25,7 @@ void OnroadWindowSP::updateState(const UIStateSP &s) {
 
 void OnroadWindowSP::mousePressEvent(QMouseEvent *e) {
   OnroadWindow::mousePressEvent(e);
-  if (uiStateSP()->scene.started) {
-    uiStateSP()->scene.screenTouched = true;
-    QTimer::singleShot(500, []() {
-      uiStateSP()->scene.screenTouched = false;
-    });
-  }
+  uiStateSP()->reset_onroad_sleep_timer();
 }
 
 void OnroadWindowSP::offroadTransition(bool offroad) {
