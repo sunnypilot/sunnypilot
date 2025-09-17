@@ -10,7 +10,6 @@ import cereal.messaging as messaging
 from cereal import custom, log
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.toyota.values import CAR as TOYOTA
-from opendbc.sunnypilot.car.toyota.tests.test_secoc_long_base import car_params_sp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
