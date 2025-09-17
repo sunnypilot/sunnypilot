@@ -82,21 +82,24 @@ class SmartCruiseControlVision:
       self.enabled = self._params.get_bool("SmartCruiseControlVision")
 
   def _update_calculations(self, sm):
-    rate_plan = np.array(np.abs(sm['modelV2'].orientationRate.z))
-    vel_plan = np.array(sm['modelV2'].velocity.x)
+    if not self.long_enabled:
+      pass
+    else:
+      rate_plan = np.array(np.abs(sm['modelV2'].orientationRate.z))
+      vel_plan = np.array(sm['modelV2'].velocity.x)
 
-    self.current_lat_acc = self.v_ego ** 2 * abs(sm['controlsState'].curvature)
+      self.current_lat_acc = self.v_ego ** 2 * abs(sm['controlsState'].curvature)
 
-    # get the maximum lat accel from the model
-    predicted_lat_accels = rate_plan * vel_plan
-    self.max_pred_lat_acc = np.amax(predicted_lat_accels)
+      # get the maximum lat accel from the model
+      predicted_lat_accels = rate_plan * vel_plan
+      self.max_pred_lat_acc = np.amax(predicted_lat_accels)
 
-    # get the maximum curve based on the current velocity
-    v_ego = max(self.v_ego, 0.1)  # ensure a value greater than 0 for calculations
-    max_curve = self.max_pred_lat_acc / (v_ego**2)
+      # get the maximum curve based on the current velocity
+      v_ego = max(self.v_ego, 0.1)  # ensure a value greater than 0 for calculations
+      max_curve = self.max_pred_lat_acc / (v_ego**2)
 
-    # Get the target velocity for the maximum curve
-    self.v_target = (_A_LAT_REG_MAX / max_curve) ** 0.5
+      # Get the target velocity for the maximum curve
+      self.v_target = (_A_LAT_REG_MAX / max_curve) ** 0.5
 
   def _update_state_machine(self):
     # ENABLED, ENTERING, TURNING, LEAVING
