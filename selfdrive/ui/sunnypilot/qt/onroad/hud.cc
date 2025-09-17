@@ -171,7 +171,7 @@ void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &s
   boxPath = boxPath.subtracted(textPath);
 
   p.setPen(Qt::NoPen);
-  p.setBrush(QColor(0x17, 0x86, 0x44, 0xf1));
+  p.setBrush(QColor(0, 0xff, 0, 0xff));
   p.drawPath(boxPath);
 }
 
