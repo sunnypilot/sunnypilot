@@ -134,22 +134,24 @@ void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surfa
   int y = surface_rect.height() / 4;
 
   QString text = "SCC-V";
-  QFont font = InterFont(32, QFont::Bold);
+  QFont font = InterFont(36, QFont::Bold);
   p.setFont(font);
 
   QFontMetrics fm(font);
   int text_width  = fm.horizontalAdvance(text);
   int text_height = fm.height();
 
-  int padding_h = 20;
-  int padding_v = 10;
+  int padding_h = 15;
+  int padding_v = 1;
 
   int x_offset = -240;
   int y_offset = -100;
 
   if (smartCruiseControlVisionEnabled || (smartCruiseControlVisionActive && active_pulse)) {
-    QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
-                   text_width + 2 * padding_h, text_height + 2 * padding_v);
+    QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset,
+                   y - (text_height / 2) - padding_v + y_offset,
+                   text_width + 2 * padding_h,
+                   text_height + 2 * padding_v);
 
     QPainterPath boxPath;
     boxPath.addRoundedRect(bg_rect, 10, 10);
@@ -160,7 +162,7 @@ void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surfa
     boxPath = boxPath.subtracted(textPath);
 
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(39, 214, 115, 200));
+    p.setBrush(QColor(0, 0xff, 0, 0xff));
     p.drawPath(boxPath);
   }
 
