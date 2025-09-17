@@ -16,7 +16,7 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
 ACTIVE_STATES = (VisionState.entering, VisionState.turning, VisionState.leaving)
-ENABLED_STATES = (VisionState.enabled, *ACTIVE_STATES)
+ENABLED_STATES = (VisionState.enabled, VisionState.overriding, *ACTIVE_STATES)
 
 _MIN_V = 20 * CV.KPH_TO_MS  # Do not operate under 20 km/h
 
@@ -50,7 +50,6 @@ class SmartCruiseControlVision:
   a_target: float = 0.
   v_ego: float = 0.
   a_ego: float = 0.
-  v_overshoot: float = 0.
   output_v_target: float = V_CRUISE_UNSET
   output_a_target: float = 0.
 
@@ -58,7 +57,8 @@ class SmartCruiseControlVision:
     self._params = Params()
     self.CP = CP
     self.frame = -1
-    self.long_active = False
+    self.long_enabled = False
+    self.long_override = False
     self.is_enabled = False
     self.is_active = False
     self.enabled = self._params.get_bool("SmartCruiseControlVision")
@@ -102,8 +102,10 @@ class SmartCruiseControlVision:
     # ENABLED, ENTERING, TURNING, LEAVING
     if self.state != VisionState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
-      if not self.long_active or not self.enabled:
+      if not self.long_enabled or not self.enabled:
         self.state = VisionState.disabled
+      elif self.long_override:
+        self.state = VisionState.overriding
 
       else:
         # ENABLED
@@ -114,6 +116,11 @@ class SmartCruiseControlVision:
           # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
           elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
             self.state = VisionState.entering
+
+        # OVERRIDING
+        elif self.state == VisionState.overriding:
+          if not self.long_override:
+            self.state = VisionState.enabled
 
         # ENTERING
         elif self.state == VisionState.entering:
@@ -141,8 +148,11 @@ class SmartCruiseControlVision:
 
     # DISABLED
     elif self.state == VisionState.disabled:
-      if self.long_active and self.enabled:
-        self.state = VisionState.enabled
+      if self.long_enabled and self.enabled:
+        if self.long_override:
+          self.state = VisionState.overriding
+        else:
+          self.state = VisionState.enabled
 
     enabled = self.state in ENABLED_STATES
     active = self.state in ACTIVE_STATES
@@ -172,8 +182,9 @@ class SmartCruiseControlVision:
 
     self.a_target = a_target
 
-  def update(self, sm, long_active, v_ego, a_ego, v_cruise_setpoint):
-    self.long_active = long_active
+  def update(self, sm, long_enabled, long_override, v_ego, a_ego, v_cruise_setpoint):
+    self.long_enabled = long_enabled
+    self.long_override = long_override
     self.v_ego = v_ego
     self.a_ego = a_ego
     self.v_cruise_setpoint = v_cruise_setpoint
