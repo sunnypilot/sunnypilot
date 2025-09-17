@@ -5,22 +5,18 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
-import math
 
 from cereal import custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
 ACTIVE_STATES = (VisionState.entering, VisionState.turning, VisionState.leaving)
 ENABLED_STATES = (VisionState.enabled, *ACTIVE_STATES)
-
-TRAJECTORY_SIZE = 33
 
 _MIN_V = 20 * CV.KPH_TO_MS  # Do not operate under 20 km/h
 
@@ -31,11 +27,6 @@ _TURNING_LAT_ACC_TH = 1.6  # Lat Acc threshold to trigger turning state.
 
 _LEAVING_LAT_ACC_TH = 1.3  # Lat Acc threshold to trigger leaving turn state.
 _FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of the turn cycle.
-
-_EVAL_STEP = 5.  # mts. Resolution of the curvature evaluation.
-_EVAL_START = 20.  # mts. Distance ahead where to start evaluating vision curvature.
-_EVAL_LENGTH = 150.  # mts. Distance ahead where to stop evaluating vision curvature.
-_EVAL_RANGE = np.arange(_EVAL_START, _EVAL_LENGTH, _EVAL_STEP)
 
 _A_LAT_REG_MAX = 2.  # Maximum lateral acceleration
 
@@ -52,35 +43,6 @@ _TURNING_ACC_V = [0.5, 0., -0.4]  # acc value
 _TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
 
 _LEAVING_ACC = 0.5  # Conformable acceleration to regain speed while leaving a turn.
-
-_MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
-
-
-def eval_curvature(poly, x_vals):
-  """
-  This function returns a vector with the curvature based on a path defined by `poly`
-  evaluated on distance vector `x_vals`
-  """
-
-  # https://en.wikipedia.org/wiki/Curvature# Local_expressions
-  def curvature(x):
-    a = abs(2 * poly[1] + 6 * poly[0] * x) / (1 + (3 * poly[0] * x ** 2 + 2 * poly[1] * x + poly[2]) ** 2) ** 1.5
-    return a
-
-  return np.vectorize(curvature)(x_vals)
-
-
-def eval_lat_acc(v_ego, x_curv):
-  """
-  This function returns a vector with the lateral acceleration based
-  for the provided speed `v_ego` evaluated over curvature vector `x_curv`
-  """
-
-  def lat_acc(curv):
-    a = v_ego ** 2 * curv
-    return a
-
-  return np.vectorize(lat_acc)(x_curv)
 
 
 class SmartCruiseControlVision:
@@ -101,108 +63,40 @@ class SmartCruiseControlVision:
     self.is_active = False
     self.enabled = self._params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
-    self.max_v_for_current_curvature = 0.
-    self.lat_acc_overshoot_ahead = 0.
-    self.v_overshoot_distance = 200.
 
     self.state = VisionState.disabled
     self.current_lat_acc = 0.
     self.max_pred_lat_acc = 0.
 
-    self.reset()
-
   def get_a_target_from_control(self) -> float:
-    if self.is_active:
-      return self.a_target
-
-    return self.a_ego
+    return self.a_target
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
-      if self.lat_acc_overshoot_ahead:
-        return self.v_overshoot
-      return self.v_ego + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
+      return max(self.v_target, _MIN_V) + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
 
     return V_CRUISE_UNSET
-
-  def reset(self):
-    self.current_lat_acc = 0.
-    self.max_v_for_current_curvature = 0.
-    self.max_pred_lat_acc = 0.
-    self.v_overshoot_distance = 200.
-    self.lat_acc_overshoot_ahead = False
 
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self._params.get_bool("SmartCruiseControlVision")
 
   def _update_calculations(self, sm):
-    # Get path polynomial approximation for curvature estimation from model data.
-    path_poly = None
+    rate_plan = np.array(np.abs(sm['modelV2'].orientationRate.z))
+    vel_plan = np.array(sm['modelV2'].velocity.x)
 
-    # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
-    # on current mode than a driving path.
-    model_v2 = sm['modelV2']
-    model_valid = model_v2 is not None and len(model_v2.orientation.x) >= CONTROL_N
-    if model_valid and len(model_v2.laneLines) == 4 and len(model_v2.laneLines[0].t) == TRAJECTORY_SIZE:
-      ll_x = model_v2.laneLines[1].x  # left and right ll x is the same
-      lll_y = np.array(model_v2.laneLines[1].y)
-      rll_y = np.array(model_v2.laneLines[2].y)
-      l_prob = model_v2.laneLineProbs[1]
-      r_prob = model_v2.laneLineProbs[2]
-      lll_std = model_v2.laneLineStds[1]
-      rll_std = model_v2.laneLineStds[2]
+    self.current_lat_acc = self.v_ego ** 2 * abs(sm['controlsState'].currentCurvature)
 
-      # Reduce reliance on lanelines that are too far apart or will be in a few seconds
-      width_pts = rll_y - lll_y
-      prob_mods = []
-      for t_check in [0.0, 1.5, 3.0]:
-        width_at_t = np.interp(t_check * (self.v_ego + 7), ll_x, width_pts)
-        prob_mods.append(np.interp(width_at_t, [4.0, 5.0], [1.0, 0.0]))
-      mod = min(prob_mods)
-      l_prob *= mod
-      r_prob *= mod
+    # get the maximum lat accel from the model
+    predicted_lat_accels = rate_plan * vel_plan
+    self.max_pred_lat_acc = np.amax(predicted_lat_accels)
 
-      # Reduce reliance on uncertain lanelines
-      l_std_mod = np.interp(lll_std, [.15, .3], [1.0, 0.0])
-      r_std_mod = np.interp(rll_std, [.15, .3], [1.0, 0.0])
-      l_prob *= l_std_mod
-      r_prob *= r_std_mod
+    # get the maximum curve based on the current velocity
+    v_ego = max(self.v_ego, 0.1)  # ensure a value greater than 0 for calculations
+    max_curve = self.max_pred_lat_acc / (v_ego**2)
 
-      # Find a path from lanes as the average center lane only if min probability on both lanes is above a threshold.
-      if l_prob > _MIN_LANE_PROB and r_prob > _MIN_LANE_PROB:
-        c_y = width_pts / 2 + lll_y
-        path_poly = np.polyfit(ll_x, c_y, 3)
-
-    # TODO-SP: uncomment this once we reintroduce models with lateralPlanner
-    # 2. If not polynomially derived from lanes, then derive it from a driving path as provided by `lateralPlanner`.
-    # lateral_plan = sm['lateralPlan']
-    # lateral_plan_valid = lateral_plan is not None and len(lateral_plan.psis) >= CONTROL_N
-    # if path_poly is None and lateral_plan_valid and len(lateral_plan.psis) == CONTROL_N \
-    #    and lateral_plan.dPathPoints[0] > 0:
-    #   yData = list(lateral_plan.dPathPoints)
-    #   path_poly = np.polyfit(lateral_plan.psis, yData[0:CONTROL_N], 3)
-
-    # 3. If no polynomial derived from lanes or driving path, then provide a straight line poly.
-    if path_poly is None:
-      path_poly = np.array([0., 0., 0., 0.])
-
-    current_curvature = abs(sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self.CP.steerRatio * self.CP.wheelbase))
-    self.current_lat_acc = current_curvature * self.v_ego ** 2
-    self.max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 else \
-                                       V_CRUISE_MAX * CV.KPH_TO_MS
-
-    pred_curvatures = eval_curvature(path_poly, _EVAL_RANGE)
-    max_pred_curvature = np.amax(pred_curvatures)
-    self.max_pred_lat_acc = self.v_ego ** 2 * max_pred_curvature
-
-    max_curvature_for_vego = _A_LAT_REG_MAX / max(self.v_ego, 0.1) ** 2
-    lat_acc_overshoot_idxs = np.nonzero(pred_curvatures >= max_curvature_for_vego)[0]
-    self.lat_acc_overshoot_ahead = len(lat_acc_overshoot_idxs) > 0
-
-    if self.lat_acc_overshoot_ahead:
-      self.v_overshoot = min(math.sqrt(_A_LAT_REG_MAX / max_pred_curvature), self.v_cruise_setpoint)
-      self.v_overshoot_distance = max(float(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START), _EVAL_STEP)
+    # Get the target velocity for the maximum curve
+    self.v_target = (_A_LAT_REG_MAX / max_curve) ** 0.5
 
   def _update_state_machine(self):
     # ENABLED, ENTERING, TURNING, LEAVING
@@ -265,10 +159,6 @@ class SmartCruiseControlVision:
     elif self.state == VisionState.entering:
       # when not overshooting, target a smooth deceleration in preparation for a sharp turn to come.
       a_target = np.interp(self.max_pred_lat_acc, _ENTERING_SMOOTH_DECEL_BP, _ENTERING_SMOOTH_DECEL_V)
-      if self.lat_acc_overshoot_ahead:
-        # when overshooting, target the acceleration needed to achieve the overshoot speed at
-        # the required distance
-        a_target = min((self.v_overshoot ** 2 - self.v_ego ** 2) / (2 * self.v_overshoot_distance), a_target)
     # TURNING
     elif self.state == VisionState.turning:
       # When turning, we provide a target acceleration that is comfortable for the lateral acceleration felt.
