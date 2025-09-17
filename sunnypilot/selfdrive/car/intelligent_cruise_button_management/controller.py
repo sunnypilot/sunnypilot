@@ -5,11 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car, custom
-from opendbc.car import apply_hysteresis
 from openpilot.common.constants import CV
-from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_set_point
+from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.car.cruise_ext import CRUISE_BUTTON_TIMER, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -57,11 +55,11 @@ class IntelligentCruiseButtonManagement:
 
     # all targets in m/s
     v_targets = {'cruise': v_cruise_ms}
-    source = min(v_targets, key=v_targets.get)
+    source = min(v_targets, key=lambda k: v_targets[k])
     v_target_ms = v_targets[source]
 
     self.v_target = round(v_target_ms * speed_conv)
-    self.v_cruise_min = get_set_point(self.is_metric)
+    self.v_cruise_min = get_minimum_set_speed(self.is_metric)
     self.v_cruise_cluster = round(CS.cruiseState.speedCluster * speed_conv)
 
   def update_state_machine(self):
