@@ -18,10 +18,4 @@ void HomeWindowSP::updateState(const UIState &s) {
 
 void HomeWindowSP::mousePressEvent(QMouseEvent *e) {
   HomeWindow::mousePressEvent(e);
-  if (uiStateSP()->scene.started) {
-    uiStateSP()->scene.screenTouched = true;
-    QTimer::singleShot(500, []() {
-      uiStateSP()->scene.screenTouched = false;
-    });
-  }
 }
