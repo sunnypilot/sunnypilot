@@ -10,16 +10,11 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.car.cruise_ext import CRUISE_BUTTON_TIMER, update_manual_button_timers
 
-ButtonType = car.CarState.ButtonEvent.Type
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
 SendButtonState = custom.IntelligentCruiseButtonManagement.SendButtonState
 
-SendCan = tuple[int, bytes, int]
-
 INACTIVE_TIMER = 0.4
-RESET_COUNT = 5
-HOLD_TIME = 7
 
 SEND_BUTTONS = {
   State.increasing: SendButtonState.increase,
