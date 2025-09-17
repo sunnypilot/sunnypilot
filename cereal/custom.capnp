@@ -122,7 +122,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
-  smartCruiseControl @1 :SmartCruiseControl;
+  longitudinalPlanSource @1 :LongitudinalPlanSource;
+  smartCruiseControl @2 :SmartCruiseControl;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -155,6 +156,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
       leaving @4; # Road ahead straightens. Start to allow positive acceleration.
     }
+  }
+
+  enum LongitudinalPlanSource {
+    cruise @0;
+    scc_v @1;
   }
 }
 
