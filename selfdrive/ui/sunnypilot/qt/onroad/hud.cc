@@ -142,9 +142,9 @@ void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surfa
   int text_height = fm.height();
 
   int padding_h = 15;
-  int padding_v = 1;
+  int padding_v = 5;
 
-  int x_offset = -240;
+  int x_offset = -260;
   int y_offset = -100;
 
   if (smartCruiseControlVisionEnabled || (smartCruiseControlVisionActive && active_pulse)) {
