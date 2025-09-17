@@ -80,7 +80,8 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
-  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getState() == cereal::LongitudinalPlanSP::SmartCruiseControl::VisionState::ENABLED;
+  longOverride = car_control.getCruiseControl().getOverride();
+  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
 }
 
@@ -94,7 +95,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // int y2_offset = -140;  // reserved for 2 icons
 
     bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
-    if (smartCruiseControlVisionEnabled || (!smartCruiseControlVisionEnabled && smartCruiseControlVisionActive && scc_vision_active_pulse)) {
+    if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
       drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y1_offset, "SCC-V");
     }
 
@@ -171,7 +172,7 @@ void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &s
   boxPath = boxPath.subtracted(textPath);
 
   p.setPen(Qt::NoPen);
-  p.setBrush(QColor(0, 0xff, 0, 0xff));
+  p.setBrush(longOverride ? QColor(0x91, 0x9b, 0x95, 0xf1) : QColor(0, 0xff, 0, 0xff));
   p.drawPath(boxPath);
 }
 

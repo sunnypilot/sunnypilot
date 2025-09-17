@@ -59,6 +59,7 @@ private:
   bool standstillTimer;
   bool isStandstill;
   float standstillElapsedTime;
+  bool longOverride;
   bool smartCruiseControlVisionEnabled;
   bool smartCruiseControlVisionActive;
   int smartCruiseControlVisionFrame;
