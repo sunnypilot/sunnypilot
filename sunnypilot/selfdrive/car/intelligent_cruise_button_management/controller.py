@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car, custom
+from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
@@ -23,7 +24,7 @@ SEND_BUTTONS = {
 
 
 class IntelligentCruiseButtonManagement:
-  def __init__(self, CP, CP_SP):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     self.CP = CP
     self.CP_SP = CP_SP
 
@@ -42,7 +43,7 @@ class IntelligentCruiseButtonManagement:
     self.cruise_button_timers = CRUISE_BUTTON_TIMER
 
   @property
-  def v_cruise_equal(self):
+  def v_cruise_equal(self) -> bool:
     return self.v_target == self.v_cruise_cluster
 
   def update_calculations(self, CS: car.CarState) -> None:
@@ -60,7 +61,7 @@ class IntelligentCruiseButtonManagement:
     self.v_cruise_min = get_minimum_set_speed(self.is_metric)
     self.v_cruise_cluster = round(CS.cruiseState.speedCluster * speed_conv)
 
-  def update_state_machine(self):
+  def update_state_machine(self) -> custom.IntelligentCruiseButtonManagement.SendButtonState:
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
     # HOLDING, ACCELERATING, DECELERATING, PRE_ACTIVE
@@ -113,7 +114,7 @@ class IntelligentCruiseButtonManagement:
 
     self.is_ready = ready and not button_pressed
 
-  def run(self, CS: car.CarState, CC: car.CarControl, is_metric: bool):
+  def run(self, CS: car.CarState, CC: car.CarControl, is_metric: bool) -> None:
     if self.CP_SP.pcmCruiseSpeed:
       return
 
