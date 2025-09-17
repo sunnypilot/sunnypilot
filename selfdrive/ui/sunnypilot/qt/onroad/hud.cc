@@ -88,9 +88,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   if (!reversing) {
 
     if (smartCruiseVisionActive) {
-      int vision_x = surface_rect.center().x();
-      int vision_y = surface_rect.height() / 4;
-      drawSmartCruiseVision(p, vision_x, vision_y);
+      drawSmartCruiseControlVision(p, surface_rect);
     }
 
     // Bottom Dev UI
@@ -122,10 +120,9 @@ void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QCo
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
-void HudRendererSP::drawSmartCruiseVision(QPainter &p, int x, int y) {
-  if (!smartCruiseVisionActive) return;
-
-  p.save();
+void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect) {
+  int x = surface_rect.center().x();
+  int y = surface_rect.height() / 4;
 
   bool blink_on = (static_cast<int>(QTime::currentTime().msec() / 500) % 2) == 0;
 
@@ -163,8 +160,6 @@ void HudRendererSP::drawSmartCruiseVision(QPainter &p, int x, int y) {
   p.setPen(Qt::NoPen);
   p.setBrush(QColor(39, 214, 115, 200));
   p.drawPath(boxPath);
-
-  p.restore();
 }
 
 int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {

@@ -26,7 +26,7 @@ private:
   int drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawBottomDevUI(QPainter &p, int x, int y);
   void drawStandstillTimer(QPainter &p, int x, int y);
-  void drawSmartCruiseVision(QPainter &p, int x, int y);
+  void drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect);
   void drawWindingRoadSign(QPainter &p, int x, int y, int size);
 
   bool lead_status;
