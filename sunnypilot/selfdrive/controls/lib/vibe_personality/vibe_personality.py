@@ -25,7 +25,7 @@ MAX_ACCEL_BREAKPOINTS =         [0.,   4.,   6.,   9.,   16.,  25.,  30., 55.]
 MIN_ACCEL_PROFILES = {
     LongPersonality.relaxed:    [-.0008, -.0008, -.2,  -0.8, -1.1],  # gentler braking
     LongPersonality.standard:   [-.0012, -.0012, -.3,  -1.0, -1.2],  # normal braking
-    LongPersonality.aggressive: [-.0030, -.0030, -1.2, -1.2, -1.2],  # more aggressive braking
+    LongPersonality.aggressive: [-.0030, -.0030, -.8,  -1.1, -1.2],  # more aggressive braking
 }
 MIN_ACCEL_BREAKPOINTS =         [0.,   1.5,    3.,   15.,  50.]
 
@@ -36,6 +36,7 @@ FOLLOW_PROFILES = {
     LongPersonality.aggressive: [1.05, 1.10, 1.05, 1.05, 1.25, 1.25, 1.27],  # tighter
 }
 FOLLOW_BREAKPOINTS = [0., 1.5, 3., 6., 12., 16., 36.]
+
 
 class VibePersonalityController:
     """Controller for acceleration and distance personalities"""
