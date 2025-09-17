@@ -38,7 +38,7 @@ class LongitudinalPlannerSP:
 
     targets = {
       Source.cruise: (v_cruise, a_ego),
-      Source.scc_v: (self.scc.vision.output_v_target, self.scc.vision.output_a_target)
+      Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target)
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
