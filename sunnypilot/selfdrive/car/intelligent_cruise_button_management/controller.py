@@ -11,6 +11,7 @@ from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.hel
 from openpilot.sunnypilot.selfdrive.car.cruise_ext import CRUISE_BUTTON_TIMER, update_manual_button_timers
 
 ButtonType = car.CarState.ButtonEvent.Type
+LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
 SendButtonState = custom.IntelligentCruiseButtonManagement.SendButtonState
 
@@ -54,7 +55,9 @@ class IntelligentCruiseButtonManagement:
     v_cruise_ms = CS.vCruise * CV.KPH_TO_MS
 
     # all targets in m/s
-    v_targets = {'cruise': v_cruise_ms}
+    v_targets = {
+      LongitudinalPlanSource.cruise: v_cruise_ms
+    }
     source = min(v_targets, key=lambda k: v_targets[k])
     v_target_ms = v_targets[source]
 
