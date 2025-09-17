@@ -59,7 +59,5 @@ private:
   bool standstillTimer;
   bool isStandstill;
   float standstillElapsedTime;
-
   bool smartCruiseVisionActive = false;
-  int visionState = 0;  // 0=disabled, 1=enabled, 2=entering, 3=turning, 4=leaving
 };

@@ -4,11 +4,12 @@
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
  */
+#include <QPainterPath>
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/hud.h"
 
 #include "selfdrive/ui/qt/util.h"
-#include <QPainterPath>
+
 
 HudRendererSP::HudRendererSP() {}
 
@@ -25,6 +26,7 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto car_params = sm["carParams"].getCarParams();
+  const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -78,19 +80,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
-
-  if (sm.alive("longitudinalPlanSP")) {
-    const auto scc_vision = sm["longitudinalPlanSP"]
-                               .getLongitudinalPlanSP()
-                               .getSmartCruiseControl()
-                               .getVision();
-    visionState = static_cast<int>(scc_vision.getState());
-    smartCruiseVisionActive = (visionState == 2 || visionState == 3);
-  } else {
-    smartCruiseVisionActive = false;
-    visionState = 0;
-  }
-
+  smartCruiseVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
