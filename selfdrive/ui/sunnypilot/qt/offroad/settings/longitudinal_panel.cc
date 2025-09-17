@@ -21,10 +21,11 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   intelligentCruiseButtonManagement = new ParamControlSP(
     "IntelligentCruiseButtonManagement",
     tr("Intelligent Cruise Button Management (ICBM) (Alpha)"),
-    "",
+    tr("When enabled, sunnypilot will attempt to manage the built-in cruise control buttons by emulating button presses for limited longitudinal control."),
     "",
     this
   );
+  intelligentCruiseButtonManagement->setConfirmation(true, false);
   list->addItem(intelligentCruiseButtonManagement);
 
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
@@ -84,6 +85,8 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->toggleFlipped(false);
       customAccIncrement->setDescription(accNoLongDescription);
       customAccIncrement->showDescription();
+      params.remove("IntelligentCruiseButtonManagement");
+      intelligentCruiseButtonManagement->toggleFlipped(false);
     }
   }
 
