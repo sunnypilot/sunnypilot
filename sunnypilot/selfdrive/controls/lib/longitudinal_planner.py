@@ -76,12 +76,15 @@ class LongitudinalPlannerSP:
       return min(mpc_accel, e2e_accel)
     self._transition_counter = min(self._transition_counter + 1, self._transition_steps)
     progress = self._transition_counter / self._transition_steps
-    ease_progress = 3 * progress**2 - 2 * progress**3
+    # Cubic + slight exponential easing
+    ease_progress = progress ** 2 * (3 - 2 * progress) + 0.1 * progress
     if e2e_accel < 0.0:
-      # Weight E2E braking more strongly using sigmoid and low-speed scaling
-      sigmoid = 1 / (1 + math.exp(-3.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
-      low_speed_factor = min(v_ego / 5.0, 1.0)
-      blend_factor = ease_progress * sigmoid * low_speed_factor
+      # Adaptive braking: strong E2E braking, but dampen at very low speeds (<2 m/s)
+      speed_factor = min(max(v_ego / 2.0, 0.0), 1.0)
+      k = 5.0
+      midpoint = 0.3
+      sigmoid = 1 / (1 + math.exp(-k * (abs(e2e_accel / ACCEL_MIN) - midpoint)))
+      blend_factor = max(ease_progress * sigmoid * speed_factor, 0.3)  # 0.3 min to always include some E2E
       return mpc_accel + (e2e_accel - mpc_accel) * blend_factor
     return min(mpc_accel, e2e_accel)
 
