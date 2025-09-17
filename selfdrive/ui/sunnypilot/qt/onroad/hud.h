@@ -26,6 +26,7 @@ private:
   int drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawBottomDevUI(QPainter &p, int x, int y);
   void drawStandstillTimer(QPainter &p, int x, int y);
+  bool pulseElement(int frame);
   void drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
@@ -58,5 +59,7 @@ private:
   bool standstillTimer;
   bool isStandstill;
   float standstillElapsedTime;
-  bool smartCruiseVisionActive = false;
+  bool smartCruiseControlVisionEnabled;
+  bool smartCruiseControlVisionActive;
+  int smartCruiseControlVisionFrame;
 };

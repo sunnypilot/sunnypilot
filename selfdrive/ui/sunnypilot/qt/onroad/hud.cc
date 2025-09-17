@@ -80,16 +80,15 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
-  smartCruiseVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
+  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
+  smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
   if (!reversing) {
 
-    if (smartCruiseVisionActive) {
-      drawSmartCruiseControlVision(p, surface_rect);
-    }
+    drawSmartCruiseControlVision(p, surface_rect);
 
     // Bottom Dev UI
     if (devUiInfo == 2) {
@@ -120,42 +119,58 @@ void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QCo
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
-void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect) {
-  int x = surface_rect.center().x();
-  int y = surface_rect.height() / 4;
-
-  bool blink_on = (static_cast<int>(QTime::currentTime().msec() / 500) % 2) == 0;
-
-  QString text = "SCC-V";
-  QFont font = InterFont(32, QFont::Bold);
-  p.setFont(font);
-
-  QFontMetrics fm(font);
-  int text_width  = fm.horizontalAdvance(text);
-  int text_height = fm.height();
-
-  int padding_h = 20;
-  int padding_v = 10;
-
-  int x_offset = -240;
-  int y_offset = -100;
-
-  QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
-                 text_width + 2 * padding_h, text_height + 2 * padding_v);
-
-  QPainterPath boxPath;
-  boxPath.addRoundedRect(bg_rect, 10, 10);
-
-  if (blink_on) {
-    QPainterPath textPath;
-    QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
-    textPath.addText(textPos, font, text);
-    boxPath = boxPath.subtracted(textPath);
+bool HudRendererSP::pulseElement(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2.5)) {
+    return false;
   }
 
-  p.setPen(Qt::NoPen);
-  p.setBrush(QColor(39, 214, 115, 200));
-  p.drawPath(boxPath);
+  return true;
+}
+
+void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect) {
+  bool active_pulse = pulseElement(smartCruiseControlVisionFrame);
+
+  if (smartCruiseControlVisionEnabled) {
+    int x = surface_rect.center().x();
+    int y = surface_rect.height() / 4;
+
+    // bool blink_on = (static_cast<int>(QTime::currentTime().msec() / 500) % 2) == 0;
+
+    QString text = "SCC-V";
+    QFont font = InterFont(32, QFont::Bold);
+    p.setFont(font);
+
+    QFontMetrics fm(font);
+    int text_width  = fm.horizontalAdvance(text);
+    int text_height = fm.height();
+
+    int padding_h = 20;
+    int padding_v = 10;
+
+    int x_offset = -240;
+    int y_offset = -100;
+
+    if (smartCruiseControlVisionActive && active_pulse) {
+      QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
+                     text_width + 2 * padding_h, text_height + 2 * padding_v);
+
+      QPainterPath boxPath;
+      boxPath.addRoundedRect(bg_rect, 10, 10);
+
+      QPainterPath textPath;
+      QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
+      textPath.addText(textPos, font, text);
+      boxPath = boxPath.subtracted(textPath);
+
+      p.setPen(Qt::NoPen);
+      p.setBrush(QColor(39, 214, 115, 200));
+      p.drawPath(boxPath);
+    }
+
+    smartCruiseControlVisionFrame++;
+  } else {
+    smartCruiseControlVisionFrame = 0;
+  }
 }
 
 int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
