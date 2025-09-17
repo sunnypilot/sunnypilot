@@ -101,7 +101,6 @@ class SmartCruiseControlVision:
     self.is_active = False
     self.enabled = self._params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
-    self.max_v_for_current_curvature = 0.
     self.lat_acc_overshoot_ahead = 0.
     self.v_overshoot_distance = 200.
 
@@ -127,7 +126,6 @@ class SmartCruiseControlVision:
 
   def reset(self):
     self.current_lat_acc = 0.
-    self.max_v_for_current_curvature = 0.
     self.max_pred_lat_acc = 0.
     self.v_overshoot_distance = 200.
     self.lat_acc_overshoot_ahead = False
@@ -189,8 +187,6 @@ class SmartCruiseControlVision:
 
     current_curvature = abs(sm['carState'].steeringAngleDeg * CV.DEG_TO_RAD / (self.CP.steerRatio * self.CP.wheelbase))
     self.current_lat_acc = current_curvature * self.v_ego ** 2
-    self.max_v_for_current_curvature = math.sqrt(_A_LAT_REG_MAX / current_curvature) if current_curvature > 0 else \
-                                       V_CRUISE_MAX * CV.KPH_TO_MS
 
     pred_curvatures = eval_curvature(path_poly, _EVAL_RANGE)
     max_pred_curvature = np.amax(pred_curvatures)
