@@ -13,4 +13,7 @@ class SmartCruiseControl:
     self.vision = SmartCruiseControlVision(CP)
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> None:
-    self.vision.update(sm, sm['carControl'].longActive, v_ego, a_ego, v_cruise)
+    long_enabled = sm['carControl'].enabled
+    long_override = sm['carControl'].cruiseControl.override
+
+    self.vision.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)

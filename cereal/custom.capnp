@@ -155,6 +155,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       entering @2; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
       turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
       leaving @4; # Road ahead straightens. Start to allow positive acceleration.
+      overriding @5; # System overriding with manual control.
     }
   }
 
