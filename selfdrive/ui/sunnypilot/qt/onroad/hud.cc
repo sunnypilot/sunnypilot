@@ -140,12 +140,8 @@ void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surfa
   int x_offset = -240;
   int y_offset = -100;
 
-  QRectF bg_rect(
-      x - (text_width / 2) - padding_h + x_offset,
-      y - (text_height / 2) - padding_v + y_offset,
-      text_width + 2 * padding_h,
-      text_height + 2 * padding_v
-  );
+  QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset, y - (text_height / 2) - padding_v + y_offset,
+                 text_width + 2 * padding_h, text_height + 2 * padding_v);
 
   QPainterPath boxPath;
   boxPath.addRoundedRect(bg_rect, 10, 10);
