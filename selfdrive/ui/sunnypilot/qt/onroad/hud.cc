@@ -80,7 +80,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
-  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
+  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getState() == cereal::LongitudinalPlanSP::SmartCruiseControl::VisionState::ENABLED;
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
 }
 
@@ -88,7 +88,21 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
   if (!reversing) {
 
-    drawSmartCruiseControlVision(p, surface_rect);
+    // Smart Cruise Control
+    int x_offset = -260;
+    int y1_offset = -80;
+    // int y2_offset = -140;  // reserved for 2 icons
+
+    bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
+    if (smartCruiseControlVisionEnabled || (!smartCruiseControlVisionEnabled && smartCruiseControlVisionActive && scc_vision_active_pulse)) {
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y1_offset, "SCC-V");
+    }
+
+    if (smartCruiseControlVisionActive) {
+      smartCruiseControlVisionFrame++;
+    } else {
+      smartCruiseControlVisionFrame = 0;
+    }
 
     // Bottom Dev UI
     if (devUiInfo == 2) {
@@ -127,50 +141,38 @@ bool HudRendererSP::pulseElement(int frame) {
   return true;
 }
 
-void HudRendererSP::drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect) {
-  bool active_pulse = pulseElement(smartCruiseControlVisionFrame);
-
+void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
   int x = surface_rect.center().x();
   int y = surface_rect.height() / 4;
 
-  QString text = "SCC-V";
+  QString text = QString::fromStdString(name);
   QFont font = InterFont(36, QFont::Bold);
   p.setFont(font);
 
   QFontMetrics fm(font);
-  int text_width  = fm.horizontalAdvance(text);
-  int text_height = fm.height();
 
-  int padding_h = 15;
   int padding_v = 5;
+  int box_width = 160;
+  int box_height = fm.height() + padding_v * 2;
 
-  int x_offset = -260;
-  int y_offset = -100;
+  QRectF bg_rect(x - (box_width / 2) + x_offset,
+                 y - (box_height / 2) + y_offset,
+                 box_width, box_height);
 
-  if (smartCruiseControlVisionEnabled || (smartCruiseControlVisionActive && active_pulse)) {
-    QRectF bg_rect(x - (text_width / 2) - padding_h + x_offset,
-                   y - (text_height / 2) - padding_v + y_offset,
-                   text_width + 2 * padding_h,
-                   text_height + 2 * padding_v);
+  QPainterPath boxPath;
+  boxPath.addRoundedRect(bg_rect, 10, 10);
 
-    QPainterPath boxPath;
-    boxPath.addRoundedRect(bg_rect, 10, 10);
+  int text_w = fm.horizontalAdvance(text);
+  qreal baseline_y = bg_rect.top() + padding_v + fm.ascent();
+  qreal text_x = bg_rect.center().x() - (text_w / 2.0);
 
-    QPainterPath textPath;
-    QPointF textPos(bg_rect.left() + padding_h, bg_rect.top() + padding_v + fm.ascent());
-    textPath.addText(textPos, font, text);
-    boxPath = boxPath.subtracted(textPath);
+  QPainterPath textPath;
+  textPath.addText(QPointF(text_x, baseline_y), font, text);
+  boxPath = boxPath.subtracted(textPath);
 
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0, 0xff, 0, 0xff));
-    p.drawPath(boxPath);
-  }
-
-  if (smartCruiseControlVisionActive) {
-    smartCruiseControlVisionFrame++;
-  } else {
-    smartCruiseControlVisionFrame = 0;
-  }
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0x17, 0x86, 0x44, 0xf1));
+  p.drawPath(boxPath);
 }
 
 int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {

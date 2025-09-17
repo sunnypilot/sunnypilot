@@ -27,7 +27,7 @@ private:
   void drawBottomDevUI(QPainter &p, int x, int y);
   void drawStandstillTimer(QPainter &p, int x, int y);
   bool pulseElement(int frame);
-  void drawSmartCruiseControlVision(QPainter &p, const QRect &surface_rect);
+  void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
 
   bool lead_status;
   float lead_d_rel;
