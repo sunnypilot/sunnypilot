@@ -102,7 +102,7 @@ class SmartCruiseControlVision:
       self.v_target = (_A_LAT_REG_MAX / max_curve) ** 0.5
 
   def _update_state_machine(self) -> tuple[bool, bool]:
-    # ENABLED, ENTERING, TURNING, LEAVING
+    # ENABLED, ENTERING, TURNING, LEAVING, OVERRIDING
     if self.state != VisionState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
       if not self.long_enabled or not self.enabled:
@@ -163,7 +163,7 @@ class SmartCruiseControlVision:
     return enabled, active
 
   def _update_solution(self) -> float:
-    # DISABLED, ENABLED
+    # DISABLED, ENABLED, OVERRIDING
     if self.state not in ACTIVE_STATES:
       # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
       # the smooth deceleration.
