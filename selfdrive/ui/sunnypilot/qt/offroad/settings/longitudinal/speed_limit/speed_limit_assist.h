@@ -11,31 +11,19 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
-enum class SLCOffsetType {
+enum class SpeedLimitOffsetType {
   NONE,
   FIXED,
   PERCENT,
 };
 
-inline const char *SLCOffsetTypeText[]{
+inline const char *SpeedLimitOffsetTypeTexts[]{
   QT_TR_NOOP("None"),
   QT_TR_NOOP("Fixed"),
   QT_TR_NOOP("Percent"),
 };
 
-enum class SLCWarningType {
-  OFF,
-  DISPLAY,
-  CHIME,
-};
-
-inline const char *SLCWarningTypeText[]{
-  QT_TR_NOOP("Off"),
-  QT_TR_NOOP("Display"),
-  QT_TR_NOOP("Chime")
-};
-
-enum class SLCSourcePolicy {
+enum class SpeedLimitSourcePolicy {
   CAR_ONLY,
   MAP_ONLY,
   CAR_FIRST,
@@ -43,7 +31,7 @@ enum class SLCSourcePolicy {
   COMBINED
 };
 
-inline const char *SLCSourcePolicyText[]{
+inline const char *SpeedLimitSourcePolicyTexts[]{
   QT_TR_NOOP("Car\nOnly"),
   QT_TR_NOOP("Map\nOnly"),
   QT_TR_NOOP("Car\nFirst"),
@@ -51,16 +39,16 @@ inline const char *SLCSourcePolicyText[]{
   QT_TR_NOOP("Combined\nData")
 };
 
-class SpeedLimitControl : public ExpandableToggleRow {
+class SpeedLimitAssist : public ExpandableToggleRow {
   Q_OBJECT
 
 public:
-  SpeedLimitControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  SpeedLimitAssist(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
 
 signals:
-  void slcSettingsButtonClicked();
+  void speedLimitSettingsButtonClicked();
 
 private:
   Params params;
-  PushButtonSP *slcSettings;
+  PushButtonSP *speedLimitSettings;
 };

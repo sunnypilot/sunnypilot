@@ -9,15 +9,15 @@
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_policy.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_assist.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-class SpeedLimitControlSubpanel : public QStackedWidget {
+class SpeedLimitSettings : public QStackedWidget {
   Q_OBJECT
 
 public:
-  SpeedLimitControlSubpanel(QWidget *parent = nullptr);
+  SpeedLimitSettings(QWidget *parent = nullptr);
   void refresh();
   void showEvent(QShowEvent *event) override;
 
@@ -27,19 +27,19 @@ signals:
 private:
   Params params;
   QFrame *subPanelFrame;
-  PushButtonSP *slcSourceControl;
-  ButtonParamControlSP *slc_offset_setting;
-  OptionControlSP *slc_offset;
-  SpeedLimitControlPolicy *slcPolicyScreen;
+  PushButtonSP *speedLimitSource;
+  ButtonParamControlSP *speed_limit_offset_settings;
+  OptionControlSP *speed_limit_offset;
+  SpeedLimitPolicy *speedLimitPolicyScreen;
 
-  static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
+  static QString offsetDescription(SpeedLimitOffsetType type = SpeedLimitOffsetType::NONE) {
     QString none_str = tr("⦿ None: No Offset");
     QString fixed_str = tr("⦿ Fixed: Adds a fixed offset [Speed Limit + Offset]");
     QString percent_str = tr("⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]");
 
-    if (type == SLCOffsetType::FIXED) {
+    if (type == SpeedLimitOffsetType::FIXED) {
       fixed_str = "<font color='white'><b>" + fixed_str + "</b></font>";
-    } else if (type == SLCOffsetType::PERCENT) {
+    } else if (type == SpeedLimitOffsetType::PERCENT) {
       percent_str = "<font color='white'><b>" + percent_str + "</b></font>";
     } else {
       none_str = "<font color='white'><b>" + none_str + "</b></font>";

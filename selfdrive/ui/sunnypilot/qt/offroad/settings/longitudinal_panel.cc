@@ -55,7 +55,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
-  slcControl = new SpeedLimitControl(
+  slcControl = new SpeedLimitAssist(
     "SpeedLimitAssist",
     tr("Speed Limit Assist (SLA)"),
     tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
@@ -64,19 +64,19 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     this);
   list->addItem(slcControl);
 
-  connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
+  connect(slcControl, &SpeedLimitAssist::speedLimitSettingsButtonClicked, [=]() {
     cruisePanelScroller->setLastScrollPosition();
-    main_layout->setCurrentWidget(slcScreen);
+    main_layout->setCurrentWidget(speedLimitScren);
   });
 
-  slcScreen = new SpeedLimitControlSubpanel(this);
-  connect(slcScreen, &SpeedLimitControlSubpanel::backPress, [=]() {
+  speedLimitScren = new SpeedLimitSettings(this);
+  connect(speedLimitScren, &SpeedLimitSettings::backPress, [=]() {
     cruisePanelScroller->restoreScrollPosition();
     main_layout->setCurrentWidget(cruisePanelScreen);
   });
 
   main_layout->addWidget(cruisePanelScreen);
-  main_layout->addWidget(slcScreen);
+  main_layout->addWidget(speedLimitScren);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);
 }
