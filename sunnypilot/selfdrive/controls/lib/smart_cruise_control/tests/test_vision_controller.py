@@ -8,12 +8,10 @@ import numpy as np
 
 import cereal.messaging as messaging
 from cereal import custom, log
-from opendbc.car.car_helpers import interfaces
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import SmartCruiseControlVision
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState

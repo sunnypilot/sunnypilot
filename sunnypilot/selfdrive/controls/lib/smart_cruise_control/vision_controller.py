@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
 
+import cereal.messaging as messaging
 from cereal import custom
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
@@ -76,13 +77,13 @@ class SmartCruiseControlVision:
 
     return V_CRUISE_UNSET
 
-  def _update_params(self):
+  def _update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SmartCruiseControlVision")
 
-  def _update_calculations(self, sm):
+  def _update_calculations(self, sm: messaging.SubMaster) -> None:
     if not self.long_enabled:
-      pass
+      return
     else:
       rate_plan = np.array(np.abs(sm['modelV2'].orientationRate.z))
       vel_plan = np.array(sm['modelV2'].velocity.x)
@@ -100,7 +101,7 @@ class SmartCruiseControlVision:
       # Get the target velocity for the maximum curve
       self.v_target = (_A_LAT_REG_MAX / max_curve) ** 0.5
 
-  def _update_state_machine(self):
+  def _update_state_machine(self) -> tuple[bool, bool]:
     # ENABLED, ENTERING, TURNING, LEAVING
     if self.state != VisionState.disabled:
       # longitudinal and feature disable always have priority in a non-disabled state
@@ -161,7 +162,7 @@ class SmartCruiseControlVision:
 
     return enabled, active
 
-  def _update_solution(self):
+  def _update_solution(self) -> float:
     # DISABLED, ENABLED
     if self.state not in ACTIVE_STATES:
       # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
@@ -182,9 +183,10 @@ class SmartCruiseControlVision:
     else:
       raise NotImplementedError(f"SCC-V state not supported: {self.state}")
 
-    self.a_target = a_target
+    return a_target
 
-  def update(self, sm, long_enabled, long_override, v_ego, a_ego, v_cruise_setpoint):
+  def update(self, sm: messaging.SubMaster, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float,
+             v_cruise_setpoint: float) -> None:
     self.long_enabled = long_enabled
     self.long_override = long_override
     self.v_ego = v_ego
@@ -193,10 +195,11 @@ class SmartCruiseControlVision:
 
     self._update_params()
     self._update_calculations(sm)
-    self.is_enabled, self.is_active = self._update_state_machine()
-    self._update_solution()
 
-    self.frame += 1
+    self.is_enabled, self.is_active = self._update_state_machine()
+    self.a_target = self._update_solution()
 
     self.output_v_target = self.get_v_target_from_control()
     self.output_a_target = self.get_a_target_from_control()
+
+    self.frame += 1
