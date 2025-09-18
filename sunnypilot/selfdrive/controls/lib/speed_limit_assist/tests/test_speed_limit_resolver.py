@@ -16,7 +16,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist import LIMIT
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.speed_limit_resolver import SpeedLimitResolver, ALL_SOURCES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.common import Policy
 
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 
 def create_mock(properties, mocker: MockerFixture):
@@ -77,9 +77,9 @@ class TestSpeedLimitResolverValidation:
     resolver = resolver_class()
     resolver.policy = policy
     for source in ALL_SOURCES:
-      if source in resolver._limit_solutions:
-        assert resolver._limit_solutions[source] == 0.
-        assert resolver._distance_solutions[source] == 0.
+      if source in resolver.limit_solutions:
+        assert resolver.limit_solutions[source] == 0.
+        assert resolver.distance_solutions[source] == 0.
 
   @parametrized_policies
   def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
@@ -116,8 +116,8 @@ class TestSpeedLimitResolverValidation:
 
     # Assert the parsing
     resolver.update(source_speed_limit, sm_mock)
-    assert resolver._limit_solutions[ALL_SOURCES[function_key]] == source_speed_limit
-    assert resolver._distance_solutions[ALL_SOURCES[function_key]] == 0.
+    assert resolver.limit_solutions[ALL_SOURCES[function_key]] == source_speed_limit
+    assert resolver.distance_solutions[ALL_SOURCES[function_key]] == 0.
 
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
   def test_resolve_interaction_in_update(self, resolver_class, policy, mocker: MockerFixture):
@@ -140,5 +140,5 @@ class TestSpeedLimitResolverValidation:
     sm_mock = mocker.MagicMock()
     sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
     resolver._get_from_map_data(sm_mock)
-    assert resolver._limit_solutions[SpeedLimitSource.map] == 0.
-    assert resolver._distance_solutions[SpeedLimitSource.map] == 0.
+    assert resolver.limit_solutions[SpeedLimitSource.map] == 0.
+    assert resolver.distance_solutions[SpeedLimitSource.map] == 0.
