@@ -42,13 +42,16 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
+    long_enabled = sm['carControl'].enabled
+    long_override = sm['carControl'].cruiseControl.override
+
     self.events_sp.clear()
 
-    self.scc.update(sm, v_ego, a_ego, v_cruise)
+    self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
 
     # Speed Limit Assist
     self.resolver.update(v_ego, sm)
-    v_cruise_sla = self.sla.update(sm['carControl'].longActive, v_ego, a_ego, sm['carState'].vCruiseCluster,
+    v_cruise_sla = self.sla.update(long_enabled, long_override, v_ego, a_ego, sm['carState'].vCruiseCluster,
                                    self.resolver.speed_limit, self.resolver.distance, self.resolver.source, self.events_sp)
 
     targets = {

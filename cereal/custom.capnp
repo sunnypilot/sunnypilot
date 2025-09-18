@@ -205,6 +205,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     pending @3; # Awaiting new speed limit.
     adapting @4; # Reducing speed to match new speed limit.
     active @5; # Cruising at speed limit.
+    overriding @6; # System overriding with manual control.
   }
 
   enum SpeedLimitSource {

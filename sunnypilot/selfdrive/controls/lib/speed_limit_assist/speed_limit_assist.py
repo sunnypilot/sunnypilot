@@ -22,7 +22,7 @@ EventNameSP = custom.OnroadEventSP.EventName
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
 
 ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
-ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, *ACTIVE_STATES)
+ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, SpeedLimitAssistState.overriding, *ACTIVE_STATES)
 
 
 class SpeedLimitAssist:
@@ -42,8 +42,9 @@ class SpeedLimitAssist:
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get_bool("SpeedLimitAssist")
-    self.op_engaged = False
-    self.op_engaged_prev = False
+    self.long_enabled = False
+    self.long_enabled_prev = False
+    self.long_override = False
     self.is_enabled = False
     self.is_active = False
     self.v_ego = 0.
@@ -156,11 +157,13 @@ class SpeedLimitAssist:
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
-    # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE
+    # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE, OVERRIDING
     if self.state != SpeedLimitAssistState.disabled:
-      if not self.op_engaged or not self.enabled:
+      if not self.long_enabled or not self.enabled:
         self.state = SpeedLimitAssistState.disabled
         self.initial_max_set = False
+      elif self.long_override:
+        self.state = SpeedLimitAssistState.overriding
 
       else:
         # ACTIVE
@@ -200,14 +203,22 @@ class SpeedLimitAssist:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
 
+        # OVERRIDING
+        elif self.state == SpeedLimitAssistState.overriding:
+          if not self.long_override:
+            self.state = SpeedLimitAssistState.preActive
+
         # INACTIVE
         elif self.state == SpeedLimitAssistState.inactive:
           pass
 
     # DISABLED
     elif self.state == SpeedLimitAssistState.disabled:
-      if self.op_engaged and self.enabled:
-        if not self.op_engaged_prev:
+      if self.long_enabled and self.enabled:
+        if self.long_override:
+          self.state = SpeedLimitAssistState.overriding
+
+        elif not self.long_enabled_prev:
           self.pre_active_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
         elif self.pre_active_timer <= 0:
@@ -229,9 +240,10 @@ class SpeedLimitAssist:
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitChanged)
 
-  def update(self, long_active: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
+  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
              speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitSource, events_sp: EventsSP) -> float:
-    self.op_engaged = long_active
+    self.long_enabled = long_enabled
+    self.long_override = long_override
     self.v_ego = v_ego
     self.a_ego = a_ego
 
@@ -247,7 +259,7 @@ class SpeedLimitAssist:
     # Update change tracking variables
     self.speed_limit_prev = self._speed_limit
     self.v_cruise_setpoint_prev = self.v_cruise_setpoint
-    self.op_engaged_prev = self.op_engaged
+    self.long_enabled_prev = self.long_enabled
     self.frame += 1
 
     v_target = self.get_v_target_from_control()
