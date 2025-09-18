@@ -23,6 +23,7 @@ private:
   Params params;
   bool has_longitudinal_control = false;
   bool is_pcm_cruise = false;
+  bool intelligent_cruise_button_management_available = false;;
   bool offroad = false;
 
   QStackedLayout *main_layout = nullptr;
@@ -30,4 +31,5 @@ private:
   QWidget *cruisePanelScreen = nullptr;
   CustomAccIncrement *customAccIncrement = nullptr;
   ParamControl *SmartCruiseControlVision;
+  ParamControl *intelligentCruiseButtonManagement = nullptr;
 };
