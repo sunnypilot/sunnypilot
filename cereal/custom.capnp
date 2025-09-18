@@ -122,9 +122,10 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
-
-  events @1 :List(OnroadEventSP.Event);
-  slc @2 :SpeedLimitControl;
+  longitudinalPlanSource @1 :LongitudinalPlanSource;
+  smartCruiseControl @2 :SmartCruiseControl;
+  slc @3 :SpeedLimitControl;
+  events @4 :List(OnroadEventSP.Event);
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -137,6 +138,29 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     }
   }
 
+  struct SmartCruiseControl {
+    vision @0 :Vision;
+
+    struct Vision {
+      state @0 :VisionState;
+      vTarget @1 :Float32;
+      aTarget @2 :Float32;
+      currentLateralAccel @3 :Float32;
+      maxPredictedLateralAccel @4 :Float32;
+      enabled @5 :Bool;
+      active @6 :Bool;
+    }
+
+    enum VisionState {
+      disabled @0; # System disabled or inactive.
+      enabled @1; # No predicted substantial turn on vision range.
+      entering @2; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
+      turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+      leaving @4; # Road ahead straightens. Start to allow positive acceleration.
+      overriding @5; # System overriding with manual control.
+    }
+  }
+
   struct SpeedLimitControl {
     state @0 :SpeedLimitControlState;
     enabled @1 :Bool;
@@ -145,6 +169,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     speedLimitOffset @4 :Float32;
     distToSpeedLimit @5 :Float32;
     source @6 :SpeedLimitSource;
+  }
+
+  enum LongitudinalPlanSource {
+    cruise @0;
+    sccVision @1;
   }
 
   enum SpeedLimitControlState {
