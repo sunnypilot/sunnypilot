@@ -17,7 +17,7 @@ EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  speedLimit = sm['longitudinalPlanSP'].slc.speedLimit
+  speedLimit = sm['longitudinalPlanSP'].sla.speedLimit
   speed = round(speedLimit * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
   message = f'Adjusting to {speed} {"km/h" if metric else "mph"} speed limit'
   return Alert(
@@ -147,16 +147,43 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: NoEntryAlert("Pedal Pressed")
   },
 
-  EventNameSP.speedLimitActive: {
+  EventNameSP.laneTurnLeft: {
     ET.WARNING: Alert(
-      "Set speed changed to match posted speed limit",
+      "Turning Left",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
 
-  EventNameSP.speedLimitValueChange: {
-    ET.WARNING: speed_limit_adjust_alert,
+  EventNameSP.laneTurnRight: {
+    ET.WARNING: Alert(
+      "Turning Right",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
 
+  EventNameSP.speedLimitActive: {
+    ET.WARNING: Alert(
+      "Automatically adjusting",
+      "to the posted speed limit",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
+
+  EventNameSP.speedLimitChanged: {
+    ET.WARNING: Alert(
+      "Set speed changed",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
+
+  EventNameSP.speedLimitPreActive: {
+    ET.WARNING: Alert(
+      "Auto Speed Limit Control: Activation Required",
+      "Manually change set speed to 80 MPH to activate",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
 }
