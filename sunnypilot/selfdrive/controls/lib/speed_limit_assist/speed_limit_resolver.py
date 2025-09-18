@@ -38,6 +38,7 @@ class SpeedLimitResolver:
       Policy.map_data_only: [SpeedLimitSource.map],
       Policy.combined: [SpeedLimitSource.car, SpeedLimitSource.map],
     }
+    self.source = SpeedLimitSource.none
     for source in ALL_SOURCES:
       self._reset_limit_sources(source)
 
@@ -118,7 +119,7 @@ class SpeedLimitResolver:
 
     if len(limits) > 0:
       min_idx = np.argmin(limits)
-      return sources[min_idx]
+      return SpeedLimitSource(int(sources[min_idx]))
 
     return SpeedLimitSource.none
 
