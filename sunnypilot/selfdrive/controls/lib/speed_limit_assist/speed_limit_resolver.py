@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import time
 import numpy as np
 
@@ -6,7 +12,8 @@ from cereal import custom
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC, PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.common import Policy
 
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
@@ -30,7 +37,7 @@ class SpeedLimitResolver:
     self._limit_solutions = {}  # Store for speed limit solutions from different sources
     self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
-    self.policy = self.params.get("SpeedLimitAssistPolicy", return_default=True)
+    self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.car_state_priority: [SpeedLimitSource.car, SpeedLimitSource.map],
@@ -44,7 +51,7 @@ class SpeedLimitResolver:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.policy = Policy(self.params.get("SpeedLimitAssistPolicy", return_default=True))
+      self.policy = Policy(self.params.get("SpeedLimitPolicy", return_default=True))
       self.change_policy(self.policy)
 
   def change_policy(self, policy: Policy) -> None:
