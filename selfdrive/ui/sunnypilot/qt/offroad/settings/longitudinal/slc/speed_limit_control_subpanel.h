@@ -30,23 +30,7 @@ private:
   PushButtonSP *slcSourceControl;
   ButtonParamControlSP *slc_offset_setting;
   OptionControlSP *slc_offset;
-  ButtonParamControlSP *slc_engage_setting;
   SpeedLimitControlPolicy *slcPolicyScreen;
-
-  static QString engageModeDescription(SLCEngageType type = SLCEngageType::AUTO) {
-    QString auto_str = tr("⦿ Auto: Automatic speed adjustment based on speed limit data");
-    QString user_str = tr("⦿ User Confirm: Asks driver to confirm speed adjustment based on speed limit data");
-
-    if (type == SLCEngageType::USER_CONFIRM) {
-      user_str = "<font color='white'><b>" + user_str + "</b></font>";
-    } else {
-      auto_str = "<font color='white'><b>" + auto_str + "</b></font>";
-    }
-
-    return QString("%1<br>%2")
-        .arg(auto_str)
-        .arg(user_str);
-  }
 
   static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
     QString none_str = tr("⦿ None: No Offset");

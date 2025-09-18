@@ -8,19 +8,8 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
-
-enum class SLCEngageType {
-  AUTO,
-  USER_CONFIRM,
-};
-
-inline const char *SLCEngageTypeText[]{
-  QT_TR_NOOP("Auto"),
-  QT_TR_NOOP("User Confirm")
-};
 
 enum class SLCOffsetType {
   NONE,

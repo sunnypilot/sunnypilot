@@ -44,20 +44,6 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
   slcBtnFrameLayout->addWidget(slcSourceControl, 0, 0, Qt::AlignLeft);
   list->addItem(slcBtnFrame);
 
-  std::vector<QString> slc_engage_texts{
-    SLCEngageTypeText[static_cast<int>(SLCEngageType::AUTO)],
-    SLCEngageTypeText[static_cast<int>(SLCEngageType::USER_CONFIRM)]
-  };
-  slc_engage_setting = new ButtonParamControlSP(
-    "SpeedLimitEngageType",
-    tr("Engage Mode"),
-    "",
-    "",
-    slc_engage_texts,
-    500);
-  slc_engage_setting->showDescription();
-  list->addItem(slc_engage_setting);
-
   QFrame *offsetFrame = new QFrame(this);
   QVBoxLayout *offsetLayout = new QVBoxLayout(offsetFrame);
 
@@ -89,7 +75,6 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
 
   connect(slc_offset, &OptionControlSP::updateLabels, this, &SpeedLimitControlSubpanel::refresh);
   connect(slc_offset_setting, &ButtonParamControlSP::showDescriptionEvent, slc_offset, &OptionControlSP::showDescription);
-  connect(slc_engage_setting, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitControlSubpanel::refresh);
   connect(slc_offset_setting, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitControlSubpanel::refresh);
 
   refresh();
@@ -100,11 +85,9 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
 };
 
 void SpeedLimitControlSubpanel::refresh() {
-  SLCEngageType engage_type_param = static_cast<SLCEngageType>(std::atoi(params.get("SpeedLimitEngageType").c_str()));
   SLCOffsetType offset_type_param = static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
   QString offsetLabel = QString::fromStdString(params.get("SpeedLimitValueOffset"));
 
-  slc_engage_setting->setDescription(engageModeDescription(engage_type_param));
   slc_offset->setDescription(offsetDescription(offset_type_param));
 
   if (offset_type_param == SLCOffsetType::PERCENT) {
@@ -122,6 +105,5 @@ void SpeedLimitControlSubpanel::refresh() {
 
 void SpeedLimitControlSubpanel::showEvent(QShowEvent *event) {
   refresh();
-  slc_engage_setting->showDescription();
   slc_offset->showDescription();
 }
