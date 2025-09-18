@@ -4,6 +4,7 @@
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
  */
+#include <QPainterPath>
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/hud.h"
 
@@ -25,6 +26,7 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto car_params = sm["carParams"].getCarParams();
+  const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -75,11 +77,33 @@ void HudRendererSP::updateState(const UIState &s) {
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
+
+  standstillTimer = s.scene.standstill_timer;
+  isStandstill = car_state.getStandstill();
+  longOverride = car_control.getCruiseControl().getOverride();
+  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
+  smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
   if (!reversing) {
+    // Smart Cruise Control
+    int x_offset = -260;
+    int y1_offset = -80;
+    // int y2_offset = -140;  // reserved for 2 icons
+
+    bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
+    if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y1_offset, "SCC-V");
+    }
+
+    if (smartCruiseControlVisionActive) {
+      smartCruiseControlVisionFrame++;
+    } else {
+      smartCruiseControlVisionFrame = 0;
+    }
+
     // Bottom Dev UI
     if (devUiInfo == 2) {
       QRect rect_bottom(surface_rect.left(), surface_rect.bottom() - 60, surface_rect.width(), 61);
@@ -94,6 +118,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       QRect rect_right(surface_rect.right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 170);
       drawRightDevUI(p, surface_rect.right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rect_right.height());
     }
+
+    // Standstill Timer
+    if (standstillTimer) {
+      drawStandstillTimer(p, surface_rect.right() / 12 * 10, surface_rect.bottom() / 12 * 1.53);
+    }
   }
 }
 
@@ -102,6 +131,48 @@ void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QCo
   real_rect.moveCenter({x, y - real_rect.height() / 2});
   p.setPen(color);
   p.drawText(real_rect.x(), real_rect.bottom(), text);
+}
+
+bool HudRendererSP::pulseElement(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2.5)) {
+    return false;
+  }
+
+  return true;
+}
+
+void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
+  int x = surface_rect.center().x();
+  int y = surface_rect.height() / 4;
+
+  QString text = QString::fromStdString(name);
+  QFont font = InterFont(36, QFont::Bold);
+  p.setFont(font);
+
+  QFontMetrics fm(font);
+
+  int padding_v = 5;
+  int box_width = 160;
+  int box_height = fm.height() + padding_v * 2;
+
+  QRectF bg_rect(x - (box_width / 2) + x_offset,
+                 y - (box_height / 2) + y_offset,
+                 box_width, box_height);
+
+  QPainterPath boxPath;
+  boxPath.addRoundedRect(bg_rect, 10, 10);
+
+  int text_w = fm.horizontalAdvance(text);
+  qreal baseline_y = bg_rect.top() + padding_v + fm.ascent();
+  qreal text_x = bg_rect.center().x() - (text_w / 2.0);
+
+  QPainterPath textPath;
+  textPath.addText(QPointF(text_x, baseline_y), font, text);
+  boxPath = boxPath.subtracted(textPath);
+
+  p.setPen(Qt::NoPen);
+  p.setBrush(longOverride ? QColor(0x91, 0x9b, 0x95, 0xf1) : QColor(0, 0xff, 0, 0xff));
+  p.drawPath(boxPath);
 }
 
 int HudRendererSP::drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
@@ -205,4 +276,38 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
 
   UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
+}
+
+void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
+  if (isStandstill) {
+    standstillElapsedTime += 1.0 / UI_FREQ;
+
+    int minute = static_cast<int>(standstillElapsedTime / 60);
+    int second = static_cast<int>(standstillElapsedTime - (minute * 60));
+
+    // stop sign for standstill timer
+    const int size = 190;  // size
+    const float angle = M_PI / 8.0;
+
+    QPolygon octagon;
+    for (int i = 0; i < 8; i++) {
+      float curr_angle = angle + i * M_PI / 4.0;
+      int point_x = x + size / 2 * cos(curr_angle);
+      int point_y = y + size / 2 * sin(curr_angle);
+      octagon << QPoint(point_x, point_y);
+    }
+
+    p.setPen(QPen(Qt::white, 6));
+    p.setBrush(QColor(255, 90, 81, 200)); // red pastel
+    p.drawPolygon(octagon);
+
+    QString time_str = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
+    p.setFont(InterFont(55, QFont::Bold));
+    p.setPen(Qt::white);
+    QRect timerTextRect = p.fontMetrics().boundingRect(QString(time_str));
+    timerTextRect.moveCenter({x, y});
+    p.drawText(timerTextRect, Qt::AlignCenter, QString(time_str));
+  } else {
+    standstillElapsedTime = 0.0;
+  }
 }
