@@ -26,7 +26,7 @@ class LongitudinalPlannerSP:
 
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
-    self.slc = SpeedLimitController(CP)
+    self.sla = SpeedLimitAssist(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = Source.cruise
 
@@ -46,15 +46,15 @@ class LongitudinalPlannerSP:
 
     self.scc.update(sm, v_ego, a_ego, v_cruise)
 
-    # Speed Limit Control
+    # Speed Limit Assist
     self.resolver.update(v_ego, sm)
-    v_cruise_slc = self.slc.update(sm['carControl'].longActive, v_ego, a_ego, sm['carState'].vCruiseCluster,
+    v_cruise_sla = self.sla.update(sm['carControl'].longActive, v_ego, a_ego, sm['carState'].vCruiseCluster,
                                    self.resolver.speed_limit, self.resolver.distance, self.resolver.source, self.events_sp)
 
     targets = {
       Source.cruise: (v_cruise, a_ego),
       Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
-      Source.sla: (v_cruise_slc, a_ego),
+      Source.sla: (v_cruise_sla, a_ego),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
@@ -92,14 +92,14 @@ class LongitudinalPlannerSP:
     sccVision.enabled = self.scc.vision.is_enabled
     sccVision.active = self.scc.vision.is_active
 
-    # Speed Limit Control
-    slc = longitudinalPlanSP.slc
-    slc.state = self.slc.state
-    slc.enabled = self.slc.is_enabled
-    slc.active = self.slc.is_active
-    slc.speedLimit = float(self.resolver.speed_limit)
-    slc.speedLimitOffset = float(self.slc.speed_limit_offset)
-    slc.distToSpeedLimit = float(self.resolver.distance)
-    slc.source = self.resolver.source
+    # Speed Limit Assist
+    speedLimitAssist = longitudinalPlanSP.speedLimitAssist
+    speedLimitAssist.state = self.sla.state
+    speedLimitAssist.enabled = self.sla.is_enabled
+    speedLimitAssist.active = self.sla.is_active
+    speedLimitAssist.speedLimit = float(self.resolver.speed_limit)
+    speedLimitAssist.speedLimitOffset = float(self.sla.speed_limit_offset)
+    speedLimitAssist.distToSpeedLimit = float(self.resolver.distance)
+    speedLimitAssist.source = self.resolver.source
 
     pm.send('longitudinalPlanSP', plan_sp_send)

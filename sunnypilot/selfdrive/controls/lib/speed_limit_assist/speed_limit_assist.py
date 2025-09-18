@@ -125,7 +125,7 @@ class SpeedLimitAssist:
     return bool(abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
 
   def detect_manual_cruise_change(self) -> bool:
-    # If cruise speed changed and it's not what SLC would set
+    # If cruise speed changed and it's not what SLA would set
     if self.v_cruise_setpoint_changed:
       expected_cruise = self.speed_limit_final
       return bool(abs(self.v_cruise_setpoint - expected_cruise) > CRUISE_SPEED_TOLERANCE)
