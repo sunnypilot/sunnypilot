@@ -44,12 +44,12 @@ class TestCruiseSpeed:
     assert simulation_steady_state == pytest.approx(cruise_speed, abs=.01), f'Did not reach {self.speed} m/s'
 
 
-# TODO: test pcmCruise
-@parameterized_class(('pcm_cruise',), [(False,)])
+# TODO: test pcmCruise and pcmCruiseSpeed
+@parameterized_class(('pcm_cruise', 'pcm_cruise_speed'), [(False, True)])
 class TestVCruiseHelper:
   def setup_method(self):
     self.CP = car.CarParams(pcmCruise=self.pcm_cruise)
-    self.CP_SP = custom.CarParamsSP()
+    self.CP_SP = custom.CarParamsSP(pcmCruiseSpeed=self.pcm_cruise_speed)
     self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
     self.reset_cruise_speed_state()
 
