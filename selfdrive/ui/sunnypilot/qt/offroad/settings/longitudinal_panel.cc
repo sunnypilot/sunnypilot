@@ -129,6 +129,8 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
       params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->toggleFlipped(false);
+      params.remove("SpeedLimitControl");
+      slcControl->toggleFlipped(false);
     }
   }
 
@@ -141,6 +143,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->refresh();
 
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
+  slcControl->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }
