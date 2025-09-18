@@ -8,7 +8,6 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
@@ -20,7 +19,6 @@ public:
   void refresh();
   void showEvent(QShowEvent *event) override;
 
-signals:
 signals:
   void backPress();
 
@@ -48,10 +46,10 @@ private:
     }
 
     return QString("%1<br>%2<br>%3<br>%4<br>%5")
-          .arg(car_only)
-          .arg(map_only)
-          .arg(car_first)
-          .arg(map_first)
-          .arg(combined);
+        .arg(car_only)
+        .arg(map_only)
+        .arg(car_first)
+        .arg(map_first)
+        .arg(combined);
   }
 };
