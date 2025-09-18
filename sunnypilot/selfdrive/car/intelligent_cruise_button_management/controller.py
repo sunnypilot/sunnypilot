@@ -15,14 +15,15 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManagementState
 SendButtonState = custom.IntelligentCruiseButtonManagement.SendButtonState
 
+ALLOWED_SPEED_THRESHOLD = 1.8  # m/s, ~4 MPH
+HYST_GAP = 0.75
 INACTIVE_TIMER = 0.4
+
 
 SEND_BUTTONS = {
   State.increasing: SendButtonState.increase,
   State.decreasing: SendButtonState.decrease,
 }
-
-HYST_GAP = 0.75
 
 
 class IntelligentCruiseButtonManagement:
@@ -114,7 +115,10 @@ class IntelligentCruiseButtonManagement:
 
   def update_readiness(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_button_timers)
-    ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
+
+    allowed_speed = CS.vEgo > ALLOWED_SPEED_THRESHOLD
+    ready = CS.cruiseState.enabled and allowed_speed and not CC.cruiseControl.override and not CC.cruiseControl.cancel and \
+            not CC.cruiseControl.resume
     button_pressed = any(self.cruise_button_timers[k] > 0 for k in self.cruise_button_timers)
 
     self.is_ready = ready and not button_pressed
