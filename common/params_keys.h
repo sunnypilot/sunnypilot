@@ -159,6 +159,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
