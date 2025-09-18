@@ -32,5 +32,4 @@ private:
   CustomAccIncrement *customAccIncrement = nullptr;
   ParamControl *SmartCruiseControlVision;
   ParamControl *intelligentCruiseButtonManagement = nullptr;
-  ParamControl *speedLimitAssist = nullptr;
 };

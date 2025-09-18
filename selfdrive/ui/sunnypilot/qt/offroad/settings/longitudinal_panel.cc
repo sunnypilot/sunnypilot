@@ -35,13 +35,6 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(SmartCruiseControlVision);
 
-  speedLimitAssist = new ParamControl(
-    "SpeedLimitAssist",
-    tr("Speed Limit Assist (SLA)"),
-    tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
-    "");
-  list->addItem(speedLimitAssist);
-
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
@@ -112,7 +105,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->refresh();
 
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
-  speedLimitAssist->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }
