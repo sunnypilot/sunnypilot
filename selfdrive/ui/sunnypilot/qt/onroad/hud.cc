@@ -88,7 +88,6 @@ void HudRendererSP::updateState(const UIState &s) {
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
   if (!reversing) {
-
     // Smart Cruise Control
     int x_offset = -260;
     int y1_offset = -80;

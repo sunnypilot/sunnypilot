@@ -53,15 +53,14 @@ class SmartCruiseControlVision:
   output_v_target: float = V_CRUISE_UNSET
   output_a_target: float = 0.
 
-  def __init__(self, CP):
-    self._params = Params()
-    self.CP = CP
+  def __init__(self):
+    self.params = Params()
     self.frame = -1
     self.long_enabled = False
     self.long_override = False
     self.is_enabled = False
     self.is_active = False
-    self.enabled = self._params.get_bool("SmartCruiseControlVision")
+    self.enabled = self.params.get_bool("SmartCruiseControlVision")
     self.v_cruise_setpoint = 0.
 
     self.state = VisionState.disabled
@@ -79,7 +78,7 @@ class SmartCruiseControlVision:
 
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self._params.get_bool("SmartCruiseControlVision")
+      self.enabled = self.params.get_bool("SmartCruiseControlVision")
 
   def _update_calculations(self, sm):
     if not self.long_enabled:

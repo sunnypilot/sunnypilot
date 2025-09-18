@@ -9,8 +9,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_con
 
 
 class SmartCruiseControl:
-  def __init__(self, CP):
-    self.vision = SmartCruiseControlVision(CP)
+  def __init__(self):
+    self.vision = SmartCruiseControlVision()
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> None:
     long_enabled = sm['carControl'].enabled
