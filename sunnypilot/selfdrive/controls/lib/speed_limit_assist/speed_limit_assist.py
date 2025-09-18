@@ -11,21 +11,21 @@ from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
-  SpeedLimitControlState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
+  SpeedLimitAssistState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.common import OffsetType
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 EventNameSP = custom.OnroadEventSP.EventName
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
 
-ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
-ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.pending, *ACTIVE_STATES)
+ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
+ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, *ACTIVE_STATES)
 
 
-class SpeedLimitController:
+class SpeedLimitAssist:
   _speed_limit: float
   _distance: float
   _source: custom.LongitudinalPlanSP.SpeedLimitSource
@@ -41,7 +41,7 @@ class SpeedLimitController:
     self.long_engaged_timer = 0
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
-    self.enabled = self.params.get_bool("SpeedLimitControl")
+    self.enabled = self.params.get_bool("SpeedLimitAssist")
     self.op_engaged = False
     self.op_engaged_prev = False
     self.is_enabled = False
@@ -57,8 +57,8 @@ class SpeedLimitController:
     self.last_valid_speed_limit_final = 0.
     self._distance = 0.
     self._source = SpeedLimitSource.none
-    self.state = SpeedLimitControlState.disabled
-    self._state_prev = SpeedLimitControlState.disabled
+    self.state = SpeedLimitAssistState.disabled
+    self._state_prev = SpeedLimitAssistState.disabled
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
@@ -66,12 +66,12 @@ class SpeedLimitController:
 
     # Solution functions mapped to respective states
     self.acceleration_solutions = {
-      SpeedLimitControlState.disabled: self.get_current_acceleration_as_target,
-      SpeedLimitControlState.inactive: self.get_current_acceleration_as_target,
-      SpeedLimitControlState.preActive: self.get_current_acceleration_as_target,
-      SpeedLimitControlState.pending: self.get_current_acceleration_as_target,
-      SpeedLimitControlState.adapting: self.get_adapting_state_target_acceleration,
-      SpeedLimitControlState.active: self.get_active_state_target_acceleration,
+      SpeedLimitAssistState.disabled: self.get_current_acceleration_as_target,
+      SpeedLimitAssistState.inactive: self.get_current_acceleration_as_target,
+      SpeedLimitAssistState.preActive: self.get_current_acceleration_as_target,
+      SpeedLimitAssistState.pending: self.get_current_acceleration_as_target,
+      SpeedLimitAssistState.adapting: self.get_adapting_state_target_acceleration,
+      SpeedLimitAssistState.active: self.get_active_state_target_acceleration,
     }
 
   @property
@@ -116,7 +116,7 @@ class SpeedLimitController:
 
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self.params.get_bool("SpeedLimitControl")
+      self.enabled = self.params.get_bool("SpeedLimitAssist")
       self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
@@ -157,61 +157,61 @@ class SpeedLimitController:
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
     # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE
-    if self.state != SpeedLimitControlState.disabled:
+    if self.state != SpeedLimitAssistState.disabled:
       if not self.op_engaged or not self.enabled:
-        self.state = SpeedLimitControlState.disabled
+        self.state = SpeedLimitAssistState.disabled
         self.initial_max_set = False
 
       else:
         # ACTIVE
-        if self.state == SpeedLimitControlState.active:
+        if self.state == SpeedLimitAssistState.active:
           if self.detect_manual_cruise_change():
-            self.state = SpeedLimitControlState.inactive
+            self.state = SpeedLimitAssistState.inactive
           elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
-            self.state = SpeedLimitControlState.adapting
+            self.state = SpeedLimitAssistState.adapting
 
         # ADAPTING
-        elif self.state == SpeedLimitControlState.adapting:
+        elif self.state == SpeedLimitAssistState.adapting:
           if self.detect_manual_cruise_change():
-            self.state = SpeedLimitControlState.inactive
+            self.state = SpeedLimitAssistState.inactive
           elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
-            self.state = SpeedLimitControlState.active
+            self.state = SpeedLimitAssistState.active
 
         # PENDING
-        elif self.state == SpeedLimitControlState.pending:
+        elif self.state == SpeedLimitAssistState.pending:
           if self._speed_limit > 0:
             if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-              self.state = SpeedLimitControlState.adapting
+              self.state = SpeedLimitAssistState.adapting
             else:
-              self.state = SpeedLimitControlState.active
+              self.state = SpeedLimitAssistState.active
 
         # PRE_ACTIVE
-        elif self.state == SpeedLimitControlState.preActive:
+        elif self.state == SpeedLimitAssistState.preActive:
           if self.initial_max_set_confirmed():
             self.initial_max_set = True
             if self._speed_limit > 0:
               if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-                self.state = SpeedLimitControlState.adapting
+                self.state = SpeedLimitAssistState.adapting
               else:
-                self.state = SpeedLimitControlState.active
+                self.state = SpeedLimitAssistState.active
             else:
-              self.state = SpeedLimitControlState.pending
+              self.state = SpeedLimitAssistState.pending
           elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
             # Timeout - session ended
-            self.state = SpeedLimitControlState.inactive
+            self.state = SpeedLimitAssistState.inactive
 
         # INACTIVE
-        elif self.state == SpeedLimitControlState.inactive:
+        elif self.state == SpeedLimitAssistState.inactive:
           pass
 
     # DISABLED
-    elif self.state == SpeedLimitControlState.disabled:
+    elif self.state == SpeedLimitAssistState.disabled:
       if self.op_engaged and self.enabled:
         if not self.op_engaged_prev:
           self.pre_active_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
         elif self.pre_active_timer <= 0:
-          self.state = SpeedLimitControlState.preActive
+          self.state = SpeedLimitAssistState.preActive
           self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           self.initial_max_set = False
 
@@ -221,7 +221,7 @@ class SpeedLimitController:
     return enabled, active
 
   def update_events(self, events_sp: EventsSP) -> None:
-    if self.state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive:
+    if self.state == SpeedLimitAssistState.preActive and self._state_prev != SpeedLimitAssistState.preActive:
       events_sp.add(EventNameSP.speedLimitPreActive)
     elif self.is_active:
       if self._state_prev not in ACTIVE_STATES:

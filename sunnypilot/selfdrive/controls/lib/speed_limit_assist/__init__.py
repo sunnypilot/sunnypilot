@@ -1,6 +1,6 @@
 from cereal import custom
 
-SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimitAssistState
 
 PARAMS_UPDATE_PERIOD = 3.  # secs. Time between parameter updates.
 DISABLED_GUARD_PERIOD = 2  # secs.
@@ -14,7 +14,7 @@ LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on lim
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
 LIMIT_MAX_MAP_DATA_AGE = 10.  # s Maximum time to hold to map data, then consider it invalid inside limits controllers.
 
-# Speed Limit Control Auto mode constants
+# Speed Limit Assist Auto mode constants
 REQUIRED_INITIAL_MAX_SET_SPEED = 35.7632  # m/s 80 MPH  # TODO-SP: customizable with params
 CRUISE_SPEED_TOLERANCE = 0.44704  # m/s ±1 MPH tolerance  # TODO-SP: metric vs imperial
 FALLBACK_CRUISE_SPEED = 255.0  # m/s fallback when no speed limit available
