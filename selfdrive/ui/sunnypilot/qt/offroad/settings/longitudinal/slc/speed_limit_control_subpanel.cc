@@ -28,18 +28,7 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
   slcBtnFrameLayout->setContentsMargins(0, 40, 0, 40);
   slcBtnFrameLayout->setSpacing(0);
 
-  slcWarningScreen = new SpeedLimitControlWarning(this);
   slcPolicyScreen = new SpeedLimitControlPolicy(this);
-
-  slcWarningControl = new PushButtonSP(tr("Customize Warning"));
-  connect(slcWarningControl, &QPushButton::clicked, [&]() {
-    setCurrentWidget(slcWarningScreen);
-    slcWarningScreen->refresh();
-  });
-  connect(slcWarningScreen, &SpeedLimitControlWarning::backPress, [&]() {
-    setCurrentWidget(subPanelFrame);
-    showEvent(new QShowEvent());
-  });
 
   slcSourceControl = new PushButtonSP(tr("Customize Source"));
   connect(slcSourceControl, &QPushButton::clicked, [&]() {
@@ -51,12 +40,9 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
     showEvent(new QShowEvent());
   });
 
-  slcWarningControl->setFixedWidth(720);
   slcSourceControl->setFixedWidth(720);
-  slcBtnFrameLayout->addWidget(slcWarningControl, 0, 0, Qt::AlignLeft);
-  slcBtnFrameLayout->addWidget(slcSourceControl, 0, 1, Qt::AlignRight);
+  slcBtnFrameLayout->addWidget(slcSourceControl, 0, 0, Qt::AlignLeft);
   list->addItem(slcBtnFrame);
-
 
   std::vector<QString> slc_engage_texts{
     SLCEngageTypeText[static_cast<int>(SLCEngageType::AUTO)],
@@ -109,7 +95,6 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
   refresh();
   subPanelLayout->addWidget(list);
   addWidget(subPanelFrame);
-  addWidget(slcWarningScreen);
   addWidget(slcPolicyScreen);
   setCurrentWidget(subPanelFrame);
 };

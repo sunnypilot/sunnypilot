@@ -11,7 +11,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_policy.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_warning.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 class SpeedLimitControlSubpanel : public QStackedWidget {
@@ -28,12 +27,10 @@ signals:
 private:
   Params params;
   QFrame *subPanelFrame;
-  PushButtonSP *slcWarningControl;
   PushButtonSP *slcSourceControl;
   ButtonParamControlSP *slc_offset_setting;
   OptionControlSP *slc_offset;
   ButtonParamControlSP *slc_engage_setting;
-  SpeedLimitControlWarning *slcWarningScreen;
   SpeedLimitControlPolicy *slcPolicyScreen;
 
   static QString engageModeDescription(SLCEngageType type = SLCEngageType::AUTO) {
