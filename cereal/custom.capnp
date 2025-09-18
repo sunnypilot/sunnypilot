@@ -146,7 +146,6 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
   speedLimit @3 :SpeedLimit;
-  events @4 :List(OnroadEventSP.Event);
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -243,10 +242,6 @@ struct OnroadEventSP @0xda96579883444c35 {
     pedalPressedAlertOnly @16;
     laneTurnLeft @17;
     laneTurnRight @18;
-    speedLimitPreActive @19;
-    speedLimitActive @20;
-    speedLimitConfirmed @21;
-    speedLimitChanged @22;
   }
 }
 
@@ -338,7 +333,6 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
 }
 
 struct CarStateSP @0xb86e6369214c01c8 {
-  speedLimit @0 :Float32;  # m/s
 }
 
 struct LiveMapDataSP @0xf416ec09499d9d19 {

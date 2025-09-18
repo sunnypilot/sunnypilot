@@ -10,7 +10,6 @@ from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.speed_limit_resolver import SpeedLimitResolver
-from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -19,8 +18,6 @@ Source = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
-    self.events_sp = EventsSP()
-
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
@@ -39,8 +36,6 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
-    self.events_sp.clear()
-
     self.scc.update(sm, v_ego, a_ego, v_cruise)
 
     # Speed Limit Resolver
@@ -66,7 +61,6 @@ class LongitudinalPlannerSP:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source
-    longitudinalPlanSP.events = self.events_sp.to_msg()
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
