@@ -30,5 +30,6 @@ private:
   ScrollViewSP *cruisePanelScroller = nullptr;
   QWidget *cruisePanelScreen = nullptr;
   CustomAccIncrement *customAccIncrement = nullptr;
-  ParamControlSP *intelligentCruiseButtonManagement = nullptr;
+  ParamControl *SmartCruiseControlVision;
+  ParamControl *intelligentCruiseButtonManagement = nullptr;
 };

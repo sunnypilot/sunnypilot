@@ -28,6 +28,13 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   intelligentCruiseButtonManagement->setConfirmation(true, false);
   list->addItem(intelligentCruiseButtonManagement);
 
+  SmartCruiseControlVision = new ParamControl(
+    "SmartCruiseControlVision",
+    tr("Smart Cruise Control - Vision"),
+    tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
+    "");
+  list->addItem(SmartCruiseControlVision);
+
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
@@ -97,6 +104,8 @@ void LongitudinalPanel::refresh(bool _offroad) {
   bool cai_allowed = (has_longitudinal_control && !is_pcm_cruise) || icbm_allowed;
   customAccIncrement->setEnabled(cai_allowed && !offroad);
   customAccIncrement->refresh();
+
+  SmartCruiseControlVision->setEnabled(has_longitudinal_control);
 
   offroad = _offroad;
 }
