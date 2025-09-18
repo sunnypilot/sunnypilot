@@ -56,8 +56,8 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
   slcControl = new SpeedLimitControl(
-    "SpeedLimitControl",
-    tr("Speed Limit Control (SLC)"),
+    "SpeedLimitAssist",
+    tr("Speed Limit Assist (SLA)"),
     tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
       "The maximum cruising speed will always be the MAX set speed."),
     "",
@@ -129,7 +129,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
       params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->toggleFlipped(false);
-      params.remove("SpeedLimitControl");
+      params.remove("SpeedLimitAssist");
       slcControl->toggleFlipped(false);
     }
   }
