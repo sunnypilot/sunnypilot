@@ -248,7 +248,7 @@ struct OnroadEventSP @0xda96579883444c35 {
 struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
-  pcmCruiseSpeed @3 :Bool = true;
+  pcmCruiseSpeed @3 :Bool;
   intelligentCruiseButtonManagementAvailable @4 :Bool;
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
@@ -278,7 +278,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
 
     valueDEPRECATED @1 :Text; # The data type change may cause issues with backwards compatibility.
   }
-  
+
   enum ParamType {
     string @0;
     bool @1;
