@@ -51,7 +51,6 @@ void LongitudinalPanel::showEvent(QShowEvent *event) {
 }
 
 void LongitudinalPanel::refresh(bool _offroad) {
-  auto alpha_longitudinal = params.getBool("AlphaLongitudinalEnabled");
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -97,7 +96,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  bool icbm_allowed = intelligent_cruise_button_management_available && !alpha_longitudinal;
+  bool icbm_allowed = intelligent_cruise_button_management_available && !has_longitudinal_control;
   intelligentCruiseButtonManagement->setEnabled(icbm_allowed && offroad);
 
   // enable toggle when long is available and is not PCM cruise
@@ -105,7 +104,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->setEnabled(cai_allowed && !offroad);
   customAccIncrement->refresh();
 
-  SmartCruiseControlVision->setEnabled(has_longitudinal_control);
+  SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }
