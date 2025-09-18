@@ -228,7 +228,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // Speed Limit Control
     {"SpeedLimitAssist", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"SpeedLimitAssistPolicy", {PERSISTENT | BACKUP, INT, "3"}},
+    {"SpeedLimitPolicy", {PERSISTENT | BACKUP, INT, "3"}},
     {"SpeedLimitEngageType", {PERSISTENT | BACKUP, INT, "0"}},
     {"SpeedLimitOffsetType", {PERSISTENT | BACKUP, INT, "0"}},
     {"SpeedLimitValueOffset", {PERSISTENT | BACKUP, INT, "0"}},
