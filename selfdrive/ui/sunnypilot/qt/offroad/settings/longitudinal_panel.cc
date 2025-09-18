@@ -55,28 +55,21 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
-  slcControl = new SpeedLimitAssist(
-    "SpeedLimitAssist",
-    tr("Speed Limit Assist (SLA)"),
-    tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
-      "The maximum cruising speed will always be the MAX set speed."),
-    "",
-    this);
-  list->addItem(slcControl);
-
-  connect(slcControl, &SpeedLimitAssist::speedLimitSettingsButtonClicked, [=]() {
+  speedLimitSettings = new PushButtonSP(tr("Speed Limit"), 750, this);
+  connect(speedLimitSettings, &QPushButton::clicked, [&]() {
     cruisePanelScroller->setLastScrollPosition();
-    main_layout->setCurrentWidget(speedLimitScren);
+    main_layout->setCurrentWidget(speedLimitScreen);
   });
+  list->addItem(speedLimitSettings);
 
-  speedLimitScren = new SpeedLimitSettings(this);
-  connect(speedLimitScren, &SpeedLimitSettings::backPress, [=]() {
+  speedLimitScreen = new SpeedLimitSettings(this);
+  connect(speedLimitScreen, &SpeedLimitSettings::backPress, [=]() {
     cruisePanelScroller->restoreScrollPosition();
     main_layout->setCurrentWidget(cruisePanelScreen);
   });
 
   main_layout->addWidget(cruisePanelScreen);
-  main_layout->addWidget(speedLimitScren);
+  main_layout->addWidget(speedLimitScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);
 }
@@ -129,8 +122,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
       params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->toggleFlipped(false);
-      params.remove("SpeedLimitAssist");
-      slcControl->toggleFlipped(false);
     }
   }
 
@@ -143,7 +134,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->refresh();
 
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
-  slcControl->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }

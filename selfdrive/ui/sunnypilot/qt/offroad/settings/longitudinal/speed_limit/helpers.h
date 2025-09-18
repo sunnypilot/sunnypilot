@@ -4,12 +4,21 @@
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
  */
-
 #pragma once
 
-#include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
+enum class SpeedLimitMode {
+  OFF,
+  INFORMATION,
+  WARNING,
+  ASSIST,
+};
+
+inline const char *SpeedLimitModeTexts[]{
+  QT_TR_NOOP("Off"),
+  QT_TR_NOOP("Information"),
+  QT_TR_NOOP("Warning"),
+  QT_TR_NOOP("Assist"),
+};
 
 enum class SpeedLimitOffsetType {
   NONE,
@@ -37,18 +46,4 @@ inline const char *SpeedLimitSourcePolicyTexts[]{
   QT_TR_NOOP("Car\nFirst"),
   QT_TR_NOOP("Map\nFirst"),
   QT_TR_NOOP("Combined\nData")
-};
-
-class SpeedLimitAssist : public ExpandableToggleRow {
-  Q_OBJECT
-
-public:
-  SpeedLimitAssist(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
-
-signals:
-  void speedLimitSettingsButtonClicked();
-
-private:
-  Params params;
-  PushButtonSP *speedLimitSettings;
 };

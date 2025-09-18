@@ -9,7 +9,7 @@
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_assist.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
@@ -27,6 +27,8 @@ signals:
 private:
   Params params;
   QFrame *subPanelFrame;
+  ParamControlSP *speedLimitAssistToggle;
+  // ButtonParamControlSP *speed_limit_mode_settings;
   PushButtonSP *speedLimitSource;
   ButtonParamControlSP *speed_limit_offset_settings;
   OptionControlSP *speed_limit_offset;
