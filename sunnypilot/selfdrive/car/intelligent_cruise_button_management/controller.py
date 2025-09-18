@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car, custom
-from opendbc.car import structs
+from opendbc.car import structs, apply_hysteresis
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
@@ -22,6 +22,8 @@ SEND_BUTTONS = {
   State.decreasing: SendButtonState.decrease,
 }
 
+HYST_GAP = 0.75
+
 
 class IntelligentCruiseButtonManagement:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
@@ -37,7 +39,7 @@ class IntelligentCruiseButtonManagement:
 
     self.is_ready = False
     self.is_ready_prev = False
-    self.speed_steady = 0
+    self.v_target_ms_last = 0.0
     self.is_metric = False
 
     self.cruise_button_timers = CRUISE_BUTTON_TIMER
@@ -48,6 +50,7 @@ class IntelligentCruiseButtonManagement:
 
   def update_calculations(self, CS: car.CarState) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
+    ms_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     v_cruise_ms = CS.vCruise * CV.KPH_TO_MS
 
     # all targets in m/s
@@ -57,7 +60,9 @@ class IntelligentCruiseButtonManagement:
     source = min(v_targets, key=lambda k: v_targets[k])
     v_target_ms = v_targets[source]
 
-    self.v_target = round(v_target_ms * speed_conv)
+    self.v_target_ms_last = apply_hysteresis(v_target_ms, self.v_target_ms_last, HYST_GAP * ms_conv)
+
+    self.v_target = round(self.v_target_ms_last * speed_conv)
     self.v_cruise_min = get_minimum_set_speed(self.is_metric)
     self.v_cruise_cluster = round(CS.cruiseState.speedCluster * speed_conv)
 
