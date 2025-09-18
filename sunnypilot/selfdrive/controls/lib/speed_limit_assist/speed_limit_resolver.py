@@ -30,7 +30,7 @@ class SpeedLimitResolver:
     self._limit_solutions = {}  # Store for speed limit solutions from different sources
     self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
-    self.policy = self.params.get("SpeedLimitAssistPolicy", return_default=True)
+    self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.car_state_priority: [SpeedLimitSource.car, SpeedLimitSource.map],
@@ -43,7 +43,7 @@ class SpeedLimitResolver:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.policy = Policy(self.params.get("SpeedLimitAssistPolicy", return_default=True))
+      self.policy = Policy(self.params.get("SpeedLimitPolicy", return_default=True))
       self.change_policy(self.policy)
 
   def change_policy(self, policy: Policy) -> None:

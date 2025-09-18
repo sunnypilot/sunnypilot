@@ -29,7 +29,7 @@ SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(pare
     SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::COMBINED)]
   };
   slc_policy = new ButtonParamControlSP(
-    "SpeedLimitControlPolicy",
+    "SpeedLimitPolicy",
     tr("Speed Limit Source"),
     "",
     "",
@@ -43,7 +43,7 @@ SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(pare
 };
 
 void SpeedLimitControlPolicy::refresh() {
-  SLCSourcePolicy policy_param = static_cast<SLCSourcePolicy>(std::atoi(params.get("SpeedLimitControlPolicy").c_str()));
+  SLCSourcePolicy policy_param = static_cast<SLCSourcePolicy>(std::atoi(params.get("SpeedLimitPolicy").c_str()));
   slc_policy->setDescription(sourceDescription(policy_param));
 }
 
