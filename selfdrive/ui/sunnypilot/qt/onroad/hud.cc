@@ -29,9 +29,10 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
+  is_metric = s.scene.is_metric;
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
-  speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset();
+  speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
   speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
   if (speedLimitAheadValid) {
@@ -53,7 +54,6 @@ void HudRendererSP::updateState(const UIState &s) {
   }
 
   reversing = reverse_allowed;
-  is_metric = s.scene.is_metric;
 
   // Handle older routes where vEgoCluster is not set
   v_ego_cluster_seen = v_ego_cluster_seen || car_state.getVEgoCluster() != 0.0;
