@@ -115,9 +115,6 @@ class SpeedLimitResolver:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
-    elif next_speed_limit > speed_limit > 0.:
-      self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
-
   def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimit.Source:
     sources_for_policy = self._policy_to_sources_map[self.policy]
 
