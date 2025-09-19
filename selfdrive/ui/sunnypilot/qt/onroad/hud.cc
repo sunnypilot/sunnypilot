@@ -101,6 +101,7 @@ void HudRendererSP::updateState(const UIState &s) {
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
+  speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -336,6 +337,10 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
+  if (speedLimitMode == SpeedLimitMode::OFF) {
+    return;
+  }
+
   QString speedLimitStr = speedLimit > 0 ? QString::number(std::nearbyint(speedLimit)) : "---";
 
   // Offset display text
@@ -457,6 +462,10 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
+  if (speedLimitMode == SpeedLimitMode::OFF) {
+    return;
+  }
+
   bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame > 0;
   if (!speed_limit_ahead) {
     return;

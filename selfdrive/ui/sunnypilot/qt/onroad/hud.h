@@ -8,6 +8,7 @@
 #pragma once
 
 #include "selfdrive/ui/qt/onroad/hud.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/developer_ui.h"
 
 class HudRendererSP : public HudRenderer {
@@ -75,4 +76,5 @@ private:
   float speedLimitAheadDistancePrev;
   int speedLimitAheadValidFrame;
   QString roadName;
+  SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
 };

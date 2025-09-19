@@ -30,6 +30,19 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 
   speedLimitPolicyScreen = new SpeedLimitPolicy(this);
 
+  std::vector<QString> speed_limit_mode_texts{
+    SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::OFF)],
+    SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::INFORMATION)],
+  };
+  speed_limit_mode_settings = new ButtonParamControlSP(
+    "SpeedLimitMode",
+    tr("Speed Limit Mode"),
+    "",
+    "",
+    speed_limit_mode_texts,
+    380);
+  list->addItem(speed_limit_mode_settings);
+
   speedLimitSource = new PushButtonSP(tr("Customize Source"));
   connect(speedLimitSource, &QPushButton::clicked, [&]() {
     setCurrentWidget(speedLimitPolicyScreen);

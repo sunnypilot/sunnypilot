@@ -27,6 +27,7 @@ signals:
 private:
   Params params;
   QFrame *subPanelFrame;
+  ButtonParamControlSP *speed_limit_mode_settings;
   PushButtonSP *speedLimitSource;
   SpeedLimitPolicy *speedLimitPolicyScreen;
   ButtonParamControlSP *speed_limit_offset_settings;
