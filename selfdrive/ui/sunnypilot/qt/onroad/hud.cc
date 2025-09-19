@@ -39,10 +39,10 @@ void HudRendererSP::updateState(const UIState &s) {
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
     speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
-    if (speedLimitAheadDistance < speedLimitAheadDistancePrev) {
+    if (speedLimitAheadDistance < speedLimitAheadDistancePrev && speedLimitAheadValidFrame < 2) {
       speedLimitAheadValidFrame++;
-    } else {
-      speedLimitAheadValidFrame = 0;
+    } else if (speedLimitAheadDistance > speedLimitAheadDistancePrev && speedLimitAheadValidFrame > 0) {
+      speedLimitAheadValidFrame--;
     }
   }
   speedLimitAheadDistancePrev = speedLimitAheadDistance;
@@ -457,7 +457,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
-  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame >= 2;
+  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame > 0;
   if (!speed_limit_ahead) {
     return;
   }

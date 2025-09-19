@@ -73,6 +73,6 @@ private:
   float speedLimitAhead;
   float speedLimitAheadDistance;
   float speedLimitAheadDistancePrev;
-  float speedLimitAheadValidFrame;
+  int speedLimitAheadValidFrame;
   QString roadName;
 };
