@@ -65,9 +65,9 @@ class SpeedLimitResolver:
     if self.offset_type == OffsetType.off:
       return 0
     elif self.offset_type == OffsetType.fixed:
-      return self.offset_value * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+      return float(self.offset_value * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
     elif self.offset_type == OffsetType.percentage:
-      return self.offset_value * 0.01 * self.speed_limit
+      return float(self.offset_value * 0.01 * self.speed_limit)
     else:
       raise NotImplementedError("Offset not supported")
 
