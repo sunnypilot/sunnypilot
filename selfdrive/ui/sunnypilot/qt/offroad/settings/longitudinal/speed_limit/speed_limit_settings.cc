@@ -34,7 +34,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
     "",
     "",
     speed_limit_mode_texts,
-    380);
+    385);
   list->addItem(speed_limit_mode_settings);
 
   list->addItem(vertical_space());
