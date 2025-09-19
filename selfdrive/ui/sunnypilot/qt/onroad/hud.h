@@ -73,5 +73,6 @@ private:
   float speedLimitAhead;
   float speedLimitAheadDistance;
   float speedLimitAheadDistancePrev;
+  float speedLimitAheadValidFrame;
   QString roadName;
 };

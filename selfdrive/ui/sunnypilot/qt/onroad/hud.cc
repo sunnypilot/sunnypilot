@@ -138,7 +138,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawSpeedLimitSigns(p, surface_rect);
     drawUpcomingSpeedLimit(p, surface_rect);
     drawRoadName(p, surface_rect);
-    speedLimitAheadDistancePrev = speedLimitAheadDistance;
   }
 }
 
@@ -450,9 +449,14 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
-  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit &&
-                           speedLimitAheadDistance > 0 && speedLimitAheadDistance < speedLimitAheadDistancePrev;
+  if (speedLimitAheadDistance < speedLimitAheadDistancePrev) {
+    speedLimitAheadValidFrame++;
+  } else {
+    speedLimitAheadValidFrame = 0;
+  }
+  speedLimitAheadDistancePrev = speedLimitAheadDistance;
 
+  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame >= 2;
   if (!speed_limit_ahead) {
     return;
   }
