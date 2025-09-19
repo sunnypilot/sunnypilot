@@ -20,13 +20,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 
   subPanelLayout->addSpacing(20);
 
-  ListWidgetSP *list = new ListWidgetSP(this);
-
-  auto *speedLimitBtnFrame = new QFrame(this);
-  auto *speedLimitBtnFrameLayout = new QGridLayout();
-  speedLimitBtnFrame->setLayout(speedLimitBtnFrameLayout);
-  speedLimitBtnFrameLayout->setContentsMargins(0, 40, 0, 40);
-  speedLimitBtnFrameLayout->setSpacing(0);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
 
   speedLimitPolicyScreen = new SpeedLimitPolicy(this);
 
@@ -43,6 +37,10 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
     380);
   list->addItem(speed_limit_mode_settings);
 
+  list->addItem(vertical_space());
+  list->addItem(horizontal_line());
+  list->addItem(vertical_space());
+
   speedLimitSource = new PushButtonSP(tr("Customize Source"));
   connect(speedLimitSource, &QPushButton::clicked, [&]() {
     setCurrentWidget(speedLimitPolicyScreen);
@@ -54,8 +52,10 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
   });
 
   speedLimitSource->setFixedWidth(720);
-  speedLimitBtnFrameLayout->addWidget(speedLimitSource, 0, 0, Qt::AlignLeft);
-  list->addItem(speedLimitBtnFrame);
+  list->addItem(speedLimitSource);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
 
   QFrame *offsetFrame = new QFrame(this);
   QVBoxLayout *offsetLayout = new QVBoxLayout(offsetFrame);
