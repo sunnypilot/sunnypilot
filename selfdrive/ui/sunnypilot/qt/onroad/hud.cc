@@ -35,10 +35,8 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
   speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
-  if (speedLimitAheadValid) {
-    speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
-    speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
-  }
+  speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
+  speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
   roadName = QString::fromStdString(lmd.getRoadName());
 
   static int reverse_delay = 0;
@@ -140,6 +138,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawSpeedLimitSigns(p, surface_rect);
     drawUpcomingSpeedLimit(p, surface_rect);
     drawRoadName(p, surface_rect);
+    speedLimitAheadDistancePrev = speedLimitAheadDistance;
   }
 }
 
@@ -451,7 +450,12 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
-  if (!speedLimitAheadValid || speedLimitAhead <= 0 || speedLimitAhead == speedLimit) return;
+  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit &&
+                           speedLimitAheadDistance > 0 && speedLimitAheadDistance < speedLimitAheadDistancePrev;
+
+  if (!speed_limit_ahead) {
+    return;
+  }
 
   QString speedStr = QString::number(std::nearbyint(speedLimitAhead));
   QString distanceStr;

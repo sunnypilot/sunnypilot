@@ -72,5 +72,6 @@ private:
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
+  float speedLimitAheadDistancePrev;
   QString roadName;
 };
