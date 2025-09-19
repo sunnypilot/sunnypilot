@@ -34,10 +34,18 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
-  speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
-  speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
-  speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
-  roadName = QString::fromStdString(lmd.getRoadName());
+  if (sm.updated("liveMapDataSP")) {
+    roadName = QString::fromStdString(lmd.getRoadName());
+    speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
+    speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
+    speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
+    if (speedLimitAheadDistance < speedLimitAheadDistancePrev) {
+      speedLimitAheadValidFrame++;
+    } else {
+      speedLimitAheadValidFrame = 0;
+    }
+  }
+  speedLimitAheadDistancePrev = speedLimitAheadDistance;
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -449,13 +457,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
-  if (speedLimitAheadDistance < speedLimitAheadDistancePrev) {
-    speedLimitAheadValidFrame++;
-  } else {
-    speedLimitAheadValidFrame = 0;
-  }
-  speedLimitAheadDistancePrev = speedLimitAheadDistance;
-
   bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame >= 2;
   if (!speed_limit_ahead) {
     return;
