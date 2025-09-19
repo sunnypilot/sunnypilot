@@ -29,10 +29,10 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
-  int speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
-  speedLimit = 30 * speedConv; // lp_sp.getResolver().getSpeedLimit();
+  float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
+  speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
   speedLimitOffset = 2 * speedConv; // lp_sp.getResolver().getSpeedLimitOffset();
-  distToSpeedLimit = 100; // lp_sp.getResolver().getDistToSpeedLimit();
+  distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
   speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
   if (speedLimitAheadValid) {
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
@@ -328,9 +328,7 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
-  if (speedLimit <= 0) return;
-
-  QString speedLimitStr = QString::number(std::nearbyint(speedLimit));
+  QString speedLimitStr = speedLimit > 0 ? QString::number(std::nearbyint(speedLimit)) : "---";
 
   // Offset display text
   QString slcSubText = "";
