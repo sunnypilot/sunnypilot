@@ -138,6 +138,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     // Speed Limit
     drawSpeedLimitSigns(p, surface_rect);
+    drawUpcomingSpeedLimit(p, surface_rect);
+    drawRoadName(p, surface_rect);
   }
 }
 
@@ -345,52 +347,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 
   int alpha = 255; // should_show_inactive ? 128 : 255;
 
-  if (!is_metric) {
-    // US/Canada MUTCD style sign
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(255, 255, 255, alpha));
-    p.drawRoundedRect(sign_rect, 32, 32);
-
-    // Inner border with violation color coding
-    QRect inner_rect = sign_rect.adjusted(10, 10, -10, -10);
-    QColor border_color = QColor(0, 0, 0, alpha);
-
-    p.setPen(QPen(border_color, 4));
-    p.setBrush(QColor(255, 255, 255, alpha));
-    p.drawRoundedRect(inner_rect, 22, 22);
-
-    // "SPEED LIMIT" text
-    p.setFont(InterFont(40, QFont::DemiBold));
-    p.setPen(QColor(0, 0, 0, alpha));
-    p.drawText(inner_rect.adjusted(0, 10, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("SPEED"));
-    p.drawText(inner_rect.adjusted(0, 50, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("LIMIT"));
-
-    // Speed value with color coding
-    p.setFont(InterFont(90, QFont::Bold));
-    QColor speed_color = QColor(0, 0, 0, alpha);
-
-    p.setPen(speed_color);
-    p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
-
-    // Offset value in small box
-    if (!slcSubText.isEmpty()) {
-      int offset_box_size = 70;
-      QRect offset_box_rect(
-        sign_rect.right() - offset_box_size/2 + 10,
-        sign_rect.top() + offset_box_size/2 - 65,
-        offset_box_size,
-        offset_box_size
-      );
-
-      p.setPen(QPen(QColor(255, 255, 255, 75), 6));
-      p.setBrush(QColor(0, 0, 0, alpha));
-      p.drawRoundedRect(offset_box_rect, 12, 12);
-
-      p.setFont(InterFont(40, QFont::Bold));
-      p.setPen(QColor(255, 255, 255, alpha));
-      p.drawText(offset_box_rect, Qt::AlignCenter, slcSubText);
-    }
-  } else {
+  if (is_metric) {
     // EU Vienna Convention style circular sign
     QRect vienna_rect = sign_rect;
     int circle_size = std::min(vienna_rect.width(), vienna_rect.height());
@@ -445,11 +402,56 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_circle_rect, Qt::AlignCenter, slcSubText);
     }
+  } else {
+    // US/Canada MUTCD style sign
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(255, 255, 255, alpha));
+    p.drawRoundedRect(sign_rect, 32, 32);
+
+    // Inner border with violation color coding
+    QRect inner_rect = sign_rect.adjusted(10, 10, -10, -10);
+    QColor border_color = QColor(0, 0, 0, alpha);
+
+    p.setPen(QPen(border_color, 4));
+    p.setBrush(QColor(255, 255, 255, alpha));
+    p.drawRoundedRect(inner_rect, 22, 22);
+
+    // "SPEED LIMIT" text
+    p.setFont(InterFont(40, QFont::DemiBold));
+    p.setPen(QColor(0, 0, 0, alpha));
+    p.drawText(inner_rect.adjusted(0, 10, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("SPEED"));
+    p.drawText(inner_rect.adjusted(0, 50, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("LIMIT"));
+
+    // Speed value with color coding
+    p.setFont(InterFont(90, QFont::Bold));
+    QColor speed_color = QColor(0, 0, 0, alpha);
+
+    p.setPen(speed_color);
+    p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
+
+    // Offset value in small box
+    if (!slcSubText.isEmpty()) {
+      int offset_box_size = 70;
+      QRect offset_box_rect(
+        sign_rect.right() - offset_box_size/2 + 10,
+        sign_rect.top() + offset_box_size/2 - 65,
+        offset_box_size,
+        offset_box_size
+      );
+
+      p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+      p.setBrush(QColor(0, 0, 0, alpha));
+      p.drawRoundedRect(offset_box_rect, 12, 12);
+
+      p.setFont(InterFont(40, QFont::Bold));
+      p.setPen(QColor(255, 255, 255, alpha));
+      p.drawText(offset_box_rect, Qt::AlignCenter, slcSubText);
+    }
   }
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
-  if (!speedLimitAheadValid || speedLimitAhead <= 0) return;
+  if (!speedLimitAheadValid || speedLimitAhead <= 0 || speedLimitAhead == speedLimit) return;
 
   QString speedStr = QString::number(std::nearbyint(speedLimitAhead));
   QString distanceStr;
