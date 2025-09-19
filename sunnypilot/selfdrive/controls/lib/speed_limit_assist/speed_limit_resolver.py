@@ -118,7 +118,7 @@ class SpeedLimitResolver:
           return source
       return SpeedLimitSource.none
 
-    sources_with_limits = [(s, self.limit_solutions[s]) for s in sources_for_policy]
+    sources_with_limits = [(s, limit) for s, limit in [(s, self.limit_solutions[s]) for s in sources_for_policy] if limit > 0.]
     if sources_with_limits:
       return min(sources_with_limits, key=lambda x: x[1])[0]
 
