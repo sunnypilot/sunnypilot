@@ -72,17 +72,18 @@ class LongitudinalPlannerSP:
       self._last_mode = mode
 
   def blend_accel_transition(self, mpc_accel: float, e2e_accel: float, v_ego: float) -> float:
-    if not self.dec.enabled():
-      return min(mpc_accel, e2e_accel)
-    self._transition_counter = min(self._transition_counter + 1, self._transition_steps)
-    progress = self._transition_counter / self._transition_steps
-    ease_progress = 3 * progress**2 - 2 * progress**3
-    if e2e_accel < 0.0:
-      # Weight E2E braking more strongly using sigmoid and low-speed scaling
-      sigmoid = 1 / (1 + math.exp(-3.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
-      low_speed_factor = min(v_ego / 5.0, 1.0)
-      blend_factor = ease_progress * sigmoid * low_speed_factor
-      return mpc_accel + (e2e_accel - mpc_accel) * blend_factor
+    if self.dec.enabled():
+      if self._transition_counter < self._transition_steps:
+        self._transition_counter += 1
+        progress = self._transition_counter / self._transition_steps
+        if v_ego > 5.0 and e2e_accel < 0.0:
+          if mpc_accel < 0.0 and e2e_accel > mpc_accel:
+            return mpc_accel
+          # use k3.0 and normalize midpoint at 0.5
+          sigmoid = 1.0 / (1.0 + math.exp(-3.0 * (abs(e2e_accel / ACCEL_MIN) - 0.5)))
+          blend_factor = 1.0 - (1.0 - progress) * (1.0 - sigmoid)
+          blended = mpc_accel + (e2e_accel - mpc_accel) * blend_factor
+          return blended
     return min(mpc_accel, e2e_accel)
 
   def update(self, sm: messaging.SubMaster) -> None:
