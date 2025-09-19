@@ -23,7 +23,7 @@ enum class SpeedLimitSourcePolicy {
   MAP_ONLY,
   CAR_FIRST,
   MAP_FIRST,
-  COMBINED
+  COMBINED,
 };
 
 inline const QString SpeedLimitSourcePolicyTexts[]{
