@@ -114,7 +114,9 @@ class SpeedLimitResolver:
     if self.policy != Policy.combined:
       # They are ordered in the order of preference, so we pick the first that's non-zero
       for source in sources_for_policy:
-        return source if self.limit_solutions[source] > 0. else SpeedLimitSource.none
+        if self.limit_solutions[source] > 0.:
+          return source
+      return SpeedLimitSource.none
 
     sources_with_limits = [(s, self.limit_solutions[s]) for s in sources_for_policy]
     if sources_with_limits:
