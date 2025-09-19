@@ -19,7 +19,7 @@ SpeedLimitPolicy::SpeedLimitPolicy(QWidget *parent) : QWidget(parent) {
 
   main_layout->addSpacing(10);
 
-  ListWidgetSP *list = new ListWidgetSP(this, true);
+  ListWidgetSP *list = new ListWidgetSP(this);
 
   std::vector<QString> speed_limit_policy_texts{
     SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::CAR_ONLY)],

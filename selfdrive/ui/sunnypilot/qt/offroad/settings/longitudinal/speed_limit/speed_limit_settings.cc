@@ -20,7 +20,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 
   subPanelLayout->addSpacing(20);
 
-  ListWidgetSP *list = new ListWidgetSP(this, true);
+  ListWidgetSP *list = new ListWidgetSP(this);
 
   auto *speedLimitBtnFrame = new QFrame(this);
   auto *speedLimitBtnFrameLayout = new QGridLayout();
@@ -44,6 +44,39 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
   speedLimitBtnFrameLayout->addWidget(speedLimitSource, 0, 0, Qt::AlignLeft);
   list->addItem(speedLimitBtnFrame);
 
+  QFrame *offsetFrame = new QFrame(this);
+  QVBoxLayout *offsetLayout = new QVBoxLayout(offsetFrame);
+
+  std::vector<QString> speed_limit_offset_texts{
+    SpeedLimitOffsetTypeTexts[static_cast<int>(SpeedLimitOffsetType::NONE)],
+    SpeedLimitOffsetTypeTexts[static_cast<int>(SpeedLimitOffsetType::FIXED)],
+    SpeedLimitOffsetTypeTexts[static_cast<int>(SpeedLimitOffsetType::PERCENT)]
+  };
+  speed_limit_offset_settings = new ButtonParamControlSP(
+    "SpeedLimitOffsetType",
+    tr("Speed Limit Offset"),
+    "",
+    "",
+    speed_limit_offset_texts,
+    500);
+
+  offsetLayout->addWidget(speed_limit_offset_settings);
+
+  speed_limit_offset = new OptionControlSP(
+    "SpeedLimitValueOffset",
+    "",
+    "",
+    "",
+    {-30, 30}
+    );
+  offsetLayout->addWidget(speed_limit_offset);
+
+  list->addItem(offsetFrame);
+
+  connect(speed_limit_offset, &OptionControlSP::updateLabels, this, &SpeedLimitSettings::refresh);
+  connect(speed_limit_offset_settings, &ButtonParamControlSP::showDescriptionEvent, speed_limit_offset, &OptionControlSP::showDescription);
+  connect(speed_limit_offset_settings, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitSettings::refresh);
+
   refresh();
   subPanelLayout->addWidget(list);
   addWidget(subPanelFrame);
@@ -52,8 +85,28 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 }
 
 void SpeedLimitSettings::refresh() {
+  bool is_metric_param = params.getBool("IsMetric");
+  SpeedLimitOffsetType offset_type_param = static_cast<SpeedLimitOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
+  QString offsetLabel = QString::fromStdString(params.get("SpeedLimitValueOffset"));
+
+  speed_limit_offset->setDescription(offsetDescription(offset_type_param));
+
+  if (offset_type_param == SpeedLimitOffsetType::PERCENT) {
+    offsetLabel += "%";
+  } else if (offset_type_param == SpeedLimitOffsetType::FIXED) {
+    offsetLabel += QString(" %1").arg(is_metric_param ? "km/h" : "mph");
+  }
+
+  if (offset_type_param == SpeedLimitOffsetType::NONE) {
+    speed_limit_offset->setVisible(false);
+  } else {
+    speed_limit_offset->setVisible(true);
+    speed_limit_offset->setLabel(offsetLabel);
+    speed_limit_offset->showDescription();
+  }
 }
 
 void SpeedLimitSettings::showEvent(QShowEvent *event) {
   refresh();
+  speed_limit_offset->showDescription();
 }
