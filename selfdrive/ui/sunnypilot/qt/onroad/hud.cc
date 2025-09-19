@@ -31,7 +31,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
-  speedLimitOffset = 2 * speedConv; // lp_sp.getResolver().getSpeedLimitOffset();
+  speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset();
   distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
   speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
   if (speedLimitAheadValid) {
@@ -531,4 +531,3 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   QString truncated = fm.elidedText(roadName, Qt::ElideRight, road_rect.width() - 20);
   p.drawText(road_rect, Qt::AlignCenter, truncated);
 }
-
