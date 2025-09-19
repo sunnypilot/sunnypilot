@@ -344,9 +344,9 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
   QString speedLimitStr = speedLimit > 0 ? QString::number(std::nearbyint(speedLimit)) : "---";
 
   // Offset display text
-  QString slcSubText = "";
+  QString speedLimitSubText = "";
   if (speedLimitOffset != 0) {
-    slcSubText = (speedLimitOffset > 0 ? "+" : "") + QString::number(std::nearbyint(speedLimitOffset));
+    speedLimitSubText = (speedLimitOffset > 0 ? "+" : "") + QString::number(std::nearbyint(speedLimitOffset));
   }
 
   // Position next to MAX speed box
@@ -396,7 +396,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
     p.drawText(center_circle, Qt::AlignCenter, speedLimitStr);
 
     // Offset value in small circular box
-    if (!slcSubText.isEmpty()) {
+    if (!speedLimitSubText.isEmpty()) {
       int offset_circle_size = 80;
       QRect offset_circle_rect(
         circle_rect.right() - offset_circle_size/2 + 10,
@@ -411,7 +411,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 
       p.setFont(InterFont(40, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
-      p.drawText(offset_circle_rect, Qt::AlignCenter, slcSubText);
+      p.drawText(offset_circle_rect, Qt::AlignCenter, speedLimitSubText);
     }
   } else {
     // US/Canada MUTCD style sign
@@ -441,7 +441,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
 
     // Offset value in small box
-    if (!slcSubText.isEmpty()) {
+    if (!speedLimitSubText.isEmpty()) {
       int offset_box_size = 70;
       QRect offset_box_rect(
         sign_rect.right() - offset_box_size/2 + 10,
@@ -456,7 +456,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 
       p.setFont(InterFont(40, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
-      p.drawText(offset_box_rect, Qt::AlignCenter, slcSubText);
+      p.drawText(offset_box_rect, Qt::AlignCenter, speedLimitSubText);
     }
   }
 }
