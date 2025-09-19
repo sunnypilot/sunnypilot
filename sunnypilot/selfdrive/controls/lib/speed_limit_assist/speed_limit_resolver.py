@@ -39,9 +39,9 @@ class SpeedLimitResolver:
     self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
+      Policy.map_data_only: [SpeedLimitSource.map],
       Policy.car_state_priority: [SpeedLimitSource.car, SpeedLimitSource.map],
       Policy.map_data_priority: [SpeedLimitSource.map, SpeedLimitSource.car],
-      Policy.map_data_only: [SpeedLimitSource.map],
       Policy.combined: [SpeedLimitSource.car, SpeedLimitSource.map],
     }
     self.source = SpeedLimitSource.none
