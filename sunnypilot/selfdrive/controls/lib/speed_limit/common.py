@@ -19,4 +19,3 @@ class OffsetType(IntEnum):
   off = 0
   fixed = 1
   percentage = 2
-

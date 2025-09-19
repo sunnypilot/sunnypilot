@@ -9,7 +9,7 @@ from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -84,8 +84,8 @@ class LongitudinalPlannerSP:
     speedLimit = longitudinalPlanSP.speedLimit
     resolver = speedLimit.resolver
     resolver.speedLimit = float(self.resolver.speed_limit)
+    resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
     resolver.distToSpeedLimit = float(self.resolver.distance)
     resolver.source = self.resolver.source
-    resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
