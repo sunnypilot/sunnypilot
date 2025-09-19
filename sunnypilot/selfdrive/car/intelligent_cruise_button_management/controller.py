@@ -16,7 +16,7 @@ State = custom.IntelligentCruiseButtonManagement.IntelligentCruiseButtonManageme
 SendButtonState = custom.IntelligentCruiseButtonManagement.SendButtonState
 
 ALLOWED_SPEED_THRESHOLD = 1.8  # m/s, ~4 MPH
-HYST_GAP = 0.75
+HYST_GAP = 0.0  # currently disabled; TODO-SP: might need to be brand-specific
 INACTIVE_TIMER = 0.4
 
 
