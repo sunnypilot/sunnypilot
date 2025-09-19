@@ -50,7 +50,7 @@ class SpeedLimitResolver:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.policy = Policy(self.params.get("SpeedLimitPolicy", return_default=True))
+      self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
 
   def _reset_limit_sources(self, source: custom.LongitudinalPlanSP.SpeedLimit.Source) -> None:
     self.limit_solutions[source] = 0.
