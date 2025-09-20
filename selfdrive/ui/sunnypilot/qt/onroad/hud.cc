@@ -397,19 +397,20 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 
     // Offset value in small circular box
     if (!speedLimitSubText.isEmpty()) {
-      int offset_circle_size = 80;
+      int offset_circle_size = circle_size * 0.4;
+      int overlap = offset_circle_size * 0.25;
       QRect offset_circle_rect(
-        circle_rect.right() - offset_circle_size/2 + 10,
-        circle_rect.top() + offset_circle_size/2 - 35,
+        circle_rect.right() - offset_circle_size/1.25 + overlap,
+        circle_rect.top() - offset_circle_size/2 + overlap,
         offset_circle_size,
         offset_circle_size
       );
 
-      p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+      p.setPen(QPen(QColor(77, 77, 77, 255), 6));
       p.setBrush(QColor(0, 0, 0, alpha));
-      p.drawRoundedRect(offset_circle_rect, offset_circle_size/2, offset_circle_size/2);
+      p.drawEllipse(offset_circle_rect);
 
-      p.setFont(InterFont(40, QFont::Bold));
+      p.setFont(InterFont(offset_circle_size * 0.45, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_circle_rect, Qt::AlignCenter, speedLimitSubText);
     }
@@ -442,19 +443,21 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
 
     // Offset value in small box
     if (!speedLimitSubText.isEmpty()) {
-      int offset_box_size = 70;
+      int offset_box_size = sign_rect.width() * 0.4;
+      int overlap = offset_box_size * 0.25;
       QRect offset_box_rect(
-        sign_rect.right() - offset_box_size/2 + 10,
-        sign_rect.top() + offset_box_size/2 - 65,
+        sign_rect.right() - offset_box_size/1.5 + overlap,
+        sign_rect.top() - offset_box_size/1.25 + overlap,
         offset_box_size,
         offset_box_size
       );
 
-      p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+      int corner_radius = offset_box_size * 0.2;
+      p.setPen(QPen(QColor(77, 77, 77, 255), 6));
       p.setBrush(QColor(0, 0, 0, alpha));
-      p.drawRoundedRect(offset_box_rect, 12, 12);
+      p.drawRoundedRect(offset_box_rect, corner_radius, corner_radius);
 
-      p.setFont(InterFont(40, QFont::Bold));
+      p.setFont(InterFont(offset_box_size * 0.45, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_box_rect, Qt::AlignCenter, speedLimitSubText);
     }
