@@ -356,7 +356,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
   const int sign_height = 204;
   QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
-  int alpha = 255; // should_show_inactive ? 128 : 255;
+  int alpha = 255;
 
   if (is_metric) {
     // EU Vienna Convention style circular sign
@@ -365,9 +365,9 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
     QRect circle_rect(vienna_rect.x(), vienna_rect.y(), circle_size, circle_size);
 
     if (vienna_rect.width() > vienna_rect.height()) {
-        circle_rect.moveLeft(vienna_rect.x() + (vienna_rect.width() - circle_size) / 2);
+      circle_rect.moveLeft(vienna_rect.x() + (vienna_rect.width() - circle_size) / 2);
     } else if (vienna_rect.height() > vienna_rect.width()) {
-        circle_rect.moveTop(vienna_rect.y() + (vienna_rect.height() - circle_size) / 2);
+      circle_rect.moveTop(vienna_rect.y() + (vienna_rect.height() - circle_size) / 2);
     }
 
     // White background circle
