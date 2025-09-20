@@ -52,18 +52,8 @@ class IntelligentCruiseButtonManagement:
   def update_calculations(self, CS: car.CarState, LP_SP: custom.LongitudinalPlanSP) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
     ms_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
-    v_cruise_ms = CS.vCruise * CV.KPH_TO_MS
 
-    # TODO-SP: sync with longitudinal planner
-    # all targets in m/s
-    v_targets = {
-      LongitudinalPlanSource.cruise: v_cruise_ms,
-      LongitudinalPlanSource.sccVision: LP_SP.smartCruiseControl.vision.vTarget,
-    }
-    source = min(v_targets, key=lambda k: v_targets[k])
-    v_target_ms = v_targets[source]
-
-    self.v_target_ms_last = apply_hysteresis(v_target_ms, self.v_target_ms_last, HYST_GAP * ms_conv)
+    self.v_target_ms_last = apply_hysteresis(LP_SP.vTarget, self.v_target_ms_last, HYST_GAP * ms_conv)
 
     self.v_target = round(self.v_target_ms_last * speed_conv)
     self.v_cruise_min = get_minimum_set_speed(self.is_metric)
