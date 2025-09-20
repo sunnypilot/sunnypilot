@@ -27,6 +27,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     SupercomboTinygrad.__init__(self)
     PolicyTinygrad.__init__(self)
     VisionTinygrad.__init__(self)
+    self.is_20hz = self.input_shapes.get('features_buffer', (1, 25, 512))[1] <= 25  # 20hz is 25 or 24 frames, non 20hz is 99
     self._constants = ModelConstants
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
@@ -62,13 +63,13 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
   def prepare_vision_inputs(self, imgs_cl: CLMemDict, frames: FrameDict):
     """Prepares vision (image) inputs as Tinygrad Tensors."""
     for key in imgs_cl:
-      if TICI and key not in self.inputs:
-        # On TICI, directly use OpenCL memory address for efficiency via QCOM extensions
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      elif not TICI:
-        # On other platforms, copy data from CL buffer to a numpy array first
+      if (not self.is_20hz or not TICI) and key not in self.inputs:
+        # Force CPU copy for non20Hz models, and on other platforms, copy data from CL buffer to a numpy array first
         shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
+      elif TICI and key not in self.inputs:
+        # On TICI, directly use OpenCL memory address for efficiency via QCOM extensions
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
 
   def prepare_policy_inputs(self, numpy_inputs: NumpyDict):
     """Prepares non-image (policy) inputs as Tinygrad Tensors."""
