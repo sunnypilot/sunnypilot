@@ -51,7 +51,12 @@ void ModelRenderer::update_leads(const cereal::RadarState::Reader &radar_state, 
 
 void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) {
   const auto &model_position = model.getPosition();
-  float max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+  float max_distance;
+  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 0) {
+    max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+  } else {
+    max_distance = std::clamp(*(model_position.getX().end() - 1), 0.0f, 300.0f);
+  }
 
   // update lane lines
   const auto &lane_lines = model.getLaneLines();
@@ -60,6 +65,7 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   for (int i = 0; i < std::size(lane_line_vertices); i++) {
     lane_line_probs[i] = line_probs[i];
     mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    // mapLineToPolygon(lane_lines[i], 0.025, 0, &lane_line_vertices[i], max_idx);
   }
 
   // update road edges
@@ -80,16 +86,128 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
 }
 
 void ModelRenderer::drawLaneLines(QPainter &painter) {
-  // lanelines
-  for (int i = 0; i < std::size(lane_line_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
-    painter.drawPolygon(lane_line_vertices[i]);
-  }
+  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+    QRectF r = clip_region;
 
-  // road edges
-  for (int i = 0; i < std::size(road_edge_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
-    painter.drawPolygon(road_edge_vertices[i]);
+    // --- Find horizon from road edges ---
+    qreal horizonY = r.center().y();  // fallback
+    if (!road_edge_vertices[0].isEmpty() || !road_edge_vertices[1].isEmpty()) {
+      qreal leftH  = r.top();
+      qreal rightH = r.top();
+
+      if (!road_edge_vertices[0].isEmpty()) {
+        leftH = std::numeric_limits<qreal>::max();
+        for (const QPointF &pt : road_edge_vertices[0]) {
+          if (pt.y() < leftH) leftH = pt.y();
+        }
+      }
+
+      if (!road_edge_vertices[1].isEmpty()) {
+        rightH = std::numeric_limits<qreal>::max();
+        for (const QPointF &pt : road_edge_vertices[1]) {
+          if (pt.y() < rightH) rightH = pt.y();
+        }
+      }
+
+      // Pick the lower (visually deeper) horizon to ensure no gaps
+      horizonY = std::max(leftH, rightH);
+    }
+
+
+    // --- Background ---
+    // Fill above horizon: pure black
+    // painter.fillRect(QRectF(r.left(), r.top(), r.width(), horizonY - 100), QColor("#000000"));
+
+    // Gradient band across horizon
+    QLinearGradient bgGrad(r.left(), horizonY - 50, r.left(), horizonY + 50);
+    bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
+    bgGrad.setColorAt(0.5, QColor("#333333"));  // middle blend
+    bgGrad.setColorAt(1.0, QColor("#333333"));  // bottom of band
+    painter.fillRect(QRectF(r.left(), horizonY - 100, r.width(), 100), bgGrad);
+
+    // Fill below horizon: solid dark gray
+    painter.fillRect(QRectF(r.left(), horizonY + 0, r.width(), r.bottom() - (horizonY + 0)), QColor("#111111"));
+
+
+    auto buildFill = [&](const QPolygonF &edgeRibbon, bool isLeftSide) -> QPolygonF {
+      if (edgeRibbon.isEmpty()) return {};
+
+      QMap<int, QPointF> byY;
+      for (const QPointF &pt : edgeRibbon) {
+        int yi = int(std::round(pt.y()));
+        if (!byY.contains(yi)) {
+          byY[yi] = pt;
+        } else {
+          if (isLeftSide) {
+            if (pt.x() > byY[yi].x()) byY[yi] = pt;
+          } else {
+            if (pt.x() < byY[yi].x()) byY[yi] = pt;
+          }
+        }
+      }
+      if (byY.isEmpty()) return {};
+
+      QPolygonF curve;
+      for (auto it = byY.cbegin(); it != byY.cend(); ++it) {
+        curve << it.value();
+      }
+      if (curve.size() < 2) return {};
+
+      const qreal topY = curve.first().y();
+      QPolygonF fill;
+      if (isLeftSide) {
+        fill << QPointF(r.left(), topY);
+        for (const QPointF &pt : curve) fill << pt;
+        fill << QPointF(r.left(), r.bottom());
+      } else {
+        fill << QPointF(r.right(), topY);
+        for (const QPointF &pt : curve) fill << pt;
+        fill << QPointF(r.right(), r.bottom());
+      }
+      return fill;
+    };
+
+    // Left and right fills
+    QPolygonF leftFill  = buildFill(road_edge_vertices[0], true);
+    QPolygonF rightFill = buildFill(road_edge_vertices[1], false);
+
+    if (!leftFill.isEmpty()) {
+      painter.setBrush(QColor("#333333"));
+      painter.drawPolygon(leftFill);
+    }
+    if (!rightFill.isEmpty()) {
+      painter.setBrush(QColor("#333333"));
+      painter.drawPolygon(rightFill);
+    }
+
+    // Lane lines
+    for (int i = 0; i < std::size(lane_line_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
+      // painter.setBrush(QColor("#E6E6E6"));
+      painter.drawPolygon(lane_line_vertices[i]);
+    }
+
+    // Road edges
+    // for (int i = 0; i < std::size(road_edge_vertices); ++i) {
+    //   painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
+    //   // painter.setBrush(QColor("#FF3B30"));
+    //   painter.setPen(QPen(QColor("#A0A0A0"), 20));
+    //   painter.drawPolygon(road_edge_vertices[i]);
+    //   painter.setPen(Qt::NoPen);
+    // }
+
+  } else {
+    // lanelines
+    for (int i = 0; i < std::size(lane_line_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
+      painter.drawPolygon(lane_line_vertices[i]);
+    }
+
+    // road edges
+    for (int i = 0; i < std::size(road_edge_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
+      painter.drawPolygon(road_edge_vertices[i]);
+    }
   }
 }
 
