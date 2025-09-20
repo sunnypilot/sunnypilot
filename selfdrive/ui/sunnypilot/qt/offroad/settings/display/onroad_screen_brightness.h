@@ -15,7 +15,6 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
 static const QMap<QString, QString> onroadScreenOffTimerOptions = {
- {"-1", "-1"}, // Default - Always On
  {"0", "15"},
  {"1", "30"},
  {"2", "60"},
