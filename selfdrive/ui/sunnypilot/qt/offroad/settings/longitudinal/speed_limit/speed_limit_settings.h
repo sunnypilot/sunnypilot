@@ -56,8 +56,11 @@ private:
     QString off_str = tr("⦿ Off: Disables the Speed Limit functions.");
     QString info_str = tr("⦿ Information: Displays the current road's speed limit.");
     QString warning_str = tr("⦿ Warning: Provides a warning when exceeding the current road's speed limit.");
+    QString assist_str = tr("⦿ Assist: Adjusts the vehicle's cruise speed based on the current road's speed limit when operating the +/- buttons.");
 
-    if (mode == SpeedLimitMode::WARNING) {
+    if (mode == SpeedLimitMode::ASSIST) {
+      assist_str = "<font color='white'><b>" + assist_str + "</b></font>";
+    } else if (mode == SpeedLimitMode::WARNING) {
       warning_str = "<font color='white'><b>" + warning_str + "</b></font>";
     } else if (mode == SpeedLimitMode::INFORMATION) {
       info_str = "<font color='white'><b>" + info_str + "</b></font>";
@@ -68,6 +71,7 @@ private:
     return QString("%1<br>%2<br>%3")
         .arg(off_str)
         .arg(info_str)
-        .arg(warning_str);
+        .arg(warning_str)
+        .arg(assist_str);
   }
 };
