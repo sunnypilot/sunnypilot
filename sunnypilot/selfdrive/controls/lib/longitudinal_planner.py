@@ -113,5 +113,7 @@ class LongitudinalPlannerSP:
     assist.state = self.sla.state
     assist.enabled = self.sla.is_enabled
     assist.active = self.sla.is_active
+    assist.vTarget = float(self.sla.output_v_target)
+    assist.aTarget = float(self.sla.output_a_target)
 
     pm.send('longitudinalPlanSP', plan_sp_send)

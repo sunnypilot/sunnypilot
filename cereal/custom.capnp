@@ -197,6 +197,8 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       state @0 :AssistState;
       enabled @1 :Bool;
       active @2 :Bool;
+      vTarget @3 :Float32;
+      aTarget @4 :Float32;
     }
 
     enum Source {
