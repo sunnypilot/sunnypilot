@@ -21,4 +21,5 @@ private:
   HomeWindowSP *homeWindow;
   SettingsWindowSP *settingsWindow;
   void closeSettings() override;
+  bool eventFilter(QObject *obj, QEvent *event) override;
 };
