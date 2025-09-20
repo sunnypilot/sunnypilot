@@ -21,9 +21,7 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.events_sp = EventsSP()
-
     self.resolver = SpeedLimitResolver()
-
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
@@ -48,6 +46,7 @@ class LongitudinalPlannerSP:
 
     self.events_sp.clear()
 
+    # Smart Cruise Control
     self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
 
     # Speed Limit Resolver
