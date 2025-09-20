@@ -35,7 +35,6 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
   if (sm.updated("liveMapDataSP")) {
-    roadName = QString::fromStdString(lmd.getRoadName());
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
     speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
@@ -146,7 +145,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Speed Limit
     drawSpeedLimitSigns(p, surface_rect);
     drawUpcomingSpeedLimit(p, surface_rect);
-    drawRoadName(p, surface_rect);
   }
 }
 
@@ -524,34 +522,4 @@ void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rec
   p.setFont(InterFont(40, QFont::Normal));
   p.setPen(QColor(180, 180, 180, 255));
   p.drawText(ahead_rect.adjusted(0, 110, 0, 0), Qt::AlignTop | Qt::AlignHCenter, distanceStr);
-}
-
-void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
-  if (roadName.isEmpty()) return;
-
-  // Measure text to size container
-  p.setFont(InterFont(40, QFont::Normal));
-  QFontMetrics fm(p.font());
-
-  int text_width = fm.horizontalAdvance(roadName);
-  int padding = 40;
-  int rect_width = text_width + padding;
-
-  // Constrain to reasonable bounds
-  int min_width = 200;
-  int max_width = surface_rect.width() - 40;
-  rect_width = std::max(min_width, std::min(rect_width, max_width));
-
-  // Center at top of screen
-  QRect road_rect(surface_rect.width() / 2 - rect_width / 2, 5, rect_width, 60);
-
-  p.setPen(QPen(QColor(255, 255, 255, 100), 1));
-  p.setBrush(QColor(0, 0, 0, 120));
-  p.drawRoundedRect(road_rect, 6, 6);
-
-  p.setPen(QColor(255, 255, 255, 200));
-
-  // Truncate if still too long
-  QString truncated = fm.elidedText(roadName, Qt::ElideRight, road_rect.width() - 20);
-  p.drawText(road_rect, Qt::AlignCenter, truncated);
 }
