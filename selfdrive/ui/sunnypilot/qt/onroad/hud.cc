@@ -330,6 +330,7 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   int speedLimitRounded = std::nearbyint(speedLimit);
   bool overspeed = speedLimitRounded < std::nearbyint(speed) && speedLimitRounded > 0;
+  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
   QString speedLimitStr = speedLimit > 0 ? QString::number(speedLimitRounded) : "---";
 
   // Offset display text
@@ -347,7 +348,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
-  QColor speed_color = overspeed ? red_color : QColor(0, 0, 0, alpha);
+  QColor speed_color = (speedLimitWarningEnabled && overspeed) ? red_color : QColor(0, 0, 0, alpha);
 
   if (is_metric) {
     // EU Vienna Convention style circular sign
