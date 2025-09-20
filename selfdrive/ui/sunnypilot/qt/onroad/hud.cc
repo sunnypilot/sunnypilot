@@ -513,12 +513,12 @@ void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rec
   // "AHEAD" label
   p.setFont(InterFont(40, QFont::DemiBold));
   p.setPen(QColor(200, 200, 200, 255));
-  p.drawText(ahead_rect.adjusted(0, 12, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("AHEAD"));
+  p.drawText(ahead_rect.adjusted(0, 4, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("AHEAD"));
 
   // Speed value
   p.setFont(InterFont(70, QFont::Bold));
   p.setPen(QColor(255, 255, 255, 255));
-  p.drawText(ahead_rect.adjusted(0, 42, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedStr);
+  p.drawText(ahead_rect.adjusted(0, 38, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedStr);
 
   // Distance
   p.setFont(InterFont(40, QFont::Normal));
