@@ -466,49 +466,30 @@ void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
     return;
   }
 
-  auto roundToInterval = [](float distance, int interval, int threshold) -> int {
+  auto roundToInterval = [&](float distance, int interval, int threshold) {
     int base = static_cast<int>(distance / interval) * interval;
     return (distance - base >= threshold) ? base + interval : base;
   };
 
-  QString speedStr = QString::number(std::nearbyint(speedLimitAhead));
-  QString distanceStr;
+  auto outputDistance = [&] {
+    if (is_metric) {
+      if (speedLimitAheadDistance < 50) return tr("Near");
+      if (speedLimitAheadDistance >= 1000) return QString::number(speedLimitAheadDistance * METER_TO_KM, 'f', 1) + tr("km");
 
-  // Format distance based on units
-  if (is_metric) {
-    if (speedLimitAheadDistance < 1000) {
-      int rounded_distance;
-      if (speedLimitAheadDistance < 50) {
-        distanceStr = tr("Near");
-      } else {
-        if (speedLimitAheadDistance >= 50 && speedLimitAheadDistance < 200) {
-          rounded_distance = std::max(10, roundToInterval(speedLimitAheadDistance, 10, 5));
-        } else {
-          rounded_distance = roundToInterval(speedLimitAheadDistance, 100, 50);
-        }
-        distanceStr = QString::number(rounded_distance) + tr("m");
-      }
+      int rounded = (speedLimitAheadDistance < 200) ? std::max(10, roundToInterval(speedLimitAheadDistance, 10, 5)) : roundToInterval(speedLimitAheadDistance, 100, 50);
+      return QString::number(rounded) + tr("m");
     } else {
-      distanceStr = QString::number(speedLimitAheadDistance / 1000.0, 'f', 1) + tr("km");
+      float distance_ft = speedLimitAheadDistance * METER_TO_FOOT;
+      if (distance_ft < 100) return tr("Near");
+      if (distance_ft >= 900) return QString::number(speedLimitAheadDistance * METER_TO_MILE, 'f', 1) + tr("mi");
+
+      int rounded = (distance_ft < 500) ? std::max(50, roundToInterval(distance_ft, 50, 25)) : roundToInterval(distance_ft, 100, 50);
+      return QString::number(rounded) + tr("ft");
     }
-  } else {
-    float distance_ft = speedLimitAheadDistance * 3.28084;
-    if (distance_ft < 900) {
-      int rounded_distance;
-      if (distance_ft < 100) {
-        distanceStr = tr("Near");
-      } else {
-        if (distance_ft >= 100 && distance_ft < 500) {
-          rounded_distance = std::max(50, roundToInterval(distance_ft, 50, 25));
-        } else {
-          rounded_distance = roundToInterval(distance_ft, 100, 50);
-        }
-        distanceStr = QString::number(rounded_distance) + tr("ft");
-      }
-    } else {
-      distanceStr = QString::number(distance_ft / 5280.0, 'f', 1) + tr("mi");
-    }
-  }
+  };
+
+  QString speedStr = QString::number(std::nearbyint(speedLimitAhead));
+  QString distanceStr = outputDistance();
 
   // Position below current speed limit sign
   const int sign_width = is_metric ? 200 : 172;
