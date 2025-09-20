@@ -336,7 +336,9 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  QString speedLimitStr = speedLimit > 0 ? QString::number(std::nearbyint(speedLimit)) : "---";
+  int speedLimitRounded = std::nearbyint(speedLimit);
+  bool overspeed = speedLimitRounded < std::nearbyint(speed) && speedLimitRounded > 0;
+  QString speedLimitStr = speedLimit > 0 ? QString::number(speedLimitRounded) : "---";
 
   // Offset display text
   QString speedLimitSubText = "";
@@ -352,6 +354,8 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
   int alpha = 255;
+  QColor red_color = QColor(255, 0, 0, alpha);
+  QColor speed_color = overspeed ? red_color : QColor(0, 0, 0, alpha);
 
   if (is_metric) {
     // EU Vienna Convention style circular sign
@@ -372,9 +376,8 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
     // Red border ring with color coding
     QRect red_ring = circle_rect;
-    QColor ring_color = QColor(255, 0, 0, alpha);
 
-    p.setBrush(ring_color);
+    p.setBrush(red_color);
     p.drawEllipse(red_ring);
 
     // Center white circle for text
@@ -386,7 +389,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     // Speed value, smaller font for 3+ digits
     int font_size = (speedLimitStr.size() >= 3) ? 70 : 85;
     p.setFont(InterFont(font_size, QFont::Bold));
-    QColor speed_color = QColor(0, 0, 0, alpha);
 
     p.setPen(speed_color);
     p.drawText(center_circle, Qt::AlignCenter, speedLimitStr);
@@ -432,7 +434,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
     // Speed value with color coding
     p.setFont(InterFont(90, QFont::Bold));
-    QColor speed_color = QColor(0, 0, 0, alpha);
 
     p.setPen(speed_color);
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
