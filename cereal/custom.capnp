@@ -146,7 +146,9 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
   speedLimit @3 :SpeedLimit;
-  events @4 :List(OnroadEventSP.Event);
+  vTarget @4 :Float32;
+  aTarget @5 :Float32;
+  events @6 :List(OnroadEventSP.Event);
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;

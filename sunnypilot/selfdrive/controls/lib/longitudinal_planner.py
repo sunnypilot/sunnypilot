@@ -31,6 +31,9 @@ class LongitudinalPlannerSP:
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
 
+    self.output_v_target = 0.
+    self.output_a_target = 0.
+
   @property
   def mlsim(self) -> bool:
     # If we don't have a generation set, we assume it's default model. Which as of today are mlsim.
@@ -68,9 +71,8 @@ class LongitudinalPlannerSP:
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
-    v_target, a_target = targets[self.source]
-
-    return v_target, a_target
+    self.output_v_target, self.output_a_target = targets[self.source]
+    return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
@@ -82,6 +84,8 @@ class LongitudinalPlannerSP:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source
+    longitudinalPlanSP.vTarget = float(self.output_v_target)
+    longitudinalPlanSP.aTarget = float(self.output_a_target)
     longitudinalPlanSP.events = self.events_sp.to_msg()
 
     # Dynamic Experimental Control

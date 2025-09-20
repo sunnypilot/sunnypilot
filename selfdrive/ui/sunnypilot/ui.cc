@@ -54,6 +54,7 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
+  s->scene.road_name = params.getBool("RoadName");
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
