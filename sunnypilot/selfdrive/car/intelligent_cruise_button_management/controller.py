@@ -49,19 +49,11 @@ class IntelligentCruiseButtonManagement:
   def v_cruise_equal(self) -> bool:
     return self.v_target == self.v_cruise_cluster
 
-  def update_calculations(self, CS: car.CarState) -> None:
+  def update_calculations(self, CS: car.CarState, LP_SP: custom.LongitudinalPlanSP) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
     ms_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
-    v_cruise_ms = CS.vCruise * CV.KPH_TO_MS
 
-    # all targets in m/s
-    v_targets = {
-      LongitudinalPlanSource.cruise: v_cruise_ms
-    }
-    source = min(v_targets, key=lambda k: v_targets[k])
-    v_target_ms = v_targets[source]
-
-    self.v_target_ms_last = apply_hysteresis(v_target_ms, self.v_target_ms_last, HYST_GAP * ms_conv)
+    self.v_target_ms_last = apply_hysteresis(LP_SP.vTarget, self.v_target_ms_last, HYST_GAP * ms_conv)
 
     self.v_target = round(self.v_target_ms_last * speed_conv)
     self.v_cruise_min = get_minimum_set_speed(self.is_metric)
@@ -123,13 +115,13 @@ class IntelligentCruiseButtonManagement:
 
     self.is_ready = ready and not button_pressed
 
-  def run(self, CS: car.CarState, CC: car.CarControl, is_metric: bool) -> None:
+  def run(self, CS: car.CarState, CC: car.CarControl, LP_SP: custom.LongitudinalPlanSP, is_metric: bool) -> None:
     if self.CP_SP.pcmCruiseSpeed:
       return
 
     self.is_metric = is_metric
 
-    self.update_calculations(CS)
+    self.update_calculations(CS, LP_SP)
     self.update_readiness(CS, CC)
 
     self.cruise_button = self.update_state_machine()
