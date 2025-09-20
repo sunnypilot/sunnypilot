@@ -89,12 +89,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(dev_ui_settings);
 
   // Visuals: Visual Style
-  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
+  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
   visual_style_settings = new ButtonParamControlSP(
     "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the onroad UI."),
     "",
     visual_style_settings_texts,
-    380);
+    250);
   list->addItem(visual_style_settings);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
