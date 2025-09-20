@@ -45,8 +45,8 @@ class SpeedLimitAssist:
   a_ego: float
   v_offset: float
   last_valid_speed_limit_final: float
-  output_v_target: float
-  output_a_target: float
+  output_v_target: float = V_CRUISE_UNSET
+  output_a_target: float = 0.
 
   def __init__(self, CP):
     self.params = Params()
@@ -111,6 +111,10 @@ class SpeedLimitAssist:
 
     # Fallback
     return V_CRUISE_UNSET
+
+  # TODO-SP: SLA's own output_a_target for planner
+  def get_a_target_from_control(self) -> float:
+    return self.a_ego
 
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -239,5 +243,6 @@ class SpeedLimitAssist:
     self.long_enabled_prev = self.long_enabled
 
     self.output_v_target = self.get_v_target_from_control()
+    self.output_a_target = self.get_a_target_from_control()
 
     self.frame += 1
