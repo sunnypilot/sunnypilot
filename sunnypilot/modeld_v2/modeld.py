@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
@@ -113,6 +113,7 @@ class ModelState(ModelStateBase):
       self.temporal_buffers[self.desire_key][: -desire_len] = self.temporal_buffers[self.desire_key][desire_len :]
       self.temporal_buffers[self.desire_key][-desire_len :] = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
       self.prev_desire[:] = inputs[self.desire_key]
+
 
     # Roll buffer and assign based on desire.shape[1] value
     if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
