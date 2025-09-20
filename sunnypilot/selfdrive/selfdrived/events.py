@@ -1,4 +1,6 @@
+import cereal.messaging as messaging
 from cereal import log, car, custom
+from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 
@@ -12,6 +14,17 @@ EventNameSP = custom.OnroadEventSP.EventName
 
 # get event name from enum
 EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
+
+
+def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  speedLimit = sm['longitudinalPlanSP'].sla.speedLimit
+  speed = round(speedLimit * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
+  message = f'Adjusting to {speed} {"km/h" if metric else "mph"} speed limit'
+  return Alert(
+    message,
+    "",
+    AlertStatus.normal, AlertSize.small,
+    Priority.LOW, VisualAlert.none, AudibleAlert.none, 4.)
 
 
 class EventsSP(EventsBase):
@@ -148,5 +161,29 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
-  }
+  },
+
+  EventNameSP.speedLimitActive: {
+    ET.WARNING: Alert(
+      "Automatically adjusting to the posted speed limit",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
+
+  EventNameSP.speedLimitChanged: {
+    ET.WARNING: Alert(
+      "Set speed changed",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
+
+  EventNameSP.speedLimitPreActive: {
+    ET.WARNING: Alert(
+      "Speed Limit Assist: Activation Required",
+      "Manually change set speed to 80 MPH to activate",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
 }

@@ -7,29 +7,31 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import messaging, custom
 from opendbc.car import structs
-from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
-from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
-from opendbc.car.interfaces import ACCEL_MIN
-from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
+from openpilot.common.constants import CV
+from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 from openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality import VibePersonalityController
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
-Source = custom.LongitudinalPlanSP.LongitudinalPlanSource
+LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
+    self.events_sp = EventsSP()
+    self.resolver = SpeedLimitResolver()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.vibe_controller = VibePersonalityController()
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
+    self.sla = SpeedLimitAssist(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
-    self.source = Source.cruise
+    self.source = LongitudinalPlanSource.cruise
 
   @property
   def mlsim(self) -> bool:
@@ -43,14 +45,28 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
-    self.scc.update(sm, v_ego, a_ego, v_cruise)
+    v_cruise_cluster_kph = min(sm['carState'].vCruiseCluster, V_CRUISE_MAX)
+    v_cruise_cluster = v_cruise_cluster_kph * CV.KPH_TO_MS
+
+    long_enabled = sm['carControl'].enabled
+    long_override = sm['carControl'].cruiseControl.override
+
+    self.events_sp.clear()
+
+    # Smart Cruise Control
+    self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
 
     # Speed Limit Resolver
     self.resolver.update(v_ego, sm)
 
+    # Speed Limit Assist
+    self.sla.update(long_enabled, long_override, v_ego, a_ego, v_cruise_cluster,
+                    self.resolver.speed_limit, self.resolver.speed_limit_offset, self.resolver.distance, self.events_sp)
+
     targets = {
-      Source.cruise: (v_cruise, a_ego),
-      Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target)
+      LongitudinalPlanSource.cruise: (v_cruise, a_ego),
+      LongitudinalPlanSource.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
+      LongitudinalPlanSource.speedLimitAssist: (self.sla.output_v_target, a_ego),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
@@ -69,6 +85,7 @@ class LongitudinalPlannerSP:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source
+    longitudinalPlanSP.events = self.events_sp.to_msg()
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
@@ -95,5 +112,11 @@ class LongitudinalPlannerSP:
     resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
     resolver.distToSpeedLimit = float(self.resolver.distance)
     resolver.source = self.resolver.source
+    assist = speedLimit.assist
+    assist.state = self.sla.state
+    assist.enabled = self.sla.is_enabled
+    assist.active = self.sla.is_active
+    assist.vTarget = float(self.sla.output_v_target)
+    assist.aTarget = float(self.sla.output_a_target)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
