@@ -61,6 +61,7 @@ public:
       return user.user_id.toLower() != "unregisteredsponsor" && user.user_id.toLower() != "temporarysponsor";
     });
   }
+  void reset_onroad_sleep_timer();
 
 signals:
   void sunnylinkRoleChanged(bool subscriber);
