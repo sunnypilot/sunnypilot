@@ -219,8 +219,11 @@ class SpeedLimitAssist:
     elif self.is_active:
       if self._state_prev not in ACTIVE_STATES:
         events_sp.add(EventNameSP.speedLimitActive)
-      elif self.speed_limit_changed:
-        events_sp.add(EventNameSP.speedLimitChanged)
+      elif self.speed_limit_changed and self._speed_limit > 0:
+        if self.speed_limit_prev <= 0:
+          events_sp.add(EventNameSP.speedLimitActive)
+        else:
+          events_sp.add(EventNameSP.speedLimitChanged)
 
   def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float,
              speed_limit: float, speed_limit_offset: float, distance: float, events_sp: EventsSP) -> None:
