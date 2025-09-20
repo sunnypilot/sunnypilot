@@ -42,6 +42,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "../assets/offroad/icon_monitoring.png",
       false,
     },
+    {
+      "SteeringIconRotate",
+      tr("Show Steering Wheel Rotation"),
+      tr("Rotate the on-screen steering wheel icon to reflect the current steering wheel angle of the car"),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
   };
 
   // Add regular toggles first
