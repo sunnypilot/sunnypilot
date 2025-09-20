@@ -68,14 +68,12 @@ class TestSpeedLimitAssist:
     self.sla.speed_limit_prev = 0.
     self.sla.last_valid_speed_limit_offsetted = 0.
     self.sla._distance = 0.
-    self.sla.v_cruise_setpoint = 0.
-    self.sla.v_cruise_setpoint_prev = 0.
     self.events_sp.clear()
 
-  def initialize_active_state(self, v_cruise_setpoint):
+  def initialize_active_state(self, initialize_v_cruise):
     self.sla.state = SpeedLimitAssistState.active
-    self.sla.v_cruise_setpoint = v_cruise_setpoint
-    self.sla.v_cruise_setpoint_prev = v_cruise_setpoint
+    self.sla.v_cruise_cluster = initialize_v_cruise
+    self.sla.v_cruise_cluster_prev = initialize_v_cruise
 
   def test_initial_state(self):
     assert self.sla.state == SpeedLimitAssistState.disabled
@@ -135,7 +133,7 @@ class TestSpeedLimitAssist:
 
   def test_adapting_to_active_transition(self):
     self.sla.state = SpeedLimitAssistState.adapting
-    self.sla.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.sla.v_cruise_cluster_prev = REQUIRED_INITIAL_MAX_SET_SPEED
 
     self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
@@ -143,7 +141,7 @@ class TestSpeedLimitAssist:
   def test_manual_cruise_change_detection(self):
     self.sla.state = SpeedLimitAssistState.active
     expected_cruise = SPEED_LIMITS['highway']
-    self.sla.v_cruise_setpoint_prev = expected_cruise
+    self.sla.v_cruise_cluster_prev = expected_cruise
 
     different_cruise = SPEED_LIMITS['highway'] + 5
     self.sla.update(True, False, SPEED_LIMITS['city'], 0, different_cruise, SPEED_LIMITS['city'], 0, 0, self.events_sp)
@@ -179,7 +177,7 @@ class TestSpeedLimitAssist:
 
   def test_distance_based_adapting(self):
     self.sla.state = SpeedLimitAssistState.adapting
-    self.sla.v_cruise_setpoint_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.sla.v_cruise_cluster_prev = REQUIRED_INITIAL_MAX_SET_SPEED
 
     distance = 100.0
     current_speed = SPEED_LIMITS['highway']

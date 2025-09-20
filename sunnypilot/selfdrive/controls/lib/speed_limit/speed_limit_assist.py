@@ -64,8 +64,8 @@ class SpeedLimitAssist:
     self.v_ego = 0.
     self.a_ego = 0.
     self.v_offset = 0.
-    self.v_cruise_setpoint = 0.
-    self.v_cruise_setpoint_prev = 0.
+    self.v_cruise_cluster = 0.
+    self.v_cruise_cluster_prev = 0.
     self.initial_max_set = False
     self._speed_limit = 0.
     self._speed_limit_offset = 0.
@@ -95,8 +95,8 @@ class SpeedLimitAssist:
     return bool(self._speed_limit != self.speed_limit_prev)
 
   @property
-  def v_cruise_setpoint_changed(self) -> bool:
-    return bool(self.v_cruise_setpoint != self.v_cruise_setpoint_prev)
+  def v_cruise_cluster_changed(self) -> bool:
+    return bool(self.v_cruise_cluster != self.v_cruise_cluster_prev)
 
   def get_v_target_from_control(self) -> float:
     if self.is_enabled:
@@ -118,18 +118,10 @@ class SpeedLimitAssist:
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
   def initial_max_set_confirmed(self) -> bool:
-    return bool(abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
+    return bool(abs(self.v_cruise_cluster - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
 
-  def detect_manual_cruise_change(self) -> bool:
-    # If cruise speed changed and it's not what SLA would set
-    if self.v_cruise_setpoint_changed:
-      expected_cruise = self.speed_limit_final
-      return bool(abs(self.v_cruise_setpoint - expected_cruise) > CRUISE_SPEED_TOLERANCE)
-
-    return False
-
-  def update_calculations(self, v_cruise_setpoint: float) -> None:
-    self.v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
+  def update_calculations(self, v_cruise_cluster: float) -> None:
+    self.v_cruise_cluster = v_cruise_cluster if not np.isnan(v_cruise_cluster) else 0.0
 
     # Update current velocity offset (error)
     self.v_offset = self.speed_limit_final - self.v_ego
@@ -163,14 +155,14 @@ class SpeedLimitAssist:
       else:
         # ACTIVE
         if self.state == SpeedLimitAssistState.active:
-          if self.detect_manual_cruise_change():
+          if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
           elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.adapting
 
         # ADAPTING
         elif self.state == SpeedLimitAssistState.adapting:
-          if self.detect_manual_cruise_change():
+          if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
           elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.active
@@ -235,7 +227,7 @@ class SpeedLimitAssist:
       elif self.speed_limit_changed:
         events_sp.add(EventNameSP.speedLimitChanged)
 
-  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
+  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float,
              speed_limit: float, speed_limit_offset: float, distance: float, events_sp: EventsSP) -> None:
     self.long_enabled = long_enabled
     self.long_override = long_override
@@ -247,13 +239,13 @@ class SpeedLimitAssist:
     self._distance = distance
 
     self.update_params()
-    self.update_calculations(v_cruise_setpoint)
+    self.update_calculations(v_cruise_cluster)
     self.is_enabled, self.is_active = self.update_state_machine()
     self.update_events(events_sp)
 
     # Update change tracking variables
     self.speed_limit_prev = self._speed_limit
-    self.v_cruise_setpoint_prev = self.v_cruise_setpoint
+    self.v_cruise_cluster_prev = self.v_cruise_cluster
     self.long_enabled_prev = self.long_enabled
 
     self.output_v_target = self.get_v_target_from_control()

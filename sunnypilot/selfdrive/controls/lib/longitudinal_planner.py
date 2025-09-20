@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import messaging, custom
 from opendbc.car import structs
+from openpilot.common.constants import CV
+from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
@@ -41,6 +43,9 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
+    v_cruise_cluster_kph = min(sm['carState'].vCruiseCluster, V_CRUISE_MAX)
+    v_cruise_cluster = v_cruise_cluster_kph * CV.KPH_TO_MS
+
     long_enabled = sm['carControl'].enabled
     long_override = sm['carControl'].cruiseControl.override
 
@@ -53,7 +58,7 @@ class LongitudinalPlannerSP:
     self.resolver.update(v_ego, sm)
 
     # Speed Limit Assist
-    self.sla.update(long_enabled, long_override, v_ego, a_ego, sm['carState'].vCruiseCluster,
+    self.sla.update(long_enabled, long_override, v_ego, a_ego, v_cruise_cluster,
                     self.resolver.speed_limit, self.resolver.speed_limit_offset, self.resolver.distance, self.events_sp)
 
     targets = {
