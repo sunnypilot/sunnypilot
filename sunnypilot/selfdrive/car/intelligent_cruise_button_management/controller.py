@@ -108,9 +108,7 @@ class IntelligentCruiseButtonManagement:
   def update_readiness(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_button_timers)
 
-    allowed_speed = CS.vEgo > ALLOWED_SPEED_THRESHOLD
-    ready = CS.cruiseState.enabled and allowed_speed and not CC.cruiseControl.override and not CC.cruiseControl.cancel and \
-            not CC.cruiseControl.resume
+    ready = CC.enabled and not CC.cruiseControl.override and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     button_pressed = any(self.cruise_button_timers[k] > 0 for k in self.cruise_button_timers)
 
     self.is_ready = ready and not button_pressed
