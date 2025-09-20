@@ -516,7 +516,17 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     (clip_region.bottom() - y_offset) - in_x * scale
   );
 
-  if (QString::fromStdString(Params().get("VisualStyleBlend")).toInt() == 1) {
+  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
+  int visual_blend = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
+
+  // Force top-down if VisualStyle == 3
+  if (visual_style == 3) {
+    *out = topdown_view;
+    return clip_region.contains(*out);
+  }
+
+  // Blending mode
+  if (visual_blend == 1) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
     static double last_t = millis_since_boot();
@@ -551,6 +561,7 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     if (!normal_valid) return false;
     *out = normal_view;
   }
+
   return clip_region.contains(*out);
 }
 
