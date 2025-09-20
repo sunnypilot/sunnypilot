@@ -58,7 +58,7 @@ private:
     QString warning_str = tr("⦿ Warning: Provides a warning when exceeding the current road's speed limit.");
 
     if (mode == SpeedLimitMode::WARNING) {
-      ///warning_str = "<font color='white'><b>" + warning_str + "</b></font>";
+      warning_str = "<font color='white'><b>" + warning_str + "</b></font>";
     } else if (mode == SpeedLimitMode::INFORMATION) {
       info_str = "<font color='white'><b>" + info_str + "</b></font>";
     } else {
@@ -66,6 +66,7 @@ private:
     }
 
     return QString("%1<br>%2")
+        .arg(warning_str)
         .arg(off_str)
         .arg(info_str);
   }
