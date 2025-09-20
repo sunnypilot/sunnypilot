@@ -156,6 +156,10 @@ jobs:
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ github.workspace }}/selfdrive/modeld/models
+      - run: |
+          rm -f ${{ github.workspace }}/selfdrive/modeld/models/dmonitoring_model.onnx
+          rm -f ${{ github.workspace }}/selfdrive/modeld/models/big_driving_policy.onnx
+          rm -f ${{ github.workspace }}/selfdrive/modeld/models/big_driving_vision.onnx
 
       - name: Build Model
         run: |

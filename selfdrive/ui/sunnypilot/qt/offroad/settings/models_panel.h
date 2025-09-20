@@ -74,8 +74,6 @@ private:
   OptionControlSP *delay_control;
   QProgressBar *supercomboProgressBar;
   QFrame *supercomboFrame;
-  QProgressBar *navigationProgressBar;
-  QFrame *navigationFrame;
   QProgressBar *visionProgressBar;
   QFrame *visionFrame;
   QProgressBar *policyProgressBar;

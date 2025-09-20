@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
@@ -108,6 +108,7 @@ class ModelState(ModelStateBase):
     self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
     self.temporal_buffers[self.desire_key][0,-1] = new_desire
 
+
     # Roll buffer and assign based on desire.shape[1] value
     if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
       skip = self.temporal_buffers[self.desire_key].shape[1] // self.numpy_inputs[self.desire_key].shape[1]
@@ -130,6 +131,12 @@ class ModelState(ModelStateBase):
 
     # Run model inference
     outputs = self.model_runner.run_model()
+
+    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs:
+      idx_n = outputs['lat_planner_solution'].shape[1]    # Reshaped by parse_mdn from slice(5990, 6254)= (1,33,4)
+      t_idxs = [10.0 * ((i / (idx_n - 1))**2) for i in range(idx_n)]
+      inputs['lat_planner_state'][2] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 2])
+      inputs['lat_planner_state'][3] = np.interp(DT_MDL, t_idxs, outputs['lat_planner_solution'][0, :, 3])
 
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
@@ -316,8 +323,15 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
+    conditional_inputs = {
+      "lateral_control_params": lambda v_ego=v_ego, lat_delay=lat_delay: np.array([v_ego, lat_delay], dtype=np.float32),
+      "driving_style": lambda: np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32),
+      "nav_features": lambda: np.zeros(model.model_runner.input_shapes.get('nav_features')[1], dtype=np.float32),
+      "nav_instructions": lambda: np.zeros(model.model_runner.input_shapes.get('nav_instructions')[1], dtype=np.float32),
+    }
+    for key, value in conditional_inputs.items():
+      if key in model.numpy_inputs:
+        inputs[key] = value()
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
