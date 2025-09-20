@@ -376,14 +376,15 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
     p.drawEllipse(circle_rect);
 
     // Red border ring with color coding
-    QRect red_ring = circle_rect.adjusted(4, 4, -4, -4);
+    QRect red_ring = circle_rect;
     QColor ring_color = QColor(255, 0, 0, alpha);
 
     p.setBrush(ring_color);
     p.drawEllipse(red_ring);
 
     // Center white circle for text
-    QRect center_circle = red_ring.adjusted(30, 30, -30, -30);
+    int ring_size = circle_size * 0.12;
+    QRect center_circle = red_ring.adjusted(ring_size, ring_size, -ring_size, -ring_size);
     p.setBrush(QColor(255, 255, 255, alpha));
     p.drawEllipse(center_circle);
 
@@ -401,7 +402,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
       int overlap = offset_circle_size * 0.25;
       QRect offset_circle_rect(
         circle_rect.right() - offset_circle_size/1.25 + overlap,
-        circle_rect.top() - offset_circle_size/2 + overlap,
+        circle_rect.top() - offset_circle_size/1.75 + overlap,
         offset_circle_size,
         offset_circle_size
       );
