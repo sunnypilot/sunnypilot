@@ -467,22 +467,39 @@ void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
     return;
   }
 
+  auto roundToInterval = [](float distance, int interval, int threshold) -> int {
+    int base = static_cast<int>(distance / interval) * interval;
+    return (distance - base >= threshold) ? base + interval : base;
+  };
+
   QString speedStr = QString::number(std::nearbyint(speedLimitAhead));
   QString distanceStr;
 
   // Format distance based on units
   if (is_metric) {
     if (speedLimitAheadDistance < 1000) {
-      distanceStr = QString::number(std::nearbyint(speedLimitAheadDistance)) + "m";
+      int rounded_distance;
+      if (speedLimitAheadDistance >= 10 && speedLimitAheadDistance < 100) {
+        rounded_distance = std::max(10, roundToInterval(speedLimitAheadDistance, 10, 5));
+      } else {
+        rounded_distance = roundToInterval(speedLimitAheadDistance, 100, 50);
+      }
+      distanceStr = QString::number(rounded_distance) + tr("m");
     } else {
-      distanceStr = QString::number(speedLimitAheadDistance / 1000.0, 'f', 1) + "km";
+      distanceStr = QString::number(speedLimitAheadDistance / 1000.0, 'f', 1) + tr("km");
     }
   } else {
     float distance_ft = speedLimitAheadDistance * 3.28084;
-    if (distance_ft < 1000) {
-      distanceStr = QString::number(std::nearbyint(distance_ft)) + "ft";
+    if (distance_ft < 900) {
+      int rounded_distance;
+      if (distance_ft >= 50 && distance_ft < 500) {
+        rounded_distance = std::max(50, roundToInterval(distance_ft, 50, 25));
+      } else {
+        rounded_distance = roundToInterval(distance_ft, 100, 50);
+      }
+      distanceStr = QString::number(rounded_distance) + tr("ft");
     } else {
-      distanceStr = QString::number(distance_ft / 5280.0, 'f', 1) + "mi";
+      distanceStr = QString::number(distance_ft / 5280.0, 'f', 1) + tr("mi");
     }
   }
 
