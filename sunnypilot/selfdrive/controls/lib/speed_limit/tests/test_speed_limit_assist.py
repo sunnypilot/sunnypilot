@@ -63,7 +63,6 @@ class TestSpeedLimitAssist:
     self.sla.last_op_engaged_frame = 0
     self.sla.op_engaged = False
     self.sla.op_engaged_prev = False
-    self.sla.initial_max_set = False
     self.sla._speed_limit = 0.
     self.sla.speed_limit_prev = 0.
     self.sla.last_valid_speed_limit_offsetted = 0.
@@ -207,8 +206,6 @@ class TestSpeedLimitAssist:
     for state in test_states:
       self.sla.state = state
       self.sla.op_engaged = True
-      if state in [SpeedLimitAssistState.pending, SpeedLimitAssistState.active, SpeedLimitAssistState.adapting]:
-        self.sla.initial_max_set = True
 
       initial_state = state
 
