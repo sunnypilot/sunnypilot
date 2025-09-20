@@ -145,6 +145,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
+  speedLimit @3 :SpeedLimit;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -177,6 +178,23 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
       leaving @4; # Road ahead straightens. Start to allow positive acceleration.
       overriding @5; # System overriding with manual control.
+    }
+  }
+
+  struct SpeedLimit {
+    resolver @0 :Resolver;
+
+    struct Resolver {
+      speedLimit @0 :Float32;
+      distToSpeedLimit @1 :Float32;
+      source @2 :Source;
+      speedLimitOffset @3 :Float32;
+    }
+
+    enum Source {
+      none @0;
+      car @1;
+      map @2;
     }
   }
 
@@ -231,7 +249,7 @@ struct OnroadEventSP @0xda96579883444c35 {
 struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
-  pcmCruiseSpeed @3 :Bool = true;
+  pcmCruiseSpeed @3 :Bool;
   intelligentCruiseButtonManagementAvailable @4 :Bool;
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
@@ -261,7 +279,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
 
     valueDEPRECATED @1 :Text; # The data type change may cause issues with backwards compatibility.
   }
-  
+
   enum ParamType {
     string @0;
     bool @1;
@@ -316,6 +334,7 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
 }
 
 struct CarStateSP @0xb86e6369214c01c8 {
+  speedLimit @0 :Float32;
 }
 
 struct LiveMapDataSP @0xf416ec09499d9d19 {

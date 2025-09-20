@@ -8,6 +8,7 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
@@ -32,4 +33,6 @@ private:
   CustomAccIncrement *customAccIncrement = nullptr;
   ParamControl *SmartCruiseControlVision;
   ParamControl *intelligentCruiseButtonManagement = nullptr;
+  SpeedLimitSettings *speedLimitScreen;
+  PushButtonSP *speedLimitSettings;
 };

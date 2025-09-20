@@ -9,6 +9,7 @@ from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -19,6 +20,7 @@ class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
+    self.resolver = SpeedLimitResolver()
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = Source.cruise
 
@@ -35,6 +37,9 @@ class LongitudinalPlannerSP:
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     self.scc.update(sm, v_ego, a_ego, v_cruise)
+
+    # Speed Limit Resolver
+    self.resolver.update(v_ego, sm)
 
     targets = {
       Source.cruise: (v_cruise, a_ego),
@@ -74,5 +79,13 @@ class LongitudinalPlannerSP:
     sccVision.maxPredictedLateralAccel = float(self.scc.vision.max_pred_lat_acc)
     sccVision.enabled = self.scc.vision.is_enabled
     sccVision.active = self.scc.vision.is_active
+
+    # Speed Limit
+    speedLimit = longitudinalPlanSP.speedLimit
+    resolver = speedLimit.resolver
+    resolver.speedLimit = float(self.resolver.speed_limit)
+    resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
+    resolver.distToSpeedLimit = float(self.resolver.distance)
+    resolver.source = self.resolver.source
 
     pm.send('longitudinalPlanSP', plan_sp_send)
