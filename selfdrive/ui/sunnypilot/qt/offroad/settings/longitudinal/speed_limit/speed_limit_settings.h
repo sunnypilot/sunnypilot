@@ -27,6 +27,7 @@ signals:
 private:
   Params params;
   QFrame *subPanelFrame;
+  ButtonParamControlSP *speed_limit_mode_settings;
   PushButtonSP *speedLimitSource;
   SpeedLimitPolicy *speedLimitPolicyScreen;
   ButtonParamControlSP *speed_limit_offset_settings;
@@ -49,5 +50,20 @@ private:
         .arg(none_str)
         .arg(fixed_str)
         .arg(percent_str);
+  }
+
+  static QString modeDescription(SpeedLimitMode mode = SpeedLimitMode::OFF) {
+    QString off_str = tr("⦿ Off: Disables the Speed Limit functions.");
+    QString info_str = tr("⦿ Information: Displays the current road's speed limit.");
+
+    if (mode == SpeedLimitMode::INFORMATION) {
+      info_str = "<font color='white'><b>" + info_str + "</b></font>";
+    } else {
+      off_str = "<font color='white'><b>" + off_str + "</b></font>";
+    }
+
+    return QString("%1<br>%2")
+        .arg(off_str)
+        .arg(info_str);
   }
 };

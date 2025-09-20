@@ -20,7 +20,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-    "carStateSP", "liveParameters"
+    "carStateSP", "liveParameters", "liveMapDataSP"
   });
 
   // update timer
@@ -53,6 +53,7 @@ void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.standstill_timer = params.getBool("StandstillTimer");
+  s->scene.speed_limit_mode = params.getBool("SpeedLimitMode");
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
