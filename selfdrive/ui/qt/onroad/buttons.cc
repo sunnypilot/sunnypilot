@@ -50,9 +50,8 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 void ExperimentalButton::drawButton(QPainter &p) {
   QPixmap img = experimental_mode ? experimental_img : engage_img;
-  bool blindspot = Params().getBool("BlindSpot");
   QPixmap rotated_img = img.transformed(QTransform().rotate(-steering_angle), Qt::SmoothTransformation);
-  if (blindspot) {
+  if (Params().getBool("BlindSpot")) {
     drawIcon(p, QPoint(btn_size / 2, btn_size / 2), rotated_img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
   } else {
     drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
