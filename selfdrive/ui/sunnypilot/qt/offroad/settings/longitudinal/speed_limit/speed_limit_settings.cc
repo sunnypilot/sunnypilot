@@ -31,7 +31,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
   };
   speed_limit_mode_settings = new ButtonParamControlSP(
     "SpeedLimitMode",
-    tr("Speed Limit Mode"),
+    tr("Speed Limit"),
     "",
     "",
     speed_limit_mode_texts,
