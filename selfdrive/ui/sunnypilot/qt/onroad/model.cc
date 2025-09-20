@@ -48,5 +48,43 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
       painter.drawPolygon(right_blindspot_vertices);
     }
   }
-  ModelRenderer::drawPath(painter, model, surface_rect.height());
+
+  bool rainbow = Params().getBool("RainbowMode");
+  //float v_ego = sm["carState"].getCarState().getVEgo();
+
+  if (rainbow) {
+    // Simple time-based animation
+    float time_offset = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count() / 1000.0f;
+
+    // simple linear gradient from bottom to top
+    QLinearGradient bg(0, surface_rect.height(), 0, 0);
+
+    // evenly spaced colors across the spectrum
+    // The animation shifts the entire spectrum smoothly
+    float animation_speed = 40.0f; // speed vroom vroom
+    float hue_offset = fmod(time_offset * animation_speed, 360.0f);
+
+    // 6-8 color stops for smooth transitions more color makes it laggy
+    const int num_stops = 7;
+    for (int i = 0; i < num_stops; i++) {
+      float position = static_cast<float>(i) / (num_stops - 1);
+
+      float hue = fmod(hue_offset + position * 360.0f, 360.0f);
+      float saturation = 0.9f;
+      float lightness = 0.6f;
+
+      // Alpha fades out towards the far end of the path
+      float alpha = 0.8f * (1.0f - position * 0.3f);
+
+      QColor color = QColor::fromHslF(hue / 360.0f, saturation, lightness, alpha);
+      bg.setColorAt(position, color);
+    }
+
+    painter.setBrush(bg);
+    painter.drawPolygon(track_vertices);
+  } else {
+    // Normal path rendering
+    ModelRenderer::drawPath(painter, model, surface_rect.height());
+  }
 }
