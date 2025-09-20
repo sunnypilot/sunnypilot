@@ -9,13 +9,13 @@ from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.speed_limit_assist import SpeedLimitAssist
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
-Source = custom.LongitudinalPlanSP.LongitudinalPlanSource
+LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 
 class LongitudinalPlannerSP:
@@ -29,7 +29,7 @@ class LongitudinalPlannerSP:
     self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
-    self.source = Source.cruise
+    self.source = LongitudinalPlanSource.cruise
 
   @property
   def mlsim(self) -> bool:
@@ -50,18 +50,17 @@ class LongitudinalPlannerSP:
 
     self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
 
-    # Speed Limit Assist
-    self.resolver.update(v_ego, sm)
-    v_cruise_sla = self.sla.update(long_enabled, long_override, v_ego, a_ego, sm['carState'].vCruiseCluster,
-                                   self.resolver.speed_limit, self.resolver.distance, self.resolver.source, self.events_sp)
-
     # Speed Limit Resolver
     self.resolver.update(v_ego, sm)
 
+    # Speed Limit Assist
+    self.sla.update(long_enabled, long_override, v_ego, a_ego, sm['carState'].vCruiseCluster,
+                    self.resolver.speed_limit, self.resolver.speed_limit_offset, self.resolver.distance, self.events_sp)
+
     targets = {
-      Source.cruise: (v_cruise, a_ego),
-      Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
-      Source.speedLimitAssist: (v_cruise_sla, a_ego),
+      LongitudinalPlanSource.cruise: (v_cruise, a_ego),
+      LongitudinalPlanSource.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
+      LongitudinalPlanSource.speedLimitAssist: (self.sla.output_a_target, a_ego),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])

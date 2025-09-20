@@ -7,32 +7,46 @@ See the LICENSE.md file in the root directory for more details.
 import numpy as np
 
 from cereal import custom
-from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist import PARAMS_UPDATE_PERIOD, LIMIT_SPEED_OFFSET_TH, \
-  SpeedLimitAssistState, PRE_ACTIVE_GUARD_PERIOD, REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE, DISABLED_GUARD_PERIOD
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_assist.common import OffsetType
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 EventNameSP = custom.OnroadEventSP.EventName
-SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimitSource
+SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
+SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
 ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, SpeedLimitAssistState.overriding, *ACTIVE_STATES)
 
+DISABLED_GUARD_PERIOD = 2  # secs.
+PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
+
+LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers to provide.
+LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
+LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on limit controllers.
+LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
+
+# Speed Limit Assist Auto mode constants
+REQUIRED_INITIAL_MAX_SET_SPEED = 35.7632  # m/s 80 MPH  # TODO-SP: customizable with params
+CRUISE_SPEED_TOLERANCE = 0.44704  # m/s ±1 MPH tolerance  # TODO-SP: metric vs imperial
+FALLBACK_CRUISE_SPEED = 255.0  # m/s fallback when no speed limit available
+
 
 class SpeedLimitAssist:
   _speed_limit: float
+  _speed_limit_offset: float
   _distance: float
-  _source: custom.LongitudinalPlanSP.SpeedLimitSource
   v_ego: float
   a_ego: float
   v_offset: float
   last_valid_speed_limit_final: float
+  output_v_target: float
+  output_a_target: float
 
   def __init__(self, CP):
     self.params = Params()
@@ -41,7 +55,7 @@ class SpeedLimitAssist:
     self.long_engaged_timer = 0
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
-    self.enabled = self.params.get_bool("SpeedLimitAssist")
+    self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
     self.long_enabled = False
     self.long_enabled_prev = False
     self.long_override = False
@@ -54,16 +68,13 @@ class SpeedLimitAssist:
     self.v_cruise_setpoint_prev = 0.
     self.initial_max_set = False
     self._speed_limit = 0.
+    self._speed_limit_offset = 0.
     self.speed_limit_prev = 0.
     self.last_valid_speed_limit_final = 0.
     self._distance = 0.
-    self._source = SpeedLimitSource.none
     self.state = SpeedLimitAssistState.disabled
     self._state_prev = SpeedLimitAssistState.disabled
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
-
-    self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
-    self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
     # Solution functions mapped to respective states
     self.acceleration_solutions = {
@@ -77,15 +88,11 @@ class SpeedLimitAssist:
 
   @property
   def speed_limit_final(self) -> float:
-    return self._speed_limit + self.speed_limit_offset
+    return self._speed_limit + self._speed_limit_offset
 
   @property
   def speed_limit_changed(self) -> bool:
     return bool(self._speed_limit != self.speed_limit_prev)
-
-  @property
-  def speed_limit_offset(self) -> float:
-    return self.get_offset(self.offset_type, self.offset_value)
 
   @property
   def v_cruise_setpoint_changed(self) -> bool:
@@ -105,22 +112,10 @@ class SpeedLimitAssist:
     # Fallback
     return V_CRUISE_UNSET
 
-  def get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
-    if offset_type == OffsetType.off:
-      return 0
-    elif offset_type == OffsetType.fixed:
-      return offset_value * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
-    elif offset_type == OffsetType.percentage:
-      return offset_value * 0.01 * self._speed_limit
-    else:
-      raise NotImplementedError("Offset not supported")
-
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self.params.get_bool("SpeedLimitAssist")
-      self.offset_type = OffsetType(self.params.get("SpeedLimitOffsetType", return_default=True))
-      self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
+      self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
   def initial_max_set_confirmed(self) -> bool:
     return bool(abs(self.v_cruise_setpoint - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
@@ -241,15 +236,15 @@ class SpeedLimitAssist:
         events_sp.add(EventNameSP.speedLimitChanged)
 
   def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_setpoint: float,
-             speed_limit: float, distance: float, source: custom.LongitudinalPlanSP.SpeedLimitSource, events_sp: EventsSP) -> float:
+             speed_limit: float, speed_limit_offset: float, distance: float, events_sp: EventsSP) -> None:
     self.long_enabled = long_enabled
     self.long_override = long_override
     self.v_ego = v_ego
     self.a_ego = a_ego
 
     self._speed_limit = speed_limit
+    self._speed_limit_offset = speed_limit_offset
     self._distance = distance
-    self._source = source
 
     self.update_params()
     self.update_calculations(v_cruise_setpoint)
@@ -260,8 +255,7 @@ class SpeedLimitAssist:
     self.speed_limit_prev = self._speed_limit
     self.v_cruise_setpoint_prev = self.v_cruise_setpoint
     self.long_enabled_prev = self.long_enabled
+
+    self.output_v_target = self.get_v_target_from_control()
+
     self.frame += 1
-
-    v_target = self.get_v_target_from_control()
-
-    return v_target

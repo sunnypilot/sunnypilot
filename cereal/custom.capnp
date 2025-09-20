@@ -219,6 +219,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   enum LongitudinalPlanSource {
     cruise @0;
     sccVision @1;
+    speedLimitAssist @2;
   }
 }
 
