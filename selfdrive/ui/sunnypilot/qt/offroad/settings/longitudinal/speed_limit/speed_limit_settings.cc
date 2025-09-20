@@ -28,6 +28,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::OFF)],
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::INFORMATION)],
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::WARNING)],
+    SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::ASSIST)],
   };
   speed_limit_mode_settings = new ButtonParamControlSP(
     "SpeedLimitMode",
