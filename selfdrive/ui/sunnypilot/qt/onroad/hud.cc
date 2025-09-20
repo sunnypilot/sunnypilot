@@ -481,7 +481,7 @@ void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
       if (speedLimitAheadDistance < 50) {
         distanceStr = tr("Near");
       } else {
-        if (speedLimitAheadDistance >= 50 && speedLimitAheadDistance < 100) {
+        if (speedLimitAheadDistance >= 50 && speedLimitAheadDistance < 200) {
           rounded_distance = std::max(10, roundToInterval(speedLimitAheadDistance, 10, 5));
         } else {
           rounded_distance = roundToInterval(speedLimitAheadDistance, 100, 50);
