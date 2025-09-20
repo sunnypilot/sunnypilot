@@ -21,7 +21,7 @@ SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
-ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, SpeedLimitAssistState.overriding, *ACTIVE_STATES)
+ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, *ACTIVE_STATES)
 
 DISABLED_GUARD_PERIOD = 2  # secs.
 PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
@@ -58,7 +58,6 @@ class SpeedLimitAssist:
     self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
     self.long_enabled = False
     self.long_enabled_prev = False
-    self.long_override = False
     self.is_enabled = False
     self.is_active = False
     self.v_ego = 0.
@@ -145,13 +144,11 @@ class SpeedLimitAssist:
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
-    # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE, OVERRIDING
+    # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE
     if self.state != SpeedLimitAssistState.disabled:
       if not self.long_enabled or not self.enabled:
         self.state = SpeedLimitAssistState.disabled
         self.initial_max_set = False
-      elif self.long_override:
-        self.state = SpeedLimitAssistState.overriding
 
       else:
         # ACTIVE
@@ -191,11 +188,6 @@ class SpeedLimitAssist:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
 
-        # OVERRIDING
-        elif self.state == SpeedLimitAssistState.overriding:
-          if not self.long_override:
-            self.state = SpeedLimitAssistState.preActive
-
         # INACTIVE
         elif self.state == SpeedLimitAssistState.inactive:
           pass
@@ -203,10 +195,7 @@ class SpeedLimitAssist:
     # DISABLED
     elif self.state == SpeedLimitAssistState.disabled:
       if self.long_enabled and self.enabled:
-        if self.long_override:
-          self.state = SpeedLimitAssistState.overriding
-
-        elif not self.long_enabled_prev:
+        if not self.long_enabled_prev:
           self.pre_active_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
         elif self.pre_active_timer <= 0:
@@ -231,7 +220,6 @@ class SpeedLimitAssist:
   def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float,
              speed_limit: float, speed_limit_offset: float, distance: float, events_sp: EventsSP) -> None:
     self.long_enabled = long_enabled
-    self.long_override = long_override
     self.v_ego = v_ego
     self.a_ego = a_ego
 
