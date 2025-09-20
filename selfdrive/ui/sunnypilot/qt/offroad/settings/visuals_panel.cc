@@ -89,9 +89,9 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(dev_ui_settings);
 
   // Visuals: Visual Style
-  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision OS")};
+  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
   visual_style_settings = new ButtonParamControlSP(
-    "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the on-road UI."),
+    "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the onroad UI."),
     "",
     visual_style_settings_texts,
     380);
