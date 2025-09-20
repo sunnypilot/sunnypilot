@@ -17,7 +17,6 @@ void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
 
   const SubMaster &sm = *(s.sm);
-  const bool cs_alive = sm.alive("controlsState");
   const auto cs = sm["controlsState"].getControlsState();
   const auto car_state = sm["carState"].getCarState();
   const auto car_control = sm["carControl"].getCarControl();
@@ -29,7 +28,6 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
-  is_metric = s.scene.is_metric;
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
@@ -59,12 +57,6 @@ void HudRendererSP::updateState(const UIState &s) {
   }
 
   reversing = reverse_allowed;
-
-  // Handle older routes where vEgoCluster is not set
-  v_ego_cluster_seen = v_ego_cluster_seen || car_state.getVEgoCluster() != 0.0;
-  float v_ego = v_ego_cluster_seen ? car_state.getVEgoCluster() : car_state.getVEgo();
-  speed = cs_alive ? std::max<float>(0.0, v_ego) : 0.0;
-  speed *= is_metric ? MS_TO_KPH : MS_TO_MPH;
 
   latActive = car_control.getLatActive();
   steerOverride = car_state.getSteeringPressed();
