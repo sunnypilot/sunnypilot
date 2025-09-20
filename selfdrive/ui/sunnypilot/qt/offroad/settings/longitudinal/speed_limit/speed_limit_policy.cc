@@ -4,6 +4,7 @@
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
  */
+#include <QScrollBar>
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.h"
 
@@ -38,8 +39,9 @@ SpeedLimitPolicy::SpeedLimitPolicy(QWidget *parent) : QWidget(parent) {
   list->addItem(speed_limit_policy);
   connect(speed_limit_policy, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitPolicy::refresh);
 
+  speedLimitPolicyScroller = new ScrollViewSP(list, this);
+  main_layout->addWidget(speedLimitPolicyScroller);
   refresh();
-  main_layout->addWidget(list);
 };
 
 void SpeedLimitPolicy::refresh() {
@@ -48,6 +50,7 @@ void SpeedLimitPolicy::refresh() {
 }
 
 void SpeedLimitPolicy::showEvent(QShowEvent *event) {
+  speedLimitPolicyScroller->verticalScrollBar()->setValue(0);
   refresh();
   speed_limit_policy->showDescription();
 }
