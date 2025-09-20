@@ -66,8 +66,8 @@ private:
     }
 
     return QString("%1<br>%2<br>%3")
-        .arg(warning_str)
         .arg(off_str)
-        .arg(info_str);
+        .arg(info_str)
+        .arg(warning_str);
   }
 };
