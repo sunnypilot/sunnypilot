@@ -55,15 +55,19 @@ private:
   static QString modeDescription(SpeedLimitMode mode = SpeedLimitMode::OFF) {
     QString off_str = tr("⦿ Off: Disables the Speed Limit functions.");
     QString info_str = tr("⦿ Information: Displays the current road's speed limit.");
+    QString warning_str = tr("⦿ Warning: Provides a warning when exceeding the current road's speed limit.");
 
-    if (mode == SpeedLimitMode::INFORMATION) {
+    if (mode == SpeedLimitMode::WARNING) {
+      warning_str = "<font color='white'><b>" + warning_str + "</b></font>";
+    } else if (mode == SpeedLimitMode::INFORMATION) {
       info_str = "<font color='white'><b>" + info_str + "</b></font>";
     } else {
       off_str = "<font color='white'><b>" + off_str + "</b></font>";
     }
 
-    return QString("%1<br>%2")
+    return QString("%1<br>%2<br>%3")
         .arg(off_str)
-        .arg(info_str);
+        .arg(info_str)
+        .arg(warning_str);
   }
 };
