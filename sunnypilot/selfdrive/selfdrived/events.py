@@ -165,8 +165,8 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.speedLimitActive: {
     ET.WARNING: Alert(
-      "Automatically adjusting",
-      "to the posted speed limit",
+      "Automatically adjusting to the posted speed limit",
+      "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
   },
@@ -181,7 +181,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.speedLimitPreActive: {
     ET.WARNING: Alert(
-      "Auto Speed Limit Assist: Activation Required",
+      "Speed Limit Assist: Activation Required",
       "Manually change set speed to 80 MPH to activate",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
