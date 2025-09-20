@@ -17,6 +17,7 @@ public:
 
 private:
   ParamControlSP *enableCopyparty;
+  ButtonControlSP *copypartyPasswordBtn;
   ParamControlSP *enableGithubRunner;
   ButtonControlSP *errorLogBtn;
   ParamControlSP *prebuiltToggle;
@@ -25,6 +26,8 @@ private:
   bool is_development;
   bool is_release;
   bool is_tested;
+
+  void updateCopypartyPasswordButton();
 
 private slots:
   void updateToggles(bool offroad);
