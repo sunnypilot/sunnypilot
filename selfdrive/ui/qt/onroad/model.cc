@@ -492,12 +492,15 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   painter.drawPolygon(chevron, std::size(chevron));
 }
 
-// Projects a point in car to space to the corresponding point in full frame image space.
+// Projects a point in car space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
-  // Normal perspective
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+  float blend_speed_mph = sm["carState"].getCarState().getVEgo() * 2.23694f;  // convert to mph
+
+  // Normal perspective (3D)
   Eigen::Vector3f input(in_x, in_y, in_z);
   auto pt = car_space_transform * input;
-
   bool normal_valid = (pt.z() > 1e-3f &&
                        std::isfinite(pt.x()) && std::isfinite(pt.y()));
   QPointF normal_view;
@@ -505,21 +508,41 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     normal_view = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
   }
 
-  // Top-down
-  static double phase = 0.0;
-  phase += 0.0001;  // breathing speed
-  const float scale = 20.0f, y_offset = 450.0f;
+  // Top-down (2D)
+  const float scale = 20.0f;
+  const float y_offset = 450.0f;
   QPointF topdown_view(
     clip_region.center().x() + in_y * scale,
     (clip_region.bottom() - y_offset) - in_x * scale
   );
 
-  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 3) {
-    float sine_val = 0.5f * (1.0f + std::sin(phase));
-    float blend = std::pow(sine_val, 3.0f) /
-                  (std::pow(sine_val, 3.0f) + std::pow(1.0f - sine_val, 3.0f) + 1e-6f);
+  if (QString::fromStdString(Params().get("VisualStyleBlend")).toInt() == 1) {
+    static float blend = 0.0f;        // 0 = 3D, 1 = 2D
+    static float target_blend = 0.0f; // where we want to go
+    static double last_t = millis_since_boot();
 
-    if (!normal_valid) return false;  // skip this point instead of falling back
+    // Hysteresis logic
+    if (target_blend < 0.5f && blend_speed_mph > 50.0f) {
+      target_blend = 1.0f;  // switch to 2D
+    } else if (target_blend > 0.5f && blend_speed_mph < 45.0f) {
+      target_blend = 0.0f;  // switch back to 3D
+    }
+
+    // Time-based interpolation
+    double now = millis_since_boot();
+    double dt = (now - last_t) / 1000.0; // seconds
+    last_t = now;
+
+    const float transition_time = 1.50f; // seconds for full morph
+    float step = dt / transition_time;
+
+    if (blend < target_blend) {
+      blend = std::min(blend + step, target_blend);
+    } else if (blend > target_blend) {
+      blend = std::max(blend - step, target_blend);
+    }
+
+    if (!normal_valid) return false;
     *out = QPointF(
       (1 - blend) * normal_view.x() + blend * topdown_view.x(),
       (1 - blend) * normal_view.y() + blend * topdown_view.y()

@@ -42,6 +42,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "../assets/offroad/icon_monitoring.png",
       false,
     },
+    {
+      "VisualStyleBlend",
+      tr("Blend Visual Style"),
+      tr("Enable smooth morphing when switching between 3D and 2D views."),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
   };
 
   // Add regular toggles first
