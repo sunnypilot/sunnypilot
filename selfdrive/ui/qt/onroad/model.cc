@@ -494,9 +494,14 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
 
 // Projects a point in car to space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
-  Eigen::Vector3f input(in_x, in_y, in_z);
-  auto pt = car_space_transform * input;
-  *out = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 3) {
+    constexpr float scale = 20.0f;  // meters → pixels, tweak to zoom
+    *out = QPointF(clip_region.center().x() + in_y * scale, clip_region.bottom() - in_x * scale);
+  } else {
+    Eigen::Vector3f input(in_x, in_y, in_z);
+    auto pt = car_space_transform * input;
+    *out = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+  }
   return clip_region.contains(*out);
 }
 
