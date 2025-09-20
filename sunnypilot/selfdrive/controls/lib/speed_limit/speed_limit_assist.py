@@ -76,6 +76,7 @@ class SpeedLimitAssist:
     self._state_prev = SpeedLimitAssistState.disabled
     self.pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
+    # TODO-SP: SLA's own output_a_target for planner
     # Solution functions mapped to respective states
     self.acceleration_solutions = {
       SpeedLimitAssistState.disabled: self.get_current_acceleration_as_target,
