@@ -68,7 +68,7 @@ private:
       off_str = "<font color='white'><b>" + off_str + "</b></font>";
     }
 
-    return QString("%1<br>%2<br>%3")
+    return QString("%1<br>%2<br>%3<br>%4")
         .arg(off_str)
         .arg(info_str)
         .arg(warning_str)
