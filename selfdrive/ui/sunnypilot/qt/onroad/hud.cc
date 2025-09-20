@@ -33,7 +33,7 @@ void HudRendererSP::updateState(const UIState &s) {
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
-  distToSpeedLimit = lp_sp.getSpeedLimit().getResolver().getDistToSpeedLimit();
+  speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   if (sm.updated("liveMapDataSP")) {
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
@@ -100,7 +100,6 @@ void HudRendererSP::updateState(const UIState &s) {
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
-  speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
