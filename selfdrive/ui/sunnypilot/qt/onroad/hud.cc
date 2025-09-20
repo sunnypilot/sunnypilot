@@ -143,8 +143,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Speed Limit
-    drawSpeedLimitSigns(p, surface_rect);
-    drawUpcomingSpeedLimit(p, surface_rect);
+    drawSpeedLimitSigns(p);
+    drawUpcomingSpeedLimit(p);
   }
 }
 
@@ -334,7 +334,7 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
   }
 }
 
-void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
+void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   if (speedLimitMode == SpeedLimitMode::OFF) {
     return;
   }
@@ -463,7 +463,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) 
   }
 }
 
-void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect) {
+void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
   if (speedLimitMode == SpeedLimitMode::OFF) {
     return;
   }

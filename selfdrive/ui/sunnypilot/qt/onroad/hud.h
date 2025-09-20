@@ -29,8 +29,8 @@ private:
   void drawStandstillTimer(QPainter &p, int x, int y);
   bool pulseElement(int frame);
   void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
-  void drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect);
-  void drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect);
+  void drawSpeedLimitSigns(QPainter &p);
+  void drawUpcomingSpeedLimit(QPainter &p);
 
   bool lead_status;
   float lead_d_rel;
