@@ -35,7 +35,11 @@ void AnnotatedCameraWidget::initializeGL() {
   qInfo() << "OpenGL language version:" << QString((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   prev_draw_t = millis_since_boot();
-  setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
+  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 0) {
+    setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
+  } else {
+    setBackgroundColor(QColor(0, 0, 0));
+  }
 }
 
 mat4 AnnotatedCameraWidget::calcFrameMatrix() {
