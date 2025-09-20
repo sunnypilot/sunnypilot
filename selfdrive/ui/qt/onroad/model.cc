@@ -494,13 +494,39 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
 
 // Projects a point in car to space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
+  // Normal perspective
+  Eigen::Vector3f input(in_x, in_y, in_z);
+  auto pt = car_space_transform * input;
+
+  bool normal_valid = (pt.z() > 1e-3f &&
+                       std::isfinite(pt.x()) && std::isfinite(pt.y()));
+  QPointF normal_view;
+  if (normal_valid) {
+    normal_view = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+  }
+
+  // Top-down
+  static double phase = 0.0;
+  phase += 0.0001;  // breathing speed
+  const float scale = 20.0f, y_offset = 450.0f;
+  QPointF topdown_view(
+    clip_region.center().x() + in_y * scale,
+    (clip_region.bottom() - y_offset) - in_x * scale
+  );
+
   if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 3) {
-    constexpr float scale = 20.0f;  // meters → pixels, tweak to zoom
-    *out = QPointF(clip_region.center().x() + in_y * scale, clip_region.bottom() - in_x * scale);
+    float sine_val = 0.5f * (1.0f + std::sin(phase));
+    float blend = std::pow(sine_val, 3.0f) /
+                  (std::pow(sine_val, 3.0f) + std::pow(1.0f - sine_val, 3.0f) + 1e-6f);
+
+    if (!normal_valid) return false;  // skip this point instead of falling back
+    *out = QPointF(
+      (1 - blend) * normal_view.x() + blend * topdown_view.x(),
+      (1 - blend) * normal_view.y() + blend * topdown_view.y()
+    );
   } else {
-    Eigen::Vector3f input(in_x, in_y, in_z);
-    auto pt = car_space_transform * input;
-    *out = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+    if (!normal_valid) return false;
+    *out = normal_view;
   }
   return clip_region.contains(*out);
 }
