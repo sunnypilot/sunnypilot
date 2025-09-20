@@ -27,7 +27,6 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     SupercomboTinygrad.__init__(self)
     PolicyTinygrad.__init__(self)
     VisionTinygrad.__init__(self)
-    self.is_20hz = self.input_shapes.get('features_buffer', (1, 25, 512))[1] <= 25  # 20hz is 25 or 24 frames, non 20hz is 99
     self._constants = ModelConstants
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
