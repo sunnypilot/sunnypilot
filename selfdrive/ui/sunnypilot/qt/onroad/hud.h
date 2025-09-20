@@ -8,6 +8,7 @@
 #pragma once
 
 #include "selfdrive/ui/qt/onroad/hud.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/developer_ui.h"
 
 class HudRendererSP : public HudRenderer {
@@ -25,6 +26,12 @@ private:
   int drawRightDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   int drawBottomDevUIElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawBottomDevUI(QPainter &p, int x, int y);
+  void drawStandstillTimer(QPainter &p, int x, int y);
+  bool pulseElement(int frame);
+  void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
+  void drawSpeedLimitSigns(QPainter &p);
+  void drawUpcomingSpeedLimit(QPainter &p);
+  void drawRoadName(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -53,4 +60,21 @@ private:
   bool reversing;
   cereal::CarParams::SteerControlType steerControlType;
   cereal::CarControl::Actuators::Reader actuators;
+  bool standstillTimer;
+  bool isStandstill;
+  float standstillElapsedTime;
+  bool longOverride;
+  bool smartCruiseControlVisionEnabled;
+  bool smartCruiseControlVisionActive;
+  int smartCruiseControlVisionFrame;
+  float speedLimit;
+  float speedLimitOffset;
+  bool speedLimitAheadValid;
+  float speedLimitAhead;
+  float speedLimitAheadDistance;
+  float speedLimitAheadDistancePrev;
+  int speedLimitAheadValidFrame;
+  SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
+  bool roadName;
+  QString roadNameStr;
 };

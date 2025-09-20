@@ -29,7 +29,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-    "carStateSP", "liveParameters"
+    "carStateSP", "liveParameters", "liveMapDataSP"
   });
 
   // update timer
@@ -43,6 +43,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     ui_update_params_sp(this);
   });
   param_watcher->addParam("DevUIInfo");
+  param_watcher->addParam("StandstillTimer");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -60,6 +61,9 @@ void UIStateSP::update() {
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+  s->scene.standstill_timer = params.getBool("StandstillTimer");
+  s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
+  s->scene.road_name = params.getBool("RoadName");
 
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
