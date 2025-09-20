@@ -195,10 +195,11 @@ class SpeedLimitAssist:
     # DISABLED
     elif self.state == SpeedLimitAssistState.disabled:
       if self.long_enabled and self.enabled:
-        if not self.long_enabled_prev:
-          self.pre_active_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
+        # start or reset preActive timer if initially enabled or manual set speed change detected
+        if not self.long_enabled_prev or self.v_cruise_cluster_changed:
+          self.long_engaged_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
-        elif self.pre_active_timer <= 0:
+        elif self.long_engaged_timer <= 0:
           self.state = SpeedLimitAssistState.preActive
           self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           self.initial_max_set = False
