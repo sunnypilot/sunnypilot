@@ -482,13 +482,23 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   float g_xo = sz / 5;
   float g_yo = sz / 10;
 
+  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
+
   QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
-  painter.setBrush(QColor(218, 202, 37, 255));
+  if (visual_style == 2 || visual_style == 3) {
+    painter.setBrush(QColor(0xE6, 0xE6, 0xE6, 255));
+  } else {
+    painter.setBrush(QColor(218, 202, 37, 255));
+  }
   painter.drawPolygon(glow, std::size(glow));
 
   // chevron
   QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
-  painter.setBrush(QColor(201, 34, 49, fillAlpha));
+  if (visual_style == 2 || visual_style == 3) {
+    painter.setBrush(QColor(0, 0, 0, fillAlpha));
+  } else {
+    painter.setBrush(QColor(201, 34, 49, fillAlpha));
+  }
   painter.drawPolygon(chevron, std::size(chevron));
 }
 
