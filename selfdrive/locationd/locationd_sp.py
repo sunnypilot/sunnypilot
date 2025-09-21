@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Standalone GPS Localizer
+Processes GPS data independently from livePose, providing filtered GPS position/velocity
+"""
+
 import json
 import numpy as np
 from typing import Optional
