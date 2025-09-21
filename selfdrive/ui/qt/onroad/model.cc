@@ -560,7 +560,7 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   }
 
   // Blending mode
-  if (visual_blend == 1) {
+  if (visual_blend == 1 && visual_style != 0) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
     static double last_t = millis_since_boot();
