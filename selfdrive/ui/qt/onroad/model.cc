@@ -1,4 +1,5 @@
 #include "selfdrive/ui/qt/onroad/model.h"
+#include <QPainterPath>
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
@@ -188,13 +189,21 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     }
 
     // Road edges
-    // for (int i = 0; i < std::size(road_edge_vertices); ++i) {
-    //   painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
-    //   // painter.setBrush(QColor("#FF3B30"));
-    //   painter.setPen(QPen(QColor("#A0A0A0"), 20));
-    //   painter.drawPolygon(road_edge_vertices[i]);
-    //   painter.setPen(Qt::NoPen);
-    // }
+    for (int i = 0; i < std::size(road_edge_vertices); ++i) {
+      if (road_edge_vertices[i].isEmpty()) continue;
+      QPainterPath path;
+      path.addPolygon(road_edge_vertices[i]);
+      QPainterPathStroker stroker;
+      stroker.setWidth(15);
+      QPainterPath thickPath = stroker.createStroke(path);
+      QRectF bounds = thickPath.boundingRect();
+      QLinearGradient grad(bounds.left(), bounds.top(), bounds.left(), bounds.bottom());
+      grad.setColorAt(1.0, QColor(0x55, 0x55, 0x55, 255));
+      grad.setColorAt(0.0, QColor(0x33, 0x33, 0x33, 0));
+      painter.setPen(Qt::NoPen);
+      painter.setBrush(grad);
+      painter.drawPath(thickPath);
+    }
 
   } else {
     // lanelines
