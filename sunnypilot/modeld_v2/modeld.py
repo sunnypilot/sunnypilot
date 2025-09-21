@@ -138,9 +138,9 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if "lat_planner_solution" in outputs and "lat_planner_state" in self.numpy_inputs.keys():
-      self.numpy_inputs['lat_planner_state'][2] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
-      self.numpy_inputs['lat_planner_state'][3] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs:
+      inputs['lat_planner_state'][2] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+      inputs['lat_planner_state'][3] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
 
 
     # Update features_buffer
