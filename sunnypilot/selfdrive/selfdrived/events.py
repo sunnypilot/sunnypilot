@@ -18,7 +18,7 @@ EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  speedLimit = sm['longitudinalPlanSP'].sla.speedLimit
+  speedLimit = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimit
   speed = round(speedLimit * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
   message = f'Adjusting to {speed} {"km/h" if metric else "mph"} speed limit'
   return Alert(
