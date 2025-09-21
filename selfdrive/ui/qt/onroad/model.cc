@@ -518,6 +518,7 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
 
   int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
   int visual_blend = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
+  float visual_blend_threshold = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
 
   // Force top-down if VisualStyle == 3
   if (visual_style == 3) {
@@ -532,9 +533,9 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     static double last_t = millis_since_boot();
 
     // Hysteresis logic
-    if (target_blend < 0.5f && blend_speed_mph > 50.0f) {
+    if (target_blend < 0.5f && blend_speed_mph > visual_blend_threshold) {
       target_blend = 1.0f;  // switch to 2D
-    } else if (target_blend > 0.5f && blend_speed_mph < 45.0f) {
+    } else if (target_blend > 0.5f && blend_speed_mph < (visual_blend_threshold - 5)) {
       target_blend = 0.0f;  // switch back to 3D
     }
 
