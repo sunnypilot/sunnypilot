@@ -267,8 +267,8 @@ struct OnroadEventSP @0xda96579883444c35 {
     laneTurnRight @18;
     speedLimitPreActive @19;
     speedLimitActive @20;
-    speedLimitConfirmed @21;
-    speedLimitChanged @22;
+    speedLimitChanged @21;
+    speedLimitPending @22;
   }
 }
 

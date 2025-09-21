@@ -223,7 +223,10 @@ class SpeedLimitAssist:
       events_sp.add(EventNameSP.speedLimitPreActive)
     elif self.is_active:
       if self._state_prev not in ACTIVE_STATES:
-        events_sp.add(EventNameSP.speedLimitActive)
+        if self._speed_limit > 0:
+          events_sp.add(EventNameSP.speedLimitActive)
+        else:
+          events_sp.add(EventNameSP.speedLimitPending)
       elif self.speed_limit_changed and self._speed_limit > 0:
         if self.speed_limit_prev <= 0:
           events_sp.add(EventNameSP.speedLimitActive)

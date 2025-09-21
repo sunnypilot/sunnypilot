@@ -186,4 +186,12 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
   },
+
+  EventNameSP.speedLimitPending: {
+    ET.WARNING: Alert(
+      "Automatically adjusting to the previous speed limit",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+  },
 }
