@@ -106,7 +106,7 @@ class TestLocationdScenarios:
 
   @classmethod
   def setup_class(cls):
-    cls.logs = migrate_all(LogReader(TEST_ROUTE))
+    cls.logs = migrate_all(LogReader(TEST_ROUTE), live_location_kalman=False)
 
   def test_base(self):
     """
