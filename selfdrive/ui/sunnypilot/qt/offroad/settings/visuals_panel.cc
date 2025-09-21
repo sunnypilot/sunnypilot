@@ -76,8 +76,8 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   }
 
   // Visuals: VisualStyleBlend Threshold
-  visual_style_threshold_settings = new OptionControlSP("VisualStyleBlendThreshold", tr("Adjust Visual Style Blend Threshold"),
-                                      tr("Adjust the threshold when Visual Style Blend activates."),
+  visual_style_threshold_settings = new OptionControlSP("VisualStyleBlendThreshold", tr("Adjust Overhead Blend Threshold"),
+                                      tr("Adjust the threshold when overhead blend activates."),
                                       "", {10, 40}, 5, false, nullptr, false);
 
   connect(visual_style_threshold_settings, &OptionControlSP::updateLabels, [=]() {
