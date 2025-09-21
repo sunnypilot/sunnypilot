@@ -23,7 +23,7 @@ SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
 ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, *ACTIVE_STATES)
 
-DISABLED_GUARD_PERIOD = 2  # secs.
+DISABLED_GUARD_PERIOD = 0.5  # secs.
 PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
 
 LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers to provide.
