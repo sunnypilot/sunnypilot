@@ -12,6 +12,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class SpeedLimitSettings : public QStackedWidget {
   Q_OBJECT
@@ -26,6 +27,7 @@ signals:
 
 private:
   Params params;
+  ScrollViewSP *speedLimitScroller;
   QFrame *subPanelFrame;
   ButtonParamControlSP *speed_limit_mode_settings;
   PushButtonSP *speedLimitSource;
