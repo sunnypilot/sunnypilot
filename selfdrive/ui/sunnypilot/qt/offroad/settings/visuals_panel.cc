@@ -44,8 +44,8 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     },
     {
       "VisualStyleBlend",
-      tr("Morph to Overhead Visual Style"),
-      tr("Morphing to Overhead view when using Minimal/Vision visual style."),
+      tr("Blend to Overhead Visual Style"),
+      tr("Blend to Overhead view when using Minimal/Vision visual style."),
       "../assets/offroad/icon_monitoring.png",
       false,
     },
@@ -74,6 +74,21 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     toggles[param.toStdString()] = toggle;
     param_watcher->addParam(param);
   }
+
+  // Visuals: VisualStyleBlend Threshold
+  visual_style_threshold_settings = new OptionControlSP("VisualStyleBlendThreshold", tr("Adjust Visual Style Blend Threshold"),
+                                      tr("Adjust the threshold when Visual Style Blend activates."),
+                                      "", {10, 40}, 5, false, nullptr, false);
+
+  connect(visual_style_threshold_settings, &OptionControlSP::updateLabels, [=]() {
+    int value = QString::fromStdString(params.get("VisualStyleBlendThreshold")).toInt();
+    visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+  });
+
+  int value = QString::fromStdString(params.get("VisualStyleBlendThreshold")).toInt();
+  visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+
+  list->addItem(visual_style_threshold_settings);
 
   // Visuals: Visual Style
   std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
