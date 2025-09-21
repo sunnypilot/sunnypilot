@@ -1,5 +1,6 @@
 #include "selfdrive/ui/qt/onroad/model.h"
 #include <QPainterPath>
+#include <algorithm>
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
@@ -511,10 +512,18 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   painter.drawPolygon(chevron, std::size(chevron));
 }
 
+float mapRange(float x, float in_min, float in_max, float out_min, float out_max) {
+  x = std::clamp(x, in_min, in_max);
+  return out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min);
+}
+
 // Projects a point in car space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
   auto *s = uiState();
   auto &sm = *(s->sm);
+  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
+  int visual_blend = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
+  float visual_blend_threshold = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
   float blend_speed_mph = sm["carState"].getCarState().getVEgo() * 2.23694f;  // convert to mph
 
   // Normal perspective (3D)
@@ -527,18 +536,22 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     normal_view = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
   }
 
-  // Top-down (2D)
-  const float scale_x = 35.0f;  // left/right (was 20.0f)
-  const float scale_y = 15.0f;  // forward/back (was 20.0f)
+  const float base_scale_x = 20.0f;  // in/out 20 (far/fast) 100 (close/slow)
+  const float base_scale_y = 15.0f;  // squish (was 20.0f)
   const float y_offset = 450.0f;
+
+  float factor_scale_x = 0.0f;
+  if (blend_speed_mph > 0.0f) {
+    factor_scale_x = mapRange(blend_speed_mph, 0.0f, 50.0f, 100.0f, 0.0f);
+  }
+
+  float scale_x = base_scale_x + factor_scale_x;
+  float scale_y = base_scale_y;
+
   QPointF topdown_view(
     clip_region.center().x() + in_y * scale_x,
     (clip_region.bottom() - y_offset) - in_x * scale_y
   );
-
-  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
-  int visual_blend = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
-  float visual_blend_threshold = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
 
   // Force top-down if VisualStyle == 3
   if (visual_style == 3) {
@@ -561,7 +574,7 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
 
     // Time-based interpolation
     double now = millis_since_boot();
-    double dt = (now - last_t) / 1000.0; // seconds
+    double dt = (now - last_t) / 1000.0;
     last_t = now;
 
     const float transition_time = 1.50f; // seconds for full morph
