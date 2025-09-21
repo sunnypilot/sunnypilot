@@ -123,3 +123,7 @@ std::optional<cereal::Event::Reader> loadCerealEvent(Params& params, const std::
     return std::nullopt;
   }
 }
+
+bool hasIntelligentCruiseButtonManagement(const cereal::CarParamsSP::Reader &car_params_sp) {
+  return car_params_sp.getIntelligentCruiseButtonManagementAvailable() && Params().getBool("IntelligentCruiseButtonManagement");
+}
