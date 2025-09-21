@@ -221,16 +221,19 @@ class SpeedLimitAssist:
   def update_events(self, events_sp: EventsSP) -> None:
     if self.state == SpeedLimitAssistState.preActive and self._state_prev != SpeedLimitAssistState.preActive:
       events_sp.add(EventNameSP.speedLimitPreActive)
+
+    elif self.state == SpeedLimitAssistState.pending and self._state_prev != SpeedLimitAssistState.pending:
+      events_sp.add(EventNameSP.speedLimitPending)
+
     elif self.is_active:
       if self._state_prev not in ACTIVE_STATES:
-        if self._speed_limit > 0:
-          events_sp.add(EventNameSP.speedLimitActive)
-        else:
-          events_sp.add(EventNameSP.speedLimitPending)
+        events_sp.add(EventNameSP.speedLimitActive)
+
+      # only notify if we acquire a valid speed limit
       elif self.speed_limit_changed and self._speed_limit > 0:
         if self.speed_limit_prev <= 0:
           events_sp.add(EventNameSP.speedLimitActive)
-        else:
+        elif self.speed_limit_prev > 0:
           events_sp.add(EventNameSP.speedLimitChanged)
 
   def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float,
