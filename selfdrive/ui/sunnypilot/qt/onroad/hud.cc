@@ -32,6 +32,7 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
+  speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -45,6 +46,10 @@ void HudRendererSP::updateState(const UIState &s) {
     }
   }
   speedLimitAheadDistancePrev = speedLimitAheadDistance;
+
+  if (speedLimit > 0) {
+    speedLimitLastValid = speedLimit;
+  }
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -136,8 +141,23 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Speed Limit
-    if (speedLimitMode != SpeedLimitMode::OFF) {
+    bool showSpeedLimit;
+    bool speedLimitAssistPreActivePulse = pulseElement(speedLimitAssistFrame);
+
+    if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+      speedLimitAssistFrame++;
+      showSpeedLimit = speedLimitAssistPreActivePulse;
+    } else {
+      speedLimitAssistFrame = 0;
+      showSpeedLimit = speedLimitMode != SpeedLimitMode::OFF;
+    }
+
+    if (showSpeedLimit) {
       drawSpeedLimitSigns(p);
+    }
+
+    // do not show during SLA's preActive state
+    if (showSpeedLimit && speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
       drawUpcomingSpeedLimit(p);
     }
 
@@ -334,10 +354,12 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   bool speedLimitValid = speedLimit > 0;
+  bool useLastValidSpeedLimit = !speedLimitValid && speedLimitLastValid > 0 && speedLimitAssistState >= cereal::LongitudinalPlanSP::SpeedLimit::AssistState::DISABLED;
   int speedLimitRounded = std::nearbyint(speedLimit);
   bool overspeed = speedLimitRounded < std::nearbyint(speed) && speedLimitRounded > 0;
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
-  QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) : "---";
+  QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) :
+                          (useLastValidSpeedLimit ? QString::number(speedLimitLastValid) : "---");
 
   // Offset display text
   QString speedLimitSubText = "";
@@ -354,7 +376,8 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
-  QColor speed_color = (speedLimitWarningEnabled && overspeed) ? red_color : QColor(0, 0, 0, alpha);
+  QColor speed_color = (speedLimitWarningEnabled && overspeed) ? red_color :
+                       (useLastValidSpeedLimit ? QColor(0x91, 0x9b, 0x95, 0xf1) : QColor(0, 0, 0, alpha));
 
   if (is_metric) {
     // EU Vienna Convention style circular sign
