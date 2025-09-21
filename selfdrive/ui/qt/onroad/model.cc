@@ -509,11 +509,12 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   }
 
   // Top-down (2D)
-  const float scale = 20.0f;
+  const float scale_x = 35.0f;  // left/right (was 20.0f)
+  const float scale_y = 15.0f;  // forward/back (was 20.0f)
   const float y_offset = 450.0f;
   QPointF topdown_view(
-    clip_region.center().x() + in_y * scale,
-    (clip_region.bottom() - y_offset) - in_x * scale
+    clip_region.center().x() + in_y * scale_x,
+    (clip_region.bottom() - y_offset) - in_x * scale_y
   );
 
   int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
