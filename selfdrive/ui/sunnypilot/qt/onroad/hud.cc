@@ -335,7 +335,7 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   bool speedLimitValid = speedLimit > 0;
   int speedLimitRounded = std::nearbyint(speedLimit);
-  int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset)
+  int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset);
   bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
   QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) : "---";
