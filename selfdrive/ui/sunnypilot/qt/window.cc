@@ -17,14 +17,3 @@ MainWindowSP::MainWindowSP(QWidget *parent)
 void MainWindowSP::closeSettings() {
   MainWindow::closeSettings();
 }
-
-bool MainWindowSP::eventFilter(QObject* obj, QEvent* event) {
-  if (event->type() == QEvent::MouseButtonPress
-    and uiStateSP()->scene.started
-    and uiStateSP()->scene.onroadScreenOffControl) {
-
-      uiStateSP()->reset_onroad_sleep_timer();
-  }
-  return false; // pass the event to obj
-}
-
