@@ -349,7 +349,12 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   // Offset display text
   QString speedLimitSubText = "";
   if (speedLimitOffset != 0) {
-    speedLimitSubText = (speedLimitOffset > 0 ? "+" : "-") + QString::number(std::nearbyint(speedLimitOffset));
+    speedLimitSubText = (speedLimitOffset > 0 ? "" : "-") + QString::number(std::nearbyint(speedLimitOffset));
+  }
+
+  float speedLimitSubTextFactor = is_metric ? 0.5 : 0.6;
+  if (speedLimitSubText.size() >= 3) {
+    speedLimitSubTextFactor = is_metric ? 0.475 : 0.475;
   }
 
   // Position next to MAX speed box
@@ -415,7 +420,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
       p.setBrush(QColor(0, 0, 0, alpha));
       p.drawEllipse(offset_circle_rect);
 
-      p.setFont(InterFont(offset_circle_size * 0.45, QFont::Bold));
+      p.setFont(InterFont(offset_circle_size * speedLimitSubTextFactor, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_circle_rect, Qt::AlignCenter, speedLimitSubText);
     }
@@ -461,7 +466,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
       p.setBrush(QColor(0, 0, 0, alpha));
       p.drawRoundedRect(offset_box_rect, corner_radius, corner_radius);
 
-      p.setFont(InterFont(offset_box_size * 0.45, QFont::Bold));
+      p.setFont(InterFont(offset_box_size * speedLimitSubTextFactor, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_box_rect, Qt::AlignCenter, speedLimitSubText);
     }
