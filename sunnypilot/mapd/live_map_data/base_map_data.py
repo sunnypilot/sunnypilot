@@ -9,8 +9,7 @@ from abc import abstractmethod, ABC
 from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.navd.helpers import Coordinate, coordinate_from_param
+from openpilot.sunnypilot.navd.helpers import coordinate_from_param
 
 
 class BaseMapData(ABC):
@@ -23,8 +22,8 @@ class BaseMapData(ABC):
                                   ignore_valid=gps_packets, poll='livePose')
     self.pm = messaging.PubMaster(['liveMapDataSP'])
 
+    self.last_bearing = None
     self.last_position = coordinate_from_param("LastGPSPosition", self.params)
-    self.last_altitude = None
 
   @abstractmethod
   def update_location(self) -> None:
@@ -41,20 +40,6 @@ class BaseMapData(ABC):
   @abstractmethod
   def get_current_road_name(self) -> str:
     pass
-
-  def get_current_location(self) -> None:
-    gps = self.sm[self.gps_location_service]
-
-    # ignore the message if the fix is invalid
-    gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_MDL < 2.0
-    if not gps_ok and self.sm['livePose'].inputsOK:
-      return
-
-    # livePose has these data, but aren't on cereal
-    self.last_position = Coordinate(gps.latitude, gps.longitude)
-    self.last_altitude = gps.altitude
-
-    return
 
   def publish(self) -> None:
     speed_limit = self.get_current_speed_limit()
@@ -74,7 +59,6 @@ class BaseMapData(ABC):
     self.pm.send('liveMapDataSP', mapd_sp_send)
 
   def tick(self) -> None:
-    self.sm.update()
-    self.get_current_location()
+    self.sm.update(0)
     self.update_location()
     self.publish()
