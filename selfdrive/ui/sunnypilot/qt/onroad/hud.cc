@@ -333,15 +333,17 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
+  bool speedLimitValid = speedLimit > 0;
   int speedLimitRounded = std::nearbyint(speedLimit);
-  bool overspeed = speedLimitRounded < std::nearbyint(speed) && speedLimitRounded > 0;
+  int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset);
+  bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
-  QString speedLimitStr = speedLimit > 0 ? QString::number(speedLimitRounded) : "---";
+  QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) : "---";
 
   // Offset display text
   QString speedLimitSubText = "";
   if (speedLimitOffset != 0) {
-    speedLimitSubText = (speedLimitOffset > 0 ? "+" : "") + QString::number(std::nearbyint(speedLimitOffset));
+    speedLimitSubText = (speedLimitOffset > 0 ? "+" : "-") + QString::number(std::nearbyint(speedLimitOffset));
   }
 
   // Position next to MAX speed box
@@ -392,7 +394,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(center_circle, Qt::AlignCenter, speedLimitStr);
 
     // Offset value in small circular box
-    if (!speedLimitSubText.isEmpty()) {
+    if (!speedLimitSubText.isEmpty() && speedLimitValid) {
       int offset_circle_size = circle_size * 0.4;
       int overlap = offset_circle_size * 0.25;
       QRect offset_circle_rect(
@@ -437,7 +439,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
 
     // Offset value in small box
-    if (!speedLimitSubText.isEmpty()) {
+    if (!speedLimitSubText.isEmpty() && speedLimitValid) {
       int offset_box_size = sign_rect.width() * 0.4;
       int overlap = offset_box_size * 0.25;
       QRect offset_box_rect(
@@ -526,7 +528,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   if (!roadName || roadNameStr.isEmpty()) return;
 
   // Measure text to size container
-  p.setFont(InterFont(40, QFont::Normal));
+  p.setFont(InterFont(46, QFont::DemiBold));
   QFontMetrics fm(p.font());
 
   int text_width = fm.horizontalAdvance(roadNameStr);
@@ -539,7 +541,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   rect_width = std::max(min_width, std::min(rect_width, max_width));
 
   // Center at top of screen
-  QRect road_rect(surface_rect.width() / 2 - rect_width / 2, -6, rect_width, 60);
+  QRect road_rect(surface_rect.width() / 2 - rect_width / 2, -4, rect_width, 60);
 
   p.setPen(Qt::NoPen);
   p.setBrush(QColor(0, 0, 0, 120));
