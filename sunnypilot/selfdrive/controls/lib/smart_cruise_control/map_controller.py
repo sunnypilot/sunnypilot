@@ -21,14 +21,14 @@ TO_DEGREES = 180 / math.pi
 TARGET_JERK = -0.6  # m/s^3 There's some jounce limits that are not consistent so we're fudging this some
 TARGET_ACCEL = -1.2  # m/s^2 should match up with the long planner limit
 TARGET_OFFSET = 1.0  # seconds - This controls how soon before the curve you reach the target velocity. It also helps
-                     # reach the target velocity when innacuracies in the distance modeling logic would cause overshoot.
+                     # reach the target velocity when inaccuracies in the distance modeling logic would cause overshoot.
                      # The value is multiplied against the target velocity to determine the additional distance. This is
                      # done to keep the distance calculations consistent but results in the offset actually being less
-                     # time than specified depending on how much of a speed diffrential there is between v_ego and the
+                     # time than specified depending on how much of a speed differential there is between v_ego and the
                      # target velocity.
 
 
-def velocities_from_param(param: str, params: Params) -> list[dict] | None:
+def velocities_from_param(param: str, params: Params):
   if params is None:
     params = Params()
 
@@ -84,8 +84,8 @@ class SmartCruiseControlMap:
     self.target_lon = 0.0
     self.frame = -1
 
-    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params)
-    self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params)
+    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params) or Coordinate(0.0, 0.0)
+    self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params) or []
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
@@ -103,7 +103,7 @@ class SmartCruiseControlMap:
   def update_calculations(self) -> None:
     self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params) or Coordinate(0.0, 0.0)
     lat = self.last_position.latitude
-    lon = self.last_position.latitude
+    lon = self.last_position.longitude
 
     self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params) or []
 
@@ -194,7 +194,7 @@ class SmartCruiseControlMap:
         if tlat == self.target_lat and tlon == self.target_lon and tv == self.v_target:
           return
 
-      # not found so lets reset
+      # not found so let's reset
       self.v_target = 0.0
       self.target_lat = 0.0
       self.target_lon = 0.0
