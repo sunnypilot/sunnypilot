@@ -9,6 +9,7 @@ import math
 import platform
 
 from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.mapd.live_map_data.base_map_data import BaseMapData
 from openpilot.sunnypilot.navd.helpers import Coordinate
 
