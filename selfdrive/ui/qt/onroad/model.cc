@@ -130,8 +130,8 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     // Gradient band across horizon
     QLinearGradient bgGrad(r.left(), horizonY - 50, r.left(), horizonY + 50);
     bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
-    bgGrad.setColorAt(0.5, QColor("#333333"));  // middle blend
-    bgGrad.setColorAt(1.0, QColor("#333333"));  // bottom of band
+    bgGrad.setColorAt(0.5, QColor("#111111"));  // middle blend
+    bgGrad.setColorAt(1.0, QColor("#111111"));  // bottom of band
     painter.fillRect(QRectF(r.left(), horizonY - 100, r.width(), 100), bgGrad);
 
     // Fill below horizon: solid dark gray
