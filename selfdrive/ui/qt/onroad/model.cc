@@ -175,11 +175,11 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     QPolygonF rightFill = buildFill(road_edge_vertices[1], false);
 
     if (!leftFill.isEmpty()) {
-      painter.setBrush(QColor("#333333"));
+      painter.setBrush(QColor("#222222"));
       painter.drawPolygon(leftFill);
     }
     if (!rightFill.isEmpty()) {
-      painter.setBrush(QColor("#333333"));
+      painter.setBrush(QColor("#222222"));
       painter.drawPolygon(rightFill);
     }
 
