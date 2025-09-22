@@ -344,7 +344,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
   QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) :
-                          (useLastValidSpeedLimit ? QString::number(speedLimitLast) : "---");
+                          (useLastValidSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---");
 
   // Offset display text
   QString speedLimitSubText = "";
