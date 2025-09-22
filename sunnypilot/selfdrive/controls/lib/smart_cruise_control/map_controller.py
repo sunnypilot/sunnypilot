@@ -1,10 +1,13 @@
 import json
 import math
+import platform
+
 from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.navd.helpers import coordinate_from_param, Coordinate
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 
 MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
@@ -23,6 +26,19 @@ TARGET_OFFSET = 1.0  # seconds - This controls how soon before the curve you rea
                      # done to keep the distance calculations consistent but results in the offset actually being less
                      # time than specified depending on how much of a speed diffrential there is between v_ego and the
                      # target velocity.
+
+
+def velocities_from_param(param: str, params: Params) -> list[dict] | None:
+  if params is None:
+    params = Params()
+
+  json_str = params.get(param)
+  if json_str is None:
+    return None
+
+  velocities = json.loads(json_str)
+
+  return velocities
 
 
 def calculate_accel(t, target_jerk, a_ego):
@@ -56,8 +72,8 @@ class SmartCruiseControlMap:
 
   def __init__(self):
     self.params = Params()
-    self.mem_params = Params("/dev/shm/params")
-    self.enabled = self.params.get_bool("TurnSpeedControl")
+    self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
+    self.enabled = self.params.get_bool("SmartCruiseControlMap")
     self.long_enabled = False
     self.long_override = False
     self.is_enabled = False
@@ -68,8 +84,8 @@ class SmartCruiseControlMap:
     self.target_lon = 0.0
     self.frame = -1
 
-    self.last_position = json.loads(self.mem_params.get("LastGPSPosition"))
-    self.target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
+    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params)
+    self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params)
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
@@ -85,14 +101,14 @@ class SmartCruiseControlMap:
       self.enabled = self.params.get_bool("SmartCruiseControlMap")
 
   def update_calculations(self) -> None:
+    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params) or Coordinate(0.0, 0.0)
+    lat = self.last_position.latitude
+    lon = self.last_position.latitude
+
+    self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params) or []
+
     if self.last_position is None or self.target_velocities is None:
       return
-
-    self.last_position = json.loads(self.mem_params.get("LastGPSPosition"))
-    lat = self.last_position["latitude"]
-    lon = self.last_position["longitude"]
-
-    self.target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
 
     min_dist = 1000
     min_idx = 0
