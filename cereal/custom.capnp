@@ -196,6 +196,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       enabled @1; # No predicted substantial turn on map range.
       turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
       overriding @3; # System overriding with manual control.
+    }
   }
 
   struct SpeedLimit {
