@@ -541,7 +541,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   rect_width = std::max(min_width, std::min(rect_width, max_width));
 
   // Center at top of screen
-  QRect road_rect(surface_rect.width() / 2 - rect_width / 2, -6, rect_width, 60);
+  QRect road_rect(surface_rect.width() / 2 - rect_width / 2, -4, rect_width, 60);
 
   p.setPen(Qt::NoPen);
   p.setBrush(QColor(0, 0, 0, 120));
