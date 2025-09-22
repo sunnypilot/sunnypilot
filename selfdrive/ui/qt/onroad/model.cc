@@ -51,91 +51,47 @@ void ModelRenderer::update_leads(const cereal::RadarState::Reader &radar_state, 
   }
 }
 
-QPolygonF ModelRenderer::smoothPolygon(const QPolygonF &current, const QPolygonF &previous, float alpha) {
-  if (previous.isEmpty() || current.size() != previous.size()) {
-    return current;  // nothing to smooth against
-  }
-
-  QPolygonF smoothed;
-  smoothed.reserve(current.size());
-  for (int i = 0; i < current.size(); ++i) {
-    const QPointF &c = current[i];
-    const QPointF &p = previous[i];
-    smoothed << QPointF(alpha * p.x() + (1 - alpha) * c.x(),
-                        alpha * p.y() + (1 - alpha) * c.y());
-  }
-  return smoothed;
-}
-
-void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model,
-                                 const cereal::RadarState::LeadData::Reader &lead) {
+void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) {
   const auto &model_position = model.getPosition();
   float max_distance;
   if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 0) {
-    max_distance = std::clamp(*(model_position.getX().end() - 1),
-                              MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+    max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
   } else {
     max_distance = std::clamp(*(model_position.getX().end() - 1), 0.0f, 300.0f);
   }
 
-  // --- update lane lines ---
+  // update lane lines
   const auto &lane_lines = model.getLaneLines();
   const auto &line_probs = model.getLaneLineProbs();
   int max_idx = get_path_length_idx(lane_lines[0], max_distance);
-
   for (int i = 0; i < std::size(lane_line_vertices); i++) {
-    // smooth probability too
-    lane_line_probs[i] = 0.9f * lane_line_probs[i] + 0.1f * line_probs[i];
-
-    float width = (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2)
-                    ? 0.075f * lane_line_probs[i]
-                    : 0.025f * lane_line_probs[i];
-
-    mapLineToPolygon(lane_lines[i], width, 0, &lane_line_vertices[i], max_idx);
-
-    if (prev_polys_valid) {
-      lane_line_vertices[i] =
-          smoothPolygon(lane_line_vertices[i], prev_lane_vertices[i], 0.8f);
+    lane_line_probs[i] = line_probs[i];
+    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+      mapLineToPolygon(lane_lines[i], 0.075 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
     }
   }
 
-  // --- update road edges ---
+  // update road edges
   const auto &road_edges = model.getRoadEdges();
   const auto &edge_stds = model.getRoadEdgeStds();
-
   for (int i = 0; i < std::size(road_edge_vertices); i++) {
     road_edge_stds[i] = edge_stds[i];
-
-    float width = (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2)
-                    ? 0.1f
-                    : 0.025f;
-
-    mapLineToPolygon(road_edges[i], width, 0, &road_edge_vertices[i], max_idx);
-
-    if (prev_polys_valid) {
-      road_edge_vertices[i] =
-          smoothPolygon(road_edge_vertices[i], prev_edge_vertices[i], 0.8f);
+    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+      mapLineToPolygon(road_edges[i], 0.1, 0, &road_edge_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
     }
   }
 
-  // --- update path ---
+  // update path
   if (lead.getStatus()) {
-    const float lead_d = lead.getDRel() * 2.f;
-    max_distance = std::clamp((float)(lead_d - fmin(lead_d * 0.35f, 10.f)),
-                              0.0f, max_distance);
+    const float lead_d = lead.getDRel() * 2.;
+    max_distance = std::clamp((float)(lead_d - fmin(lead_d * 0.35, 10.)), 0.0f, max_distance);
   }
   max_idx = get_path_length_idx(model_position, max_distance);
-  mapLineToPolygon(model_position, 0.9f, path_offset_z, &track_vertices, max_idx, false);
-
-  if (prev_polys_valid) {
-    track_vertices = smoothPolygon(track_vertices, prev_track_vertices, 0.85f);
-  }
-
-  // save for next frame
-  prev_lane_vertices = lane_line_vertices;
-  prev_edge_vertices = road_edge_vertices;
-  prev_track_vertices = track_vertices;
-  prev_polys_valid = true;
+  mapLineToPolygon(model_position, 0.9, path_offset_z, &track_vertices, max_idx, false);
 }
 
 void ModelRenderer::drawLaneLines(QPainter &painter) {
