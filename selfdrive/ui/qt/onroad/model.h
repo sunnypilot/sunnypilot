@@ -59,8 +59,10 @@ protected:
   float road_edge_stds[2] = {};
   float path_offset_z = 1.22f;
   QPolygonF track_vertices;
-  QPolygonF lane_line_vertices[4] = {};
-  QPolygonF road_edge_vertices[2] = {};
+  // QPolygonF lane_line_vertices[4] = {};
+  // QPolygonF road_edge_vertices[2] = {};
+  std::array<QPolygonF, 4> lane_line_vertices = {};
+  std::array<QPolygonF, 2> road_edge_vertices = {};
   QPointF lead_vertices[2] = {};
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
@@ -69,4 +71,13 @@ protected:
   QPointF lead_status_pos;
   QString lead_status_text;
   QColor lead_status_color;
+
+   // --- NEW: smoothing support ---
+  std::array<QPolygonF, 4> prev_lane_vertices;
+  std::array<QPolygonF, 2> prev_edge_vertices;
+  QPolygonF prev_track_vertices;
+  bool prev_polys_valid = false;
+
+  // helper for smoothing polygons
+  QPolygonF smoothPolygon(const QPolygonF &current, const QPolygonF &previous, float alpha);
 };
