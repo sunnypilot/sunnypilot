@@ -215,7 +215,7 @@ class SmartCruiseControlMap:
         # ENABLED
         if self.state == MapState.enabled:
           if self.v_cruise > self.v_target != 0:
-            self.state = MapState.active
+            self.state = MapState.turning
 
         # TURNING
         elif self.state == MapState.turning:
@@ -226,7 +226,7 @@ class SmartCruiseControlMap:
         elif self.state == MapState.overriding:
           if not self.long_override:
             if self.v_cruise > self.v_target != 0:
-              self.state = MapState.active
+              self.state = MapState.turning
             else:
               self.state = MapState.enabled
 
