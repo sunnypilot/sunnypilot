@@ -36,7 +36,7 @@ class OsmMapData(BaseMapData):
     }
 
     if self.last_bearing is not None:
-      params['bearings'] = self.last_bearing
+      params['bearing'] = self.last_bearing
 
     self.mem_params.put("LastGPSPosition", json.dumps(params))
 
