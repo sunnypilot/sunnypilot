@@ -127,12 +127,6 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     // Fill above horizon: pure black
     // painter.fillRect(QRectF(r.left(), r.top(), r.width(), horizonY - 100), QColor("#000000"));
 
-    // Gradient band across horizon
-    QLinearGradient bgGrad(r.left(), horizonY - 50, r.left(), horizonY + 50);
-    bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
-    bgGrad.setColorAt(0.5, QColor("#111111"));  // middle blend
-    bgGrad.setColorAt(1.0, QColor("#111111"));  // bottom of band
-    painter.fillRect(QRectF(r.left(), horizonY - 100, r.width(), 100), bgGrad);
 
     // Fill below horizon: solid dark gray
     painter.fillRect(QRectF(r.left(), horizonY + 0, r.width(), r.bottom() - (horizonY + 0)), QColor("#111111"));
@@ -200,6 +194,13 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
       painter.setBrush(QColor(0x55, 0x55, 0x55, 255));
       painter.drawPolygon(road_edge_vertices[i]);
     }
+
+    // Gradient band across horizon
+    QLinearGradient bgGrad(r.left(), horizonY - 100, r.left(), horizonY + 100);
+    bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
+    bgGrad.setColorAt(0.5, QColor("#111111"));  // middle blend
+    bgGrad.setColorAt(1.0, QColor("#111111"));  // bottom of band
+    painter.fillRect(QRectF(r.left(), horizonY - 200, r.width(), 200), bgGrad);
 
   } else {
     // lanelines
