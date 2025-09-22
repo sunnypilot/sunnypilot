@@ -48,7 +48,7 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitAheadDistancePrev = speedLimitAheadDistance;
 
   if (speedLimitValid) {
-    speedLimitLastValid = speedLimit;
+    speedLimitLast = speedLimit;
   }
 
   static int reverse_delay = 0;
@@ -339,12 +339,12 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   int speedLimitRounded = std::nearbyint(speedLimit);
-  bool useLastValidSpeedLimit = !speedLimitValid && speedLimitLastValid > 0;
+  bool useLastValidSpeedLimit = !speedLimitValid && speedLimitLast > 0;
   int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset);
   bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
   QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) :
-                          (useLastValidSpeedLimit ? QString::number(speedLimitLastValid) : "---");
+                          (useLastValidSpeedLimit ? QString::number(speedLimitLast) : "---");
 
   // Offset display text
   QString speedLimitSubText = "";
