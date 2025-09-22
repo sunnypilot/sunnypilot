@@ -94,6 +94,8 @@ void HudRendererSP::updateState(const UIState &s) {
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
+  smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
+  smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -102,7 +104,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Smart Cruise Control
     int x_offset = -260;
     int y1_offset = -80;
-    // int y2_offset = -140;  // reserved for 2 icons
+    int y2_offset = -140;
 
     bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
     if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
@@ -113,6 +115,17 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       smartCruiseControlVisionFrame++;
     } else {
       smartCruiseControlVisionFrame = 0;
+    }
+
+    bool scc_map_active_pulse = pulseElement(smartCruiseControlMapFrame);
+    if ((smartCruiseControlMapEnabled && !smartCruiseControlMapActive) || (smartCruiseControlMapActive && scc_map_active_pulse)) {
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y2_offset, "SCC-M");
+    }
+
+    if (smartCruiseControlMapActive) {
+      smartCruiseControlMapFrame++;
+    } else {
+      smartCruiseControlMapFrame = 0;
     }
 
     // Bottom Dev UI
