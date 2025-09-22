@@ -84,7 +84,7 @@ class SmartCruiseControlMap:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SmartCruiseControlMap")
 
-  def target_speed(self, v_ego, a_ego) -> None:
+  def update_calculations(self) -> None:
     if self.last_position is None or self.target_velocities is None:
       return
 
@@ -120,21 +120,21 @@ class SmartCruiseControlMap:
       tlat = target_velocity["latitude"]
       tlon = target_velocity["longitude"]
       tv = target_velocity["velocity"]
-      if tv > v_ego:
+      if tv > self.v_ego:
         continue
 
       d = forward_distances[i]
 
-      a_diff = (a_ego - TARGET_ACCEL)
+      a_diff = (self.a_ego - TARGET_ACCEL)
       accel_t = abs(a_diff / TARGET_JERK)
-      min_accel_v = calculate_velocity(accel_t, TARGET_JERK, a_ego, v_ego)
+      min_accel_v = calculate_velocity(accel_t, TARGET_JERK, self.a_ego, self.v_ego)
 
       max_d = 0
       if tv > min_accel_v:
         # calculate time needed based on target jerk
         a = 0.5 * TARGET_JERK
-        b = a_ego
-        c = v_ego - tv
+        b = self.a_ego
+        c = self.v_ego - tv
         t_a = -1 * ((b**2 - 4 * a * c) ** 0.5 + b) / 2 * a
         t_b = ((b**2 - 4 * a * c) ** 0.5 - b) / 2 * a
         if not isinstance(t_a, complex) and t_a > 0:
@@ -144,10 +144,10 @@ class SmartCruiseControlMap:
         if isinstance(t, complex):
           continue
 
-        max_d = max_d + calculate_distance(t, TARGET_JERK, a_ego, v_ego)
+        max_d = max_d + calculate_distance(t, TARGET_JERK, self.a_ego, self.v_ego)
       else:
         t = accel_t
-        max_d = calculate_distance(t, TARGET_JERK, a_ego, v_ego)
+        max_d = calculate_distance(t, TARGET_JERK, self.a_ego, self.v_ego)
 
         # calculate additional time needed based on target accel
         t = abs((min_accel_v - tv) / TARGET_ACCEL)
@@ -172,7 +172,7 @@ class SmartCruiseControlMap:
         tlat = target_velocity["latitude"]
         tlon = target_velocity["longitude"]
         tv = target_velocity["velocity"]
-        if tv > v_ego:
+        if tv > self.v_ego:
           continue
 
         if tlat == self.target_lat and tlon == self.target_lon and tv == self.v_target:
@@ -235,7 +235,7 @@ class SmartCruiseControlMap:
     self.v_cruise = v_cruise
 
     self.update_params()
-    self.target_speed(v_ego, a_ego)
+    self.update_calculations()
 
     self.is_enabled, self.is_active = self._update_state_machine()
 
