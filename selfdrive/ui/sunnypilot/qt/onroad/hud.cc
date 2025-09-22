@@ -339,12 +339,12 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  int speedLimitRounded = std::nearbyint(speedLimit);
-  int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset);
-  bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
-  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
-  QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) :
-                          (speedLimitLastValid ? QString::number(std::nearbyint(speedLimitLast)) : "---");
+  bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
+  int speedLimitFinal = speedLimitValid ? std::nearbyint(speedLimit) : std::nearbyint(speedLimitLast);
+  int speedLimitOffsetFinal = speedLimitFinal + std::nearbyint(speedLimitOffset);
+  bool overspeed = speedLimitOffsetFinal < std::nearbyint(speed) && hasSpeedLimit;
+  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
+  QString speedLimitStr = hasSpeedLimit ? QString::number(speedLimitFinal) : "---";
 
   // Offset display text
   QString speedLimitSubText = "";
@@ -406,7 +406,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(center_circle, Qt::AlignCenter, speedLimitStr);
 
     // Offset value in small circular box
-    if (!speedLimitSubText.isEmpty() && (speedLimitValid || speedLimitLastValid)) {
+    if (!speedLimitSubText.isEmpty() && hasSpeedLimit) {
       int offset_circle_size = circle_size * 0.4;
       int overlap = offset_circle_size * 0.25;
       QRect offset_circle_rect(
@@ -451,7 +451,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
 
     // Offset value in small box
-    if (!speedLimitSubText.isEmpty() && (speedLimitValid || speedLimitLastValid)) {
+    if (!speedLimitSubText.isEmpty() && hasSpeedLimit) {
       int offset_box_size = sign_rect.width() * 0.4;
       int overlap = offset_box_size * 0.25;
       QRect offset_box_rect(
