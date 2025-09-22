@@ -103,16 +103,15 @@ class ModelState(ModelStateBase):
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs[self.desire_key][0] = 0
+    new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
+    self.prev_desire[:] = inputs[self.desire_key]
     if self.numpy_inputs[self.desire_key].shape[1] == 25:
-      new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
-      self.prev_desire[:] = inputs[self.desire_key]
       self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
       self.temporal_buffers[self.desire_key][0,-1] = new_desire
     else:
-      desire_len = self.numpy_inputs[self.desire_key].shape[2]
-      self.temporal_buffers[self.desire_key][: -desire_len] = self.temporal_buffers[self.desire_key][desire_len :]
-      self.temporal_buffers[self.desire_key][-desire_len :] = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
-      self.prev_desire[:] = inputs[self.desire_key]
+      desire_len = self.numpy_inputs[self.desire_key].shape[-1]
+      self.temporal_buffers[self.desire_key][0][: -desire_len] = self.temporal_buffers[self.desire_key][0][desire_len :]
+      self.temporal_buffers[self.desire_key][0][-desire_len :] =  new_desire
 
 
     # Roll buffer and assign based on desire.shape[1] value
@@ -138,7 +137,7 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
-    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs:
+    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs.keys():
       inputs['lat_planner_state'][2] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
       inputs['lat_planner_state'][3] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
 
@@ -148,22 +147,16 @@ class ModelState(ModelStateBase):
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
     self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-      if input_name_prev and input_name_prev in self.temporal_buffers:
-        self.process_desired_curvature(outputs, input_name_prev)
+    if "desired_curvature" in outputs and "prev_desired_curv" in self.numpy_inputs.keys():
+      self.process_desired_curvature(outputs, 'prev_desired_curv')
     return outputs
 
-  def process_desired_curvature(self, outputs, input_name_prev):
-    self.temporal_buffers[input_name_prev][0,:-1] = self.temporal_buffers[input_name_prev][0,1:]
-    self.temporal_buffers[input_name_prev][0,-1,:] = outputs['desired_curvature'][0, :]
-    self.numpy_inputs[input_name_prev][:] = self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+  def process_desired_curvature(self, outputs, input_name):
+    self.temporal_buffers[input_name][0,:-1] = self.temporal_buffers[input_name][0,1:]
+    self.temporal_buffers[input_name][0,-1,:] = outputs['desired_curvature'][0, :]
+    self.numpy_inputs[input_name][:] = self.temporal_buffers[input_name][0, self.temporal_idxs_map[input_name]]
     if self.mlsim:
-      self.numpy_inputs[input_name_prev][:] = 0*self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+      self.numpy_inputs[input_name][:] = 0 * self.temporal_buffers[input_name][0, self.temporal_idxs_map[input_name]]
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
