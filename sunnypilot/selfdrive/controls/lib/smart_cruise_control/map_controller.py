@@ -62,7 +62,7 @@ class SmartCruiseControlMap:
     self.long_override = False
     self.is_enabled = False
     self.is_active = False
-    self._state = MapState.inactive
+    self.state = MapState.disabled
     self.v_cruise = 0
     self.target_lat = 0.0
     self.target_lon = 0.0
