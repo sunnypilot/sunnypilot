@@ -33,3 +33,15 @@ inline const QString SpeedLimitSourcePolicyTexts[]{
   QObject::tr("Map\nFirst"),
   QObject::tr("Combined\nData")
 };
+
+enum class SpeedLimitMode {
+  OFF,
+  INFORMATION,
+  WARNING,
+};
+
+inline const QString SpeedLimitModeTexts[]{
+  QObject::tr("Off"),
+  QObject::tr("Information"),
+  QObject::tr("Warning"),
+};
