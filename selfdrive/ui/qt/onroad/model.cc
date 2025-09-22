@@ -66,8 +66,11 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   int max_idx = get_path_length_idx(lane_lines[0], max_distance);
   for (int i = 0; i < std::size(lane_line_vertices); i++) {
     lane_line_probs[i] = line_probs[i];
-    mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
-    // mapLineToPolygon(lane_lines[i], 0.025, 0, &lane_line_vertices[i], max_idx);
+    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+      mapLineToPolygon(lane_lines[i], 0.075 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    }
   }
 
   // update road edges
@@ -75,7 +78,11 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   const auto &edge_stds = model.getRoadEdgeStds();
   for (int i = 0; i < std::size(road_edge_vertices); i++) {
     road_edge_stds[i] = edge_stds[i];
-    mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
+    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+      mapLineToPolygon(road_edges[i], 0.1, 0, &road_edge_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
+    }
   }
 
   // update path
@@ -182,28 +189,16 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
       painter.drawPolygon(rightFill);
     }
 
-    // Lane lines
+    // lanelines
     for (int i = 0; i < std::size(lane_line_vertices); ++i) {
-      painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
-      // painter.setBrush(QColor("#E6E6E6"));
+      painter.setBrush(QColor::fromRgbF(0.902, 0.902, 0.902, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
       painter.drawPolygon(lane_line_vertices[i]);
     }
 
-    // Road edges
+    // road edges
     for (int i = 0; i < std::size(road_edge_vertices); ++i) {
-      if (road_edge_vertices[i].isEmpty()) continue;
-      QPainterPath path;
-      path.addPolygon(road_edge_vertices[i]);
-      QPainterPathStroker stroker;
-      stroker.setWidth(15);
-      QPainterPath thickPath = stroker.createStroke(path);
-      QRectF bounds = thickPath.boundingRect();
-      QLinearGradient grad(bounds.left(), bounds.top(), bounds.left(), bounds.bottom());
-      grad.setColorAt(1.0, QColor(0x55, 0x55, 0x55, 255));
-      grad.setColorAt(0.0, QColor(0x33, 0x33, 0x33, 0));
-      painter.setPen(Qt::NoPen);
-      painter.setBrush(grad);
-      painter.drawPath(thickPath);
+      painter.setBrush(QColor(0x55, 0x55, 0x55, 255));
+      painter.drawPolygon(road_edge_vertices[i]);
     }
 
   } else {
