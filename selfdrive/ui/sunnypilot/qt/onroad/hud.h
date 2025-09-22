@@ -71,6 +71,7 @@ private:
   float speedLimitLast;
   float speedLimitOffset;
   bool speedLimitValid;
+  bool speedLimitLastValid;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
