@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
@@ -105,8 +105,14 @@ class ModelState(ModelStateBase):
     inputs[self.desire_key][0] = 0
     new_desire = np.where(inputs[self.desire_key] - self.prev_desire > .99, inputs[self.desire_key], 0)
     self.prev_desire[:] = inputs[self.desire_key]
-    self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
-    self.temporal_buffers[self.desire_key][0,-1] = new_desire
+    if self.numpy_inputs[self.desire_key].shape[1] == 25:
+      self.temporal_buffers[self.desire_key][0,:-1] = self.temporal_buffers[self.desire_key][0,1:]
+      self.temporal_buffers[self.desire_key][0,-1] = new_desire
+    else:
+      desire_len = self.numpy_inputs[self.desire_key].shape[-1]
+      self.temporal_buffers[self.desire_key][0][: -desire_len] = self.temporal_buffers[self.desire_key][0][desire_len :]
+      self.temporal_buffers[self.desire_key][0][-desire_len :] =  new_desire
+
 
     # Roll buffer and assign based on desire.shape[1] value
     if self.temporal_buffers[self.desire_key].shape[1] > self.numpy_inputs[self.desire_key].shape[1]:
@@ -131,27 +137,26 @@ class ModelState(ModelStateBase):
     # Run model inference
     outputs = self.model_runner.run_model()
 
+    if "lat_planner_solution" in outputs and "lat_planner_state" in inputs.keys():
+      inputs['lat_planner_state'][2] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+      inputs['lat_planner_state'][3] = np.interp(DT_MDL, self.constants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+
+
     # Update features_buffer
     self.temporal_buffers['features_buffer'][0, :-1] = self.temporal_buffers['features_buffer'][0, 1:]
     self.temporal_buffers['features_buffer'][0, -1] = outputs['hidden_state'][0, :]
     self.numpy_inputs['features_buffer'][:] = self.temporal_buffers['features_buffer'][0, self.temporal_idxs_map['features_buffer']]
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-      if input_name_prev and input_name_prev in self.temporal_buffers:
-        self.process_desired_curvature(outputs, input_name_prev)
+    if "desired_curvature" in outputs and "prev_desired_curv" in self.numpy_inputs.keys():
+      self.process_desired_curvature(outputs, 'prev_desired_curv')
     return outputs
 
-  def process_desired_curvature(self, outputs, input_name_prev):
-    self.temporal_buffers[input_name_prev][0,:-1] = self.temporal_buffers[input_name_prev][0,1:]
-    self.temporal_buffers[input_name_prev][0,-1,:] = outputs['desired_curvature'][0, :]
-    self.numpy_inputs[input_name_prev][:] = self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+  def process_desired_curvature(self, outputs, input_name):
+    self.temporal_buffers[input_name][0,:-1] = self.temporal_buffers[input_name][0,1:]
+    self.temporal_buffers[input_name][0,-1,:] = outputs['desired_curvature'][0, :]
+    self.numpy_inputs[input_name][:] = self.temporal_buffers[input_name][0, self.temporal_idxs_map[input_name]]
     if self.mlsim:
-      self.numpy_inputs[input_name_prev][:] = 0*self.temporal_buffers[input_name_prev][0, self.temporal_idxs_map[input_name_prev]]
+      self.numpy_inputs[input_name][:] = 0 * self.temporal_buffers[input_name][0, self.temporal_idxs_map[input_name]]
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
@@ -316,8 +321,15 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
+    conditional_inputs = {
+      "lateral_control_params": lambda v_ego=v_ego, lat_delay=lat_delay: np.array([v_ego, lat_delay], dtype=np.float32),
+      "driving_style": lambda: np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32),
+      "nav_features": lambda: np.zeros(model.model_runner.input_shapes.get('nav_features')[1], dtype=np.float32),
+      "nav_instructions": lambda: np.zeros(model.model_runner.input_shapes.get('nav_instructions')[1], dtype=np.float32),
+    }
+    for key, value in conditional_inputs.items():
+      if key in model.numpy_inputs:
+        inputs[key] = value()
 
     mt1 = time.perf_counter()
     model_output = model.run(bufs, transforms, inputs, prepare_only)
