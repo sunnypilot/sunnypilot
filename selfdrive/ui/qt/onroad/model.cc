@@ -99,7 +99,7 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     QRectF r = clip_region;
 
     // --- Find horizon from road edges ---
-    qreal horizonY = r.center().y();  // fallback
+    qreal horizonY = r.bottom();  // fallback
     if (!road_edge_vertices[0].isEmpty() || !road_edge_vertices[1].isEmpty()) {
       qreal leftH  = r.top();
       qreal rightH = r.top();
