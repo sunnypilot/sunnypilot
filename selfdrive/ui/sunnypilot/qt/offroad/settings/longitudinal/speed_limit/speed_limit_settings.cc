@@ -27,10 +27,11 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
   std::vector<QString> speed_limit_mode_texts{
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::OFF)],
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::INFORMATION)],
+    SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::WARNING)],
   };
   speed_limit_mode_settings = new ButtonParamControlSP(
     "SpeedLimitMode",
-    tr("Speed Limit Mode"),
+    tr("Speed Limit"),
     "",
     "",
     speed_limit_mode_texts,
@@ -42,10 +43,12 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 
   speedLimitSource = new PushButtonSP(tr("Customize Source"));
   connect(speedLimitSource, &QPushButton::clicked, [&]() {
+    speedLimitScroller->setLastScrollPosition();
     setCurrentWidget(speedLimitPolicyScreen);
     speedLimitPolicyScreen->refresh();
   });
   connect(speedLimitPolicyScreen, &SpeedLimitPolicy::backPress, [&]() {
+    speedLimitScroller->restoreScrollPosition();
     setCurrentWidget(subPanelFrame);
     showEvent(new QShowEvent());
   });
@@ -91,7 +94,8 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
   connect(speed_limit_offset_settings, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitSettings::refresh);
 
   refresh();
-  subPanelLayout->addWidget(list);
+  speedLimitScroller = new ScrollViewSP(list, this);
+  subPanelLayout->addWidget(speedLimitScroller);
   addWidget(subPanelFrame);
   addWidget(speedLimitPolicyScreen);
   setCurrentWidget(subPanelFrame);

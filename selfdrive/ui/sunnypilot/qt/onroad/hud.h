@@ -31,6 +31,7 @@ private:
   void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
   void drawSpeedLimitSigns(QPainter &p);
   void drawUpcomingSpeedLimit(QPainter &p);
+  void drawRoadName(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -74,4 +75,6 @@ private:
   float speedLimitAheadDistancePrev;
   int speedLimitAheadValidFrame;
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
+  bool roadName;
+  QString roadNameStr;
 };
