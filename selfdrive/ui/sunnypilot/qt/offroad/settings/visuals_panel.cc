@@ -43,7 +43,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "RoadName",
+      "RoadNameToggle",
       tr("Display Road Name"),
       tr("Displays the name of the road the car is traveling on. The OpenStreetMap database of the location must be downloaded from the OSM panel to fetch the road name."),
       "",
