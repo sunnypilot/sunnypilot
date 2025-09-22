@@ -528,7 +528,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   if (!roadName || roadNameStr.isEmpty()) return;
 
   // Measure text to size container
-  p.setFont(InterFont(40, QFont::Normal));
+  p.setFont(InterFont(46, QFont::DemiBold));
   QFontMetrics fm(p.font());
 
   int text_width = fm.horizontalAdvance(roadNameStr);
