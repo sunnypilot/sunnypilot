@@ -3,7 +3,9 @@ import math
 from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 
 MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
 
@@ -44,7 +46,14 @@ def distance_to_point(ax, ay, bx, by):
   return R * c  # in meters
 
 
-class TurnSpeedController:
+class SmartCruiseControlMap:
+  v_target: float = 0
+  a_target: float = 0.
+  v_ego: float = 0.
+  a_ego: float = 0.
+  output_v_target: float = V_CRUISE_UNSET
+  output_a_target: float = 0.
+
   def __init__(self):
     self.params = Params()
     self.mem_params = Params("/dev/shm/params")
@@ -54,39 +63,44 @@ class TurnSpeedController:
     self.is_enabled = False
     self.is_active = False
     self._state = MapState.inactive
-    self._v_cruise = 0
-    self._min_v = 0
+    self.v_cruise = 0
     self.target_lat = 0.0
     self.target_lon = 0.0
-    self.target_v = 0.0
     self.frame = -1
 
-  @property
-  def v_target(self):
-    return self._min_v
+    self.last_position = json.loads(self.mem_params.get("LastGPSPosition"))
+    self.target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
+
+  def get_v_target_from_control(self) -> float:
+    if self.is_active:
+      return max(self.v_target, MIN_V)
+
+    return V_CRUISE_UNSET
+
+  def get_a_target_from_control(self) -> float:
+    return self.a_ego
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SmartCruiseControlMap")
 
-  def target_speed(self, v_ego, a_ego) -> float:
-    try:
-      position = json.loads(self.mem_params.get("LastGPSPosition"))
-      lat = position["latitude"]
-      lon = position["longitude"]
-    except: return 0.0
+  def target_speed(self, v_ego, a_ego) -> None:
+    if self.last_position is None or self.target_velocities is None:
+      return
 
-    try:
-      target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
-    except: return 0.0
+    self.last_position = json.loads(self.mem_params.get("LastGPSPosition"))
+    lat = self.last_position["latitude"]
+    lon = self.last_position["longitude"]
+
+    self.target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
 
     min_dist = 1000
     min_idx = 0
     distances = []
 
     # find our location in the path
-    for i in range(len(target_velocities)):
-      target_velocity = target_velocities[i]
+    for i in range(len(self.target_velocities)):
+      target_velocity = self.target_velocities[i]
       tlat = target_velocity["latitude"]
       tlon = target_velocity["longitude"]
       d = distance_to_point(lat * TO_RADIANS, lon * TO_RADIANS, tlat * TO_RADIANS, tlon * TO_RADIANS)
@@ -96,7 +110,7 @@ class TurnSpeedController:
         min_idx = i
 
     # only look at values from our current position forward
-    forward_points = target_velocities[min_idx:]
+    forward_points = self.target_velocities[min_idx:]
     forward_distances = distances[min_idx:]
 
     # find velocities that we are within the distance we need to adjust for
@@ -152,7 +166,7 @@ class TurnSpeedController:
         target_lat = lat
         target_lon = lon
 
-    if self.target_v < min_v and not (self.target_lat == 0 and self.target_lon == 0):
+    if self.v_target < min_v and not (self.target_lat == 0 and self.target_lon == 0):
       for i in range(len(forward_points)):
         target_velocity = forward_points[i]
         tlat = target_velocity["latitude"]
@@ -161,18 +175,17 @@ class TurnSpeedController:
         if tv > v_ego:
           continue
 
-        if tlat == self.target_lat and tlon == self.target_lon and tv == self.target_v:
-          return float(self.target_v)
+        if tlat == self.target_lat and tlon == self.target_lon and tv == self.v_target:
+          return
+
       # not found so lets reset
-      self.target_v = 0.0
+      self.v_target = 0.0
       self.target_lat = 0.0
       self.target_lon = 0.0
 
-    self.target_v = min_v
+    self.v_target = min_v
     self.target_lat = target_lat
     self.target_lon = target_lon
-
-    return min_v
 
   def _update_state_machine(self) -> tuple[bool, bool]:
     # ENABLED, TURNING
@@ -185,18 +198,18 @@ class TurnSpeedController:
       else:
         # ENABLED
         if self.state == MapState.enabled:
-          if self._v_cruise > self._min_v != 0:
+          if self.v_cruise > self.v_target != 0:
             self.state = MapState.active
 
         # TURNING
         elif self.state == MapState.turning:
-          if self._v_cruise <= self._min_v or self._min_v == 0:
+          if self.v_cruise <= self.v_target or self.v_target == 0:
             self.state = MapState.enabled
 
         # OVERRIDING
         elif self.state == MapState.overriding:
           if not self.long_override:
-            if self._v_cruise > self._min_v != 0:
+            if self.v_cruise > self.v_target != 0:
               self.state = MapState.active
             else:
               self.state = MapState.enabled
@@ -214,13 +227,19 @@ class TurnSpeedController:
 
     return enabled, active
 
-  def update(self, long_enabled: bool, long_override: bool, v_ego, a_ego, v_cruise):
-    self.update_params()
+  def update(self, long_enabled: bool, long_override: bool, v_ego, a_ego, v_cruise) -> None:
     self.long_enabled = long_enabled
     self.long_override = long_override
-    self._v_cruise = v_cruise
-    self._min_v = self.target_speed(v_ego, a_ego)
+    self.v_ego = v_ego
+    self.a_ego = a_ego
+    self.v_cruise = v_cruise
+
+    self.update_params()
+    self.target_speed(v_ego, a_ego)
 
     self.is_enabled, self.is_active = self._update_state_machine()
+
+    self.output_v_target = self.get_v_target_from_control()
+    self.output_a_target = self.get_a_target_from_control()
 
     self.frame += 1
