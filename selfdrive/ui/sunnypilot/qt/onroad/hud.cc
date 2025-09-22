@@ -340,9 +340,9 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
-  int speedLimitFinal = speedLimitValid ? std::nearbyint(speedLimit) : std::nearbyint(speedLimitLast);
+  int speedLimitFinal = std::nearbyint(speedLimitValid ? speedLimit : speedLimitLast);
   int speedLimitOffsetFinal = speedLimitFinal + std::nearbyint(speedLimitOffset);
-  bool overspeed = speedLimitOffsetFinal < std::nearbyint(speed) && hasSpeedLimit;
+  bool overspeed = hasSpeedLimit && speedLimitOffsetFinal < std::nearbyint(speed);
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
   QString speedLimitStr = hasSpeedLimit ? QString::number(speedLimitFinal) : "---";
 
@@ -354,7 +354,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
   float speedLimitSubTextFactor = is_metric ? 0.5 : 0.6;
   if (speedLimitSubText.size() >= 3) {
-    speedLimitSubTextFactor = is_metric ? 0.475 : 0.475;
+    speedLimitSubTextFactor = 0.475;
   }
 
   // Position next to MAX speed box
