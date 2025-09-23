@@ -11,6 +11,8 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/developer_ui.h"
 
+constexpr int SPEED_LIMIT_AHEAD_VALID_FRAME_THRESHOLD = 5;
+
 class HudRendererSP : public HudRenderer {
   Q_OBJECT
 
@@ -68,7 +70,10 @@ private:
   bool smartCruiseControlVisionActive;
   int smartCruiseControlVisionFrame;
   float speedLimit;
+  float speedLimitLast;
   float speedLimitOffset;
+  bool speedLimitValid;
+  bool speedLimitLastValid;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
