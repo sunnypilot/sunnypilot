@@ -103,6 +103,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     param_watcher->addParam(param);
   }
 
+  // Visuals: Visual Style
+  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
+  visual_style_settings = new ButtonParamControlSP(
+    "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the onroad UI."),
+    "",
+    visual_style_settings_texts,
+    250);
+  list->addItem(visual_style_settings);
+
   // Visuals: VisualStyleBlend Threshold
   visual_style_threshold_settings = new OptionControlSP("VisualStyleBlendThreshold", tr("Adjust Overhead Blend Threshold"),
                                       tr("Adjust the threshold when overhead blend activates."),
@@ -118,14 +127,20 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
 
   list->addItem(visual_style_threshold_settings);
 
-  // Visuals: Visual Style
-  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
-  visual_style_settings = new ButtonParamControlSP(
-    "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the onroad UI."),
-    "",
-    visual_style_settings_texts,
-    250);
-  list->addItem(visual_style_settings);
+  // Visuals: Radar Tracks Delay
+  visual_radar_tracks_delay_settings = new OptionControlSP("VisualRadarTracksDelay", tr("Adjust Visual Radar Tracks Delay"),
+                                      tr("Delays radar tracks to better match what you see through the camera."),
+                                      "", {0, 100}, 10, false, nullptr, true);
+
+  connect(visual_radar_tracks_delay_settings, &OptionControlSP::updateLabels, [=]() {
+    float radar_tracks_delay_value = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
+    visual_radar_tracks_delay_settings->setLabel(QString::number(radar_tracks_delay_value, 'f', 1) + " s");
+  });
+
+  float radar_tracks_delay_value = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
+  visual_radar_tracks_delay_settings->setLabel(QString::number(radar_tracks_delay_value, 'f', 1) + " s");
+
+  list->addItem(visual_radar_tracks_delay_settings);
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
