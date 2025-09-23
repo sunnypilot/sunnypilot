@@ -21,11 +21,11 @@ class TestLocationdProc:
 
     self.params = Params()
     self.params.put_bool("UbloxAvailable", True)
-    managed_processes['locationd'].prepare()
-    managed_processes['locationd'].start()
+    managed_processes['locationd_llk'].prepare()
+    managed_processes['locationd_llk'].start()
 
   def teardown_method(self):
-    managed_processes['locationd'].stop()
+    managed_processes['locationd_llk'].stop()
 
   def get_msg(self, name, t):
     try:
@@ -63,7 +63,7 @@ class TestLocationdProc:
 
   def test_params_gps(self):
     random.seed(123489234)
-    self.params.remove('LastGPSPosition')
+    self.params.remove('LastGPSPositionLLK')
 
     self.x = -2710700 + (random.random() * 1e5)
     self.y = -4280600 + (random.random() * 1e5)
@@ -83,7 +83,7 @@ class TestLocationdProc:
         self.pm.wait_for_readers_to_update(msg.which(), 0.1, dt=0.005)
     time.sleep(1)  # wait for async params write
 
-    lastGPS = json.loads(self.params.get('LastGPSPosition'))
+    lastGPS = json.loads(self.params.get('LastGPSPositionLLK'))
     assert lastGPS['latitude'] == pytest.approx(self.lat, abs=0.001)
     assert lastGPS['longitude'] == pytest.approx(self.lon, abs=0.001)
     assert lastGPS['altitude'] == pytest.approx(self.alt, abs=0.001)
