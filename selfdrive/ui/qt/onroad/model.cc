@@ -9,6 +9,21 @@ void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float 
 }
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
+  static double last_draw_t = millis_since_boot();
+  static float avg_frame_time = 50.0f;  // ms
+  static float avg_fps = 20.0f;
+
+  double now = millis_since_boot();
+  double frame_time_ms = now - last_draw_t;
+  last_draw_t = now;
+
+  float fps = (frame_time_ms > 0) ? (1000.0f / frame_time_ms) : 0.0f;
+
+  // Stronger smoothing to reduce jutter
+  const float alpha = 0.02f;  // smaller = smoother
+  avg_frame_time = (1 - alpha) * avg_frame_time + alpha * frame_time_ms;
+  avg_fps        = (1 - alpha) * avg_fps + alpha * fps;
+
   auto *s = uiState();
   auto &sm = *(s->sm);
   // Check if data is up-to-date
@@ -64,6 +79,26 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   }
 
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
+
+  // === Overlay FPS + Frame time (middle left) ===
+  painter.setPen(Qt::white);
+  QFont font("monospace", 48, QFont::Bold);  // big and clear
+  painter.setFont(font);
+
+  QString fps_line   = QString("FPS: %1 (avg %2)")
+                          .arg(fps, 0, 'f', 1)
+                          .arg(avg_fps, 0, 'f', 1);
+  QString frame_line = QString("Frame: %1 ms (avg %2 ms)")
+                          .arg(frame_time_ms, 0, 'f', 1)
+                          .arg(avg_frame_time, 0, 'f', 1);
+
+  int x = 30;  // stick to left margin
+  int mid_y = surface_rect.center().y();   // vertical middle
+  int line_spacing = 40;
+
+  // draw FPS on first line, frame time just below
+  painter.drawText(x, mid_y - line_spacing/2, fps_line);
+  painter.drawText(x, mid_y + line_spacing/2, frame_line);
 
   painter.restore();
 }
