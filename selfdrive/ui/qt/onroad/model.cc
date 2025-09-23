@@ -48,9 +48,13 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
       for (const auto &track : tracks) {
         if (!std::isfinite(track.getDRel()) || !std::isfinite(track.getYRel())) continue;
+        const float t_lag = 0.5f;  // seconds
+        float d_pred = track.getDRel() + track.getVRel() * t_lag;
+        d_pred += 0.5f * track.getARel() * t_lag * t_lag;
+        float y_pred = track.getYRel();
         QPointF screen_pt;
-        if (mapToScreen(track.getDRel(), -track.getYRel(), path_offset_z, &screen_pt)) {
-          float radius = std::clamp(15.0f / (1.0f + track.getDRel() * 0.1f), 3.0f, 8.0f);
+        if (mapToScreen(d_pred, -y_pred, path_offset_z, &screen_pt)) {
+          float radius = std::clamp(15.0f / (1.0f + d_pred * 0.1f), 3.0f, 8.0f);
           drawRadarPoint(painter, screen_pt, track.getVRel(), radius * 3);
         }
       }
