@@ -50,6 +50,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
+      "VisualWideCam",
+      tr("Force Wide Cam"),
+      tr("Forces the wide cam view regardless of experimental mode status."),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
+    {
       "VisualRadarTracks",
       tr("Show Radar Tracks"),
       tr("Shows what the cars radar sees."),
