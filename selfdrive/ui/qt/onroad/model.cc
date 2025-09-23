@@ -50,7 +50,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       QPointF screen_pt;
       if (mapToScreen(track.getDRel(), -track.getYRel(), path_offset_z, &screen_pt)) {
         float radius = std::clamp(15.0f / (1.0f + track.getDRel() * 0.1f), 3.0f, 8.0f);
-        drawRadarPoint(painter, screen_pt, track.getVRel(), radius);
+        drawRadarPoint(painter, screen_pt, track.getVRel(), radius * 3);
       }
     }
   }
