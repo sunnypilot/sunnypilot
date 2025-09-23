@@ -8,8 +8,8 @@ import json
 import math
 import platform
 
+from cereal import log
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.mapd.live_map_data.base_map_data import BaseMapData
 from openpilot.sunnypilot.navd.helpers import Coordinate
 
@@ -20,15 +20,12 @@ class OsmMapData(BaseMapData):
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
 
   def update_location(self) -> None:
-    gps = self.sm[self.gps_location_service]
-    gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_MDL < 2.0
+    location = self.sm['liveLocationKalman']
+    self.localizer_valid = (location.status == log.LiveLocationKalman.Status.valid) and location.positionGeodetic.valid
 
-    if gps_ok:
-      self.last_bearing = gps.bearingDeg * 180/math.pi
-      self.last_position = Coordinate(gps.latitude, gps.longitude)
-
-    if not gps_ok and self.sm['livePose'].inputsOK:
-      return
+    if self.localizer_valid:
+      self.last_bearing = math.degrees(location.calibratedOrientationNED.value[2])
+      self.last_position = Coordinate(location.positionGeodetic.value[0], location.positionGeodetic.value[1])
 
     if self.last_position is None:
       return
@@ -36,8 +33,10 @@ class OsmMapData(BaseMapData):
     params = {
       "latitude": self.last_position.latitude,
       "longitude": self.last_position.longitude,
-      "bearing": self.last_bearing,
     }
+
+    if self.last_bearing is not None:
+      params['bearing'] = self.last_bearing
 
     self.mem_params.put("LastGPSPosition", json.dumps(params))
 
