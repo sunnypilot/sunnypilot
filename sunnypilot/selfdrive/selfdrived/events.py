@@ -37,7 +37,7 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     "Speed Limit Assist: Activation Required",
     f"Manually change set speed to {max_initial_set_speed} {speed_unit} to activate",
     AlertStatus.normal, AlertSize.mid,
-    Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.)
+    Priority.LOW, VisualAlert.none, AudibleAlert.none, .1)
 
 
 class EventsSP(EventsBase):
@@ -198,7 +198,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.speedLimitPending: {
     ET.WARNING: Alert(
-      "Automatically adjusting to the previous speed limit",
+      "Automatically adjusting to the last speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),

@@ -25,7 +25,7 @@ ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
 ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending, *ACTIVE_STATES)
 
 DISABLED_GUARD_PERIOD = 0.5  # secs.
-PRE_ACTIVE_GUARD_PERIOD = 5  # secs. Time to wait after activation before considering temp deactivation signal.
+PRE_ACTIVE_GUARD_PERIOD = 10  # secs. Time to wait after activation before considering temp deactivation signal.
 
 LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers to provide.
 LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
@@ -215,7 +215,7 @@ class SpeedLimitAssist:
     return enabled, active
 
   def update_events(self, events_sp: EventsSP) -> None:
-    if self.state == SpeedLimitAssistState.preActive and self._state_prev != SpeedLimitAssistState.preActive:
+    if self.state == SpeedLimitAssistState.preActive:
       events_sp.add(EventNameSP.speedLimitPreActive)
 
     elif self.state == SpeedLimitAssistState.pending and self._state_prev != SpeedLimitAssistState.pending:
