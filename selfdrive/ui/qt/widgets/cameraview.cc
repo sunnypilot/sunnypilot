@@ -62,6 +62,10 @@ const char frame_fragment_shader[] =
 
 } // namespace
 
+void CameraWidget::updateParams() {
+  visual_style_ = QString::fromStdString(Params().get("VisualStyle")).toInt();
+}
+
 CameraWidget::CameraWidget(std::string stream_name, VisionStreamType type, QWidget* parent) :
                           stream_name(stream_name), active_stream_type(type), requested_stream_type(type), QOpenGLWidget(parent) {
   setAttribute(Qt::WA_OpaquePaintEvent);
@@ -196,6 +200,13 @@ mat4 CameraWidget::calcFrameMatrix() {
 }
 
 void CameraWidget::paintGL() {
+  static double last_params_t = 0.0;
+  double now = millis_since_boot();
+  if (now - last_params_t > 1000.0) {
+    updateParams();
+    last_params_t = now;
+  }
+  
   glClearColor(bg.redF(), bg.greenF(), bg.blueF(), bg.alphaF());
   glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -248,7 +259,7 @@ void CameraWidget::paintGL() {
 
   glUniformMatrix4fv(program->uniformLocation("uTransform"), 1, GL_TRUE, frame_mat.v);
   glEnableVertexAttribArray(0);
-  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 0) {
+  if (visual_style_ == 0) {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const void *)0);
   }
   glDisableVertexAttribArray(0);
