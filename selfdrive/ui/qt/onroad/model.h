@@ -71,12 +71,4 @@ protected:
   QColor lead_status_color;
 
   void drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius = 5.0f);
-
-  void updateParams();
-  int visual_style_ = 0;
-  int visual_blend_ = 0;
-  float visual_blend_threshold_ = 20.0f;
-  int visual_radar_tracks_ = 0;
-  int visual_radar_tracks_delay_ = 0;
-  int visual_fps_ = 0;
 };
