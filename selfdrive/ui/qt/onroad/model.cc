@@ -2,6 +2,12 @@
 #include <QPainterPath>
 #include <algorithm>
 
+void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius) {
+  painter.setBrush(QColor(255, 255, 255, 200));
+  painter.setPen(Qt::NoPen);
+  painter.drawEllipse(pos, radius, radius);
+}
+
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
   auto &sm = *(s->sm);
@@ -36,6 +42,19 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       drawLead(painter, lead_two, lead_vertices[1], surface_rect);
     }
   }
+
+  if (sm.alive("liveTracks") && sm.rcv_frame("liveTracks") >= s->scene.started_frame) {
+    const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
+    for (const auto &track : tracks) {
+      if (!std::isfinite(track.getDRel()) || !std::isfinite(track.getYRel())) continue;
+      QPointF screen_pt;
+      if (mapToScreen(track.getDRel(), -track.getYRel(), path_offset_z, &screen_pt)) {
+        float radius = std::clamp(15.0f / (1.0f + track.getDRel() * 0.1f), 3.0f, 8.0f);
+        drawRadarPoint(painter, screen_pt, track.getVRel(), radius);
+      }
+    }
+  }
+
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
   painter.restore();
