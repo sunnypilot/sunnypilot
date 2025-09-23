@@ -68,7 +68,7 @@ class SpeedLimitAssist:
     self._distance = 0.
     self.state = SpeedLimitAssistState.disabled
     self._state_prev = SpeedLimitAssistState.disabled
-    self.pcm_cruise_long = CP.openpilotLongitudinalControl and CP.pcmCruise
+    self.pcm_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
     # TODO-SP: SLA's own output_a_target for planner
     # Solution functions mapped to respective states
@@ -137,6 +137,16 @@ class SpeedLimitAssist:
   def get_active_state_target_acceleration(self) -> float:
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
+  def _update_pcm_op_long_state(self):
+    if self.initial_max_set_confirmed():
+      if self._speed_limit > 0:
+        if self.v_offset < LIMIT_SPEED_OFFSET_TH:
+          self.state = SpeedLimitAssistState.adapting
+        else:
+          self.state = SpeedLimitAssistState.active
+      else:
+        self.state = SpeedLimitAssistState.pending
+
   def update_state_machine(self):
     self._state_prev = self.state
 
@@ -173,14 +183,8 @@ class SpeedLimitAssist:
 
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
-          if self.initial_max_set_confirmed():
-            if self._speed_limit > 0:
-              if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-                self.state = SpeedLimitAssistState.adapting
-              else:
-                self.state = SpeedLimitAssistState.active
-            else:
-              self.state = SpeedLimitAssistState.pending
+          if self.pcm_op_long:
+            self._update_pcm_op_long_state()
           elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
@@ -197,14 +201,8 @@ class SpeedLimitAssist:
           self.long_engaged_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
         elif self.long_engaged_timer <= 0:
-          if self.initial_max_set_confirmed():
-            if self._speed_limit > 0:
-              if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-                self.state = SpeedLimitAssistState.adapting
-              else:
-                self.state = SpeedLimitAssistState.active
-            else:
-              self.state = SpeedLimitAssistState.pending
+          if self.pcm_op_long:
+            self._update_pcm_op_long_state()
           else:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
