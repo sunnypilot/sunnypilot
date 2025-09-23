@@ -109,7 +109,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
 
     painter.setPen(Qt::white);
     QFont font;
-    font.setFamily("Courier");
+    font.setFamily("FixedFont");
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
     font.setPixelSize(48);
