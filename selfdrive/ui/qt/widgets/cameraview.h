@@ -60,6 +60,9 @@ protected:
   void vipcThread();
   void clearFrames();
 
+  void updateParams();
+  int visual_style_ = 0;
+
   int glWidth();
   int glHeight();
 
