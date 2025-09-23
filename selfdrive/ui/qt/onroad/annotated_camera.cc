@@ -131,6 +131,7 @@ void AnnotatedCameraWidget::paintGL() {
         wide_cam_requested = false;
       }
       wide_cam_requested = wide_cam_requested && sm["selfdriveState"].getSelfdriveState().getExperimentalMode();
+      wide_cam_requested = wide_cam_requested || QString::fromStdString(Params().get("VisualWideCam")).toInt();
     }
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
     CameraWidget::setFrameId(sm["modelV2"].getModelV2().getFrameId());

@@ -167,6 +167,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"VisualStyleBlend", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"VisualStyleBlendThreshold", {PERSISTENT | BACKUP, INT, "20"}},
     {"VisualRadarTracks", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualWideCam", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
