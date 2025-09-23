@@ -8,18 +8,16 @@ import numpy as np
 
 import cereal.messaging as messaging
 from cereal import custom
-from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
 ACTIVE_STATES = (VisionState.entering, VisionState.turning, VisionState.leaving)
 ENABLED_STATES = (VisionState.enabled, VisionState.overriding, *ACTIVE_STATES)
-
-_MIN_V = 20 * CV.KPH_TO_MS  # Do not operate under 20 km/h
 
 _ENTERING_PRED_LAT_ACC_TH = 1.3  # Predicted Lat Acc threshold to trigger entering turn state.
 _ABORT_ENTERING_PRED_LAT_ACC_TH = 1.1  # Predicted Lat Acc threshold to abort entering state if speed drops.
@@ -73,7 +71,7 @@ class SmartCruiseControlVision:
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
-      return max(self.v_target, _MIN_V) + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
+      return max(self.v_target, MIN_V) + self.a_target * _NO_OVERSHOOT_TIME_HORIZON
 
     return V_CRUISE_UNSET
 
@@ -114,7 +112,7 @@ class SmartCruiseControlVision:
         # ENABLED
         if self.state == VisionState.enabled:
           # Do not enter a turn control cycle if the speed is low.
-          if self.v_ego <= _MIN_V:
+          if self.v_ego <= MIN_V:
             pass
           # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
           elif self.max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:

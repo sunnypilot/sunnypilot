@@ -50,6 +50,13 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(SmartCruiseControlVision);
 
+  SmartCruiseControlMap = new ParamControl(
+    "SmartCruiseControlMap",
+    tr("Smart Cruise Control - Map"),
+    tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
+    "");
+  list->addItem(SmartCruiseControlMap);
+
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
@@ -136,6 +143,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->refresh();
 
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
+  SmartCruiseControlMap->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }
