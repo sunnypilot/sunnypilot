@@ -2,6 +2,13 @@
 #include <QPainterPath>
 #include <algorithm>
 
+void ModelRenderer::updateParams() {
+  visual_style_          = QString::fromStdString(Params().get("VisualStyle")).toInt();
+  visual_blend_          = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
+  visual_blend_threshold_ = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
+  visual_radar_tracks_    = QString::fromStdString(Params().get("VisualRadarTracks")).toInt();
+}
+
 void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius) {
   painter.setBrush(QColor(255, 255, 255, 200));
   painter.setPen(Qt::NoPen);
@@ -9,13 +16,20 @@ void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float 
 }
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
+  static double last_params_t = 0.0;
+  double params_now = millis_since_boot();
+  if (params_now - last_params_t > 1000.0) {
+    updateParams();
+    last_params_t = params_now;
+  }
+
   static double last_draw_t = millis_since_boot();
-  static float avg_frame_time = 50.0f;  // ms
+  static float avg_frame_time = 50.0f;
   static float avg_fps = 20.0f;
 
-  double now = millis_since_boot();
-  double frame_time_ms = now - last_draw_t;
-  last_draw_t = now;
+  double frame_now = millis_since_boot();
+  double frame_time_ms = frame_now - last_draw_t;
+  last_draw_t = frame_now;
 
   float fps = (frame_time_ms > 0) ? (1000.0f / frame_time_ms) : 0.0f;
 
@@ -58,7 +72,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
     }
   }
 
-  if (QString::fromStdString(Params().get("VisualRadarTracks")).toInt()) {
+  if (visual_radar_tracks_) {
     if (sm.alive("liveTracks") && sm.rcv_frame("liveTracks") >= s->scene.started_frame) {
       const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
       for (const auto &track : tracks) {
@@ -116,7 +130,7 @@ void ModelRenderer::update_leads(const cereal::RadarState::Reader &radar_state, 
 void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) {
   const auto &model_position = model.getPosition();
   float max_distance;
-  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 0) {
+  if (visual_style_ == 0) {
     max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
   } else {
     max_distance = std::clamp(*(model_position.getX().end() - 1), 0.0f, 300.0f);
@@ -128,7 +142,7 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   int max_idx = get_path_length_idx(lane_lines[0], max_distance);
   for (int i = 0; i < std::size(lane_line_vertices); i++) {
     lane_line_probs[i] = line_probs[i];
-    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+    if (visual_style_ == 2) {
       mapLineToPolygon(lane_lines[i], 0.075 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
     } else {
       mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
@@ -140,7 +154,7 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   const auto &edge_stds = model.getRoadEdgeStds();
   for (int i = 0; i < std::size(road_edge_vertices); i++) {
     road_edge_stds[i] = edge_stds[i];
-    if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+    if (visual_style_ == 2) {
       mapLineToPolygon(road_edges[i], 0.1, 0, &road_edge_vertices[i], max_idx);
     } else {
       mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
@@ -157,7 +171,7 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
 }
 
 void ModelRenderer::drawLaneLines(QPainter &painter) {
-  if (QString::fromStdString(Params().get("VisualStyle")).toInt() == 2) {
+  if (visual_style_ == 2) {
     QRectF r = clip_region;
 
     // --- Find horizon from road edges ---
@@ -550,10 +564,8 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   float g_xo = sz / 5;
   float g_yo = sz / 10;
 
-  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
-
   QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
-  if (visual_style == 2) {
+  if (visual_style_ == 2) {
     painter.setBrush(QColor(0xE6, 0xE6, 0xE6, 255));
   } else {
     painter.setBrush(QColor(218, 202, 37, 255));
@@ -562,7 +574,7 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
 
   // chevron
   QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
-  if (visual_style == 2) {
+  if (visual_style_ == 2) {
     painter.setBrush(QColor(0, 0, 0, fillAlpha));
   } else {
     painter.setBrush(QColor(201, 34, 49, fillAlpha));
@@ -579,9 +591,6 @@ float mapRange(float x, float in_min, float in_max, float out_min, float out_max
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  int visual_style = QString::fromStdString(Params().get("VisualStyle")).toInt();
-  int visual_blend = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
-  float visual_blend_threshold = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
   float blend_speed_mph = sm["carState"].getCarState().getVEgo() * 2.23694f;  // convert to mph
 
   // Normal perspective (3D)
@@ -612,21 +621,21 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   );
 
   // Force top-down if VisualStyle == 3
-  if (visual_style == 3) {
+  if (visual_style_ == 3) {
     *out = topdown_view;
     return clip_region.contains(*out);
   }
 
   // Blending mode
-  if (visual_blend == 1 && visual_style != 0) {
+  if (visual_blend_ == 1 && visual_style_ != 0) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
     static double last_t = millis_since_boot();
 
     // Hysteresis logic
-    if (target_blend < 0.5f && blend_speed_mph > visual_blend_threshold) {
+    if (target_blend < 0.5f && blend_speed_mph > visual_blend_threshold_) {
       target_blend = 1.0f;  // switch to 2D
-    } else if (target_blend > 0.5f && blend_speed_mph < (visual_blend_threshold - 5)) {
+    } else if (target_blend > 0.5f && blend_speed_mph < (visual_blend_threshold_ - 5)) {
       target_blend = 0.0f;  // switch back to 3D
     }
 
