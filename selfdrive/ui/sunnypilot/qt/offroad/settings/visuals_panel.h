@@ -31,4 +31,5 @@ protected:
  ButtonParamControlSP *dev_ui_settings;
  ButtonParamControlSP *visual_style_settings;
  OptionControlSP *visual_style_threshold_settings;
+ OptionControlSP *visual_radar_tracks_delay_settings;
 };

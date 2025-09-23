@@ -7,6 +7,7 @@ void ModelRenderer::updateParams() {
   visual_blend_          = QString::fromStdString(Params().get("VisualStyleBlend")).toInt();
   visual_blend_threshold_ = QString::fromStdString(Params().get("VisualStyleBlendThreshold")).toFloat();
   visual_radar_tracks_    = QString::fromStdString(Params().get("VisualRadarTracks")).toInt();
+  visual_radar_tracks_delay_ = QString::fromStdString(Params().get("VisualRadarTracksDelay")).toFloat();
   visual_fps_             = QString::fromStdString(Params().get("VisualFPS")).toInt();
 }
 
@@ -78,7 +79,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
       for (const auto &track : tracks) {
         if (!std::isfinite(track.getDRel()) || !std::isfinite(track.getYRel())) continue;
-        const float t_lag = 0.0f;  // seconds
+        float t_lag = visual_radar_tracks_delay_;
         float d_pred = track.getDRel();
         float y_pred = track.getYRel();
         if (t_lag > 0.0f) {
