@@ -156,11 +156,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     // Speed Limit
     bool showSpeedLimit;
-    bool speedLimitAssistPreActivePulse = pulseElement(speedLimitAssistFrame);
+    bool speed_limit_assist_pre_active_pulse = pulseElement(speedLimitAssistFrame);
 
     if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
       speedLimitAssistFrame++;
-      showSpeedLimit = speedLimitAssistPreActivePulse;
+      showSpeedLimit = speed_limit_assist_pre_active_pulse;
     } else {
       speedLimitAssistFrame = 0;
       showSpeedLimit = speedLimitMode != SpeedLimitMode::OFF;
