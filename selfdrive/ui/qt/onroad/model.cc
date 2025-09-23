@@ -85,13 +85,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
         }
         QPointF screen_pt;
         if (mapToScreen(d_pred, -y_pred, path_offset_z, &screen_pt)) {
-          float radius;
-          if (visual_style_ == 3) {
-            radius = 8.0f;
-          } else {
-            radius = std::clamp(15.0f / (1.0f + d_pred * 0.1f), 3.0f, 8.0f) * 3;
-          }
-          drawRadarPoint(painter, screen_pt, track.getVRel(), radius);
+          drawRadarPoint(painter, screen_pt, track.getVRel(), 10);
         }
       }
     }
