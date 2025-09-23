@@ -116,8 +116,15 @@ class SpeedLimitAssist:
       self.is_metric = self.params.get_bool("IsMetric")
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
-  def initial_max_set_confirmed(self) -> bool:
-    return bool(abs(self.v_cruise_cluster - REQUIRED_INITIAL_MAX_SET_SPEED) <= CRUISE_SPEED_TOLERANCE)
+  @property
+  def target_set_speed_confirmed(self) -> bool:
+    speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
+    speed_limit_final_conv = round(self.speed_limit_final * speed_conv)
+    v_cruise_cluster_conv = round(self.v_cruise_cluster * speed_conv)
+
+    target_set_speed_conv = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric] if self.pcm_op_long else speed_limit_final_conv
+
+    return v_cruise_cluster_conv == target_set_speed_conv
 
   def update_calculations(self, v_cruise_cluster: float) -> None:
     self.v_cruise_cluster = v_cruise_cluster if not np.isnan(v_cruise_cluster) else 0.0
@@ -146,7 +153,7 @@ class SpeedLimitAssist:
     else:
       self.state = SpeedLimitAssistState.pending
 
-  def update_state_machine(self):
+  def update_state_machine_pcm_op_long(self):
     self._state_prev = self.state
 
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
@@ -182,7 +189,7 @@ class SpeedLimitAssist:
 
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
-          if self.initial_max_set_confirmed():
+          if self.target_set_speed_confirmed:
             self._update_pcm_long_confirmed_state()
           elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
             # Timeout - session ended
@@ -200,7 +207,7 @@ class SpeedLimitAssist:
           self.long_engaged_timer = int(DISABLED_GUARD_PERIOD / DT_MDL)
 
         elif self.long_engaged_timer <= 0:
-          if self.initial_max_set_confirmed():
+          if self.target_set_speed_confirmed:
             self._update_pcm_long_confirmed_state()
           else:
             self.state = SpeedLimitAssistState.preActive
@@ -241,7 +248,12 @@ class SpeedLimitAssist:
 
     self.update_params()
     self.update_calculations(v_cruise_cluster)
-    self.is_enabled, self.is_active = self.update_state_machine()
+
+    if self.pcm_op_long:
+      self.is_enabled, self.is_active = self.update_state_machine_pcm_op_long()
+    else:
+      pass
+
     self.update_events(events_sp)
 
     # Update change tracking variables
