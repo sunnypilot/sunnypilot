@@ -8,11 +8,6 @@
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/util.h"
 
-void AnnotatedCameraWidget::updateParams() {
-  visual_style_    = QString::fromStdString(Params().get("VisualStyle")).toInt();
-  visual_wide_cam_ = QString::fromStdString(Params().get("VisualWideCam")).toInt();
-}
-
 // Window that shows camera view and variety of info drawn on top
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget *parent)
     : fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, parent) {
@@ -31,7 +26,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   experimental_btn->updateState(s);
   dmon.updateState(s);
 
-  if (visual_style_ == 0) {
+  if (s.scene.visual_style == 0) {
     setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
   } else {
     setBackgroundColor(QColor(0, 0, 0));
@@ -46,7 +41,8 @@ void AnnotatedCameraWidget::initializeGL() {
   qInfo() << "OpenGL language version:" << QString((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   prev_draw_t = millis_since_boot();
-  if (visual_style_ == 0) {
+  auto *s = uiState();
+  if (s->scene.visual_style == 0) {
     setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
   } else {
     setBackgroundColor(QColor(0, 0, 0));
@@ -103,14 +99,6 @@ mat4 AnnotatedCameraWidget::calcFrameMatrix() {
 }
 
 void AnnotatedCameraWidget::paintGL() {
-  // refresh VisualWideCam param ~once per second
-  static double last_params_t = 0.0;
-  double params_now = millis_since_boot();
-  if (params_now - last_params_t > 1000.0) {
-    updateParams();
-    last_params_t = params_now;
-  }
-
   UIState *s = uiState();
   SubMaster &sm = *(s->sm);
   const double start_draw_t = millis_since_boot();
@@ -142,7 +130,7 @@ void AnnotatedCameraWidget::paintGL() {
         wide_cam_requested = false;
       }
       wide_cam_requested = wide_cam_requested && sm["selfdriveState"].getSelfdriveState().getExperimentalMode();
-      wide_cam_requested = wide_cam_requested || (visual_wide_cam_ != 0);
+      wide_cam_requested = wide_cam_requested || (s->scene.visual_wide_cam != 0);
     }
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
     CameraWidget::setFrameId(sm["modelV2"].getModelV2().getFrameId());

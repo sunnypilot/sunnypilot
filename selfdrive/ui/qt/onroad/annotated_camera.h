@@ -45,8 +45,4 @@ protected:
 
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
-
-  void updateParams();
-  int visual_style_ = 0;
-  int visual_wide_cam_ = 0;
 };
