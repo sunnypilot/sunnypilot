@@ -48,10 +48,12 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
       for (const auto &track : tracks) {
         if (!std::isfinite(track.getDRel()) || !std::isfinite(track.getYRel())) continue;
-        const float t_lag = 0.5f;  // seconds
-        float d_pred = track.getDRel() + track.getVRel() * t_lag;
-        d_pred += 0.5f * track.getARel() * t_lag * t_lag;
+        const float t_lag = 0.0f;  // seconds
+        float d_pred = track.getDRel();
         float y_pred = track.getYRel();
+        if (t_lag > 0.0f) {
+          d_pred += track.getVRel() * t_lag + 0.5f * track.getARel() * t_lag * t_lag;
+        }
         QPointF screen_pt;
         if (mapToScreen(d_pred, -y_pred, path_offset_z, &screen_pt)) {
           float radius = std::clamp(15.0f / (1.0f + d_pred * 0.1f), 3.0f, 8.0f);
