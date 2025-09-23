@@ -137,7 +137,7 @@ class SpeedLimitAssist:
   def get_active_state_target_acceleration(self) -> float:
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
-  def _update_pcm_op_long_state(self):
+  def _update_pcm_long_confirmed_state(self):
     if self._speed_limit > 0:
       if self.v_offset < LIMIT_SPEED_OFFSET_TH:
         self.state = SpeedLimitAssistState.adapting
@@ -183,7 +183,7 @@ class SpeedLimitAssist:
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
           if self.initial_max_set_confirmed():
-            self._update_pcm_op_long_state()
+            self._update_pcm_long_confirmed_state()
           elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
@@ -201,7 +201,7 @@ class SpeedLimitAssist:
 
         elif self.long_engaged_timer <= 0:
           if self.initial_max_set_confirmed():
-            self._update_pcm_op_long_state()
+            self._update_pcm_long_confirmed_state()
           else:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
