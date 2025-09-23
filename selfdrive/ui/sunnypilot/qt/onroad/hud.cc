@@ -112,27 +112,26 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     int y1_offset = -80;
     int y2_offset = -140;
 
+    int y_scc_v = 0, y_scc_m = 0;
+    const int orders[2] = {y1_offset, y2_offset};
+    int i = 0;
+    // SCC-V takes first order
+    if (smartCruiseControlVisionEnabled) y_scc_v = orders[i++];
+    if (smartCruiseControlMapEnabled) y_scc_m = orders[i++];
+
+    // Smart Cruise Control - Vision
     bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
     if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
-      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y1_offset, "SCC-V");
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_v, "SCC-V");
     }
+    smartCruiseControlVisionFrame = smartCruiseControlVisionActive ? (smartCruiseControlVisionFrame + 1) : 0;
 
-    if (smartCruiseControlVisionActive) {
-      smartCruiseControlVisionFrame++;
-    } else {
-      smartCruiseControlVisionFrame = 0;
-    }
-
+    // Smart Cruise Control - Map
     bool scc_map_active_pulse = pulseElement(smartCruiseControlMapFrame);
     if ((smartCruiseControlMapEnabled && !smartCruiseControlMapActive) || (smartCruiseControlMapActive && scc_map_active_pulse)) {
-      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y2_offset, "SCC-M");
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_m, "SCC-M");
     }
-
-    if (smartCruiseControlMapActive) {
-      smartCruiseControlMapFrame++;
-    } else {
-      smartCruiseControlMapFrame = 0;
-    }
+    smartCruiseControlMapFrame = smartCruiseControlMapActive ? (smartCruiseControlMapFrame + 1) : 0;
 
     // Bottom Dev UI
     if (devUiInfo == 2) {
