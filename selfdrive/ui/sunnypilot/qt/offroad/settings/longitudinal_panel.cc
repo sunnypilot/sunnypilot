@@ -8,6 +8,21 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
 
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
+  setStyleSheet(R"(
+    #back_btn {
+      font-size: 50px;
+      margin: 0px;
+      padding: 15px;
+      border-width: 0;
+      border-radius: 30px;
+      color: #dddddd;
+      background-color: #393939;
+    }
+    #back_btn:pressed {
+      background-color:  #4a4a4a;
+    }
+  )");
+
   main_layout = new QStackedLayout(this);
   ListWidget *list = new ListWidget(this, false);
 
@@ -35,12 +50,33 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(SmartCruiseControlVision);
 
+  SmartCruiseControlMap = new ParamControl(
+    "SmartCruiseControlMap",
+    tr("Smart Cruise Control - Map"),
+    tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
+    "");
+  list->addItem(SmartCruiseControlMap);
+
   customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
+  speedLimitSettings = new PushButtonSP(tr("Speed Limit"), 750, this);
+  connect(speedLimitSettings, &QPushButton::clicked, [&]() {
+    cruisePanelScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(speedLimitScreen);
+  });
+  list->addItem(speedLimitSettings);
+
+  speedLimitScreen = new SpeedLimitSettings(this);
+  connect(speedLimitScreen, &SpeedLimitSettings::backPress, [=]() {
+    cruisePanelScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(cruisePanelScreen);
+  });
+
   main_layout->addWidget(cruisePanelScreen);
+  main_layout->addWidget(speedLimitScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh(offroad);
 }
@@ -51,6 +87,7 @@ void LongitudinalPanel::showEvent(QShowEvent *event) {
 }
 
 void LongitudinalPanel::refresh(bool _offroad) {
+  auto icbm_available = false;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -63,11 +100,12 @@ void LongitudinalPanel::refresh(bool _offroad) {
 
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
-    intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+    icbm_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+    has_intelligent_cruise_button_management = hasIntelligentCruiseButtonManagement(CP_SP);
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
-    intelligent_cruise_button_management_available = false;
+    has_intelligent_cruise_button_management = false;
   }
 
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
@@ -79,7 +117,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     customAccIncrement->setDescription(onroadOnlyDescription);
     customAccIncrement->showDescription();
   } else {
-    if (has_longitudinal_control || intelligent_cruise_button_management_available) {
+    if (has_longitudinal_control || icbm_available) {
       if (is_pcm_cruise) {
         customAccIncrement->setDescription(accPcmCruiseDisabledDescription);
         customAccIncrement->showDescription();
@@ -96,7 +134,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  bool icbm_allowed = intelligent_cruise_button_management_available && !has_longitudinal_control;
+  bool icbm_allowed = has_intelligent_cruise_button_management && !has_longitudinal_control;
   intelligentCruiseButtonManagement->setEnabled(icbm_allowed && offroad);
 
   // enable toggle when long is available and is not PCM cruise
@@ -105,6 +143,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->refresh();
 
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
+  SmartCruiseControlMap->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }

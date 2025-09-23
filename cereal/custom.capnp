@@ -145,6 +145,9 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
+  speedLimit @3 :SpeedLimit;
+  vTarget @4 :Float32;
+  aTarget @5 :Float32;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -159,6 +162,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
 
   struct SmartCruiseControl {
     vision @0 :Vision;
+    map @1 :Map;
 
     struct Vision {
       state @0 :VisionState;
@@ -170,6 +174,14 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       active @6 :Bool;
     }
 
+    struct Map {
+      state @0 :MapState;
+      vTarget @1 :Float32;
+      aTarget @2 :Float32;
+      enabled @3 :Bool;
+      active @4 :Bool;
+    }
+
     enum VisionState {
       disabled @0; # System disabled or inactive.
       enabled @1; # No predicted substantial turn on vision range.
@@ -178,11 +190,36 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       leaving @4; # Road ahead straightens. Start to allow positive acceleration.
       overriding @5; # System overriding with manual control.
     }
+
+    enum MapState {
+      disabled @0; # System disabled or inactive.
+      enabled @1; # No predicted substantial turn on map range.
+      turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+      overriding @3; # System overriding with manual control.
+    }
+  }
+
+  struct SpeedLimit {
+    resolver @0 :Resolver;
+
+    struct Resolver {
+      speedLimit @0 :Float32;
+      distToSpeedLimit @1 :Float32;
+      source @2 :Source;
+      speedLimitOffset @3 :Float32;
+    }
+
+    enum Source {
+      none @0;
+      car @1;
+      map @2;
+    }
   }
 
   enum LongitudinalPlanSource {
     cruise @0;
     sccVision @1;
+    sccMap @2;
   }
 }
 
@@ -316,6 +353,7 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
 }
 
 struct CarStateSP @0xb86e6369214c01c8 {
+  speedLimit @0 :Float32;
 }
 
 struct LiveMapDataSP @0xf416ec09499d9d19 {

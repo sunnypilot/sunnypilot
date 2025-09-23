@@ -6,14 +6,17 @@ See the LICENSE.md file in the root directory for more details.
 """
 import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import SmartCruiseControlVision
+from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.map_controller import SmartCruiseControlMap
 
 
 class SmartCruiseControl:
   def __init__(self):
     self.vision = SmartCruiseControlVision()
+    self.map = SmartCruiseControlMap()
 
   def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> None:
     long_enabled = sm['carControl'].enabled
     long_override = sm['carControl'].cruiseControl.override
 
+    self.map.update(long_enabled, long_override, v_ego, a_ego, v_cruise)
     self.vision.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)

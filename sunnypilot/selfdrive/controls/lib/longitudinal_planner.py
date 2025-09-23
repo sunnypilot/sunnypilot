@@ -9,6 +9,7 @@ from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -19,8 +20,12 @@ class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
+    self.resolver = SpeedLimitResolver()
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = Source.cruise
+
+    self.output_v_target = 0.
+    self.output_a_target = 0.
 
   @property
   def mlsim(self) -> bool:
@@ -36,15 +41,18 @@ class LongitudinalPlannerSP:
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     self.scc.update(sm, v_ego, a_ego, v_cruise)
 
+    # Speed Limit Resolver
+    self.resolver.update(v_ego, sm)
+
     targets = {
       Source.cruise: (v_cruise, a_ego),
-      Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target)
+      Source.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
+      Source.sccMap: (self.scc.map.output_v_target, self.scc.map.output_a_target),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
-    v_target, a_target = targets[self.source]
-
-    return v_target, a_target
+    self.output_v_target, self.output_a_target = targets[self.source]
+    return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
@@ -56,6 +64,8 @@ class LongitudinalPlannerSP:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source
+    longitudinalPlanSP.vTarget = float(self.output_v_target)
+    longitudinalPlanSP.aTarget = float(self.output_a_target)
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
@@ -65,7 +75,7 @@ class LongitudinalPlannerSP:
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl
-    # Vision Turn Speed Control
+    # Vision Control
     sccVision = smartCruiseControl.vision
     sccVision.state = self.scc.vision.state
     sccVision.vTarget = float(self.scc.vision.output_v_target)
@@ -74,5 +84,20 @@ class LongitudinalPlannerSP:
     sccVision.maxPredictedLateralAccel = float(self.scc.vision.max_pred_lat_acc)
     sccVision.enabled = self.scc.vision.is_enabled
     sccVision.active = self.scc.vision.is_active
+    # Map Control
+    sccMap = smartCruiseControl.map
+    sccMap.state = self.scc.map.state
+    sccMap.vTarget = float(self.scc.map.output_v_target)
+    sccMap.aTarget = float(self.scc.map.output_a_target)
+    sccMap.enabled = self.scc.map.is_enabled
+    sccMap.active = self.scc.map.is_active
+
+    # Speed Limit
+    speedLimit = longitudinalPlanSP.speedLimit
+    resolver = speedLimit.resolver
+    resolver.speedLimit = float(self.resolver.speed_limit)
+    resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
+    resolver.distToSpeedLimit = float(self.resolver.distance)
+    resolver.source = self.resolver.source
 
     pm.send('longitudinalPlanSP', plan_sp_send)
