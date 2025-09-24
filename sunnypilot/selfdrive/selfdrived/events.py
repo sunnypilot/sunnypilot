@@ -29,7 +29,7 @@ def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 
 def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  max_initial_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[metric]
+  max_initial_set_speed = round(PCM_LONG_REQUIRED_MAX_SET_SPEED[metric] * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
   speed_unit = "km/h" if metric else "mph"
   return Alert(
     "Speed Limit Assist: Activation Required",
