@@ -123,7 +123,7 @@ class SpeedLimitAssist:
 
   @property
   def target_set_speed_confirmed(self) -> bool:
-    return self.v_cruise_cluster_conv == self.target_set_speed_conv
+    return bool(self.v_cruise_cluster_conv == self.target_set_speed_conv)
 
   def update_calculations(self, v_cruise_cluster: float) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
