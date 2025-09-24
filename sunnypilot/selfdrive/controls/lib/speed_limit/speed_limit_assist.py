@@ -129,14 +129,15 @@ class SpeedLimitAssist:
 
   def update_calculations(self, v_cruise_cluster: float) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
-    self.v_cruise_cluster = v_cruise_cluster if not np.isnan(v_cruise_cluster) else 0.0
+    self.v_cruise_cluster = v_cruise_cluster
 
     # Update current velocity offset (error)
     self.v_offset = self.speed_limit_final - self.v_ego
 
     self.speed_limit_final_conv = round(self.speed_limit_final * speed_conv)
     self.v_cruise_cluster_conv = round(self.v_cruise_cluster * speed_conv)
-    self.target_set_speed_conv = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric] if self.pcm_op_long else self.speed_limit_final_conv
+    pcm_long_required_max_set_speed_conv = round(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric] * speed_conv)
+    self.target_set_speed_conv = pcm_long_required_max_set_speed_conv if self.pcm_op_long else self.speed_limit_final_conv
 
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego

@@ -14,7 +14,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import REQUIRED_INITIAL_MAX_SET_SPEED
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
   PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
@@ -37,7 +37,7 @@ class TestSpeedLimitAssist:
     self.params = Params()
     self.reset_custom_params()
     self.events_sp = EventsSP()
-    CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2_2022)
+    CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2)
     self.sla = SpeedLimitAssist(CI.CP)
     self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
 
@@ -95,7 +95,7 @@ class TestSpeedLimitAssist:
 
   def test_preactive_to_active_with_max_speed_confirmation(self):
     self.sla.state = SpeedLimitAssistState.preActive
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
     assert self.sla.is_enabled and self.sla.is_active, f"enabled: {self.sla.is_enabled}, active: {self.sla.is_active}"
     assert self.sla.output_v_target == SPEED_LIMITS['city']
@@ -110,32 +110,32 @@ class TestSpeedLimitAssist:
 
   def test_preactive_to_pending_no_speed_limit(self):
     self.sla.state = SpeedLimitAssistState.preActive
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, 0, 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], 0, 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.pending
     assert self.sla.is_enabled and not self.sla.is_active
 
   def test_pending_to_active_when_speed_limit_available(self):
     self.sla.state = SpeedLimitAssistState.pending
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
 
   def test_pending_to_adapting_when_below_speed_limit(self):
     self.sla.state = SpeedLimitAssistState.pending
-    self.sla.update(True, False, SPEED_LIMITS['city'] + 5, 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'] + 5, 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.adapting
     assert self.sla.is_enabled and self.sla.is_active
 
   def test_active_to_adapting_transition(self):
-    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
+    self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
 
-    self.sla.update(True, False, SPEED_LIMITS['city'] + 2, 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'] + 2, 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.adapting
 
   def test_adapting_to_active_transition(self):
     self.sla.state = SpeedLimitAssistState.adapting
-    self.sla.v_cruise_cluster_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.sla.v_cruise_cluster_prev = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric]
 
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'], 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'], 0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
 
   def test_manual_cruise_change_detection(self):
@@ -148,49 +148,49 @@ class TestSpeedLimitAssist:
     assert self.sla.state == SpeedLimitAssistState.inactive
 
   def test_rapid_speed_limit_changes(self):
-    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
+    self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
     speed_limits = [SPEED_LIMITS['city'], SPEED_LIMITS['highway'], SPEED_LIMITS['residential']]
 
     for _, speed_limit in enumerate(speed_limits):
-      self.sla.update(True, False, speed_limit, 0, REQUIRED_INITIAL_MAX_SET_SPEED, speed_limit, 0, 0, self.events_sp)
+      self.sla.update(True, False, speed_limit, 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], speed_limit, 0, 0, self.events_sp)
     assert self.sla.state in ACTIVE_STATES
 
   def test_invalid_speed_limits_handling(self):
-    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
+    self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
     self.sla.last_valid_speed_limit_final = SPEED_LIMITS['city']
 
     invalid_limits = [-10, 0, 200 * CV.MPH_TO_MS]
 
     for invalid_limit in invalid_limits:
-      self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, invalid_limit, 0, 0, self.events_sp)
+      self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], invalid_limit, 0, 0, self.events_sp)
       assert isinstance(self.sla.output_v_target, (int, float))
       assert self.sla.output_v_target == V_CRUISE_UNSET or self.sla.output_v_target > 0
 
   def test_stale_data_handling(self):
-    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
+    self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
     old_speed_limit = SPEED_LIMITS['city']
     self.sla.last_valid_speed_limit_final = old_speed_limit
 
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, 0, 0, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], 0, 0, 0, self.events_sp)
     assert self.sla.state in ACTIVE_STATES
     assert self.sla.output_v_target == old_speed_limit
 
   def test_distance_based_adapting(self):
     self.sla.state = SpeedLimitAssistState.adapting
-    self.sla.v_cruise_cluster_prev = REQUIRED_INITIAL_MAX_SET_SPEED
+    self.sla.v_cruise_cluster_prev = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric]
 
     distance = 100.0
     current_speed = SPEED_LIMITS['highway']
     target_speed = SPEED_LIMITS['city']
 
-    self.sla.update(True, False, current_speed, 0, REQUIRED_INITIAL_MAX_SET_SPEED, target_speed, 0, distance, self.events_sp)
+    self.sla.update(True, False, current_speed, 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], target_speed, 0, distance, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.adapting
     assert self.sla.output_v_target == target_speed  # TODO-SP: assert expected accel, need to enable self.acceleration_solutions
 
   def test_long_disengaged_to_disabled(self):
-    self.initialize_active_state(REQUIRED_INITIAL_MAX_SET_SPEED)
+    self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
 
-    self.sla.update(False, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED, SPEED_LIMITS['city'],
+    self.sla.update(False, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], SPEED_LIMITS['city'],
                     0, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.disabled
     assert self.sla.output_v_target == V_CRUISE_UNSET
@@ -210,7 +210,7 @@ class TestSpeedLimitAssist:
 
       initial_state = state
 
-      self.sla.update(True, False, SPEED_LIMITS['city'], 0, REQUIRED_INITIAL_MAX_SET_SPEED,SPEED_LIMITS['city'], 0, 0, self.events_sp)
+      self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric],SPEED_LIMITS['city'], 0, 0, self.events_sp)
 
       assert self.sla.state in ALL_STATES  # Sanity check
 

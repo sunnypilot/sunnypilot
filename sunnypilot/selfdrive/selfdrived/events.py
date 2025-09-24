@@ -3,7 +3,7 @@ from cereal import log, car, custom
 from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import REQUIRED_INITIAL_MAX_SET_SPEED, CRUISE_SPEED_TOLERANCE
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -29,9 +29,7 @@ def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 
 def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  max_initial_set_speed = round(REQUIRED_INITIAL_MAX_SET_SPEED * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
-  if metric:
-    max_initial_set_speed += round(CRUISE_SPEED_TOLERANCE * CV.MS_TO_KPH)
+  max_initial_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[metric]
   speed_unit = "km/h" if metric else "mph"
   return Alert(
     "Speed Limit Assist: Activation Required",
