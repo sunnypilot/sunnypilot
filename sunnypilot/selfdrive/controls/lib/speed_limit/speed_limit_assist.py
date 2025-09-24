@@ -341,7 +341,10 @@ class SpeedLimitAssist:
     self.update_params()
     self.update_calculations(v_cruise_cluster)
 
-    self.is_enabled, self.is_active = self.update_state_machine_pcm_op_long()
+    if self.pcm_op_long:
+      self.is_enabled, self.is_active = self.update_state_machine_pcm_op_long()
+    else:
+      self.is_enabled, self.is_active = self.update_state_machine_non_pcm_long()
 
     self.update_events(events_sp)
 
