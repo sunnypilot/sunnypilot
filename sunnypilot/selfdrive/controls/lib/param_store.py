@@ -19,6 +19,11 @@ class ParamStore:
     universal_params: list[str] = []
     brand_params: list[str] = []
 
+    if CP.brand == "tesla":
+      brand_params.extend([
+        "TeslaCoopSteering",
+      ])
+
     self.keys = universal_params + brand_params
     self._params = {}
 
