@@ -31,6 +31,10 @@ LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers
 LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on limit controllers.
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
 V_CRUISE_UNSET = 255
+CONFIRM_SPEED_THRESHOLD = {
+  True: 80,   # km/h
+  False: 50,  # mph
+}
 
 CRUISE_BUTTONS_PLUS = (ButtonType.accelCruise, ButtonType.resumeCruise)
 CRUISE_BUTTONS_MINUS = (ButtonType.decelCruise, ButtonType.setCruise)
@@ -65,8 +69,8 @@ class SpeedLimitAssist:
     self._speed_limit = 0.
     self._speed_limit_final_last = 0.
     self.speed_limit_prev = 0.
-    self.speed_limit_final_conv = 0
-    self.prev_speed_limit_final_conv = 0
+    self.speed_limit_final_last_conv = 0
+    self.prev_speed_limit_final_last_conv = 0
     self._distance = 0.
     self.state = SpeedLimitAssistState.disabled
     self._state_prev = SpeedLimitAssistState.disabled
@@ -118,10 +122,24 @@ class SpeedLimitAssist:
     # Update current velocity offset (error)
     self.v_offset = self._speed_limit_final_last - self.v_ego
 
-    self.speed_limit_final_conv = round(self._speed_limit_final_last * speed_conv)
+    self.speed_limit_final_last_conv = round(self._speed_limit_final_last * speed_conv)
     self.v_cruise_cluster_conv = round(self.v_cruise_cluster * speed_conv)
-    pcm_long_required_max_set_speed_conv = round(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric] * speed_conv)
-    self.target_set_speed_conv = pcm_long_required_max_set_speed_conv if self.pcm_op_long else self.speed_limit_final_conv
+
+    cst_low, cst_high = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric]
+    pcm_long_required_max = cst_low if self.speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[self.is_metric] else cst_high
+    pcm_long_required_max_set_speed_conv = round(pcm_long_required_max * speed_conv)
+
+    self.target_set_speed_conv = pcm_long_required_max_set_speed_conv if self.pcm_op_long else self.speed_limit_final_last_conv
+
+  def apply_confirm_speed_threshold(self) -> bool:
+    # below CST: always require user confirmation
+    if self.v_cruise_cluster_conv < CONFIRM_SPEED_THRESHOLD[self.is_metric]:
+      return True
+
+    # at/above CST:
+    # - new speed limit >= CST: auto change
+    # - new speed limit < CST: user confirmation required
+    return self.speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[self.is_metric]
 
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego
@@ -171,6 +189,8 @@ class SpeedLimitAssist:
         if self.state == SpeedLimitAssistState.active:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
+          elif self.speed_limit_changed and self.apply_confirm_speed_threshold():
+            self.state = SpeedLimitAssistState.preActive
           elif self._has_speed_limit and self.v_offset < LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.adapting
 
@@ -178,6 +198,8 @@ class SpeedLimitAssist:
         elif self.state == SpeedLimitAssistState.adapting:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
+          elif self.speed_limit_changed and self.apply_confirm_speed_threshold():
+            self.state = SpeedLimitAssistState.preActive
           elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.active
 
@@ -234,6 +256,9 @@ class SpeedLimitAssist:
         if self.state == SpeedLimitAssistState.active:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
+
+          elif self.speed_limit_changed and self.apply_confirm_speed_threshold():
+            self.state = SpeedLimitAssistState.preActive
 
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
@@ -316,7 +341,7 @@ class SpeedLimitAssist:
     self.long_enabled_prev = self.long_enabled
     self.prev_target_set_speed_conv = self.target_set_speed_conv
     self.prev_v_cruise_cluster_conv = self.v_cruise_cluster_conv
-    self.prev_speed_limit_final_conv = self.speed_limit_final_conv
+    self.prev_speed_limit_final_last_conv = self.speed_limit_final_last_conv
 
     self.output_v_target = self.get_v_target_from_control()
     self.output_a_target = self.get_a_target_from_control()
