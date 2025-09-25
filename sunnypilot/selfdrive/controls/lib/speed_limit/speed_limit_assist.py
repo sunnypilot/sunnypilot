@@ -91,6 +91,10 @@ class SpeedLimitAssist:
   def v_cruise_cluster_changed(self) -> bool:
     return bool(self.v_cruise_cluster != self.v_cruise_cluster_prev)
 
+  @property
+  def target_set_speed_confirmed(self) -> bool:
+    return bool(self.v_cruise_cluster_conv == self.target_set_speed_conv)
+
   def get_v_target_from_control(self) -> float:
     if self.is_enabled and self._has_speed_limit:
       return self._speed_limit_final_last
@@ -106,10 +110,6 @@ class SpeedLimitAssist:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.is_metric = self.params.get_bool("IsMetric")
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
-
-  @property
-  def target_set_speed_confirmed(self) -> bool:
-    return bool(self.v_cruise_cluster_conv == self.target_set_speed_conv)
 
   def update_calculations(self, v_cruise_cluster: float) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
