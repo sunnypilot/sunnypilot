@@ -207,6 +207,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       distToSpeedLimit @1 :Float32;
       source @2 :Source;
       speedLimitOffset @3 :Float32;
+      speedLimitLast @4 :Float32;
+      speedLimitFinal @5 :Float32;
+      speedLimitFinalLast @6 :Float32;
+      speedLimitValid @7 :Bool;
+      speedLimitLastValid @8 :Bool;
     }
 
     enum Source {
