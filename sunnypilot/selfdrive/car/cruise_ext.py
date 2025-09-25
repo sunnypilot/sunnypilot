@@ -55,6 +55,7 @@ class VCruiseHelperSP:
     # Speed Limit Assist
     self.sla_state = SpeedLimitAssistState.disabled
     self.prev_sla_state = SpeedLimitAssistState.disabled
+    self.has_speed_limit = False
     self.speed_limit_final_last_kph = 0.
     self.prev_speed_limit_final_last_kph = 0.
 
@@ -102,12 +103,14 @@ class VCruiseHelperSP:
     return enabled
 
   def update_speed_limit_assist(self, LP_SP: custom.LongitudinalPlanSP) -> None:
+    resolver = LP_SP.speedLimit.resolver
+    self.has_speed_limit = resolver.speedLimitValid or resolver.speedLimitLastValid
     self.speed_limit_final_last_kph = LP_SP.speedLimit.resolver.speedLimitFinalLast * CV.MS_TO_KPH
     self.sla_state = LP_SP.speedLimit.assist.state
 
   @property
   def update_speed_limit_final_last_changed(self) -> bool:
-    return bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
+    return self.has_speed_limit and bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
 
   @property
   def update_speed_limit_assist_pre_active_confirmed(self) -> bool:
