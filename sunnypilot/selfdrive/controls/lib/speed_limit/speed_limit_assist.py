@@ -162,14 +162,16 @@ class SpeedLimitAssist:
     if self.target_set_speed_confirmed:
       return True
 
-    if self.state != SpeedLimitAssistState.preActive:
-      return False
+    if self.state == SpeedLimitAssistState.preActive:
+      req_plus = self.target_set_speed_conv > self.v_cruise_cluster_conv
+      req_minus = self.target_set_speed_conv < self.v_cruise_cluster_conv
+      expected = CRUISE_BUTTONS_PLUS if req_plus else CRUISE_BUTTONS_MINUS if req_minus else ()
 
-    req_plus = self.target_set_speed_conv > self.v_cruise_cluster_conv
-    req_minus = self.target_set_speed_conv < self.v_cruise_cluster_conv
-    expected = CRUISE_BUTTONS_PLUS if req_plus else CRUISE_BUTTONS_MINUS if req_minus else ()
+      for b in CS.buttonEvents:
+        if b.type in expected and not b.pressed:
+          return True
 
-    return any(b.type in expected and not b.pressed for b in CS.buttonEvents)
+    return False
 
   def update_state_machine_pcm_op_long(self):
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
