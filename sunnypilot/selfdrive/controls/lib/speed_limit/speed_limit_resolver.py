@@ -29,8 +29,6 @@ class SpeedLimitResolver:
   speed_limit_last: float
   speed_limit_final: float
   speed_limit_final_last: float
-  speed_limit_valid: bool
-  speed_limit_last_valid: bool
   distance: float
   source: custom.LongitudinalPlanSP.SpeedLimit.Source
   speed_limit_offset: float
