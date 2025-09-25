@@ -115,17 +115,17 @@ class LongitudinalPlannerSP:
     model_x: list[float] = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
     lead_status: bool = sm['radarState'].leadOne.status
-    lead_dRel: float = sm['radarState'].leadOne.dRel
-    isStandstill: bool = CS.standstill
-    gasPressed: bool = CS.gasPressed
+    lead_vRel: float = sm['radarState'].leadOne.vRel
+    isStandstill: bool = sm['carState'].standstill
+    gasPressed: bool = sm['carState'].gasPressed
     self.greenLightAlert = False
     self.leadDepartAlert = False
 
     # Green light alert
     if (isStandstill
-        and model_x[max_idx] > 30
-        and not lead_status
-        and not gasPressed):
+            and model_x[max_idx] > 30
+            and not lead_status
+            and not gasPressed):
       self.greenLightAlert = True
     # Lead departure alert
     elif (isStandstill
@@ -134,6 +134,3 @@ class LongitudinalPlannerSP:
           and lead_vRel > 1
           and not gasPressed):
       self.leadDepartAlert = True
-
-    if isStandstill:
-      self.standstill_lead_dRel_last = lead_dRel
