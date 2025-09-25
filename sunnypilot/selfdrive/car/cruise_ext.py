@@ -54,7 +54,7 @@ class VCruiseHelperSP:
     # Speed Limit Assist
     self.sla_state = SpeedLimitAssistState.disabled
     self.prev_sla_state = SpeedLimitAssistState.disabled
-    self.speed_limit_final_kph = 0.
+    self.speed_limit_final_last_kph = 0.
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
@@ -100,9 +100,7 @@ class VCruiseHelperSP:
     return enabled
 
   def update_speed_limit_assist(self, LP_SP: custom.LongitudinalPlanSP) -> None:
-    speed_limit_kph = LP_SP.speedLimit.resolver.speedLimit
-    speed_limit_offset_kph = LP_SP.speedLimit.resolver.speedLimitOffset
-    self.speed_limit_final_kph = (speed_limit_kph + speed_limit_offset_kph) * CV.MS_TO_KPH
+    self.speed_limit_final_last_kph = LP_SP.speedLimit.resolver.speedLimitFinalLast * CV.MS_TO_KPH
     self.sla_state = LP_SP.speedLimit.assist.state
 
   @property
@@ -111,6 +109,6 @@ class VCruiseHelperSP:
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.update_speed_limit_assist_pre_active_confirmed:
-      self.v_cruise_kph = np.clip(round(self.speed_limit_final_kph, 1), self.v_cruise_min, V_CRUISE_MAX)
+      self.v_cruise_kph = np.clip(round(self.speed_limit_final_last_kph, 1), self.v_cruise_min, V_CRUISE_MAX)
 
     self.prev_sla_state = self.sla_state
