@@ -33,13 +33,6 @@ LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and curren
 
 
 class SpeedLimitAssist:
-  _speed_limit: float
-  _speed_limit_offset: float
-  _distance: float
-  v_ego: float
-  a_ego: float
-  v_offset: float
-  last_valid_speed_limit_final: float
   output_v_target: float = V_CRUISE_UNSET
   output_a_target: float = 0.
 
@@ -64,10 +57,10 @@ class SpeedLimitAssist:
     self.v_cruise_cluster_prev = 0.
     self.v_cruise_cluster_conv = 0
     self.prev_v_cruise_cluster_conv = 0
+    self._has_speed_limit = False
     self._speed_limit = 0.
-    self._speed_limit_offset = 0.
+    self._speed_limit_final_last = 0.
     self.speed_limit_prev = 0.
-    self.last_valid_speed_limit_final = 0.
     self.speed_limit_final_conv = 0
     self.prev_speed_limit_final_conv = 0
     self._distance = 0.
@@ -87,10 +80,6 @@ class SpeedLimitAssist:
     }
 
   @property
-  def speed_limit_final(self) -> float:
-    return self._speed_limit + self._speed_limit_offset
-
-  @property
   def speed_limit_changed(self) -> bool:
     return bool(self._speed_limit != self.speed_limit_prev)
 
@@ -99,15 +88,8 @@ class SpeedLimitAssist:
     return bool(self.v_cruise_cluster != self.v_cruise_cluster_prev)
 
   def get_v_target_from_control(self) -> float:
-    if self.is_enabled:
-      # If we have a current valid speed limit, use it
-      if self._speed_limit > 0:
-        self.last_valid_speed_limit_final = self.speed_limit_final
-        return self.speed_limit_final
-
-      # If no current speed limit but we have a last valid one, use that
-      if self.last_valid_speed_limit_final > 0:
-        return self.last_valid_speed_limit_final
+    if self.is_enabled and (self._speed_limit_final_last > 0):
+      return self._speed_limit_final_last
 
     # Fallback
     return V_CRUISE_UNSET
@@ -130,9 +112,9 @@ class SpeedLimitAssist:
     self.v_cruise_cluster = v_cruise_cluster
 
     # Update current velocity offset (error)
-    self.v_offset = self.speed_limit_final - self.v_ego
+    self.v_offset = self._speed_limit_final_last - self.v_ego
 
-    self.speed_limit_final_conv = round(self.speed_limit_final * speed_conv)
+    self.speed_limit_final_conv = round(self._speed_limit_final_last * speed_conv)
     self.v_cruise_cluster_conv = round(self.v_cruise_cluster * speed_conv)
     pcm_long_required_max_set_speed_conv = round(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.is_metric] * speed_conv)
     self.target_set_speed_conv = pcm_long_required_max_set_speed_conv if self.pcm_op_long else self.speed_limit_final_conv
@@ -142,7 +124,7 @@ class SpeedLimitAssist:
 
   def get_adapting_state_target_acceleration(self) -> float:
     if self._distance > 0:
-      return (self.speed_limit_final ** 2 - self.v_ego ** 2) / (2. * self._distance)
+      return (self._speed_limit_final_last ** 2 - self.v_ego ** 2) / (2. * self._distance)
 
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
@@ -150,7 +132,7 @@ class SpeedLimitAssist:
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
   def _update_confirmed_state(self):
-    if self._speed_limit > 0:
+    if self._has_speed_limit:
       if self.v_offset < LIMIT_SPEED_OFFSET_TH:
         self.state = SpeedLimitAssistState.adapting
       else:
@@ -188,7 +170,7 @@ class SpeedLimitAssist:
         if self.state == SpeedLimitAssistState.active:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
-          elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
+          elif self._has_speed_limit and self.v_offset < LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.adapting
 
         # ADAPTING
@@ -200,7 +182,7 @@ class SpeedLimitAssist:
 
         # PENDING
         elif self.state == SpeedLimitAssistState.pending:
-          if self._speed_limit > 0:
+          if self._has_speed_limit:
             if self.v_offset < LIMIT_SPEED_OFFSET_TH:
               self.state = SpeedLimitAssistState.adapting
             else:
@@ -260,7 +242,7 @@ class SpeedLimitAssist:
         if self.state == SpeedLimitAssistState.active:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
-          elif self._speed_limit > 0 and self.v_offset < LIMIT_SPEED_OFFSET_TH:
+          elif self._has_speed_limit and self.v_offset < LIMIT_SPEED_OFFSET_TH:
             self.state = SpeedLimitAssistState.adapting
 
         # ADAPTING
@@ -272,7 +254,7 @@ class SpeedLimitAssist:
 
         # PENDING
         elif self.state == SpeedLimitAssistState.pending:
-          if self._speed_limit > 0:
+          if self._has_speed_limit:
             if self.v_offset < LIMIT_SPEED_OFFSET_TH:
               self.state = SpeedLimitAssistState.adapting
             else:
@@ -325,20 +307,21 @@ class SpeedLimitAssist:
         events_sp.add(EventNameSP.speedLimitActive)
 
       # only notify if we acquire a valid speed limit
-      elif self.speed_limit_changed and self._speed_limit > 0:
+      elif self.speed_limit_changed and self._has_speed_limit:
         if self.speed_limit_prev <= 0:
           events_sp.add(EventNameSP.speedLimitActive)
         elif self.speed_limit_prev > 0:
           events_sp.add(EventNameSP.speedLimitChanged)
 
-  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float,
-             speed_limit: float, speed_limit_offset: float, distance: float, events_sp: EventsSP) -> None:
+  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float, speed_limit: float,
+             speed_limit_final_last: float, has_speed_limit: bool, distance: float, events_sp: EventsSP) -> None:
     self.long_enabled = long_enabled
     self.v_ego = v_ego
     self.a_ego = a_ego
 
+    self._has_speed_limit = has_speed_limit
     self._speed_limit = speed_limit
-    self._speed_limit_offset = speed_limit_offset
+    self._speed_limit_final_last = speed_limit_final_last
     self._distance = distance
 
     self.update_params()
