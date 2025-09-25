@@ -34,7 +34,7 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
   speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
   speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
-  speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast();
+  speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
