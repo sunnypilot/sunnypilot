@@ -169,7 +169,7 @@ class TestSpeedLimitAssist:
     self.initialize_active_state(PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric])
     old_speed_limit = SPEED_LIMITS['city']
 
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], 0, old_speed_limit, False, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric], 0, old_speed_limit, True, 0, self.events_sp)
     assert self.sla.state in ACTIVE_STATES
     assert self.sla.output_v_target == old_speed_limit
 

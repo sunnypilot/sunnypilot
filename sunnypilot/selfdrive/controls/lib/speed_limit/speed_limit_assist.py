@@ -88,7 +88,7 @@ class SpeedLimitAssist:
     return bool(self.v_cruise_cluster != self.v_cruise_cluster_prev)
 
   def get_v_target_from_control(self) -> float:
-    if self.is_enabled and (self._speed_limit_final_last > 0):
+    if self.is_enabled and self._has_speed_limit:
       return self._speed_limit_final_last
 
     # Fallback
