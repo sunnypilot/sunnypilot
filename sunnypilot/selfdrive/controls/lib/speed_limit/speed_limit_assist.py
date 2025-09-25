@@ -220,13 +220,6 @@ class SpeedLimitAssist:
     return enabled, active
 
   def update_state_machine_non_pcm_long(self):
-    """
-      When disabled: if the set speed already matches the speed limit final (valid), we go to active.
-                     if there is no valid speed limit final, we go to pending.
-                     if the set speed is different from the speed limit final, we go to preActive.
-
-    :return:
-    """
     self._state_prev = self.state
 
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
