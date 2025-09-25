@@ -588,7 +588,7 @@ float mapRange(float x, float in_min, float in_max, float out_min, float out_max
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  float blend_speed_mph = sm["carState"].getCarState().getVEgo() * 2.23694f;  // convert to mph
+  float blend_speed_mph = fabsf(sm["carState"].getCarState().getVEgo() * 2.23694f);  // convert to mph
 
   // Normal perspective (3D)
   Eigen::Vector3f input(in_x, in_y, in_z);
