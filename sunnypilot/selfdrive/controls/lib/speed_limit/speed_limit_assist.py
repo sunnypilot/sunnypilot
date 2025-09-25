@@ -155,8 +155,6 @@ class SpeedLimitAssist:
     return False
 
   def update_state_machine_pcm_op_long(self):
-    self._state_prev = self.state
-
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
@@ -220,8 +218,6 @@ class SpeedLimitAssist:
     return enabled, active
 
   def update_state_machine_non_pcm_long(self):
-    self._state_prev = self.state
-
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
 
@@ -320,6 +316,7 @@ class SpeedLimitAssist:
     self.update_params()
     self.update_calculations(v_cruise_cluster)
 
+    self._state_prev = self.state
     if self.pcm_op_long:
       self.is_enabled, self.is_active = self.update_state_machine_pcm_op_long()
     else:
