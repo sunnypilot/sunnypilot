@@ -85,4 +85,6 @@ private:
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
   bool roadName;
   QString roadNameStr;
+  bool greenLightAlert;
+  bool leadDepartAlert;
 };

@@ -148,6 +148,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   speedLimit @3 :SpeedLimit;
   vTarget @4 :Float32;
   aTarget @5 :Float32;
+  e2eAlerts @6 :E2eAlerts;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -220,6 +221,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     cruise @0;
     sccVision @1;
     sccMap @2;
+  }
+
+  struct E2eAlerts {
+    greenLightAlert @0 :Bool;
+    leadDepartAlert @1 :Bool;
   }
 }
 
