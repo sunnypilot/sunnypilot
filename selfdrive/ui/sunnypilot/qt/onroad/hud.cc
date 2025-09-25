@@ -30,9 +30,11 @@ void HudRendererSP::updateState(const UIState &s) {
 
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
+  speedLimitLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLast() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
-  speedLimitValid = speedLimit > 0;
-  speedLimitLastValid = speedLimitLast > 0;
+  speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
+  speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
+  speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast();
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
@@ -47,10 +49,6 @@ void HudRendererSP::updateState(const UIState &s) {
     }
   }
   speedLimitAheadDistancePrev = speedLimitAheadDistance;
-
-  if (speedLimitValid) {
-    speedLimitLast = speedLimit;
-  }
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -351,12 +349,10 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
-  int speedLimitFinal = std::nearbyint(speedLimitValid ? speedLimit : speedLimitLast);
-  int speedLimitOffsetFinal = speedLimitFinal + std::nearbyint(speedLimitOffset);
-  bool overspeed = hasSpeedLimit && speedLimitOffsetFinal < std::nearbyint(speed);
   bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
-  QString speedLimitStr = hasSpeedLimit ? QString::number(speedLimitFinal) : "---";
+  bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
+  bool overspeed = hasSpeedLimit && speedLimitFinalLast < std::nearbyint(speed);
+  QString speedLimitStr = hasSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---";
 
   // Offset display text
   QString speedLimitSubText = "";

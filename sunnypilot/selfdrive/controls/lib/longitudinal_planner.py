@@ -96,6 +96,11 @@ class LongitudinalPlannerSP:
     speedLimit = longitudinalPlanSP.speedLimit
     resolver = speedLimit.resolver
     resolver.speedLimit = float(self.resolver.speed_limit)
+    resolver.speedLimitLast = float(self.resolver.speed_limit_last)
+    resolver.speedLimitFinal = float(self.resolver.speed_limit_final)
+    resolver.speedLimitFinalLast = float(self.resolver.speed_limit_final_last)
+    resolver.speedLimitValid = self.resolver.speed_limit_valid
+    resolver.speedLimitLastValid = self.resolver.speed_limit_last_valid
     resolver.speedLimitOffset = float(self.resolver.speed_limit_offset)
     resolver.distToSpeedLimit = float(self.resolver.distance)
     resolver.source = self.resolver.source
