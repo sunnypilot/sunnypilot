@@ -128,7 +128,7 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   if (s->scene.visual_style == 0) {
     max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
   } else {
-    max_distance = std::clamp(*(model_position.getX().end() - 1), 0.0f, 300.0f);
+    max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
   }
 
   // update lane lines
@@ -592,6 +592,18 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
 
   // Normal perspective (3D)
   Eigen::Vector3f input(in_x, in_y, in_z);
+
+  if (s->scene.visual_style_blend == 1 && s->scene.visual_style != 0) {
+    float IN_X_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 24.0f);
+    float IN_Y_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 1.0f, 2.0f);
+    float IN_Z_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 5.0f);
+    float PITCH_DEG = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 5.0f);
+
+    input = Eigen::Vector3f(in_x + IN_X_OFFSET, in_y / IN_Y_OFFSET, in_z + IN_Z_OFFSET);
+    Eigen::AngleAxisf pitch_rot(PITCH_DEG * M_PI / 180.0f, Eigen::Vector3f::UnitY());
+    input = pitch_rot * input;
+  }
+
   auto pt = car_space_transform * input;
   bool normal_valid = (pt.z() > 1e-3f &&
                        std::isfinite(pt.x()) && std::isfinite(pt.y()));
@@ -624,15 +636,15 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   }
 
   // Blending mode
-  if (s->scene.visual_blend == 1 && s->scene.visual_style != 0) {
+  if (s->scene.visual_style_overhead_blend == 1 && s->scene.visual_style != 0) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
     static double last_t = millis_since_boot();
 
     // Hysteresis logic
-    if (target_blend < 0.5f && blend_speed_mph > s->scene.visual_blend_threshold) {
+    if (target_blend < 0.5f && blend_speed_mph > s->scene.visual_style_blend_threshold) {
       target_blend = 1.0f;  // switch to 2D
-    } else if (target_blend > 0.5f && blend_speed_mph < (s->scene.visual_blend_threshold - 5)) {
+    } else if (target_blend > 0.5f && blend_speed_mph < (s->scene.visual_style_blend_threshold - 5)) {
       target_blend = 0.0f;  // switch back to 3D
     }
 
