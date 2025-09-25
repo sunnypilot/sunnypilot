@@ -26,6 +26,9 @@ class SpeedLimitResolver:
   distance_solutions: dict[custom.LongitudinalPlanSP.SpeedLimit.Source, float]
   v_ego: float
   speed_limit: float
+  speed_limit_last: float
+  speed_limit_final: float
+  speed_limit_final_last: float
   distance: float
   source: custom.LongitudinalPlanSP.SpeedLimit.Source
   speed_limit_offset: float
@@ -53,6 +56,21 @@ class SpeedLimitResolver:
     self.is_metric = self.params.get_bool("IsMetric")
     self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+
+  def update_speed_limit_states(self) -> None:
+    self.speed_limit_final = self.speed_limit + self.speed_limit_offset
+
+    if self.speed_limit > 0.:
+      self.speed_limit_last = self.speed_limit
+      self.speed_limit_final_last = self.speed_limit_final
+
+  @property
+  def speed_limit_valid(self) -> bool:
+    return self.speed_limit > 0.
+
+  @property
+  def speed_limit_last_valid(self) -> bool:
+    return self.speed_limit_last > 0.
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -148,5 +166,7 @@ class SpeedLimitResolver:
 
     self.speed_limit, self.distance, self.source = self._resolve_limit_sources(sm)
     self.speed_limit_offset = self._get_speed_limit_offset()
+
+    self.update_speed_limit_states()
 
     self.frame += 1
