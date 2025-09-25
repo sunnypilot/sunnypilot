@@ -231,23 +231,6 @@ class SpeedLimitAssist:
         if self.state == SpeedLimitAssistState.active:
           if self.v_cruise_cluster_changed:
             self.state = SpeedLimitAssistState.inactive
-          elif self._has_speed_limit and self.v_offset < LIMIT_SPEED_OFFSET_TH:
-            self.state = SpeedLimitAssistState.adapting
-
-        # ADAPTING
-        elif self.state == SpeedLimitAssistState.adapting:
-          if self.v_cruise_cluster_changed:
-            self.state = SpeedLimitAssistState.inactive
-          elif self.v_offset >= LIMIT_SPEED_OFFSET_TH:
-            self.state = SpeedLimitAssistState.active
-
-        # PENDING
-        elif self.state == SpeedLimitAssistState.pending:
-          if self._has_speed_limit:
-            if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-              self.state = SpeedLimitAssistState.adapting
-            else:
-              self.state = SpeedLimitAssistState.active
 
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
