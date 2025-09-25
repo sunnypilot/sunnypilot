@@ -167,7 +167,10 @@ class SpeedLimitAssist:
     if v_cruise_cluster_delta == 0:
       return False
 
-    return (target_delta > 0) == (v_cruise_cluster_delta > 0)
+    if self.state == SpeedLimitAssistState.preActive:
+      return (target_delta > 0) == (v_cruise_cluster_delta > 0)
+
+    return False
 
   def update_state_machine_pcm_op_long(self):
     self._state_prev = self.state
