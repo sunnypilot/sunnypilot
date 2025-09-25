@@ -11,6 +11,7 @@ from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import ACTIVE_STATES as SLA_ACTIVE_STATES
 
 ButtonType = car.CarState.ButtonEvent.Type
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
@@ -55,6 +56,7 @@ class VCruiseHelperSP:
     self.sla_state = SpeedLimitAssistState.disabled
     self.prev_sla_state = SpeedLimitAssistState.disabled
     self.speed_limit_final_last_kph = 0.
+    self.prev_speed_limit_final_last_kph = 0.
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
@@ -104,11 +106,17 @@ class VCruiseHelperSP:
     self.sla_state = LP_SP.speedLimit.assist.state
 
   @property
+  def update_speed_limit_final_last_changed(self) -> bool:
+    return bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
+
+  @property
   def update_speed_limit_assist_pre_active_confirmed(self) -> bool:
-    return self.sla_state == SpeedLimitAssistState.active and self.prev_sla_state == SpeedLimitAssistState.preActive
+    return self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
-    if self.update_speed_limit_assist_pre_active_confirmed:
+    if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or
+                                                self.update_speed_limit_final_last_changed):
       self.v_cruise_kph = np.clip(round(self.speed_limit_final_last_kph, 1), self.v_cruise_min, V_CRUISE_MAX)
 
     self.prev_sla_state = self.sla_state
+    self.prev_speed_limit_final_last_kph = self.speed_limit_final_last_kph
