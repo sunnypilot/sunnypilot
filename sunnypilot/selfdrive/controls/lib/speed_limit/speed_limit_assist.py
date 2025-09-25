@@ -85,7 +85,7 @@ class SpeedLimitAssist:
 
   @property
   def speed_limit_changed(self) -> bool:
-    return bool(self._speed_limit != self.speed_limit_prev)
+    return self._has_speed_limit and bool(self._speed_limit != self.speed_limit_prev)
 
   @property
   def v_cruise_cluster_changed(self) -> bool:
@@ -282,7 +282,7 @@ class SpeedLimitAssist:
         events_sp.add(EventNameSP.speedLimitActive)
 
       # only notify if we acquire a valid speed limit
-      elif self.speed_limit_changed and self._has_speed_limit:
+      elif self.speed_limit_changed:
         if self.speed_limit_prev <= 0:
           events_sp.add(EventNameSP.speedLimitActive)
         elif self.speed_limit_prev > 0:
