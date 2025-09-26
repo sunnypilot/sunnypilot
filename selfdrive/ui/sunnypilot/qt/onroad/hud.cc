@@ -177,11 +177,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     if (showSpeedLimit) {
       drawSpeedLimitSigns(p, sign_rect);
-    }
 
-    // do not show during SLA's preActive state
-    if (showSpeedLimit && speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
-      drawUpcomingSpeedLimit(p);
+      // do not show during SLA's preActive state
+      if (speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+        drawUpcomingSpeedLimit(p);
+      }
     }
 
     // Road Name
