@@ -32,6 +32,8 @@ LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers
 LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
 LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on limit controllers.
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
+
+V_CRUISE_MAX = 145
 V_CRUISE_UNSET = 255
 
 CONFIRM_BUTTON_TTL = 0.5  # s
@@ -117,9 +119,28 @@ class SpeedLimitAssist:
       self.is_metric = self.params.get_bool("IsMetric")
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
-  def update_calculations(self, v_cruise_cluster: float) -> None:
+  def update_car_state(self, sm_ext):
+    """
+      This is invoked directly in plannerd, running at 100 Hz.
+    """
+
+    CS = sm_ext['carState']
+    v_cruise_cluster_kph = min(CS.vCruiseCluster, V_CRUISE_MAX)
+    self.v_cruise_cluster = v_cruise_cluster_kph * CV.KPH_TO_MS
+
+    self.update_buttons(CS)
+
+  def update_buttons(self, CS: car.CarState) -> None:
+    now = time.monotonic()
+    for b in CS.buttonEvents:
+      if not b.pressed:
+        if b.type in CRUISE_BUTTONS_PLUS:
+          self._plus_hold = max(self._plus_hold, now + CONFIRM_BUTTON_TTL)
+        elif b.type in CRUISE_BUTTONS_MINUS:
+          self._minus_hold = max(self._minus_hold, now + CONFIRM_BUTTON_TTL)
+
+  def update_calculations(self) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
-    self.v_cruise_cluster = v_cruise_cluster
 
     # Update current velocity offset (error)
     self.v_offset = self._speed_limit_final_last - self.v_ego
@@ -154,20 +175,6 @@ class SpeedLimitAssist:
 
   def get_active_state_target_acceleration(self) -> float:
     return self.v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
-
-  def update_buttons(self, CS: car.CarState) -> None:
-    """
-      This is invoked directly in plannerd, running at 100 Hz.
-    :param CS:
-    :return:
-    """
-    now = time.monotonic()
-    for b in CS.buttonEvents:
-      if not b.pressed:
-        if b.type in CRUISE_BUTTONS_PLUS:
-          self._plus_hold = max(self._plus_hold, now + CONFIRM_BUTTON_TTL)
-        elif b.type in CRUISE_BUTTONS_MINUS:
-          self._minus_hold = max(self._minus_hold, now + CONFIRM_BUTTON_TTL)
 
   def _get_button(self, req_plus: bool, req_minus: bool) -> bool:
     now = time.monotonic()
@@ -344,7 +351,7 @@ class SpeedLimitAssist:
         elif self.speed_limit_prev > 0:
           events_sp.add(EventNameSP.speedLimitChanged)
 
-  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float, speed_limit: float,
+  def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, speed_limit: float,
              speed_limit_final_last: float, has_speed_limit: bool, distance: float, events_sp: EventsSP) -> None:
     self.long_enabled = long_enabled
     self.v_ego = v_ego
@@ -356,7 +363,7 @@ class SpeedLimitAssist:
     self._distance = distance
 
     self.update_params()
-    self.update_calculations(v_cruise_cluster)
+    self.update_calculations()
 
     self._state_prev = self.state
     if self.pcm_op_long:

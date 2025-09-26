@@ -34,7 +34,7 @@ def main():
     sm.update()
     sm_ext.update()
     if sm.updated['modelV2']:
-      speed_limit_assist.update_buttons(sm_ext['carState'])
+      speed_limit_assist.update_car_state(sm_ext['carState'])
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
 
