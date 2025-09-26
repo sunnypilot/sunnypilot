@@ -30,7 +30,11 @@ void HudRendererSP::updateState(const UIState &s) {
 
   float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
   speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
+  speedLimitLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLast() * speedConv;
   speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
+  speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
+  speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
+  speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
@@ -38,7 +42,7 @@ void HudRendererSP::updateState(const UIState &s) {
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
     speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
-    if (speedLimitAheadDistance < speedLimitAheadDistancePrev && speedLimitAheadValidFrame < 2) {
+    if (speedLimitAheadDistance < speedLimitAheadDistancePrev && speedLimitAheadValidFrame < SPEED_LIMIT_AHEAD_VALID_FRAME_THRESHOLD) {
       speedLimitAheadValidFrame++;
     } else if (speedLimitAheadDistance > speedLimitAheadDistancePrev && speedLimitAheadValidFrame > 0) {
       speedLimitAheadValidFrame--;
@@ -94,6 +98,8 @@ void HudRendererSP::updateState(const UIState &s) {
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
+  smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
+  smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -102,18 +108,28 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Smart Cruise Control
     int x_offset = -260;
     int y1_offset = -80;
-    // int y2_offset = -140;  // reserved for 2 icons
+    int y2_offset = -140;
 
+    int y_scc_v = 0, y_scc_m = 0;
+    const int orders[2] = {y1_offset, y2_offset};
+    int i = 0;
+    // SCC-V takes first order
+    if (smartCruiseControlVisionEnabled) y_scc_v = orders[i++];
+    if (smartCruiseControlMapEnabled) y_scc_m = orders[i++];
+
+    // Smart Cruise Control - Vision
     bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
     if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
-      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y1_offset, "SCC-V");
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_v, "SCC-V");
     }
+    smartCruiseControlVisionFrame = smartCruiseControlVisionActive ? (smartCruiseControlVisionFrame + 1) : 0;
 
-    if (smartCruiseControlVisionActive) {
-      smartCruiseControlVisionFrame++;
-    } else {
-      smartCruiseControlVisionFrame = 0;
+    // Smart Cruise Control - Map
+    bool scc_map_active_pulse = pulseElement(smartCruiseControlMapFrame);
+    if ((smartCruiseControlMapEnabled && !smartCruiseControlMapActive) || (smartCruiseControlMapActive && scc_map_active_pulse)) {
+      drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_m, "SCC-M");
     }
+    smartCruiseControlMapFrame = smartCruiseControlMapActive ? (smartCruiseControlMapFrame + 1) : 0;
 
     // Bottom Dev UI
     if (devUiInfo == 2) {
@@ -333,17 +349,20 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  bool speedLimitValid = speedLimit > 0;
-  int speedLimitRounded = std::nearbyint(speedLimit);
-  int speedLimitFinalRounded = std::nearbyint(speedLimit + speedLimitOffset);
-  bool overspeed = speedLimitFinalRounded < std::nearbyint(speed) && speedLimitRounded > 0;
-  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;
-  QString speedLimitStr = speedLimitValid ? QString::number(speedLimitRounded) : "---";
+  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
+  bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
+  bool overspeed = hasSpeedLimit && speedLimitFinalLast < std::nearbyint(speed);
+  QString speedLimitStr = hasSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---";
 
   // Offset display text
   QString speedLimitSubText = "";
   if (speedLimitOffset != 0) {
-    speedLimitSubText = (speedLimitOffset > 0 ? "+" : "-") + QString::number(std::nearbyint(speedLimitOffset));
+    speedLimitSubText = (speedLimitOffset > 0 ? "" : "-") + QString::number(std::nearbyint(speedLimitOffset));
+  }
+
+  float speedLimitSubTextFactor = is_metric ? 0.5 : 0.6;
+  if (speedLimitSubText.size() >= 3) {
+    speedLimitSubTextFactor = 0.475;
   }
 
   // Position next to MAX speed box
@@ -355,7 +374,8 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
-  QColor speed_color = (speedLimitWarningEnabled && overspeed) ? red_color : QColor(0, 0, 0, alpha);
+  QColor speed_color = (speedLimitWarningEnabled && overspeed) ? red_color :
+                       (!speedLimitValid && speedLimitLastValid ? QColor(0x91, 0x9b, 0x95, 0xf1) : QColor(0, 0, 0, alpha));
 
   if (is_metric) {
     // EU Vienna Convention style circular sign
@@ -394,7 +414,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(center_circle, Qt::AlignCenter, speedLimitStr);
 
     // Offset value in small circular box
-    if (!speedLimitSubText.isEmpty() && speedLimitValid) {
+    if (!speedLimitSubText.isEmpty() && hasSpeedLimit) {
       int offset_circle_size = circle_size * 0.4;
       int overlap = offset_circle_size * 0.25;
       QRect offset_circle_rect(
@@ -408,7 +428,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
       p.setBrush(QColor(0, 0, 0, alpha));
       p.drawEllipse(offset_circle_rect);
 
-      p.setFont(InterFont(offset_circle_size * 0.45, QFont::Bold));
+      p.setFont(InterFont(offset_circle_size * speedLimitSubTextFactor, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_circle_rect, Qt::AlignCenter, speedLimitSubText);
     }
@@ -439,7 +459,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
 
     // Offset value in small box
-    if (!speedLimitSubText.isEmpty() && speedLimitValid) {
+    if (!speedLimitSubText.isEmpty() && hasSpeedLimit) {
       int offset_box_size = sign_rect.width() * 0.4;
       int overlap = offset_box_size * 0.25;
       QRect offset_box_rect(
@@ -454,7 +474,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
       p.setBrush(QColor(0, 0, 0, alpha));
       p.drawRoundedRect(offset_box_rect, corner_radius, corner_radius);
 
-      p.setFont(InterFont(offset_box_size * 0.45, QFont::Bold));
+      p.setFont(InterFont(offset_box_size * speedLimitSubTextFactor, QFont::Bold));
       p.setPen(QColor(255, 255, 255, alpha));
       p.drawText(offset_box_rect, Qt::AlignCenter, speedLimitSubText);
     }
