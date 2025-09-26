@@ -26,15 +26,9 @@ def main():
                             'liveMapDataSP', 'carStateSP', gps_location_service],
                            poll='modelV2')
 
-  # Speed Limit Assist
-  sm_ext = messaging.SubMaster(['carState'])
-  speed_limit_assist = longitudinal_planner.sla
-
   while True:
     sm.update()
-    sm_ext.update()
     if sm.updated['modelV2']:
-      speed_limit_assist.update_buttons(sm_ext['carState'])
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
 
