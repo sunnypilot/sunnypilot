@@ -162,6 +162,14 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyle", {PERSISTENT | BACKUP, INT, "0"}},
+    {"VisualStyleBlend", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyleOverheadBlend", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyleBlendThreshold", {PERSISTENT | BACKUP, INT, "20"}},
+    {"VisualRadarTracks", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualRadarTracksDelay", {PERSISTENT | BACKUP, FLOAT, "0.0"}},
+    {"VisualWideCam", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualFPS", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},

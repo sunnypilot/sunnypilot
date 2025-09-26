@@ -29,4 +29,7 @@ protected:
  ParamWatcher * param_watcher;
  ButtonParamControlSP *chevron_info_settings;
  ButtonParamControlSP *dev_ui_settings;
+ ButtonParamControlSP *visual_style_settings;
+ OptionControlSP *visual_style_threshold_settings;
+ OptionControlSP *visual_radar_tracks_delay_settings;
 };

@@ -25,6 +25,12 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
   dmon.updateState(s);
+
+  if (s.scene.visual_style == 0) {
+    setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
+  } else {
+    setBackgroundColor(QColor(0, 0, 0));
+  }
 }
 
 void AnnotatedCameraWidget::initializeGL() {
@@ -35,7 +41,12 @@ void AnnotatedCameraWidget::initializeGL() {
   qInfo() << "OpenGL language version:" << QString((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   prev_draw_t = millis_since_boot();
-  setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
+  auto *s = uiState();
+  if (s->scene.visual_style == 0) {
+    setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
+  } else {
+    setBackgroundColor(QColor(0, 0, 0));
+  }
 }
 
 mat4 AnnotatedCameraWidget::calcFrameMatrix() {
@@ -119,6 +130,7 @@ void AnnotatedCameraWidget::paintGL() {
         wide_cam_requested = false;
       }
       wide_cam_requested = wide_cam_requested && sm["selfdriveState"].getSelfdriveState().getExperimentalMode();
+      wide_cam_requested = wide_cam_requested || (s->scene.visual_wide_cam != 0);
     }
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
     CameraWidget::setFrameId(sm["modelV2"].getModelV2().getFrameId());
