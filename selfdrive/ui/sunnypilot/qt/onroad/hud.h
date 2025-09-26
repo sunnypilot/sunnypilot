@@ -34,6 +34,7 @@ private:
   void drawSpeedLimitSigns(QPainter &p);
   void drawUpcomingSpeedLimit(QPainter &p);
   void drawRoadName(QPainter &p, const QRect &surface_rect);
+  void drawE2eAlert(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -85,6 +86,7 @@ private:
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
   bool roadName;
   QString roadNameStr;
+  int e2eAlertFrame;
   bool greenLightAlert;
   bool leadDepartAlert;
 };

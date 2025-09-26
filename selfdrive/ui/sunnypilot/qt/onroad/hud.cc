@@ -165,8 +165,9 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Road Name
     drawRoadName(p, surface_rect);
 
+    // Green Light & Lead Depart Alerts
     if (greenLightAlert or leadDepartAlert) {
-      //TODO-SP: UI Visuals
+      drawE2eAlert(p, surface_rect);
     }
   }
 }
@@ -583,4 +584,53 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   // Truncate if still too long
   QString truncated = fm.elidedText(roadNameStr, Qt::ElideRight, road_rect.width() - 20);
   p.drawText(road_rect, Qt::AlignCenter, truncated);
+}
+
+void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
+  int width = devUiInfo > 0 ? 250 : 300;
+  int height = width;
+  int x = surface_rect.center().x() + surface_rect.width() / 4;
+  int y = surface_rect.center().y() + 40;
+  x += devUiInfo > 0 ? 0 : 50;
+  y += devUiInfo > 0 ? 0 : 80;
+  QRect alertRect(x - width,
+                 y - height,
+                 width * 2, height * 2);
+
+  QString alert_text;
+  QString alert_img;
+  if (greenLightAlert) {
+    alert_text = tr("GREEN\nLIGHT");
+    alert_img = "../../sunnypilot/selfdrive/assets/images/green_light.png";
+  }
+  else if (leadDepartAlert) {
+    alert_text = tr("LEAD VEHICLE\nDEPARTING");
+    alert_img = "../../sunnypilot/selfdrive/assets/images/lead_depart.png";
+  }
+
+  // Alert Circle
+  QPoint center = alertRect.center();
+  QColor frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
+  p.setPen(QPen(frameColor, 15));
+  p.setBrush(QColor(0, 0, 0, 190));
+  p.drawEllipse(center, width, height);
+
+  // Alert Text
+  QColor txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 255);
+  p.setFont(InterFont(48, QFont::Bold));
+  p.setPen(txtColor);
+  QFontMetrics fm(p.font());
+  QRect textRect = fm.boundingRect(alertRect, Qt::TextWordWrap, alert_text);
+  textRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
+  textRect.moveBottom(alertRect.bottom() - alertRect.height()/7);
+  p.drawText(textRect, Qt::AlignCenter, alert_text);
+
+  // Alert Image
+  QPixmap image(alert_img);
+  int maxImgWidth = width*2 - 40;
+  int maxImgHeight = height*2 - 40;
+  QPixmap scaled_img = image.scaled(maxImgWidth, maxImgHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+  QPointF pixmapCenterOffset = QPointF(scaled_img.width() / 2.0, scaled_img.height() / 2.0);
+  QPointF drawPoint = center - pixmapCenterOffset;
+  p.drawPixmap(drawPoint, scaled_img);
 }
