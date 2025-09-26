@@ -11,7 +11,10 @@
 #include "selfdrive/ui/qt/util.h"
 
 
-HudRendererSP::HudRendererSP() {}
+HudRendererSP::HudRendererSP() {
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+}
 
 void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
@@ -156,16 +159,24 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     bool showSpeedLimit;
     bool speed_limit_assist_pre_active_pulse = pulseElement(speedLimitAssistFrame);
 
+    // Position speed limit sign next to set speed box
+    const int sign_width = is_metric ? 200 : 172;
+    const int sign_x = is_metric ? 280 : 272;
+    const int sign_y = 45;
+    const int sign_height = 204;
+    QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
+
     if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
       speedLimitAssistFrame++;
       showSpeedLimit = speed_limit_assist_pre_active_pulse;
+      drawSpeedLimitPreActiveArrow(p, sign_rect);
     } else {
       speedLimitAssistFrame = 0;
       showSpeedLimit = speedLimitMode != SpeedLimitMode::OFF;
     }
 
     if (showSpeedLimit) {
-      drawSpeedLimitSigns(p);
+      drawSpeedLimitSigns(p, sign_rect);
     }
 
     // do not show during SLA's preActive state
@@ -364,10 +375,10 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
   }
 }
 
-void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
+void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
   bool speedLimitWarningEnabled = speedLimitMode >= SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
   bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
-  bool overspeed = hasSpeedLimit && speedLimitFinalLast < std::nearbyint(speed);
+  bool overspeed = hasSpeedLimit && std::nearbyint(speedLimitFinalLast) < std::nearbyint(speed);
   QString speedLimitStr = hasSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---";
 
   // Offset display text
@@ -380,13 +391,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   if (speedLimitSubText.size() >= 3) {
     speedLimitSubTextFactor = 0.475;
   }
-
-  // Position next to MAX speed box
-  const int sign_width = is_metric ? 200 : 172;
-  const int sign_x = is_metric ? 280 : 272;
-  const int sign_y = 45;
-  const int sign_height = 204;
-  QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
@@ -588,4 +592,25 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   // Truncate if still too long
   QString truncated = fm.elidedText(roadNameStr, Qt::ElideRight, road_rect.width() - 20);
   p.drawText(road_rect, Qt::AlignCenter, truncated);
+}
+
+void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
+  const int sign_margin = 12;
+  const int arrow_spacing = sign_margin * 3;
+  int arrow_x = sign_rect.right() + arrow_spacing;
+
+  int _set_speed = std::nearbyint(set_speed);
+  int _speed_limit_final_last = std::nearbyint(speedLimitFinalLast);
+
+  // Calculate the vertical offset using a sinusoidal function for smooth bouncing
+  double bounce_frequency = 2.0 * M_PI / UI_FREQ;  // 20 frames for one full oscillation
+  int bounce_offset = 20 * sin(speedLimitAssistFrame * bounce_frequency);  // Adjust the amplitude (20 pixels) as needed
+
+  if (_set_speed < _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - plus_arrow_up_img.height() / 2 + bounce_offset);
+    p.drawPixmap(iconPosition, plus_arrow_up_img);
+  } else if (_set_speed > _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
+    p.drawPixmap(iconPosition, minus_arrow_down_img);
+  }
 }
