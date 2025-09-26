@@ -305,8 +305,8 @@ class SelfdriveD(CruiseHelper):
 
     # E2E Lead Departure & Green Light Alerts
     # TODO-SP: Can be handled in longitudinal_planner directly once SLC is merged
-    if (self.sm['longitudinalPlan'].e2eAlerts.greenLightAlert
-            or self.sm['longitudinalPlan'].e2eAlerts.leadDepartAlert):
+    if (self.sm['longitudinalPlanSP'].e2eAlerts.greenLightAlert
+            or self.sm['longitudinalPlanSP'].e2eAlerts.leadDepartAlert):
       self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):
