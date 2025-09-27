@@ -19,3 +19,10 @@ class OffsetType(IntEnum):
   off = 0
   fixed = 1
   percentage = 2
+
+
+class Mode(IntEnum):
+  off = 0
+  information = 1
+  warning = 2
+  assist = 3
