@@ -32,7 +32,7 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
   speed_limit_final_last_conv = round(sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast * speed_conv)
 
-  v_cruise_cluster = sm['carState'].vCruiseCluster
+  v_cruise_cluster = CS.vCruiseCluster
   v_cruise_cluster_conv = v_cruise_cluster * (1 if metric else CV.KPH_TO_MS)
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
