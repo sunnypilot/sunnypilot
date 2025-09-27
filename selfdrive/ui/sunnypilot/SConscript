@@ -1,0 +1,98 @@
+widgets_src = [
+  "sunnypilot/qt/request_repeater.cc",
+  "sunnypilot/qt/widgets/toggle.cc",
+  "sunnypilot/qt/widgets/controls.cc",
+  "sunnypilot/qt/widgets/drive_stats.cc",
+  "sunnypilot/qt/widgets/expandable_row.cc",
+  "sunnypilot/qt/widgets/external_storage.cc",
+  "sunnypilot/qt/widgets/prime.cc",
+  "sunnypilot/qt/widgets/scrollview.cc",
+  "sunnypilot/qt/network/networking.cc",
+]
+
+qt_util = [
+  "sunnypilot/qt/util.cc",
+]
+
+qt_src = [
+  "sunnypilot/ui.cc",
+  "sunnypilot/qt/api.cc",
+  "sunnypilot/qt/sidebar.cc",
+  "sunnypilot/qt/window.cc",
+  "sunnypilot/qt/home.cc",
+  "sunnypilot/qt/offroad/exit_offroad_button.cc",
+  "sunnypilot/qt/offroad/offroad_home.cc",
+  "sunnypilot/qt/offroad/settings/developer_panel.cc",
+  "sunnypilot/qt/offroad/settings/device_panel.cc",
+  "sunnypilot/qt/offroad/settings/lateral_panel.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal_panel.cc",
+  "sunnypilot/qt/offroad/settings/max_time_offroad.cc",
+  "sunnypilot/qt/offroad/settings/brightness.cc",
+  "sunnypilot/qt/offroad/settings/models_panel.cc",
+  "sunnypilot/qt/offroad/settings/osm_panel.cc",
+  "sunnypilot/qt/offroad/settings/settings.cc",
+  "sunnypilot/qt/offroad/settings/software_panel.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink_panel.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.cc",
+  "sunnypilot/qt/offroad/settings/trips_panel.cc",
+  "sunnypilot/qt/offroad/settings/vehicle_panel.cc",
+  "sunnypilot/qt/offroad/settings/visuals_panel.cc",
+  "sunnypilot/qt/onroad/annotated_camera.cc",
+  "sunnypilot/qt/onroad/buttons.cc",
+  "sunnypilot/qt/onroad/developer_ui/developer_ui.cc",
+  "sunnypilot/qt/onroad/hud.cc",
+  "sunnypilot/qt/onroad/model.cc",
+  "sunnypilot/qt/onroad/onroad_home.cc",
+]
+
+lateral_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/lateral/blinker_pause_lateral_settings.cc",
+  "sunnypilot/qt/offroad/settings/lateral/lane_change_settings.cc",
+  "sunnypilot/qt/offroad/settings/lateral/mads_settings.cc",
+  "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
+]
+
+longitudinal_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_settings.cc",
+]
+
+network_src = [
+  "sunnypilot/qt/network/sunnylink/sunnylink_client.cc",
+  "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/role_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/user_service.cc",
+]
+
+osm_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/osm/models_fetcher.cc",
+]
+
+vehicle_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/vehicle/brand_settings_factory.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/brand_settings_interface.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/platform_selector.cc",
+]
+
+brand_settings_qt_src = [
+  "sunnypilot/qt/offroad/settings/vehicle/chrysler_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/ford_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/gm_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/honda_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/mazda_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/nissan_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/rivian_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/subaru_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/tesla_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/toyota_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/volkswagen_settings.cc",
+]
+
+
+sp_widgets_src = widgets_src + network_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + longitudinal_panel_qt_src + osm_panel_qt_src
+sp_qt_util = qt_util
+
+Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")
