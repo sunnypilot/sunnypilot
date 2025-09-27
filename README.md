@@ -129,4 +129,4 @@ By becoming a sponsor, you will gain access to exclusive content, early access t
 
 Your continuous love and support are greatly appreciated! Enjoy 🥰
 
-<span>-</span> Jason, Founder of sunnypilot
+<span>-</span> Jason, Founder of sunnypilot 
