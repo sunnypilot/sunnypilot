@@ -64,9 +64,9 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
+    self._read_params()
     self.dec.update(sm)
     self.update_e2e_alerts(sm)
-    self._read_params()
     self._frame += 1
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
@@ -131,8 +131,8 @@ class LongitudinalPlannerSP:
     lead_vRel: float = sm['radarState'].leadOne.vRel
     isStandstill: bool = sm['carState'].standstill
     gasPressed: bool = sm['carState'].gasPressed
-    self.greenLightAlert = False
-    self.leadDepartAlert = False
+    _greenLightAlert = False
+    _leadDepartAlert = False
 
     # Green light alert
     if (self.greenLightAlertEnabled
@@ -140,7 +140,7 @@ class LongitudinalPlannerSP:
             and model_x[max_idx] > 30
             and not lead_status
             and not gasPressed):
-      self.greenLightAlert = True
+      _greenLightAlert = True
     # Lead departure alert
     elif (self.leadDepartAlertEnabled
           and isStandstill
@@ -148,7 +148,10 @@ class LongitudinalPlannerSP:
           and lead_status
           and lead_vRel > 1
           and not gasPressed):
-      self.leadDepartAlert = True
+      _leadDepartAlert = True
+
+    self.greenLightAlert = _greenLightAlert
+    self.leadDepartAlert = _leadDepartAlert
 
   def _read_params(self) -> None:
     if self._frame % int(3. / DT_MDL) == 0:
