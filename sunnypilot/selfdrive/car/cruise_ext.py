@@ -112,6 +112,10 @@ class VCruiseHelperSP:
   def update_speed_limit_final_last_changed(self) -> bool:
     return self.has_speed_limit and bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
 
+  @property
+  def update_speed_limit_assist_pre_active_confirmed(self) -> bool:
+    return self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive
+
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or
                                                 self.update_speed_limit_final_last_changed):
