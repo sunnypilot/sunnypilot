@@ -31,9 +31,10 @@ private:
   void drawStandstillTimer(QPainter &p, int x, int y);
   bool pulseElement(int frame);
   void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
-  void drawSpeedLimitSigns(QPainter &p);
+  void drawSpeedLimitSigns(QPainter &p, QRect &sign_rect);
   void drawUpcomingSpeedLimit(QPainter &p);
   void drawRoadName(QPainter &p, const QRect &surface_rect);
+  void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -86,4 +87,8 @@ private:
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
   bool roadName;
   QString roadNameStr;
+  cereal::LongitudinalPlanSP::SpeedLimit::AssistState speedLimitAssistState;
+  int speedLimitAssistFrame;
+  QPixmap plus_arrow_up_img;
+  QPixmap minus_arrow_down_img;
 };

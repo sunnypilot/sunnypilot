@@ -23,4 +23,3 @@ std::optional<QString> getParamIgnoringDefault(const std::string &param_name, co
 QMap<QString, QVariantMap> loadPlatformList();
 QStringList searchFromList(const QString &query, const QStringList &list);
 std::optional<cereal::Event::Reader> loadCerealEvent(Params& params, const std::string& _param);
-bool hasIntelligentCruiseButtonManagement(const cereal::CarParamsSP::Reader &car_params_sp);

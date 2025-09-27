@@ -27,7 +27,7 @@ private:
   Params params;
   bool has_longitudinal_control = false;
   bool is_pcm_cruise = false;
-  bool has_intelligent_cruise_button_management = false;;
+  bool intelligent_cruise_button_management_available = false;;
   bool offroad = false;
 
   QStackedLayout *main_layout = nullptr;

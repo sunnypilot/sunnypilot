@@ -57,6 +57,12 @@ class SpeedLimitResolver:
     self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
+    self.speed_limit = 0.
+    self.speed_limit_last = 0.
+    self.speed_limit_final = 0.
+    self.speed_limit_final_last = 0.
+    self.speed_limit_offset = 0.
+
   def update_speed_limit_states(self) -> None:
     self.speed_limit_final = self.speed_limit + self.speed_limit_offset
 
