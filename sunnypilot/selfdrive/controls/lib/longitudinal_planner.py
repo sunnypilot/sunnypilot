@@ -155,5 +155,5 @@ class LongitudinalPlannerSP:
 
   def _read_params(self) -> None:
     if self._frame % int(3. / DT_MDL) == 0:
-      self.greenLightAlertenabled = self._params.get_bool("GreenLightAlert")
+      self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
       self.leadDepartAlertEnabled = self._params.get_bool("LeadDepartAlert")
