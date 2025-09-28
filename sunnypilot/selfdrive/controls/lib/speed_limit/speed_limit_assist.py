@@ -136,6 +136,7 @@ class SpeedLimitAssist:
       return True
     elif req_minus and now <= self._minus_hold:
       self._minus_hold = 0.
+      return True
 
     # expired
     if now > self._plus_hold:
