@@ -18,9 +18,9 @@ GearShifter = structs.CarState.GearShifter
 
 
 class CarSpecificEventsSP:
-  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
+  def __init__(self, CP: structs.CarParams, params):
     self.CP = CP
-    self.CP_SP = CP_SP
+    self.params = params
 
     self.low_speed_alert = False
 
@@ -41,11 +41,5 @@ class CarSpecificEventsSP:
           self.low_speed_alert = True
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
-
-    elif self.CP.brand == 'toyota':
-      if self.CP.openpilotLongitudinalControl:
-        if CS.cruiseState.standstill and not CS.brakePressed and not self.CP_SP.enableGasInterceptor:
-          if events.has(EventName.resumeRequired):
-            events.add(EventName.resumeRequired)
 
     return events_sp
