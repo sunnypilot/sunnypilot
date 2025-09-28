@@ -258,7 +258,10 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
   roadName @5 :Text;
 }
 
-struct CustomReserved9 @0xa1680744031fdb2d {
+struct ParkingEvent @0xa1680744031fdb2d {
+  shockDetected @0 :Bool;
+  magnitude @1 :Float32;
+  timestamp @2 :UInt64;
 }
 
 struct CustomReserved10 @0xcb9fd56c7057593a {

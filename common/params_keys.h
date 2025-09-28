@@ -196,6 +196,10 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LagdToggleDelay", {PERSISTENT | BACKUP, FLOAT, "0.2"}},
     {"LagdValueCache", {PERSISTENT, FLOAT, "0.2"}},
 
+    // Parking Mode params
+    {"EnableParkingMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ParkingModeActive", {CLEAR_ON_MANAGER_START, BOOL}},
+
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},
     {"MapdVersion", {PERSISTENT, STRING, ""}},
