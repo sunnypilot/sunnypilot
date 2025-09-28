@@ -12,6 +12,7 @@ from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import ACTIVE_STATES as SLA_ACTIVE_STATES
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
 
 ButtonType = car.CarState.ButtonEvent.Type
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
@@ -42,6 +43,7 @@ class VCruiseHelperSP:
     self.CP = CP
     self.CP_SP = CP_SP
     self.v_cruise_kph = V_CRUISE_UNSET
+    self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.params = Params()
     self.v_cruise_min = 0
     self.enabled_prev = False
@@ -56,6 +58,7 @@ class VCruiseHelperSP:
     self.sla_state = SpeedLimitAssistState.disabled
     self.prev_sla_state = SpeedLimitAssistState.disabled
     self.has_speed_limit = False
+    self.speed_limit_final_last = 0.
     self.speed_limit_final_last_kph = 0.
     self.prev_speed_limit_final_last_kph = 0.
 
@@ -105,16 +108,25 @@ class VCruiseHelperSP:
   def update_speed_limit_assist(self, LP_SP: custom.LongitudinalPlanSP) -> None:
     resolver = LP_SP.speedLimit.resolver
     self.has_speed_limit = resolver.speedLimitValid or resolver.speedLimitLastValid
-    self.speed_limit_final_last_kph = LP_SP.speedLimit.resolver.speedLimitFinalLast * CV.MS_TO_KPH
+    self.speed_limit_final_last = LP_SP.speedLimit.resolver.speedLimitFinalLast
+    self.speed_limit_final_last_kph = self.speed_limit_final_last * CV.MS_TO_KPH
     self.sla_state = LP_SP.speedLimit.assist.state
 
   @property
   def update_speed_limit_final_last_changed(self) -> bool:
     return self.has_speed_limit and bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
 
-  @property
-  def update_speed_limit_assist_pre_active_confirmed(self) -> bool:
-    return self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive
+  def update_speed_limit_assist_pre_active_confirmed(self, is_metric: bool, button_type: car.CarState.ButtonEvent.Type) -> bool:
+    v_cruise_cluster = self.v_cruise_cluster_kph * CV.KPH_TO_MS
+    req_plus, req_minus = compare_cluster_target(v_cruise_cluster, self.speed_limit_final_last, is_metric)
+
+    if self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive:
+      if button_type == ButtonType.decelCruise and req_minus:
+        return True
+      if button_type == ButtonType.accelCruise and req_plus:
+        return True
+
+    return False
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or

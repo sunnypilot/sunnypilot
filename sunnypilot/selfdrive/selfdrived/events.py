@@ -4,6 +4,7 @@ from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -30,10 +31,8 @@ def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
-  speed_limit_final_last_conv = round(sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast * speed_conv)
-
-  v_cruise_cluster = CS.vCruiseCluster
-  v_cruise_cluster_conv = v_cruise_cluster * (1 if metric else CV.KPH_TO_MPH)
+  speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
+  speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
     # PCM long
@@ -44,10 +43,13 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     alert_2_str = f"Manually change set speed to {pcm_long_required_max_set_speed_conv} {speed_unit} to activate"
   else:
     # Non PCM long
+    v_cruise_cluster = CS.vCruiseCluster * CV.KPH_TO_MS
+
+    req_plus, req_minus = compare_cluster_target(v_cruise_cluster, speed_limit_final_last, metric)
     arrow_str = ""
-    if v_cruise_cluster_conv < speed_limit_final_last_conv:
+    if req_plus:
       arrow_str = "RES/+"
-    elif v_cruise_cluster_conv > speed_limit_final_last_conv:
+    elif req_minus:
       arrow_str = "SET/-"
 
     alert_2_str = f"Operate the {arrow_str} cruise control button to activate"

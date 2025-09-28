@@ -15,6 +15,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -199,8 +200,7 @@ class SpeedLimitAssist:
     if self.state != SpeedLimitAssistState.preActive:
       return False
 
-    req_plus = self.target_set_speed_conv > self.v_cruise_cluster_conv
-    req_minus = self.target_set_speed_conv < self.v_cruise_cluster_conv
+    req_plus, req_minus = compare_cluster_target(self.v_cruise_cluster, self._speed_limit_final_last, self.is_metric)
 
     return self._get_button_release(req_plus, req_minus)
 
