@@ -46,6 +46,6 @@ class CarSpecificEventsSP:
       if self.CP.openpilotLongitudinalControl:
         if CS.cruiseState.standstill and not CS.brakePressed and not self.CP_SP.enableGasInterceptor:
           if events.has(EventName.resumeRequired):
-            events.add(EventName.resumeRequired)
+            events.remove(EventName.resumeRequired)
 
     return events_sp
