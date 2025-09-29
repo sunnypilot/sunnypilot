@@ -115,6 +115,8 @@ void HudRendererSP::updateState(const UIState &s) {
 
   greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
   leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
+  leftBlinkerOn = car_state.getLeftBlinker();
+  rightBlinkerOn = car_state.getRightBlinker();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
