@@ -22,7 +22,7 @@ class ParamStore:
     self.keys = universal_params + brand_params
     self._params = {}
 
-    self.frame = 0
+    self.frame = -1
 
   def update(self, params: Params) -> None:
     self.frame += 1
