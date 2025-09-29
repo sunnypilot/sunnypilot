@@ -44,7 +44,7 @@ class CarSpecificEventsSP:
 
     elif self.CP.brand == 'toyota':
       if self.CP.openpilotLongitudinalControl:
-        if CS.cruiseState.standstill and not CS.brakePressed and not self.CP_SP.enableGasInterceptor:
+        if CS.cruiseState.standstill and not CS.brakePressed and self.CP_SP.enableGasInterceptor:
           if events.has(EventName.resumeRequired):
             events.remove(EventName.resumeRequired)
 
