@@ -97,7 +97,7 @@ class SpeedLimitAssist:
 
   @property
   def v_cruise_cluster_changed(self) -> bool:
-    return bool(self.v_cruise_cluster != self.v_cruise_cluster_prev)
+    return bool(self.v_cruise_cluster_conv != self.prev_v_cruise_cluster_conv)
 
   @property
   def target_set_speed_confirmed(self) -> bool:
