@@ -108,7 +108,7 @@ class VCruiseHelper(VCruiseHelperSP):
     # Speed Limit Assist for Non PCM long cars.
     # True: Disallow set speed changes when user confirmed the target set speed during preActive state
     # False: Allow set speed changes as SLA is not requesting user confirmation
-    if self.update_speed_limit_assist_pre_active_confirmed(is_metric, button_type):
+    if self.update_speed_limit_assist_pre_active_confirmed(button_type):
       return
 
     long_press, v_cruise_delta = VCruiseHelperSP.update_v_cruise_delta(self, long_press, v_cruise_delta)

@@ -61,6 +61,8 @@ class VCruiseHelperSP:
     self.speed_limit_final_last = 0.
     self.speed_limit_final_last_kph = 0.
     self.prev_speed_limit_final_last_kph = 0.
+    self.req_plus = False
+    self.req_minus = False
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
@@ -105,25 +107,24 @@ class VCruiseHelperSP:
 
     return enabled
 
-  def update_speed_limit_assist(self, LP_SP: custom.LongitudinalPlanSP) -> None:
+  def update_speed_limit_assist(self, is_metric, LP_SP: custom.LongitudinalPlanSP) -> None:
     resolver = LP_SP.speedLimit.resolver
     self.has_speed_limit = resolver.speedLimitValid or resolver.speedLimitLastValid
     self.speed_limit_final_last = LP_SP.speedLimit.resolver.speedLimitFinalLast
     self.speed_limit_final_last_kph = self.speed_limit_final_last * CV.MS_TO_KPH
     self.sla_state = LP_SP.speedLimit.assist.state
+    self.req_plus, self.req_minus = compare_cluster_target(self.v_cruise_cluster_kph * CV.KPH_TO_MS,
+                                                           self.speed_limit_final_last, is_metric)
 
   @property
   def update_speed_limit_final_last_changed(self) -> bool:
     return self.has_speed_limit and bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
 
-  def update_speed_limit_assist_pre_active_confirmed(self, is_metric: bool, button_type: car.CarState.ButtonEvent.Type) -> bool:
-    v_cruise_cluster = self.v_cruise_cluster_kph * CV.KPH_TO_MS
-    req_plus, req_minus = compare_cluster_target(v_cruise_cluster, self.speed_limit_final_last, is_metric)
-
+  def update_speed_limit_assist_pre_active_confirmed(self, button_type: car.CarState.ButtonEvent.Type) -> bool:
     if self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive:
-      if button_type == ButtonType.decelCruise and req_minus:
+      if button_type == ButtonType.decelCruise and self.req_minus:
         return True
-      if button_type == ButtonType.accelCruise and req_plus:
+      if button_type == ButtonType.accelCruise and self.req_plus:
         return True
 
     return False
