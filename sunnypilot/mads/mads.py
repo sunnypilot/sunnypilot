@@ -102,7 +102,7 @@ class ModularAssistiveDrivingSystem:
 
   def update_events(self, CS: structs.CarState):
     if not self.selfdrive.enabled and self.enabled:
-      if not CS.standstill:
+      if CS.standstill:
         if self.events.has(EventName.doorOpen):
           self.replace_event(EventName.doorOpen, EventNameSP.silentDoorOpen)
           self.transition_paused_state()
