@@ -358,10 +358,11 @@ class SpeedLimitAssist:
         events_sp.add(EventNameSP.speedLimitActive)
 
       # only notify if we acquire a valid speed limit
-      elif self.speed_limit_changed:
+      # do not check has_speed_limit here
+      elif self._speed_limit != self.speed_limit_prev:
         if self.speed_limit_prev <= 0:
           events_sp.add(EventNameSP.speedLimitActive)
-        elif self.speed_limit_prev > 0:
+        elif self.speed_limit_prev > 0 and self._speed_limit > 0:
           events_sp.add(EventNameSP.speedLimitChanged)
 
   def update(self, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise_cluster: float, speed_limit: float,
