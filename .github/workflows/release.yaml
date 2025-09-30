@@ -39,4 +39,4 @@ jobs:
         git config --global --add safe.directory '*'
         git lfs pull
     - name: Push __nightly
-      run: BRANCH=__nightly release/build_devel.sh
+      run: BRANCH=__nightly release/build_stripped.sh

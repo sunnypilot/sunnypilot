@@ -73,9 +73,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LastOffroadStatusPacket", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, JSON}},
     {"LastPowerDropDetected", {CLEAR_ON_MANAGER_START, STRING}},
     {"LastUpdateException", {CLEAR_ON_MANAGER_START, STRING}},
-    {"LastUpdateRouteCount", {PERSISTENT, INT}},
+    {"LastUpdateRouteCount", {PERSISTENT, INT, "0"}},
     {"LastUpdateTime", {PERSISTENT, TIME}},
-    {"LastUpdateUptimeOnroad", {PERSISTENT, FLOAT}},
+    {"LastUpdateUptimeOnroad", {PERSISTENT, FLOAT, "0.0"}},
     {"LiveDelay", {PERSISTENT | BACKUP, BYTES}},
     {"LiveParameters", {PERSISTENT, JSON}},
     {"LiveParametersV2", {PERSISTENT, BYTES}},
@@ -94,7 +94,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"Offroad_NeosUpdate", {CLEAR_ON_MANAGER_START, JSON}},
     {"Offroad_NoFirmware", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, JSON}},
     {"Offroad_Recalibration", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, JSON}},
-    {"Offroad_StorageMissing", {CLEAR_ON_MANAGER_START, JSON}},
     {"Offroad_TemperatureTooHigh", {CLEAR_ON_MANAGER_START, JSON}},
     {"Offroad_UnregisteredHardware", {CLEAR_ON_MANAGER_START, JSON}},
     {"Offroad_UpdateFailed", {CLEAR_ON_MANAGER_START, JSON}},
@@ -146,16 +145,23 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"CustomAccLongPressIncrement", {PERSISTENT | BACKUP, INT, "5"}},
     {"CustomAccShortPressIncrement", {PERSISTENT | BACKUP, INT, "1"}},
     {"DeviceBootMode", {PERSISTENT | BACKUP, INT, "0"}},
+    {"DevUIInfo", {PERSISTENT | BACKUP, INT, "0"}},
+    {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
     {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
+    {"IntelligentCruiseButtonManagement", {PERSISTENT | BACKUP , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
+    {"LastGPSPositionLLK", {PERSISTENT, STRING}},
     {"MaxTimeOffroad", {PERSISTENT | BACKUP, INT, "1800"}},
     {"ModelRunnerTypeCache", {CLEAR_ON_ONROAD_TRANSITION, INT}},
     {"OffroadMode", {CLEAR_ON_MANAGER_START, BOOL}},
+    {"Offroad_TiciSupport", {CLEAR_ON_MANAGER_START, JSON}},
     {"QuickBootToggle", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
@@ -167,6 +173,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ModelManager_ActiveBundle", {PERSISTENT, JSON}},
     {"ModelManager_ClearCache", {CLEAR_ON_MANAGER_START, BOOL}},
     {"ModelManager_DownloadIndex", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, INT, "0"}},
+    {"ModelManager_Favs", {PERSISTENT | BACKUP, STRING}},
     {"ModelManager_LastSyncTime", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, INT, "0"}},
     {"ModelManager_ModelsCache", {PERSISTENT | BACKUP, JSON}},
 
@@ -192,14 +199,16 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"DynamicExperimentalControl", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"BlindSpot", {PERSISTENT | BACKUP, BOOL, "0"}},
 
-    // model panel params
+    // sunnypilot model params
     {"LagdToggle", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"LagdToggleDelay", {PERSISTENT | BACKUP, FLOAT, "0.2"}},
     {"LagdValueCache", {PERSISTENT, FLOAT, "0.2"}},
+    {"LaneTurnDesire", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"LaneTurnValue", {PERSISTENT | BACKUP, FLOAT, "19.0"}},
 
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},
-    {"MapdVersion", {PERSISTENT, STRING, ""}},
+    {"MapdVersion", {PERSISTENT, STRING}},
     {"MapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT, "0.0"}},
     {"NextMapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, JSON}},
     {"Offroad_OSMUpdateRequired", {CLEAR_ON_MANAGER_START, JSON}},
@@ -215,5 +224,17 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"OsmStateName", {PERSISTENT, STRING, "All"}},
     {"OsmStateTitle", {PERSISTENT, STRING}},
     {"OsmWayTest", {PERSISTENT, STRING}},
-    {"RoadName", {CLEAR_ON_ONROAD_TRANSITION, STRING, ""}},
+    {"RoadName", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
+    {"RoadNameToggle", {PERSISTENT, STRING}},
+
+    // Speed Limit
+    {"SpeedLimitMode", {PERSISTENT | BACKUP, INT, "1"}},
+    {"SpeedLimitOffsetType", {PERSISTENT | BACKUP, INT, "0"}},
+    {"SpeedLimitPolicy", {PERSISTENT | BACKUP, INT, "3"}},
+    {"SpeedLimitValueOffset", {PERSISTENT | BACKUP, INT, "0"}},
+
+    // Smart Cruise Control
+    {"MapTargetVelocities", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
+    {"SmartCruiseControlMap", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
 };
