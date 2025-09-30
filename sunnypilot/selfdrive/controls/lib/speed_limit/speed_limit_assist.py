@@ -28,6 +28,7 @@ ENABLED_STATES = (SpeedLimitAssistState.preActive, SpeedLimitAssistState.pending
 
 DISABLED_GUARD_PERIOD = 0.5  # secs.
 PRE_ACTIVE_GUARD_PERIOD = 15  # secs. Time to wait after activation before considering temp deactivation signal.
+SPEED_LIMIT_CHANGED_HOLD_PERIOD = 1  # secs. Time to wait after speed limit change before switching to preActive.
 
 LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers to provide.
 LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
@@ -53,6 +54,7 @@ class SpeedLimitAssist:
     self.frame = -1
     self.long_engaged_timer = 0
     self.pre_active_timer = 0
+    self.speed_limit_changed_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
     self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
     self.long_enabled = False
@@ -286,6 +288,7 @@ class SpeedLimitAssist:
   def update_state_machine_non_pcm_long(self):
     self.long_engaged_timer = max(0, self.long_engaged_timer - 1)
     self.pre_active_timer = max(0, self.pre_active_timer - 1)
+    self.speed_limit_changed_timer = max(0, self.speed_limit_changed_timer - 1)
 
     # ACTIVE, ADAPTING, PENDING, PRE_ACTIVE, INACTIVE
     if self.state != SpeedLimitAssistState.disabled:
@@ -299,6 +302,8 @@ class SpeedLimitAssist:
             self.state = SpeedLimitAssistState.inactive
 
           elif self.speed_limit_changed and self.apply_confirm_speed_threshold:
+            self.speed_limit_changed_timer = int(SPEED_LIMIT_CHANGED_HOLD_PERIOD / DT_MDL)
+          elif self.speed_limit_changed_timer <= 0:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
 
@@ -313,6 +318,8 @@ class SpeedLimitAssist:
         # INACTIVE
         elif self.state == SpeedLimitAssistState.inactive:
           if self.speed_limit_changed:
+            self.speed_limit_changed_timer = int(SPEED_LIMIT_CHANGED_HOLD_PERIOD / DT_MDL)
+          elif self.speed_limit_changed_timer <= 0:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
           elif self._update_non_pcm_long_confirmed_state():
