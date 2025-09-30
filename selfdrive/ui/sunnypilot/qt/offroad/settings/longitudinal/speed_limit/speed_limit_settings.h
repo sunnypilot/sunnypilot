@@ -76,4 +76,21 @@ private:
         .arg(warning_str)
         .arg(assist_str);
   }
+
+  static std::vector<SpeedLimitMode> getSpeedLimitModeValues() {
+    std::vector<SpeedLimitMode> values;
+    for (int i = static_cast<int>(SpeedLimitMode::OFF);
+         i <= static_cast<int>(SpeedLimitMode::ASSIST); ++i) {
+      values.push_back(static_cast<SpeedLimitMode>(i));
+    }
+    return values;
+  }
+
+  static std::vector<int> convertSpeedLimitModeValues(const std::vector<SpeedLimitMode> &modes) {
+    std::vector<int> values;
+    for (const auto& mode : modes) {
+      values.push_back(static_cast<int>(mode));
+    }
+    return values;
+  }
 };
