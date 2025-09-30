@@ -11,7 +11,10 @@
 #include "selfdrive/ui/qt/util.h"
 
 
-HudRendererSP::HudRendererSP() {}
+HudRendererSP::HudRendererSP() {
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+}
 
 void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
@@ -36,6 +39,8 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
   speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
+  speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
+  speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -104,6 +109,13 @@ void HudRendererSP::updateState(const UIState &s) {
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
+
+  p.save();
+
+  if (is_cruise_available) {
+    drawSetSpeedSP(p, surface_rect);
+  }
+
   if (!reversing) {
     // Smart Cruise Control
     int x_offset = -260;
@@ -152,14 +164,39 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Speed Limit
-    if (speedLimitMode != SpeedLimitMode::OFF) {
-      drawSpeedLimitSigns(p);
-      drawUpcomingSpeedLimit(p);
+    bool showSpeedLimit;
+    bool speed_limit_assist_pre_active_pulse = pulseElement(speedLimitAssistFrame);
+
+    // Position speed limit sign next to set speed box
+    const int sign_width = is_metric ? 200 : 172;
+    const int sign_x = is_metric ? 280 : 272;
+    const int sign_y = 45;
+    const int sign_height = 204;
+    QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
+
+    if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+      speedLimitAssistFrame++;
+      showSpeedLimit = speed_limit_assist_pre_active_pulse;
+      drawSpeedLimitPreActiveArrow(p, sign_rect);
+    } else {
+      speedLimitAssistFrame = 0;
+      showSpeedLimit = speedLimitMode != SpeedLimitMode::OFF;
+    }
+
+    if (showSpeedLimit) {
+      drawSpeedLimitSigns(p, sign_rect);
+
+      // do not show during SLA's preActive state
+      if (speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+        drawUpcomingSpeedLimit(p);
+      }
     }
 
     // Road Name
     drawRoadName(p, surface_rect);
   }
+
+  p.restore();
 }
 
 void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QColor color) {
@@ -348,10 +385,10 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
   }
 }
 
-void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
+void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
+  bool speedLimitWarningEnabled = speedLimitMode >= SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
   bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
-  bool overspeed = hasSpeedLimit && speedLimitFinalLast < std::nearbyint(speed);
+  bool overspeed = hasSpeedLimit && std::nearbyint(speedLimitFinalLast) < std::nearbyint(speed);
   QString speedLimitStr = hasSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---";
 
   // Offset display text
@@ -364,13 +401,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   if (speedLimitSubText.size() >= 3) {
     speedLimitSubTextFactor = 0.475;
   }
-
-  // Position next to MAX speed box
-  const int sign_width = is_metric ? 200 : 172;
-  const int sign_x = is_metric ? 280 : 272;
-  const int sign_y = 45;
-  const int sign_height = 204;
-  QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
@@ -572,4 +602,67 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   // Truncate if still too long
   QString truncated = fm.elidedText(roadNameStr, Qt::ElideRight, road_rect.width() - 20);
   p.drawText(road_rect, Qt::AlignCenter, truncated);
+}
+
+void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
+  const int sign_margin = 12;
+  const int arrow_spacing = sign_margin * 3;
+  int arrow_x = sign_rect.right() + arrow_spacing;
+
+  int _set_speed = std::nearbyint(set_speed);
+  int _speed_limit_final_last = std::nearbyint(speedLimitFinalLast);
+
+  // Calculate the vertical offset using a sinusoidal function for smooth bouncing
+  double bounce_frequency = 2.0 * M_PI / UI_FREQ;  // 20 frames for one full oscillation
+  int bounce_offset = 20 * sin(speedLimitAssistFrame * bounce_frequency);  // Adjust the amplitude (20 pixels) as needed
+
+  if (_set_speed < _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - plus_arrow_up_img.height() / 2 + bounce_offset);
+    p.drawPixmap(iconPosition, plus_arrow_up_img);
+  } else if (_set_speed > _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
+    p.drawPixmap(iconPosition, minus_arrow_down_img);
+  }
+}
+
+void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
+  // Draw outer box + border to contain set speed
+  const QSize default_size = {172, 204};
+  QSize set_speed_size = is_metric ? QSize(200, 204) : default_size;
+  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+
+  // Draw set speed box
+  p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+  p.setBrush(QColor(0, 0, 0, 166));
+  p.drawRoundedRect(set_speed_rect, 32, 32);
+
+  // Colors based on status
+  QColor max_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+  QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
+  if (is_cruise_set) {
+    set_speed_color = QColor(255, 255, 255);
+    if (speedLimitAssistActive) {
+      set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
+      max_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+    } else {
+      if (status == STATUS_DISENGAGED) {
+        max_color = QColor(255, 255, 255);
+      } else if (status == STATUS_OVERRIDE) {
+        max_color = QColor(0x91, 0x9b, 0x95, 0xff);
+      } else {
+        max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+      }
+    }
+  }
+
+  // Draw "MAX" text
+  p.setFont(InterFont(40, QFont::DemiBold));
+  p.setPen(max_color);
+  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("MAX"));
+
+  // Draw set speed
+  QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
+  p.setFont(InterFont(90, QFont::Bold));
+  p.setPen(set_speed_color);
+  p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 }

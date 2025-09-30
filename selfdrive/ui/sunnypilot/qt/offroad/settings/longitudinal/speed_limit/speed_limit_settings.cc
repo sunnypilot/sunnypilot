@@ -28,6 +28,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::OFF)],
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::INFORMATION)],
     SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::WARNING)],
+    SpeedLimitModeTexts[static_cast<int>(SpeedLimitMode::ASSIST)],
   };
   speed_limit_mode_settings = new ButtonParamControlSP(
     "SpeedLimitMode",
@@ -35,7 +36,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
     "",
     "",
     speed_limit_mode_texts,
-    385);
+    380);
   list->addItem(speed_limit_mode_settings);
 
   list->addItem(horizontal_line());
@@ -107,6 +108,25 @@ void SpeedLimitSettings::refresh() {
   SpeedLimitOffsetType offset_type_param = static_cast<SpeedLimitOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
   QString offsetLabel = QString::fromStdString(params.get("SpeedLimitValueOffset"));
 
+  bool has_longitudinal_control;
+  bool intelligent_cruise_button_management_available;
+  auto cp_bytes = params.get("CarParamsPersistent");
+  auto cp_sp_bytes = params.get("CarParamsSPPersistent");
+  if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    AlignedBuffer aligned_buf_sp;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    capnp::FlatArrayMessageReader cmsg_sp(aligned_buf_sp.align(cp_sp_bytes.data(), cp_sp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+    cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
+
+    has_longitudinal_control = hasLongitudinalControl(CP);
+    intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+  } else {
+    has_longitudinal_control = false;
+    intelligent_cruise_button_management_available = false;
+  }
+
   speed_limit_mode_settings->setDescription(modeDescription(speed_limit_mode_param));
   speed_limit_offset->setDescription(offsetDescription(offset_type_param));
 
@@ -122,6 +142,13 @@ void SpeedLimitSettings::refresh() {
     speed_limit_offset->setVisible(true);
     speed_limit_offset->setLabel(offsetLabel);
     speed_limit_offset->showDescription();
+  }
+
+  if (has_longitudinal_control || intelligent_cruise_button_management_available) {
+    speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(getSpeedLimitModeValues()));
+  } else {
+    speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(
+      {SpeedLimitMode::OFF,SpeedLimitMode::INFORMATION, SpeedLimitMode::WARNING}));
   }
 
   speed_limit_mode_settings->showDescription();
