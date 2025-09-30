@@ -258,7 +258,7 @@ class SpeedLimitAssist:
         elif self.state == SpeedLimitAssistState.preActive:
           if self.target_set_speed_confirmed:
             self._update_confirmed_state()
-          elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
+          elif self.pre_active_timer <= 0:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
 
@@ -311,7 +311,7 @@ class SpeedLimitAssist:
         elif self.state == SpeedLimitAssistState.preActive:
           if self._update_non_pcm_long_confirmed_state():
             self.state = SpeedLimitAssistState.active
-          elif self.pre_active_timer <= PRE_ACTIVE_GUARD_PERIOD:
+          elif self.pre_active_timer <= 0:
             # Timeout - session ended
             self.state = SpeedLimitAssistState.inactive
 
