@@ -185,7 +185,7 @@ def getParamsAllKeys() -> dict[str, str]:
       "default_value": base64.b64encode(value).decode('utf-8') if value else None,
     })
 
-  return {"keys": json.dumps(available_keys), "keys_v1": json.dumps(params_dict.get("params", []))}
+  return {"keys": json.dumps(params_dict.get("params", []))}
 
 
 @dispatcher.add_method
