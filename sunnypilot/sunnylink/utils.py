@@ -75,7 +75,7 @@ def _to_bytes(value: bytes, param_type: ParamKeyType) -> bytes | None:
 def get_param_as_byte(param_name: str, params=None, get_default=False) -> bytes | None:
   """Get a parameter as bytes. Returns None if the parameter does not exist."""
   params = params or Params()
-  value = params.get(param_name) if not get_default else params.get_default(param_name)
+  value = params.get(param_name) if not get_default else params.get_default_value(param_name)
   param_type = params.get_type(param_name)
   return _to_bytes(value, param_type)
 
