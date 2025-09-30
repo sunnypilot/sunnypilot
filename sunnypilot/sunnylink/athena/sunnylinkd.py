@@ -177,6 +177,7 @@ def getParamsAllKeys() -> list[str]:
   keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
   return keys
 
+
 @dispatcher.add_method
 def getParamsAllKeysV1() -> dict[str, str]:
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
