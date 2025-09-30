@@ -11,6 +11,8 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/helpers.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/developer_ui.h"
 
+constexpr int SPEED_LIMIT_AHEAD_VALID_FRAME_THRESHOLD = 5;
+
 class HudRendererSP : public HudRenderer {
   Q_OBJECT
 
@@ -29,9 +31,11 @@ private:
   void drawStandstillTimer(QPainter &p, int x, int y);
   bool pulseElement(int frame);
   void drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name);
-  void drawSpeedLimitSigns(QPainter &p);
+  void drawSpeedLimitSigns(QPainter &p, QRect &sign_rect);
   void drawUpcomingSpeedLimit(QPainter &p);
   void drawRoadName(QPainter &p, const QRect &surface_rect);
+  void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
+  void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -67,8 +71,15 @@ private:
   bool smartCruiseControlVisionEnabled;
   bool smartCruiseControlVisionActive;
   int smartCruiseControlVisionFrame;
+  bool smartCruiseControlMapEnabled;
+  bool smartCruiseControlMapActive;
+  int smartCruiseControlMapFrame;
   float speedLimit;
+  float speedLimitLast;
   float speedLimitOffset;
+  bool speedLimitValid;
+  bool speedLimitLastValid;
+  float speedLimitFinalLast;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
@@ -77,4 +88,9 @@ private:
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
   bool roadName;
   QString roadNameStr;
+  cereal::LongitudinalPlanSP::SpeedLimit::AssistState speedLimitAssistState;
+  bool speedLimitAssistActive;
+  int speedLimitAssistFrame;
+  QPixmap plus_arrow_up_img;
+  QPixmap minus_arrow_down_img;
 };
