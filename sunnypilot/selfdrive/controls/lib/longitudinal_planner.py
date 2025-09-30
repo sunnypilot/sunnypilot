@@ -171,7 +171,6 @@ class LongitudinalPlannerSP:
             and not lead_status
             and not gasPressed):
       _greenLightAlert = True
-      self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
     # Lead departure alert
     elif (self.leadDepartAlertEnabled
           and isStandstill
@@ -180,10 +179,12 @@ class LongitudinalPlannerSP:
           and lead_vRel > 1
           and not gasPressed):
       _leadDepartAlert = True
-      self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
     self.greenLightAlert = _greenLightAlert
     self.leadDepartAlert = _leadDepartAlert
+
+    if (self.greenLightAlert or self.leadDepartAlert):
+      self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
   def _read_params(self) -> None:
     if self._frame % int(3. / DT_MDL) == 0:
