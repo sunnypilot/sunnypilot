@@ -179,9 +179,6 @@ def getParamsAllKeys() -> dict[str, str]:
   params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
   for key in available_keys:
     value = get_param_as_byte(key, get_default=True)
-    if value is None:
-      continue
-
     params_dict["params"].append({
       "key": key,
       "type": int(params.get_type(key).value),
