@@ -99,10 +99,10 @@ class TestSpeedLimitAssist:
 
   def test_preactive_to_active_with_max_speed_confirmation(self):
     self.sla.state = SpeedLimitAssistState.preActive
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'], SPEED_LIMITS['highway'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
-    assert self.sla.is_enabled and self.sla.is_active, f"enabled: {self.sla.is_enabled}, active: {self.sla.is_active}"
-    assert self.sla.output_v_target == SPEED_LIMITS['city']
+    assert self.sla.is_enabled and self.sla.is_active
+    assert self.sla.output_v_target == SPEED_LIMITS['highway']
 
   def test_preactive_timeout_to_inactive(self):
     self.sla.state = SpeedLimitAssistState.preActive
@@ -152,9 +152,10 @@ class TestSpeedLimitAssist:
     self.sla.update(True, False, SPEED_LIMITS['city'], 0, different_cruise, SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.inactive
 
+  # TODO-SP: test lower CST cases
   def test_rapid_speed_limit_changes(self):
     self.initialize_active_state(self.pcm_long_max_set_speed)
-    speed_limits = [SPEED_LIMITS['city'], SPEED_LIMITS['highway'], SPEED_LIMITS['residential']]
+    speed_limits = [SPEED_LIMITS['highway'], SPEED_LIMITS['freeway']]
 
     for _, speed_limit in enumerate(speed_limits):
       self.sla.update(True, False, speed_limit, 0, self.pcm_long_max_set_speed, speed_limit, speed_limit, True, 0, self.events_sp)
@@ -181,10 +182,11 @@ class TestSpeedLimitAssist:
   def test_distance_based_adapting(self):
     self.sla.state = SpeedLimitAssistState.adapting
     self.sla.v_cruise_cluster_prev = self.pcm_long_max_set_speed
+    self.sla.prev_v_cruise_cluster_conv = round(self.pcm_long_max_set_speed * self.speed_conv)
 
     distance = 100.0
-    current_speed = SPEED_LIMITS['highway']
-    target_speed = SPEED_LIMITS['city']
+    current_speed = SPEED_LIMITS['freeway']
+    target_speed = SPEED_LIMITS['highway']
 
     self.sla.update(True, False, current_speed, 0, self.pcm_long_max_set_speed, target_speed, target_speed, True, distance, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.adapting
