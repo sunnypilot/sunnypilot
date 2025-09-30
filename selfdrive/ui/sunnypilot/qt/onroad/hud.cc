@@ -40,6 +40,7 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
+  speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -108,6 +109,13 @@ void HudRendererSP::updateState(const UIState &s) {
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
+
+  p.save();
+
+  if (is_cruise_available) {
+    drawSetSpeedSP(p, surface_rect);
+  }
+
   if (!reversing) {
     // Smart Cruise Control
     int x_offset = -260;
@@ -187,6 +195,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Road Name
     drawRoadName(p, surface_rect);
   }
+
+  p.restore();
 }
 
 void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QColor color) {
@@ -613,4 +623,46 @@ void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) 
     QPoint iconPosition(arrow_x, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
     p.drawPixmap(iconPosition, minus_arrow_down_img);
   }
+}
+
+void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
+  // Draw outer box + border to contain set speed
+  const QSize default_size = {172, 204};
+  QSize set_speed_size = is_metric ? QSize(200, 204) : default_size;
+  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+
+  // Draw set speed box
+  p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+  p.setBrush(QColor(0, 0, 0, 166));
+  p.drawRoundedRect(set_speed_rect, 32, 32);
+
+  // Colors based on status
+  QColor max_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+  QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
+  if (is_cruise_set) {
+    set_speed_color = QColor(255, 255, 255);
+    if (speedLimitAssistActive) {
+      set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
+      max_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+    } else {
+      if (status == STATUS_DISENGAGED) {
+        max_color = QColor(255, 255, 255);
+      } else if (status == STATUS_OVERRIDE) {
+        max_color = QColor(0x91, 0x9b, 0x95, 0xff);
+      } else {
+        max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+      }
+    }
+  }
+
+  // Draw "MAX" text
+  p.setFont(InterFont(40, QFont::DemiBold));
+  p.setPen(max_color);
+  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("MAX"));
+
+  // Draw set speed
+  QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
+  p.setFont(InterFont(90, QFont::Bold));
+  p.setPen(set_speed_color);
+  p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 }
