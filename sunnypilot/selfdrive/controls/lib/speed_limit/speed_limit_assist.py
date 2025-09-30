@@ -41,8 +41,11 @@ CRUISE_BUTTON_CONFIRM_HOLD = 0.5  # secs.
 
 
 class SpeedLimitAssist:
-  output_v_target: float = V_CRUISE_UNSET
-  output_a_target: float = 0.
+  _speed_limit_final_last: float
+  _distance: float
+  v_ego: float
+  a_ego: float
+  v_offset: float
 
   def __init__(self, CP):
     self.params = Params()
@@ -56,6 +59,8 @@ class SpeedLimitAssist:
     self.long_enabled_prev = False
     self.is_enabled = False
     self.is_active = False
+    self.output_v_target = V_CRUISE_UNSET
+    self.output_a_target = 0.
     self.v_ego = 0.
     self.a_ego = 0.
     self.v_offset = 0.
@@ -175,7 +180,7 @@ class SpeedLimitAssist:
     # at/above CST:
     # - new speed limit >= CST: auto change
     # - new speed limit < CST: user confirmation required
-    return self.speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[self.is_metric]
+    return bool(self.speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[self.is_metric])
 
   def get_current_acceleration_as_target(self) -> float:
     return self.a_ego

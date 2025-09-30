@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import cereal.messaging as messaging
 from cereal import custom
 
 from opendbc.car.car_helpers import interfaces
@@ -99,7 +98,8 @@ class TestSpeedLimitAssist:
 
   def test_preactive_to_active_with_max_speed_confirmation(self):
     self.sla.state = SpeedLimitAssistState.preActive
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'], SPEED_LIMITS['highway'], True, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'],
+                    SPEED_LIMITS['highway'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
     assert self.sla.is_enabled and self.sla.is_active
     assert self.sla.output_v_target == SPEED_LIMITS['highway']
@@ -132,7 +132,8 @@ class TestSpeedLimitAssist:
   def test_active_to_adapting_transition(self):
     self.initialize_active_state(self.pcm_long_max_set_speed)
 
-    self.sla.update(True, False, SPEED_LIMITS['highway'] + 2, 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'], SPEED_LIMITS['highway'], True, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['highway'] + 2, 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'],
+                    SPEED_LIMITS['highway'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.adapting
 
   def test_adapting_to_active_transition(self):
@@ -140,7 +141,8 @@ class TestSpeedLimitAssist:
     self.sla.v_cruise_cluster_prev = self.pcm_long_max_set_speed
     self.sla.prev_v_cruise_cluster_conv = round(self.pcm_long_max_set_speed * self.speed_conv)
 
-    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'], SPEED_LIMITS['highway'], True, 0, self.events_sp)
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['highway'],
+                    SPEED_LIMITS['highway'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.active
 
   def test_manual_cruise_change_detection(self):
