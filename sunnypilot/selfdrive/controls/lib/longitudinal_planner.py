@@ -7,11 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import messaging, custom
 from opendbc.car import structs
-from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
+from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -32,16 +31,10 @@ class LongitudinalPlannerSP:
     self.sla = SpeedLimitAssist(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
-    self._params = Params()
-    self._frame = -1
+    self.e2e_alerts_helper = E2EAlertsHelper()
 
     self.output_v_target = 0.
     self.output_a_target = 0.
-
-    self.greenLightAlert = False
-    self.leadDepartAlert = False
-    self.greenLightAlertEnabled = False
-    self.leadDepartAlertEnabled = False
 
   @property
   def mlsim(self) -> bool:
@@ -61,8 +54,6 @@ class LongitudinalPlannerSP:
 
     long_enabled = sm['carControl'].enabled
     long_override = sm['carControl'].cruiseControl.override
-
-    self.events_sp.clear()
 
     # Smart Cruise Control
     self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
@@ -87,10 +78,9 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
-    self._read_params()
+    self.events_sp.clear()
     self.dec.update(sm)
-    self.update_e2e_alerts(sm)
-    self._frame += 1
+    self.e2e_alerts_helper.update(sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -149,44 +139,7 @@ class LongitudinalPlannerSP:
 
     # E2E Alerts
     e2eAlerts = longitudinalPlanSP.e2eAlerts
-    e2eAlerts.greenLightAlert = self.greenLightAlert
-    e2eAlerts.leadDepartAlert = self.leadDepartAlert
+    e2eAlerts.greenLightAlert = self.e2e_alerts_helper.greenLightAlert
+    e2eAlerts.leadDepartAlert = self.e2e_alerts_helper.leadDepartAlert
 
     pm.send('longitudinalPlanSP', plan_sp_send)
-
-  def update_e2e_alerts(self, sm: messaging.SubMaster) -> None:
-    model_x: list[float] = sm['modelV2'].position.x
-    max_idx = len(model_x) - 1
-    lead_status: bool = sm['radarState'].leadOne.status
-    lead_vRel: float = sm['radarState'].leadOne.vRel
-    isStandstill: bool = sm['carState'].standstill
-    gasPressed: bool = sm['carState'].gasPressed
-    _greenLightAlert = False
-    _leadDepartAlert = False
-
-    # Green light alert
-    if (self.greenLightAlertEnabled
-            and isStandstill
-            and model_x[max_idx] > 30
-            and not lead_status
-            and not gasPressed):
-      _greenLightAlert = True
-    # Lead departure alert
-    elif (self.leadDepartAlertEnabled
-          and isStandstill
-          and model_x[max_idx] > 30
-          and lead_status
-          and lead_vRel > 1
-          and not gasPressed):
-      _leadDepartAlert = True
-
-    self.greenLightAlert = _greenLightAlert
-    self.leadDepartAlert = _leadDepartAlert
-
-    if (self.greenLightAlert or self.leadDepartAlert):
-      self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
-
-  def _read_params(self) -> None:
-    if self._frame % int(3. / DT_MDL) == 0:
-      self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
-      self.leadDepartAlertEnabled = self._params.get_bool("LeadDepartAlert")
