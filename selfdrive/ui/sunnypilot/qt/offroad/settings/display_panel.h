@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/display/onroad_screen_brightness.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
@@ -23,4 +24,5 @@ private:
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;
   Params params;
+  OnroadScreenBrightnessControl *onroadScreenBrightnessControl = nullptr;
 };
