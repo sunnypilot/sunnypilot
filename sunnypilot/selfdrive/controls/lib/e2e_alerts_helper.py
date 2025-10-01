@@ -20,19 +20,19 @@ class E2EAlertsHelper:
     self._params = Params()
     self._frame = -1
 
-    self.greenLightAlert = False
-    self.enabled = self._params.get_bool("GreenLightAlert")
+    self.green_light_alert = False
+    self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
 
   def _read_params(self) -> None:
     if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self._params.get_bool("GreenLightAlert")
+      self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
 
     self._frame += 1
 
   def update(self, sm: messaging.SubMaster, events_sp: EventsSP) -> None:
     self._read_params()
 
-    if not self.enabled:
+    if not self.green_light_alert_enabled:
       return
 
     CS = sm['carState']
@@ -43,8 +43,8 @@ class E2EAlertsHelper:
     has_lead = sm['radarState'].leadOne.status
 
     # Green light alert
-    self.greenLightAlert = model_x[max_idx] > TRIGGER_THRESHOLD and \
+    self.green_light_alert = model_x[max_idx] > TRIGGER_THRESHOLD and \
                            not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
 
-    if self.greenLightAlert:
+    if self.green_light_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
