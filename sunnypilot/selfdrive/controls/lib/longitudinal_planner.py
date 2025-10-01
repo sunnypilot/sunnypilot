@@ -10,6 +10,7 @@ from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
+from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -30,6 +31,7 @@ class LongitudinalPlannerSP:
     self.sla = SpeedLimitAssist(CP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
+    self.e2e_alerts_helper = E2EAlertsHelper()
 
     self.output_v_target = 0.
     self.output_a_target = 0.
@@ -52,8 +54,6 @@ class LongitudinalPlannerSP:
 
     long_enabled = sm['carControl'].enabled
     long_override = sm['carControl'].cruiseControl.override
-
-    self.events_sp.clear()
 
     # Smart Cruise Control
     self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
@@ -78,7 +78,9 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
+    self.events_sp.clear()
     self.dec.update(sm)
+    self.e2e_alerts_helper.update(sm, self.events_sp)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -134,5 +136,9 @@ class LongitudinalPlannerSP:
     assist.active = self.sla.is_active
     assist.vTarget = float(self.sla.output_v_target)
     assist.aTarget = float(self.sla.output_a_target)
+
+    # E2E Alerts
+    e2eAlerts = longitudinalPlanSP.e2eAlerts
+    e2eAlerts.greenLightAlert = self.e2e_alerts_helper.green_light_alert
 
     pm.send('longitudinalPlanSP', plan_sp_send)
