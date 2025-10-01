@@ -100,5 +100,5 @@ private:
   QPixmap green_light_alert_large_img;
   bool greenLightAlert;
   int e2eAlertFrame;
-  int e2eAlertDisplayTimer;
+  int e2eAlertDisplayTimer = 0;
 };
