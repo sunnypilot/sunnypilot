@@ -206,7 +206,7 @@ void Device::updateBrightness(const UIState &s) {
 
   // Onroad Brightness Control
 #ifdef SUNNYPILOT
-  if (awake && s.scene.started && s.scene.onroadScreenOffTimer == 0 && s.scene.onroadScreenOffControl) {
+  if (awake && s.scene.started && s.scene.onroadScreenOffControl && s.scene.onroadScreenOffTimer == 0) {
     brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
   }
 #endif
