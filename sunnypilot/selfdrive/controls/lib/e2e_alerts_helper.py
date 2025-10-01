@@ -8,6 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 class E2EAlertsHelper:
 
