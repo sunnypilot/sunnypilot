@@ -56,13 +56,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
-    {
-      "LeadDepartAlert",
-      tr("Lead Departure Chime"),
-      tr("Plays an audible chime & shows an on-screen alert when the car is at standstill and the lead vehicle is departing."),
-      "",
-      false,
-    },
   };
 
   // Add regular toggles first

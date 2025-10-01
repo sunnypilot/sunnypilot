@@ -96,5 +96,4 @@ private:
   QPixmap minus_arrow_down_img;
   int e2eAlertFrame;
   bool greenLightAlert;
-  bool leadDepartAlert;
 };

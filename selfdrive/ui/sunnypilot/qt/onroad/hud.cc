@@ -107,7 +107,6 @@ void HudRendererSP::updateState(const UIState &s) {
   smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
 
   greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
-  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -199,7 +198,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawRoadName(p, surface_rect);
 
     // Green Light & Lead Depart Alerts
-    if (greenLightAlert or leadDepartAlert) {
+    if (greenLightAlert) {
       drawE2eAlert(p, surface_rect);
     }
   }
@@ -686,16 +685,8 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
                  y - height,
                  width * 2, height * 2);
 
-  QString alert_text;
-  QString alert_img;
-  if (greenLightAlert) {
-    alert_text = tr("GREEN\nLIGHT");
-    alert_img = "../../sunnypilot/selfdrive/assets/images/green_light.png";
-  }
-  else if (leadDepartAlert) {
-    alert_text = tr("LEAD VEHICLE\nDEPARTING");
-    alert_img = "../../sunnypilot/selfdrive/assets/images/lead_depart.png";
-  }
+  QString alert_text = tr("GREEN\nLIGHT");
+  QString alert_img = "../../sunnypilot/selfdrive/assets/images/green_light.png";
 
   // Alert Circle
   QPoint center = alertRect.center();

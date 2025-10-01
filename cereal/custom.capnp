@@ -250,7 +250,6 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
 
   struct E2eAlerts {
     greenLightAlert @0 :Bool;
-    leadDepartAlert @1 :Bool;
   }
 }
 
