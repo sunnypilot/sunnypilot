@@ -200,7 +200,10 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     // Green Light & Lead Depart Alerts
     if (greenLightAlert or leadDepartAlert) {
+      e2eAlertFrame++;
       drawE2eAlert(p, surface_rect);
+    } else {
+      e2eAlertFrame = 0;
     }
   }
 
@@ -722,6 +725,4 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   QPointF pixmapCenterOffset = QPointF(scaled_img.width() / 2.0, scaled_img.height() / 2.0);
   QPointF drawPoint = center - pixmapCenterOffset;
   p.drawPixmap(drawPoint, scaled_img);
-
-  e2eAlertFrame = greenLightAlert ? (e2eAlertFrame + 1) : 0;
 }
