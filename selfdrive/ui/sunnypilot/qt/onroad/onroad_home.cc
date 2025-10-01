@@ -25,8 +25,10 @@ void OnroadWindowSP::updateState(const UIStateSP &s) {
 
 void OnroadWindowSP::mousePressEvent(QMouseEvent *e) {
   OnroadWindow::mousePressEvent(e);
+  uiStateSP()->reset_onroad_sleep_timer();
 }
 
 void OnroadWindowSP::offroadTransition(bool offroad) {
   OnroadWindow::offroadTransition(offroad);
+  uiStateSP()->reset_onroad_sleep_timer();
 }
