@@ -94,6 +94,10 @@ private:
   int speedLimitAssistFrame;
   QPixmap plus_arrow_up_img;
   QPixmap minus_arrow_down_img;
+  int green_light_alert_small = 250;
+  int green_light_alert_large = 300;
+  QPixmap green_light_alert_small_img;
+  QPixmap green_light_alert_large_img;
   bool greenLightAlert;
   int e2eAlertFrame;
   int e2eAlertDisplayTimer;
