@@ -20,7 +20,7 @@ class E2EAlertsHelper:
     self.greenLightAlertEnabled = False
     self.leadDepartAlertEnabled = False
 
-  def update(self, sm: messaging.SubMaster) -> None:
+  def update(self, sm: messaging.SubMaster, events_sp: EventsSP) -> None:
     self._read_params()
     self._frame += 1
 
@@ -53,7 +53,7 @@ class E2EAlertsHelper:
     self.leadDepartAlert = _leadDepartAlert
 
     if (self.greenLightAlert or self.leadDepartAlert):
-      self.events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
+      events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
   def _read_params(self) -> None:
     if self._frame % int(3. / DT_MDL) == 0:
