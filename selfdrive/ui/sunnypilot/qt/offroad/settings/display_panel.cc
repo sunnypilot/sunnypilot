@@ -7,8 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/display_panel.h"
 
-#include "display/onroad_screen_brightness.h"
-
 DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
   main_layout = new QStackedLayout(this);
   ListWidgetSP *list = new ListWidgetSP(this, false);
