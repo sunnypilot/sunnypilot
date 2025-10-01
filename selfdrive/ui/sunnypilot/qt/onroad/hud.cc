@@ -694,9 +694,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   int y = surface_rect.center().y() + 40;
   x += devUiInfo > 0 ? 0 : 50;
   y += devUiInfo > 0 ? 0 : 80;
-  QRect alertRect(x - size,
-                 y - size,
-                 size * 2, size * 2);
+  QRect alertRect(x - size, y - size, size * 2, size * 2);
 
   QString alert_text = tr("GREEN\nLIGHT");
 
