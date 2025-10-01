@@ -71,6 +71,8 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
   s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
   s->reset_onroad_sleep_timer();
+
+  s->scene.turn_signals = params.getBool("ShowTurnSignals");
 }
 
 void UIStateSP::reset_onroad_sleep_timer() {

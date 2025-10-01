@@ -37,6 +37,7 @@ private:
   void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
   void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
   void drawE2eAlert(QPainter &p, const QRect &surface_rect);
+  void drawBlinker(QPainter &p, const QRect &surface_rect, int x_gap, int y_offset);
 
   bool lead_status;
   float lead_d_rel;
@@ -101,4 +102,9 @@ private:
   bool greenLightAlert;
   int e2eAlertFrame;
   int e2eAlertDisplayTimer = 0;
+  bool leftBlinkerOn;
+  bool rightBlinkerOn;
+  bool blinkerPhase;
+  int blinkerFrameCounter;
+  bool showTurnSignals;
 };
