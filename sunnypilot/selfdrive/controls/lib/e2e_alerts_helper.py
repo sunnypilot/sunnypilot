@@ -35,17 +35,16 @@ class E2EAlertsHelper:
     if not self.enabled:
       return
 
-    model_x: list[float] = sm['modelV2'].position.x
+    CS = sm['carState']
+    CC = sm['carControl']
+
+    model_x = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
-    lead_status: bool = sm['radarState'].leadOne.status
-    standstill: bool = sm['carState'].standstill
-    gasPressed: bool = sm['carState'].gasPressed
+    has_lead = sm['radarState'].leadOne.status
 
     # Green light alert
-    if model_x[max_idx] > TRIGGER_THRESHOLD and standstill and not lead_status and not gasPressed:
-      self.greenLightAlert = True
-    else:
-      self.greenLightAlert = False
+    self.greenLightAlert = model_x[max_idx] > TRIGGER_THRESHOLD and \
+                           not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
 
     if self.greenLightAlert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
