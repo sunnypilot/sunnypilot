@@ -20,4 +20,7 @@ typedef struct UISceneSP : UIScene {
   float visual_radar_tracks_delay = 0;
   int visual_wide_cam = 0;
   int visual_fps = 0;
+  int onroadScreenOffBrightness, onroadScreenOffTimer = 0;
+  bool onroadScreenOffControl;
+  int onroadScreenOffTimerParam;
 } UISceneSP;

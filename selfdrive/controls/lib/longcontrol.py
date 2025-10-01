@@ -10,8 +10,11 @@ CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
-def long_control_state_trans(CP, active, long_control_state, v_ego,
+def long_control_state_trans(CP, CP_SP, active, long_control_state, v_ego,
                              should_stop, brake_pressed, cruise_standstill):
+  # Gas Interceptor
+  cruise_standstill = cruise_standstill and not CP_SP.enableGasInterceptor
+
   stopping_condition = should_stop
   starting_condition = (not should_stop and
                         not cruise_standstill and
@@ -45,8 +48,9 @@ def long_control_state_trans(CP, active, long_control_state, v_ego,
   return long_control_state
 
 class LongControl:
-  def __init__(self, CP):
+  def __init__(self, CP, CP_SP):
     self.CP = CP
+    self.CP_SP = CP_SP
     self.long_control_state = LongCtrlState.off
     self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                              (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
@@ -61,7 +65,7 @@ class LongControl:
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
-    self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
+    self.long_control_state = long_control_state_trans(self.CP, self.CP_SP, active, self.long_control_state, CS.vEgo,
                                                        should_stop, CS.brakePressed,
                                                        CS.cruiseState.standstill)
     if self.long_control_state == LongCtrlState.off:
