@@ -749,7 +749,7 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect, int x_ga
   // Some Settings
   const int circleRadius = 37;
   const int arrowLength  = 36;
-  const int framesPerCycle = static_cast<int>(UI_FREQ / (1.2 * 2)); // Blink at 1.2 Hz
+  const int framesPerCycle = static_cast<int>(UI_FREQ / (1.0 * 2)); // Blink at 1.0 Hz
 
   // Increase Frame Counter and toggle/reset if framesPerCycle is reached
   blinkerFrameCounter++;
