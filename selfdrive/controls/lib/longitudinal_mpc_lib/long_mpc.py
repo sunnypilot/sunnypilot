@@ -336,9 +336,6 @@ class LongitudinalMpc:
     # Get following distance
     if self.vibe_controller.is_follow_enabled():
       t_follow = self.vibe_controller.get_follow_distance_multiplier(v_ego)
-      if t_follow is None:
-        # Fallback to stock behavior when vibe controller can't provide a value
-        t_follow = get_T_FOLLOW(personality)
     else:
       t_follow = get_T_FOLLOW(personality)
 
@@ -347,10 +344,7 @@ class LongitudinalMpc:
     # Get acceleration limits
     if self.vibe_controller.is_accel_enabled():
       accel_limits = self.vibe_controller.get_accel_limits(v_ego)
-      if accel_limits is not None:
-        min_accel = accel_limits[0]
-      else:
-        min_accel = CRUISE_MIN_ACCEL
+      min_accel = accel_limits[0]
     else:
       min_accel = CRUISE_MIN_ACCEL
 
@@ -429,7 +423,7 @@ class LongitudinalMpc:
       if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow))- self.x_sol[:,0] < 0.0):
         self.source = 'lead0'
       if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow))- self.x_sol[:,0] < 0.0) and \
-         (lead_1_obstacle[0] - lead_0_obstacle[0]):
+            (lead_1_obstacle[0] - lead_0_obstacle[0]):
         self.source = 'lead1'
 
   def run(self):
