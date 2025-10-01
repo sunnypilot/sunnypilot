@@ -94,6 +94,7 @@ private:
   int speedLimitAssistFrame;
   QPixmap plus_arrow_up_img;
   QPixmap minus_arrow_down_img;
-  int e2eAlertFrame;
   bool greenLightAlert;
+  int e2eAlertFrame;
+  int e2eAlertDisplayTimer;
 };

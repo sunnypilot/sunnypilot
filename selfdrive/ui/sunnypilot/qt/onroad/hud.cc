@@ -112,6 +112,8 @@ void HudRendererSP::updateState(const UIState &s) {
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
 
+  e2eAlertDisplayTimer = std::max(0, e2eAlertDisplayTimer - 1);
+
   p.save();
 
   if (is_cruise_available) {
@@ -197,8 +199,12 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Road Name
     drawRoadName(p, surface_rect);
 
-    // Green Light
+    // Green Light Alert
     if (greenLightAlert) {
+      e2eAlertDisplayTimer = 3 * UI_FREQ;
+    }
+
+    if (e2eAlertDisplayTimer > 0) {
       e2eAlertFrame++;
       drawE2eAlert(p, surface_rect);
     } else {
