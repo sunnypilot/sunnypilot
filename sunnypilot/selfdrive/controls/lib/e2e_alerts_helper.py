@@ -6,9 +6,12 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import messaging, custom
+
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+
 
 class E2EAlertsHelper:
 
@@ -17,22 +20,25 @@ class E2EAlertsHelper:
     self._frame = -1
 
     self.greenLightAlert = False
-    self.greenLightAlertEnabled = False
+    self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
+
+  def _read_params(self) -> None:
+    if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
+      self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
 
   def update(self, sm: messaging.SubMaster, events_sp: EventsSP) -> None:
     self._read_params()
-    self._frame += 1
 
     model_x: list[float] = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
     lead_status: bool = sm['radarState'].leadOne.status
-    isStandstill: bool = sm['carState'].standstill
+    standstill: bool = sm['carState'].standstill
     gasPressed: bool = sm['carState'].gasPressed
     _greenLightAlert = False
 
     # Green light alert
     if (self.greenLightAlertEnabled
-            and isStandstill
+            and standstill
             and model_x[max_idx] > 30
             and not lead_status
             and not gasPressed):
@@ -40,9 +46,7 @@ class E2EAlertsHelper:
 
     self.greenLightAlert = _greenLightAlert
 
-    if (self.greenLightAlert):
+    if self.greenLightAlert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
-  def _read_params(self) -> None:
-    if self._frame % int(3. / DT_MDL) == 0:
-      self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
+    self._frame += 1
