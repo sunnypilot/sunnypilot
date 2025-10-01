@@ -25,6 +25,7 @@ class E2EAlertsHelper:
   def _read_params(self) -> None:
     if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.greenLightAlertEnabled = self._params.get_bool("GreenLightAlert")
+    self._frame += 1
 
   def update(self, sm: messaging.SubMaster, events_sp: EventsSP) -> None:
     self._read_params()
@@ -48,5 +49,3 @@ class E2EAlertsHelper:
 
     if self.greenLightAlert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
-
-    self._frame += 1
