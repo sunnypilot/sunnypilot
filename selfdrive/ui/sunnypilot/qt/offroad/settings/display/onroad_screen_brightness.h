@@ -13,29 +13,30 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
 static const QMap<QString, QString> onroadScreenOffTimerOptions = {
- {"0", "15"},
- {"1", "30"},
- {"2", "60"},
- {"3", "120"},
- {"4", "180"},
- {"5", "240"},
- {"6", "300"},
- {"7", "360"},
- {"8", "420"},
- {"9", "480"},
- {"10", "540"},
- {"11", "600"}
+  {"0", "15"},
+  {"1", "30"},
+  {"2", "60"},
+  {"3", "120"},
+  {"4", "180"},
+  {"5", "240"},
+  {"6", "300"},
+  {"7", "360"},
+  {"8", "420"},
+  {"9", "480"},
+  {"10", "540"},
+  {"11", "600"}
 };
 
 class OnroadScreenBrightnessControl : public ExpandableToggleRow {
- Q_OBJECT
+  Q_OBJECT
 
 public:
- OnroadScreenBrightnessControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
- void refresh();
+  OnroadScreenBrightnessControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
+                                QWidget *parent = nullptr);
+  void refresh();
 
 private:
- Params params;
- OptionControlSP *onroadScreenOffTimer;
- OptionControlSP *onroadScreenBrightness;
+  Params params;
+  OptionControlSP *onroadScreenOffTimer;
+  OptionControlSP *onroadScreenBrightness;
 };
