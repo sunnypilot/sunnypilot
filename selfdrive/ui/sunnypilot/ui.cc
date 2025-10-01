@@ -11,11 +11,12 @@
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
+
   if (scene.started && scene.onroadScreenOffControl) {
     auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
     if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE &&
-                   selfdriveState.getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL) {
-        reset_onroad_sleep_timer();
+        selfdriveState.getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL) {
+      reset_onroad_sleep_timer();
     } else if (scene.onroadScreenOffTimer > 0) {
       scene.onroadScreenOffTimer--;
     }
@@ -68,14 +69,13 @@ void ui_update_params_sp(UIStateSP *s) {
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
+  s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
   s->reset_onroad_sleep_timer();
 }
 
 void UIStateSP::reset_onroad_sleep_timer() {
-  auto params = Params();
-  int onroadTimer = std::atoi(params.get("OnroadScreenOffTimer").c_str());
-  if (onroadTimer >= 0 and scene.onroadScreenOffControl) {
-    scene.onroadScreenOffTimer = onroadTimer * UI_FREQ;
+  if (scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl) {
+    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
   } else {
     scene.onroadScreenOffTimer = -1;
   }
