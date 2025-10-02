@@ -109,3 +109,7 @@ Pipfile
 !.idea/customTargets.xml
 !.idea/tools/*
 !.run/*
+
+### clippy ###
+clippy_stats.json
+clippy.log

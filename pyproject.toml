@@ -73,6 +73,10 @@ dependencies = [
 
   # ui
   "qrcode",
+
+  # clippy
+  "discord-py",
+  "flask",
 ]
 
 [project.optional-dependencies]

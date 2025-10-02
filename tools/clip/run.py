@@ -28,7 +28,7 @@ DEMO_ROUTE = 'a2a0ccea32023010/2023-07-27--13-01-19'
 FRAMERATE = 20
 PIXEL_DEPTH = '24'
 RESOLUTION = '2160x1080'
-SECONDS_TO_WARM = 2
+SECONDS_TO_WARM = 0.5   # fix for 2s
 PROC_WAIT_SECONDS = 30*10
 
 OPENPILOT_FONT = str(Path(BASEDIR, 'selfdrive/assets/fonts/Inter-Regular.ttf').resolve())
@@ -104,8 +104,9 @@ def parse_args(parser: ArgumentParser):
     args.end = int(parts[3])
   if args.end <= args.start:
     parser.error(f'end ({args.end}) must be greater than start ({args.start})')
-  if args.start < SECONDS_TO_WARM:
-    parser.error(f'start must be greater than {SECONDS_TO_WARM}s to allow the UI time to warm up')
+  # fix for 2s
+  # if args.start < SECONDS_TO_WARM:
+  #   parser.error(f'start must be greater than {SECONDS_TO_WARM}s to allow the UI time to warm up')
 
   try:
     args.route = Route(args.route, data_dir=args.data_dir)
@@ -113,16 +114,16 @@ def parse_args(parser: ArgumentParser):
     parser.error(f'failed to get route: {e}')
 
   # FIXME: length isn't exactly max segment seconds, simplify to replay exiting at end of data
-  length = round(args.route.max_seg_number * 60)
-  if args.start >= length:
-    parser.error(f'start ({args.start}s) cannot be after end of route ({length}s)')
-  if args.end > length:
-    parser.error(f'end ({args.end}s) cannot be after end of route ({length}s)')
+  # length = round(args.route.max_seg_number * 60)
+  # if args.start >= length:
+  #   parser.error(f'start ({args.start}s) cannot be after end of route ({length}s)')
+  # if args.end > length:
+  #   parser.error(f'end ({args.end}s) cannot be after end of route ({length}s)')
 
   return args
 
 
-def populate_car_params(lr: LogReader):
+def populate_car_params(lr: LogReader, developer: int):
   init_data = lr.first('initData')
   assert init_data is not None
 
@@ -131,10 +132,14 @@ def populate_car_params(lr: LogReader):
   for cp in entries:
     key, value = cp.key, cp.value
     try:
+      if key == "OSMDownloadProgress":
+        continue
       params.put(key, params.cpp2python(key, value))
     except UnknownKeyName:
       # forks of openpilot may have other Params keys configured. ignore these
-      logger.warning(f"unknown Params key '{key}', skipping")
+      pass
+  if developer is not None:
+    params.put("DevUIInfo", developer)
   logger.debug('persisted CarParams')
 
 
@@ -179,6 +184,7 @@ def wait_for_frames(procs: list[Popen]):
 def clip(
   data_dir: str | None,
   quality: Literal['low', 'high'],
+  wide: bool,
   prefix: str,
   route: Route,
   out: str,
@@ -187,8 +193,9 @@ def clip(
   speed: int,
   target_mb: int,
   title: str | None,
+  developer: int,
 ):
-  logger.info(f'clipping route {route.name.canonical_name}, start={start} end={end} quality={quality} target_filesize={target_mb}MB')
+  logger.info(f'clipping route {route.name.canonical_name}, start={start} end={end} quality={quality} wide={wide} target_filesize={target_mb}MB')
   lr = get_logreader(route)
 
   begin_at = max(start - SECONDS_TO_WARM, 0)
@@ -224,8 +231,6 @@ def clip(
     '-draw_mouse', '0',
     '-i', display,
     '-c:v', 'libx264',
-    '-maxrate', f'{bit_rate_kbps}k',
-    '-bufsize', f'{bit_rate_kbps*2}k',
     '-crf', '23',
     '-filter:v', ','.join(overlays),
     '-preset', 'ultrafast',
@@ -234,12 +239,19 @@ def clip(
     '-movflags', '+faststart',
     '-f', 'mp4',
     '-t', str(duration),
-    out,
   ]
 
-  replay_cmd = [REPLAY, '--ecam', '-c', '1', '-s', str(begin_at), '--prefix', prefix]
+  if target_mb > 0:
+    ffmpeg_cmd += ['-maxrate', f'{bit_rate_kbps}k']
+    ffmpeg_cmd += ['-bufsize', f'{bit_rate_kbps*2}k']
+
+  ffmpeg_cmd.append(out)
+
+  replay_cmd = [REPLAY, '-c', '1', '-s', str(begin_at), '--prefix', prefix]
   if data_dir:
     replay_cmd.extend(['--data_dir', data_dir])
+  if wide:
+    replay_cmd.append('--ecam')
   if quality == 'low':
     replay_cmd.append('--qcam')
   replay_cmd.append(route.name.canonical_name)
@@ -248,7 +260,7 @@ def clip(
   xvfb_cmd = ['Xvfb', display, '-terminate', '-screen', '0', f'{RESOLUTION}x{PIXEL_DEPTH}']
 
   with OpenpilotPrefix(prefix, shared_download_cache=True):
-    populate_car_params(lr)
+    populate_car_params(lr, developer)
     env = os.environ.copy()
     env['DISPLAY'] = display
 
@@ -262,7 +274,7 @@ def clip(
       with managed_proc(ffmpeg_cmd, env) as ffmpeg_proc:
         procs.append(ffmpeg_proc)
         logger.info(f'recording in progress ({duration}s)...')
-        ffmpeg_proc.wait(duration + PROC_WAIT_SECONDS)
+        ffmpeg_proc.wait((duration * 2) + PROC_WAIT_SECONDS)
         check_for_failure(procs)
         logger.info(f'recording complete: {Path(out).resolve()}')
 
@@ -279,15 +291,18 @@ def main():
   p.add_argument('-o', '--output', help='output clip to (.mp4)', type=validate_output_file, default=DEFAULT_OUTPUT)
   p.add_argument('-p', '--prefix', help='openpilot prefix', default=f'clip_{randint(100, 99999)}')
   p.add_argument('-q', '--quality', help='quality of camera (low = qcam, high = hevc)', choices=['low', 'high'], default='high')
+  p.add_argument('-w', '--wide', help='enable wide view if uploaded', action='store_true',)
   p.add_argument('-x', '--speed', help='record the clip at this speed multiple', type=int, default=1)
   p.add_argument('-s', '--start', help='start clipping at <start> seconds', type=int)
   p.add_argument('-t', '--title', help='overlay this title on the video (e.g. "Chill driving across the Golden Gate Bridge")', type=validate_title)
+  p.add_argument('-z', '--developer', help='developer', type=int, default=0)
   args = parse_args(p)
   exit_code = 1
   try:
     clip(
       data_dir=args.data_dir,
       quality=args.quality,
+      wide=args.wide,
       prefix=args.prefix,
       route=args.route,
       out=args.output,
@@ -296,6 +311,7 @@ def main():
       speed=args.speed,
       target_mb=args.file_size,
       title=args.title,
+      developer=args.developer,
     )
     exit_code = 0
   except KeyboardInterrupt as e:
