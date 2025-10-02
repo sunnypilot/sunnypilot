@@ -104,4 +104,6 @@ private:
   bool leadDepartAlert;
   QPixmap lead_depart_alert_small_img;
   QPixmap lead_depart_alert_large_img;
+  QString alert_text;
+  QPixmap alert_img;
 };

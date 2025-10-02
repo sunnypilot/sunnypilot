@@ -214,6 +214,14 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     if (e2eAlertDisplayTimer > 0) {
       e2eAlertFrame++;
+      if (greenLightAlert) {
+        alert_text = tr("GREEN\nLIGHT");
+        alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
+      }
+      else if (leadDepartAlert) {
+        alert_text = tr("LEAD VEHICLE\nDEPARTING");
+        alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
+      }
       drawE2eAlert(p, surface_rect);
     } else {
       e2eAlertFrame = 0;
@@ -698,17 +706,6 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   x += devUiInfo > 0 ? 0 : 50;
   y += devUiInfo > 0 ? 0 : 80;
   QRect alertRect(x - size, y - size, size * 2, size * 2);
-
-  QString alert_text;
-  QPixmap alert_img;
-  if (greenLightAlert) {
-    alert_text = tr("GREEN\nLIGHT");
-    alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
-  }
-  else if (leadDepartAlert) {
-    alert_text = tr("LEAD VEHICLE\nDEPARTING");
-    alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
-  }
 
   // Alert Circle
   QPoint center = alertRect.center();
