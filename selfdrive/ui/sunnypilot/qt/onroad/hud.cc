@@ -14,6 +14,11 @@
 HudRendererSP::HudRendererSP() {
   plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
   minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+
+  int green_light_small_max = green_light_alert_small * 2 - 40;
+  int green_light_large_max = green_light_alert_large * 2 - 40;
+  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {green_light_small_max, green_light_small_max});
+  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {green_light_large_max, green_light_large_max});
 }
 
 void HudRendererSP::updateState(const UIState &s) {
@@ -113,6 +118,8 @@ void HudRendererSP::updateState(const UIState &s) {
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
 
+  e2eAlertDisplayTimer = std::max(0, e2eAlertDisplayTimer - 1);
+
   p.save();
 
   if (is_cruise_available) {
@@ -200,6 +207,10 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
     // Green Light & Lead Depart Alerts
     if (greenLightAlert or leadDepartAlert) {
+      e2eAlertDisplayTimer = 3 * UI_FREQ;
+    }
+
+    if (e2eAlertDisplayTimer > 0) {
       e2eAlertFrame++;
       drawE2eAlert(p, surface_rect);
     } else {
@@ -679,21 +690,18 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
-  int width = devUiInfo > 0 ? 250 : 300;
-  int height = width;
+  int size = devUiInfo > 0 ? green_light_alert_small : green_light_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
   int y = surface_rect.center().y() + 40;
   x += devUiInfo > 0 ? 0 : 50;
   y += devUiInfo > 0 ? 0 : 80;
-  QRect alertRect(x - width,
-                 y - height,
-                 width * 2, height * 2);
+  QRect alertRect(x - size, y - size, size * 2, size * 2);
 
   QString alert_text;
-  QString alert_img;
+  QPixmap alert_img;
   if (greenLightAlert) {
     alert_text = tr("GREEN\nLIGHT");
-    alert_img = "../../sunnypilot/selfdrive/assets/images/green_light.png";
+    alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
   }
   else if (leadDepartAlert) {
     alert_text = tr("LEAD VEHICLE\nDEPARTING");
@@ -705,7 +713,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   QColor frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
-  p.drawEllipse(center, width, height);
+  p.drawEllipse(center, size, size);
 
   // Alert Text
   QColor txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 255);
@@ -714,15 +722,11 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   QFontMetrics fm(p.font());
   QRect textRect = fm.boundingRect(alertRect, Qt::TextWordWrap, alert_text);
   textRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
-  textRect.moveBottom(alertRect.bottom() - alertRect.height()/7);
+  textRect.moveBottom(alertRect.bottom() - alertRect.height() / 7);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
   // Alert Image
-  QPixmap image(alert_img);
-  int maxImgWidth = width*2 - 40;
-  int maxImgHeight = height*2 - 40;
-  QPixmap scaled_img = image.scaled(maxImgWidth, maxImgHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-  QPointF pixmapCenterOffset = QPointF(scaled_img.width() / 2.0, scaled_img.height() / 2.0);
+  QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
   QPointF drawPoint = center - pixmapCenterOffset;
-  p.drawPixmap(drawPoint, scaled_img);
+  p.drawPixmap(drawPoint, alert_img);
 }
