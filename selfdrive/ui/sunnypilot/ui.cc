@@ -14,8 +14,7 @@ void UIStateSP::updateStatus() {
 
   if (scene.started && scene.onroadScreenOffControl) {
     auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
-    if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE &&
-        selfdriveState.getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL) {
+    if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE) {
       reset_onroad_sleep_timer();
     } else if (scene.onroadScreenOffTimer > 0) {
       scene.onroadScreenOffTimer--;
