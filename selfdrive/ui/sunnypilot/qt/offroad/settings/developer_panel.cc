@@ -5,8 +5,13 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/external_storage.h"
 
 DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(parent) {
+
+  #ifndef __APPLE__
+  addItem(new ExternalStorageControl());
+  #endif
 
   // Advanced Controls Toggle
   showAdvancedControls = new ParamControlSP("ShowAdvancedControls", tr("Show Advanced Controls"), tr("Toggle visibility of advanced sunnypilot controls.\nThis only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state."), "");
@@ -21,6 +26,10 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   // Github Runner Toggle
   enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "", this, true);
   addItem(enableGithubRunner);
+
+  // Copyparty Toggle
+  enableCopyparty = new ParamControlSP("EnableCopyparty", tr("Enable Copyparty service"), tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs and even make some edits on some files from your browser. Requires you to connect to your comma locally via it's IP."), "", this, false);
+  addItem(enableCopyparty);
 
   // Quickboot Mode Toggle
   prebuiltToggle = new ParamControlSP("QuickBootToggle", tr("Enable Quickboot Mode"), tr(""), "", this, true);
@@ -47,17 +56,17 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(errorLogBtn);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &DeveloperPanelSP::updateToggles);
+
+  is_release = params.getBool("IsReleaseBranch");
+  is_tested = params.getBool("IsTestedBranch");
+  is_development = params.getBool("IsDevelopmentBranch");
 }
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
-  bool is_release = params.getBool("IsReleaseBranch");
-  bool is_tested = params.getBool("IsTestedBranch");
-  bool is_development = params.getBool("IsDevelopmentBranch");
   bool disable_updates = params.getBool("DisableUpdates");
 
   prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
   prebuiltToggle->setEnabled(disable_updates);
-
   params.putBool("QuickBootToggle", QFile::exists("/data/openpilot/prebuilt"));
   prebuiltToggle->refresh();
 
@@ -66,6 +75,7 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
          "it immediately removes the prebuilt file so compilation of locally edited cpp files can be made. "
          "<br><br><b>To edit C++ files locally on device, you MUST first turn off this toggle so the changes can recompile.</b>")
     : tr("Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' in the Software panel first."));
+  prebuiltToggle->showDescription();
 
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
@@ -74,7 +84,6 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
-  updateToggles(!uiState()->scene.started);
   AbstractControlSP::UpdateAllAdvancedControls();
-  prebuiltToggle->showDescription();
+  updateToggles(!uiState()->scene.started);
 }

@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 from openpilot.common.git import get_branch
-from openpilot.common.params import Params, ParamKeyType, ParamKeyFlag
+from openpilot.common.params import Params, ParamKeyFlag
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version
@@ -20,6 +20,7 @@ from openpilot.system.version import get_version
 from cereal import messaging, custom
 from sunnypilot.sunnylink.api import SunnylinkApi
 from sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
+from sunnypilot.sunnylink.utils import get_param_as_byte, save_param_from_base64_encoded_string
 
 
 class OperationType(Enum):
@@ -74,7 +75,7 @@ class BackupManagerSP:
     config_data = {}
     params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyFlag.BACKUP)]
     for param in params_to_backup:
-      value = str(self.params.get(param)).encode('utf-8')
+      value = get_param_as_byte(param)
       if value is not None:
         config_data[param] = base64.b64encode(value).decode('utf-8')
     return config_data
@@ -113,6 +114,7 @@ class BackupManagerSP:
       payload = json.loads(json.dumps(backup_info.to_dict(), cls=SnakeCaseEncoder))
       self._update_progress(75.0, OperationType.BACKUP)
 
+      cloudlog.debug(f"Uploading backup with payload: {json.dumps(payload)}")
       # Upload to sunnylink
       result = self.api.api_get(
         f"backup/{self.device_id}",
@@ -124,9 +126,11 @@ class BackupManagerSP:
       if result:
         self.backup_status = custom.BackupManagerSP.Status.completed
         self._update_progress(100.0, OperationType.BACKUP)
+        cloudlog.info("Backup successfully created and uploaded")
       else:
         self.backup_status = custom.BackupManagerSP.Status.failed
         self.last_error = "Failed to upload backup"
+        cloudlog.error(result)
         self._report_status()
 
       return bool(self.backup_status == custom.BackupManagerSP.Status.completed)
@@ -169,8 +173,7 @@ class BackupManagerSP:
       self._update_progress(75.0, OperationType.RESTORE)
 
       # Apply configuration
-      all_values_encoded = self._get_metadata_value(backup_metadata, "all_values_encoded", "false")
-      self._apply_config(config_data, str(all_values_encoded).lower() == "true")
+      self._apply_config(config_data)
 
       self.restore_status = custom.BackupManagerSP.Status.completed
       self._update_progress(100.0, OperationType.RESTORE)
@@ -183,7 +186,7 @@ class BackupManagerSP:
       self._report_status()
       return False
 
-  def _apply_config(self, config_data: dict[str, str], all_values_encoded: bool = False) -> None:
+  def _apply_config(self, config_data: dict[str, str]) -> None:
     """Applies configuration data from a backup, but only for parameters marked as backupable."""
     backupable_params = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyFlag.BACKUP)]
     backupable_set_lower = {p.lower() for p in backupable_params}
@@ -195,26 +198,8 @@ class BackupManagerSP:
       if param.lower() in backupable_set_lower:
         # Find real param name (with correct casing)
         real_param = next(p for p in backupable_params if p.lower() == param.lower())
-        param_type = self.params.get_type(real_param)
         try:
-          value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
-
-          if param_type != ParamKeyType.BYTES:
-            value = value.decode('utf-8')  # type: ignore
-
-          if param_type == ParamKeyType.STRING:
-            value = value
-          elif param_type == ParamKeyType.BOOL:
-            value = value.lower() in ('true', '1', 'yes')  # type: ignore
-          elif param_type == ParamKeyType.INT:
-            value = int(value)  # type: ignore
-          elif param_type == ParamKeyType.FLOAT:
-            value = float(value)  # type: ignore
-          elif param_type == ParamKeyType.TIME:
-            value = str(value)
-          elif param_type == ParamKeyType.JSON:
-            value = json.loads(value)
-          self.params.put(real_param, value)
+          save_param_from_base64_encoded_string(real_param, encoded_value)
           restored_count += 1
         except Exception as e:
           cloudlog.error(f"Failed to restore param {param}: {str(e)}")
@@ -264,8 +249,8 @@ class BackupManagerSP:
         # Check for backup command
         if self.params.get_bool("BackupManager_CreateBackup"):
           try:
-            await self.create_backup()
-            reset_progress = True
+            if await self.create_backup():
+              reset_progress = True
           finally:
             self.params.remove("BackupManager_CreateBackup")
 

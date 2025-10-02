@@ -93,12 +93,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
+    mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
     if not self.mlsim:
-      self.mpc.mode = self.mode
+      self.mpc.mode = mode
     LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
-      self.mode = dec_mpc_mode
+      mode = dec_mpc_mode
       if not self.mlsim:
         self.mpc.mode = dec_mpc_mode
 
@@ -123,7 +123,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     # No change cost when user is controlling the speed, or when standstill
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
-    if self.mode == 'acc':
+    if mode == 'acc':
       accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
       steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
       accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
@@ -145,6 +145,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       clipped_accel_coast = max(accel_coast, accel_clip[0])
       clipped_accel_coast_interp = np.interp(v_ego, [MIN_ALLOW_THROTTLE_SPEED, MIN_ALLOW_THROTTLE_SPEED*2], [accel_clip[1], clipped_accel_coast])
       accel_clip[1] = min(accel_clip[1], clipped_accel_coast_interp)
+
+    # Get new v_cruise and a_desired from Smart Cruise Control and Speed Limit Assist
+    v_cruise, self.a_desired = LongitudinalPlannerSP.update_targets(self, sm, self.v_desired_filter.x, self.a_desired, v_cruise)
 
     if force_slow_decel:
       v_cruise = 0.0
@@ -173,7 +176,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.mode == 'acc' or not self.mlsim:
+    if mode == 'acc' or not self.mlsim:
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
     else:
