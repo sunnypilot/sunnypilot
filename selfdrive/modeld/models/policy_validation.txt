@@ -1,0 +1,91 @@
+
+Checking for empty initializers in model1:
+
+Checking for empty initializers in model2:
+Model 1 checkpoint: a423dec7-7dcc-4523-aaae-a4012d56b9b5/400
+Model 2 checkpoint: 6d6639ee-643e-4f72-bd1c-dda546383854/400
+Base model: driving_policy.onnx
+Model to merge: driving_policy.onnx
+--------------------------------------------------
+Found 63 common weights to merge.
+Found 0 weights only in the base model (will be kept).
+Found 0 weights only in the second model.
+--------------------------------------------------
+WEIGHT NAME ANALYSIS:
+Model 1 only weights: []
+Model 2 only weights: []
+Common weights: ['onnx::Add_221', 'onnx::MatMul_222', 'onnx::MatMul_223', 'onnx::MatMul_238', 'onnx::MatMul_239', 'onnx::MatMul_240', 'pad', 'policy_model.action_block.action_block_in.0.bias', 'policy_model.action_block.action_block_in.0.weight', 'policy_model.action_block.action_block_out.bias']...
+--------------------------------------------------
+Model 1 ONNX head weights (auto-generated): []
+Model 2 ONNX head weights (auto-generated): []
+Possible head patterns found: ['policy_model']
+HEAD SWAPPING ANALYSIS:
+  Model 1 head weights: 0 ([])
+  Model 2 head weights: 0 ([])
+  Common head weights (will be replaced): 0 ([])
+  Model 2 only head weights (will be added): 0 ([])
+  ONNX Model 1 head weights (will be kept): 0 ([])
+  ONNX Model 2 head weights (will be ignored): 0 ([])
+  Note: ONNX auto-generated head weights will NOT be changed (keeping model1 behavior)
+--------------------------------------------------
+Updating model checkpoint to: 'merged_onnx_heads_keep with w=0.3 from (model1: 'a423dec7-7dcc-4523-aaae-a4012d56b9b5/400') and (model2: '6d6639ee-643e-4f72-bd1c-dda546383854/400')'
+MERGE SUMMARY:
+  Removed 0 head initializers: []
+  Added 0 head initializers: []
+  Removed 0 head nodes: []
+  Added 0 head nodes: []
+  Replaced 0 outputs: []
+  Merged 63 common trunk weights (weight=0.3)
+  Kept 0 ONNX head weights from model1: []
+  Ignored 0 ONNX head weights from model2: []
+  Behavior: Using model1's driving patterns with merged trunk features
+
+--------------------------------------------------
+COMPREHENSIVE MODEL VALIDATION
+
+1. ONNX Structure Validation:
+    ONNX structure is valid
+
+2. Model Metadata Validation:
+   IR Version: 8
+   Opset Version: [17]
+   Producer: pytorch 2.7.1
+
+3. Graph Structure Validation:
+   Nodes: 107
+   Inputs: 5
+   Outputs: 1
+   Initializers: 63
+   Original nodes: 107 -> Merged: 107
+   Original initializers: 63 -> Merged: 63
+
+4. Input/Output Shape Validation:
+   Input 0: desire -> [1, 25, 8] (10)
+   Input 1: traffic_convention -> [1, 2] (10)
+   Input 2: lateral_control_params -> [1, 2] (10)
+   Input 3: prev_desired_curv -> [1, 25, 1] (10)
+   Input 4: features_buffer -> [1, 25, 512] (10)
+   Output 0: outputs -> [1, 4968] (10)
+
+5. Weight Statistics Validation:
+ Potential weight issues found:
+     - pad: Zero variance (might be frozen)
+   pad: shape=(1, 3), mean=0.000000, std=0.000000
+   policy_model.temporal_summarizer._extra_in.0.weight: shape=(512, 202), mean=0.006683, std=0.097839
+   policy_model.temporal_summarizer._extra_in.0.bias: shape=(512,), mean=0.027969, std=0.084778
+
+6. Node Connectivity Validation:
+    All node inputs are satisfied
+
+7. Inference Capability Test:
+    Model can be loaded by ONNX Runtime
+   Input: desire -> [1, 25, 8] (tensor(float16))
+   Input: traffic_convention -> [1, 2] (tensor(float16))
+   Input: lateral_control_params -> [1, 2] (tensor(float16))
+   Input: prev_desired_curv -> [1, 25, 1] (tensor(float16))
+   Input: features_buffer -> [1, 25, 512] (tensor(float16))
+
+8. Model Size Analysis:
+   Original model: 14.86 MB
+   Merged model: 14.86 MB
+   Size change: +0.0%
