@@ -40,19 +40,19 @@ class E2EAlertsHelper:
 
     CS = sm['carState']
     CC = sm['carControl']
-    RS = sm['radarState']
 
     model_x = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
-    has_lead = RS.leadOne.status
-    lead_vRel: float = RS.leadOne.vRel
+    has_lead = sm['radarState'].leadOne.status
+    lead_vRel: float = sm['radarState'].leadOne.vRel
 
     # Green light alert
-    self.green_light_alert = self.green_light_alert_enabled and model_x[max_idx] > TRIGGER_THRESHOLD and \
-                           not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
+    self.green_light_alert = (self.green_light_alert_enabled and model_x[max_idx] > TRIGGER_THRESHOLD
+                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled)
 
     # Lead Departure Alert
-    self.lead_depart_alert = self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30 and has_lead and lead_vRel > 1 and not CS.gasPressed
+    self.lead_depart_alert = (self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30
+                              and has_lead and lead_vRel > 1 and not CS.gasPressed)
 
     if self.green_light_alert or self.green_light_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)

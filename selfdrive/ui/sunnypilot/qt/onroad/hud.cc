@@ -15,10 +15,12 @@ HudRendererSP::HudRendererSP() {
   plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
   minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
 
-  int green_light_small_max = green_light_alert_small * 2 - 40;
-  int green_light_large_max = green_light_alert_large * 2 - 40;
-  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {green_light_small_max, green_light_small_max});
-  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {green_light_large_max, green_light_large_max});
+  int small_max = e2e_alert_small * 2 - 40;
+  int large_max = e2e_alert_large * 2 - 40;
+  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {small_max, small_max});
+  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
+  lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
+  lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
 }
 
 void HudRendererSP::updateState(const UIState &s) {
@@ -690,7 +692,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
-  int size = devUiInfo > 0 ? green_light_alert_small : green_light_alert_large;
+  int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
   int y = surface_rect.center().y() + 40;
   x += devUiInfo > 0 ? 0 : 50;
@@ -705,7 +707,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   }
   else if (leadDepartAlert) {
     alert_text = tr("LEAD VEHICLE\nDEPARTING");
-    alert_img = "../../sunnypilot/selfdrive/assets/images/lead_depart.png";
+    alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
   }
 
   // Alert Circle
