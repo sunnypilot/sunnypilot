@@ -207,6 +207,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // Green Light Alert
     if (greenLightAlert) {
       e2eAlertDisplayTimer = 3 * UI_FREQ;
+      // reset onroad sleep timer for e2e alerts
+      uiStateSP()->reset_onroad_sleep_timer();
     }
 
     if (e2eAlertDisplayTimer > 0) {
