@@ -22,7 +22,7 @@ from openpilot.system.version import is_prebuilt
 from openpilot.sunnypilot.mapd import MAPD_PATH, MAPD_BIN_DIR
 import openpilot.system.sentry as sentry
 
-VERSION = 'v1.10.0'
+VERSION = 'v1.11.0'
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
 
 
@@ -90,7 +90,7 @@ class MapdInstallManager:
     logging.error("Failed to download file after all retries")
 
   def get_installed_version(self) -> str:
-    return str(self._params.get("MapdVersion"))
+    return str(self._params.get("MapdVersion") or "")
 
   def wait_for_internet_connection(self, return_on_failure: bool = False) -> bool:
     max_retries = 10

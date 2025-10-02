@@ -101,8 +101,31 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   QString policyType = tr("Policy Model");
   policyFrame = createModelDetailFrame(this, policyType, policyProgressBar);
   list->addItem(policyFrame);
-
   list->addItem(horizontal_line());
+
+  // Lane Turn Desire toggle
+  lane_turn_desire_toggle = new ParamControlSP("LaneTurnDesire", tr("Use Lane Turn Desires"),
+                            "If you’re driving at 20 mph (32 km/h) or below and have your blinker on, "
+                            "the car will plan a turn in that direction at the nearest drivable path. "
+                            "This prevents situations (like at red lights) where the car might plan the wrong turn direction.",
+                             "../assets/offroad/icon_shell.png");
+  list->addItem(lane_turn_desire_toggle);
+
+  // Lane Turn Value control
+  int max_value_mph = 20;
+  bool is_metric_initial = params.getBool("IsMetric");
+  const float K = 1.609344f;
+  int per_value_change_scaled = is_metric_initial ? static_cast<int>(std::round((1.0f / K) * 100.0f)) : 100; // 100 -> 1 mph
+  lane_turn_value_control = new OptionControlSP("LaneTurnValue", tr("Adjust Lane Turn Speed"),
+    tr("Set the maximum speed for lane turn desires. Default is 19 %1.").arg(is_metric_initial ? "km/h" : "mph"),
+    "", {5 * 100, max_value_mph * 100}, per_value_change_scaled, false, nullptr, true, true);
+  lane_turn_value_control->showDescription();
+  list->addItem(lane_turn_value_control);
+
+  // Show based on toggle
+  refreshLaneTurnValueControl();
+  connect(lane_turn_desire_toggle, &ParamControlSP::toggleFlipped, this, &ModelsPanel::refreshLaneTurnValueControl);
+  connect(lane_turn_value_control, &OptionControlSP::updateLabels, this, &ModelsPanel::refreshLaneTurnValueControl);
 
   // LiveDelay toggle
   lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
@@ -110,23 +133,10 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(lagd_toggle_control);
 
   // Software delay control
-  int liveDelayMaxInt = 30;
-  std::string liveDelayBytes = params.get("LiveDelay");
-  if (!liveDelayBytes.empty()) {
-    capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-      reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-      liveDelayBytes.size() / sizeof(capnp::word)));
-    auto event = msg.getRoot<cereal::Event>();
-    if (event.hasLiveDelay()) {
-      auto liveDelay = event.getLiveDelay();
-      float lateralDelay = liveDelay.getLateralDelay();
-      liveDelayMaxInt = static_cast<int>(lateralDelay * 100.0f) + 20;
-    }
-  }
   delay_control = new OptionControlSP("LagdToggleDelay", tr("Adjust Software Delay"),
-                                     tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
-                                        "\nThe default software delay value is 0.2"),
-                                     "", {5, liveDelayMaxInt}, 1, false, nullptr, true, true);
+                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
+                                         "\nThe default software delay value is 0.2"),
+                                      "", {5, 50}, 1, false, nullptr, true, true);
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
     float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
@@ -157,6 +167,19 @@ QFrame* ModelsPanel::createModelDetailFrame(QWidget *parent, QString &typeName, 
   layout->addWidget(progressBar);
   frame->setVisible(false);
   return frame;
+}
+
+void ModelsPanel::refreshLaneTurnValueControl() {
+  if (!lane_turn_value_control) return;
+  float stored_mph = QString::fromStdString(params.get("LaneTurnValue")).toFloat();
+  bool is_metric = params.getBool("IsMetric");
+  QString unit = is_metric ? "km/h" : "mph";
+  float display_value = stored_mph;
+  if (is_metric) {
+    display_value = stored_mph * 1.609344f;
+  }
+  lane_turn_value_control->setLabel(QString::number(static_cast<int>(std::round(display_value))) + " " + unit);
+  lane_turn_value_control->setVisible(params.getBool("LaneTurnDesire"));
 }
 
 /**
@@ -259,6 +282,18 @@ QString ModelsPanel::GetActiveModelInternalName() {
   return DEFAULT_MODEL;
 }
 
+/**
+ * @brief Gets the ref of the currently selected model bundle
+ * @return ref of the selected bundle or default model name
+ */
+QString ModelsPanel::GetActiveModelRef() {
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getRef());
+  }
+
+  return DEFAULT_MODEL;
+}
+
 void ModelsPanel::updateModelManagerState() {
   const SubMaster &sm = *(uiStateSP()->sm);
   model_manager = sm["modelManagerSP"].getModelManagerSP();
@@ -272,34 +307,31 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
-  struct ModelEntry {
-    QString folder;
-    QString displayName;
-    int index;
-  };
-  QList<ModelEntry> sortedModels;
+  QList<TreeNode> sortedModels;
   QSet<QString> modelFolders;
+  QRegularExpression re("\\(([^)]*)\\)[^(]*$");
   const auto bundles = model_manager.getAvailableBundles();
 
   for (const auto &bundle : bundles) {
     auto overrides = bundle.getOverrides();
-    QString gen;
+    QString folder;
     for (const auto &override : overrides) {
       if (override.getKey() == "folder") {
-        gen = QString::fromStdString(override.getValue().cStr());
+        folder = QString::fromStdString(override.getValue().cStr());
       }
     }
 
-    modelFolders.insert(gen);
-    sortedModels.append(ModelEntry{
-      gen,
+    modelFolders.insert(folder);
+    sortedModels.append(TreeNode{
+      folder,
       QString::fromStdString(bundle.getDisplayName()),
+      QString::fromStdString(bundle.getRef()),
       static_cast<int>(bundle.getIndex())
     });
   }
 
   std::sort(sortedModels.begin(), sortedModels.end(),
-    [](const ModelEntry &a, const ModelEntry &b) {
+    [](const TreeNode &a, const TreeNode &b) {
       return a.index > b.index;
     });
 
@@ -322,37 +354,46 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
       });
 
   // Create the final items list using sorted folders
-  QList<QPair<QString, QStringList>> items;
+  QList<TreeFolder> items;
   for (const auto &folderPair : folderMaxIndices) {
-    QStringList folderModels;
+    QList<TreeNode> folderModels;
+    QString folder = folderPair.first;
     for (const auto &model : sortedModels) {
       if (model.folder == folderPair.first) {
-        folderModels.append(model.displayName);
+        if (model.index == folderPair.second) {
+          QRegularExpressionMatch match = re.match(model.displayName);
+          if (match.hasMatch()) {
+            folder.append(" - (Updated: ").append(match.captured(1)).append(")");
+          }
+        }
+        folderModels.append(model);
       }
     }
-    items.append(qMakePair(folderPair.first, folderModels));
+    items.append(TreeFolder{folder, folderModels});
   }
 
-  items.insert(0, qMakePair(QString(""), QStringList{DEFAULT_MODEL}));
+  items.insert(0, TreeFolder{"", {
+    TreeNode{"", DEFAULT_MODEL, DEFAULT_MODEL, -1}
+  }});
 
   currentModelLblBtn->setValue(GetActiveModelInternalName());
 
-  const QString selectedBundleName = TreeOptionDialog::getSelection(
-    tr("Select a Model"), items, GetActiveModelName(), this);
+  const QString selectedBundleRef = TreeOptionDialog::getSelection(
+    tr("Select a Model"), items, GetActiveModelRef(), QString("ModelManager_Favs"), this);
 
-  if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
+  if (selectedBundleRef.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == DEFAULT_MODEL) {
+  if (selectedBundleRef == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();
   } else {
     // Find selected bundle and initiate download
     for (const auto &bundle: bundles) {
-      if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
+      if (QString::fromStdString(bundle.getRef()) == selectedBundleRef) {
         params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
         if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
           showResetParamsDialog();
@@ -383,34 +424,28 @@ void ModelsPanel::updateLabels() {
                    "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
   bool lagdEnabled = params.getBool("LagdToggle");
   if (lagdEnabled) {
-    std::string liveDelayBytes = params.get("LiveDelay");
+    auto liveDelayBytes = params.get("LiveDelay");
     if (!liveDelayBytes.empty()) {
-      capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-        reinterpret_cast<const capnp::word*>(liveDelayBytes.data()),
-        liveDelayBytes.size() / sizeof(capnp::word)));
-      auto event = msg.getRoot<cereal::Event>();
-      if (event.hasLiveDelay()) {
-        auto liveDelay = event.getLiveDelay();
-        float lateralDelay = liveDelay.getLateralDelay();
-        desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
-                .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 2));
-      }
+      auto LD = loadCerealEvent(params, "LiveDelay");
+      float lateralDelay = LD->getLiveDelay().getLateralDelay();
+      desc += QString("<br><br><b><span style=\"color:#e0e0e0\">%1</span></b> <span style=\"color:#e0e0e0\">%2 s</span>")
+              .arg(tr("Live Steer Delay:")).arg(QString::number(lateralDelay, 'f', 3));
     }
   } else {
-    std::string carParamsBytes = params.get("CarParamsPersistent");
+    auto carParamsBytes = params.get("CarParamsPersistent");
     if (!carParamsBytes.empty()) {
-      capnp::FlatArrayMessageReader msg(kj::ArrayPtr<const capnp::word>(
-        reinterpret_cast<const capnp::word*>(carParamsBytes.data()),
-        carParamsBytes.size() / sizeof(capnp::word)));
-      auto carParams = msg.getRoot<cereal::CarParams>();
-      float steerDelay = carParams.getSteerActuatorDelay();
+      AlignedBuffer aligned_buf_cp;
+      capnp::FlatArrayMessageReader cmsg(aligned_buf_cp.align(carParamsBytes.data(), carParamsBytes.size()));
+      cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+      float steerDelay = CP.getSteerActuatorDelay();
       float softwareDelay = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
       float totalLag = steerDelay + softwareDelay;
       desc += QString("<br><br><span style=\"color:#e0e0e0\">"
                       "<b>%1</b> %2 s + <b>%3</b> %4 s = <b>%5</b> %6 s</span>")
-           .arg(tr("Actuator Delay:"), QString::number(steerDelay, 'f', 2),
-                tr("Software Delay:"), QString::number(softwareDelay, 'f', 2),
-                tr("Total Delay:"), QString::number(totalLag, 'f', 2));
+             .arg(tr("Actuator Delay:"), QString::number(steerDelay, 'f', 2),
+                  tr("Software Delay:"), QString::number(softwareDelay, 'f', 2),
+                  tr("Total Delay:"), QString::number(totalLag, 'f', 2));
     }
   }
   lagd_toggle_control->setDescription(desc);
@@ -420,6 +455,9 @@ void ModelsPanel::updateLabels() {
     float value = QString::fromStdString(params.get("LagdToggleDelay")).toFloat();
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
   }
+
+  // Update lane turn desire label and visibility
+  refreshLaneTurnValueControl();
 
   clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }

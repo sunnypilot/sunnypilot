@@ -47,10 +47,11 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
   bg.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
   p.fillRect(0, 0, surface_rect.width(), UI_HEADER_HEIGHT, bg);
 
-
+#ifndef SUNNYPILOT
   if (is_cruise_available) {
     drawSetSpeed(p, surface_rect);
   }
+#endif
   drawCurrentSpeed(p, surface_rect);
 
   p.restore();

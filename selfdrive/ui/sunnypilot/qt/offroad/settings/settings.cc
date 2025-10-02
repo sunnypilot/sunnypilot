@@ -13,6 +13,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/device_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/display_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/software_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
@@ -87,6 +88,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     PanelInfo("   " + tr("Steering"), new LateralPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png"),
     PanelInfo("   " + tr("Cruise"), new LongitudinalPanel(this), "../assets/icons/speed_limit.png"),
     PanelInfo("   " + tr("Visuals"), new VisualsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
+    PanelInfo("   " + tr("Display"), new DisplayPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_display.png"),
     PanelInfo("   " + tr("OSM"), new OsmPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
     PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),

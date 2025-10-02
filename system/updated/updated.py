@@ -7,7 +7,6 @@ import psutil
 import shutil
 import signal
 import fcntl
-import time
 import threading
 from collections import defaultdict
 from pathlib import Path
@@ -19,7 +18,7 @@ from openpilot.common.markdown import parse_markdown
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.hardware import AGNOS, HARDWARE
-from openpilot.system.version import get_build_metadata
+from openpilot.system.version import get_build_metadata, SP_BRANCH_MIGRATIONS
 
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
 STAGING_ROOT = os.getenv("UPDATER_STAGING_ROOT", "/data/safe_staging")
@@ -190,15 +189,6 @@ def finalize_update() -> None:
   run(["git", "reset", "--hard"], FINALIZED)
   run(["git", "submodule", "foreach", "--recursive", "git", "reset", "--hard"], FINALIZED)
 
-  cloudlog.info("Starting git cleanup in finalized update")
-  t = time.monotonic()
-  try:
-    run(["git", "gc"], FINALIZED)
-    run(["git", "lfs", "prune"], FINALIZED)
-    cloudlog.event("Done git cleanup", duration=time.monotonic() - t)
-  except subprocess.CalledProcessError:
-    cloudlog.exception(f"Failed git cleanup, took {time.monotonic() - t:.3f} s")
-
   set_consistent_flag(True)
   cloudlog.info("done finalizing overlay")
 
@@ -242,6 +232,7 @@ class Updater:
     b: str | None = self.params.get("UpdaterTargetBranch")
     if b is None:
       b = self.get_branch(BASEDIR)
+    b = SP_BRANCH_MIGRATIONS.get((HARDWARE.get_device_type(), b), b)
     return b
 
   @property
@@ -283,8 +274,8 @@ class Updater:
       self.params.put("LastUpdateUptimeOnroad", last_uptime_onroad)
       self.params.put("LastUpdateRouteCount", last_route_count)
     else:
-      last_uptime_onroad = self.params.get("LastUpdateUptimeOnroad") or last_uptime_onroad
-      last_route_count = self.params.get("LastUpdateRouteCount") or last_route_count
+      last_uptime_onroad = self.params.get("LastUpdateUptimeOnroad", return_default=True)
+      last_route_count = self.params.get("LastUpdateRouteCount", return_default=True)
 
     if exception is None:
       self.params.remove("LastUpdateException")
