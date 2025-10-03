@@ -52,6 +52,14 @@ TorqueLateralControlSettings::TorqueLateralControlSettings(QWidget *parent) : QW
   list->addItem(torqueLateralControlCustomParams);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &TorqueLateralControlSettings::updateToggles);
+  QObject::connect(toggles["LiveTorqueParamsToggle"], &ParamControlSP::toggleFlipped, [=](bool state) {
+    if (!state) {
+      params.remove("LiveTorqueParamsRelaxedToggle");
+      toggles["LiveTorqueParamsRelaxedToggle"]->refresh();
+    }
+
+    updateToggles(offroad);
+  });
 
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
@@ -61,6 +69,12 @@ void TorqueLateralControlSettings::showEvent(QShowEvent *event) {
 }
 
 void TorqueLateralControlSettings::updateToggles(bool _offroad) {
+  bool live_toggle = toggles["LiveTorqueParamsToggle"]->isToggled();
+
+  toggles["LiveTorqueParamsToggle"]->setEnabled(_offroad);
+  toggles["LiveTorqueParamsRelaxedToggle"]->setEnabled(_offroad && live_toggle);
+
+  torqueLateralControlCustomParams->setEnabled(_offroad);
   torqueLateralControlCustomParams->refresh();
 
   offroad = _offroad;
