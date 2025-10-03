@@ -577,9 +577,8 @@ public:
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
         value = use_float_scaling ? getParamValueScaled() : getParamValue();
-        int _value = value;
-        _value += change_value;
-        value = std::clamp(_value, range.min_value, range.max_value);
+        value += change_value;
+        value = std::clamp(value, range.min_value, range.max_value);
 
         if (use_float_scaling) {
           setParamValueScaled(value);
