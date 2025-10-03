@@ -16,7 +16,7 @@ from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfac
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
-  PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES
+  PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES, DISABLED_GUARD_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
@@ -94,6 +94,12 @@ class TestSpeedLimitAssist:
     for _ in range(int(3. / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.preActive
+    assert self.sla.is_enabled and not self.sla.is_active
+
+  def test_transition_disabled_to_pending_no_speed_limit_not_max_initial_set_speed(self):
+    for _ in range(int(3. / DT_MDL)):
+      self.sla.update(True, False, SPEED_LIMITS['highway'], 0, SPEED_LIMITS['city'], 0, 0, False, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.pending
     assert self.sla.is_enabled and not self.sla.is_active
 
   def test_preactive_to_active_with_max_speed_confirmation(self):

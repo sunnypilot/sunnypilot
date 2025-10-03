@@ -249,7 +249,7 @@ class SpeedLimitAssist:
         elif self.state == SpeedLimitAssistState.pending:
           if self.target_set_speed_confirmed:
             self._update_confirmed_state()
-          else:
+          elif self.speed_limit_changed:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
 
