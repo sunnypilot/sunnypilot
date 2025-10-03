@@ -60,7 +60,7 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def _to_bytes(value: bytes, param_type: ParamKeyType) -> bytes | None:
+def _to_bytes(value: bytes | None, param_type: ParamKeyType) -> bytes | None:
   """Convert a parameter value to bytes based on its type."""
   if value is None:
     return None
