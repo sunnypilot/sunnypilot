@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 
 import numpy as np
 
-import cereal.messaging as messaging
 from cereal import car
 
 from openpilot.common.params import Params
