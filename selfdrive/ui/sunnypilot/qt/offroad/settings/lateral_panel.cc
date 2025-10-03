@@ -89,7 +89,11 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     sunnypilotScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(torqueLateralControlWidget);
   });
-  QObject::connect(torqueLateralControlToggle, &ToggleControl::toggleFlipped, torqueLateralControlSettingsButton, &PushButtonSP::setEnabled);
+  QObject::connect(torqueLateralControlToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    torqueLateralControlSettingsButton->setEnabled(state);
+    updateToggles(offroad);
+    nnlcToggle->updateToggle();
+  });
 
   torqueLateralControlWidget = new TorqueLateralControlSettings(this);
   connect(torqueLateralControlWidget, &TorqueLateralControlSettings::backPress, [=]() {
@@ -112,6 +116,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
       nnlcToggle->hideDescription();
     }
 
+    updateToggles(offroad);
     nnlcToggle->updateToggle();
   });
 
@@ -160,6 +165,7 @@ void LateralPanel::updateToggles(bool _offroad) {
     toggle->setEnabled(_offroad);
   }
 
+  bool torque_allowed = true;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -175,11 +181,21 @@ void LateralPanel::updateToggles(bool _offroad) {
     } else {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_FULL_COMPATIBILITY, MADS_BASE_DESC));
     }
+
+    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+      params.remove("EnforceTorqueControl");
+      torque_allowed = false;
+    }
   } else {
     madsToggle->setDescription(descriptionBuilder(STATUS_MADS_CHECK_COMPATIBILITY, MADS_BASE_DESC));
+
+    params.remove("EnforceTorqueControl");
+    torque_allowed = false;
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+
+  torqueLateralControlToggle->setEnabled(_offroad && torque_allowed && !nnlcToggle->isToggled());
   torqueLateralControlSettingsButton->setEnabled(torqueLateralControlToggle->isToggled());
 
   blinkerPauseLateralSettings->refresh();
