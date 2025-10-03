@@ -24,11 +24,12 @@ class TorqueEstimatorExt:
   def __init__(self, CP: car.CarParams):
     self.CP = CP
     self._params = Params()
+    self.frame = -1
 
-    self.enforce_torque_control_toggle = self._params.get_bool("EnforceTorqueControl")
-    self.use_params = False
-    self.use_live_torque_params = False
-    self.torque_override_enabled = False
+    self.enforce_torque_control_toggle = self._params.get_bool("EnforceTorqueControl")  # only during init
+    self.use_params = self.CP.brand in ALLOWED_CARS and self.CP.lateralTuning.which() == 'torque'
+    self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
+    self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
     self.min_bucket_points = RELAXED_MIN_BUCKET_POINTS
     self.factor_sanity = 0.0
     self.friction_sanity = 0.0
@@ -48,18 +49,18 @@ class TorqueEstimatorExt:
         self.offline_latAccelFactor = float(self._params.get("TorqueParamsOverrideLatAccelFactor", return_default=True))
         self.offline_friction = float(self._params.get("TorqueParamsOverrideFriction", return_default=True))
 
-  def update_params(self, sm: messaging.SubMaster):
-    if sm.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
+  def update_params(self):
+    if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
       self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
 
-  def update_use_params(self, sm: messaging.SubMaster):
-    self.update_params(sm)
+  def update_use_params(self):
+    self.update_params()
 
     if self.enforce_torque_control_toggle:
       if self.torque_override_enabled:
         self.use_params = False
       else:
         self.use_params = self.use_live_torque_params
-    else:
-      self.use_params = self.CP.brand in ALLOWED_CARS and self.CP.lateralTuning.which() == 'torque'
+
+    self.frame += 1

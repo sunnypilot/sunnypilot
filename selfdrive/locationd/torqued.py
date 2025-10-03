@@ -264,7 +264,7 @@ def main(demo=False):
           t = sm.logMonoTime[which] * 1e-9
           estimator.handle_log(t, which, sm[which])
 
-    TorqueEstimatorExt.update_use_params(estimator, sm)
+    TorqueEstimatorExt.update_use_params(estimator)
 
     # 4Hz driven by livePose
     if sm.frame % 5 == 0:
