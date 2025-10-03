@@ -12,10 +12,14 @@ class LatControlTorqueExtOverride:
   def __init__(self, CP):
     self.CP = CP
     self.params = Params()
+    self.enforce_torque_control_toggle = self.params.get_bool("EnforceTorqueControl")  # only during init
     self.torque_override_enabled = self.params.get_bool("TorqueParamsOverrideEnabled")
     self.frame = -1
 
   def update_override_torque_params(self, torque_params) -> bool:
+    if not self.enforce_torque_control_toggle:
+      return False
+
     self.frame += 1
     if self.frame % 300 == 0:
       self.torque_override_enabled = self.params.get_bool("TorqueParamsOverrideEnabled")
