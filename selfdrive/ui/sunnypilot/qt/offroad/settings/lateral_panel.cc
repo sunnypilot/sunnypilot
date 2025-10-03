@@ -75,6 +75,32 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   list->addItem(horizontal_line());
 
+  // Customized Torque Lateral Control
+  torqueLateralControlToggle = new ParamControl(
+    "EnforceTorqueControl",
+    tr("Enforce Torque Lateral Control"),
+    tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
+    "");
+  list->addItem(torqueLateralControlToggle);
+
+  torqueLateralControlSettingsButton = new PushButtonSP(tr("Customize Params"));
+  torqueLateralControlSettingsButton->setObjectName("torque_btn");
+  connect(torqueLateralControlSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(torqueLateralControlWidget);
+  });
+  QObject::connect(madsToggle, &ToggleControl::toggleFlipped, torqueLateralControlSettingsButton, &PushButtonSP::setEnabled);
+
+  torqueLateralControlWidget = new TorqueLateralControlSettings(this);
+  connect(torqueLateralControlWidget, &TorqueLateralControlSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(torqueLateralControlSettingsButton);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
+
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
@@ -100,6 +126,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
   main_layout->addWidget(laneChangeWidget);
+  main_layout->addWidget(torqueLateralControlWidget);
 
   setStyleSheet(R"(
     #back_btn {
