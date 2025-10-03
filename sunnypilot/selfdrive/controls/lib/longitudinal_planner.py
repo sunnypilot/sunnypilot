@@ -140,5 +140,6 @@ class LongitudinalPlannerSP:
     # E2E Alerts
     e2eAlerts = longitudinalPlanSP.e2eAlerts
     e2eAlerts.greenLightAlert = self.e2e_alerts_helper.green_light_alert
+    e2eAlerts.leadDepartAlert = self.e2e_alerts_helper.lead_depart_alert
 
     pm.send('longitudinalPlanSP', plan_sp_send)
