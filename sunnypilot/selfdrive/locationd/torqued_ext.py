@@ -48,13 +48,13 @@ class TorqueEstimatorExt:
         self.offline_latAccelFactor = float(self._params.get("TorqueParamsOverrideLatAccelFactor", return_default=True))
         self.offline_friction = float(self._params.get("TorqueParamsOverrideFriction", return_default=True))
 
-  def update_params(self):
+  def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
       self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
 
   def update_use_params(self):
-    self.update_params()
+    self._update_params()
 
     if self.enforce_torque_control_toggle:
       if self.torque_override_enabled:
