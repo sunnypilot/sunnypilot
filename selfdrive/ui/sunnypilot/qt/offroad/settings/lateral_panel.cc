@@ -89,7 +89,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     sunnypilotScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(torqueLateralControlWidget);
   });
-  QObject::connect(madsToggle, &ToggleControl::toggleFlipped, torqueLateralControlSettingsButton, &PushButtonSP::setEnabled);
+  QObject::connect(torqueLateralControlToggle, &ToggleControl::toggleFlipped, torqueLateralControlSettingsButton, &PushButtonSP::setEnabled);
 
   torqueLateralControlWidget = new TorqueLateralControlSettings(this);
   connect(torqueLateralControlWidget, &TorqueLateralControlSettings::backPress, [=]() {
@@ -180,6 +180,7 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+  torqueLateralControlSettingsButton->setEnabled(torqueLateralControlToggle->isToggled());
 
   blinkerPauseLateralSettings->refresh();
 
