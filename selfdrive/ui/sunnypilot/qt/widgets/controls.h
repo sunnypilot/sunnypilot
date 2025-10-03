@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <optional>
 #include <string>
@@ -500,7 +501,7 @@ private:
 
   int getParamValueScaled() {
     const auto param_value = QString::fromStdString(params.get(key));
-    return static_cast<int>(param_value.toFloat() * 100);
+    return std::nearbyint(param_value.toFloat() * 100.0f);
   }
 
   void setParamValueScaled(const int new_value) {
@@ -576,8 +577,9 @@ public:
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
         value = use_float_scaling ? getParamValueScaled() : getParamValue();
-        value += change_value;
-        value = std::clamp(value, range.min_value, range.max_value);
+        int _value = value;
+        _value += change_value;
+        value = std::clamp(_value, range.min_value, range.max_value);
 
         if (use_float_scaling) {
           setParamValueScaled(value);
