@@ -748,10 +748,10 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   blinkerFrameCounter++;
 
   // Some Settings
-  const int circleRadius = 37;
-  const int arrowLength  = 36;
+  const int circleRadius = 44;
+  const int arrowLength  = 44;
   const int x_gap = 180;
-  const int y_offset = 265;
+  const int y_offset = 272;
 
   // Background Style
   QColor bgColor(23, 134, 68);
@@ -799,7 +799,7 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
       p.setBrush(arrowBrush);
       p.drawPolygon(arrow);
   };
-  
+
   // Draw Left
   if (leftBlinkerOn) {
     drawCircle(surface_rect.center().x() - x_gap, y_offset);
