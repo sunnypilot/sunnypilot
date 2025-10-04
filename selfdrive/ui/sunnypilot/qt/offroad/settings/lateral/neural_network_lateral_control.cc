@@ -18,6 +18,7 @@ void NeuralNetworkLateralControl::updateToggle() {
   QString notLoadedText = "<font color='yellow'>" + STATUS_NOT_LOADED + "</font>";
   QString loadedText = "<font color=#00ff00>" + STATUS_LOADED + "</font>";
 
+  bool allowed = true;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -31,7 +32,7 @@ void NeuralNetworkLateralControl::updateToggle() {
     if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
       params.remove("NeuralNetworkLateralControl");
       setDescription(nnffDescriptionBuilder(STATUS_NOT_AVAILABLE));
-      setEnabled(false);
+      allowed = false;
     } else {
       QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
       QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ?
@@ -56,4 +57,7 @@ void NeuralNetworkLateralControl::updateToggle() {
   if (getDescription() != getBaseDescription()) {
     showDescription();
   }
+
+  bool enforce_torque_toggle = params.getBool("EnforceTorqueControl");
+  setEnabled(allowed && !enforce_torque_toggle);
 }

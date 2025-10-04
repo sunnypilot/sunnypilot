@@ -6,11 +6,13 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.nnlc import NeuralNetworkLateralControl
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_override import LatControlTorqueExtOverride
 
 
-class LatControlTorqueExt(NeuralNetworkLateralControl):
+class LatControlTorqueExt(NeuralNetworkLateralControl, LatControlTorqueExtOverride):
   def __init__(self, lac_torque, CP, CP_SP, CI):
-    super().__init__(lac_torque, CP, CP_SP, CI)
+    NeuralNetworkLateralControl.__init__(self, lac_torque, CP, CP_SP, CI)
+    LatControlTorqueExtOverride.__init__(self, CP)
 
   def update(self, CS, VM, pid, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
              desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel,

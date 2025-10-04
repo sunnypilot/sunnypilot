@@ -51,6 +51,8 @@ lateral_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/lateral/lane_change_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/mads_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
+  "sunnypilot/qt/offroad/settings/lateral/torque_lateral_control_custom_params.cc",
+  "sunnypilot/qt/offroad/settings/lateral/torque_lateral_control_settings.cc",
 ]
 
 longitudinal_panel_qt_src = [
