@@ -116,7 +116,7 @@ jobs:
     - name: Homebrew cache
       uses: ./.github/workflows/auto-cache
       with:
-        save: false # No need save here if we manually save: later
+        save: false # No need save here if we manually save it later conditionally
         path: ~/Library/Caches/Homebrew
         key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
         restore-keys: |
@@ -137,6 +137,7 @@ jobs:
     - name: Getting scons cache
       uses: ./.github/workflows/auto-cache
       with:
+        save: false # No need save here if we manually save it later conditionally
         path: /tmp/scons_cache
         key: scons-${{ runner.arch }}-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
         restore-keys: |
