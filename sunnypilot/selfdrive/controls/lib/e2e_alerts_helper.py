@@ -19,6 +19,7 @@ class E2EAlertsHelper:
   def __init__(self):
     self._params = Params()
     self._frame = -1
+    self.was_moving = False
 
     self.green_light_alert = False
     self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
@@ -41,6 +42,9 @@ class E2EAlertsHelper:
     CS = sm['carState']
     CC = sm['carControl']
 
+    if not self.was_moving:
+      self.was_moving = CS.vEgo > 0.1
+
     model_x = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
     has_lead = sm['radarState'].leadOne.status
@@ -48,11 +52,12 @@ class E2EAlertsHelper:
 
     # Green light alert
     self.green_light_alert = (self.green_light_alert_enabled and model_x[max_idx] > TRIGGER_THRESHOLD
-                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled)
+                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
+                              and self.was_moving)
 
     # Lead Departure Alert
     self.lead_depart_alert = (self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30
-                              and has_lead and lead_vRel > 1 and not CS.gasPressed)
+                              and has_lead and lead_vRel > 1 and not CS.gasPressed and self.was_moving)
 
     if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
