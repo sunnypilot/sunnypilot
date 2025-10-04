@@ -147,7 +147,7 @@ class SunnylinkApi(BaseApi):
     self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
     # Set the last ping time to the current time since we were just talking to the API
-    last_ping = int(time.monotonic() * 1e9) if successful_registration else start_time
+    last_ping = int((time.monotonic() if successful_registration else start_time) * 1e9)
     Params().put("LastSunnylinkPingTime", last_ping)
 
     # Disable sunnylink if registration was not successful
