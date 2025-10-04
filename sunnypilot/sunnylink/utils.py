@@ -60,14 +60,20 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def get_param_as_byte(param_name: str, params=None) -> bytes | None:
+def get_param_as_byte(param_name: str, params=None, get_default=False) -> bytes | None:
   """Get a parameter as bytes. Returns None if the parameter does not exist."""
-  params = params or Params() # Use existing Params instance if provided
-  param = params.get(param_name)
+  params = params or Params()
+  param = params.get(param_name) if not get_default else params.get_default_value(param_name)
+
   if param is None:
     return None
 
   param_type = params.get_type(param_name)
+  return _to_bytes(param, param_type)
+
+
+def _to_bytes(param: bytes, param_type: ParamKeyType) -> bytes | None:
+  """Convert a parameter value to bytes based on its type."""
   if param_type == ParamKeyType.BYTES:
     return bytes(param)
   elif param_type == ParamKeyType.JSON:
