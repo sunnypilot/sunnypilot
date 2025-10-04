@@ -75,6 +75,7 @@ void HudRendererSP::updateState(const UIState &s) {
   }
 
   reversing = reverse_allowed;
+  if (not wasMoving) wasMoving = car_state.getVEgo() > 0.1;
 
   latActive = car_control.getLatActive();
   steerOverride = car_state.getSteeringPressed();
@@ -238,7 +239,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       drawE2eAlert(p, surface_rect);
     }
     // Standstill Timer
-    else if (standstillTimer && isStandstill) {
+    else if (standstillTimer && isStandstill && wasMoving) {
       alert_img = QPixmap();
 
       standstillElapsedTime += 1.0 / UI_FREQ;

@@ -115,4 +115,5 @@ private:
   bool rightBlindspot;
   int blinkerFrameCounter;
   bool showTurnSignals;
+  bool wasMoving = false;
 };
