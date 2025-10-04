@@ -745,27 +745,20 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
     blinkerFrameCounter = 0;
     return;
   }
+  blinkerFrameCounter++;
 
   // Some Settings
   const int circleRadius = 37;
   const int arrowLength  = 36;
   const int x_gap = 180;
   const int y_offset = 265;
-  const int framesPerCycle = static_cast<int>(UI_FREQ / (1.0 * 2)); // Blink at 1.0 Hz
-
-  // Increase Frame Counter and toggle/reset if framesPerCycle is reached
-  blinkerFrameCounter++;
-  if (blinkerFrameCounter >= framesPerCycle) {
-    blinkerPhase = !blinkerPhase;
-    blinkerFrameCounter = 0;
-  }
 
   // Background Style
   QColor bgColor(23, 134, 68);
   QPen bgBorder(Qt::white, 5);
 
   // Arrow Style
-  QColor arrowColor = (blinkerPhase) ? Qt::white : QColor(12, 67, 34);
+  QColor arrowColor = pulseElement(blinkerFrameCounter) ? Qt::white : QColor(12, 67, 34);
   QPen arrowPen(Qt::NoPen);
   QBrush arrowBrush(arrowColor);
 

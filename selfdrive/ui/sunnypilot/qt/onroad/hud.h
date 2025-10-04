@@ -109,7 +109,6 @@ private:
   QPixmap alert_img;
   bool leftBlinkerOn;
   bool rightBlinkerOn;
-  bool blinkerPhase;
   int blinkerFrameCounter;
   bool showTurnSignals;
 };
