@@ -60,24 +60,20 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def _to_bytes(value: bytes | None, param_type: ParamKeyType) -> bytes | None:
-  """Convert a parameter value to bytes based on its type."""
-  if value is None:
+def get_param_as_byte(param_name: str, params=None) -> bytes | None:
+  """Get a parameter as bytes. Returns None if the parameter does not exist."""
+  params = params or Params() # Use existing Params instance if provided
+  param = params.get(param_name)
+  if param is None:
     return None
 
-  if param_type == ParamKeyType.BYTES:
-    return bytes(value)
-  if param_type == ParamKeyType.JSON:
-    return json.dumps(value).encode("utf-8")
-  return str(value).encode("utf-8")
-
-
-def get_param_as_byte(param_name: str, params=None, get_default=False) -> bytes | None:
-  """Get a parameter as bytes. Returns None if the parameter does not exist."""
-  params = params or Params()
-  value = params.get(param_name) if not get_default else params.get_default_value(param_name)
   param_type = params.get_type(param_name)
-  return _to_bytes(value, param_type)
+  if param_type == ParamKeyType.BYTES:
+    return bytes(param)
+  elif param_type == ParamKeyType.JSON:
+    return json.dumps(param).encode('utf-8')
+  return str(param).encode('utf-8')
+
 
 def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: str, is_compressed=False) -> None:
   """Save a parameter from bytes. Overwrites the parameter if it already exists."""
