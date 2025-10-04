@@ -749,6 +749,8 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   // Some Settings
   const int circleRadius = 37;
   const int arrowLength  = 36;
+  const int x_gap = 180;
+  const int y_offset = 265;
   const int framesPerCycle = static_cast<int>(UI_FREQ / (1.0 * 2)); // Blink at 1.0 Hz
 
   // Increase Frame Counter and toggle/reset if framesPerCycle is reached
@@ -804,9 +806,6 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
       p.setBrush(arrowBrush);
       p.drawPolygon(arrow);
   };
-
-  int x_gap = 180;
-  int y_offset = 265;
   
   // Draw Left
   if (leftBlinkerOn) {
