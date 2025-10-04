@@ -116,6 +116,7 @@ jobs:
     - name: Homebrew cache
       uses: ./.github/workflows/auto-cache
       with:
+        save: false # No need save here if we manually save: later
         path: ~/Library/Caches/Homebrew
         key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
         restore-keys: |
