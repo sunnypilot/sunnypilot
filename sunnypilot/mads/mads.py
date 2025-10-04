@@ -61,6 +61,7 @@ class ModularAssistiveDrivingSystem:
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def pedal_pressed_non_gas_pressed(self, CS: structs.CarState) -> bool:
+    # ignore `pedalPressed` events caused by gas presses
     if self.events.has(EventName.pedalPressed) and not (CS.gasPressed and not self.selfdrive.CS_prev.gasPressed and self.disengage_on_accelerator):
       return True
 
