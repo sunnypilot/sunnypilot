@@ -16,6 +16,7 @@ public:
   explicit DeveloperPanelSP(SettingsWindow *parent);
 
 private:
+  ParamControlSP *enableCopyparty;
   ParamControlSP *enableGithubRunner;
   ButtonControlSP *errorLogBtn;
   ParamControlSP *prebuiltToggle;
