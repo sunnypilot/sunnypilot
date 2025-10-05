@@ -4,8 +4,9 @@ from dataclasses import dataclass
 @dataclass
 class Default:
   # Base Colors
+  BASE_BG_COLOR = rl.Color(57, 57, 57, 255) # Grey
   ON_BG_COLOR = rl.Color(28, 101, 186, 255) # Blue
-  OFF_BG_COLOR = rl.Color(57, 57, 57, 255) # Grey
+  OFF_BG_COLOR = BASE_BG_COLOR
   ON_HOVER_BG_COLOR = rl.Color(17, 78, 150, 255) # Dark Blue
   OFF_HOVER_BG_COLOR = rl.Color(21, 21, 21, 255)  # Dark gray
   DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255) # Dull Blue

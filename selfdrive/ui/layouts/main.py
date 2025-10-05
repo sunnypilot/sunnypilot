@@ -11,6 +11,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
 if Params().get_bool("sunnypilot_ui"):
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.settings import SettingsLayoutSP as SettingsLayout
+  from openpilot.selfdrive.ui.sunnypilot.layouts.home import HomeLayoutSP as HomeLayout
 
 
 class MainState(IntEnum):
