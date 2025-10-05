@@ -10,7 +10,8 @@ from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
 from openpilot.system.ui.lib.application import gui_app,MousePos
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.text_measure import measure_text_cached
-from openpilot.selfdrive.ui.layouts.network import NetworkLayout
+from openpilot.system.ui.widgets.network import WifiManagerUI
+from openpilot.system.ui.lib.wifi_manager import WifiManager
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.sunnylink import SunnylinkLayout
@@ -52,11 +53,13 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Create sidebar scroller
     self._sidebar_scroller = Scroller([], spacing=0, line_separator = False, pad_end=False)
 
-
     # Panel configuration
+    wifi_manager = WifiManager()
+    wifi_manager.set_active(False)
+
     self._panels = {
       OP.PanelType.DEVICE: PanelInfo("Device", DeviceLayoutSP(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_home.png"),
-      OP.PanelType.NETWORK: PanelInfo("Network", NetworkLayout(), icon="icons/network.png"),
+      OP.PanelType.NETWORK: PanelInfo("Network", WifiManagerUI(wifi_manager), icon="icons/network.png"),
       OP.PanelType.SUNNYLINK: PanelInfo("sunnylink", SunnylinkLayout(), icon="icons/shell.png"),
       OP.PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
       OP.PanelType.SOFTWARE: PanelInfo("Software", SoftwareLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
