@@ -12,7 +12,16 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-const std::vector<std::string> mads_limited_settings_brands = {"rivian", "tesla"};
+inline bool madsLimitedSettings(const cereal::CarParams::Reader &CP, const cereal::CarParamsSP::Reader &CP_SP) {
+  if (CP.getBrand() == "rivian") {
+    return true;
+  }
+  if (CP.getBrand() == "tesla") {
+    return !(CP_SP.getFlags() & 1);  // 1 == TeslaFlagsSP.HAS_VEHICLE_BUS
+  }
+
+  return false;
+}
 
 enum class MadsSteeringMode {
   REMAIN_ACTIVE = 0,
