@@ -134,12 +134,16 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   auto cp_bytes = params.get("CarParamsPersistent");
-  if (!cp_bytes.empty()) {
+  auto cp_sp_bytes = params.get("CarParamsSPPersistent");
+  if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
     AlignedBuffer aligned_buf;
+    AlignedBuffer aligned_buf_sp;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    capnp::FlatArrayMessageReader cmsg_sp(aligned_buf_sp.align(cp_sp_bytes.data(), cp_sp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+    cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
-    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
+    if (madsLimitedSettings(CP, CP_SP)) {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_LIMITED_COMPATIBILITY, MADS_BASE_DESC));
     } else {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_FULL_COMPATIBILITY, MADS_BASE_DESC));

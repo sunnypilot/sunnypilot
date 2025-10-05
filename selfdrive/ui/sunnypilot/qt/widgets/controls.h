@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <optional>
 #include <string>
@@ -500,7 +501,7 @@ private:
 
   int getParamValueScaled() {
     const auto param_value = QString::fromStdString(params.get(key));
-    return static_cast<int>(param_value.toFloat() * 100);
+    return std::nearbyint(param_value.toFloat() * 100.0f);
   }
 
   void setParamValueScaled(const int new_value) {
