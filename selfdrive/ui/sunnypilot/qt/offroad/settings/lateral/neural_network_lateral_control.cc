@@ -60,4 +60,6 @@ void NeuralNetworkLateralControl::updateToggle() {
 
   bool enforce_torque_toggle = params.getBool("EnforceTorqueControl");
   setEnabled(allowed && !enforce_torque_toggle);
+
+  refresh();
 }
