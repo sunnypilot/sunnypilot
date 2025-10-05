@@ -10,7 +10,7 @@
 NeuralNetworkLateralControl::NeuralNetworkLateralControl() :
   ParamControl("NeuralNetworkLateralControl", tr("Neural Network Lateral Control (NNLC)"),  "", "") {
   setConfirmation(true, false);
-  updateToggle();
+  updateToggle(offroad);
 }
 
 void NeuralNetworkLateralControl::updateToggle(bool _offroad) {
@@ -62,4 +62,6 @@ void NeuralNetworkLateralControl::updateToggle(bool _offroad) {
   setEnabled(_offroad && allowed && !enforce_torque_toggle);
 
   refresh();
+
+  offroad = _offroad;
 }
