@@ -20,7 +20,7 @@ public:
   NeuralNetworkLateralControl();
 
 public slots:
-  void updateToggle();
+  void updateToggle(bool _offroad);
 
 private:
   Params params;

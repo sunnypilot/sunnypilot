@@ -13,7 +13,7 @@ NeuralNetworkLateralControl::NeuralNetworkLateralControl() :
   updateToggle();
 }
 
-void NeuralNetworkLateralControl::updateToggle() {
+void NeuralNetworkLateralControl::updateToggle(bool _offroad) {
   QString statusInitText = "<font color='yellow'>" + STATUS_CHECK_COMPATIBILITY + "</font>";
   QString notLoadedText = "<font color='yellow'>" + STATUS_NOT_LOADED + "</font>";
   QString loadedText = "<font color=#00ff00>" + STATUS_LOADED + "</font>";
@@ -59,7 +59,7 @@ void NeuralNetworkLateralControl::updateToggle() {
   }
 
   bool enforce_torque_toggle = params.getBool("EnforceTorqueControl");
-  setEnabled(allowed && !enforce_torque_toggle);
+  setEnabled(_offroad && allowed && !enforce_torque_toggle);
 
   refresh();
 }

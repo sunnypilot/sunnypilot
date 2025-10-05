@@ -91,8 +91,8 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   QObject::connect(torqueLateralControlToggle, &ToggleControl::toggleFlipped, [=](bool state) {
     torqueLateralControlSettingsButton->setEnabled(state);
+    nnlcToggle->updateToggle(offroad);
     updateToggles(offroad);
-    nnlcToggle->updateToggle();
   });
 
   torqueLateralControlWidget = new TorqueLateralControlSettings(this);
@@ -116,13 +116,10 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
       nnlcToggle->hideDescription();
     }
 
+    nnlcToggle->updateToggle(offroad);
     updateToggles(offroad);
-    nnlcToggle->updateToggle();
   });
 
-  toggleOffroadOnly = {
-    madsToggle, nnlcToggle,
-  };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
@@ -152,7 +149,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 }
 
 void LateralPanel::showEvent(QShowEvent *event) {
-  nnlcToggle->updateToggle();
+  nnlcToggle->updateToggle(offroad);
   updateToggles(offroad);
 }
 
@@ -161,10 +158,6 @@ void LateralPanel::hideEvent(QHideEvent *event) {
 }
 
 void LateralPanel::updateToggles(bool _offroad) {
-  for (auto *toggle : toggleOffroadOnly) {
-    toggle->setEnabled(_offroad);
-  }
-
   bool torque_allowed = true;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
@@ -193,6 +186,7 @@ void LateralPanel::updateToggles(bool _offroad) {
     torque_allowed = false;
   }
 
+  madsToggle->setEnabled(_offroad);
   madsSettingsButton->setEnabled(madsToggle->isToggled());
 
   torqueLateralControlToggle->setEnabled(_offroad && torque_allowed && !nnlcToggle->isToggled());
