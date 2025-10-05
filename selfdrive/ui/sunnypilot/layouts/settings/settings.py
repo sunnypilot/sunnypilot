@@ -21,6 +21,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle import VehicleLa
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import SteeringLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
+from selfdrive.ui.sunnypilot.layouts.settings.display import DisplayLayout
 
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
@@ -33,6 +34,7 @@ OP.PanelType = IntEnum( # type: ignore
     "STEERING",
     "CRUISE",
     "VISUALS",
+    "DISPLAY",
     "OSM",
     "TRIPS",
     "VEHICLE",
@@ -67,6 +69,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
       OP.PanelType.STEERING: PanelInfo("Steering", SteeringLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png"),
       OP.PanelType.CRUISE: PanelInfo("Cruise", CruiseLayout(), icon="icons/speed_limit.png"),
       OP.PanelType.VISUALS: PanelInfo("Visuals", VisualsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
+      OP.PanelType.DISPLAY: PanelInfo("Display", DisplayLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_display.png"),
       OP.PanelType.OSM: PanelInfo("OSM", OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       OP.PanelType.TRIPS: PanelInfo("Trips", TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
       OP.PanelType.VEHICLE: PanelInfo("Vehicle", VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
