@@ -11,7 +11,17 @@
 #include "selfdrive/ui/qt/util.h"
 
 
-HudRendererSP::HudRendererSP() {}
+HudRendererSP::HudRendererSP() {
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+
+  int small_max = e2e_alert_small * 2 - 40;
+  int large_max = e2e_alert_large * 2 - 40;
+  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {small_max, small_max});
+  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
+  lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
+  lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
+}
 
 void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
@@ -36,6 +46,8 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
   speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
+  speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
+  speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -100,10 +112,22 @@ void HudRendererSP::updateState(const UIState &s) {
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
   smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
   smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
+
+  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
+  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   HudRenderer::draw(p, surface_rect);
+
+  e2eAlertDisplayTimer = std::max(0, e2eAlertDisplayTimer - 1);
+
+  p.save();
+
+  if (is_cruise_available) {
+    drawSetSpeedSP(p, surface_rect);
+  }
+
   if (!reversing) {
     // Smart Cruise Control
     int x_offset = -260;
@@ -152,14 +176,61 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Speed Limit
-    if (speedLimitMode != SpeedLimitMode::OFF) {
-      drawSpeedLimitSigns(p);
-      drawUpcomingSpeedLimit(p);
+    bool showSpeedLimit;
+    bool speed_limit_assist_pre_active_pulse = pulseElement(speedLimitAssistFrame);
+
+    // Position speed limit sign next to set speed box
+    const int sign_width = is_metric ? 200 : 172;
+    const int sign_x = is_metric ? 280 : 272;
+    const int sign_y = 45;
+    const int sign_height = 204;
+    QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
+
+    if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+      speedLimitAssistFrame++;
+      showSpeedLimit = speed_limit_assist_pre_active_pulse;
+      drawSpeedLimitPreActiveArrow(p, sign_rect);
+    } else {
+      speedLimitAssistFrame = 0;
+      showSpeedLimit = speedLimitMode != SpeedLimitMode::OFF;
+    }
+
+    if (showSpeedLimit) {
+      drawSpeedLimitSigns(p, sign_rect);
+
+      // do not show during SLA's preActive state
+      if (speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+        drawUpcomingSpeedLimit(p);
+      }
     }
 
     // Road Name
     drawRoadName(p, surface_rect);
+
+    // Green Light & Lead Depart Alerts
+    if (greenLightAlert or leadDepartAlert) {
+      e2eAlertDisplayTimer = 3 * UI_FREQ;
+      // reset onroad sleep timer for e2e alerts
+      uiStateSP()->reset_onroad_sleep_timer();
+    }
+
+    if (e2eAlertDisplayTimer > 0) {
+      e2eAlertFrame++;
+      if (greenLightAlert) {
+        alert_text = tr("GREEN\nLIGHT");
+        alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
+      }
+      else if (leadDepartAlert) {
+        alert_text = tr("LEAD VEHICLE\nDEPARTING");
+        alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
+      }
+      drawE2eAlert(p, surface_rect);
+    } else {
+      e2eAlertFrame = 0;
+    }
   }
+
+  p.restore();
 }
 
 void HudRendererSP::drawText(QPainter &p, int x, int y, const QString &text, QColor color) {
@@ -348,10 +419,10 @@ void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
   }
 }
 
-void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
-  bool speedLimitWarningEnabled = speedLimitMode == SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
+void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
+  bool speedLimitWarningEnabled = speedLimitMode >= SpeedLimitMode::WARNING;  // TODO-SP: update to include SpeedLimitMode::ASSIST
   bool hasSpeedLimit = speedLimitValid || speedLimitLastValid;
-  bool overspeed = hasSpeedLimit && speedLimitFinalLast < std::nearbyint(speed);
+  bool overspeed = hasSpeedLimit && std::nearbyint(speedLimitFinalLast) < std::nearbyint(speed);
   QString speedLimitStr = hasSpeedLimit ? QString::number(std::nearbyint(speedLimitLast)) : "---";
 
   // Offset display text
@@ -364,13 +435,6 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p) {
   if (speedLimitSubText.size() >= 3) {
     speedLimitSubTextFactor = 0.475;
   }
-
-  // Position next to MAX speed box
-  const int sign_width = is_metric ? 200 : 172;
-  const int sign_x = is_metric ? 280 : 272;
-  const int sign_y = 45;
-  const int sign_height = 204;
-  QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
   int alpha = 255;
   QColor red_color = QColor(255, 0, 0, alpha);
@@ -572,4 +636,98 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
   // Truncate if still too long
   QString truncated = fm.elidedText(roadNameStr, Qt::ElideRight, road_rect.width() - 20);
   p.drawText(road_rect, Qt::AlignCenter, truncated);
+}
+
+void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
+  const int sign_margin = 12;
+  const int arrow_spacing = sign_margin * 3;
+  int arrow_x = sign_rect.right() + arrow_spacing;
+
+  int _set_speed = std::nearbyint(set_speed);
+  int _speed_limit_final_last = std::nearbyint(speedLimitFinalLast);
+
+  // Calculate the vertical offset using a sinusoidal function for smooth bouncing
+  double bounce_frequency = 2.0 * M_PI / UI_FREQ;  // 20 frames for one full oscillation
+  int bounce_offset = 20 * sin(speedLimitAssistFrame * bounce_frequency);  // Adjust the amplitude (20 pixels) as needed
+
+  if (_set_speed < _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - plus_arrow_up_img.height() / 2 + bounce_offset);
+    p.drawPixmap(iconPosition, plus_arrow_up_img);
+  } else if (_set_speed > _speed_limit_final_last) {
+    QPoint iconPosition(arrow_x, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
+    p.drawPixmap(iconPosition, minus_arrow_down_img);
+  }
+}
+
+void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
+  // Draw outer box + border to contain set speed
+  const QSize default_size = {172, 204};
+  QSize set_speed_size = is_metric ? QSize(200, 204) : default_size;
+  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+
+  // Draw set speed box
+  p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+  p.setBrush(QColor(0, 0, 0, 166));
+  p.drawRoundedRect(set_speed_rect, 32, 32);
+
+  // Colors based on status
+  QColor max_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+  QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
+  if (is_cruise_set) {
+    set_speed_color = QColor(255, 255, 255);
+    if (speedLimitAssistActive) {
+      set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
+      max_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+    } else {
+      if (status == STATUS_DISENGAGED) {
+        max_color = QColor(255, 255, 255);
+      } else if (status == STATUS_OVERRIDE) {
+        max_color = QColor(0x91, 0x9b, 0x95, 0xff);
+      } else {
+        max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+      }
+    }
+  }
+
+  // Draw "MAX" text
+  p.setFont(InterFont(40, QFont::DemiBold));
+  p.setPen(max_color);
+  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("MAX"));
+
+  // Draw set speed
+  QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
+  p.setFont(InterFont(90, QFont::Bold));
+  p.setPen(set_speed_color);
+  p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
+}
+
+void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
+  int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
+  int x = surface_rect.center().x() + surface_rect.width() / 4;
+  int y = surface_rect.center().y() + 40;
+  x += devUiInfo > 0 ? 0 : 50;
+  y += devUiInfo > 0 ? 0 : 80;
+  QRect alertRect(x - size, y - size, size * 2, size * 2);
+
+  // Alert Circle
+  QPoint center = alertRect.center();
+  QColor frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
+  p.setPen(QPen(frameColor, 15));
+  p.setBrush(QColor(0, 0, 0, 190));
+  p.drawEllipse(center, size, size);
+
+  // Alert Text
+  QColor txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 255);
+  p.setFont(InterFont(48, QFont::Bold));
+  p.setPen(txtColor);
+  QFontMetrics fm(p.font());
+  QRect textRect = fm.boundingRect(alertRect, Qt::TextWordWrap, alert_text);
+  textRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
+  textRect.moveBottom(alertRect.bottom() - alertRect.height() / 7);
+  p.drawText(textRect, Qt::AlignCenter, alert_text);
+
+  // Alert Image
+  QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
+  QPointF drawPoint = center - pixmapCenterOffset;
+  p.drawPixmap(drawPoint, alert_img);
 }
