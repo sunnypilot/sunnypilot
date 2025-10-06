@@ -11,6 +11,15 @@
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
+
+  if (scene.started && scene.onroadScreenOffControl) {
+    auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
+    if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE) {
+      reset_onroad_sleep_timer();
+    } else if (scene.onroadScreenOffTimer > 0) {
+      scene.onroadScreenOffTimer--;
+    }
+  }
 }
 
 UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
@@ -20,7 +29,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-    "carStateSP", "liveParameters"
+    "carStateSP", "liveParameters", "liveMapDataSP"
   });
 
   // update timer
@@ -34,6 +43,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     ui_update_params_sp(this);
   });
   param_watcher->addParam("DevUIInfo");
+  param_watcher->addParam("StandstillTimer");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -51,6 +61,23 @@ void UIStateSP::update() {
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+  s->scene.standstill_timer = params.getBool("StandstillTimer");
+  s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
+  s->scene.road_name = params.getBool("RoadNameToggle");
+
+  // Onroad Screen Brightness
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
+  s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
+  s->reset_onroad_sleep_timer();
+}
+
+void UIStateSP::reset_onroad_sleep_timer() {
+  if (scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl) {
+    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
+  } else {
+    scene.onroadScreenOffTimer = -1;
+  }
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {

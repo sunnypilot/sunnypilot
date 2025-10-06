@@ -25,6 +25,26 @@ struct ModularAssistiveDrivingSystem {
   }
 }
 
+struct IntelligentCruiseButtonManagement {
+  state @0 :IntelligentCruiseButtonManagementState;
+  sendButton @1 :SendButtonState;
+  vTarget @2 :Float32;
+
+  enum IntelligentCruiseButtonManagementState {
+    inactive @0;      # No button press or default state
+    preActive @1;     # Pre-active state before transitioning to increasing or decreasing
+    increasing @2;    # Increasing speed
+    decreasing @3;    # Decreasing speed
+    holding @4;       # Holding steady speed
+  }
+
+  enum SendButtonState {
+    none @0;
+    increase @1;
+    decrease @2;
+  }
+}
+
 # Same struct as Log.RadarState.LeadData
 struct LeadData {
   dRel @0 :Float32;
@@ -48,6 +68,7 @@ struct LeadData {
 
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
+  intelligentCruiseButtonManagement @1 :IntelligentCruiseButtonManagement;
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -122,6 +143,13 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+  longitudinalPlanSource @1 :LongitudinalPlanSource;
+  smartCruiseControl @2 :SmartCruiseControl;
+  speedLimit @3 :SpeedLimit;
+  vTarget @4 :Float32;
+  aTarget @5 :Float32;
+  events @6 :List(OnroadEventSP.Event);
+  e2eAlerts @7 :E2eAlerts;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -132,6 +160,97 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       acc @0;
       blended @1;
     }
+  }
+
+  struct SmartCruiseControl {
+    vision @0 :Vision;
+    map @1 :Map;
+
+    struct Vision {
+      state @0 :VisionState;
+      vTarget @1 :Float32;
+      aTarget @2 :Float32;
+      currentLateralAccel @3 :Float32;
+      maxPredictedLateralAccel @4 :Float32;
+      enabled @5 :Bool;
+      active @6 :Bool;
+    }
+
+    struct Map {
+      state @0 :MapState;
+      vTarget @1 :Float32;
+      aTarget @2 :Float32;
+      enabled @3 :Bool;
+      active @4 :Bool;
+    }
+
+    enum VisionState {
+      disabled @0; # System disabled or inactive.
+      enabled @1; # No predicted substantial turn on vision range.
+      entering @2; # A substantial turn is predicted ahead, adapting speed to turn comfort levels.
+      turning @3; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+      leaving @4; # Road ahead straightens. Start to allow positive acceleration.
+      overriding @5; # System overriding with manual control.
+    }
+
+    enum MapState {
+      disabled @0; # System disabled or inactive.
+      enabled @1; # No predicted substantial turn on map range.
+      turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+      overriding @3; # System overriding with manual control.
+    }
+  }
+
+  struct SpeedLimit {
+    resolver @0 :Resolver;
+    assist @1 :Assist;
+
+    struct Resolver {
+      speedLimit @0 :Float32;
+      distToSpeedLimit @1 :Float32;
+      source @2 :Source;
+      speedLimitOffset @3 :Float32;
+      speedLimitLast @4 :Float32;
+      speedLimitFinal @5 :Float32;
+      speedLimitFinalLast @6 :Float32;
+      speedLimitValid @7 :Bool;
+      speedLimitLastValid @8 :Bool;
+    }
+
+    struct Assist {
+      state @0 :AssistState;
+      enabled @1 :Bool;
+      active @2 :Bool;
+      vTarget @3 :Float32;
+      aTarget @4 :Float32;
+    }
+
+    enum Source {
+      none @0;
+      car @1;
+      map @2;
+    }
+
+    enum AssistState {
+      disabled @0;
+      inactive @1; # No speed limit set or not enabled by parameter.
+      preActive @2;
+      pending @3; # Awaiting new speed limit.
+      adapting @4; # Reducing speed to match new speed limit.
+      active @5; # Cruising at speed limit.
+    }
+  }
+
+  enum LongitudinalPlanSource {
+    cruise @0;
+    sccVision @1;
+    sccMap @2;
+    speedLimitAssist @3;
+  }
+
+  struct E2eAlerts {
+    greenLightAlert @0 :Bool;
+    leadDepartAlert @1 :Bool;
   }
 }
 
@@ -174,12 +293,20 @@ struct OnroadEventSP @0xda96579883444c35 {
     pedalPressedAlertOnly @16;
     laneTurnLeft @17;
     laneTurnRight @18;
+    speedLimitPreActive @19;
+    speedLimitActive @20;
+    speedLimitChanged @21;
+    speedLimitPending @22;
+    e2eChime @23;
   }
 }
 
 struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
+  pcmCruiseSpeed @3 :Bool;
+  intelligentCruiseButtonManagementAvailable @4 :Bool;
+  enableGasInterceptor @5 :Bool;
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
 
@@ -199,10 +326,24 @@ struct CarControlSP @0xa5cd762cd951a455 {
   params @1 :List(Param);
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
+  intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
 
   struct Param {
     key @0 :Text;
-    value @1 :Text;
+    type @2 :ParamType;
+    value @3 :Data;
+
+    valueDEPRECATED @1 :Text; # The data type change may cause issues with backwards compatibility.
+  }
+
+  enum ParamType {
+    string @0;
+    bool @1;
+    int @2;
+    float @3;
+    time @4;
+    json @5;
+    bytes @6;
   }
 }
 
@@ -249,6 +390,7 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
 }
 
 struct CarStateSP @0xb86e6369214c01c8 {
+  speedLimit @0 :Float32;
 }
 
 struct LiveMapDataSP @0xf416ec09499d9d19 {

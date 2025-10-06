@@ -25,14 +25,48 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "BlindSpot",
       tr("Show Blind Spot Warnings"),
       tr("Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."),
-      "../assets/offroad/icon_monitoring.png",
+      "",
       false,
     },
     {
       "RainbowMode",
       tr("Enable Tesla Rainbow Mode"),
       RainbowizeWords(tr("A beautiful rainbow effect on the path the model wants to take.")) + "<br/><i>" + tr("It")+ " <b>" + tr("does not") + "</b> " + tr("affect driving in any way.") + "</i>",
-      "../assets/offroad/icon_monitoring.png",
+      "",
+      false,
+    },
+    {
+      "StandstillTimer",
+      tr("Enable Standstill Timer"),
+      tr("Show a timer on the HUD when the car is at a standstill."),
+      "",
+      false,
+    },
+    {
+      "RoadNameToggle",
+      tr("Display Road Name"),
+      tr("Displays the name of the road the car is traveling on. The OpenStreetMap database of the location must be downloaded from the OSM panel to fetch the road name."),
+      "",
+      false,
+    },
+    {
+      "GreenLightAlert",
+      tr("Green Traffic Light Alert (Beta)"),
+      QString("%1<br>"
+        "<h4>%2</h4><br>")
+        .arg(tr("A chime and on-screen alert will play when the traffic light you are waiting for turns green and you have no vehicle in front of you."))
+        .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "",
+      false,
+    },
+    {
+      "LeadDepartAlert",
+      tr("Lead Departure Alert (Beta)"),
+      QString("%1<br>"
+        "<h4>%2</h4><br>")
+        .arg(tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving."))
+        .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "",
       false,
     },
   };

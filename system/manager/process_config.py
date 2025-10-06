@@ -173,6 +173,9 @@ procs += [
   # mapd
   NativeProcess("mapd", Paths.mapd_root(), ["bash", "-c", f"{MAPD_PATH} > /dev/null 2>&1"], mapd_ready),
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
+
+  # locationd
+  NativeProcess("locationd_llk", "sunnypilot/selfdrive/locationd", ["./locationd"], only_onroad),
 ]
 
 if os.path.exists("./github_runner.sh"):
