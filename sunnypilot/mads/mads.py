@@ -131,7 +131,6 @@ class ModularAssistiveDrivingSystem:
           self.transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
-      self.events.remove(EventName.belowEngageSpeed)
       self.events.remove(EventName.speedTooLow)
       self.events.remove(EventName.cruiseDisabled)
       self.events.remove(EventName.manualRestart)
