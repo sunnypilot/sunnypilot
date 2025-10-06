@@ -43,11 +43,21 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
+def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  icbm_enabled = params.get_bool("IntelligentCruiseButtonManagement")
+  if icbm_enabled and CP_SP.intelligentCruiseButtonManagementAvailable and not CP.openpilotLongitudinalControl:
+    CP_SP.pcmCruiseSpeed = False
+
+
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
+  _initialize_intelligent_cruise_button_management(CP, CP_SP, params)
 
 
 def initialize_params(params) -> list[dict[str, Any]]:

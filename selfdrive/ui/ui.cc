@@ -55,8 +55,7 @@ void update_state(UIState *s) {
   }
   if (sm.updated("wideRoadCameraState")) {
     auto cam_state = sm["wideRoadCameraState"].getWideRoadCameraState();
-    float scale = (cam_state.getSensor() == cereal::FrameData::ImageSensor::AR0231) ? 6.0f : 1.0f;
-    scene.light_sensor = std::max(100.0f - scale * cam_state.getExposureValPercent(), 0.0f);
+    scene.light_sensor = std::max(100.0f - cam_state.getExposureValPercent(), 0.0f);
   } else if (!sm.allAliveAndValid({"wideRoadCameraState"})) {
     scene.light_sensor = -1;
   }
@@ -204,6 +203,13 @@ void Device::updateBrightness(const UIState &s) {
   if (!awake) {
     brightness = 0;
   }
+
+  // Onroad Brightness Control
+#ifdef SUNNYPILOT
+  if (awake && s.scene.started && s.scene.onroadScreenOffControl && s.scene.onroadScreenOffTimer == 0) {
+    brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
+  }
+#endif
 
   if (brightness != last_brightness) {
     if (!brightness_future.isRunning()) {
