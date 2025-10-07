@@ -1,79 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://docs.comma.ai/</loc>
+         <loc>https://docs.sunnypilot.ai/SAFETY/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/CARS/</loc>
+         <loc>https://docs.sunnypilot.ai/branches/definitions/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/CONTRIBUTING/</loc>
+         <loc>https://docs.sunnypilot.ai/branches/recommended-branches/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/DEBUGGING_SAFETY/</loc>
+         <loc>https://docs.sunnypilot.ai/community/CONTRIBUTING/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/INTEGRATION/</loc>
+         <loc>https://docs.sunnypilot.ai/community/WORKFLOW/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/LIMITATIONS/</loc>
+         <loc>https://docs.sunnypilot.ai/community/reporting-a-bug/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/SAFETY/</loc>
+         <loc>https://docs.sunnypilot.ai/community/reporting-a-docs-issue/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/car-porting/brand-port/</loc>
+         <loc>https://docs.sunnypilot.ai/features/auto-lane-change/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/car-porting/model-port/</loc>
+         <loc>https://docs.sunnypilot.ai/features/custom-acc-increments/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/car-porting/what-is-a-car-port/</loc>
+         <loc>https://docs.sunnypilot.ai/features/dynamic-experimental-control/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/concepts/glossary/</loc>
+         <loc>https://docs.sunnypilot.ai/features/hyundai-longitudinal-tuning/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/concepts/logs/</loc>
+         <loc>https://docs.sunnypilot.ai/features/icbm/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/concepts/safety/</loc>
+         <loc>https://docs.sunnypilot.ai/features/mads/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/contributing/architecture/</loc>
+         <loc>https://docs.sunnypilot.ai/features/nnlc/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/contributing/roadmap/</loc>
+         <loc>https://docs.sunnypilot.ai/features/scc-m/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/getting-started/what-is-openpilot/</loc>
+         <loc>https://docs.sunnypilot.ai/features/scc-v/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/how-to/connect-to-comma/</loc>
+         <loc>https://docs.sunnypilot.ai/features/speed-limit-assist/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/how-to/replay-a-drive/</loc>
+         <loc>https://docs.sunnypilot.ai/getting-started/develop-sunnypilot/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
     <url>
-         <loc>https://docs.comma.ai/how-to/turn-the-speed-blue/</loc>
+         <loc>https://docs.sunnypilot.ai/getting-started/use-sunnypilot-in-a-car/</loc>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.sunnypilot.ai/getting-started/what-is-sunnypilot/</loc>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.sunnypilot.ai/safety-information/prohibited-safety-modifications/</loc>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.sunnypilot.ai/setup/read-before-installing/</loc>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.sunnypilot.ai/setup/ssh-method/</loc>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.sunnypilot.ai/setup/url-method/</loc>
          <lastmod>2025-10-07</lastmod>
     </url>
 </urlset>
