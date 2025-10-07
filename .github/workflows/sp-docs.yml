@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
@@ -33,3 +35,5 @@ jobs:
               mkdocs-glightbox \
               mkdocs-redirects
       - run: mkdocs gh-deploy --config-file mkdocs-sp.yml --force
+        env:
+          MKDOCS_GIT_COMMITTERS_APIKEY: ${{ secrets.GITHUB_TOKEN }}
