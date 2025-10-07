@@ -78,10 +78,6 @@ markdown_extensions:
 plugins:
   - git-authors:
       show_email_address: false
-  - git-committers:
-      repository: sunnypilot/sunnypilot
-      branch: master
-      enabled: !ENV [CI, false]
   - git-revision-date-localized:
       enable_creation_date: true
   - search
