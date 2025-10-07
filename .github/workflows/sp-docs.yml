@@ -3,7 +3,7 @@ on:
   push:
     branches:
       #- master
-      - sp-docs
+      - feature/sp-docs
 permissions:
   contents: write
 jobs:
