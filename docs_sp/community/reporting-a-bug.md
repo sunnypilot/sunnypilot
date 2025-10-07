@@ -60,7 +60,7 @@ and yourself by doing some research:
     sure that the settings are configured correctly.
 2. [Search our Discord][discord] to learn if other users are struggling with similar problems and work together with 
    our 
-   great comunity towards a solution. Many problems are solved there.
+   great community towards a solution. Many problems are solved there.
 3. [Search comma's openpilot issue tracker][comma's issue tracker], as another user might 
    already have reported the same problem that may exist in
    stock openpilot, and there might even be a known workaround or fix for it. Thus, no need to create a new issue.
