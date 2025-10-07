@@ -763,12 +763,15 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const int x_gap = 180;
   const int y_offset = 272;
 
-  // Background Style
-  QColor bgColor(23, 134, 68);
+  // Background Style - Red if blocked
+  QColor bgColor = laneChangeBlocked ? QColor(135, 23, 23) : QColor(23, 134, 68);
   QPen bgBorder(Qt::white, 5);
 
-  // Arrow Style
-  QColor arrowColor = pulseElement(blinkerFrameCounter) ? Qt::white : QColor(12, 67, 34);
+  // Arrow Style - Red if blocked
+  QColor arrowColor = laneChangeBlocked ? QColor(66, 12, 12) : QColor(12, 67, 34);
+  if(pulseElement(blinkerFrameCounter)) {
+    arrowColor = Qt::white;
+  }
   QPen arrowPen(Qt::NoPen);
   QBrush arrowBrush(arrowColor);
 
