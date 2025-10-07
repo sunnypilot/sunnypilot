@@ -35,11 +35,12 @@ void ExperimentalButton::changeMode() {
 void ExperimentalButton::updateState(const UIState &s) {
   const auto cs = (*s.sm)["selfdriveState"].getSelfdriveState();
   bool eng = cs.getEngageable() || cs.getEnabled();
+  steering_angle = (*s.sm)["carState"].getCarState().getSteeringAngleDeg();
   if ((cs.getExperimentalMode() != experimental_mode) || (eng != engageable)) {
     engageable = eng;
     experimental_mode = cs.getExperimentalMode();
-    update();
   }
+  update();
 }
 
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
@@ -49,5 +50,11 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 void ExperimentalButton::drawButton(QPainter &p) {
   QPixmap img = experimental_mode ? experimental_img : engage_img;
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  bool blindspot = Params().getBool("BlindSpot");
+  QPixmap rotated_img = img.transformed(QTransform().rotate(-steering_angle), Qt::SmoothTransformation);
+  if (blindspot) {
+    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), rotated_img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  } else {
+    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  }
 }
