@@ -4,9 +4,6 @@
 #include <map>
 
 #include "selfdrive/ui/qt/util.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/ui.h"
-#endif
 
 void OnroadAlerts::updateState(const UIState &s) {
   Alert a = getAlert(*(s.sm), s.scene.started_frame);
@@ -38,7 +35,7 @@ OnroadAlerts::Alert OnroadAlerts::getAlert(const SubMaster &sm, uint64_t started
     // Handle selfdrive timeout
     if (selfdrive_frame < started_frame) {
       // car is started, but selfdriveState hasn't been seen at all
-      a = {tr("sunnypilot Unavailable"), tr("Waiting to start"),
+      a = {tr("openpilot Unavailable"), tr("Waiting to start"),
            "selfdriveWaiting", cereal::SelfdriveState::AlertSize::MID,
            cereal::SelfdriveState::AlertStatus::NORMAL};
     } else if (ss_missing > SELFDRIVE_STATE_TIMEOUT && !Hardware::PC()) {
@@ -76,13 +73,6 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   }
   QRect r = QRect(0 + margin, height() - h + margin, width() - margin*2, h - margin*2);
 
-#ifdef SUNNYPILOT
-  const int dev_ui_info = uiStateSP()->scene.dev_ui_info;
-  const int v_adjustment = dev_ui_info > 1 && alert.size != cereal::SelfdriveState::AlertSize::FULL ? 30 : 0;
-  const int h_adjustment = dev_ui_info > 0 && alert.size != cereal::SelfdriveState::AlertSize::FULL ? 230 : 0;
-  r = QRect(0 + margin, height() - h + margin - v_adjustment, width() - margin*2 - h_adjustment, h - margin*2);
-#endif
-
   QPainter p(this);
 
   // draw background + gradient
@@ -106,12 +96,12 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   p.setRenderHint(QPainter::TextAntialiasing);
   if (alert.size == cereal::SelfdriveState::AlertSize::SMALL) {
     p.setFont(InterFont(74, QFont::DemiBold));
-    p.drawText(r, Qt::AlignCenter | Qt::TextWordWrap, alert.text1);
+    p.drawText(r, Qt::AlignCenter, alert.text1);
   } else if (alert.size == cereal::SelfdriveState::AlertSize::MID) {
     p.setFont(InterFont(88, QFont::Bold));
-    p.drawText(QRect(r.x(), c.y() - 125, r.width(), 150), Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap | Qt::AlignCenter, alert.text1);
+    p.drawText(QRect(0, c.y() - 125, width(), 150), Qt::AlignHCenter | Qt::AlignTop, alert.text1);
     p.setFont(InterFont(66));
-    p.drawText(QRect(r.x(), c.y() + 21, r.width(), 90), Qt::AlignHCenter | Qt::TextWordWrap | Qt::AlignCenter, alert.text2);
+    p.drawText(QRect(0, c.y() + 21, width(), 90), Qt::AlignHCenter, alert.text2);
   } else if (alert.size == cereal::SelfdriveState::AlertSize::FULL) {
     bool l = alert.text1.length() > 15;
     p.setFont(InterFont(l ? 132 : 177, QFont::Bold));
