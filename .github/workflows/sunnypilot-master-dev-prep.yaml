@@ -149,7 +149,7 @@ jobs:
                   }
                 }
               }
-          }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${PR_LABEL},${PR_LABEL}-c3 draft:false sort:created-asc")
+            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${PR_LABEL},${PR_LABEL}-c3 draft:false sort:created-asc")
 
           PR_LIST=${PR_LIST//\'/}
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
