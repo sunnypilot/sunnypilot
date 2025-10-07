@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://docs.comma.ai/how-to/connect-to-comma/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Connect to a comma 3X - openpilot docs</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/tooltip.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Connect to a comma 3X";
+        var mkdocs_page_input_path = "how-to/connect-to-comma.md";
+        var mkdocs_page_url = "/how-to/connect-to-comma/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> openpilot docs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/what-is-openpilot/">What is openpilot?</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">How-to</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../turn-the-speed-blue/">Turn the speed blue</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Connect to a comma 3X</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#serial-console">Serial Console</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ssh">SSH</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#adb">ADB</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#notes">Notes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#one-off-connection">One-off connection</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sshcommaai-host-key-fingerprint">ssh.comma.ai host key fingerprint</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/logs/">Logs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/safety/">Safety</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/glossary/">Glossary</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Car Porting</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../car-porting/what-is-a-car-port/">What is a car port?</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../car-porting/brand-port/">Porting a car brand</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../car-porting/model-port/">Porting a car model</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Contributing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../contributing/roadmap/">Roadmap</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="https://github.com/commaai/openpilot/blob/master/docs/CONTRIBUTING.md">Contributing Guide →</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Links</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="https://blog.comma.ai">Blog →</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="https://comma.ai/bounties">Bounties →</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="https://github.com/commaai">GitHub →</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="https://discord.comma.ai">Discord →</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="https://x.com/comma_ai">X →</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">openpilot docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">How-to</li>
+      <li class="breadcrumb-item active">Connect to a comma 3X</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/commaai/openpilot/edit/master/docs/how-to/connect-to-comma.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="connect-to-a-comma-3x">connect to a comma 3X</h1>
+<p>A comma 3X is a normal <a href="https://github.com/commaai/agnos-builder">Linux</a> computer that exposes <a href="https://wiki.archlinux.org/title/Secure_Shell">SSH</a> and a <a href="https://wiki.archlinux.org/title/Working_with_the_serial_console">serial console</a>.</p>
+<h2 id="serial-console">Serial Console</h2>
+<p>On both the comma three and 3X, the serial console is accessible from the main OBD-C port.
+Connect the comma 3X to your computer with a normal USB C cable, or use a <a href="https://comma.ai/shop/comma-serial">comma serial</a> for steady 12V power.</p>
+<p>On the comma three, the serial console is exposed through a UART-to-USB chip, and <code>tools/scripts/serial.sh</code> can be used to connect.</p>
+<p>On the comma 3X, the serial console is accessible through the <a href="https://github.com/commaai/panda">panda</a> using the <code>panda/tests/som_debug.sh</code> script.</p>
+<ul>
+<li>Username: <code>comma</code></li>
+<li>Password: <code>comma</code></li>
+</ul>
+<h2 id="ssh">SSH</h2>
+<p>In order to SSH into your device, you'll need a GitHub account with SSH keys. See this <a href="https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh">GitHub article</a> for getting your account setup with SSH keys.</p>
+<ul>
+<li>Enable SSH in your device's settings</li>
+<li>Enter your GitHub username in the device's settings</li>
+<li>Connect to your device<ul>
+<li>Username: <code>comma</code></li>
+<li>Port: <code>22</code></li>
+</ul>
+</li>
+</ul>
+<p>Here's an example command for connecting to your device using its tethered connection:<br />
+<code>ssh comma@192.168.43.1</code></p>
+<p>For doing development work on device, it's recommended to use <a href="https://docs.github.com/en/developers/overview/using-ssh-agent-forwarding">SSH agent forwarding</a>.</p>
+<h2 id="adb">ADB</h2>
+<p>In order to use ADB on your device, you'll need to perform the following steps using the image below for reference:</p>
+<p><img alt="comma 3/3x back" src="../../assets/three-back.svg" /></p>
+<ul>
+<li>Plug your device into constant power using port 2, letting the device boot up</li>
+<li>Enable ADB in your device's settings</li>
+<li>Plug in your device to your PC using port 1</li>
+<li>Connect to your device<ul>
+<li><code>adb shell</code> over USB</li>
+<li><code>adb connect</code> over WiFi</li>
+<li>Here's an example command for connecting to your device using its tethered connection: <code>adb connect 192.168.43.1:5555</code></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>[!NOTE]
+The default port for ADB is 5555 on the comma 3X.</p>
+</blockquote>
+<p>For more info on ADB, see the <a href="https://developer.android.com/tools/adb">Android Debug Bridge (ADB) documentation</a>.</p>
+<h3 id="notes">Notes</h3>
+<p>The public keys are only fetched from your GitHub account once. In order to update your device's authorized keys, you'll need to re-enter your GitHub username.</p>
+<p>The <code>id_rsa</code> key in this directory only works while your device is in the setup state with no software installed. After installation, that default key will be removed.</p>
+<h4 id="sshcommaai-proxy">ssh.comma.ai proxy</h4>
+<p>With a <a href="https://comma.ai/connect">comma prime subscription</a>, you can SSH into your comma device from anywhere.</p>
+<p>With the below SSH configuration, you can type <code>ssh comma-{dongleid}</code> to connect to your device through <code>ssh.comma.ai</code>.</p>
+<pre><code>Host comma-*
+  Port 22
+  User comma
+  IdentityFile ~/.ssh/my_github_key
+  ProxyCommand ssh %h@ssh.comma.ai -W %h:%p
+
+Host ssh.comma.ai
+  Hostname ssh.comma.ai
+  Port 22
+  IdentityFile ~/.ssh/my_github_key
+</code></pre>
+<h3 id="one-off-connection">One-off connection</h3>
+<pre><code>ssh -i ~/.ssh/my_github_key -o ProxyCommand=&quot;ssh -i ~/.ssh/my_github_key -W %h:%p -p %p %h@ssh.comma.ai&quot; comma@ffffffffffffffff
+</code></pre>
+<p>(Replace <code>ffffffffffffffff</code> with your dongle_id)</p>
+<h3 id="sshcommaai-host-key-fingerprint">ssh.comma.ai host key fingerprint</h3>
+<pre><code>Host key fingerprint is SHA256:X22GOmfjGb9J04IA2+egtdaJ7vW9Fbtmpz9/x8/W1X4
++---[RSA 4096]----+
+|                 |
+|                 |
+|        .        |
+|         +   o   |
+|        S = + +..|
+|         + @ = .=|
+|        . B @ ++=|
+|         o * B XE|
+|         .o o OB/|
++----[SHA256]-----+
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../turn-the-speed-blue/" class="btn btn-neutral float-left" title="Turn the speed blue"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../concepts/logs/" class="btn btn-neutral float-right" title="Logs">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/commaai/openpilot/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../turn-the-speed-blue/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../concepts/logs/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
