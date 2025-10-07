@@ -91,7 +91,7 @@ For our accel value calculations we have the following:
 
    `self.accel_value = np.clip(self.accel_raw, self.state.accel_last - jerk_number, self.state.accel_last + jerk_number)`
 
-This essentialy means that we have our accel_raw, which is acceleration (m/s^2), followed by our clipping variables. 
+This essentially means that we have our accel_raw, which is acceleration (m/s^2), followed by our clipping variables. 
 jerk_number in this equation represents exactly `0.1`, which is subtracted or added by self.state.accel_last, which is 
-previous calculated accel_value. Furthermore, we have `self.state.accel_last`, which is caculated as the stored accel from
+previous calculated accel_value. Furthermore, we have `self.state.accel_last`, which is calculated as the stored accel from
 the above calculations.
