@@ -2,9 +2,8 @@
 
 #include <QPainter>
 #include <map>
-#include <qt5/QtCore/QRect>
-#include <qt5/QtGui/QFont>
-#include <qt5/QtGui/QPainter>
+#include <QRect>
+#include <QFont>
 
 OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t started_frame) {
   OnroadAlerts::Alert alert = OnroadAlerts::getAlert(sm, started_frame);
