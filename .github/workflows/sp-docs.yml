@@ -30,7 +30,10 @@ jobs:
       - run: pip install \
               mkdocs-material \
               mkdocs-git-revision-date-localized-plugin \
+              mkdocs-git-committers-plugin-2 \
               mkdocs-git-authors-plugin \
               mkdocs-glightbox \
               mkdocs-redirects
       - run: mkdocs gh-deploy --config-file mkdocs-sp.yml --force
+        env:
+          MKDOCS_GIT_COMMITTERS_APIKEY: ${{ secrets.GITHUB_TOKEN }}
