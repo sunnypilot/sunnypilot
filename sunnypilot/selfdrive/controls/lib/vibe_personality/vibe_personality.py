@@ -15,7 +15,7 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles mapped to AccelPersonality (eco/normal/sport)
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:       [1.50, 1.5,  1.20, 1.1, 0.058, .53,  .28, .13, .088],  # eco
+  AccelPersonality.eco:       [1.50, 1.5,  1.20, 1.0, 0.4,  .40, .25, .13, .068],  # eco
   AccelPersonality.normal:    [2.00, 2.00, 1.42, 1.10, .65,  .56, .43, .36, .12],   # normal
   AccelPersonality.sport:     [2.00, 2.00, 1.52, 1.40, .80,  .70, .53, .46, .20],   # sport
 }
@@ -23,7 +23,7 @@ MAX_ACCEL_BREAKPOINTS =       [0.,   6.,   9.,   11.,  16.,  20., 25., 30., 55.]
 
 # Braking profiles mapped to LongPersonality (relaxed/standard/aggressive)
 MIN_ACCEL_PROFILES = {
-  LongPersonality.relaxed:    [-0.08, -0.08, -1.1, -1.1],  # gentler braking
+  LongPersonality.relaxed:    [-0.08, -0.08, -0.08, -0.5],  # gentler braking
   LongPersonality.standard:   [-1.05, -1.15, -1.30, -1.30],  # normal braking
   LongPersonality.aggressive: [-1.10, -1.25, -1.40, -1.40],  # more aggressive braking
 }

@@ -58,7 +58,8 @@ class LatControlTorqueExtBase:
     self.torque_from_lateral_accel_in_torque_space = CI.torque_from_lateral_accel_in_torque_space()
 
     self._ff = 0.0
-    self._pid = PIDController(0.0, 0.0, k_f=0.0)
+    self._pid = PIDController(self.torque_params.kp, self.torque_params.ki,
+                              k_f=self.torque_params.kf)
     self._pid_log = None
     self._setpoint = 0.0
     self._measurement = 0.0
