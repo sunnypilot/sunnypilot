@@ -614,12 +614,6 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     (clip_region.bottom() - y_offset) - in_x * scale_y
   );
 
-  // Force top-down if VisualStyle == 3
-  // if (s->scene.visual_style == 3) {
-  //   *out = topdown_view;
-  //   return clip_region.contains(*out);
-  // }
-
   if ((s->scene.visual_style_overhead == 1 || s->scene.visual_style_overhead == 2) && s->scene.visual_style != 0) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
