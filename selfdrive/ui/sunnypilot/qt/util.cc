@@ -110,3 +110,16 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
   }
   return search_results;
 }
+
+std::optional<cereal::Event::Reader> loadCerealEvent(Params& params, const std::string& _param) {
+  std::string bytes = params.get(_param);
+
+  try {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(bytes.data(), bytes.size()));
+    return cmsg.getRoot<cereal::Event>();
+  } catch (kj::Exception& e) {
+    qInfo() << "invalid " << QString::fromStdString(_param) << ":" << e.getDescription().cStr();
+    return std::nullopt;
+  }
+}

@@ -8,12 +8,16 @@ import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 
 ModelState = modeld_module.ModelState
 
-
 # These are the shapes extracted/loaded from the model onnx
 SHAPE_MODE_PARAMS = [
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512), 'prev_desired_curv': (1, 25, 1)}, 'split'),
-  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512), 'prev_desired_curv': (1, 25, 1)}, '20hz'),
-  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1)}, 'non20hz'),
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "nav_features": (1, 256), "nav_instructions": (1, 150)}, 'non20hz'), # Optimus Prime
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "lat_planner_state": (1, 4),}, 'non20hz'), # farmville
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), "lateral_control_params": (1, 2), "prev_desired_curv": (1, 100, 1)}, 'non20hz'), # wd40
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1), "lateral_control_params": (1, 2),}, 'non20hz'), # NTS
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 24, 512)}, '20hz'), # NPR
+  ({'desire': (1, 100, 8), 'features_buffer': (1, 99, 512), 'prev_desired_curv': (1, 100, 1), "lateral_control_params": (1, 2),}, 'non20hz'), # NTS
+  ({'desire': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # Steam Powered v2
+  ({'desire_pulse': (1, 25, 8), 'features_buffer': (1, 25, 512)}, 'split'), # desire rename
 ]
 
 
@@ -95,9 +99,7 @@ def get_expected_indices(shape, constants, mode, key=None):
     idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
     return idxs
   elif mode == 'non20hz':
-    if key and shape[1] == constants.FULL_HISTORY_BUFFER_LEN:
-      return np.arange(constants.FULL_HISTORY_BUFFER_LEN)
-    return None
+    return np.arange(shape[1])
   return None
 
 
@@ -108,6 +110,8 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
   for key in shapes:
     buf = state.temporal_buffers.get(key, None)
     idxs = state.temporal_idxs_map.get(key, None)
+    if buf is None:
+      continue    # not all shapes are 3D, and the non-3D ones are not buffered
     # Buffer shape logic
     if mode == 'split':
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])
@@ -116,10 +120,7 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
       expected_shape = (1, constants.FULL_HISTORY_BUFFER_LEN, shapes[key][2])
       expected_idxs = get_expected_indices(shapes[key], constants, '20hz', key)
     elif mode == 'non20hz':
-      if key == 'features_buffer':
-        expected_shape = (1, shapes[key][1]*4, shapes[key][2])
-      else:
-        expected_shape = (1, shapes[key][1], shapes[key][2])
+      expected_shape = (1, shapes[key][1], shapes[key][2])
       expected_idxs = get_expected_indices(shapes[key], constants, 'non20hz', key)
 
     assert buf is not None, f"{key}: buffer not found"
@@ -130,10 +131,10 @@ def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
       assert idxs is None or idxs.size == 0, f"{key}: buffer idxs should be None or empty"
 
 
-def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
+def legacy_buffer_update(buf, new_val, mode, key, constants, idxs, input_shape, prev_desire=None):
   # This is what we compare the new dynamic logic to, to ensure it does the same thing
   if mode == 'split':
-    if key == 'desire':
+    if key == 'desire' or key.startswith('desire'):
       buf[0,:-1] = buf[0,1:]
       buf[0,-1] = new_val
       return buf.reshape((1, constants.INPUT_HISTORY_BUFFER_LEN, constants.TEMPORAL_SKIP, -1)).max(axis=2)
@@ -173,15 +174,22 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
       return legacy_buf[idxs]
   elif mode == 'non20hz':
     if key == 'desire':
-      length = new_val.shape[0]
-      buf[0,:-1,:length] = buf[0,1:,:length]
-      buf[0,-1,:length] = new_val[:length]
+      desire_len = constants.DESIRE_LEN
+      if prev_desire is None:
+        prev_desire = np.zeros(desire_len, dtype=np.float32)
+      # Set first element to zero
+      new_val = new_val.copy()
+      new_val[0] = 0
+      # Shift buffer by desire len
+      buf[0][:-desire_len] = buf[0][desire_len:]
+      # Only insert new desire if rising edge
+      buf[0][-desire_len:] = np.where(new_val - prev_desire > 0.99, new_val, 0)
+      prev_desire[:] = new_val
       return buf[0]
     elif key == 'features_buffer':
-      feature_len = new_val.shape[0]
-      buf[0,:-1,:feature_len] = buf[0,1:,:feature_len]
-      buf[0,-1,:feature_len] = new_val[:feature_len]
-      return buf[0]
+      buf[0, :-1] = buf[0, 1:]
+      buf[0, -1] = new_val
+      return buf[0, -input_shape[1]:]  # (99, 512)
     elif key == 'prev_desired_curv':
       length = new_val.shape[0]
       buf[0,:-length,0] = buf[0,length:,0]
@@ -191,32 +199,18 @@ def legacy_buffer_update(buf, new_val, mode, key, constants, idxs):
 
 
 def dynamic_buffer_update(state, key, new_val, mode):
-  if key == 'desire':
-    state.temporal_buffers['desire'][0,:-1] = state.temporal_buffers['desire'][0,1:]
-    state.temporal_buffers['desire'][0,-1] = new_val
-    if state.temporal_buffers['desire'].shape[1] > state.numpy_inputs['desire'].shape[1]:
-      skip = state.temporal_buffers['desire'].shape[1] // state.numpy_inputs['desire'].shape[1]
-      return state.temporal_buffers['desire'][0].reshape(
-        state.numpy_inputs['desire'].shape[0], state.numpy_inputs['desire'].shape[1], skip, -1
-      ).max(axis=2)
-    else:
-      return state.temporal_buffers['desire'][0, state.temporal_idxs_map['desire']]
-
-  inputs = {'desire': np.zeros((1, state.constants.DESIRE_LEN), dtype=np.float32)}
-  for k, tb in state.temporal_buffers.items():
-    if k in state.temporal_idxs_map:
-      continue
-    buf_len = tb.shape[1]
-    if k in state.numpy_inputs:
-      out_len = state.numpy_inputs[k].shape[1]
-      if out_len <= buf_len:
-        state.temporal_idxs_map[k] = np.arange(buf_len)[-out_len:]
-      else:
-        state.temporal_idxs_map[k] = np.arange(buf_len)
-    else:
-      state.temporal_idxs_map[k] = np.arange(buf_len)
+  if key == 'desire' or key.startswith('desire'):
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != key}
+    inputs[key] = new_val.copy()
+    # ModelState.run expects desire as a pulse, so we zero the first element.
+    inputs[key][0] = 0
+    state.run({}, {}, inputs, prepare_only=False)
+    return state.numpy_inputs[key]
 
   if key == 'features_buffer':
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != 'features_buffer'}
     def run_model_stub():
       return {
         'hidden_state': np.asarray(new_val, dtype=np.float32).reshape(1, -1),
@@ -226,6 +220,8 @@ def dynamic_buffer_update(state, key, new_val, mode):
     return state.numpy_inputs['features_buffer'][0]
 
   if key == 'prev_desired_curv':
+    inputs = {k: np.zeros(v[2], dtype=np.float32) if len(v) == 3 else np.zeros(v[1], dtype=np.float32)
+              for k, v in state.model_runner.input_shapes.items() if k != 'prev_desired_curv'}
     def run_model_stub():
       return {
         'hidden_state': np.zeros((1, state.constants.FEATURE_LEN), dtype=np.float32),
@@ -241,16 +237,27 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
   state = ModelState(None)
+  if key == "desire":
+    desire_keys = [k for k in shapes.keys() if k.startswith('desire')]
+    if desire_keys:
+      actual_key = desire_keys[0]  # Use the first (and likely only) desire key
+  else:
+    actual_key = key
+
+  if actual_key not in state.numpy_inputs:
+    pytest.skip()
+
   constants = DummyModelRunner(shapes).constants
-  buf = state.temporal_buffers.get(key, None)
-  idxs = state.temporal_idxs_map.get(key, None)
-  input_shape = shapes[key]
+  buf = state.temporal_buffers.get(actual_key, None)
+  idxs = state.temporal_idxs_map.get(actual_key, None)
+  input_shape = shapes[actual_key]
+  prev_desire = np.zeros(constants.DESIRE_LEN, dtype=np.float32) if key == 'desire' else None
+
   for step in range(20):    # multiple steps to ensure history is built up
     new_val = np.full((input_shape[2],), step, dtype=np.float32)
-    expected = legacy_buffer_update(buf, new_val, mode, key, constants, idxs)
-    actual = dynamic_buffer_update(state, key, new_val, mode)
-    # Model returns the reduced numpy_inputs history, compare the last n entries so the test is checking the same slices.
+    expected = legacy_buffer_update(buf, new_val, mode, actual_key, constants, idxs, input_shape, prev_desire)
+    actual = dynamic_buffer_update(state, actual_key, new_val, mode)
     if expected is not None and actual is not None and expected.shape != actual.shape:
       if expected.ndim == 2 and actual.ndim == 2 and expected.shape[1] == actual.shape[1]:
         expected = expected[-actual.shape[0]:]
-    assert np.allclose(actual, expected), f"{mode} {key}: dynamic buffer update does not match legacy logic"
+    assert np.allclose(actual, expected), f"{mode} {actual_key}: dynamic buffer update does not match legacy logic"
