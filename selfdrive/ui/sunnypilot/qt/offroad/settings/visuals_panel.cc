@@ -77,7 +77,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "TrueVEgoUI",
+      "HideVEgoUI",
       tr("Speedometer: Hide from Onroad Screen"),
       tr("Always display the true vehicle current speed from wheel speed sensors."),
       "",
