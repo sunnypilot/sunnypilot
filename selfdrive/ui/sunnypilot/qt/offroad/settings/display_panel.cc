@@ -15,11 +15,6 @@ DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* vlayout = new QVBoxLayout(sunnypilotScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
-  // Global Brightness
-  brightness = new Brightness();
-  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
-  list->addItem(brightness);
-
   // Onroad Screen Off/Brightness
   onroadScreenBrightnessControl = new OnroadScreenBrightnessControl(
     "OnroadScreenOffControl",
@@ -29,7 +24,12 @@ DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
     "",
     this);
   list->addItem(onroadScreenBrightnessControl);
+  list->addItem(horizontal_line());
 
+  // Global Brightness
+  brightness = new Brightness();
+  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
+  list->addItem(brightness);
   list->addItem(horizontal_line());
 
   // Interactivity Timeout
