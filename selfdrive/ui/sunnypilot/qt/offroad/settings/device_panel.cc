@@ -23,6 +23,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     {"regulatoryBtn", tr("Regulatory"), ""},
     {"translateBtn", tr("Language"), ""},
     {"resetParams", tr("Reset Settings"), ""},
+    {"onroadUploadsBtn", tr("Onroad Uploads"), "OnroadUploads"}
   };
 
   int row = 0, col = 0;
@@ -75,12 +76,14 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
+  connect(buttons["onroadUploadsBtn"], &PushButtonSP::clicked, buttons["onroadUploadsBtn"], &PushButtonSP::updateButton);
+
   // Max Time Offroad
   maxTimeOffroad = new MaxTimeOffroad();
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
   addItem(maxTimeOffroad);
 
-    toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
+  toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
   addItem(toggleDeviceBootMode);
 
   connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonClicked, this, [=](int index) {
@@ -113,9 +116,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   offroadBtn->setFixedWidth(power_layout->sizeHint().width());
   QObject::connect(offroadBtn, &PushButtonSP::clicked, this, &DevicePanelSP::setOffroadMode);
 
-  QVBoxLayout *power_group_layout = new QVBoxLayout();
+  power_group_layout = new QVBoxLayout();
   power_group_layout->setSpacing(25);
-  power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
   power_group_layout->addLayout(power_layout);
 
   addItem(power_group_layout);
@@ -125,9 +127,10 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     poweroffBtn,
     offroadBtn,
     buttons["quietModeBtn"],
+    buttons["onroadUploadsBtn"],
   };
 
-  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
       bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
 
@@ -135,6 +138,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
         btn->setEnabled(offroad);
       }
     }
+    offroad = _offroad;
+    updateState();
   });
 }
 
@@ -185,7 +190,7 @@ void DevicePanelSP::updateState() {
   }
 
   bool offroad_mode_param = params.getBool("OffroadMode");
-  offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Always Offroad"));
+  offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Enable Always Offroad"));
   offroadBtn->setStyleSheet(offroad_mode_param ? alwaysOffroadStyle : autoOffroadStyle);
 
   DeviceSleepModeStatus currStatus = DeviceSleepModeStatus::DEFAULT;
@@ -193,4 +198,10 @@ void DevicePanelSP::updateState() {
     currStatus = DeviceSleepModeStatus::OFFROAD;
   }
   toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
+
+  if (offroad and not offroad_mode_param) {
+    power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
+  } else {
+    AddWidgetAt(0, offroadBtn);
+  }
 }
