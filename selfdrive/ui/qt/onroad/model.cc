@@ -629,7 +629,11 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
 
   float factor_scale_x = 0.0f;
   if (blend_speed_mph > 0.0f) {
-    factor_scale_x = mapRange(blend_speed_mph, 0.0f, 50.0f, 100.0f, 0.0f);
+    if (s->scene.visual_style_overhead_zoom == 1) {
+      factor_scale_x = mapRange(blend_speed_mph, 0.0f, 50.0f, 30.0f, 0.0f);
+    } else if (s->scene.visual_style_overhead_zoom == 2) {
+      factor_scale_x = mapRange(blend_speed_mph, 50.0f, 0.0f, 30.0f, 0.0f);
+    }
   }
 
   float scale_x = base_scale_x + factor_scale_x;
