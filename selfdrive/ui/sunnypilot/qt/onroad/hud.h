@@ -107,4 +107,5 @@ private:
   QPixmap lead_depart_alert_large_img;
   QString alert_text;
   QPixmap alert_img;
+  bool hideVEgoUI;
 };
