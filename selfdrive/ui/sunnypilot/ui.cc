@@ -44,10 +44,13 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   });
   param_watcher->addParam("DevUIInfo");
   param_watcher->addParam("StandstillTimer");
+
   param_watcher->addParam("VisualStyle");
-  param_watcher->addParam("VisualStyleBlend");
-  param_watcher->addParam("VisualStyleOverheadBlend");
-  param_watcher->addParam("VisualStyleBlendThreshold");
+  param_watcher->addParam("VisualStyleZoom");
+  param_watcher->addParam("VisualStyleOverhead");
+  param_watcher->addParam("VisualStyleOverheadZoom");
+  param_watcher->addParam("VisualStyleOverheadThreshold");
+  
   param_watcher->addParam("VisualRadarTracks");
   param_watcher->addParam("VisualRadarTracksDelay");
   param_watcher->addParam("VisualWideCam");
@@ -80,9 +83,11 @@ void ui_update_params_sp(UIStateSP *s) {
   s->reset_onroad_sleep_timer();
 
   s->scene.visual_style = QString::fromStdString(params.get("VisualStyle")).toInt();
-  s->scene.visual_style_blend = QString::fromStdString(params.get("VisualStyleBlend")).toInt();
-  s->scene.visual_style_overhead_blend = QString::fromStdString(params.get("VisualStyleOverheadBlend")).toInt();
-  s->scene.visual_style_blend_threshold = QString::fromStdString(params.get("VisualStyleBlendThreshold")).toInt();
+  s->scene.visual_style_zoom = QString::fromStdString(params.get("VisualStyleZoom")).toInt();
+  s->scene.visual_style_overhead = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
+  s->scene.visual_style_overhead_zoom = QString::fromStdString(params.get("VisualStyleOverheadZoom")).toInt();
+  s->scene.visual_style_overhead_threshold = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+
   s->scene.visual_radar_tracks = QString::fromStdString(params.get("VisualRadarTracks")).toInt();
   s->scene.visual_radar_tracks_delay = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
   s->scene.visual_wide_cam = QString::fromStdString(params.get("VisualWideCam")).toInt();

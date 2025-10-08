@@ -50,34 +50,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "VisualFPS",
-      tr("Show FPS Overlay"),
-      tr("Display current and average FPS on screen for performance monitoring."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualRadarTracks",
-      tr("Show Radar Tracks"),
-      tr("Shows what the cars radar sees."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualStyleBlend",
-      tr("Blend to Visual Style"),
-      tr("Blend to view when using Minimal/Vision visual style."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualStyleOverheadBlend",
-      tr("Blend to Overhead Visual Style"),
-      tr("Blend to Overhead view when using Minimal/Vision visual style."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
       "GreenLightAlert",
       tr("Green Traffic Light Alert (Beta)"),
       QString("%1<br>"
@@ -95,6 +67,20 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
         .arg(tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving."))
         .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
       "",
+      false,
+    },
+    {
+      "VisualFPS",
+      tr("Show FPS Overlay"),
+      tr("Display current and average FPS on screen for performance monitoring."),
+      "../assets/offroad/icon_monitoring.png",
+      false,
+    },
+    {
+      "VisualRadarTracks",
+      tr("Show Radar Tracks"),
+      tr("Shows what the cars radar sees."),
+      "../assets/offroad/icon_monitoring.png",
       false,
     },
   };
@@ -123,38 +109,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     param_watcher->addParam(param);
   }
 
-  // Visuals: Wide Cam
-  std::vector<QString> visual_wide_cam_settings_texts{tr("Auto"), tr("On"), tr("Off")};
-  visual_wide_cam_settings = new ButtonParamControlSP(
-    "VisualWideCam", tr("Wide Cam"), tr("Override the wide cam view regardless of experimental mode status."),
-    "",
-    visual_wide_cam_settings_texts,
-    250);
-  list->addItem(visual_wide_cam_settings);
-
-  // Visuals: Visual Style
-  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
-  visual_style_settings = new ButtonParamControlSP(
-    "VisualStyle", tr("Visual Style"), tr("Controls how the road and driving environment are displayed in the onroad UI."),
-    "",
-    visual_style_settings_texts,
-    250);
-  list->addItem(visual_style_settings);
-
-  // Visuals: VisualStyleBlend Threshold
-  visual_style_threshold_settings = new OptionControlSP("VisualStyleBlendThreshold", tr("Adjust Overhead Blend Threshold"),
-                                      tr("Adjust the threshold when overhead blend activates."),
-                                      "", {10, 80}, 5, false, nullptr, false);
-
-  connect(visual_style_threshold_settings, &OptionControlSP::updateLabels, [=]() {
-    int value = QString::fromStdString(params.get("VisualStyleBlendThreshold")).toInt();
-    visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
-  });
-
-  int value = QString::fromStdString(params.get("VisualStyleBlendThreshold")).toInt();
-  visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
-
-  list->addItem(visual_style_threshold_settings);
 
   // Visuals: Radar Tracks Delay
   visual_radar_tracks_delay_settings = new OptionControlSP("VisualRadarTracksDelay", tr("Adjust Visual Radar Tracks Delay"),
@@ -170,6 +124,73 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   visual_radar_tracks_delay_settings->setLabel(QString::number(radar_tracks_delay_value, 'f', 1) + " s");
 
   list->addItem(visual_radar_tracks_delay_settings);
+
+
+  // Wide Cam
+  std::vector<QString> visual_wide_cam_settings_texts{tr("Auto"), tr("On"), tr("Off")};
+  visual_wide_cam_settings = new ButtonParamControlSP(
+    "VisualWideCam", tr("Wide Cam"), tr("Override the wide cam view regardless of experimental mode status."),
+    "",
+    visual_wide_cam_settings_texts,
+    250);
+  list->addItem(visual_wide_cam_settings);
+
+
+  // Visual Style
+  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
+  visual_style_settings = new ButtonParamControlSP(
+    "VisualStyle", tr("Visual Style"), tr("todo"),
+    "",
+    visual_style_settings_texts,
+    380);
+  list->addItem(visual_style_settings);
+
+
+  // Visual Style Zoom
+  std::vector<QString> visual_style_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_zoom_settings = new ButtonParamControlSP(
+    "VisualStyleZoom", tr("Visual Style Zoom"), tr("todo"),
+    "",
+    visual_style_zoom_settings_texts,
+    380);
+  list->addItem(visual_style_zoom_settings);
+
+
+  // Visual Style Overhead
+  std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_overhead_settings = new ButtonParamControlSP(
+    "VisualStyleOverheadZoom", tr("Visual Style Overhead"), tr("todo"),
+    "",
+    visual_style_overhead_settings_texts,
+    380);
+  list->addItem(visual_style_overhead_settings);
+
+
+  // Visual Style Overhead Zoom
+  std::vector<QString> visual_style_overhead_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_overhead_zoom_settings = new ButtonParamControlSP(
+    "VisualStyleOverheadZoom", tr("Visual Style Overhead Zoom"), tr("todo"),
+    "",
+    visual_style_overhead_zoom_settings_texts,
+    380);
+  list->addItem(visual_style_overhead_zoom_settings);
+
+
+  // Visual Style Overhead Threshold
+  visual_style_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
+                                      tr("Adjust the threshold when overhead blend activates."),
+                                      "", {10, 80}, 5, false, nullptr, false);
+
+  connect(visual_style_threshold_settings, &OptionControlSP::updateLabels, [=]() {
+    int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+    visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+  });
+
+  int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+  visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+
+  list->addItem(visual_style_threshold_settings);
+
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
@@ -217,5 +238,14 @@ void VisualsPanel::paramsRefresh() {
   }
   if (visual_style_settings) {
     visual_style_settings->refresh();
+  }
+  if (visual_style_zoom_settings) {
+    visual_style_zoom_settings->refresh();
+  }
+  if (visual_style_overhead_settings) {
+    visual_style_overhead_settings->refresh();
+  }
+  if (visual_style_overhead_zoom_settings) {
+    visual_style_overhead_zoom_settings->refresh();
   }
 }
