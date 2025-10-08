@@ -19,22 +19,22 @@ OnroadScreenBrightnessControl::OnroadScreenBrightnessControl(const QString &para
 
   onroadScreenOffTimer = new OptionControlSP(
     "OnroadScreenOffTimer",
-    "Delay",
+    "Onroad Brightness Delay",
     "",
     "",
     {0, 11}, 1, true, &onroadScreenOffTimerOptions);
 
   onroadScreenBrightness = new OptionControlSP(
     "OnroadScreenOffBrightness",
-    "Brightness",
+    "Onroad Brightness",
     "",
     "",
     {0, 100}, 10, true);
 
   connect(onroadScreenOffTimer, &OptionControlSP::updateLabels, this, &OnroadScreenBrightnessControl::refresh);
   connect(onroadScreenBrightness, &OptionControlSP::updateLabels, this, &OnroadScreenBrightnessControl::refresh);
-  mainFrameLayout->addWidget(onroadScreenOffTimer);
   mainFrameLayout->addWidget(onroadScreenBrightness);
+  mainFrameLayout->addWidget(onroadScreenOffTimer);
 
   addItem(mainFrame);
 
