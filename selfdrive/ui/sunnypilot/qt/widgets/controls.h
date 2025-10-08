@@ -545,10 +545,8 @@ public:
         main_layout->removeWidget(title_label);
         hlayout->addWidget(title_label, 1);
       }
-      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
-        main_layout->removeItem(spacingItem);
-        spacingItem = nullptr;
-      }
+      main_layout->removeItem(spacingItem);
+      spacingItem = nullptr;
     }
 
     label.setStyleSheet(label_enabled_style);
