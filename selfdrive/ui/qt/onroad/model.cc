@@ -8,21 +8,6 @@ void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float 
 }
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
-  static double last_draw_t = millis_since_boot();
-  static float avg_frame_time = 50.0f;
-  static float avg_fps = 20.0f;
-
-  double frame_now = millis_since_boot();
-  double frame_time_ms = frame_now - last_draw_t;
-  last_draw_t = frame_now;
-
-  float fps = (frame_time_ms > 0) ? (1000.0f / frame_time_ms) : 0.0f;
-
-  // Stronger smoothing to reduce jutter
-  const float alpha = 0.02f;  // smaller = smoother
-  avg_frame_time = (1 - alpha) * avg_frame_time + alpha * frame_time_ms;
-  avg_fps        = (1 - alpha) * avg_fps + alpha * fps;
-
   auto *s = uiState();
   auto &sm = *(s->sm);
   // Check if data is up-to-date
@@ -639,7 +624,6 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
       }
     }
 
-    // Time-based interpolation
     double now = millis_since_boot();
     double dt = (now - last_t) / 1000.0;
     last_t = now;
