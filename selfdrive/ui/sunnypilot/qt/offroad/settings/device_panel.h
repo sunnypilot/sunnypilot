@@ -34,6 +34,7 @@ private:
   ButtonParamControlSP *toggleDeviceBootMode;
   Brightness *brightness;
   OptionControlSP *interactivityTimeout;
+  QVBoxLayout *power_group_layout;
 
   const QString alwaysOffroadStyle = R"(
     PushButtonSP {
