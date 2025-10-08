@@ -756,6 +756,9 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const int x_gap = 180;
   const int y_offset = 272;
 
+  // Check if there is something in the blindspot while we have our blinker on
+  bool laneChangeBlocked = (leftBlinkerOn && leftBlindspot) || (rightBlinkerOn && rightBlindspot);
+
   // Background Style - Red if blocked
   QColor bgColor = laneChangeBlocked ? QColor(135, 23, 23) : QColor(23, 134, 68);
   QPen bgBorder(Qt::white, 5);
