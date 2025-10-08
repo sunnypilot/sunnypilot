@@ -69,6 +69,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
+    {
+      "TrueVEgoUI",
+      tr("Speedometer: Display True Speed"),
+      tr("Display the true vehicle current speed from wheel speed sensors."),
+      "",
+      false,
+    },
   };
 
   // Add regular toggles first
