@@ -79,35 +79,6 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
 
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
-  if (s->scene.visual_fps) {
-    static double last_overlay_update_t = 0.0;
-    static QString cached_fps_line;
-    static QString cached_frame_line;
-
-    double now_overlay = millis_since_boot();
-    if (now_overlay - last_overlay_update_t > 500.0) {
-      cached_fps_line   = QString("FPS %1 / %2").arg(fps, 0, 'f', 0).arg(avg_fps, 0, 'f', 0);
-      cached_frame_line = QString("FRM %1 / %2").arg(frame_time_ms, 0, 'f', 0).arg(avg_frame_time, 0, 'f', 0);
-      last_overlay_update_t = now_overlay;
-    }
-
-    painter.setPen(Qt::white);
-    QFont font;
-    font.setFamily("FixedFont");
-    font.setStyleHint(QFont::Monospace);
-    font.setFixedPitch(true);
-    font.setPixelSize(48);
-    font.setBold(true);
-    painter.setFont(font);
-
-    int x = 30;
-    int mid_y = surface_rect.center().y();
-    int line_spacing = 40;
-
-    painter.drawText(x, mid_y - line_spacing/2, cached_fps_line);
-    painter.drawText(x, mid_y + line_spacing/2, cached_frame_line);
-  }
-
   painter.restore();
 }
 

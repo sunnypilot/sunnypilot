@@ -23,5 +23,4 @@ typedef struct UISceneSP : UIScene {
   int visual_style_overhead = 0;
   int visual_style_overhead_zoom = 0;
   int visual_style_overhead_threshold = 20.0;
-  int visual_fps = 0;
 } UISceneSP;
