@@ -29,11 +29,11 @@ protected:
  ParamWatcher * param_watcher;
  ButtonParamControlSP *chevron_info_settings;
  ButtonParamControlSP *dev_ui_settings;
+ OptionControlSP *visual_radar_tracks_delay_settings;
+ ButtonParamControlSP *visual_wide_cam_settings;
  ButtonParamControlSP *visual_style_settings;
  ButtonParamControlSP *visual_style_zoom_settings;
  ButtonParamControlSP *visual_style_overhead_settings;
  ButtonParamControlSP *visual_style_overhead_zoom_settings;
- ButtonParamControlSP *visual_wide_cam_settings;
  OptionControlSP *visual_style_overhead_threshold_settings;
- OptionControlSP *visual_radar_tracks_delay_settings;
 };
