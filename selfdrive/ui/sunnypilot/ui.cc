@@ -11,6 +11,15 @@
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
+
+  if (scene.started && scene.onroadScreenOffControl) {
+    auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
+    if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE) {
+      reset_onroad_sleep_timer();
+    } else if (scene.onroadScreenOffTimer > 0) {
+      scene.onroadScreenOffTimer--;
+    }
+  }
 }
 
 UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
@@ -63,6 +72,13 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
   s->scene.road_name = params.getBool("RoadNameToggle");
+
+  // Onroad Screen Brightness
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
+  s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
+  s->reset_onroad_sleep_timer();
+
   s->scene.visual_style = QString::fromStdString(params.get("VisualStyle")).toInt();
   s->scene.visual_style_blend = QString::fromStdString(params.get("VisualStyleBlend")).toInt();
   s->scene.visual_style_overhead_blend = QString::fromStdString(params.get("VisualStyleOverheadBlend")).toInt();
@@ -71,6 +87,14 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.visual_radar_tracks_delay = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
   s->scene.visual_wide_cam = QString::fromStdString(params.get("VisualWideCam")).toInt();
   s->scene.visual_fps = QString::fromStdString(params.get("VisualFPS")).toInt();
+}
+
+void UIStateSP::reset_onroad_sleep_timer() {
+  if (scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl) {
+    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
+  } else {
+    scene.onroadScreenOffTimer = -1;
+  }
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
