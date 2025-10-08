@@ -54,7 +54,6 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   param_watcher->addParam("VisualRadarTracks");
   param_watcher->addParam("VisualRadarTracksDelay");
   param_watcher->addParam("VisualWideCam");
-  param_watcher->addParam("VisualFPS");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -91,7 +90,6 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.visual_radar_tracks = QString::fromStdString(params.get("VisualRadarTracks")).toInt();
   s->scene.visual_radar_tracks_delay = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
   s->scene.visual_wide_cam = QString::fromStdString(params.get("VisualWideCam")).toInt();
-  s->scene.visual_fps = QString::fromStdString(params.get("VisualFPS")).toInt();
 }
 
 void UIStateSP::reset_onroad_sleep_timer() {

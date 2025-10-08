@@ -70,13 +70,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "VisualFPS",
-      tr("Show FPS Overlay"),
-      tr("Display current and average FPS on screen for performance monitoring."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
       "VisualRadarTracks",
       tr("Show Radar Tracks"),
       tr("Shows what the cars radar sees."),
