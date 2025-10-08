@@ -118,6 +118,8 @@ void HudRendererSP::updateState(const UIState &s) {
 
   leftBlinkerOn = car_state.getLeftBlinker();
   rightBlinkerOn = car_state.getRightBlinker();
+  leftBlindspot = car_state.getLeftBlindspot();
+  rightBlindspot = car_state.getRightBlindspot();
   showTurnSignals = s.scene.turn_signals;
 }
 
