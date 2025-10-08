@@ -201,7 +201,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visual Style Overhead
   std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_overhead_settings = new ButtonParamControlSP(
-    "VisualStyleOverheadZoom", tr("Visual Style Overhead"), tr("todo"),
+    "VisualStyleOverhead", tr("Visual Style Overhead"), tr("todo"),
     "",
     visual_style_overhead_settings_texts,
     380);
