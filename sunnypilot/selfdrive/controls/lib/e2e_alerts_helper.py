@@ -54,5 +54,5 @@ class E2EAlertsHelper:
     self.lead_depart_alert = (self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30
                               and has_lead and lead_vRel > 1 and not CS.gasPressed)
 
-    if self.green_light_alert or self.green_light_alert:
+    if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
