@@ -13,9 +13,10 @@ typedef struct UISceneSP : UIScene {
   int speed_limit_mode = 0;
   bool road_name = false;
   int visual_style = 0;
-  int visual_style_blend = 0;
-  int visual_style_overhead_blend = 0;
-  int visual_style_blend_threshold = 20.0;
+  int visual_style_zoom = 0;
+  int visual_style_overhead = 0;
+  int visual_style_overhead_zoom = 0;
+  int visual_style_overhead_threshold = 20.0;
   int visual_radar_tracks = 0;
   float visual_radar_tracks_delay = 0;
   int visual_wide_cam = 0;

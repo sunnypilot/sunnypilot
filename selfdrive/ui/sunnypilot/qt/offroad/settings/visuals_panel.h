@@ -30,6 +30,9 @@ protected:
  ButtonParamControlSP *chevron_info_settings;
  ButtonParamControlSP *dev_ui_settings;
  ButtonParamControlSP *visual_style_settings;
+ ButtonParamControlSP *visual_style_zoom_settings;
+ ButtonParamControlSP *visual_style_overhead_settings;
+ ButtonParamControlSP *visual_style_overhead_zoom_settings;
  ButtonParamControlSP *visual_wide_cam_settings;
  OptionControlSP *visual_style_threshold_settings;
  OptionControlSP *visual_radar_tracks_delay_settings;
