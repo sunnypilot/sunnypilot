@@ -57,41 +57,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "VisualWideCam",
-      tr("Force Wide Cam"),
-      tr("Forces the wide cam view regardless of experimental mode status."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualFPS",
-      tr("Show FPS Overlay"),
-      tr("Display current and average FPS on screen for performance monitoring."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualRadarTracks",
-      tr("Show Radar Tracks"),
-      tr("Shows what the cars radar sees."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualStyleBlend",
-      tr("Blend to Visual Style"),
-      tr("Blend to view when using Minimal/Vision visual style."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
-      "VisualStyleOverheadBlend",
-      tr("Blend to Overhead Visual Style"),
-      tr("Blend to Overhead view when using Minimal/Vision visual style."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
       "GreenLightAlert",
       tr("Green Traffic Light Alert (Beta)"),
       QString("%1<br>"
