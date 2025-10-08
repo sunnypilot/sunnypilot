@@ -25,7 +25,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
   dmon.updateState(s);
-
   if (s.scene.visual_style == 0) {
     setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
   } else {

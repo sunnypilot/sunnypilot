@@ -102,7 +102,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     param_watcher->addParam(param);
   }
 
-
   // Visuals: Radar Tracks Delay
   visual_radar_tracks_delay_settings = new OptionControlSP("VisualRadarTracksDelay", tr("Adjust Visual Radar Tracks Delay"),
                                       tr("Delays radar tracks to better match what you see through the camera."),
@@ -118,7 +117,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
 
   list->addItem(visual_radar_tracks_delay_settings);
 
-
   // Wide Cam
   std::vector<QString> visual_wide_cam_settings_texts{tr("Auto"), tr("On"), tr("Off")};
   visual_wide_cam_settings = new ButtonParamControlSP(
@@ -127,7 +125,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_wide_cam_settings_texts,
     250);
   list->addItem(visual_wide_cam_settings);
-
 
   // Visual Style
   std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
@@ -138,7 +135,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     380);
   list->addItem(visual_style_settings);
 
-
   // Visual Style Zoom
   std::vector<QString> visual_style_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_zoom_settings = new ButtonParamControlSP(
@@ -147,7 +143,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_zoom_settings_texts,
     380);
   list->addItem(visual_style_zoom_settings);
-
 
   // Visual Style Overhead
   std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
@@ -158,7 +153,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     380);
   list->addItem(visual_style_overhead_settings);
 
-
   // Visual Style Overhead Zoom
   std::vector<QString> visual_style_overhead_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_overhead_zoom_settings = new ButtonParamControlSP(
@@ -167,7 +161,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_overhead_zoom_settings_texts,
     380);
   list->addItem(visual_style_overhead_zoom_settings);
-
 
   // Visual Style Overhead Threshold
   visual_style_overhead_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
@@ -183,7 +176,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
 
   list->addItem(visual_style_overhead_threshold_settings);
-
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};

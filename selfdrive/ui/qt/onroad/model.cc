@@ -125,8 +125,7 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
   if (s->scene.visual_style == 2) {
     QRectF r = clip_region;
 
-    // --- Find horizon from road edges ---
-    qreal horizonY = r.bottom();  // fallback
+    qreal horizonY = r.bottom();
     if (!road_edge_vertices[0].isEmpty() || !road_edge_vertices[1].isEmpty()) {
       qreal leftH  = r.top();
       qreal rightH = r.top();
@@ -145,19 +144,10 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
         }
       }
 
-      // Pick the lower (visually deeper) horizon to ensure no gaps
       horizonY = std::max(leftH, rightH);
     }
 
-
-    // --- Background ---
-    // Fill above horizon: pure black
-    // painter.fillRect(QRectF(r.left(), r.top(), r.width(), horizonY - 100), QColor("#000000"));
-
-
-    // Fill below horizon: solid dark gray
     painter.fillRect(QRectF(r.left(), horizonY + 0, r.width(), r.bottom() - (horizonY + 0)), QColor("#111111"));
-
 
     auto buildFill = [&](const QPolygonF &edgeRibbon, bool isLeftSide) -> QPolygonF {
       if (edgeRibbon.isEmpty()) return {};
@@ -197,7 +187,6 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
       return fill;
     };
 
-    // Left and right fills
     QPolygonF leftFill  = buildFill(road_edge_vertices[0], true);
     QPolygonF rightFill = buildFill(road_edge_vertices[1], false);
 
@@ -210,19 +199,16 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
       painter.drawPolygon(rightFill);
     }
 
-    // lanelines
     for (int i = 0; i < std::size(lane_line_vertices); ++i) {
       painter.setBrush(QColor::fromRgbF(0.902, 0.902, 0.902, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
       painter.drawPolygon(lane_line_vertices[i]);
     }
 
-    // road edges
     for (int i = 0; i < std::size(road_edge_vertices); ++i) {
       painter.setBrush(QColor(0x55, 0x55, 0x55, 255));
       painter.drawPolygon(road_edge_vertices[i]);
     }
 
-    // Gradient band across horizon
     QLinearGradient bgGrad(r.left(), horizonY - 100, r.left(), horizonY + 100);
     bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
     bgGrad.setColorAt(0.5, QColor("#111111"));  // middle blend
@@ -578,8 +564,8 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     normal_view = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
   }
 
-  const float base_scale_x = 20.0f;  // in/out 20 (far/fast) 100 (close/slow)
-  const float base_scale_y = 15.0f;  // squish (was 20.0f)
+  const float base_scale_x = 20.0f;
+  const float base_scale_y = 15.0f;
   const float y_offset = 450.0f;
 
   float factor_scale_x = 0.0f;
@@ -609,14 +595,12 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     const float hysteresis = 5.0f;
 
     if (!inverted) {
-      // Normal: 3D → 2D as speed increases
       if (target_blend < 0.5f && blend_speed_mph > threshold) {
         target_blend = 1.0f;
       } else if (target_blend > 0.5f && blend_speed_mph < threshold - hysteresis) {
         target_blend = 0.0f;
       }
     } else {
-      // Inverted: 3D → 2D as speed decreases
       if (target_blend < 0.5f && blend_speed_mph < threshold) {
         target_blend = 1.0f;
       } else if (target_blend > 0.5f && blend_speed_mph > threshold + hysteresis) {
@@ -628,7 +612,7 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
     double dt = (now - last_t) / 1000.0;
     last_t = now;
 
-    const float transition_time = 1.50f; // seconds for full morph
+    const float transition_time = 1.50f;
     float step = dt / transition_time;
 
     if (blend < target_blend) {
