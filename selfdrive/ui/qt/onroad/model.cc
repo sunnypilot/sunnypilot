@@ -646,17 +646,29 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   //   return clip_region.contains(*out);
   // }
 
-  // Blending mode
-  if (s->scene.visual_style_overhead_zoom == 1 && s->scene.visual_style != 0) {
+  if ((s->scene.visual_style_overhead == 1 || s->scene.visual_style_overhead == 2) && s->scene.visual_style != 0) {
     static float blend = 0.0f;        // 0 = 3D, 1 = 2D
     static float target_blend = 0.0f; // where we want to go
     static double last_t = millis_since_boot();
 
-    // Hysteresis logic
-    if (target_blend < 0.5f && blend_speed_mph > s->scene.visual_style_overhead_threshold) {
-      target_blend = 1.0f;  // switch to 2D
-    } else if (target_blend > 0.5f && blend_speed_mph < (s->scene.visual_style_overhead_threshold - 5)) {
-      target_blend = 0.0f;  // switch back to 3D
+    const bool inverted = (s->scene.visual_style_overhead == 2);
+    const float threshold = s->scene.visual_style_overhead_threshold;
+    const float hysteresis = 5.0f;
+
+    if (!inverted) {
+      // Normal: 3D → 2D as speed increases
+      if (target_blend < 0.5f && blend_speed_mph > threshold) {
+        target_blend = 1.0f;
+      } else if (target_blend > 0.5f && blend_speed_mph < threshold - hysteresis) {
+        target_blend = 0.0f;
+      }
+    } else {
+      // Inverted: 3D → 2D as speed decreases
+      if (target_blend < 0.5f && blend_speed_mph < threshold) {
+        target_blend = 1.0f;
+      } else if (target_blend > 0.5f && blend_speed_mph > threshold + hysteresis) {
+        target_blend = 0.0f;
+      }
     }
 
     // Time-based interpolation
