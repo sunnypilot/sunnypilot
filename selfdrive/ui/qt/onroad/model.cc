@@ -1,5 +1,4 @@
 #include "selfdrive/ui/qt/onroad/model.h"
-#include <QPainterPath>
 #include <algorithm>
 
 void ModelRenderer::drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius) {
