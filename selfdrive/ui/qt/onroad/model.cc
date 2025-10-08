@@ -580,7 +580,11 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
 }
 
 float mapRange(float x, float in_min, float in_max, float out_min, float out_max) {
-  x = std::clamp(x, in_min, in_max);
+  if (in_min < in_max) {
+    x = std::clamp(x, in_min, in_max);
+  } else {
+    x = std::clamp(x, in_max, in_min);
+  }
   return out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min);
 }
 
@@ -593,11 +597,18 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   // Normal perspective (3D)
   Eigen::Vector3f input(in_x, in_y, in_z);
 
-  if (s->scene.visual_style_zoom == 1 && s->scene.visual_style != 0) {
-    float IN_X_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 24.0f);
-    float IN_Y_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 1.0f, 2.0f);
-    float IN_Z_OFFSET = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 5.0f);
-    float PITCH_DEG = mapRange(blend_speed_mph, 20.0f, 50.0f, 0.0f, 5.0f);
+  if ((s->scene.visual_style_zoom == 1 || s->scene.visual_style_zoom == 2) && s->scene.visual_style != 0) {
+    float zoom_start = 20.0f;
+    float zoom_end   = 50.0f;
+
+    if (s->scene.visual_style_zoom == 2) {
+      std::swap(zoom_start, zoom_end);
+    }
+
+    float IN_X_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 24.0f);
+    float IN_Y_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 1.0f, 2.0f);
+    float IN_Z_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 5.0f);
+    float PITCH_DEG   = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 5.0f);
 
     input = Eigen::Vector3f(in_x + IN_X_OFFSET, in_y / IN_Y_OFFSET, in_z + IN_Z_OFFSET);
     Eigen::AngleAxisf pitch_rot(PITCH_DEG * M_PI / 180.0f, Eigen::Vector3f::UnitY());
