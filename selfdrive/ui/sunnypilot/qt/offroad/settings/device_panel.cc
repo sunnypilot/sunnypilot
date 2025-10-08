@@ -151,10 +151,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
       }
     }
     if (offroad and not params.getBool("OffroadMode")) {
-      RemoveWidgetAt(0);
       power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
     } else {
-      power_group_layout->removeWidget(offroadBtn);
       AddWidgetAt(0, offroadBtn);
     }
   });
