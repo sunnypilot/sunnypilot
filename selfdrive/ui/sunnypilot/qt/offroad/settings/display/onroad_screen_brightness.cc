@@ -15,6 +15,7 @@ OnroadScreenBrightnessControl::OnroadScreenBrightnessControl(const QString &para
   auto *mainFrameLayout = new QGridLayout();
   mainFrame->setLayout(mainFrameLayout);
   mainFrameLayout->setSpacing(0);
+  mainFrameLayout->setContentsMargins(0, 0, 0, 0);
 
   onroadScreenOffTimer = new OptionControlSP(
     "OnroadScreenOffTimer",
