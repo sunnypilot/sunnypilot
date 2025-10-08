@@ -142,7 +142,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     buttons["quietModeBtn"],
   };
 
-  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
       bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
 
@@ -150,11 +150,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
         btn->setEnabled(offroad);
       }
     }
-    if (offroad and not params.getBool("OffroadMode")) {
-      power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
-    } else {
-      AddWidgetAt(0, offroadBtn);
-    }
+    offroad = _offroad;
+    updateState();
   });
 }
 
@@ -219,5 +216,11 @@ void DevicePanelSP::updateState() {
     interactivityTimeout->setLabel("Default");
   } else {
     interactivityTimeout->setLabel(timeoutValue + "s");
+  }
+
+  if (offroad and not offroad_mode_param) {
+    power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
+  } else {
+    AddWidgetAt(0, offroadBtn);
   }
 }
