@@ -119,15 +119,6 @@ void HudRendererSP::updateState(const UIState &s) {
   leftBlinkerOn = car_state.getLeftBlinker();
   rightBlinkerOn = car_state.getRightBlinker();
   showTurnSignals = s.scene.turn_signals;
-
-  // Check for the LANE_CHANGE_BLOCKED Event
-  laneChangeBlocked = false;
-  for(const auto &event : sm["onroadEvents"].getOnroadEvents()) {
-    if(event.getName() == cereal::OnroadEvent::EventName::LANE_CHANGE_BLOCKED) {
-      laneChangeBlocked = true;
-      break;
-    }
-  }
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {

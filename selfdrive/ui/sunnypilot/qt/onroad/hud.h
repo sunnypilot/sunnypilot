@@ -111,5 +111,4 @@ private:
   bool rightBlinkerOn;
   int blinkerFrameCounter;
   bool showTurnSignals;
-  bool laneChangeBlocked;
 };
