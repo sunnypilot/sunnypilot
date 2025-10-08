@@ -219,19 +219,19 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
 
 
   // Visual Style Overhead Threshold
-  visual_style_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
+  visual_style_overhead_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
                                       tr("Adjust the threshold when overhead blend activates."),
                                       "", {10, 80}, 5, false, nullptr, false);
 
-  connect(visual_style_threshold_settings, &OptionControlSP::updateLabels, [=]() {
+  connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, [=]() {
     int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
-    visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+    visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
   });
 
   int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
-  visual_style_threshold_settings->setLabel(QString::number(value) + " mph");
+  visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
 
-  list->addItem(visual_style_threshold_settings);
+  list->addItem(visual_style_overhead_threshold_settings);
 
 
   // Visuals: Display Metrics below Chevron
