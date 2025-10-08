@@ -50,13 +50,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
-      "VisualWideCam",
-      tr("Force Wide Cam"),
-      tr("Forces the wide cam view regardless of experimental mode status."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
-    {
       "VisualFPS",
       tr("Show FPS Overlay"),
       tr("Display current and average FPS on screen for performance monitoring."),
@@ -129,6 +122,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     toggles[param.toStdString()] = toggle;
     param_watcher->addParam(param);
   }
+
+  // Visuals: Wide Cam
+  std::vector<QString> visual_wide_cam_settings_texts{tr("Auto"), tr("On"), tr("Off")};
+  visual_wide_cam_settings = new ButtonParamControlSP(
+    "VisualWideCam", tr("Wide Cam"), tr("Override the wide cam view regardless of experimental mode status."),
+    "",
+    visual_wide_cam_settings_texts,
+    250);
+  list->addItem(visual_wide_cam_settings);
 
   // Visuals: Visual Style
   std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision"), tr("Overhead")};
@@ -209,6 +211,9 @@ void VisualsPanel::paramsRefresh() {
   }
   if (dev_ui_settings) {
     dev_ui_settings->refresh();
+  }
+  if (visual_wide_cam_settings) {
+    visual_wide_cam_settings->refresh();
   }
   if (visual_style_settings) {
     visual_style_settings->refresh();
