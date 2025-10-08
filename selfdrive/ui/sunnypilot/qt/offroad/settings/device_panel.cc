@@ -23,6 +23,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     {"regulatoryBtn", tr("Regulatory"), ""},
     {"translateBtn", tr("Language"), ""},
     {"resetParams", tr("Reset Settings"), ""},
+    {"onroadUploadsBtn", tr("Onroad Uploads"), "OnroadUploads"}
   };
 
   int row = 0, col = 0;
@@ -74,6 +75,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   });
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
+
+  connect(buttons["onroadUploadsBtn"], &PushButtonSP::clicked, buttons["onroadUploadsBtn"], &PushButtonSP::updateButton);
 
   // Max Time Offroad
   maxTimeOffroad = new MaxTimeOffroad();
@@ -140,6 +143,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     poweroffBtn,
     offroadBtn,
     buttons["quietModeBtn"],
+    buttons["onroadUploadsBtn"],
   };
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
