@@ -82,7 +82,14 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       tr("When enabled, the speedometer on the onroad screen is not displayed."),
       "",
       false,
-    }
+    },
+    {
+      "ShowTurnSignals",
+      tr("Display Turn Signals"),
+      tr("When enabled, visual turn indicators are drawn on the HUD."),
+      "",
+      false,
+    },
   };
 
   // Add regular toggles first
