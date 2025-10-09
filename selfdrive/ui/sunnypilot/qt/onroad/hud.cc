@@ -247,7 +247,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     }
 
     // Blinker
-    if(showTurnSignals) {
+    if (showTurnSignals) {
       drawBlinker(p, surface_rect);
     }
   }
@@ -765,13 +765,12 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
-  if(!leftBlinkerOn && !rightBlinkerOn) {
+  if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
     return;
   }
   blinkerFrameCounter++;
 
-  // Some Settings
   const int circleRadius = 44;
   const int arrowLength  = 44;
   const int x_gap = 180;
@@ -786,59 +785,52 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
 
   // Arrow Style - Red if blocked
   QColor arrowColor = laneChangeBlocked ? QColor(66, 12, 12) : QColor(12, 67, 34);
-  if(pulseElement(blinkerFrameCounter)) {
+  if (pulseElement(blinkerFrameCounter)) {
     arrowColor = Qt::white;
   }
   QPen arrowPen(Qt::NoPen);
   QBrush arrowBrush(arrowColor);
 
-  // Some Lambdas for the Circle..
+  p.save();
+
   auto drawCircle = [&](int cx, int cy) {
     p.setPen(bgBorder);
     p.setBrush(bgColor);
     p.drawEllipse(QPoint(cx, cy), circleRadius, circleRadius);
   };
 
-  // ..and Arrow
-  auto drawArrow = [&](int cx, int cy, bool left) {
-    QPolygon arrow;
+  auto drawArrow = [&](int cx, int cy, int dir) {
     int bodyLength = arrowLength / 2;
-    int bodyWidth = arrowLength / 2;
+    int bodyWidth  = arrowLength / 2;
     int headLength = arrowLength / 2;
-    int headWidth = arrowLength;
+    int headWidth  = arrowLength;
 
-    if (left) {
-        arrow << QPoint(cx + bodyLength,  cy - bodyWidth / 2)
-              << QPoint(cx,               cy - bodyWidth / 2)
-              << QPoint(cx,               cy - headWidth / 2)
-              << QPoint(cx - headLength,  cy                )
-              << QPoint(cx,               cy + headWidth / 2)
-              << QPoint(cx,               cy + bodyWidth / 2)
-              << QPoint(cx + bodyLength,  cy + bodyWidth / 2);
-    } else {
-        arrow << QPoint(cx - bodyLength,  cy - bodyWidth / 2)
-              << QPoint(cx,               cy - bodyWidth / 2)
-              << QPoint(cx,               cy - headWidth / 2)
-              << QPoint(cx + headLength,  cy                )
-              << QPoint(cx,               cy + headWidth / 2)
-              << QPoint(cx,               cy + bodyWidth / 2)
-              << QPoint(cx - bodyLength,  cy + bodyWidth / 2);
-    }
+    QPolygon arrow;
+    arrow << QPoint(cx - dir * bodyLength, cy - bodyWidth / 2)
+          << QPoint(cx,                     cy - bodyWidth / 2)
+          << QPoint(cx,                     cy - headWidth / 2)
+          << QPoint(cx + dir * headLength,  cy)
+          << QPoint(cx,                     cy + headWidth / 2)
+          << QPoint(cx,                     cy + bodyWidth / 2)
+          << QPoint(cx - dir * bodyLength,  cy + bodyWidth / 2);
 
-      p.setPen(arrowPen);
-      p.setBrush(arrowBrush);
-      p.drawPolygon(arrow);
+    p.setPen(arrowPen);
+    p.setBrush(arrowBrush);
+    p.drawPolygon(arrow);
   };
 
-  // Draw Left
-  if (leftBlinkerOn) {
-    drawCircle(surface_rect.center().x() - x_gap, y_offset);
-    drawArrow(surface_rect.center().x() - x_gap, y_offset, true);
+  // Draw blinkers
+  std::vector<std::pair<bool, int>> blinkers = {
+    {leftBlinkerOn,  -1},
+    {rightBlinkerOn,  1}
+  };
+
+  for (const auto &[on, dir] : blinkers) {
+    if (!on) continue;
+    int cx = surface_rect.center().x() + dir * x_gap;
+    drawCircle(cx, y_offset);
+    drawArrow(cx, y_offset, dir);
   }
 
-  // Draw Right
-  if (rightBlinkerOn) {
-      drawCircle(surface_rect.center().x() + x_gap, y_offset);
-      drawArrow(surface_rect.center().x() + x_gap, y_offset, false);
-  }
+  p.restore();
 }
