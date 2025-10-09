@@ -119,6 +119,7 @@ void HudRendererSP::updateState(const UIState &s) {
   // override stock current speed values
   float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
   speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
+  hideVEgoUI = s.scene.hideVEgoUI;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -132,6 +133,10 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawSetSpeedSP(p, surface_rect);
   }
   drawCurrentSpeedSP(p, surface_rect);
+
+  if (!hideVEgoUI) {
+    drawCurrentSpeedSP(p, surface_rect);
+  }
 
   if (!reversing) {
     // Smart Cruise Control
