@@ -86,5 +86,28 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
   } else {
     // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height());
+
+    rocketFuel(painter, surface_rect);
+
+
   }
+}
+
+void ModelRendererSP::rocketFuel(QPainter &p, const QRect &surface_rect) {
+  UIState *s = uiState();
+  float accel = (*s->sm)["carControl"].getCarControl().getActuators().getAccel();
+  int widgetHeight = surface_rect.height();
+  float halfHeightAbs = std::abs(accel) * widgetHeight / 2.0f;
+  const float scannerWidth = 15;
+  QRect scannerRect;
+
+  if (accel > 0) {
+    p.setBrush(QColor(0, 245, 0, 200));
+    scannerRect = QRect(0, widgetHeight / 2 - halfHeightAbs, scannerWidth, halfHeightAbs);
+  } else {
+    p.setBrush(QColor(245, 0, 0, 200));
+    scannerRect = QRect(0, widgetHeight / 2, scannerWidth, halfHeightAbs);
+  }
+
+  p.drawRect(scannerRect);
 }
