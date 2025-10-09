@@ -25,6 +25,7 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
   auto *s = uiState();
   auto &sm = *(s->sm);
   bool blindspot = Params().getBool("BlindSpot");
+  bool rocketfuel = Params().getBool("RocketFuel");
 
   if (blindspot) {
     bool left_blindspot = sm["carState"].getCarState().getLeftBlindspot();
@@ -87,7 +88,9 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
     // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height());
 
-    rocketFuel(painter, surface_rect);
+    if (rocketfuel) {
+      rocketFuel(painter, surface_rect);
+    }
 
 
   }
