@@ -51,8 +51,8 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
   if (is_cruise_available) {
     drawSetSpeed(p, surface_rect);
   }
-#endif
   drawCurrentSpeed(p, surface_rect);
+#endif
 
   p.restore();
 }
