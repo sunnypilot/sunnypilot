@@ -218,15 +218,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     "VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
     tr("Sets the speed (in mph) where the display transitions between normal and overhead view."),
     "", {10, 80}, 5, false, nullptr, false);
-
-  connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, [=]() {
-    int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
-    visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
-  });
-
-  int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
-  visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
-
+  auto updateThresholdLabel = [=]() {
+    int mph = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+    visual_style_overhead_threshold_settings->setLabel(QString("%1 mph").arg(mph));
+  };
+  connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, updateThresholdLabel);
+  updateThresholdLabel();
   list->addItem(visual_style_overhead_threshold_settings);
 
   // Visuals: Display Metrics below Chevron
