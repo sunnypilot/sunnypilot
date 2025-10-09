@@ -79,6 +79,8 @@ if __name__ == "__main__":
 
   if not args.new_ver:
     print("Warning: No new mapd version provided. Use --new_ver to specify")
+    print("Example:")
+    print("  python sunnypilot/mapd/update_version.py --new_ver \"v1.12.0\"")
     print("Current mapd version and hash will not be updated! (aborted)")
     exit(0)
 
