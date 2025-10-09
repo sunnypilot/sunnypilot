@@ -21,8 +21,6 @@ HudRendererSP::HudRendererSP() {
   green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
   lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
   lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
-
-  standstillTimerOctagon.reserve(8);
 }
 
 void HudRendererSP::updateState(const UIState &s) {
@@ -187,11 +185,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       drawRightDevUI(p, surface_rect.right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rect_right.height());
     }
 
-    // Standstill Timer
-    if (standstillTimer) {
-      drawStandstillTimer(p, surface_rect.right() / 12 * 10, surface_rect.bottom() / 12 * 1.53);
-    }
-
     // Speed Limit
     bool showSpeedLimit;
     bool speed_limit_assist_pre_active_pulse = pulseElement(speedLimitAssistFrame);
@@ -242,7 +235,20 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
         alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
       }
       drawE2eAlert(p, surface_rect);
-    } else {
+    }
+    // Standstill Timer
+    else if (standstillTimer && isStandstill) {
+      alert_img = QPixmap();
+
+      standstillElapsedTime += 1.0 / UI_FREQ;
+      int minute = static_cast<int>(standstillElapsedTime / 60);
+      int second = static_cast<int>(standstillElapsedTime - (minute * 60));
+      alert_text = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
+      drawE2eAlert(p, surface_rect, tr("STOPPED"));
+      e2eAlertFrame++;
+    }
+    // No Alerts displayed
+    else {
       e2eAlertFrame = 0;
     }
 
@@ -405,40 +411,6 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
 
   UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
-}
-
-void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
-  if (isStandstill) {
-    standstillElapsedTime += 1.0 / UI_FREQ;
-
-    int minute = static_cast<int>(standstillElapsedTime / 60);
-    int second = static_cast<int>(standstillElapsedTime - (minute * 60));
-
-    // stop sign for standstill timer
-    const int size = 190;  // size
-    const float angle = M_PI / 8.0f;
-
-    standstillTimerOctagon.clear();
-    for (int i = 0; i < 8; i++) {
-      float curr_angle = angle + i * M_PI / 4.0f;
-      int point_x = x + size / 2 * cos(curr_angle);
-      int point_y = y + size / 2 * sin(curr_angle);
-      standstillTimerOctagon << QPoint(point_x, point_y);
-    }
-
-    p.setPen(QPen(Qt::white, 6));
-    p.setBrush(QColor(255, 90, 81, 200)); // red pastel
-    p.drawPolygon(standstillTimerOctagon);
-
-    QString time_str = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
-    p.setFont(InterFont(55, QFont::Bold));
-    p.setPen(Qt::white);
-    QRect timerTextRect = p.fontMetrics().boundingRect(QString(time_str));
-    timerTextRect.moveCenter({x, y});
-    p.drawText(timerTextRect, Qt::AlignCenter, QString(time_str));
-  } else {
-    standstillElapsedTime = 0.0;
-  }
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
@@ -723,7 +695,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 }
 
-void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
+void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
   int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
   int y = surface_rect.center().y() + 40;
@@ -733,25 +705,49 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
 
   // Alert Circle
   QPoint center = alertRect.center();
-  QColor frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
+  QColor frameColor;
+  if (not alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
+  else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
   p.drawEllipse(center, size, size);
 
   // Alert Text
-  QColor txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 255);
-  p.setFont(InterFont(48, QFont::Bold));
+  QColor txtColor;
+  QFont font;
+  int alert_bottom_adjustment;
+  if (not alert_alt_text.isEmpty()) {
+    font = InterFont(100, QFont::Bold);
+    alert_bottom_adjustment = 5;
+    txtColor = QColor(255, 255, 255, 255);
+  } else {
+    font = InterFont(48, QFont::Bold);
+    alert_bottom_adjustment = 7;
+    txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 190);
+  }
   p.setPen(txtColor);
+  p.setFont(font);
   QFontMetrics fm(p.font());
   QRect textRect = fm.boundingRect(alertRect, Qt::TextWordWrap, alert_text);
   textRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
-  textRect.moveBottom(alertRect.bottom() - alertRect.height() / 7);
+  textRect.moveBottom(alertRect.bottom() - alertRect.height() / alert_bottom_adjustment);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
-  // Alert Image
-  QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
-  QPointF drawPoint = center - pixmapCenterOffset;
-  p.drawPixmap(drawPoint, alert_img);
+  if (not alert_alt_text.isEmpty()) {
+    // Alert Alternate Text
+    p.setFont(InterFont(80, QFont::Bold));
+    p.setPen(QColor(255, 175, 3, 240));
+    QFontMetrics fmt(p.font());
+    QRect topTextRect = fmt.boundingRect(alertRect, Qt::TextWordWrap, alert_alt_text);
+    topTextRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
+    topTextRect.moveTop(alertRect.top() + alertRect.height() / 3.5);
+    p.drawText(topTextRect, Qt::AlignCenter, alert_alt_text);
+  } else {
+    // Alert Image instead of Top Text
+    QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
+    QPointF drawPoint = center - pixmapCenterOffset;
+    p.drawPixmap(drawPoint, alert_img);
+  }
 }
 
 void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
