@@ -75,6 +75,7 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
   s->scene.road_name = params.getBool("RoadNameToggle");
+  s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
   s->scene.visual_style = QString::fromStdString(params.get("VisualStyle")).toInt();
   s->scene.visual_style_zoom = QString::fromStdString(params.get("VisualStyleZoom")).toInt();
   s->scene.visual_style_overhead = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
