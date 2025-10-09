@@ -29,6 +29,8 @@ protected:
  ParamWatcher * param_watcher;
  ButtonParamControlSP *chevron_info_settings;
  ButtonParamControlSP *dev_ui_settings;
+ int visual_style_value = 0;
+ int visual_style_overhead_value = 0;
  OptionControlSP *visual_radar_tracks_delay_settings;
  ButtonParamControlSP *visual_wide_cam_settings;
  ButtonParamControlSP *visual_style_settings;

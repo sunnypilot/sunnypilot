@@ -12,13 +12,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
     paramsRefresh();
     if (param_name == "VisualStyle") {
-      visual_style_zoom_settings->setVisible(param_value.toInt() != 0);
-      visual_style_overhead_settings->setVisible(param_value.toInt() != 0);
-      visual_style_overhead_zoom_settings->setVisible(param_value.toInt() != 0);
-      visual_style_overhead_threshold_settings->setVisible(param_value.toInt() != 0);
+      visual_style_value = param_value.toInt();
+      visual_style_zoom_settings->setVisible(visual_style_value != 0);
+      visual_style_overhead_settings->setVisible(visual_style_value != 0);
+      visual_style_overhead_zoom_settings->setVisible(visual_style_value != 0);
+      visual_style_overhead_threshold_settings->setVisible(visual_style_value != 0);
     } else if (param_name == "VisualStyleOverhead") {
-      visual_style_overhead_zoom_settings->setVisible(param_value.toInt() != 0);
-      visual_style_overhead_threshold_settings->setVisible(param_value.toInt() != 0);
+      visual_style_overhead_value = param_value.toInt();
+      visual_style_overhead_zoom_settings->setVisible(visual_style_overhead_value != 0);
+      visual_style_overhead_threshold_settings->setVisible(visual_style_overhead_value != 0);
     }
   });
 
