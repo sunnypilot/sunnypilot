@@ -586,8 +586,8 @@ bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out
   );
 
   if ((s->scene.visual_style_overhead == 1 || s->scene.visual_style_overhead == 2) && s->scene.visual_style != 0) {
-    static float blend = 0.0f;        // 0 = 3D, 1 = 2D
-    static float target_blend = 0.0f; // where we want to go
+    static float blend = 0.0f;
+    static float target_blend = 0.0f;
     static double last_t = millis_since_boot();
 
     const bool inverted = (s->scene.visual_style_overhead == 2);
