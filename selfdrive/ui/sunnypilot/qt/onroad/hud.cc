@@ -132,7 +132,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   if (is_cruise_available) {
     drawSetSpeedSP(p, surface_rect);
   }
-  drawCurrentSpeedSP(p, surface_rect);
 
   if (!hideVEgoUI) {
     drawCurrentSpeedSP(p, surface_rect);
