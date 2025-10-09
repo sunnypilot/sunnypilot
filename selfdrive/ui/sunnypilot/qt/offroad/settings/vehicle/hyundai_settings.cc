@@ -8,6 +8,19 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
 
 HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(parent) {
+
+  std::vector<QString> custom_btn_texts{ tr("Off"), tr("Bookmark") };
+  customButtonMapping = new ButtonParamControlSP(
+    "SteeringCustomButtonMapping",
+    tr("Steering Custom ☆ Button"),
+    tr("Customize the steering wheel custom/star button for openpilot control.\n"
+       "This will not disable OEM functionality."),
+    "",
+    custom_btn_texts,
+    300
+  );
+  list->addItem(customButtonMapping);
+
   std::vector<QString> tuning_texts{ tr("Off"), tr("Dynamic"), tr("Predictive") };
   longitudinalTuningToggle = new ButtonParamControl(
     "HyundaiLongitudinalTuning",
@@ -36,6 +49,18 @@ void HyundaiSettings::updateSettings() {
     has_longitudinal_control = false;
   }
 
+  auto cp_sp_bytes = params.get("CarParamsSPPersistent");
+  if (!cp_sp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_sp_bytes.data(), cp_sp_bytes.size()));
+    cereal::CarParamsSP::Reader CP_SP = cmsg.getRoot<cereal::CarParamsSP>();
+
+    // TODO-SP: Better way to get the flag value in qt?
+    has_custom_button = CP_SP.getFlags() & 512; // 512 = HAS_CUSTOM_BUTTON (2 ** 9)
+  } else {
+    has_custom_button = false;
+  }
+
   LongitudinalTuningOption longitudinal_tuning_option;
   if (longitudinal_tuning_param == int(LongitudinalTuningOption::PREDICTIVE)) {
     longitudinal_tuning_option = LongitudinalTuningOption::PREDICTIVE;
@@ -54,4 +79,6 @@ void HyundaiSettings::updateSettings() {
   longitudinalTuningToggle->setEnabled(!longitudinal_tuning_disabled);
   longitudinalTuningToggle->setDescription(longitudinal_tuning_description);
   longitudinalTuningToggle->showDescription();
+
+  customButtonMapping->setVisible(has_custom_button);
 }
