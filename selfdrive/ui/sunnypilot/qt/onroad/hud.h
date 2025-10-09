@@ -37,6 +37,7 @@ private:
   void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
   void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
   void drawE2eAlert(QPainter &p, const QRect &surface_rect);
+  void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -106,4 +107,5 @@ private:
   QPixmap lead_depart_alert_large_img;
   QString alert_text;
   QPixmap alert_img;
+  bool hideVEgoUI;
 };

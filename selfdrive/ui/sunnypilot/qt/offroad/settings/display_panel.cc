@@ -18,9 +18,9 @@ DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
   // Onroad Screen Off/Brightness
   onroadScreenBrightnessControl = new OnroadScreenBrightnessControl(
     "OnroadScreenOffControl",
-    tr("Driving Screen Off: Non-Critical Events"),
+    tr("Onroad Screen: Reduced Brightness"),
     tr("Turn off device screen or reduce brightness after driving starts. "
-       "It automatically brightens again when screen is touched or a critical event occurs."),
+       "It automatically brightens again when screen is touched or a visible alert is displayed."),
     "",
     this);
   list->addItem(onroadScreenBrightnessControl);

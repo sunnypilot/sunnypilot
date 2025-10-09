@@ -115,6 +115,11 @@ void HudRendererSP::updateState(const UIState &s) {
 
   greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
   leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
+
+  // override stock current speed values
+  float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
+  speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
+  hideVEgoUI = s.scene.hideVEgoUI;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -126,6 +131,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
 
   if (is_cruise_available) {
     drawSetSpeedSP(p, surface_rect);
+  }
+  drawCurrentSpeedSP(p, surface_rect);
+
+  if (!hideVEgoUI) {
+    drawCurrentSpeedSP(p, surface_rect);
   }
 
   if (!reversing) {
@@ -730,4 +740,14 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
   QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
   QPointF drawPoint = center - pixmapCenterOffset;
   p.drawPixmap(drawPoint, alert_img);
+}
+
+void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
+  QString speedStr = QString::number(std::nearbyint(speed));
+
+  p.setFont(InterFont(176, QFont::Bold));
+  HudRenderer::drawText(p, surface_rect.center().x(), 210, speedStr);
+
+  p.setFont(InterFont(66));
+  HudRenderer::drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
 }
