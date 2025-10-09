@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+ *
+ * This file is part of sunnypilot and is licensed under the MIT License.
+ * See the LICENSE.md file in the root directory for more details.
+ */
+
 #include "selfdrive/ui/sunnypilot/qt/onroad/alerts.h"
 
 #include <QPainter>
@@ -11,6 +18,7 @@ OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t start
   alert.text2.replace("openpilot", "sunnypilot");
   return alert;
 }
+
 void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
   if (alert.size == cereal::SelfdriveState::AlertSize::NONE) {
     return;
@@ -41,18 +49,24 @@ void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
   if (alert.size == cereal::SelfdriveState::AlertSize::SMALL) {
     topFont = InterFont(74, QFont::DemiBold);
     QFontMetrics fmTop(topFont);
-    topTextBoundingRect = fmTop.boundingRect(QRect(0 + margin, height() - h + margin - v_adjustment, width() - margin*2 - h_adjustment, 0), Qt::TextWordWrap, alert.text1);
+    topTextBoundingRect = fmTop.boundingRect(
+      QRect(0 + margin, height() - h + margin - v_adjustment, width() - margin * 2 - h_adjustment, 0), Qt::TextWordWrap,
+      alert.text1);
     h = topTextBoundingRect.height();
-    rect = QRect(0 + margin, height() - h - margin*2 - v_adjustment, width() - margin*2 - h_adjustment, h + margin);
+    rect = QRect(0 + margin, height() - h - margin * 2 - v_adjustment, width() - margin * 2 - h_adjustment, h + margin);
   } else if (alert.size == cereal::SelfdriveState::AlertSize::MID) {
     topFont = InterFont(88, QFont::Bold);
     bottomFont = InterFont(66);
     QFontMetrics fmTop(topFont);
     QFontMetrics fmBotton(bottomFont);
-    topTextBoundingRect = fmTop.boundingRect(QRect(0 + margin, height() - h + margin - v_adjustment, width() - margin*2 - h_adjustment, 0), Qt::TextWordWrap, alert.text1);
-    bottomTextBoundingRect = fmBotton.boundingRect(QRect(0 + margin, height() - h + margin - v_adjustment + topTextBoundingRect.height(), width() - margin*2 - h_adjustment, 0), Qt::TextWordWrap, alert.text2);
-    h = topTextBoundingRect.height() + bottomTextBoundingRect.height() + margin*2;
-    rect = QRect(0 + margin, height() - h - margin*2 - v_adjustment, width() - margin*2 - h_adjustment, h + margin);
+    topTextBoundingRect = fmTop.boundingRect(
+      QRect(0 + margin, height() - h + margin - v_adjustment, width() - margin * 2 - h_adjustment, 0), Qt::TextWordWrap,
+      alert.text1);
+    bottomTextBoundingRect = fmBotton.boundingRect(
+      QRect(0 + margin, height() - h + margin - v_adjustment + topTextBoundingRect.height(),
+            width() - margin * 2 - h_adjustment, 0), Qt::TextWordWrap, alert.text2);
+    h = topTextBoundingRect.height() + bottomTextBoundingRect.height() + margin * 2;
+    rect = QRect(0 + margin, height() - h - margin * 2 - v_adjustment, width() - margin * 2 - h_adjustment, h + margin);
   }
 
 
@@ -82,6 +96,7 @@ void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
     QRect topText = QRect(rect.x(), rect.top() + margin, rect.width(), topTextBoundingRect.height());
     p.drawText(topText, Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap | Qt::AlignCenter, alert.text1);
     p.setFont(bottomFont);
-    p.drawText(QRect(rect.x(), topText.bottom() + margin, rect.width(), bottomTextBoundingRect.height()), Qt::AlignHCenter | Qt::TextWordWrap | Qt::AlignCenter, alert.text2);
+    p.drawText(QRect(rect.x(), topText.bottom() + margin, rect.width(), bottomTextBoundingRect.height()),
+               Qt::AlignHCenter | Qt::TextWordWrap | Qt::AlignCenter, alert.text2);
   }
 }
