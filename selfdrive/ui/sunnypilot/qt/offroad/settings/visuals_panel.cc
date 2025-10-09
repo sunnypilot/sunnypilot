@@ -143,7 +143,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_settings_texts,
     380);
   list->addItem(visual_style_settings);
-  param_watcher->addParam("VisualStyle");
 
   // Visual Style Zoom
   std::vector<QString> visual_style_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
@@ -153,7 +152,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_zoom_settings_texts,
     380);
   list->addItem(visual_style_zoom_settings);
-  visual_style_zoom_settings->setVisible(QString::fromStdString(params.get("VisualStyle")).toInt() != 0);
 
   // Visual Style Overhead
   std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
@@ -163,8 +161,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_overhead_settings_texts,
     380);
   list->addItem(visual_style_overhead_settings);
-  param_watcher->addParam("VisualStyleOverhead");
-  visual_style_overhead_settings->setVisible(QString::fromStdString(params.get("VisualStyle")).toInt() != 0);
 
   // Visual Style Overhead Zoom
   std::vector<QString> visual_style_overhead_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
@@ -174,10 +170,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_overhead_zoom_settings_texts,
     380);
   list->addItem(visual_style_overhead_zoom_settings);
-  visual_style_overhead_zoom_settings->setVisible(
-    QString::fromStdString(params.get("VisualStyle")).toInt() != 0 &&
-    QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0
-  );
 
   // Visual Style Overhead Threshold
   visual_style_overhead_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
@@ -193,10 +185,6 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
 
   list->addItem(visual_style_overhead_threshold_settings);
-  visual_style_overhead_threshold_settings->setVisible(
-    QString::fromStdString(params.get("VisualStyle")).toInt() != 0 &&
-    QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0
-  );
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
@@ -217,6 +205,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     dev_ui_settings_texts,
     380);
   list->addItem(dev_ui_settings);
+
+  visual_style_value = QString::fromStdString(params.get("VisualStyle")).toInt();
+  visual_style_overhead_value = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
+  visual_style_zoom_settings->setVisible(visual_style_value != 0);
+  visual_style_overhead_settings->setVisible(visual_style_value != 0);
+  visual_style_overhead_zoom_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
+  visual_style_overhead_threshold_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
+  param_watcher->addParam("VisualStyle");
+  param_watcher->addParam("VisualStyleOverhead");
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
