@@ -174,8 +174,10 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     visual_style_overhead_zoom_settings_texts,
     380);
   list->addItem(visual_style_overhead_zoom_settings);
-  visual_style_overhead_zoom_settings->setVisible(QString::fromStdString(params.get("VisualStyle")).toInt() != 0);
-  visual_style_overhead_zoom_settings->setVisible(QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0);
+  visual_style_overhead_zoom_settings->setVisible(
+    QString::fromStdString(params.get("VisualStyle")).toInt() != 0 &&
+    QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0
+  );
 
   // Visual Style Overhead Threshold
   visual_style_overhead_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
@@ -191,8 +193,10 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   visual_style_overhead_threshold_settings->setLabel(QString::number(value) + " mph");
 
   list->addItem(visual_style_overhead_threshold_settings);
-  visual_style_overhead_threshold_settings->setVisible(QString::fromStdString(params.get("VisualStyle")).toInt() != 0);
-  visual_style_overhead_threshold_settings->setVisible(QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0);
+  visual_style_overhead_threshold_settings->setVisible(
+    QString::fromStdString(params.get("VisualStyle")).toInt() != 0 &&
+    QString::fromStdString(params.get("VisualStyleOverhead")).toInt() != 0
+  );
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
