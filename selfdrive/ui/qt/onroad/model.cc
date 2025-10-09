@@ -210,9 +210,9 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
     }
 
     QLinearGradient bgGrad(r.left(), horizonY - 100, r.left(), horizonY + 100);
-    bgGrad.setColorAt(0.0, QColor("#000000"));  // top of band
-    bgGrad.setColorAt(0.5, QColor("#111111"));  // middle blend
-    bgGrad.setColorAt(1.0, QColor("#111111"));  // bottom of band
+    bgGrad.setColorAt(0.0, QColor("#000000"));
+    bgGrad.setColorAt(0.5, QColor("#111111"));
+    bgGrad.setColorAt(1.0, QColor("#111111"));
     painter.fillRect(QRectF(r.left(), horizonY - 200, r.width(), 200), bgGrad);
 
   } else {
@@ -533,9 +533,8 @@ float mapRange(float x, float in_min, float in_max, float out_min, float out_max
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  float blend_speed_mph = fabsf(sm["carState"].getCarState().getVEgo() * 2.23694f);  // convert to mph
+  float blend_speed_mph = fabsf(sm["carState"].getCarState().getVEgo() * 2.23694f);
 
-  // Normal perspective (3D)
   Eigen::Vector3f input(in_x, in_y, in_z);
 
   if ((s->scene.visual_style_zoom == 1 || s->scene.visual_style_zoom == 2) && s->scene.visual_style != 0) {
