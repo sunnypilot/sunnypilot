@@ -148,20 +148,28 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"DevUIInfo", {PERSISTENT | BACKUP, INT, "0"}},
     {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
+    {"GreenLightAlert", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
+    {"HideVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"IntelligentCruiseButtonManagement", {PERSISTENT | BACKUP , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
     {"LastGPSPositionLLK", {PERSISTENT, STRING}},
+    {"LeadDepartAlert", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"MaxTimeOffroad", {PERSISTENT | BACKUP, INT, "1800"}},
     {"ModelRunnerTypeCache", {CLEAR_ON_ONROAD_TRANSITION, INT}},
     {"OffroadMode", {CLEAR_ON_MANAGER_START, BOOL}},
     {"Offroad_TiciSupport", {CLEAR_ON_MANAGER_START, JSON}},
+    {"OnroadScreenOffBrightness", {PERSISTENT | BACKUP, INT, "100"}},
+    {"OnroadScreenOffControl", {PERSISTENT | BACKUP, BOOL}},
+    {"OnroadScreenOffTimer", {PERSISTENT | BACKUP, INT, "0"}},
+    {"OnroadUploads", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"QuickBootToggle", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"TrueVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
@@ -187,7 +195,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SunnylinkCache_Users", {PERSISTENT, STRING}},
     {"SunnylinkDongleId", {PERSISTENT, STRING}},
     {"SunnylinkdPid", {PERSISTENT, INT}},
-    {"SunnylinkEnabled", {PERSISTENT, BOOL}},
+    {"SunnylinkEnabled", {PERSISTENT, BOOL, "1"}},
 
     // Backup Manager params
     {"BackupManager_CreateBackup", {PERSISTENT, BOOL}},
@@ -238,4 +246,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"MapTargetVelocities", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
     {"SmartCruiseControlMap", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
+
+    // Torque lateral control custom params
+    {"CustomTorqueParams", {PERSISTENT | BACKUP , BOOL}},
+    {"EnforceTorqueControl", {PERSISTENT | BACKUP, BOOL}},
+    {"LiveTorqueParamsToggle", {PERSISTENT | BACKUP , BOOL}},
+    {"LiveTorqueParamsRelaxedToggle", {PERSISTENT | BACKUP , BOOL}},
+    {"TorqueParamsOverrideEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"TorqueParamsOverrideFriction", {PERSISTENT | BACKUP, FLOAT, "0.1"}},
+    {"TorqueParamsOverrideLatAccelFactor", {PERSISTENT | BACKUP, FLOAT, "2.5"}},
 };

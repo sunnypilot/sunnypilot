@@ -124,7 +124,7 @@ class Car:
 
     self.CP.alternativeExperience = 0
     # mads
-    set_alternative_experience(self.CP, self.params)
+    set_alternative_experience(self.CP, self.CP_SP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
 
     # Dynamic Experimental Control
