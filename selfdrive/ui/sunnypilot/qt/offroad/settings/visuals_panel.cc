@@ -82,6 +82,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       tr("When enabled, the speedometer on the onroad screen is not displayed."),
       "",
       false,
+    },
+    {
+      "RocketFuel",
+      tr("Show Rocket Fuel Bar"),
+      tr("Show a indicator on the left side of the screen to indicate acceleration and braking."),
+      "",
+      false,
     }
   };
 
