@@ -90,6 +90,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
+    {
+      "RocketFuel",
+      tr("Show Rocket Fuel Bar"),
+      tr("Show a indicator on the left side of the screen to indicate acceleration and braking."),
+      "",
+      false,
+    }
   };
 
   // Add regular toggles first
