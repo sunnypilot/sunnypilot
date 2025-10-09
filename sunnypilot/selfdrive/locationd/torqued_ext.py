@@ -13,7 +13,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
-RELAXED_MIN_BUCKET_POINTS = np.array([0, 200, 300, 500, 500, 300, 200, 0])
+RELAXED_MIN_BUCKET_POINTS = np.array([1, 200, 300, 500, 500, 300, 200, 1])
 
 ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
 

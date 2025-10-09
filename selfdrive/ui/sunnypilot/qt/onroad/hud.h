@@ -69,6 +69,7 @@ private:
   bool standstillTimer;
   bool isStandstill;
   float standstillElapsedTime;
+  QPolygon standstillTimerOctagon;
   bool longOverride;
   bool smartCruiseControlVisionEnabled;
   bool smartCruiseControlVisionActive;
