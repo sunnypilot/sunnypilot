@@ -22,6 +22,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/locations_fetcher.h"
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "system/hardware/hw.h"
 
@@ -76,6 +77,7 @@ private:
   void updateDownloadProgress();
   static int extractIntFromJson(const QJsonObject &json, const QString &key);
   QString processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject &json, bool failed_state);
+  QString search(const QString &query, const QStringList &list, const QString &prompt_text);
 
   ConfirmationDialog *confirmationDialog;
   LabelControlSP *mapdVersion;
