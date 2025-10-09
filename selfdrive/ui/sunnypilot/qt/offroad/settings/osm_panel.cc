@@ -7,7 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm_panel.h"
 
-
 #include <tuple>
 #include <vector>
 #include <string>
