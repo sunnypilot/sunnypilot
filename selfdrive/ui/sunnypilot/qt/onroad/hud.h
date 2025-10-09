@@ -37,6 +37,7 @@ private:
   void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
   void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
   void drawE2eAlert(QPainter &p, const QRect &surface_rect);
+  void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
