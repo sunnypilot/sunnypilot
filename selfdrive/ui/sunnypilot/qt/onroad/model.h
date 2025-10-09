@@ -24,7 +24,7 @@ private:
                                 const QPointF &chevron_pos,
                                 int height, int width,
                                 const QString &label);
-
+  void rocketFuel(QPainter &p, const QRect &surface_rect);
   QPolygonF left_blindspot_vertices;
   QPolygonF right_blindspot_vertices;
 
