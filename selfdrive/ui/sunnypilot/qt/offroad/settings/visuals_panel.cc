@@ -15,6 +15,9 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       visual_style_value = param_value.toInt();
     } else if (param_name == "VisualStyleOverhead") {
       visual_style_overhead_value = param_value.toInt();
+    } else if (param_name == "VisualRadarTracks") {
+      bool radar_tracks_enabled = param_value.toInt() != 0;
+      visual_radar_tracks_delay_settings->setVisible(radar_tracks_enabled);
     }
     visual_style_zoom_settings->setVisible(visual_style_value != 0);
     visual_style_overhead_settings->setVisible(visual_style_value != 0);
@@ -245,6 +248,10 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     dev_ui_settings_texts,
     380);
   list->addItem(dev_ui_settings);
+
+  bool radar_tracks_enabled = QString::fromStdString(params.get("VisualRadarTracks")).toInt() != 0;
+  visual_radar_tracks_delay_settings->setVisible(radar_tracks_enabled);
+  param_watcher->addParam("VisualRadarTracks");
 
   visual_style_value = QString::fromStdString(params.get("VisualStyle")).toInt();
   visual_style_overhead_value = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
