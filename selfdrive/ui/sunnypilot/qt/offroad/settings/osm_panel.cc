@@ -7,11 +7,13 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm_panel.h"
 
+
 #include <tuple>
 #include <vector>
 #include <string>
 
 #include "common/swaglog.h"
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
@@ -99,7 +101,7 @@ ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
       if (!selection.isEmpty()) {
         params.put("OsmLocal", "1");
         params.put("OsmLocationTitle", selection.toStdString());
-        for (auto& loc : locations) {
+        for (auto &loc: locations) {
           if (std::get<0>(loc) == selection) {
             params.put("OsmLocationName", std::get<1>(loc).toStdString());
             break;
@@ -109,7 +111,7 @@ ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
           usStatesBtn->click();
           return;
         }
-        else if (selection != "== None ==") {
+        if (selection != "== None ==") {
           if (showConfirmationDialog(parent)) {
             osm_download_in_progress = true;
             params.putBool("OsmDbUpdatesCheck", true);

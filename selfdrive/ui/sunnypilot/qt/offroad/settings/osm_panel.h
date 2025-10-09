@@ -22,7 +22,6 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/locations_fetcher.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "system/hardware/hw.h"
 
