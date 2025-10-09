@@ -197,6 +197,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SunnylinkDongleId", {PERSISTENT, STRING}},
     {"SunnylinkdPid", {PERSISTENT, INT}},
     {"SunnylinkEnabled", {PERSISTENT, BOOL, "1"}},
+    {"SunnylinkTempFault", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL, "0"}},
 
     // Backup Manager params
     {"BackupManager_CreateBackup", {PERSISTENT, BOOL}},
