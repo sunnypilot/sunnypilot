@@ -67,6 +67,9 @@ jobs:
     - name: Check submodules
       if: github.repository == 'sunnypilot/sunnypilot'
       timeout-minutes: 3
+      env:
+        LTS_BRANCH: master-tici
+        LTS_SUBMODULES: "opendbc_repo panda"
       run: |
         if [ "${{ github.ref }}" != "refs/heads/master-tici" ]; then
           git fetch  origin master-tici:refs/remotes/origin/master-tici
