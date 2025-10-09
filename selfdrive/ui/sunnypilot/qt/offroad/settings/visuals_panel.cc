@@ -218,23 +218,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     "VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
     tr("Sets the speed (in mph) where the display transitions between normal and overhead view."),
     "", {10, 80}, 5, false, nullptr, false);
-  auto updateThresholdLabel = [this]() {
-    bool metric = params.getBool("IsMetric");
-    int mph_value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
-    int display_value = metric ? static_cast<int>(std::round(mph_value * 1.60934 / 5.0) * 5) : mph_value;
-    QString unit = metric ? "km/h" : "mph";
-    visual_style_overhead_threshold_settings->setLabel(QString("%1 %2").arg(display_value).arg(unit));
+  auto updateThresholdLabel = [=]() {
+    int mph = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+    visual_style_overhead_threshold_settings->setLabel(QString("%1 mph").arg(mph));
   };
   connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, updateThresholdLabel);
   updateThresholdLabel();
   list->addItem(visual_style_overhead_threshold_settings);
-  param_watcher->addParam("IsMetric");
-  connect(param_watcher, &ParamWatcher::paramChanged,
-    [updateThresholdLabel](const QString &param_name, const QString &) {
-      if (param_name == "IsMetric") {
-        updateThresholdLabel();
-      }
-    });
 
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
