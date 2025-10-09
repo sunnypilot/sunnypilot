@@ -136,10 +136,10 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &VisualsPanel::refreshLongitudinalStatus);
 
-  refreshLongitudinalStatus(offroad);
+  refreshLongitudinalStatus();
 }
 
-void VisualsPanel::refreshLongitudinalStatus(bool _offroad) {
+void VisualsPanel::refreshLongitudinalStatus() {
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
@@ -154,28 +154,19 @@ void VisualsPanel::refreshLongitudinalStatus(bool _offroad) {
   if (chevron_info_settings) {
     QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).");
     QString chevronNoLongDescription = tr("This feature requires openpilot longitudinal control to be available.");
-    QString onroadOnlyDescription = tr("Start the vehicle to check vehicle compatibility.");
 
-    if (_offroad) {
-      chevron_info_settings->setDescription(onroadOnlyDescription);
-      chevron_info_settings->showDescription();
+    if (has_longitudinal_control) {
+      chevron_info_settings->setDescription(chevronEnabledDescription);
     } else {
-      if (has_longitudinal_control) {
-        chevron_info_settings->setDescription(chevronEnabledDescription);
-      } else {
-        // Reset to "Off" when longitudinal not available
-        params.put("ChevronInfo", "0");
-        chevron_info_settings->setDescription(chevronNoLongDescription);
-        chevron_info_settings->showDescription();
-      }
+      // Reset to "Off" when longitudinal not available
+      params.put("ChevronInfo", "0");
+      chevron_info_settings->setDescription(chevronNoLongDescription);
     }
 
-    // Enable only when longitudinal is available and not offroad
-    chevron_info_settings->setEnabled(has_longitudinal_control && !_offroad);
+    // Enable only when longitudinal is available
+    chevron_info_settings->setEnabled(has_longitudinal_control);
     chevron_info_settings->refresh();
   }
-
-  offroad = _offroad;
 }
 
 void VisualsPanel::paramsRefresh() {

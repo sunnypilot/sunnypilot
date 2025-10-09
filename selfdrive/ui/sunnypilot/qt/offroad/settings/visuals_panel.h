@@ -19,7 +19,7 @@ public:
  explicit VisualsPanel(QWidget *parent = nullptr);
 
  void paramsRefresh();
- void refreshLongitudinalStatus(bool _offroad);
+ void refreshLongitudinalStatus();
 
 protected:
  QStackedLayout* main_layout = nullptr;
@@ -32,5 +32,4 @@ protected:
  ButtonParamControlSP *dev_ui_settings;
 
  bool has_longitudinal_control = false;
- bool offroad = true;
 };

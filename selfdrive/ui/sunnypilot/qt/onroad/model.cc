@@ -144,13 +144,12 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
 
   QFont content_font = painter.font();
-  content_font.setPixelSize(42);
+  content_font.setPixelSize(50);
   content_font.setBold(true);
   painter.setFont(content_font);
 
   bool is_metric = s->scene.is_metric;
   QStringList text_lines;
-
   const int chevron_all = 4;
   QStringList chevron_text[3];
 
@@ -181,9 +180,7 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   }
 
   for (int i = 0; i < 3; ++i) {
-    if (!chevron_text[i].isEmpty()) {
-      text_lines.append(chevron_text[i]);
-    }
+    if (!chevron_text[i].isEmpty()) text_lines.append(chevron_text[i]);
   }
 
   if (text_lines.isEmpty()) return;
@@ -195,7 +192,7 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   }
   text_width = std::min(text_width, 250.0f);
 
-  float line_height = 45.0f;
+  float line_height = 50.0f;
   float total_height = text_lines.size() * line_height;
   float margin = 20.0f;
 
@@ -209,7 +206,7 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   text_x = std::clamp(text_x, margin, (float)width - text_width - margin);
 
   QPoint shadow_offset(2, 2);
-
+  QColor text_color = QColor(255, 255, 255, (int)(255 * lead_status_alpha));
   for (int i = 0; i < text_lines.size(); ++i) {
     float y = text_y + (i * line_height);
     if (y + line_height > height - margin) break;
@@ -219,18 +216,6 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
     // Draw shadow
     painter.setPen(QColor(0, 0, 0, (int)(200 * lead_status_alpha)));
     painter.drawText(rect.translated(shadow_offset), Qt::AlignCenter, text_lines[i]);
-
-    QColor text_color = QColor(255, 255, 255, (int)(255 * lead_status_alpha));
-    if (text_lines[i].contains("m") || text_lines[i].contains("ft")) {
-      if (d_rel < 20.0f) {
-        text_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha));
-      } else if (d_rel < 40.0f) {
-        text_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha));
-      } else {
-        text_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha));
-      }
-    }
-
     painter.setPen(text_color);
     painter.drawText(rect, Qt::AlignCenter, text_lines[i]);
   }
