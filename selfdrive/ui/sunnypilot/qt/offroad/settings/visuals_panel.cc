@@ -145,7 +145,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visual Style
   std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
   visual_style_settings = new ButtonParamControlSP(
-    "VisualStyle", tr("Visual Style"), tr("todo"),
+    "VisualStyle", tr("Visual Style"),
+    tr(
+      "Switch between different on-road visualization layouts."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Default:</b> Standard OpenPilot layout with camera and path view.</li>"
+      "<li><b>Minimal:</b> Clean interface without camera feed or extra elements.</li>"
+      "<li><b>Vision:</b> Experimental layout that focuses on model perception and environment.</li>"
+      "</ul>"
+    ),
     "",
     visual_style_settings_texts,
     380);
@@ -154,7 +162,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visual Style Zoom
   std::vector<QString> visual_style_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_zoom_settings = new ButtonParamControlSP(
-    "VisualStyleZoom", tr("Visual Style Zoom"), tr("todo"),
+    "VisualStyleZoom", tr("Visual Style Zoom"),
+    tr(
+      "Enables dynamic zooming based on driving speed in the selected visual style."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps the zoom fixed.</li>"
+      "<li><b>Enabled:</b> Zooms in at low speed and out at high speed.</li>"
+      "<li><b>Inverted:</b> Reverses the zoom behavior.</li>"
+      "</ul>"
+    ),
     "",
     visual_style_zoom_settings_texts,
     380);
@@ -163,7 +179,15 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visual Style Overhead
   std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_overhead_settings = new ButtonParamControlSP(
-    "VisualStyleOverhead", tr("Visual Style Overhead"), tr("todo"),
+    "VisualStyleOverhead", tr("Visual Style Overhead"),
+    tr(
+      "Toggles an overhead (top-down) camera view for a 2D-style perspective."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps the standard forward 3D view.</li>"
+      "<li><b>Enabled:</b> Switches to overhead view when active.</li>"
+      "<li><b>Inverted:</b> Reverses when the transition happens.</li>"
+      "</ul>"
+    ),
     "",
     visual_style_overhead_settings_texts,
     380);
@@ -172,16 +196,25 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visual Style Overhead Zoom
   std::vector<QString> visual_style_overhead_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
   visual_style_overhead_zoom_settings = new ButtonParamControlSP(
-    "VisualStyleOverheadZoom", tr("Visual Style Overhead Zoom"), tr("todo"),
+    "VisualStyleOverheadZoom", tr("Visual Style Overhead Zoom"),
+    tr(
+      "Controls zooming behavior while in overhead mode."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps a fixed zoom level in overhead mode.</li>"
+      "<li><b>Enabled:</b> Zooms dynamically based on speed while overhead.</li>"
+      "<li><b>Inverted:</b> Opposite zoom direction.</li>"
+      "</ul>"
+    ),
     "",
     visual_style_overhead_zoom_settings_texts,
     380);
   list->addItem(visual_style_overhead_zoom_settings);
 
   // Visual Style Overhead Threshold
-  visual_style_overhead_threshold_settings = new OptionControlSP("VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
-                                      tr("todo"),
-                                      "", {10, 80}, 5, false, nullptr, false);
+  visual_style_overhead_threshold_settings = new OptionControlSP(
+    "VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
+    tr("Sets the speed (in mph) where the display transitions between normal and overhead view."),
+    "", {10, 80}, 5, false, nullptr, false);
 
   connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, [=]() {
     int value = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
