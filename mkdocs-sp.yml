@@ -1,0 +1,149 @@
+site_name: sunnypilot docs
+repo_name: sunnypilot/sunnypilot
+repo_url: https://github.com/sunnypilot/sunnypilot/
+site_description: sunnypilot Documentation
+site_url: https://docs.sunnypilot.ai
+edit_uri: blob/new-docs/docs_sp
+
+exclude_docs: README.md
+
+strict: true
+docs_dir: docs_sp
+site_dir: docs_sp_site/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Open Sans
+    code: Fira Code
+  logo: assets/sp_logo.svg
+  favicon: assets/sp_logo.svg
+  features:
+    - content.code.copy
+    - navigation.tabs
+    - navigation.tabs.sticky
+
+extra_css:
+  - stylesheets/style.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: sunnypilot
+      repo: sunnypilot
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+      clickable_checkbox: true
+  - toc:
+      permalink: true
+
+plugins:
+  - git-authors:
+      show_email_address: false
+  - git-committers:
+      repository: sunnypilot/sunnypilot
+      branch: master
+      enabled: !ENV [CI, false]
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - search
+  - redirects:
+      redirect_maps:
+        'index.md': 'getting-started/what-is-sunnypilot.md'
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sunnypilot/sunnypilot
+    - icon: fontawesome/brands/discord
+      link: https://discord.sunnypilot.ai
+#  analytics:
+#    provider: google
+#    property: !ENV GOOGLE_ANALYTICS_KEY
+#    feedback:
+#      title: Was this page helpful?
+#      ratings:
+#        - icon: material/emoticon-happy-outline
+#          name: This page was helpful
+#          data: 1
+#          note: >-
+#            Thanks for your feedback!
+#        - icon: material/emoticon-sad-outline
+#          name: This page could be improved
+#          data: 0
+#          note: >-
+#            Thanks for your feedback! Help us improve this page by
+#            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+
+nav:
+  - Getting Started:
+      - What is sunnypilot?: getting-started/what-is-sunnypilot.md
+      - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
+      - Develop sunnypilot: getting-started/develop-sunnypilot.md
+      - Setup:
+          - 🚨 Read before installing 🚨: setup/read-before-installing.md
+          - Installation:
+              - URL Method: setup/url-method.md
+              - SSH Method: setup/ssh-method.md
+  - Features:
+      - Hyundai Longitudinal Tuning: features/hyundai-longitudinal-tuning.md
+      - Modified Assistive Driving Safety: features/mads.md
+      - Smart Cruise Control - Vision: features/scc-v.md
+      - Smart Cruise Control - Map: features/scc-m.md
+      - Speed Limit Assist: features/speed-limit-assist.md
+      - Custom ACC Increments: features/custom-acc-increments.md
+      - Dynamic Experimental Control: features/dynamic-experimental-control.md
+      - Auto Lane Change: features/auto-lane-change.md
+      - NNLC: features/nnlc.md
+      - Intelligent Cruise Button Management: features/icbm.md
+  - Community:
+      - Contributing: community/CONTRIBUTING.md
+      - Workflow: community/WORKFLOW.md
+      - Reporting a bug: community/reporting-a-bug.md
+      - Reporting a docs issue: community/reporting-a-docs-issue.md
+      - Discord Community: https://discord.sunnypilot.ai
+  - Safety Information:
+      - Safety: SAFETY.md
+      - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
+  - References:
+      - Branches:
+          - Recommended Branches: branches/recommended-branches.md
+          - Branch Definitions: branches/definitions.md
