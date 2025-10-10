@@ -6,7 +6,6 @@ import struct
 import threading
 import time
 from collections import OrderedDict, namedtuple
-from pathlib import Path
 
 import psutil
 
@@ -341,12 +340,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     extra_text = f"{offroad_comp_temp:.1f}C"
     show_alert = (not onroad_conditions["device_temp_good"] or not startup_conditions["device_temp_engageable"]) and onroad_conditions["ignition"]
     set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", show_alert, extra_text=extra_text)
-
-    # TODO: this should move to TICI.initialize_hardware, but we currently can't import params there
-    if TICI and HARDWARE.get_device_type() == "tici":
-      if not os.path.isfile("/persist/comma/living-in-the-moment"):
-        if not Path("/data/media").is_mount():
-          set_offroad_alert_if_changed("Offroad_StorageMissing", True)
 
     # Handle offroad/onroad transition
     should_start = all(onroad_conditions.values())

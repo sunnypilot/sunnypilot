@@ -14,10 +14,10 @@ ExpandableToggleRow::ExpandableToggleRow(const QString &param, const QString &ti
   QObject::connect(this, &ExpandableToggleRow::toggleFlipped, this, &ExpandableToggleRow::toggleClicked);
 
   collapsibleWidget = new QFrame(this);
-  collapsibleWidget->setContentsMargins(0, 0, 0, 0);
   collapsibleWidget->setVisible(false);
   QVBoxLayout *collapsible_layout = new QVBoxLayout();
   collapsibleWidget->setLayout(collapsible_layout);
+  collapsible_layout->setContentsMargins(0, 0, 0, 0);
 
   list = new ListWidgetSP(this, false);
 
