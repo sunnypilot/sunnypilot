@@ -115,4 +115,8 @@ private:
   bool rightBlindspot;
   int blinkerFrameCounter;
   bool showTurnSignals;
+
+  bool carControlEnabled;
+  float speedCluster = 0;
+  int icbm_active_counter = 0;
 };
