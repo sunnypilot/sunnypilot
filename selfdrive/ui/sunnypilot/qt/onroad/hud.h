@@ -116,7 +116,7 @@ private:
   int blinkerFrameCounter;
   bool showTurnSignals;
 
-  cereal::IntelligentCruiseButtonManagement::IntelligentCruiseButtonManagementState ICBMState;
+  bool carControlEnabled;
   float speedCluster = 0;
   int icbm_active_counter = 0;
 };
