@@ -31,12 +31,23 @@ while read hash submodule ref; do
       exit 1
     fi
   else
-    git -C $submodule fetch --depth 100 origin master
-    git -C $submodule branch -r --contains $hash | grep "origin/master"
+    # Check against master-tici for specific submodules, master for others
+    if [ "$submodule" = "opendbc_repo" ] || [ "$submodule" = "panda" ]; then
+      git -C $submodule fetch --depth 100 origin master-tici
+      git -C $submodule branch -r --contains $hash | grep "origin/master-tici"
+    else
+      git -C $submodule fetch --depth 100 origin master
+      git -C $submodule branch -r --contains $hash | grep "origin/master"
+    fi
+
     if [ "$?" -eq 0 ]; then
       echo "$submodule ok"
     else
-      echo "$submodule: $hash is not on master"
+      if [ "$submodule" = "opendbc_repo" ] || [ "$submodule" = "panda" ]; then
+        echo "$submodule: $hash is not on master-tici"
+      else
+        echo "$submodule: $hash is not on master"
+      fi
       exit 1
     fi
   fi
