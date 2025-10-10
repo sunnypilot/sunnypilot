@@ -50,11 +50,12 @@ class VCruiseHelper(VCruiseHelperSP):
 
     if CS.cruiseState.available:
       _enabled = self.update_enabled_state(CS, enabled)
-      if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed and _enabled):
+      if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed):
         # if stock cruise is completely disabled, then we can use our own set speed logic
-        self._update_v_cruise_non_pcm(CS, _enabled, is_metric)
-        self.update_speed_limit_assist_v_cruise_non_pcm()
-        self.v_cruise_cluster_kph = self.v_cruise_kph
+        if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed and _enabled):
+          self._update_v_cruise_non_pcm(CS, _enabled, is_metric)
+          self.update_speed_limit_assist_v_cruise_non_pcm()
+          self.v_cruise_cluster_kph = self.v_cruise_kph
         self.update_button_timers(CS, enabled)
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
