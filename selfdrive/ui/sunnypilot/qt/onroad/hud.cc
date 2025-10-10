@@ -107,6 +107,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
+  if (not s.scene.started) standstillElapsedTime = 0.0;
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
@@ -250,6 +251,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // No Alerts displayed
     else {
       e2eAlertFrame = 0;
+      if (not isStandstill) standstillElapsedTime = 0.0;
     }
 
     // Blinker
