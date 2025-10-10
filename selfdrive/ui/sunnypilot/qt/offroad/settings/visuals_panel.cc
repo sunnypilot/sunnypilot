@@ -90,6 +90,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
+    {
+      "QuietModeUI",
+      tr("Hide Non-Critical Alerts"),
+      tr("Hide all non-critical alerts from the UI. Alert chime will still play unless Quiet Mode is on. Critical alerts will continue to show as usual."),
+      "",
+      false,
+    },
   };
 
   // Add regular toggles first
