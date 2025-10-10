@@ -43,11 +43,11 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
-| `staging` | `https://staging.sunnypilot.ai`        |
-|   `dev`   | `https://dev.sunnypilot.ai`            |
+| `staging` | `https://install.sunnypilot.ai/staging`        |
+|   `dev`   | `https://install.sunnypilot.ai/dev`            |
 | `custom-branch`  | `https://install.sunnypilot.ai/{branch_name}` |
 | `release-tizi` |            **Not yet available**.             |
-| `staging-tici` (for legacy Comma three) | `https://staging-tici.sunnypilot.ai`        |
+| `staging-tici` (for legacy Comma three) | `https://install.sunnypilot.ai/staging-tici`        |
 | `release-tici` (for legacy Comma three) |            **Not yet available**.             |
 
 > [!TIP]
