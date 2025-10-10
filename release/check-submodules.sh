@@ -4,7 +4,7 @@ set -euo pipefail
 has_submodule_changes() {
   local submodule_path="$1"
   if [ -n "${SUBMODULE_PATHS:-}" ]; then
-    echo "$SUBMODULE_PATHS" | grep -qw "$submodule_path"
+    echo " $SUBMODULE_PATHS " | grep -qw " $submodule_path "
     return $?
   fi
   return 1
@@ -22,7 +22,8 @@ required_branch_for() {
 }
 
 while read -r hash submodule ref; do
-  [ -z "$hash" ] || [ -z "$submodule" ] && continue
+  [ -z "${hash:-}" ] || [ -z "${submodule:-}" ] && continue
+
   hash="${hash#[-+]}"
   if [ "$submodule" = "tinygrad_repo" ]; then
     echo "Skipping $submodule"
@@ -32,7 +33,6 @@ while read -r hash submodule ref; do
   target_branch="$(required_branch_for "$submodule")"
 
   if [ "${CHECK_PR_REFS:-}" = "true" ] && has_submodule_changes "$submodule"; then
-    echo "Checking $submodule (non-master): verifying hash $hash exists"
     git -C "$submodule" fetch --depth 100 origin
     if git -C "$submodule" cat-file -e "$hash" 2>/dev/null; then
       echo "$submodule ok (hash exists)"
@@ -41,6 +41,7 @@ while read -r hash submodule ref; do
       exit 1
     fi
   else
+    echo "Checking $submodule on origin/$target_branch: verifying $hash is contained"
     git -C "$submodule" fetch --depth 100 origin "$target_branch"
     if git -C "$submodule" branch -r --contains "$hash" | grep -q "origin/$target_branch"; then
       echo "$submodule ok"
