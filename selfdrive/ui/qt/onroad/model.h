@@ -69,5 +69,5 @@ protected:
   QPointF lead_status_pos;
   QString lead_status_text;
   QColor lead_status_color;
-  void drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius = 5.0f);
+  void drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius = 10.0f);
 };
