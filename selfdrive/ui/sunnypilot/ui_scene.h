@@ -12,4 +12,10 @@ typedef struct UISceneSP : UIScene {
   bool standstill_timer = false;
   int speed_limit_mode = 0;
   bool road_name = false;
+  int onroadScreenOffBrightness, onroadScreenOffTimer = 0;
+  bool onroadScreenOffControl;
+  int onroadScreenOffTimerParam;
+  bool trueVEgoUI;
+  bool hideVEgoUI;
+  bool turn_signals = false;
 } UISceneSP;
