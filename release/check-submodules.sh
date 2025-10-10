@@ -41,11 +41,22 @@ while read -r hash submodule ref; do
   else
     branch="$(required_branch_for "$submodule")"
     echo "Checking $submodule on origin/$branch: verifying $hash is contained"
-    git -C "$submodule" fetch --depth 100 origin "$branch"
-    if git -C "$submodule" branch -r --contains "$hash" | grep -q "origin/$branch"; then
+
+    git -C "$submodule" fetch --no-tags origin "$branch" --depth=0
+    git -C "$submodule" fetch --no-tags origin "$hash" || true
+    if ! git -C "$submodule" cat-file -e "$hash^{commit}" 2>/dev/null; then
+      echo "  $submodule: commit $hash not present locally after fetch"
+      git -C "$submodule" remote -v
+      exit 1
+    fi
+
+    if git -C "$submodule" merge-base --is-ancestor "$hash" "origin/$branch"; then
       echo "$submodule ok"
     else
       echo "$submodule: $hash is not on $branch"
+      echo "  Debug:"
+      git -C "$submodule" show -s --oneline "$hash" || true
+      git -C "$submodule" log --oneline -n 20 "origin/$branch" || true
       exit 1
     fi
   fi
