@@ -10,16 +10,14 @@ authors = [
 
 dependencies = [
   # multiple users
-  "sounddevice",  # micd + soundd
-  "pyserial",     # pigeond + qcomgpsd
-  "requests",     # many one-off uses
-  "sympy",        # rednose + friends
-  "crcmod",       # cars + qcomgpsd
-  "tqdm",         # cars (fw_versions.py) on start + many one-off uses
-
+  "sounddevice", # micd + soundd
+  "pyserial", # pigeond + qcomgpsd
+  "requests", # many one-off uses
+  "sympy", # rednose + friends
+  "crcmod", # cars + qcomgpsd
+  "tqdm", # cars (fw_versions.py) on start + many one-off uses
   # hardwared
   "smbus2", # configuring amp
-
   # core
   "cffi",
   "scons",
@@ -27,7 +25,6 @@ dependencies = [
   "Cython",
   "setuptools",
   "numpy >=2.0",
-
   # body / webrtcd
   "aiohttp",
   "aiortc",
@@ -35,44 +32,35 @@ dependencies = [
   # with the latest release
   "pyopenssl < 24.3.0",
   "pyaudio",
-
   # ubloxd (TODO: just use struct)
   "kaitaistruct",
-
   # panda
   "libusb1",
   "spidev; platform_system == 'Linux'",
-
   # modeld
   "onnx >= 1.14.0",
-
   # logging
   "pyzmq",
   "sentry-sdk",
   "xattr", # used in place of 'os.getxattr' for macos compatibility
-
   # athena
   "PyJWT",
   "json-rpc",
   "websocket_client",
-
   # acados deps
-  "casadi >=3.6.6",  # 3.12 fixed in 3.6.6
+  "casadi >=3.6.6", # 3.12 fixed in 3.6.6
   "future-fstrings",
-
   # joystickd
   "inputs",
-
   # these should be removed
   "psutil",
   "pycryptodome", # used in updated/casync, panda, body, and a test
   "setproctitle",
-
   # logreader
   "zstandard",
-
   # ui
   "qrcode",
+  "onnxruntime>=1.23.1",
 ]
 
 [project.optional-dependencies]
@@ -237,6 +225,7 @@ lint.ignore = [
   "NPY002",  # new numpy random syntax is worse
   "UP038",   # (x, y) -> x|y for isinstance
 ]
+lint.flake8-implicit-str-concat.allow-multiline = false
 line-length = 160
 target-version ="py311"
 exclude = [
@@ -253,7 +242,6 @@ exclude = [
   "*.ipynb",
   "generated",
 ]
-lint.flake8-implicit-str-concat.allow-multiline = false
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "selfdrive".msg = "Use openpilot.selfdrive"

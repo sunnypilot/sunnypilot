@@ -162,6 +162,105 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
 </context>
 <context>
+    <name>DecControllerSubpanel</name>
+    <message>
+        <source>Reset to Defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FCW Detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when FCW is detected in the road ahead.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable at Standstill</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when the vehicle is at a standstill.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Model Slow Down Detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Follow Lead Vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lead Vehicle Detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when a lead vehicle is detected and significantly slowing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Significantly Slower Lead Detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stopped Lead Detection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distance-Based Switching</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when the distance to the lead vehicle is below the specified threshold.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distance Threshold</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distance from lead vehicle in meters below which blended mode will be used.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed-Based Switching</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when the vehicle speed is below the specified threshold.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed Threshold</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed in km/h below which blended mode will be used.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Currently active. Prefers ACC with weighted confidence when following a lead vehicle for normal scenarios. If the model wants to slowdown significantly, it will still trigger blended mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disabled when Follow Lead Vehicle is active. Follow Lead mode overrides this when a lead vehicle is present (except during imminent slowdown scenarios).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, overrides model slow down detection, and prefers ACC mode when following a lead vehicle for normal scenarios. Model wants to stop now situations still trigger blended mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Model slow down detection must be enabled to use this mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use blended mode when the model detects a slow down scenario ahead.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DeclinePage</name>
     <message>
         <source>Back</source>
@@ -778,6 +877,10 @@ DEPARTING</source>
         <source>MAX</source>
         <translation type="unfinished">MAX</translation>
     </message>
+    <message>
+        <source>STOPPED</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>HyundaiSettings</name>
@@ -851,6 +954,44 @@ DEPARTING</source>
     </message>
 </context>
 <context>
+    <name>LaneTurnDesireControl</name>
+    <message>
+        <source>Lane Turn Desires</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If you&apos;re driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong turn direction.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nudge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nudgeless</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>LaneTurnSettings</name>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Adjust Lane Turn Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set the maximum speed for lane turn desires. Default is 19 %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>LateralPanel</name>
     <message>
         <source>Modular Assistive Driving System (MADS)</source>
@@ -904,6 +1045,10 @@ DEPARTING</source>
         <source>Customize Params</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Customize Lane Turn</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>LongitudinalPanel</name>
@@ -953,6 +1098,42 @@ DEPARTING</source>
     </message>
     <message>
         <source>Speed Limit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Vibe Personality Controller</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). Customize your driving experience with independent acceleration and distance personalities.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). Adjust how aggressively the vehicle accelerates while maintaining smooth operation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Following Distance Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). Fine-tune your comfort level in traffic situations.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Experimental Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Customize DEC</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1211,18 +1392,6 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>Total Delay:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use Lane Turn Desires</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Adjust Lane Turn Speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Set the maximum speed for lane turn desires. Default is 19 %1.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1561,6 +1730,34 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>Time remaining: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all countries.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all states.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No results found for keywords: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2569,14 +2766,6 @@ Data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2602,6 +2791,26 @@ Data</source>
     </message>
     <message>
         <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sport</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Eco</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2799,6 +3008,26 @@ Bottom</source>
     </message>
     <message>
         <source>Display real-time parameters and metrics from various sources.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, the speedometer on the onroad screen is not displayed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display Turn Signals</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, visual turn indicators are drawn on the HUD.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use Metric Units for Distance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If enabled, distances below the chevron are shown in meters. If disabled, distances are shown in feet.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -32,6 +32,10 @@ else
     brew up
 fi
 
+if brew list | grep -q pyqt; then
+  brew uninstall --ignore-dependencies pyqt
+fi
+
 brew bundle --file=- <<-EOS
 brew "git-lfs"
 brew "zlib"
