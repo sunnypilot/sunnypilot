@@ -16,11 +16,15 @@ public:
   explicit DeveloperPanelSP(SettingsWindow *parent);
 
 private:
+  ParamControlSP *enableCopyparty;
   ParamControlSP *enableGithubRunner;
   ButtonControlSP *errorLogBtn;
   ParamControlSP *prebuiltToggle;
   Params params;
   ParamControlSP *showAdvancedControls;
+  bool is_development;
+  bool is_release;
+  bool is_tested;
 
 private slots:
   void updateToggles(bool offroad);
