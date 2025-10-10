@@ -18,4 +18,12 @@ typedef struct UISceneSP : UIScene {
   bool trueVEgoUI;
   bool hideVEgoUI;
   bool turn_signals = false;
+  int visual_radar_tracks = 0;
+  float visual_radar_tracks_delay = 0;
+  int visual_wide_cam = 0;
+  int visual_style = 0;
+  int visual_style_zoom = 0;
+  int visual_style_overhead = 0;
+  int visual_style_overhead_zoom = 0;
+  int visual_style_overhead_threshold = 20.0;
 } UISceneSP;
