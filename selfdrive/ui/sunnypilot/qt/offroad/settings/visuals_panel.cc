@@ -106,7 +106,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "VisualRadarTracks",
       tr("Show Radar Tracks"),
       tr("Shows what the cars radar sees."),
-      "../assets/offroad/icon_monitoring.png",
+      "",
       false,
     },
   };
