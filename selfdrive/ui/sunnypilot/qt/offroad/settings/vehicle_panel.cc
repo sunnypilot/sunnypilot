@@ -62,8 +62,6 @@ void VehiclePanel::updateBrandSettings() {
       currentBrandSettings->setContentsMargins(0, 0, 0, 0);
       brandSettingsContainerLayout->addWidget(currentBrandSettings);
       currentBrandSettings->updatePanel(offroad);
-      QObject::connect(currentBrandSettings, SIGNAL(liveTuningOpened()), platformSelector, SLOT(hide()));
-      QObject::connect(currentBrandSettings, SIGNAL(liveTuningClosed()), platformSelector, SLOT(show()));
     }
   }
 }
