@@ -18,12 +18,30 @@ DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
   // Onroad Screen Off/Brightness
   onroadScreenBrightnessControl = new OnroadScreenBrightnessControl(
     "OnroadScreenOffControl",
-    tr("Driving Screen Off: Non-Critical Events"),
+    tr("Onroad Screen: Reduced Brightness"),
     tr("Turn off device screen or reduce brightness after driving starts. "
-       "It automatically brightens again when screen is touched or a critical event occurs."),
+       "It automatically brightens again when screen is touched or a visible alert is displayed."),
     "",
     this);
   list->addItem(onroadScreenBrightnessControl);
+  list->addItem(horizontal_line());
+
+  // Global Brightness
+  brightness = new Brightness();
+  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
+  list->addItem(brightness);
+  list->addItem(horizontal_line());
+
+  // Interactivity Timeout
+  interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
+                                   tr("Apply a custom timeout for settings UI."
+                                      "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
+                                   "", {0, 120}, 10, true, nullptr, false);
+
+  connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
+    refresh();
+  });
+  list->addItem(interactivityTimeout);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
@@ -37,4 +55,11 @@ void DisplayPanel::showEvent(QShowEvent *event) {
 
 void DisplayPanel::refresh() {
   onroadScreenBrightnessControl->refresh();
+
+  QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
+  if (timeoutValue == "0" || timeoutValue.isEmpty()) {
+    interactivityTimeout->setLabel("Default");
+  } else {
+    interactivityTimeout->setLabel(timeoutValue + "s");
+  }
 }

@@ -59,6 +59,37 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
+    {
+      "LeadDepartAlert",
+      tr("Lead Departure Alert (Beta)"),
+      QString("%1<br>"
+        "<h4>%2</h4><br>")
+        .arg(tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving."))
+        .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "",
+      false,
+    },
+    {
+      "TrueVEgoUI",
+      tr("Speedometer: Always Display True Speed"),
+      tr("Always display the true vehicle current speed from wheel speed sensors."),
+      "",
+      false,
+    },
+    {
+      "HideVEgoUI",
+      tr("Speedometer: Hide from Onroad Screen"),
+      tr("When enabled, the speedometer on the onroad screen is not displayed."),
+      "",
+      false,
+    },
+    {
+      "ShowTurnSignals",
+      tr("Display Turn Signals"),
+      tr("When enabled, visual turn indicators are drawn on the HUD."),
+      "",
+      false,
+    },
   };
 
   // Add regular toggles first

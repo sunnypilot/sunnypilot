@@ -247,11 +247,11 @@ class SpeedLimitAssist:
 
         # PENDING
         elif self.state == SpeedLimitAssistState.pending:
-          if self._has_speed_limit:
-            if self.v_offset < LIMIT_SPEED_OFFSET_TH:
-              self.state = SpeedLimitAssistState.adapting
-            else:
-              self.state = SpeedLimitAssistState.active
+          if self.target_set_speed_confirmed:
+            self._update_confirmed_state()
+          elif self.speed_limit_changed:
+            self.state = SpeedLimitAssistState.preActive
+            self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
 
         # PRE_ACTIVE
         elif self.state == SpeedLimitAssistState.preActive:
@@ -275,9 +275,11 @@ class SpeedLimitAssist:
         elif self.long_engaged_timer <= 0:
           if self.target_set_speed_confirmed:
             self._update_confirmed_state()
-          else:
+          elif self._has_speed_limit:
             self.state = SpeedLimitAssistState.preActive
             self.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
+          else:
+            self.state = SpeedLimitAssistState.pending
 
     enabled = self.state in ENABLED_STATES
     active = self.state in ACTIVE_STATES
