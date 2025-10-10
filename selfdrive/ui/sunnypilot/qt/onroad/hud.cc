@@ -107,6 +107,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
+  if (not s.scene.started) standstillElapsedTime = 0.0;
   longOverride = car_control.getCruiseControl().getOverride();
   smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
   smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
@@ -120,6 +121,12 @@ void HudRendererSP::updateState(const UIState &s) {
   float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
   speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
   hideVEgoUI = s.scene.hideVEgoUI;
+
+  leftBlinkerOn = car_state.getLeftBlinker();
+  rightBlinkerOn = car_state.getRightBlinker();
+  leftBlindspot = car_state.getLeftBlindspot();
+  rightBlindspot = car_state.getRightBlindspot();
+  showTurnSignals = s.scene.turn_signals;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -132,7 +139,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
   if (is_cruise_available) {
     drawSetSpeedSP(p, surface_rect);
   }
-  drawCurrentSpeedSP(p, surface_rect);
 
   if (!hideVEgoUI) {
     drawCurrentSpeedSP(p, surface_rect);
@@ -178,11 +184,6 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     if (devUiInfo != 0) {
       QRect rect_right(surface_rect.right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 170);
       drawRightDevUI(p, surface_rect.right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rect_right.height());
-    }
-
-    // Standstill Timer
-    if (standstillTimer) {
-      drawStandstillTimer(p, surface_rect.right() / 12 * 10, surface_rect.bottom() / 12 * 1.53);
     }
 
     // Speed Limit
@@ -235,8 +236,27 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
         alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
       }
       drawE2eAlert(p, surface_rect);
-    } else {
+    }
+    // Standstill Timer
+    else if (standstillTimer && isStandstill) {
+      alert_img = QPixmap();
+
+      standstillElapsedTime += 1.0 / UI_FREQ;
+      int minute = static_cast<int>(standstillElapsedTime / 60);
+      int second = static_cast<int>(standstillElapsedTime - (minute * 60));
+      alert_text = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
+      drawE2eAlert(p, surface_rect, tr("STOPPED"));
+      e2eAlertFrame++;
+    }
+    // No Alerts displayed
+    else {
       e2eAlertFrame = 0;
+      if (not isStandstill) standstillElapsedTime = 0.0;
+    }
+
+    // Blinker
+    if (showTurnSignals) {
+      drawBlinker(p, surface_rect);
     }
   }
 
@@ -393,40 +413,6 @@ void HudRendererSP::drawBottomDevUI(QPainter &p, int x, int y) {
 
   UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawBottomDevUIElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
-}
-
-void HudRendererSP::drawStandstillTimer(QPainter &p, int x, int y) {
-  if (isStandstill) {
-    standstillElapsedTime += 1.0 / UI_FREQ;
-
-    int minute = static_cast<int>(standstillElapsedTime / 60);
-    int second = static_cast<int>(standstillElapsedTime - (minute * 60));
-
-    // stop sign for standstill timer
-    const int size = 190;  // size
-    const float angle = M_PI / 8.0;
-
-    QPolygon octagon;
-    for (int i = 0; i < 8; i++) {
-      float curr_angle = angle + i * M_PI / 4.0;
-      int point_x = x + size / 2 * cos(curr_angle);
-      int point_y = y + size / 2 * sin(curr_angle);
-      octagon << QPoint(point_x, point_y);
-    }
-
-    p.setPen(QPen(Qt::white, 6));
-    p.setBrush(QColor(255, 90, 81, 200)); // red pastel
-    p.drawPolygon(octagon);
-
-    QString time_str = QString("%1:%2").arg(minute, 1, 10, QChar('0')).arg(second, 2, 10, QChar('0'));
-    p.setFont(InterFont(55, QFont::Bold));
-    p.setPen(Qt::white);
-    QRect timerTextRect = p.fontMetrics().boundingRect(QString(time_str));
-    timerTextRect.moveCenter({x, y});
-    p.drawText(timerTextRect, Qt::AlignCenter, QString(time_str));
-  } else {
-    standstillElapsedTime = 0.0;
-  }
 }
 
 void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
@@ -711,7 +697,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 }
 
-void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
+void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
   int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
   int y = surface_rect.center().y() + 40;
@@ -721,25 +707,49 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect) {
 
   // Alert Circle
   QPoint center = alertRect.center();
-  QColor frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
+  QColor frameColor;
+  if (not alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
+  else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
   p.drawEllipse(center, size, size);
 
   // Alert Text
-  QColor txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 255);
-  p.setFont(InterFont(48, QFont::Bold));
+  QColor txtColor;
+  QFont font;
+  int alert_bottom_adjustment;
+  if (not alert_alt_text.isEmpty()) {
+    font = InterFont(100, QFont::Bold);
+    alert_bottom_adjustment = 5;
+    txtColor = QColor(255, 255, 255, 255);
+  } else {
+    font = InterFont(48, QFont::Bold);
+    alert_bottom_adjustment = 7;
+    txtColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 255) : QColor(0, 255, 0, 190);
+  }
   p.setPen(txtColor);
+  p.setFont(font);
   QFontMetrics fm(p.font());
   QRect textRect = fm.boundingRect(alertRect, Qt::TextWordWrap, alert_text);
   textRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
-  textRect.moveBottom(alertRect.bottom() - alertRect.height() / 7);
+  textRect.moveBottom(alertRect.bottom() - alertRect.height() / alert_bottom_adjustment);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
-  // Alert Image
-  QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
-  QPointF drawPoint = center - pixmapCenterOffset;
-  p.drawPixmap(drawPoint, alert_img);
+  if (not alert_alt_text.isEmpty()) {
+    // Alert Alternate Text
+    p.setFont(InterFont(80, QFont::Bold));
+    p.setPen(QColor(255, 175, 3, 240));
+    QFontMetrics fmt(p.font());
+    QRect topTextRect = fmt.boundingRect(alertRect, Qt::TextWordWrap, alert_alt_text);
+    topTextRect.moveCenter({alertRect.center().x(), alertRect.center().y()});
+    topTextRect.moveTop(alertRect.top() + alertRect.height() / 3.5);
+    p.drawText(topTextRect, Qt::AlignCenter, alert_alt_text);
+  } else {
+    // Alert Image instead of Top Text
+    QPointF pixmapCenterOffset = QPointF(alert_img.width() / 2.0, alert_img.height() / 2.0);
+    QPointF drawPoint = center - pixmapCenterOffset;
+    p.drawPixmap(drawPoint, alert_img);
+  }
 }
 
 void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
@@ -750,4 +760,74 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 
   p.setFont(InterFont(66));
   HudRenderer::drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
+}
+
+void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
+  if (!leftBlinkerOn && !rightBlinkerOn) {
+    blinkerFrameCounter = 0;
+    return;
+  }
+  ++blinkerFrameCounter;
+
+  const int circleRadius = 44;
+  const int arrowLength = 44;
+  const int x_gap = 180;
+  const int y_offset = 272;
+
+  const int centerX = surface_rect.center().x();
+  const bool hazard = leftBlinkerOn && rightBlinkerOn;
+
+  const QPen bgBorder(Qt::white, 5);
+  const QPen arrowPen(Qt::NoPen);
+
+  p.save();
+
+  auto drawArrow = [&](int cx, int cy, int dir, const QBrush &arrowBrush) {
+    const int bodyLength = arrowLength / 2;
+    const int bodyWidth = arrowLength / 2;
+    const int headLength = arrowLength / 2;
+    const int headWidth = arrowLength;
+
+    QPolygon arrow;
+    arrow.reserve(7);
+    arrow << QPoint(cx - dir * bodyLength, cy - bodyWidth / 2)
+        << QPoint(cx, cy - bodyWidth / 2)
+        << QPoint(cx, cy - headWidth / 2)
+        << QPoint(cx + dir * headLength, cy)
+        << QPoint(cx, cy + headWidth / 2)
+        << QPoint(cx, cy + bodyWidth / 2)
+        << QPoint(cx - dir * bodyLength, cy + bodyWidth / 2);
+
+    p.setPen(arrowPen);
+    p.setBrush(arrowBrush);
+    p.drawPolygon(arrow);
+  };
+
+  auto drawCircle = [&](int cx, int cy, const QBrush &bgBrush) {
+    p.setPen(bgBorder);
+    p.setBrush(bgBrush);
+    p.drawEllipse(QPoint(cx, cy), circleRadius, circleRadius);
+  };
+
+  struct BlinkerSide { bool on; int dir; bool blocked; int cx; };
+  const std::array<BlinkerSide, 2> sides = {{
+    {leftBlinkerOn, -1, hazard ? true : (leftBlinkerOn  && leftBlindspot), centerX - x_gap},
+    {rightBlinkerOn, 1, hazard ? true : (rightBlinkerOn && rightBlindspot), centerX + x_gap},
+  }};
+
+  for (const auto &s: sides) {
+    if (!s.on) continue;
+
+    QColor bgColor = s.blocked ? QColor(135, 23, 23) : QColor(23, 134, 68);
+    QColor arrowColor = s.blocked ? QColor(66, 12, 12) : QColor(12, 67, 34);
+    if (pulseElement(blinkerFrameCounter)) arrowColor = Qt::white;
+
+    const QBrush bgBrush(bgColor);
+    const QBrush arrowBrush(arrowColor);
+
+    drawCircle(s.cx, y_offset, bgBrush);
+    drawArrow(s.cx, y_offset, s.dir, arrowBrush);
+  }
+
+  p.restore();
 }
