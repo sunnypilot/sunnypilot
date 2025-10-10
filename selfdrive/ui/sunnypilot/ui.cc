@@ -64,12 +64,16 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
   s->scene.road_name = params.getBool("RoadNameToggle");
+  s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
+  s->scene.hideVEgoUI = params.getBool("HideVEgoUI");
 
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
   s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
   s->reset_onroad_sleep_timer();
+
+  s->scene.turn_signals = params.getBool("ShowTurnSignals");
 }
 
 void UIStateSP::reset_onroad_sleep_timer() {

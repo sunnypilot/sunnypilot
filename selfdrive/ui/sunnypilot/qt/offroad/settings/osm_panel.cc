@@ -12,6 +12,7 @@
 #include <string>
 
 #include "common/swaglog.h"
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
@@ -91,24 +92,30 @@ ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
-    const QString selection = MultiOptionDialog::getSelection(tr("Country"), locationTitles, currentTitle, this);
-    if (!selection.isEmpty()) {
-      params.put("OsmLocal", "1");
-      params.put("OsmLocationTitle", selection.toStdString());
-      for (auto &loc: locations) {
-        if (std::get<0>(loc) == selection) {
-          params.put("OsmLocationName", std::get<1>(loc).toStdString());
-          break;
+    InputDialog d(tr("Search Country"), this, tr("Enter search keywords, or leave blank to list all countries."), false);
+    d.setMinLength(0);
+    const int ret = d.exec();
+    if (ret) {
+      const QString selection = search(d.text(), locationTitles, tr("Select Country"));
+      if (!selection.isEmpty()) {
+        params.put("OsmLocal", "1");
+        params.put("OsmLocationTitle", selection.toStdString());
+        for (auto &loc: locations) {
+          if (std::get<0>(loc) == selection) {
+            params.put("OsmLocationName", std::get<1>(loc).toStdString());
+            break;
+          }
         }
-      }
-      if (params.get("OsmLocationName") == "US") {
-        usStatesBtn->click();
-        return;
-      } else if (selection != "== None ==") {
-        if (showConfirmationDialog(parent)) {
-          osm_download_in_progress = true;
-          params.putBool("OsmDbUpdatesCheck", true);
-          updateLabels();
+        if (params.get("OsmLocationName") == "US") {
+          usStatesBtn->click();
+          return;
+        }
+        if (selection != "== None ==") {
+          if (showConfirmationDialog(parent)) {
+            osm_download_in_progress = true;
+            params.putBool("OsmDbUpdatesCheck", true);
+            updateLabels();
+          }
         }
       }
     }
@@ -135,20 +142,25 @@ ButtonControlSP *OsmPanel::setupUsStatesButton(QWidget *parent) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
-    const QString selection = MultiOptionDialog::getSelection(tr("State"), locationTitles, currentTitle, this);
-    if (!selection.isEmpty()) {
-      params.put("OsmStateTitle", selection.toStdString());
-      for (auto &loc: locations) {
-        if (std::get<0>(loc) == selection) {
-          params.put("OsmStateName", std::get<1>(loc).toStdString());
-          break;
+    InputDialog d(tr("Search State"), this, tr("Enter search keywords, or leave blank to list all states."), false);
+    d.setMinLength(0);
+    const int ret = d.exec();
+    if (ret) {
+      const QString selection = search(d.text(), locationTitles, tr("Select State"));
+      if (!selection.isEmpty()) {
+        params.put("OsmStateTitle", selection.toStdString());
+        for (auto &loc: locations) {
+          if (std::get<0>(loc) == selection) {
+            params.put("OsmStateName", std::get<1>(loc).toStdString());
+            break;
+          }
         }
-      }
-      usStatesBtn->setValue(selection);
-      if (showConfirmationDialog(parent)) {
-        osm_download_in_progress = true;
-        params.putBool("OsmDbUpdatesCheck", true);
-        updateLabels();
+        usStatesBtn->setValue(selection);
+        if (showConfirmationDialog(parent)) {
+          osm_download_in_progress = true;
+          params.putBool("OsmDbUpdatesCheck", true);
+          updateLabels();
+        }
       }
     }
     updateLabels();
@@ -280,4 +292,16 @@ void OsmPanel::updateMapSize() {
   if (!mapSizeFuture.has_value() || !mapSizeFuture.value().isRunning()) {
     mapSizeFuture = QtConcurrent::run(getDirSize, MAP_PATH);
   }
+}
+
+QString OsmPanel::search(const QString &query, const QStringList &list, const QString &prompt_text) {
+  QStringList lst_results = searchFromList(query, list);
+  QString selection;
+
+  if (lst_results.isEmpty()) {
+    ConfirmationDialog::alert(tr("No results found for keywords: %1").arg(query), this);
+    return selection;
+  }
+  selection = MultiOptionDialog::getSelection(prompt_text, lst_results, "", this);
+  return selection;
 }

@@ -134,19 +134,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
 <context>
     <name>Brightness</name>
     <message>
-        <source>Brightness</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Overrides the brightness of the device.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Auto (Dark)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Auto</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Global Brightness</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Overrides the brightness of the device. This applies to both onroad and offroad screens. </source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -159,105 +159,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Cancel</source>
         <translation>Cancelar</translation>
-    </message>
-</context>
-<context>
-    <name>DecControllerSubpanel</name>
-    <message>
-        <source>Reset to Defaults</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>FCW Detection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when FCW is detected in the road ahead.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable at Standstill</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when the vehicle is at a standstill.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Model Slow Down Detection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Follow Lead Vehicle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Lead Vehicle Detection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when a lead vehicle is detected and significantly slowing.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Significantly Slower Lead Detection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Stopped Lead Detection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Distance-Based Switching</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when the distance to the lead vehicle is below the specified threshold.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Distance Threshold</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Distance from lead vehicle in meters below which blended mode will be used.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Speed-Based Switching</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when the vehicle speed is below the specified threshold.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Speed Threshold</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Speed in km/h below which blended mode will be used.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Currently active. Prefers ACC with weighted confidence when following a lead vehicle for normal scenarios. If the model wants to slowdown significantly, it will still trigger blended mode.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Disabled when Follow Lead Vehicle is active. Follow Lead mode overrides this when a lead vehicle is present (except during imminent slowdown scenarios).</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>When enabled, overrides model slow down detection, and prefers ACC mode when following a lead vehicle for normal scenarios. Model wants to stop now situations still trigger blended mode.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Model slow down detection must be enabled to use this mode.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use blended mode when the model detects a slow down scenario ahead.</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -576,15 +477,6 @@ La calibración del retraso de la dirección está completa.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Interactivity Timeout</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Apply a custom timeout for settings UI.
-This is the time after which settings UI closes automatically if user is not interacting with the screen.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Reboot</source>
         <translation type="unfinished">Reiniciar</translation>
     </message>
@@ -629,10 +521,6 @@ This is the time after which settings UI closes automatically if user is not int
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Always Offroad</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>⁍ Default: Device will boot/wake-up normally &amp; will be ready to engage.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -642,6 +530,34 @@ This is the time after which settings UI closes automatically if user is not int
     </message>
     <message>
         <source>Controls state of the device after boot/sleep.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Onroad Uploads</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Always Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>DisplayPanel</name>
+    <message>
+        <source>Onroad Screen: Reduced Brightness</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Turn off device screen or reduce brightness after driving starts. It automatically brightens again when screen is touched or a visible alert is displayed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Interactivity Timeout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Apply a custom timeout for settings UI.
+This is the time after which settings UI closes automatically if user is not interacting with the screen.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -810,6 +726,27 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <source>MAX</source>
         <translation>MAX</translation>
     </message>
+</context>
+<context>
+    <name>HudRendererSP</name>
+    <message>
+        <source>km/h</source>
+        <translation type="unfinished">km/h</translation>
+    </message>
+    <message>
+        <source>mph</source>
+        <translation type="unfinished">mph</translation>
+    </message>
+    <message>
+        <source>GREEN
+LIGHT</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>LEAD VEHICLE
+DEPARTING</source>
+        <translation type="unfinished"></translation>
+    </message>
     <message>
         <source>SPEED</source>
         <translation type="unfinished"></translation>
@@ -819,43 +756,32 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Near</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>km</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>m</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>mi</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ft</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>AHEAD</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>PREPARING</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ADAPTING</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ACTIVE</source>
-        <translation type="unfinished">ACTIVO</translation>
-    </message>
-    <message>
-        <source>TURN AHEAD</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>TURNING</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>TURN EXIT</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>HyundaiLiveTuning</name>
-    <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reset to defaults</source>
-        <translation type="unfinished"></translation>
+        <source>MAX</source>
+        <translation type="unfinished">MAX</translation>
     </message>
 </context>
 <context>
@@ -873,7 +799,15 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Custom Longitudinal Tuning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>This feature can only be used with openpilot longitudinal control enabled.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -890,34 +824,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Longitudinal Tuning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Tuning Override</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Customize Tune</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select all available options.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Warning: Deviating from the preset tune can introduce undesirable behavior. Use at your own risk.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>When enabled, custom values override the selected tuning mode. </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom tuning is only available when longitudinal tuning is set to Dynamic or Predictive mode.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -947,44 +853,6 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>LaneTurnDesireControl</name>
-    <message>
-        <source>Lane Turn Desires</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>If you&apos;re driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong turn direction.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Nudge</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>LaneTurnSettings</name>
-    <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Adjust Lane Turn Speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Set the maximum speed for lane turn desires. Default is 19 %1.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1031,7 +899,15 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Customize Lane Turn</source>
+        <source>Enforce Torque Lateral Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this to enforce sunnypilot to steer with Torque lateral control.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Customize Params</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1058,55 +934,31 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Vibe Personality Controller</source>
+        <source>Intelligent Cruise Button Management (ICBM) (Alpha)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). Customize your driving experience with independent acceleration and distance personalities.</source>
+        <source>When enabled, sunnypilot will attempt to manage the built-in cruise control buttons by emulating button presses for limited longitudinal control.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Acceleration Personality</source>
+        <source>Smart Cruise Control - Vision</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). Adjust how aggressively the vehicle accelerates while maintaining smooth operation.</source>
+        <source>Use vision path predictions to estimate the appropriate speed to drive through turns ahead.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Following Distance Personality</source>
+        <source>Smart Cruise Control - Map</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). Fine-tune your comfort level in traffic situations.</source>
+        <source>Use map data to estimate the appropriate speed to drive through turns ahead.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Speed Limit Control (SLC)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Customize DEC</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Vision Turn Speed Controller</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged.</source>
+        <source>Speed Limit</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1367,6 +1219,18 @@ The default software delay value is 0.2</source>
         <source>Total Delay:</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Use Lane Turn Desires</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Adjust Lane Turn Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set the maximum speed for lane turn desires. Default is 19 %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MultiOptionDialog</name>
@@ -1487,10 +1351,6 @@ The default software delay value is 0.2</source>
     <message>
         <source>An update to your device&apos;s operating system is downloading in the background. You will be prompted to update when it&apos;s ready to install.</source>
         <translation>Se está descargando una actualización del sistema operativo de su dispositivo en segundo plano. Se le pedirá que actualice cuando esté listo para instalarse.</translation>
-    </message>
-    <message>
-        <source>NVMe drive not mounted.</source>
-        <translation>Unidad NVMe no montada.</translation>
     </message>
     <message>
         <source>Device failed to register with the comma.ai backend. It will not connect or upload to comma.ai servers, and receives no support from comma.ai. If this is a device purchased at comma.ai/shop, open a ticket at https://comma.ai/support.</source>
@@ -1909,59 +1769,56 @@ Warning: You are on a metered connection!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Deceleration Max</source>
+        <source>None</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Deceleration limit, higher negative value equals more brakeforce (m/s^2)</source>
+        <source>Fixed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Acceleration Max</source>
+        <source>Percent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Acceleration limit (m/s^2)</source>
+        <source>Car
+Only</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Stopping Threshold</source>
+        <source>Map
+Only</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Velocity threshold for stopping behavior (m/s)</source>
+        <source>Car
+First</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Stopping Decel Rate</source>
+        <source>Map
+First</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Deceleration rate when stopping (m/s^2)</source>
+        <source>Combined
+Data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Min Upper Jerk</source>
+        <source>Off</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Minimum accel jerk limit (m/s^3)</source>
+        <source>Information</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Min Lower Jerk</source>
+        <source>Warning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Minimum braking jerk limit (m/s^3)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dynamic Tune Jerk Max</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Maximum lower jerk limit the tune cannot exceed (m/s^3)</source>
+        <source>Assist</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2057,6 +1914,10 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Developer</source>
         <translation type="unfinished">Desarrollador</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2295,14 +2156,7 @@ Warning: You are on a metered connection!</source>
     </message>
 </context>
 <context>
-    <name>SpeedLimitControl</name>
-    <message>
-        <source>Customize SLC</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SpeedLimitControlPolicy</name>
+    <name>SpeedLimitPolicy</name>
     <message>
         <source>Back</source>
         <translation type="unfinished"></translation>
@@ -2333,13 +2187,13 @@ Warning: You are on a metered connection!</source>
     </message>
 </context>
 <context>
-    <name>SpeedLimitControlSubpanel</name>
+    <name>SpeedLimitSettings</name>
     <message>
         <source>Back</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Customize Warning</source>
+        <source>Speed Limit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2347,22 +2201,10 @@ Warning: You are on a metered connection!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Engage Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Speed Limit Offset</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>⦿ Auto: Automatic speed adjustment based on speed limit data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ User Confirm: Asks driver to confirm speed adjustment based on speed limit data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>⦿ None: No Offset</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2374,47 +2216,20 @@ Warning: You are on a metered connection!</source>
         <source>⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]</source>
         <translation type="unfinished"></translation>
     </message>
-</context>
-<context>
-    <name>SpeedLimitControlWarning</name>
     <message>
-        <source>Back</source>
+        <source>⦿ Off: Disables the Speed Limit functions.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Speed Limit Warning</source>
+        <source>⦿ Information: Displays the current road&apos;s speed limit.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Warning Offset</source>
+        <source>⦿ Warning: Provides a warning when exceeding the current road&apos;s speed limit.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>N/A</source>
-        <translation type="unfinished">N/A</translation>
-    </message>
-    <message>
-        <source>⦿ Off: No Warning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ Display: Speed Limit Sign will visually alert</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ Chime: Speed Limit Sign will visually alert along with an audible chime</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ None: No Offset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ Fixed: Adds a fixed offset [Speed Limit + Offset]</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]</source>
+        <source>⦿ Assist: Adjusts the vehicle&apos;s cruise speed based on the current road&apos;s speed limit when operating the +/- buttons.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2764,6 +2579,14 @@ Warning: You are on a metered connection!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Enable Dynamic Experimental Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2791,24 +2614,58 @@ Warning: You are on a metered connection!</source>
         <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>TorqueLateralControlCustomParams</name>
     <message>
-        <source>Sport</source>
+        <source>Manual Real-Time Tuning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Normal</source>
+        <source>Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Eco</source>
+        <source>Lateral Acceleration Factor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Acceleration Personality</source>
+        <source>Friction</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
+        <source>Real-time and Offline</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Offline Only</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>TorqueLateralControlSettings</name>
+    <message>
+        <source>Self-Tune</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enables self-tune for Torque lateral control for platforms that do not use Torque lateral control by default.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Less Restrict Settings for Self-Tune (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Custom Tuning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enables custom tuning for Torque lateral control. Modifying Lateral Acceleration Factor and Friction below will override the offline values indicated in the YAML files within &quot;opendbc/car/torque_data&quot;. The values will also be used live when &quot;Manual Real-Time Tuning&quot; toggle is enabled.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2874,15 +2731,84 @@ Warning: You are on a metered connection!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable the rainbow mode, which displays a rainbow effect on the screen.</source>
+        <source>A beautiful rainbow effect on the path the model wants to take.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Use Metric Units for Distance</source>
+        <source>It</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>If enabled, distances below the chevron are shown in meters. If disabled, distances are shown in feet.</source>
+        <source>does not</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>affect driving in any way.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Standstill Timer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show a timer on the HUD when the car is at a standstill.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display Road Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Displays the name of the road the car is traveling on. The OpenStreetMap database of the location must be downloaded from the OSM panel to fetch the road name.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Green Traffic Light Alert (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A chime and on-screen alert will play when the traffic light you are waiting for turns green and you have no vehicle in front of you.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: This chime is only designed as a notification. It is the driver&apos;s responsibility to observe their environment and make decisions accordingly.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lead Departure Alert (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speedometer: Always Display True Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Always display the true vehicle current speed from wheel speed sensors.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speedometer: Hide from Onroad Screen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Right &amp;&amp;
+Bottom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Developer UI</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display real-time parameters and metrics from various sources.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

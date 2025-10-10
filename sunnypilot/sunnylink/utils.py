@@ -6,31 +6,32 @@ from openpilot.common.params import Params, ParamKeyType
 from openpilot.system.version import is_prebuilt
 
 
-def get_sunnylink_status(params=None) -> tuple[bool, bool]:
+def get_sunnylink_status(params=None) -> tuple[bool, bool, bool]:
   """Get the status of Sunnylink on the device. Returns a tuple of (is_sunnylink_enabled, is_registered)."""
   params = params or Params()
   is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
   is_registered = params.get("SunnylinkDongleId") not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
-  return is_sunnylink_enabled, is_registered
+  is_on_temporary_fault = params.get_bool("SunnylinkTempFault")
+  return is_sunnylink_enabled, is_registered, is_on_temporary_fault
 
 
 def sunnylink_ready(params=None) -> bool:
   """Check if the device is ready to communicate with Sunnylink. That means it is enabled and registered."""
   params = params or Params()
-  is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
-  return is_sunnylink_enabled and is_registered
+  is_sunnylink_enabled, is_registered, is_on_temporary_fault = get_sunnylink_status(params)
+  return is_sunnylink_enabled and is_registered and not is_on_temporary_fault
 
 
 def use_sunnylink_uploader(params) -> bool:
   """Check if the device is ready to use Sunnylink and the uploader is enabled."""
-  return sunnylink_ready(params) and params.get_bool("EnableSunnylinkUploader")
+  return not params.get_bool("NetworkMetered") and sunnylink_ready(params) and params.get_bool("EnableSunnylinkUploader")
 
 
 def sunnylink_need_register(params=None) -> bool:
   """Check if the device needs to be registered with Sunnylink."""
   params = params or Params()
-  is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
-  return is_sunnylink_enabled and not is_registered
+  is_sunnylink_enabled, is_registered, is_on_temporary_fault = get_sunnylink_status(params)
+  return is_sunnylink_enabled and not is_registered and not is_on_temporary_fault
 
 
 def register_sunnylink():
@@ -47,8 +48,12 @@ def register_sunnylink():
       "timeout": 60
     }
 
-  sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
-  print(f"SunnyLinkId: {sunnylink_id}")
+  try:
+    sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
+    print(f"SunnyLinkId: {sunnylink_id}")
+  except Exception:
+    Params().put_bool("SunnylinkTempFault", True)
+    raise
 
 
 def get_api_token():
@@ -60,14 +65,20 @@ def get_api_token():
   print(f"API Token: {token}")
 
 
-def get_param_as_byte(param_name: str, params=None) -> bytes | None:
+def get_param_as_byte(param_name: str, params=None, get_default=False) -> bytes | None:
   """Get a parameter as bytes. Returns None if the parameter does not exist."""
-  params = params or Params() # Use existing Params instance if provided
-  param = params.get(param_name)
+  params = params or Params()
+  param = params.get(param_name) if not get_default else params.get_default_value(param_name)
+
   if param is None:
     return None
 
   param_type = params.get_type(param_name)
+  return _to_bytes(param, param_type)
+
+
+def _to_bytes(param: bytes, param_type: ParamKeyType) -> bytes | None:
+  """Convert a parameter value to bytes based on its type."""
   if param_type == ParamKeyType.BYTES:
     return bytes(param)
   elif param_type == ParamKeyType.JSON:

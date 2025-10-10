@@ -179,11 +179,28 @@ def getParamsAllKeys() -> list[str]:
 
 
 @dispatcher.add_method
+def getParamsAllKeysV1() -> dict[str, str]:
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+
+  params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
+  for key in available_keys:
+    value = get_param_as_byte(key, get_default=True)
+    params_dict["params"].append({
+      "key": key,
+      "type": int(params.get_type(key).value),
+      "default_value": base64.b64encode(value).decode('utf-8') if value else None,
+    })
+
+  return {"keys": json.dumps(params_dict.get("params", []))}
+
+
+@dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
   params = Params()
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
   try:
-    param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
+    param_keys_validated = [key for key in params_keys if key in available_keys]
     params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
     for key in param_keys_validated:
       value = get_param_as_byte(key)

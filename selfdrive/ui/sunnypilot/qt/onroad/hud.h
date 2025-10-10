@@ -36,7 +36,9 @@ private:
   void drawRoadName(QPainter &p, const QRect &surface_rect);
   void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
   void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
-  void drawE2eAlert(QPainter &p, const QRect &surface_rect);
+  void drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text = "");
+  void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
+  void drawBlinker(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -106,4 +108,11 @@ private:
   QPixmap lead_depart_alert_large_img;
   QString alert_text;
   QPixmap alert_img;
+  bool hideVEgoUI;
+  bool leftBlinkerOn;
+  bool rightBlinkerOn;
+  bool leftBlindspot;
+  bool rightBlindspot;
+  int blinkerFrameCounter;
+  bool showTurnSignals;
 };
