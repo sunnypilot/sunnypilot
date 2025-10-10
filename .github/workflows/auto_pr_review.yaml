@@ -40,10 +40,10 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event.pull_request.head.repo.fork && (contains(github.event_name, 'pull_request') && github.event.action == 'synchronize'))
     env:
-      PR_LABEL: 'dev-c3'
+      PR_LABEL: 'dev'
       TRUST_FORK_PR_LABEL: 'trust-fork-pr'
     steps:
-      - name: Check if PR has dev-c3 label
+      - name: Check if PR has dev label
         id: check-labels
         uses: actions/github-script@v7
         with:
@@ -62,11 +62,11 @@ jobs:
             console.log(`PR #${prNumber} has ${process.env.PR_LABEL} label: ${hasDevC3Label}`);
             console.log(`PR #${prNumber} has ${process.env.TRUST_FORK_PR_LABEL} label: ${hasTrustLabel}`);
             
-            core.setOutput('has-dev-c3', hasDevC3Label ? 'true' : 'false');
+            core.setOutput('has-dev', hasDevC3Label ? 'true' : 'false');
             core.setOutput('has-trust', hasTrustLabel ? 'true' : 'false');
 
       - name: Remove trust-fork-pr label if present
-        if: steps.check-labels.outputs.has-dev-c3 == 'true' && steps.check-labels.outputs.has-trust == 'true'
+        if: steps.check-labels.outputs.has-dev == 'true' && steps.check-labels.outputs.has-trust == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

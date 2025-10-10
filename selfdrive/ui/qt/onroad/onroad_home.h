@@ -4,8 +4,10 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/onroad/annotated_camera.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/alerts.h"
 #define UIState UIStateSP
 #define AnnotatedCameraWidget AnnotatedCameraWidgetSP
+#define OnroadAlerts OnroadAlertsSP
 #else
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 #endif
