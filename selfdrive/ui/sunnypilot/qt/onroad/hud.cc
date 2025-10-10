@@ -127,6 +127,9 @@ void HudRendererSP::updateState(const UIState &s) {
   leftBlindspot = car_state.getLeftBlindspot();
   rightBlindspot = car_state.getRightBlindspot();
   showTurnSignals = s.scene.turn_signals;
+
+  carControlEnabled = car_control.getEnabled();
+  speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -685,10 +688,21 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
     }
   }
 
-  // Draw "MAX" text
+  // Draw "MAX" or carState.cruiseState.speedCluster (when ICBM is active) text
+  if (carControlEnabled) {
+    if (std::nearbyint(set_speed) != std::nearbyint(speedCluster)) {
+      icbm_active_counter = 3 * UI_FREQ;
+    } else if (icbm_active_counter > 0) {
+      icbm_active_counter--;
+    }
+  } else {
+    icbm_active_counter = 0;
+  }
+  QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
+
   p.setFont(InterFont(40, QFont::DemiBold));
   p.setPen(max_color);
-  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("MAX"));
+  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, max_str);
 
   // Draw set speed
   QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
