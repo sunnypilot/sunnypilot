@@ -16,6 +16,8 @@ typedef struct UISceneSP : UIScene {
   bool onroadScreenOffControl;
   int onroadScreenOffTimerParam;
   bool trueVEgoUI;
+  bool hideVEgoUI;
+  bool turn_signals = false;
   int visual_radar_tracks = 0;
   float visual_radar_tracks_delay = 0;
   int visual_wide_cam = 0;

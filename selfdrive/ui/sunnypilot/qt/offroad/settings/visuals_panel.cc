@@ -89,6 +89,20 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       false,
     },
     {
+      "HideVEgoUI",
+      tr("Speedometer: Hide from Onroad Screen"),
+      tr("When enabled, the speedometer on the onroad screen is not displayed."),
+      "",
+      false,
+    },
+    {
+      "ShowTurnSignals",
+      tr("Display Turn Signals"),
+      tr("When enabled, visual turn indicators are drawn on the HUD."),
+      "",
+      false,
+    },
+    {
       "VisualRadarTracks",
       tr("Show Radar Tracks"),
       tr("Shows what the cars radar sees."),

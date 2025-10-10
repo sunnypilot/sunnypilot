@@ -73,12 +73,16 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
   s->scene.road_name = params.getBool("RoadNameToggle");
   s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
+  s->scene.hideVEgoUI = params.getBool("HideVEgoUI");
 
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
   s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
   s->reset_onroad_sleep_timer();
+
+  s->scene.turn_signals = params.getBool("ShowTurnSignals");
+
   s->scene.visual_radar_tracks = QString::fromStdString(params.get("VisualRadarTracks")).toInt();
   s->scene.visual_radar_tracks_delay = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
   s->scene.visual_wide_cam = QString::fromStdString(params.get("VisualWideCam")).toInt();
