@@ -56,14 +56,13 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(errorLogBtn);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &DeveloperPanelSP::updateToggles);
-
-  is_release = params.getBool("IsReleaseBranch");
-  is_tested = params.getBool("IsTestedBranch");
-  is_development = params.getBool("IsDevelopmentBranch");
 }
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
   bool disable_updates = params.getBool("DisableUpdates");
+  bool is_release = params.getBool("IsReleaseBranch");
+  bool is_tested = params.getBool("IsTestedBranch");
+  bool is_development = params.getBool("IsDevelopmentBranch");
 
   prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
   prebuiltToggle->setEnabled(disable_updates);
