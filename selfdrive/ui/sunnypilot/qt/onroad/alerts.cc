@@ -20,11 +20,14 @@ OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t start
 }
 
 void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
+  bool hideAlerts = params.getBool("QuietModeUI");
   if (alert.size == cereal::SelfdriveState::AlertSize::NONE) {
     return;
   } else if (alert.size == cereal::SelfdriveState::AlertSize::FULL) {
     OnroadAlerts::paintEvent(event);
     return;
+  } else if (hideAlerts) {
+    if (alert.status == cereal::SelfdriveState::AlertStatus::NORMAL) return;
   }
   static std::map<cereal::SelfdriveState::AlertSize, const int> alert_heights = {
     {cereal::SelfdriveState::AlertSize::SMALL, 271},
