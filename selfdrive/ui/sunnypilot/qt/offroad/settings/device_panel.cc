@@ -131,6 +131,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   };
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
+    offroad = _offroad;
     for (auto btn : findChildren<PushButtonSP*>()) {
       bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
 
@@ -138,7 +139,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
         btn->setEnabled(offroad);
       }
     }
-    offroad = _offroad;
     updateState();
   });
 }
