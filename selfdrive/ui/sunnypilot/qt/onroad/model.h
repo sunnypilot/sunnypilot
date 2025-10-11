@@ -13,10 +13,15 @@ class ModelRendererSP : public ModelRenderer {
 public:
   ModelRendererSP() = default;
 
+  void draw(QPainter &painter, const QRect &surface_rect);
+
 private:
   void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) override;
-  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &rect) override;
-  void rocketFuel(QPainter &p, const QRect &surface_rect);
+  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) override;
+
+  void drawBlindspot(QPainter &painter, const QRect &surface_rect, bool left_blindspot, bool right_blindspot);
+  void drawRainbowPath(QPainter &painter, const QRect &surface_rect);
+  void drawRocketFuel(QPainter &painter, const QRect &surface_rect, float accel);
 
   QPolygonF left_blindspot_vertices;
   QPolygonF right_blindspot_vertices;
