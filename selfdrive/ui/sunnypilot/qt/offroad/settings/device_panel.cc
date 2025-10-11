@@ -23,6 +23,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     {"regulatoryBtn", tr("Regulatory"), ""},
     {"translateBtn", tr("Language"), ""},
     {"resetParams", tr("Reset Settings"), ""},
+    {"onroadUploadsBtn", tr("Onroad Uploads"), "OnroadUploads"}
   };
 
   int row = 0, col = 0;
@@ -75,6 +76,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
+  connect(buttons["onroadUploadsBtn"], &PushButtonSP::clicked, buttons["onroadUploadsBtn"], &PushButtonSP::updateButton);
+
   // Max Time Offroad
   maxTimeOffroad = new MaxTimeOffroad();
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
@@ -87,22 +90,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
     updateState();
   });
-
-  interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
-                                     tr("Apply a custom timeout for settings UI."
-                                        "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
-                                     "", {0, 120}, 10, true, nullptr, false);
-
-  connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
-    updateState();
-  });
-
-  addItem(interactivityTimeout);
-  
-  // Brightness
-  brightness = new Brightness();
-  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
-  addItem(brightness);
 
   addItem(device_grid_layout);
 
@@ -140,6 +127,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     poweroffBtn,
     offroadBtn,
     buttons["quietModeBtn"],
+    buttons["onroadUploadsBtn"],
   };
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
@@ -210,13 +198,6 @@ void DevicePanelSP::updateState() {
     currStatus = DeviceSleepModeStatus::OFFROAD;
   }
   toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
-
-  QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
-  if (timeoutValue == "0" || timeoutValue.isEmpty()) {
-    interactivityTimeout->setLabel("Default");
-  } else {
-    interactivityTimeout->setLabel(timeoutValue + "s");
-  }
 
   if (offroad and not offroad_mode_param) {
     power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
