@@ -85,8 +85,8 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     },
     {
       "RocketFuel",
-      tr("Show Rocket Fuel Bar"),
-      tr("Show a indicator on the left side of the screen to indicate acceleration and braking."),
+      tr("Display Rocket Fuel Bar"),
+      tr("Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration."),
       "",
       false,
     }
