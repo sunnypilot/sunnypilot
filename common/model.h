@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Steam Powered (Default)"
+#define DEFAULT_MODEL "Firehose (Default)"

@@ -20,10 +20,11 @@ public:
   NeuralNetworkLateralControl();
 
 public slots:
-  void updateToggle();
+  void updateToggle(bool _offroad);
 
 private:
   Params params;
+  bool offroad;
 
   // Status messages
   const QString STATUS_NOT_AVAILABLE = tr("NNLC is currently not available on this platform.");

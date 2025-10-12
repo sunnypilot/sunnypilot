@@ -8,14 +8,14 @@ env:
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
   
   # Branch configurations
-  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master' }} # vars are set on repo settings.
+  STAGING_SOURCE_BRANCH: 'master'
   
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
 
 on:
   push:
-    branches: [ master, master-dev-c3-new ]
+    branches: [ master, master-dev ]
     tags: [ 'release/*' ]
   pull_request_target:
     types: [ labeled ]
@@ -138,7 +138,7 @@ jobs:
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_C3_SOURCE_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_SOURCE_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
       - name: Set environment variables

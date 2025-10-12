@@ -24,6 +24,7 @@ qt_src = [
   "sunnypilot/qt/offroad/offroad_home.cc",
   "sunnypilot/qt/offroad/settings/developer_panel.cc",
   "sunnypilot/qt/offroad/settings/device_panel.cc",
+  "sunnypilot/qt/offroad/settings/display_panel.cc",
   "sunnypilot/qt/offroad/settings/lateral_panel.cc",
   "sunnypilot/qt/offroad/settings/longitudinal_panel.cc",
   "sunnypilot/qt/offroad/settings/max_time_offroad.cc",
@@ -37,8 +38,10 @@ qt_src = [
   "sunnypilot/qt/offroad/settings/trips_panel.cc",
   "sunnypilot/qt/offroad/settings/vehicle_panel.cc",
   "sunnypilot/qt/offroad/settings/visuals_panel.cc",
+  "sunnypilot/qt/onroad/alerts.cc",
   "sunnypilot/qt/onroad/annotated_camera.cc",
   "sunnypilot/qt/onroad/buttons.cc",
+  "sunnypilot/qt/onroad/developer_ui/developer_ui.cc",
   "sunnypilot/qt/onroad/hud.cc",
   "sunnypilot/qt/onroad/model.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
@@ -49,10 +52,14 @@ lateral_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/lateral/lane_change_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/mads_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
+  "sunnypilot/qt/offroad/settings/lateral/torque_lateral_control_custom_params.cc",
+  "sunnypilot/qt/offroad/settings/lateral/torque_lateral_control_settings.cc",
 ]
 
 longitudinal_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_policy.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_settings.cc",
 ]
 
 network_src = [
@@ -87,9 +94,13 @@ brand_settings_qt_src = [
   "sunnypilot/qt/offroad/settings/vehicle/volkswagen_settings.cc",
 ]
 
+display_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/display/onroad_screen_brightness.cc",
+]
 
 sp_widgets_src = widgets_src + network_src
-sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + longitudinal_panel_qt_src + osm_panel_qt_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + \
+            longitudinal_panel_qt_src + osm_panel_qt_src + display_panel_qt_src
 sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")

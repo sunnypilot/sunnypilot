@@ -11,6 +11,15 @@
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
+
+  if (scene.started && scene.onroadScreenOffControl) {
+    auto selfdriveState = (*sm)["selfdriveState"].getSelfdriveState();
+    if (selfdriveState.getAlertSize() != cereal::SelfdriveState::AlertSize::NONE) {
+      reset_onroad_sleep_timer();
+    } else if (scene.onroadScreenOffTimer > 0) {
+      scene.onroadScreenOffTimer--;
+    }
+  }
 }
 
 UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
@@ -18,13 +27,23 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
-    "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP"
+    "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
+    "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
+    "carStateSP", "liveParameters", "liveMapDataSP"
   });
 
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
   timer->start(1000 / UI_FREQ);
+
+  // Param watcher for UIScene param updates
+  param_watcher = new ParamWatcher(this);
+  connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    ui_update_params_sp(this);
+  });
+  param_watcher->addParam("DevUIInfo");
+  param_watcher->addParam("StandstillTimer");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -37,6 +56,34 @@ void UIStateSP::update() {
     watchdog_kick(nanos_since_boot());
   }
   emit uiUpdate(*this);
+}
+
+void ui_update_params_sp(UIStateSP *s) {
+  auto params = Params();
+  s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+  s->scene.standstill_timer = params.getBool("StandstillTimer");
+  s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
+  s->scene.road_name = params.getBool("RoadNameToggle");
+  s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
+  s->scene.hideVEgoUI = params.getBool("HideVEgoUI");
+
+  // Onroad Screen Brightness
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
+  s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
+
+  s->scene.turn_signals = params.getBool("ShowTurnSignals");
+}
+
+void UIStateSP::reset_onroad_sleep_timer(OnroadTimerStatusToggle toggleTimerStatus) {
+  // Toggling from active state to inactive
+  if (toggleTimerStatus == OnroadTimerStatusToggle::PAUSE and scene.onroadScreenOffTimer != -1) {
+    scene.onroadScreenOffTimer = -1;
+  }
+  // Toggling from a previously inactive state or resetting an active timer
+  else if ((scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl and scene.onroadScreenOffTimer != -1) or toggleTimerStatus == OnroadTimerStatusToggle::RESUME) {
+    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
+  }
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent) {
