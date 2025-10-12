@@ -18,4 +18,6 @@ typedef struct UISceneSP : UIScene {
   bool trueVEgoUI;
   bool hideVEgoUI;
   bool turn_signals = false;
+  bool blindspot_ui;
+  bool rainbow_mode;
 } UISceneSP;

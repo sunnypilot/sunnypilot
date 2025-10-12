@@ -24,7 +24,7 @@ void ModelRendererSP::update_model(const cereal::ModelDataV2::Reader &model, con
 void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  bool blindspot = Params().getBool("BlindSpot");
+  bool blindspot = s->scene.blindspot_ui;
 
   if (blindspot) {
     bool left_blindspot = sm["carState"].getCarState().getLeftBlindspot();
@@ -49,7 +49,7 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
     }
   }
 
-  bool rainbow = Params().getBool("RainbowMode");
+  bool rainbow = s->scene.rainbow_mode;
   //float v_ego = sm["carState"].getCarState().getVEgo();
 
   if (rainbow) {
