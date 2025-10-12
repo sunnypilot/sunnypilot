@@ -7,6 +7,10 @@
 #include "selfdrive/ui/qt/offroad/onboarding.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#endif
+
 class MainWindow : public QWidget {
   Q_OBJECT
 

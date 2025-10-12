@@ -88,7 +88,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonClicked, this, [=](int index) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
-    updateState();
+    updateState(offroad);
   });
 
   addItem(device_grid_layout);
@@ -122,7 +122,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   addItem(power_group_layout);
 
-  std::vector always_enabled_btns = {
+  always_enabled_btns = {
     rebootBtn,
     poweroffBtn,
     offroadBtn,
@@ -130,17 +130,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     buttons["onroadUploadsBtn"],
   };
 
-  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool _offroad) {
-    for (auto btn : findChildren<PushButtonSP*>()) {
-      bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
-
-      if (!always_enabled) {
-        btn->setEnabled(offroad);
-      }
-    }
-    offroad = _offroad;
-    updateState();
-  });
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &DevicePanelSP::updateState);
 }
 
 void DevicePanelSP::setOffroadMode() {
@@ -164,7 +154,7 @@ void DevicePanelSP::setOffroadMode() {
     ConfirmationDialog::alert(tr("Disengage to Enter Always Offroad Mode"), this);
   }
 
-  updateState();
+  updateState(offroad);
 }
 
 void DevicePanelSP::resetSettings() {
@@ -181,12 +171,16 @@ void DevicePanelSP::resetSettings() {
 }
 
 void DevicePanelSP::showEvent(QShowEvent *event) {
-  updateState();
+  updateState(offroad);
 }
 
-void DevicePanelSP::updateState() {
-  if (!isVisible()) {
-    return;
+void DevicePanelSP::updateState(bool _offroad) {
+  for (auto btn : findChildren<PushButtonSP*>()) {
+    bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
+
+    if (!always_enabled) {
+      btn->setEnabled(_offroad);
+    }
   }
 
   bool offroad_mode_param = params.getBool("OffroadMode");
@@ -204,4 +198,6 @@ void DevicePanelSP::updateState() {
   } else {
     AddWidgetAt(0, offroadBtn);
   }
+
+  offroad = _offroad;
 }
