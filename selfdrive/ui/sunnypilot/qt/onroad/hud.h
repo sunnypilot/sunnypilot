@@ -114,6 +114,7 @@ private:
   bool leftBlindspot;
   bool rightBlindspot;
   int blinkerFrameCounter;
+  int lastBlinkerStatus;
   bool showTurnSignals;
 
   bool carControlEnabled;
