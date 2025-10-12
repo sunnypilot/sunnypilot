@@ -244,6 +244,4 @@ void DevicePanelSP::updateParkingShockIndicator() {
   } catch (...) {
     lastParkingShockLabel->setText(tr("Error"));
   }
-
-  offroad = _offroad;
 }
