@@ -776,19 +776,33 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
+  const bool hazard = leftBlinkerOn && rightBlinkerOn;
+  int blinkerStatus = hazard ? 2 : (leftBlinkerOn or rightBlinkerOn) ? 1 : 0;
+
   if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
+    lastBlinkerStatus = 0;
     return;
   }
+
+  if (blinkerStatus != lastBlinkerStatus) {
+    blinkerFrameCounter = 0;
+    lastBlinkerStatus = blinkerStatus;
+  }
+
   ++blinkerFrameCounter;
 
-  const int circleRadius = 44;
-  const int arrowLength = 44;
-  const int x_gap = 180;
+  const int BLINKER_COOLDOWN_FRAMES = UI_FREQ / 10;
+  if (blinkerFrameCounter < BLINKER_COOLDOWN_FRAMES) {
+    return;
+  }
+
+  const int circleRadius = 60;
+  const int arrowLength = 60;
+  const int x_gap = 160;
   const int y_offset = 272;
 
   const int centerX = surface_rect.center().x();
-  const bool hazard = leftBlinkerOn && rightBlinkerOn;
 
   const QPen bgBorder(Qt::white, 5);
   const QPen arrowPen(Qt::NoPen);
