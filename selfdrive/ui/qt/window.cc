@@ -94,12 +94,12 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       device()->resetInteractiveTimeout();
 
 #ifdef SUNNYPILOT
-      UIStateSP *uiSP = uiStateSP();
-      bool onroadScreenControl = uiSP->scene.onroadScreenOffControl;
-      bool started = uiSP->scene.started;
-      bool timerExpired = (uiSP->scene.onroadScreenOffTimer == 0);
+      auto *s_sp = uiStateSP();
+      bool onroadScreenControl = s_sp->scene.onroadScreenOffControl;
+      bool started = s_sp->scene.started;
+      bool timerExpired = (s_sp->scene.onroadScreenOffTimer == 0);
       ignore |= (onroadScreenControl and started and timerExpired);
-      uiSP->reset_onroad_sleep_timer();
+      s_sp->reset_onroad_sleep_timer();
 #endif
 
       break;
