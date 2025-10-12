@@ -29,11 +29,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-<<<<<<< Updated upstream
     "carStateSP", "liveParameters", "liveMapDataSP", "parkingEvent"
-=======
-    "carStateSP", "liveParameters", "liveMapDataSP"
->>>>>>> Stashed changes
   });
 
   // update timer

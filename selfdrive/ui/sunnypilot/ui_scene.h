@@ -18,12 +18,9 @@ typedef struct UISceneSP : UIScene {
   bool trueVEgoUI;
   bool hideVEgoUI;
   bool turn_signals = false;
-<<<<<<< Updated upstream
 
   // Parking Mode
   bool parkingShockDetected = false;
   uint64_t parkingShockTimestamp = 0;
   float parkingShockMagnitude = 0.0f;
-=======
->>>>>>> Stashed changes
 } UISceneSP;

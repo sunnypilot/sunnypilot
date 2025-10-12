@@ -13,7 +13,6 @@
 #include <QFont>
 
 OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t started_frame) {
-<<<<<<< Updated upstream
   // Check for parking mode shock detection
   if (uiStateSP()->scene.parkingShockDetected) {
     OnroadAlerts::Alert parking_alert;
@@ -26,8 +25,6 @@ OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t start
     return parking_alert;
   }
 
-=======
->>>>>>> Stashed changes
   OnroadAlerts::Alert alert = OnroadAlerts::getAlert(sm, started_frame);
   alert.text1.replace("openpilot", "sunnypilot");
   alert.text2.replace("openpilot", "sunnypilot");
