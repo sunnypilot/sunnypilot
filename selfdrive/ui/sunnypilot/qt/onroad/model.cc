@@ -140,7 +140,7 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   auto &sm = *(s->sm);
   float v_ego = sm["carState"].getCarState().getVEgo();
 
-  int chevron_data = std::atoi(Params().get("ChevronInfo").c_str());
+  int chevron_data = s->scene.chevron_info;
   float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
 
   QFont content_font = painter.font();

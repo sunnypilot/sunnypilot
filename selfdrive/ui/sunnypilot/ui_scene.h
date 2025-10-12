@@ -18,4 +18,5 @@ typedef struct UISceneSP : UIScene {
   bool trueVEgoUI;
   bool hideVEgoUI;
   bool turn_signals = false;
+  int chevron_info;
 } UISceneSP;
