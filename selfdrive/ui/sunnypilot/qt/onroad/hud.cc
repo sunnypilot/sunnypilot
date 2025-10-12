@@ -714,9 +714,8 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
   int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
-  int y = surface_rect.center().y() + 40;
+  int y = surface_rect.center().y() + 20;
   x += devUiInfo > 0 ? 0 : 50;
-  y += devUiInfo > 0 ? 0 : 80;
   QRect alertRect(x - size, y - size, size * 2, size * 2);
 
   // Alert Circle
@@ -777,19 +776,33 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
+  const bool hazard = leftBlinkerOn && rightBlinkerOn;
+  int blinkerStatus = hazard ? 2 : (leftBlinkerOn or rightBlinkerOn) ? 1 : 0;
+
   if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
+    lastBlinkerStatus = 0;
     return;
   }
+
+  if (blinkerStatus != lastBlinkerStatus) {
+    blinkerFrameCounter = 0;
+    lastBlinkerStatus = blinkerStatus;
+  }
+
   ++blinkerFrameCounter;
 
-  const int circleRadius = 44;
-  const int arrowLength = 44;
-  const int x_gap = 180;
+  const int BLINKER_COOLDOWN_FRAMES = UI_FREQ / 10;
+  if (blinkerFrameCounter < BLINKER_COOLDOWN_FRAMES) {
+    return;
+  }
+
+  const int circleRadius = 60;
+  const int arrowLength = 60;
+  const int x_gap = 160;
   const int y_offset = 272;
 
   const int centerX = surface_rect.center().x();
-  const bool hazard = leftBlinkerOn && rightBlinkerOn;
 
   const QPen bgBorder(Qt::white, 5);
   const QPen arrowPen(Qt::NoPen);
