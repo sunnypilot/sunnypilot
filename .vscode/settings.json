@@ -28,5 +28,6 @@
   "files.associations": {
     "*.ts": "typescript",
     "string": "cpp"
-  }
+  },
+  "workbench.colorTheme": "Winter is Coming (Dark Black - No Italics)"
 }

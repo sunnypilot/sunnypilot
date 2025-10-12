@@ -60,7 +60,7 @@ class ParkingMonitor:
 
     data = np.array(self.calibration_data)
     self.mean_accel = np.mean(data, axis=0)
-    
+
     try:
       cov = np.cov(data, rowvar=False)
       self.cov_inv_accel = np.linalg.inv(cov)
@@ -79,10 +79,10 @@ class ParkingMonitor:
 
     current_accel = np.array(self.sm['accelerometer'].acceleration.v)
     diff = current_accel - self.mean_accel
-    
+
     # Mahalanobis distance squared: D² = (x - μ)ᵀ Σ⁻¹ (x - μ)
     mahal_dist_sq = diff.T @ self.cov_inv_accel @ diff
-    
+
     is_shock = mahal_dist_sq > self.MAHALANOBIS_THRESHOLD
     return is_shock, math.sqrt(mahal_dist_sq)
 
@@ -90,7 +90,7 @@ class ParkingMonitor:
     if not self.sm.valid['deviceState']:
       return 13.0  # Default safe value
 
-    return self.sm['deviceState'].batteryVoltage
+    return float(self.sm['deviceState'].batteryVoltage)
 
   def should_shutdown(self) -> bool:
     voltage = self.check_battery_voltage()
@@ -163,7 +163,7 @@ class ParkingMonitor:
       # Détection de chocs (après calibration)
       shock, magnitude = self.detect_shock_mahalanobis()
       if shock:
-        current_time = int(time.time())
+        current_time = int(self.sm['deviceState'].wallTimeNanos / 1e9)
         cloudlog.event("parking_shock_detected", magnitude=magnitude, timestamp=current_time)
         cloudlog.warning(f"Parking Mode: Impact detected! Magnitude (Mahalanobis): {magnitude:.2f} at {current_time}")
 
@@ -178,7 +178,7 @@ class ParkingMonitor:
         msg.valid = True
         msg.parkingEvent.shockDetected = True
         msg.parkingEvent.magnitude = magnitude
-        msg.parkingEvent.timestamp = int(time.monotonic() * 1e9)
+        msg.parkingEvent.timestamp = self.sm['deviceState'].wallTimeNanos
         self.pm.send('parkingEvent', msg)
 
 
