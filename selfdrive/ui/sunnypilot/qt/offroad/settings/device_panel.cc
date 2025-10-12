@@ -83,7 +83,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
   addItem(maxTimeOffroad);
 
-<<<<<<< Updated upstream
   // Parking Mode
   ParamControl *parkingModeToggle = new ParamControl("EnableParkingMode",
     tr("Parking Mode"),
@@ -100,8 +99,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   connect(shockUpdateTimer, &QTimer::timeout, this, &DevicePanelSP::updateParkingShockIndicator);
   shockUpdateTimer->start(1000);  // Update every second
 
-=======
->>>>>>> Stashed changes
   toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
   addItem(toggleDeviceBootMode);
 
@@ -216,7 +213,6 @@ void DevicePanelSP::updateState(bool _offroad) {
     power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
   } else {
     AddWidgetAt(0, offroadBtn);
-<<<<<<< Updated upstream
   }
 
   offroad = _offroad;
@@ -247,8 +243,6 @@ void DevicePanelSP::updateParkingShockIndicator() {
     lastParkingShockLabel->setText(display_text);
   } catch (...) {
     lastParkingShockLabel->setText(tr("Error"));
-=======
->>>>>>> Stashed changes
   }
 
   offroad = _offroad;

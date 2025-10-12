@@ -32,10 +32,7 @@ private:
   PushButtonSP *offroadBtn;
   MaxTimeOffroad *maxTimeOffroad;
   ButtonParamControlSP *toggleDeviceBootMode;
-<<<<<<< Updated upstream
   LabelControlSP *lastParkingShockLabel;
-=======
->>>>>>> Stashed changes
   QVBoxLayout *power_group_layout;
   bool offroad;
 
