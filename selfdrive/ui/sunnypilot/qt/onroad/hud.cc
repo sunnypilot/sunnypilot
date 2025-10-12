@@ -714,9 +714,8 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
   int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
   int x = surface_rect.center().x() + surface_rect.width() / 4;
-  int y = surface_rect.center().y() + 40;
+  int y = surface_rect.center().y() + 20;
   x += devUiInfo > 0 ? 0 : 50;
-  y += devUiInfo > 0 ? 0 : 80;
   QRect alertRect(x - size, y - size, size * 2, size * 2);
 
   // Alert Circle
