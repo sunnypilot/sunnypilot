@@ -25,12 +25,17 @@ public:
   void setOffroadMode();
   void updateState(bool _offroad);
   void resetSettings();
+  void updateParkingShockIndicator();
 
 private:
   std::map<QString, PushButtonSP*> buttons;
   PushButtonSP *offroadBtn;
   MaxTimeOffroad *maxTimeOffroad;
   ButtonParamControlSP *toggleDeviceBootMode;
+<<<<<<< Updated upstream
+  LabelControlSP *lastParkingShockLabel;
+=======
+>>>>>>> Stashed changes
   QVBoxLayout *power_group_layout;
   bool offroad;
 

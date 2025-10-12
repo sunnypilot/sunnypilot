@@ -83,6 +83,25 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
   addItem(maxTimeOffroad);
 
+<<<<<<< Updated upstream
+  // Parking Mode
+  ParamControl *parkingModeToggle = new ParamControl("EnableParkingMode",
+    tr("Parking Mode"),
+    tr("Enable intelligent dashcam mode when parked. Continuously records and automatically preserves footage when impacts are detected."),
+    "../assets/offroad/icon_road.png");
+  addItem(parkingModeToggle);
+
+  // Last Parking Shock Indicator
+  lastParkingShockLabel = new LabelControlSP(tr("Last Impact Detected"), tr("None"), tr("Displays the most recent parking mode impact event."));
+  addItem(lastParkingShockLabel);
+
+  // Timer to update shock indicator
+  QTimer *shockUpdateTimer = new QTimer(this);
+  connect(shockUpdateTimer, &QTimer::timeout, this, &DevicePanelSP::updateParkingShockIndicator);
+  shockUpdateTimer->start(1000);  // Update every second
+
+=======
+>>>>>>> Stashed changes
   toggleDeviceBootMode = new ButtonParamControlSP("DeviceBootMode", tr("Wake-Up Behavior"), "", "", {"Default", "Offroad"}, 375, true);
   addItem(toggleDeviceBootMode);
 
@@ -197,6 +216,39 @@ void DevicePanelSP::updateState(bool _offroad) {
     power_group_layout->insertWidget(0, offroadBtn, 0, Qt::AlignHCenter);
   } else {
     AddWidgetAt(0, offroadBtn);
+<<<<<<< Updated upstream
+  }
+
+  offroad = _offroad;
+}
+
+void DevicePanelSP::updateParkingShockIndicator() {
+  std::string shock_time_str = params.get("LastParkingShockTime");
+  std::string shock_magnitude_str = params.get("LastParkingShockMagnitude");
+
+  if (shock_time_str.empty() || shock_magnitude_str.empty()) {
+    lastParkingShockLabel->setText(tr("None"));
+    return;
+  }
+
+  try {
+    uint64_t shock_timestamp = std::stoull(shock_time_str);
+    float magnitude = std::stof(shock_magnitude_str);
+
+    // Convert timestamp to readable format
+    time_t rawtime = static_cast<time_t>(shock_timestamp);
+    struct tm *timeinfo = localtime(&rawtime);
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+
+    QString display_text = QString("%1 (Magnitude: %2)")
+                             .arg(buffer)
+                             .arg(magnitude, 0, 'f', 2);
+    lastParkingShockLabel->setText(display_text);
+  } catch (...) {
+    lastParkingShockLabel->setText(tr("Error"));
+=======
+>>>>>>> Stashed changes
   }
 
   offroad = _offroad;

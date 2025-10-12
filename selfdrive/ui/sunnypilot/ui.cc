@@ -29,7 +29,11 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
+<<<<<<< Updated upstream
+    "carStateSP", "liveParameters", "liveMapDataSP", "parkingEvent"
+=======
     "carStateSP", "liveParameters", "liveMapDataSP"
+>>>>>>> Stashed changes
   });
 
   // update timer
@@ -51,6 +55,14 @@ void UIStateSP::update() {
   update_sockets(this);
   update_state(this);
   updateStatus();
+
+  // Update parking shock detection state
+  if (sm->updated("parkingEvent")) {
+    auto parking_event = (*sm)["parkingEvent"].getParkingEvent();
+    scene.parkingShockDetected = parking_event.getShockDetected();
+    scene.parkingShockMagnitude = parking_event.getMagnitude();
+    scene.parkingShockTimestamp = parking_event.getTimestamp();
+  }
 
   if (sm->frame % UI_FREQ == 0) {
     watchdog_kick(nanos_since_boot());

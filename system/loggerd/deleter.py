@@ -40,8 +40,9 @@ def get_preserved_segments(dirs_by_creation: list[str]) -> set[str]:
     except ValueError:
       continue
 
-    # preserve segment and two prior
-    for _seg_num in range(max(0, seg_num - 2), seg_num + 1):
+    # preserve segment, two prior, and four after (for parking mode shock detection)
+    # 7 segments × 60s = 7 minutes of context
+    for _seg_num in range(max(0, seg_num - 2), seg_num + 5):
       preserved.add(f"{date_str}--{_seg_num}")
 
   return preserved

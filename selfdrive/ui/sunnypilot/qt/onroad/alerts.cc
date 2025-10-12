@@ -13,6 +13,21 @@
 #include <QFont>
 
 OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t started_frame) {
+<<<<<<< Updated upstream
+  // Check for parking mode shock detection
+  if (uiStateSP()->scene.parkingShockDetected) {
+    OnroadAlerts::Alert parking_alert;
+    parking_alert.text1 = tr("Parking Mode: Impact Detected");
+    float magnitude = uiStateSP()->scene.parkingShockMagnitude;
+    parking_alert.text2 = QString("Impact magnitude: %1 - Recording preserved").arg(magnitude, 0, 'f', 2);
+    parking_alert.type = "parkingShock";
+    parking_alert.size = cereal::SelfdriveState::AlertSize::MID;
+    parking_alert.status = cereal::SelfdriveState::AlertStatus::USER_PROMPT;
+    return parking_alert;
+  }
+
+=======
+>>>>>>> Stashed changes
   OnroadAlerts::Alert alert = OnroadAlerts::getAlert(sm, started_frame);
   alert.text1.replace("openpilot", "sunnypilot");
   alert.text2.replace("openpilot", "sunnypilot");
