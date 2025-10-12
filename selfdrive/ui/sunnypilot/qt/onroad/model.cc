@@ -86,9 +86,9 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
   } else {
     // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height());
-
-    drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
   }
+
+  drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 }
 
 void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
@@ -198,7 +198,8 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
 
   float text_y = chevron_pos.y() + sz + 15;
   if (text_y + total_height > height - margin) {
-    text_y = chevron_pos.y() - sz - 15 - total_height;
+    float y_max = chevron_pos.y() > (height - margin) ? (height - margin) : chevron_pos.y();
+    text_y = y_max - 15 - total_height;
     text_y = std::max(margin, text_y);
   }
 
