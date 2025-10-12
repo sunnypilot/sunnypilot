@@ -15,7 +15,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 
-enum ONROAD_TIMER_STATUS_TOGGLE {
+enum OnroadTimerStatusToggle {
   NONE,
   PAUSE,
   RESUME
@@ -67,7 +67,7 @@ public:
       return user.user_id.toLower() != "unregisteredsponsor" && user.user_id.toLower() != "temporarysponsor";
     });
   }
-  void reset_onroad_sleep_timer(ONROAD_TIMER_STATUS_TOGGLE toggleTimerStatus = ONROAD_TIMER_STATUS_TOGGLE::NONE);
+  void reset_onroad_sleep_timer(OnroadTimerStatusToggle toggleTimerStatus = OnroadTimerStatusToggle::NONE);
 
 signals:
   void sunnylinkRoleChanged(bool subscriber);
