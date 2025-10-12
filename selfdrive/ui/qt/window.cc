@@ -92,6 +92,16 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       // ignore events when device is awakened by resetInteractiveTimeout
       ignore = !device()->isAwake();
       device()->resetInteractiveTimeout();
+
+#ifdef SUNNYPILOT
+      UIStateSP *uiSP = uiStateSP();
+      bool onroadScreenControl = uiSP->scene.onroadScreenOffControl;
+      bool started = uiSP->scene.started;
+      bool timerExpired = (uiSP->scene.onroadScreenOffTimer == 0);
+      ignore |= (onroadScreenControl and started and timerExpired);
+      uiSP->reset_onroad_sleep_timer();
+#endif
+
       break;
     }
     default:
