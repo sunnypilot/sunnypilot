@@ -18,5 +18,11 @@ def get_file_hash(path: str) -> str:
   return sha256_hash.hexdigest()
 
 
-def sanitize_int_param(val: int, min_val: int, max_val: int) -> int:
-  return max(min_val, min(max_val, val))
+def get_sanitize_int_param(key: str, min_val: int, max_val: int, params) -> int:
+  val = params.get(key, return_default=True)
+  clipped_val = max(min_val, min(max_val, val))
+
+  if clipped_val != val:
+    params.put(key, clipped_val)
+
+  return clipped_val
