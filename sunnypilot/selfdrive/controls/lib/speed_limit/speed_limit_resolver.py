@@ -12,7 +12,7 @@ from openpilot.common.constants import CV
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD, sanitize_int_param
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Policy, OffsetType
 
@@ -54,7 +54,11 @@ class SpeedLimitResolver:
       self._reset_limit_sources(source)
 
     self.is_metric = self.params.get_bool("IsMetric")
-    self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
+    self.offset_type = sanitize_int_param(
+      self.params.get("SpeedLimitOffsetType", return_default=True),
+      OffsetType.min().value,
+      OffsetType.max().value,
+    )
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
     self.speed_limit = 0.

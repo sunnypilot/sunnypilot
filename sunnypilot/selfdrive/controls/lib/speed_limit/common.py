@@ -20,6 +20,14 @@ class OffsetType(IntEnum):
   fixed = 1
   percentage = 2
 
+  @classmethod
+  def min(cls):
+    return min(cls)
+
+  @classmethod
+  def max(cls):
+    return max(cls)
+
 
 class Mode(IntEnum):
   off = 0

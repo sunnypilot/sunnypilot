@@ -16,3 +16,7 @@ def get_file_hash(path: str) -> str:
     for byte_block in iter(lambda: f.read(4096), b""):
       sha256_hash.update(byte_block)
   return sha256_hash.hexdigest()
+
+
+def sanitize_int_param(val: int, min_val, max_val) -> int:
+  return max(min_val, min(max_val, val))
