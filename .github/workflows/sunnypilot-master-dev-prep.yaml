@@ -118,8 +118,8 @@ jobs:
         run: |
           # Use GitHub API to get PRs with specific label, ordered by creation date
           PR_LIST=$(gh api graphql -f query='
-            query($label:String!) {
-              search(query: $label, type:ISSUE, first:100) {
+            query($search_query:String!) {
+              search(query: $search_query, type:ISSUE, first:100) {
                 nodes {
                   ... on PullRequest {
                     number
@@ -149,7 +149,7 @@ jobs:
                   }
                 }
               }
-            }' -F label="is:pr is:open label:${PR_LABEL} draft:false sort:created-asc")
+            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${PR_LABEL},${PR_LABEL}-c3 draft:false sort:created-asc")
 
           PR_LIST=${PR_LIST//\'/}
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
