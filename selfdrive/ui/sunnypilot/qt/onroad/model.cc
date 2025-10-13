@@ -24,7 +24,7 @@ void ModelRendererSP::update_model(const cereal::ModelDataV2::Reader &model, con
 void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  bool blindspot = Params().getBool("BlindSpot");
+  bool blindspot = s->scene.blindspot_ui;
 
   if (blindspot) {
     bool left_blindspot = sm["carState"].getCarState().getLeftBlindspot();
@@ -49,7 +49,7 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
     }
   }
 
-  bool rainbow = Params().getBool("RainbowMode");
+  bool rainbow = s->scene.rainbow_mode;
   //float v_ego = sm["carState"].getCarState().getVEgo();
 
   if (rainbow) {
@@ -87,4 +87,139 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
     // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height());
   }
+
+  drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
+}
+
+void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+
+  bool longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
+  if (!longitudinal_control) {
+    lead_status_alpha = std::max(0.0f, lead_status_alpha - 0.05f);
+    return;
+  }
+
+  if (!sm.alive("radarState")) {
+    lead_status_alpha = std::max(0.0f, lead_status_alpha - 0.05f);
+    return;
+  }
+
+  const auto &radar_state = sm["radarState"].getRadarState();
+  const auto &lead_one = radar_state.getLeadOne();
+  const auto &lead_two = radar_state.getLeadTwo();
+
+  bool has_lead_one = lead_one.getStatus();
+  bool has_lead_two = lead_two.getStatus();
+
+  if (!has_lead_one && !has_lead_two) {
+    lead_status_alpha = std::max(0.0f, lead_status_alpha - 0.05f);
+    if (lead_status_alpha <= 0.0f) return;
+  } else {
+    lead_status_alpha = std::min(1.0f, lead_status_alpha + 0.1f);
+  }
+
+  if (has_lead_one) {
+    drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
+  }
+
+  if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
+    drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
+  }
+}
+
+void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
+                                               const cereal::RadarState::LeadData::Reader &lead_data,
+                                               const QPointF &chevron_pos,
+                                               int height, int width,
+                                               const QString &label) {
+  float d_rel = lead_data.getDRel();
+  float v_rel = lead_data.getVRel();
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+  float v_ego = sm["carState"].getCarState().getVEgo();
+
+  int chevron_data = s->scene.chevron_info;
+  float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
+
+  QFont content_font = painter.font();
+  content_font.setPixelSize(50);
+  content_font.setBold(true);
+  painter.setFont(content_font);
+
+  bool is_metric = s->scene.is_metric;
+  QStringList text_lines;
+  const int chevron_all = 4;
+  QStringList chevron_text[3];
+
+  // Distance display
+  if (chevron_data == 1 || chevron_data == chevron_all) {
+    int pos = 0;
+    float val = std::max(0.0f, d_rel);
+    QString unit = is_metric ? "m" : "ft";
+    if (!is_metric) val *= 3.28084f;
+    chevron_text[pos].append(QString::number(val, 'f', 0) + " " + unit);
+  }
+
+  // Speed display
+  if (chevron_data == 2 || chevron_data == chevron_all) {
+    int pos = (chevron_data == 2) ? 0 : 1;
+    float multiplier = is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH);
+    float val = std::max(0.0f, (v_rel + v_ego) * multiplier);
+    QString unit = is_metric ? "km/h" : "mph";
+    chevron_text[pos].append(QString::number(val, 'f', 0) + " " + unit);
+  }
+
+  // Time to contact
+  if (chevron_data == 3 || chevron_data == chevron_all) {
+    int pos = (chevron_data == 3) ? 0 : 2;
+    float val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+    QString ttc = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
+    chevron_text[pos].append(ttc);
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    if (!chevron_text[i].isEmpty()) text_lines.append(chevron_text[i]);
+  }
+
+  if (text_lines.isEmpty()) return;
+
+  QFontMetrics fm(content_font);
+  float text_width = 120.0f;
+  for (const QString &line : text_lines) {
+    text_width = std::max(text_width, fm.horizontalAdvance(line) + 20.0f);
+  }
+  text_width = std::min(text_width, 250.0f);
+
+  float line_height = 50.0f;
+  float total_height = text_lines.size() * line_height;
+  float margin = 20.0f;
+
+  float text_y = chevron_pos.y() + sz + 15;
+  if (text_y + total_height > height - margin) {
+    float y_max = chevron_pos.y() > (height - margin) ? (height - margin) : chevron_pos.y();
+    text_y = y_max - 15 - total_height;
+    text_y = std::max(margin, text_y);
+  }
+
+  float text_x = chevron_pos.x() - text_width / 2;
+  text_x = std::clamp(text_x, margin, (float)width - text_width - margin);
+
+  QPoint shadow_offset(2, 2);
+  QColor text_color = QColor(255, 255, 255, (int)(255 * lead_status_alpha));
+  for (int i = 0; i < text_lines.size(); ++i) {
+    float y = text_y + (i * line_height);
+    if (y + line_height > height - margin) break;
+
+    QRect rect(text_x, y, text_width, line_height);
+
+    // Draw shadow
+    painter.setPen(QColor(0, 0, 0, (int)(200 * lead_status_alpha)));
+    painter.drawText(rect.translated(shadow_offset), Qt::AlignCenter, text_lines[i]);
+    painter.setPen(text_color);
+    painter.drawText(rect, Qt::AlignCenter, text_lines[i]);
+  }
+
+  painter.setPen(Qt::NoPen);
 }
