@@ -698,11 +698,13 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   } else {
     icbm_active_counter = 0;
   }
+  int max_str_size = (icbm_active_counter != 0) ? 60 : 40;
+  int max_str_y = (icbm_active_counter != 0) ? 15 : 27;
   QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
 
-  p.setFont(InterFont(40, QFont::DemiBold));
+  p.setFont(InterFont(max_str_size, QFont::DemiBold));
   p.setPen(max_color);
-  p.drawText(set_speed_rect.adjusted(0, 27, 0, 0), Qt::AlignTop | Qt::AlignHCenter, max_str);
+  p.drawText(set_speed_rect.adjusted(0, max_str_y, 0, 0), Qt::AlignTop | Qt::AlignHCenter, max_str);
 
   // Draw set speed
   QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
