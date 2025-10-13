@@ -60,19 +60,26 @@ class VibePersonalityController:
     if self.frame % int(1. / DT_MDL) != 0:
       return
 
-    accel_personality_int = int(self.params.get(self.param_keys['accel_personality']))
-    self.accel_personality = accel_personality_int
+    accel_personality_bytes = self.params.get(self.param_keys['accel_personality'])
+    if accel_personality_bytes is not None:
+      self.accel_personality = int(accel_personality_bytes)
 
-    long_personality_int = int(self.params.get(self.param_keys['long_personality']))
-    self.long_personality = long_personality_int
+    long_personality_bytes = self.params.get(self.param_keys['long_personality'])
+    if long_personality_bytes is not None:
+      self.long_personality = int(long_personality_bytes)
 
   def _get_toggle_state(self, key: str) -> bool:
-    return self.params.get_bool(self.param_keys[key])
+    value = self.params.get_bool(self.param_keys[key])
+    return value if value is not None else False
 
   def _set_toggle_state(self, key: str, value: bool):
     self.params.put_bool(self.param_keys[key], value)
 
   def set_accel_personality(self, personality: int) -> bool:
+    valid_personalities = [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]
+    if personality not in valid_personalities:
+      return False
+
     self.accel_personality = personality
     self.params.put(self.param_keys['accel_personality'], str(personality))
     return True
@@ -89,6 +96,10 @@ class VibePersonalityController:
     return int(self.accel_personality)
 
   def set_long_personality(self, personality: int) -> bool:
+    valid_personalities = [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]
+    if personality not in valid_personalities:
+      return False
+
     self.long_personality = personality
     self.params.put(self.param_keys['long_personality'], str(personality))
     return True
@@ -108,33 +119,49 @@ class VibePersonalityController:
   def toggle_accel_personality(self): return self._toggle_flag('accel_enabled')
   def toggle_follow_distance_personality(self): return self._toggle_flag('follow_enabled')
 
-  def _toggle_flag(self, key):
+  def _toggle_flag(self, key) -> bool:
     current = self._get_toggle_state(key)
     self._set_toggle_state(key, not current)
     return not current
 
   def set_personality_enabled(self, enabled: bool): self._set_toggle_state('enabled', enabled)
-  def is_accel_enabled(self) -> bool: return self._get_toggle_state('enabled') and self._get_toggle_state('accel_enabled')
-  def is_follow_enabled(self) -> bool: return self._get_toggle_state('enabled') and self._get_toggle_state('follow_enabled')
-  def is_enabled(self) -> bool: return self._get_toggle_state('enabled') and (self._get_toggle_state('accel_enabled') or self._get_toggle_state('follow_enabled'))
+  def is_accel_enabled(self) -> bool:
+    return self._get_toggle_state('enabled') and self._get_toggle_state('accel_enabled')
+  def is_follow_enabled(self) -> bool:
+    return self._get_toggle_state('enabled') and self._get_toggle_state('follow_enabled')
+  def is_enabled(self) -> bool:
+    return (self._get_toggle_state('enabled') and
+            (self._get_toggle_state('accel_enabled') or self._get_toggle_state('follow_enabled')))
 
-  def get_accel_limits(self, v_ego: float) -> tuple[float, float]:
+  def get_accel_limits(self, v_ego: float) -> tuple[float, float] | None:
     """Get acceleration limits based on current personalities."""
+    if not self.is_accel_enabled():
+      return None
+
     self._update_from_params()
     max_a = np.interp(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.accel_personality])
     min_a = np.interp(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self.long_personality])
     return float(min_a), float(max_a)
 
-  def get_follow_distance_multiplier(self, v_ego: float) -> float:
+  def get_follow_distance_multiplier(self, v_ego: float) -> float | None:
     """Get dynamic following distance based on speed and personality"""
+    if not self.is_follow_enabled():
+      return None
+
     self._update_from_params()
     return float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self.long_personality]))
 
   def get_min_accel(self, v_ego: float) -> float:
-    return self.get_accel_limits(v_ego)[0]
+    limits = self.get_accel_limits(v_ego)
+    if limits is None:
+      raise RuntimeError("Accel personality is not enabled")
+    return limits[0]
 
   def get_max_accel(self, v_ego: float) -> float:
-    return self.get_accel_limits(v_ego)[1]
+    limits = self.get_accel_limits(v_ego)
+    if limits is None:
+      raise RuntimeError("Accel personality is not enabled")
+    return limits[1]
 
   def reset(self):
     self.accel_personality = AccelPersonality.normal
