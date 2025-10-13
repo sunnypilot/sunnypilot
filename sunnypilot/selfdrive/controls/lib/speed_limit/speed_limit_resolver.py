@@ -42,6 +42,12 @@ class SpeedLimitResolver:
     self.distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
     self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
+    self.policy = get_sanitize_int_param(
+      "SpeedLimitPolicy",
+      Policy.min().value,
+      Policy.max().value,
+      self.params
+    )
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.map_data_only: [SpeedLimitSource.map],
