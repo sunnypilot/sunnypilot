@@ -133,8 +133,8 @@ class SelfdriveD(CruiseHelper):
     self.experimental_mode = False
     self.personality = sanitize_int_param(
       self.params.get("LongitudinalPersonality", return_default=True),
-      min(log.LongitudinalPersonality.schema.enumerants.keys()),
-      max(log.LongitudinalPersonality.schema.enumerants.keys())
+      min(log.LongitudinalPersonality.schema.enumerants.values()),
+      max(log.LongitudinalPersonality.schema.enumerants.values())
     )
     self.recalibrating_seen = False
     self.state_machine = StateMachine()
