@@ -75,6 +75,36 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   list->addItem(horizontal_line());
 
+  // Customized Torque Lateral Control
+  torqueLateralControlToggle = new ParamControl(
+    "EnforceTorqueControl",
+    tr("Enforce Torque Lateral Control"),
+    tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
+    "");
+  list->addItem(torqueLateralControlToggle);
+
+  torqueLateralControlSettingsButton = new PushButtonSP(tr("Customize Params"));
+  torqueLateralControlSettingsButton->setObjectName("torque_btn");
+  connect(torqueLateralControlSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(torqueLateralControlWidget);
+  });
+  QObject::connect(torqueLateralControlToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    torqueLateralControlSettingsButton->setEnabled(state);
+    nnlcToggle->updateToggle(offroad);
+    updateToggles(offroad);
+  });
+
+  torqueLateralControlWidget = new TorqueLateralControlSettings(this);
+  connect(torqueLateralControlWidget, &TorqueLateralControlSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(torqueLateralControlSettingsButton);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
+
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
@@ -86,12 +116,10 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
       nnlcToggle->hideDescription();
     }
 
-    nnlcToggle->updateToggle();
+    nnlcToggle->updateToggle(offroad);
+    updateToggles(offroad);
   });
 
-  toggleOffroadOnly = {
-    madsToggle, nnlcToggle,
-  };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
@@ -100,6 +128,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
   main_layout->addWidget(laneChangeWidget);
+  main_layout->addWidget(torqueLateralControlWidget);
 
   setStyleSheet(R"(
     #back_btn {
@@ -120,7 +149,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 }
 
 void LateralPanel::showEvent(QShowEvent *event) {
-  nnlcToggle->updateToggle();
+  nnlcToggle->updateToggle(offroad);
   updateToggles(offroad);
 }
 
@@ -129,10 +158,7 @@ void LateralPanel::hideEvent(QHideEvent *event) {
 }
 
 void LateralPanel::updateToggles(bool _offroad) {
-  for (auto *toggle : toggleOffroadOnly) {
-    toggle->setEnabled(_offroad);
-  }
-
+  bool torque_allowed = true;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -148,11 +174,23 @@ void LateralPanel::updateToggles(bool _offroad) {
     } else {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_FULL_COMPATIBILITY, MADS_BASE_DESC));
     }
+
+    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+      params.remove("EnforceTorqueControl");
+      torque_allowed = false;
+    }
   } else {
     madsToggle->setDescription(descriptionBuilder(STATUS_MADS_CHECK_COMPATIBILITY, MADS_BASE_DESC));
+
+    params.remove("EnforceTorqueControl");
+    torque_allowed = false;
   }
 
+  madsToggle->setEnabled(_offroad);
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+
+  torqueLateralControlToggle->setEnabled(_offroad && torque_allowed && !nnlcToggle->isToggled());
+  torqueLateralControlSettingsButton->setEnabled(torqueLateralControlToggle->isToggled());
 
   blinkerPauseLateralSettings->refresh();
 
