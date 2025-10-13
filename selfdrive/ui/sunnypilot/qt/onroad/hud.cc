@@ -35,6 +35,7 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto car_params = sm["carParams"].getCarParams();
+  const auto car_params_sp = sm["carParamsSP"].getCarParamsSP();
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
@@ -130,6 +131,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   carControlEnabled = car_control.getEnabled();
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
+  pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -689,7 +691,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   }
 
   // Draw "MAX" or carState.cruiseState.speedCluster (when ICBM is active) text
-  if (carControlEnabled) {
+  if (!pcmCruiseSpeed && carControlEnabled) {
     if (std::nearbyint(set_speed) != std::nearbyint(speedCluster)) {
       icbm_active_counter = 3 * UI_FREQ;
     } else if (icbm_active_counter > 0) {
