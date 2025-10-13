@@ -131,9 +131,11 @@ class SelfdriveD(CruiseHelper):
     self.logged_comm_issue = None
     self.not_running_prev = None
     self.experimental_mode = False
-    _personality = self.params.get("LongitudinalPersonality", return_default=True)
-    self.personality = sanitize_int_param(_personality, min(log.LongitudinalPersonality.schema.enumerants.keys()),
-                                                        max(log.LongitudinalPersonality.schema.enumerants.keys()))
+    self.personality = sanitize_int_param(
+      self.params.get("LongitudinalPersonality", return_default=True),
+      min(log.LongitudinalPersonality.schema.enumerants.keys()),
+      max(log.LongitudinalPersonality.schema.enumerants.keys())
+    )
     self.recalibrating_seen = False
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
