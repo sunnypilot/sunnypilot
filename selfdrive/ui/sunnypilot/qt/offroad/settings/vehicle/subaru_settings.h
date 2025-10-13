@@ -32,7 +32,7 @@ private:
   ParamControl* stopAndGoToggle;
   ParamControl* stopAndGoManualParkingBrakeToggle;
 
-  QString stopAndGoDesc = tr("Enable auto-resume during stop-and-go for certain supported Subaru platforms.");
+  QString stopAndGoDesc = tr("Experimental feature to enable auto-resume during stop-and-go for certain supported Subaru platforms.");
   QString stopAndGoManualParkingBrakeDesc = tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!");
 
   QString stopAndGoDisabledMsg() const {

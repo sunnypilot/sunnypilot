@@ -8,7 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/subaru_settings.h"
 
 SubaruSettings::SubaruSettings(QWidget *parent) : BrandSettingsInterface(parent) {
-  stopAndGoToggle = new ParamControl("SubaruStopAndGo", tr("Stop and Go"), "", "");
+  stopAndGoToggle = new ParamControl("SubaruStopAndGo", tr("Stop and Go (Beta)"), "", "");
   stopAndGoToggle->setConfirmation(true, false);
   list->addItem(stopAndGoToggle);
 
