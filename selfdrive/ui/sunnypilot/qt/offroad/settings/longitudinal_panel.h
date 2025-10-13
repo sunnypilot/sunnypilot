@@ -18,6 +18,7 @@ class LongitudinalPanel : public QWidget {
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
   void refresh(bool _offroad);
 
 private:
