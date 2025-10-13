@@ -12,7 +12,8 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
-TRIGGER_THRESHOLD = 30
+GREEN_LIGHT_X_THRESHOLD = 30
+ALERT_DURATION = 3 #Seconds
 
 
 class E2EAlertsHelper:
@@ -24,6 +25,8 @@ class E2EAlertsHelper:
     self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
+    self.alert_frame = -1
+    self.alert_allowed = True
 
   def _read_params(self) -> None:
     if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -46,13 +49,27 @@ class E2EAlertsHelper:
     has_lead = sm['radarState'].leadOne.status
     lead_vRel: float = sm['radarState'].leadOne.vRel
 
+    if not CS.standstill:
+      self.alert_allowed = True
+
     # Green light alert
-    self.green_light_alert = (self.green_light_alert_enabled and model_x[max_idx] > TRIGGER_THRESHOLD
-                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled)
+    self.green_light_alert = (self.green_light_alert_enabled and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD
+                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
+                              and self.alert_allowed)
 
     # Lead Departure Alert
     self.lead_depart_alert = (self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30
-                              and has_lead and lead_vRel > 1 and not CS.gasPressed)
+                              and has_lead and lead_vRel > 1 and not CS.gasPressed and not CC.enabled
+                              and self.alert_allowed)
+
+
+    if (self.green_light_alert or self.lead_depart_alert):
+      self.alert_frame += 1
+      if self.alert_frame > ALERT_DURATION / DT_MDL:
+        self.green_light_alert = False
+        self.lead_depart_alert = False
+        self.alert_allowed = False
+        self.alert_frame = -1
 
     if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
