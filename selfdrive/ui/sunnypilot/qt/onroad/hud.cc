@@ -51,6 +51,7 @@ void HudRendererSP::updateState(const UIState &s) {
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
+    if (roadNameStr.length() > 30) roadNameStr = roadNameStr.left(30).append("...");
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
     speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
