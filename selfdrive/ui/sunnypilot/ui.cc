@@ -64,19 +64,28 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
   s->scene.road_name = params.getBool("RoadNameToggle");
+  s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
+  s->scene.hideVEgoUI = params.getBool("HideVEgoUI");
 
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffControl = params.getBool("OnroadScreenOffControl");
   s->scene.onroadScreenOffTimerParam = std::atoi(params.get("OnroadScreenOffTimer").c_str());
-  s->reset_onroad_sleep_timer();
+
+  s->scene.turn_signals = params.getBool("ShowTurnSignals");
+  s->scene.chevron_info = std::atoi(params.get("ChevronInfo").c_str());
+  s->scene.blindspot_ui = params.getBool("BlindSpot");
+  s->scene.rainbow_mode = params.getBool("RainbowMode");
 }
 
-void UIStateSP::reset_onroad_sleep_timer() {
-  if (scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl) {
-    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
-  } else {
+void UIStateSP::reset_onroad_sleep_timer(OnroadTimerStatusToggle toggleTimerStatus) {
+  // Toggling from active state to inactive
+  if (toggleTimerStatus == OnroadTimerStatusToggle::PAUSE and scene.onroadScreenOffTimer != -1) {
     scene.onroadScreenOffTimer = -1;
+  }
+  // Toggling from a previously inactive state or resetting an active timer
+  else if ((scene.onroadScreenOffTimerParam >= 0 and scene.onroadScreenOffControl and scene.onroadScreenOffTimer != -1) or toggleTimerStatus == OnroadTimerStatusToggle::RESUME) {
+    scene.onroadScreenOffTimer = scene.onroadScreenOffTimerParam * UI_FREQ;
   }
 }
 
