@@ -51,7 +51,6 @@ void HudRendererSP::updateState(const UIState &s) {
   roadName = s.scene.road_name;
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
-    if (roadNameStr.length() > 30) roadNameStr = roadNameStr.left(30).append("...");
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
     speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
     speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
@@ -621,7 +620,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
 
   // Constrain to reasonable bounds
   int min_width = 200;
-  int max_width = surface_rect.width() - 40;
+  int max_width = surface_rect.width() / 3;
   rect_width = std::max(min_width, std::min(rect_width, max_width));
 
   // Center at top of screen
