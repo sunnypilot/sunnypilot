@@ -30,7 +30,7 @@ class IntEnumBase(IntEnum):
 
 
 def get_sanitize_int_param(key: str, min_val: int, max_val: int, params) -> int:
-  val = params.get(key, return_default=True)
+  val: int = params.get(key, return_default=True)
   clipped_val = max(min_val, min(max_val, val))
 
   if clipped_val != val:
