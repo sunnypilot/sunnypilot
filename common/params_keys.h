@@ -203,6 +203,10 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"BackupManager_CreateBackup", {PERSISTENT, BOOL}},
     {"BackupManager_RestoreVersion", {PERSISTENT, STRING}},
 
+    // Parking Mode params
+    {"EnableParkingMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ParkingModeActive", {CLEAR_ON_MANAGER_START, BOOL}},
+
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", {PERSISTENT | BACKUP, INT, "0"}},
 
@@ -213,8 +217,10 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LagdToggle", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"LagdToggleDelay", {PERSISTENT | BACKUP, FLOAT, "0.2"}},
     {"LagdValueCache", {PERSISTENT, FLOAT, "0.2"}},
-    {"LaneTurnDesire", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"LaneTurnValue", {PERSISTENT | BACKUP, FLOAT, "19.0"}},
+
+    // Parking Mode params
+    {"EnableParkingMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ParkingModeActive", {CLEAR_ON_MANAGER_START, BOOL}},
 
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},

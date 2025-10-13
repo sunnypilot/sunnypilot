@@ -21,4 +21,9 @@ typedef struct UISceneSP : UIScene {
   int chevron_info;
   bool blindspot_ui;
   bool rainbow_mode;
+  // Parking Mode
+  bool parkingShockDetected = false;
+  uint64_t parkingShockTimestamp = 0;
+  float parkingShockMagnitude = 0.0f;
+
 } UISceneSP;

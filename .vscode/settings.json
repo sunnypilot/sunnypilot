@@ -23,5 +23,11 @@
     "system/**",
     "third_party/**",
     "tools/**",
-  ]
+  ],
+  "C_Cpp.errorSquiggles": "disabled",
+  "files.associations": {
+    "*.ts": "typescript",
+    "string": "cpp"
+  },
+  "workbench.colorTheme": "Winter is Coming (Dark Black - No Italics)"
 }
