@@ -25,22 +25,18 @@ class E2EAlertsHelper:
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
-    self.alert_allowed = True
+    self.alert_allowed = False
     self.green_light_alert_count = 0
     self.last_lead_distance = -1
+    self.last_moving_frame = 0
 
   def _read_params(self) -> None:
     if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
       self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
-    self._frame += 1
-
   def update(self, sm: messaging.SubMaster, events_sp: EventsSP) -> None:
     self._read_params()
-
-    if not (self.green_light_alert_enabled or self.lead_depart_alert_enabled):
-      return
 
     CS = sm['carState']
     CC = sm['carControl']
@@ -48,12 +44,18 @@ class E2EAlertsHelper:
     model_x = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
     has_lead = sm['radarState'].leadOne.status
-    lead_dRel: float = sm['radarState'].leadOne.dRel
+    lead_dRel = sm['radarState'].leadOne.dRel
+    standstill = CS.standstill
+    _allowed = standstill and not CS.gasPressed
 
-    _allowed = CS.standstill and not CS.gasPressed
+    if not standstill:
+      self.last_moving_frame = self._frame
+    recent_moving = (self._frame - self.last_moving_frame) * DT_MDL < 2.0
 
-    if not CS.standstill:
+    if standstill and not recent_moving:
       self.alert_allowed = True
+    elif not standstill:
+      self.alert_allowed = False
       self.green_light_alert_count = 0
       self.last_lead_distance = -1
 
@@ -87,3 +89,5 @@ class E2EAlertsHelper:
 
     if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
+
+    self._frame += 1
