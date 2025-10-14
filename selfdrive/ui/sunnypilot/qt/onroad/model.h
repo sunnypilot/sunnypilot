@@ -17,7 +17,6 @@ public:
 
 private:
   void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) override;
-  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) override;
   void drawLeadStatus(QPainter &painter, int height, int width);
   void drawLeadStatusAtPosition(QPainter &painter,
                                 const cereal::RadarState::LeadData::Reader &lead_data,

@@ -22,6 +22,7 @@ void ModelRendererSP::update_model(const cereal::ModelDataV2::Reader &model, con
 }
 
 void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
+  ModelRenderer::draw(painter, surface_rect);
   auto *s = uiState();
   auto &sm = *(s->sm);
 
@@ -30,16 +31,12 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
     return;
   }
 
-  clip_region = surface_rect.adjusted(-CLIP_MARGIN, -CLIP_MARGIN, CLIP_MARGIN, CLIP_MARGIN);
-  experimental_mode = sm["selfdriveState"].getSelfdriveState().getExperimentalMode();
-  longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
-  path_offset_z = sm["liveCalibration"].getLiveCalibration().getHeight()[0];
-
   painter.save();
 
   const auto &model = sm["modelV2"].getModelV2();
   const auto &radar_state = sm["radarState"].getRadarState();
   const auto &lead_one = radar_state.getLeadOne();
+  const auto &car_state = sm["carState"].getCarState();
 
   update_model(model, lead_one);
   drawLaneLines(painter);
@@ -47,8 +44,8 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
   bool blindspot = s->scene.blindspot_ui;
   bool rainbow = s->scene.rainbow_mode;
 
-  bool left_blindspot = sm["carState"].getCarState().getLeftBlindspot();
-  bool right_blindspot = sm["carState"].getCarState().getRightBlindspot();
+  bool left_blindspot = car_state.getLeftBlindspot();
+  bool right_blindspot = car_state.getRightBlindspot();
 
   if (blindspot) {
     drawBlindspot(painter, surface_rect, left_blindspot, right_blindspot);
@@ -57,26 +54,12 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
   if (rainbow) {
     drawRainbowPath(painter, surface_rect);
   } else {
-    ModelRenderer::drawPath(painter, model, surface_rect);
+    ModelRenderer::drawPath(painter, model, surface_rect.height());
   }
 
-  if (longitudinal_control && sm.alive("radarState")) {
-    update_leads(radar_state, model.getPosition());
-    const auto &lead_two = radar_state.getLeadTwo();
-    if (lead_one.getStatus()) {
-      drawLead(painter, lead_one, lead_vertices[0], surface_rect);
-    }
-    if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
-      drawLead(painter, lead_two, lead_vertices[1], surface_rect);
-    }
-  }
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
   painter.restore();
-}
-
-void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {
-  ModelRenderer::drawPath(painter, model, surface_rect);
 }
 
 void ModelRendererSP::drawBlindspot(QPainter &painter, const QRect &surface_rect,
