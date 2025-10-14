@@ -24,8 +24,8 @@ class E2EAlertsHelper:
     self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
-    self.alert_allowed = True
 
+    self.alert_allowed = True
     self.green_light_alert_count = 0
     self.last_lead_distance = -1
 
@@ -55,8 +55,7 @@ class E2EAlertsHelper:
     if not CS.standstill:
       self.alert_allowed = True
       self.green_light_alert_count = 0
-      if self.last_lead_distance != -1:
-        self.last_lead_distance = -1
+      self.last_lead_distance = -1
 
     # Green light alert
     _green_light_alert = False
