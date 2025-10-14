@@ -62,8 +62,7 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
   painter.restore();
 }
 
-void ModelRendererSP::drawBlindspot(QPainter &painter, const QRect &surface_rect,
-                                     bool left_blindspot, bool right_blindspot) {
+void ModelRendererSP::drawBlindspot(QPainter &painter, const QRect &surface_rect, bool left_blindspot, bool right_blindspot) {
   if (left_blindspot && !left_blindspot_vertices.isEmpty()) {
     QLinearGradient gradient(0, 0, surface_rect.width(), 0); // Horizontal gradient from left to right
     gradient.setColorAt(0.0, QColor(255, 165, 0, 102)); // Orange with alpha
@@ -111,19 +110,16 @@ void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
   }
 
   if (has_lead_one) {
-    drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
+    drawLeadStatusPosition(painter, lead_one, lead_vertices[0], height, width);
   }
 
   if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
-    drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
+    drawLeadStatusPosition(painter, lead_two, lead_vertices[1], height, width);
   }
 }
 
-void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
-                                               const cereal::RadarState::LeadData::Reader &lead_data,
-                                               const QPointF &chevron_pos,
-                                               int height, int width,
-                                               const QString &label) {
+void ModelRendererSP::drawLeadStatusPosition(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
+                                             const QPointF &chevron_pos, int height, int width) {
   float d_rel = lead_data.getDRel();
   float v_rel = lead_data.getVRel();
   auto *s = uiState();
