@@ -305,9 +305,9 @@ class SelfdriveD(CruiseHelper):
 
     # Handle lane turn
     lane_turn_direction = self.sm['modelDataV2SP'].laneTurnDirection
-    if lane_turn_direction == custom.TurnDirection.turnLeft:
+    if lane_turn_direction == custom.ModelDataV2SP.TurnDirection.turnLeft:
       self.events_sp.add(custom.OnroadEventSP.EventName.laneTurnLeft)
-    elif lane_turn_direction == custom.TurnDirection.turnRight:
+    elif lane_turn_direction == custom.ModelDataV2SP.TurnDirection.turnRight:
       self.events_sp.add(custom.OnroadEventSP.EventName.laneTurnRight)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):
