@@ -13,9 +13,9 @@ enum class SpeedLimitOffsetType {
 };
 
 inline const QString SpeedLimitOffsetTypeTexts[]{
-  QObject::tr("None"),
-  QObject::tr("Fixed"),
-  QObject::tr("Percent"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "None"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Fixed"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Percent"),
 };
 
 enum class SpeedLimitSourcePolicy {
@@ -27,11 +27,11 @@ enum class SpeedLimitSourcePolicy {
 };
 
 inline const QString SpeedLimitSourcePolicyTexts[]{
-  QObject::tr("Car\nOnly"),
-  QObject::tr("Map\nOnly"),
-  QObject::tr("Car\nFirst"),
-  QObject::tr("Map\nFirst"),
-  QObject::tr("Combined\nData")
+  QT_TRANSLATE_NOOP("SpeedLimitPolicy", "Car\nOnly"),
+  QT_TRANSLATE_NOOP("SpeedLimitPolicy", "Map\nOnly"),
+  QT_TRANSLATE_NOOP("SpeedLimitPolicy", "Car\nFirst"),
+  QT_TRANSLATE_NOOP("SpeedLimitPolicy", "Map\nFirst"),
+  QT_TRANSLATE_NOOP("SpeedLimitPolicy", "Combined\nData")
 };
 
 enum class SpeedLimitMode {
@@ -42,8 +42,8 @@ enum class SpeedLimitMode {
 };
 
 inline const QString SpeedLimitModeTexts[]{
-  QObject::tr("Off"),
-  QObject::tr("Information"),
-  QObject::tr("Warning"),
-  QObject::tr("Assist"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Off"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Information"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Warning"),
+  QT_TRANSLATE_NOOP("SpeedLimitSettings", "Assist"),
 };
