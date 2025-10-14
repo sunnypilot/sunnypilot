@@ -39,9 +39,6 @@ protected:
   virtual void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead);
   void drawLaneLines(QPainter &painter);
   void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height);
-  virtual void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {;
-    drawPath(painter, model, surface_rect.height());
-  }
   void updatePathGradient(QLinearGradient &bg);
   QColor blendColors(const QColor &start, const QColor &end, float t);
 
@@ -58,5 +55,4 @@ protected:
   QPointF lead_vertices[2] = {};
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
-
 };
