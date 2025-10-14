@@ -84,7 +84,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     promptRepeat @7;
     promptDistracted @8;
 
-    # unused, these are reserved for upstream events in case
+    # unused, these are reserved for upstream events so we don't collide
     reserved9 @9;
     reserved10 @10;
     reserved11 @11;
