@@ -18,7 +18,7 @@ GREEN_LIGHT_X_THRESHOLD = 30
 class E2EAlertsHelper:
   def __init__(self):
     self._params = Params()
-    self._frame = -1
+    self.frame = -1
 
     self.green_light_alert = False
     self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
@@ -31,7 +31,7 @@ class E2EAlertsHelper:
     self.last_moving_frame = 0
 
   def _read_params(self) -> None:
-    if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
+    if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
       self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
@@ -49,8 +49,8 @@ class E2EAlertsHelper:
     _allowed = standstill and not CS.gasPressed
 
     if not standstill:
-      self.last_moving_frame = self._frame
-    recent_moving = (self._frame - self.last_moving_frame) * DT_MDL < 2.0
+      self.last_moving_frame = self.frame
+    recent_moving = (self.frame - self.last_moving_frame) * DT_MDL < 2.0
 
     if standstill and not recent_moving:
       self.alert_allowed = True
@@ -59,7 +59,7 @@ class E2EAlertsHelper:
       self.green_light_alert_count = 0
       self.last_lead_distance = -1
 
-    # Green light alert
+    # Green Light Alert
     _green_light_alert = False
     if _allowed and not has_lead and not CC.enabled and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
       if self.alert_allowed:
@@ -90,4 +90,4 @@ class E2EAlertsHelper:
     if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
 
-    self._frame += 1
+    self.frame += 1
