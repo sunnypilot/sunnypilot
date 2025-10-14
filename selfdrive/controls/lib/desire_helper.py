@@ -32,9 +32,9 @@ DESIRES = {
 }
 
 TURN_DESIRES = {
-  custom.ModelDataV2SP.TurnDirection.none: log.Desire.none,
-  custom.ModelDataV2SP.TurnDirection.turnLeft: log.Desire.turnLeft,
-  custom.ModelDataV2SP.TurnDirection.turnRight: log.Desire.turnRight,
+  custom.TurnDirection.none: log.Desire.none,
+  custom.TurnDirection.turnLeft: log.Desire.turnLeft,
+  custom.TurnDirection.turnRight: log.Desire.turnRight,
 }
 
 
@@ -49,7 +49,7 @@ class DesireHelper:
     self.desire = log.Desire.none
     self.alc = AutoLaneChangeController(self)
     self.lane_turn_controller = LaneTurnController(self)
-    self.lane_turn_direction = custom.ModelDataV2SP.TurnDirection.none
+    self.lane_turn_direction = custom.TurnDirection.none
 
   @staticmethod
   def get_lane_change_direction(CS):
@@ -126,7 +126,7 @@ class DesireHelper:
 
     self.prev_one_blinker = one_blinker
 
-    if self.lane_turn_direction != custom.ModelDataV2SP.TurnDirection.none:
+    if self.lane_turn_direction != custom.TurnDirection.none:
       self.desire = TURN_DESIRES[self.lane_turn_direction]
     else:
       self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
