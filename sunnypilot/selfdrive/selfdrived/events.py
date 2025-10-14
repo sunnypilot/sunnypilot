@@ -231,6 +231,6 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.prompt, 0.1),
+      Priority.MID, VisualAlert.none, AudibleAlert.prompt, 3.),
   },
 }

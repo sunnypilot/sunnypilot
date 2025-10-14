@@ -13,7 +13,6 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 GREEN_LIGHT_X_THRESHOLD = 30
-ALERT_DURATION = 3 #Seconds
 
 
 class E2EAlertsHelper:
@@ -25,8 +24,10 @@ class E2EAlertsHelper:
     self.green_light_alert_enabled = self._params.get_bool("GreenLightAlert")
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
-    self.alert_frame = -1
     self.alert_allowed = True
+
+    self.green_light_alert_count = 0
+    self.last_lead_distance = -1
 
   def _read_params(self) -> None:
     if self._frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -47,29 +48,43 @@ class E2EAlertsHelper:
     model_x = sm['modelV2'].position.x
     max_idx = len(model_x) - 1
     has_lead = sm['radarState'].leadOne.status
-    lead_vRel: float = sm['radarState'].leadOne.vRel
+    lead_dRel: float = sm['radarState'].leadOne.dRel
+
+    _allowed = CS.standstill and not CS.gasPressed
 
     if not CS.standstill:
       self.alert_allowed = True
+      self.green_light_alert_count = 0
+      if self.last_lead_distance != -1:
+        self.last_lead_distance = -1
 
     # Green light alert
-    self.green_light_alert = (self.green_light_alert_enabled and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD
-                              and not has_lead and CS.standstill and not CS.gasPressed and not CC.enabled
-                              and self.alert_allowed)
+    _green_light_alert = False
+    if _allowed and not has_lead and not CC.enabled and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
+      if self.alert_allowed:
+        self.green_light_alert_count += 1
+      else:
+        self.green_light_alert_count = 0
+
+      if self.green_light_alert_enabled and self.green_light_alert_count > 2 and self.alert_allowed:
+        _green_light_alert = True
+        self.alert_allowed = False
+    else:
+      self.green_light_alert_count = 0
+
+    self.green_light_alert = _green_light_alert
 
     # Lead Departure Alert
-    self.lead_depart_alert = (self.lead_depart_alert_enabled and CS.standstill and model_x[max_idx] > 30
-                              and has_lead and lead_vRel > 1 and not CS.gasPressed and not CC.enabled
-                              and self.alert_allowed)
+    _lead_depart_alert = False
+    if _allowed and has_lead and CC.enabled:
+      if self.last_lead_distance == -1 or lead_dRel < self.last_lead_distance:
+        self.last_lead_distance = lead_dRel
 
-
-    if (self.green_light_alert or self.lead_depart_alert):
-      self.alert_frame += 1
-      if self.alert_frame > ALERT_DURATION / DT_MDL:
-        self.green_light_alert = False
-        self.lead_depart_alert = False
+      if self.lead_depart_alert_enabled and self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0) and self.alert_allowed:
+        _lead_depart_alert = True
         self.alert_allowed = False
-        self.alert_frame = -1
+
+    self.lead_depart_alert = _lead_depart_alert
 
     if self.green_light_alert or self.lead_depart_alert:
       events_sp.add(custom.OnroadEventSP.EventName.e2eChime)
