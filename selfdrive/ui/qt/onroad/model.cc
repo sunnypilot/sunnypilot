@@ -22,7 +22,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
 
   update_model(model, lead_one);
   drawLaneLines(painter);
-  drawPath(painter, model, surface_rect);
+  drawPath(painter, model, surface_rect.height());
 
   if (longitudinal_control && sm.alive("radarState")) {
     update_leads(radar_state, model.getPosition());
@@ -172,7 +172,6 @@ QColor ModelRenderer::blendColors(const QColor &start, const QColor &end, float 
       (1 - t) * start.blueF() + t * end.blueF(),
       (1 - t) * start.alphaF() + t * end.alphaF());
 }
-
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
                              const QPointF &vd, const QRect &surface_rect) {
