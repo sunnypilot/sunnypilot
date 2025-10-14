@@ -41,9 +41,6 @@ protected:
   virtual void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead);
   void drawLaneLines(QPainter &painter);
   void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width);
-  virtual void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {
-    drawPath(painter, model, surface_rect.height(), surface_rect.width());
-  }
 
   // Gauge helper methods
   void drawGaugeBackground(QPainter &painter, qreal centerX, qreal centerY);
