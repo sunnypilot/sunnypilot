@@ -28,7 +28,7 @@ class E2EAlertsHelper:
     self.alert_allowed = False
     self.green_light_alert_count = 0
     self.last_lead_distance = -1
-    self.last_moving_frame = 0
+    self.last_moving_frame = -1
 
   def _read_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -46,11 +46,12 @@ class E2EAlertsHelper:
     has_lead = sm['radarState'].leadOne.status
     lead_dRel = sm['radarState'].leadOne.dRel
     standstill = CS.standstill
+    moving = not standstill and CS.vEgo > 0.1
     _allowed = standstill and not CS.gasPressed and not CC.enabled
 
-    if not standstill:
+    if moving:
       self.last_moving_frame = self.frame
-    recent_moving = (self.frame - self.last_moving_frame) * DT_MDL < 2.0
+    recent_moving = self.last_moving_frame == -1 or (self.frame - self.last_moving_frame) * DT_MDL < 2.0
 
     if standstill and not recent_moving:
       self.alert_allowed = True
