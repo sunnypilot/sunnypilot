@@ -83,6 +83,7 @@ private:
   bool speedLimitValid;
   bool speedLimitLastValid;
   float speedLimitFinalLast;
+  cereal::LongitudinalPlanSP::SpeedLimit::Source speedLimitSource;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
@@ -120,4 +121,5 @@ private:
   bool carControlEnabled;
   float speedCluster = 0;
   int icbm_active_counter = 0;
+  bool pcmCruiseSpeed;
 };

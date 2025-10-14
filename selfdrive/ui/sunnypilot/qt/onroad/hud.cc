@@ -35,6 +35,7 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto car_params = sm["carParams"].getCarParams();
+  const auto car_params_sp = sm["carParamsSP"].getCarParamsSP();
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
@@ -45,6 +46,7 @@ void HudRendererSP::updateState(const UIState &s) {
   speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
   speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
   speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
+  speedLimitSource = lp_sp.getSpeedLimit().getResolver().getSource();
   speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
   speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
   speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
@@ -130,6 +132,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   carControlEnabled = car_control.getEnabled();
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
+  pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -545,7 +548,8 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
 }
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
-  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame > 0;
+  bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame > 0 &&
+                           speedLimitSource == cereal::LongitudinalPlanSP::SpeedLimit::Source::MAP;
   if (!speed_limit_ahead) {
     return;
   }
@@ -689,7 +693,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   }
 
   // Draw "MAX" or carState.cruiseState.speedCluster (when ICBM is active) text
-  if (carControlEnabled) {
+  if (!pcmCruiseSpeed && carControlEnabled) {
     if (std::nearbyint(set_speed) != std::nearbyint(speedCluster)) {
       icbm_active_counter = 3 * UI_FREQ;
     } else if (icbm_active_counter > 0) {
