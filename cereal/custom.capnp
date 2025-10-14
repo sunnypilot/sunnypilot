@@ -107,6 +107,9 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     reserved28 @28;
     reserved29 @29;
     reserved30 @30;
+
+    promptSingleLow @31;
+    promptSingleHigh @32;
   }
 }
 

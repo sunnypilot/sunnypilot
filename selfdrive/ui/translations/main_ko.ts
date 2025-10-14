@@ -1778,62 +1778,6 @@ Warning: You are on a metered connection!</source>
         <source>sunnypilot</source>
         <translation>sunnypilot</translation>
     </message>
-    <message>
-        <source>None</source>
-        <translation>없음</translation>
-    </message>
-    <message>
-        <source>Fixed</source>
-        <translation>고정</translation>
-    </message>
-    <message>
-        <source>Percent</source>
-        <translation>비율</translation>
-    </message>
-    <message>
-        <source>Car
-Only</source>
-        <translation>차량만</translation>
-    </message>
-    <message>
-        <source>Map
-Only</source>
-        <translation>지도만</translation>
-    </message>
-    <message>
-        <source>Car
-First</source>
-        <translation>차량
-우선</translation>
-    </message>
-    <message>
-        <source>Map
-First</source>
-        <translation>지도
-우선</translation>
-    </message>
-    <message>
-        <source>Combined
-Data</source>
-        <translation>결합
-데이터</translation>
-    </message>
-    <message>
-        <source>Off</source>
-        <translation>끄기</translation>
-    </message>
-    <message>
-        <source>Information</source>
-        <translation>정보</translation>
-    </message>
-    <message>
-        <source>Warning</source>
-        <translation>경고</translation>
-    </message>
-    <message>
-        <source>Assist</source>
-        <translation>보조</translation>
-    </message>
 </context>
 <context>
     <name>SettingsWindow</name>
@@ -2198,6 +2142,34 @@ Data</source>
         <source>⦿ Combined: Use combined Speed Limit data from Car &amp; OpenStreetMaps</source>
         <translation>⦿ 결합: 차량 및 OpenStreetMaps의 속도 제한 결합 데이터 사용</translation>
     </message>
+    <message>
+        <source>Car
+Only</source>
+        <translation>차량만</translation>
+    </message>
+    <message>
+        <source>Map
+Only</source>
+        <translation>지도만</translation>
+    </message>
+    <message>
+        <source>Car
+First</source>
+        <translation>차량
+우선</translation>
+    </message>
+    <message>
+        <source>Map
+First</source>
+        <translation>지도
+우선</translation>
+    </message>
+    <message>
+        <source>Combined
+Data</source>
+        <translation>결합
+데이터</translation>
+    </message>
 </context>
 <context>
     <name>SpeedLimitSettings</name>
@@ -2244,6 +2216,34 @@ Data</source>
     <message>
         <source>⦿ Assist: Adjusts the vehicle&apos;s cruise speed based on the current road&apos;s speed limit when operating the +/- buttons.</source>
         <translation>⦿ 보조: +/- 버튼을 조작할 때 현재 도로의 제한 속도를 기준으로 차량의 크루즈 속도를 조정합니다.</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>없음</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Percent</source>
+        <translation>비율</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>끄기</translation>
+    </message>
+    <message>
+        <source>Information</source>
+        <translation>정보</translation>
+    </message>
+    <message>
+        <source>Warning</source>
+        <translation>경고</translation>
+    </message>
+    <message>
+        <source>Assist</source>
+        <translation>보조</translation>
     </message>
 </context>
 <context>
