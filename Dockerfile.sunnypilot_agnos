@@ -1,0 +1,25 @@
+# Replicate build environment of AGNOS running on C3X device
+
+FROM agnos-system:latest
+
+ENV OPENPILOT_PATH=/data/openpilot
+ENV SCONSCACHEPATH=/data/scons_cache
+
+USER root
+RUN mkdir -p -m 0750  /home/comma
+RUN chown comma:comma /home/comma
+RUN mkdir -p -m 0755 ${OPENPILOT_PATH}
+RUN chown comma:comma ${OPENPILOT_PATH}
+RUN mkdir -p -m 0755 ${SCONSCACHEPATH}
+RUN chown comma:comma ${SCONSCACHEPATH}
+WORKDIR ${OPENPILOT_PATH}
+
+COPY . ${OPENPILOT_PATH}/
+
+# Verify agnos-system matches expected AGNOS version of the source tree
+RUN tools/dockerize-agnos/check-agnos-version.sh
+
+USER root
+# Launch build with the same environment as the comma user on the device
+RUN su - comma -c "cd ${OPENPILOT_PATH}/; scons --cache-readonly -j$(nproc)"
+
