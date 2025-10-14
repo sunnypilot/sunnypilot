@@ -83,6 +83,7 @@ private:
   bool speedLimitValid;
   bool speedLimitLastValid;
   float speedLimitFinalLast;
+  cereal::LongitudinalPlanSP::SpeedLimit::Source speedLimitSource;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
