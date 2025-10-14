@@ -5,6 +5,8 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
+from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
+
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
 
@@ -106,8 +108,10 @@ def set_lane_turn_params():
   (DummyCarState(vEgo=4, leftBlinker=False, rightBlinker=False), True, 1.0, log.Desire.none),  # No blinkers? no desire!
 ])
 def test_desire_helper_integration(carstate, lateral_active, lane_change_prob, expected_desire, set_lane_turn_params):
-  dh = DesireHelper()
-  dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
-  for _ in range(10):
-    dh.update(carstate, lateral_active, lane_change_prob)
-  assert dh.desire == expected_desire  # The first four tests were unit tests to test the controller, where this tests the integration in desire helpers
+    dh = DesireHelper()
+    relc = RoadEdgeLaneChangeController(dh)
+    relc.set_enabled(True)
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
+    for _ in range(10):
+        dh.update(carstate, lateral_active, lane_change_prob, left_edge_detected=relc.left_edge_detected, right_edge_detected=relc.right_edge_detected)
+    assert dh.desire == expected_desire  # The first four tests were unit tests to test the controller, where this tests the integration in desire helpers
