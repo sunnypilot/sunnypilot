@@ -46,7 +46,7 @@ class E2EAlertsHelper:
     has_lead = sm['radarState'].leadOne.status
     lead_dRel = sm['radarState'].leadOne.dRel
     standstill = CS.standstill
-    _allowed = standstill and not CS.gasPressed
+    _allowed = standstill and not CS.gasPressed and not CC.enabled
 
     if not standstill:
       self.last_moving_frame = self._frame
@@ -61,13 +61,13 @@ class E2EAlertsHelper:
 
     # Green light alert
     _green_light_alert = False
-    if _allowed and not has_lead and not CC.enabled and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
+    if self.green_light_alert_enabled and _allowed and not has_lead and model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
       if self.alert_allowed:
         self.green_light_alert_count += 1
       else:
         self.green_light_alert_count = 0
 
-      if self.green_light_alert_enabled and self.green_light_alert_count > 2 and self.alert_allowed:
+      if self.green_light_alert_count > 2 and self.alert_allowed:
         _green_light_alert = True
         self.alert_allowed = False
     else:
@@ -77,11 +77,11 @@ class E2EAlertsHelper:
 
     # Lead Departure Alert
     _lead_depart_alert = False
-    if _allowed and has_lead and CC.enabled:
+    if self.lead_depart_alert_enabled and _allowed and has_lead:
       if self.last_lead_distance == -1 or lead_dRel < self.last_lead_distance:
         self.last_lead_distance = lead_dRel
 
-      if self.lead_depart_alert_enabled and self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0) and self.alert_allowed:
+      if self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0) and self.alert_allowed:
         _lead_depart_alert = True
         self.alert_allowed = False
 
