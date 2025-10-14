@@ -25,7 +25,6 @@ private:
                                 const QString &label);
   void drawBlindspot(QPainter &painter, const QRect &surface_rect, bool left_blindspot, bool right_blindspot);
   void drawRainbowPath(QPainter &painter, const QRect &surface_rect);
-  void drawRocketFuel(QPainter &painter, const QRect &surface_rect, float accel);
 
   QPolygonF left_blindspot_vertices;
   QPolygonF right_blindspot_vertices;
