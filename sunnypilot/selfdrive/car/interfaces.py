@@ -11,6 +11,7 @@ from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 
 import openpilot.system.sentry as sentry
 
@@ -66,6 +67,24 @@ def _initialize_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarPara
     CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
 
+def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  if CP.steerControlType == structs.CarParams.SteerControlType.angle:
+    params.remove("NeuralNetworkLateralControl")
+    params.remove("EnforceTorqueControl")
+
+  if not CP_SP.intelligentCruiseButtonManagementAvailable or CP.openpilotLongitudinalControl or CP_SP.pcmCruiseSpeed:
+    params.remove("IntelligentCruiseButtonManagement")
+
+  if not CP.openpilotLongitudinalControl or CP_SP.pcmCruiseSpeed:
+    params.remove("CustomAccIncrementsEnabled")
+    params.remove("SmartCruiseControlVision")
+    params.remove("SmartCruiseControlMap")
+    params.put("SpeedLimitMode", SpeedLimitMode.warning)
+
+
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
@@ -74,6 +93,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   nnlc_enabled = _initialize_neural_network_lateral_control(CP, CP_SP, params)
   _initialize_intelligent_cruise_button_management(CP, CP_SP, params)
   _initialize_torque_lateral_control(CI, CP, enforce_torque, nnlc_enabled)
+  _cleanup_unsupported_params(CP, CP_SP)
 
 
 def initialize_params(params) -> list[dict[str, Any]]:
