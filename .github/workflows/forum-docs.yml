@@ -1,0 +1,46 @@
+name: Publish Docs
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Set to true to publish to forum'
+        required: false
+        type: boolean
+
+env:
+  DOCS_CATEGORY_ID: 114
+  DOCS_DATA_EXPLORER_QUERY_ID: 2
+  DOCS_TARGET: https://forum.sunnypilot.ai
+  DOCS_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+jobs:
+#  dry_run:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: ruby/setup-ruby@v1
+#        with:
+#          ruby-version: "3.3"
+#          bundler-cache: true
+#          working-directory: ./release/ci
+#      - run: bundle exec ./sync_docs.rb --dry-run
+#        working-directory: ./release/ci
+
+  publish:
+#    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+#    needs: dry_run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: ./release/ci
+      - run: bundle exec ./sync_docs.rb
+        working-directory: ./release/ci
