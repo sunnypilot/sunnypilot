@@ -43,6 +43,15 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   intelligentCruiseButtonManagement->setConfirmation(true, false);
   list->addItem(intelligentCruiseButtonManagement);
 
+  dynamicExperimentalControl = new ParamControlSP(
+    "DynamicExperimentalControl",
+    tr("Dynamic Experimental Control (DEC)"),
+    tr("Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal."),
+    "",
+    this
+  );
+  list->addItem(dynamicExperimentalControl);
+
   SmartCruiseControlVision = new ParamControl(
     "SmartCruiseControlVision",
     tr("Smart Cruise Control - Vision"),
@@ -104,6 +113,17 @@ void LongitudinalPanel::refresh(bool _offroad) {
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
     intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+
+    if (!intelligent_cruise_button_management_available || has_longitudinal_control) {
+      params.remove("IntelligentCruiseButtonManagement");
+    }
+
+    if (!has_longitudinal_control && CP_SP.getPcmCruiseSpeed()) {
+      params.remove("CustomAccIncrementsEnabled");
+      params.remove("DynamicExperimentalControl");
+      params.remove("SmartCruiseControlVision");
+      params.remove("SmartCruiseControlMap");
+    }
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
@@ -127,11 +147,9 @@ void LongitudinalPanel::refresh(bool _offroad) {
         customAccIncrement->setDescription(accEnabledDescription);
       }
     } else {
-      params.remove("CustomAccIncrementsEnabled");
       customAccIncrement->toggleFlipped(false);
       customAccIncrement->setDescription(accNoLongDescription);
       customAccIncrement->showDescription();
-      params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->toggleFlipped(false);
     }
   }
@@ -144,6 +162,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->setEnabled(cai_allowed && !offroad);
   customAccIncrement->refresh();
 
+  dynamicExperimentalControl->setEnabled(has_longitudinal_control);
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
   SmartCruiseControlMap->setEnabled(has_longitudinal_control || icbm_allowed);
 

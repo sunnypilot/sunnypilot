@@ -29,7 +29,7 @@ OnroadScreenBrightnessControl::OnroadScreenBrightnessControl(const QString &para
     "Onroad Brightness",
     "",
     "",
-    {0, 100}, 10, true);
+    {0, 90}, 10, true);
 
   connect(onroadScreenOffTimer, &OptionControlSP::updateLabels, this, &OnroadScreenBrightnessControl::refresh);
   connect(onroadScreenBrightness, &OptionControlSP::updateLabels, this, &OnroadScreenBrightnessControl::refresh);
