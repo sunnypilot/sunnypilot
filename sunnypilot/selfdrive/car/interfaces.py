@@ -75,14 +75,14 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
     params.remove("NeuralNetworkLateralControl")
     params.remove("EnforceTorqueControl")
 
-  if not CP_SP.intelligentCruiseButtonManagementAvailable or CP.openpilotLongitudinalControl or CP_SP.pcmCruiseSpeed:
+  if not CP_SP.intelligentCruiseButtonManagementAvailable or CP.openpilotLongitudinalControl:
     params.remove("IntelligentCruiseButtonManagement")
 
-  if not CP.openpilotLongitudinalControl or CP_SP.pcmCruiseSpeed:
+  if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
     params.remove("CustomAccIncrementsEnabled")
     params.remove("SmartCruiseControlVision")
     params.remove("SmartCruiseControlMap")
-    params.put("SpeedLimitMode", SpeedLimitMode.warning)
+    params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
 
 
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
