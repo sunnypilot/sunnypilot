@@ -121,5 +121,5 @@ private:
   bool carControlEnabled;
   float speedCluster = 0;
   int icbm_active_counter = 0;
-  bool pcmCruiseSpeed;
+  bool pcmCruiseSpeed = true;
 };
