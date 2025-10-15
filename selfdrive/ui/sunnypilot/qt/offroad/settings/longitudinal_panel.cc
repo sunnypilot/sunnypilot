@@ -43,6 +43,15 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   intelligentCruiseButtonManagement->setConfirmation(true, false);
   list->addItem(intelligentCruiseButtonManagement);
 
+  dynamicExperimentalControl = new ParamControlSP(
+    "DynamicExperimentalControl",
+    tr("Dynamic Experimental Control (DEC)"),
+    tr("Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal."),
+    "",
+    this
+  );
+  list->addItem(dynamicExperimentalControl);
+
   SmartCruiseControlVision = new ParamControl(
     "SmartCruiseControlVision",
     tr("Smart Cruise Control - Vision"),
@@ -153,6 +162,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   customAccIncrement->setEnabled(cai_allowed && !offroad);
   customAccIncrement->refresh();
 
+  dynamicExperimentalControl->setEnabled(has_longitudinal_control);
   SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
   SmartCruiseControlMap->setEnabled(has_longitudinal_control || icbm_allowed);
 
