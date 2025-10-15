@@ -64,7 +64,7 @@ class LocalDoc
 
       ---
 
-      <small>This document is version controlled - suggest changes [on github](https://github.com/sunnypilot/sunnypilot/blob/master/docs_sp).</small>
+      <small>This document is version controlled - suggest changes [on github](https://github.com/sunnypilot/sunnypilot/blob/master/docs_sp/#{path}).</small>
     MD
 
     if assets.size == 0

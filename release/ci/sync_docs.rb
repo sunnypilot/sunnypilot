@@ -25,8 +25,8 @@ require_relative "lib/util"
 
 # Gemini API client for title generation
 class GeminiClient
-#   GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
-  GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"  
+  GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
+  #GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"  
 #   MAX_REQUESTS_PER_MINUTE = 15
   MAX_REQUESTS_PER_MINUTE = 9
   RATE_LIMIT_WINDOW = 60 # seconds
@@ -137,7 +137,83 @@ class GeminiClient
   end
 end
 
-# Helper method to convert MkDocs Material callouts to Obsidian format
+# Convert MkDocs "=== Tabs" sections to Obsidian callouts
+def convert_mkdocs_tabs_to_callouts(content, debug: false)
+  lines = content.lines
+  result = []
+  i = 0
+  match_count = 0
+
+  while i < lines.length
+    line = lines[i]
+
+    # Detect a MkDocs tab start, e.g., === "sunnypilot not installed"
+    if line =~ /^===\s+"([^"]+)"\s*$/
+      match_count += 1
+      tab_title = $1.strip
+
+      # Collect all indented lines following the tab
+      body_lines = []
+      i += 1
+      while i < lines.length
+        current_line = lines[i]
+        
+        # Check if line is indented (4+ spaces or tab)
+        if current_line =~ /^(?:    |\t)/
+          body_lines << current_line
+          i += 1
+        # Check if it's a blank line - peek ahead like we do for callouts
+        elsif current_line =~ /^\s*$/
+          peek_index = i + 1
+          has_more_indented = false
+          while peek_index < lines.length
+            if lines[peek_index] =~ /^(?:    |\t)/
+              has_more_indented = true
+              break
+            elsif lines[peek_index] =~ /^\s*$/
+              peek_index += 1
+            else
+              break
+            end
+          end
+          
+          if has_more_indented
+            body_lines << current_line
+            i += 1
+          else
+            break
+          end
+        else
+          # Non-indented, non-blank line (could be next tab!) - stop
+          break
+        end
+      end
+
+      puts "DEBUG: Tab '#{tab_title}', lines: #{body_lines.length}" if debug
+
+      # Convert the tab section to a callout
+      result << "> [!note] #{tab_title}\n"
+      body_lines.each do |body_line|
+        # Remove the first level of indentation (4 spaces or 1 tab) and add > prefix
+        stripped = body_line.sub(/^(?:    |\t)/, '')
+        if stripped.strip.empty?
+          result << ">\n"
+        else
+          result << ">#{stripped}"
+        end
+      end
+    else
+      result << line
+      i += 1
+    end
+  end
+
+  puts "DEBUG: Total tab matches: #{match_count}" if debug
+  result.join
+end
+
+
+# New implementation of MkDocs Material callout to Obsidian converter
 def convert_mkdocs_to_obsidian_callouts(content, debug: false)
   # Map of MkDocs callout types to Obsidian equivalents
   callout_map = {
@@ -167,33 +243,42 @@ def convert_mkdocs_to_obsidian_callouts(content, debug: false)
   while i < lines.length
     line = lines[i]
     
-    # Check if this line starts a callout
-    if line =~ /^!!!\s+(#{callout_map.keys.map { |k| Regexp.escape(k) }.join('|')})(?:\s+"([^"]+)")?\s*$/
+    # Check if this line starts a callout (can be indented or not)
+    # Capture any leading indentation
+    if line =~ /^(\s*)!!!\s+(#{callout_map.keys.map { |k| Regexp.escape(k) }.join('|')})(?:\s+"([^"]*)")?\s*$/
+      leading_indent = $1
+      mkdocs_type = $2
+      custom_title = $3
       match_count += 1
-      mkdocs_type = $1
-      custom_title = $2
       obsidian_type = callout_map[mkdocs_type]
       
-      # Collect all indented lines that follow
+      # Determine the base indentation level (number of spaces/tabs before !!!)
+      base_indent_size = leading_indent.length
+      
+      # Collect all lines that have MORE indentation than the base
       body_lines = []
       i += 1
       while i < lines.length
         current_line = lines[i]
         
-        # Check if line is indented (starts with 4 spaces or tab)
-        if current_line =~ /^(?:    |\t)/
+        # Check if line has the required base indentation plus more (for body content)
+        # Body content should be indented relative to the !!! line
+        required_indent = leading_indent + "    " # base + 4 more spaces
+        alt_required_indent = leading_indent + "\t" # base + 1 tab
+        
+        if current_line.start_with?(required_indent) || current_line.start_with?(alt_required_indent)
           body_lines << current_line
           i += 1
-        # Check if line is blank (empty or only whitespace) - might be between paragraphs
+        # Check if line is blank - might be between paragraphs
         elsif current_line =~ /^\s*$/
-          # Peek ahead to see if there are more indented lines
           peek_index = i + 1
           has_more_indented = false
           while peek_index < lines.length
-            if lines[peek_index] =~ /^(?:    |\t)/
+            peek_line = lines[peek_index]
+            if peek_line.start_with?(required_indent) || peek_line.start_with?(alt_required_indent)
               has_more_indented = true
               break
-            elsif lines[peek_index] =~ /^\s*$/
+            elsif peek_line =~ /^\s*$/
               peek_index += 1
             else
               break
@@ -207,29 +292,31 @@ def convert_mkdocs_to_obsidian_callouts(content, debug: false)
             break
           end
         else
-          # Non-indented, non-blank line - stop here
+          # Line doesn't have required indentation - stop
           break
         end
       end
       
-      puts "DEBUG: Match #{match_count} - type: #{mkdocs_type}, title: #{custom_title.inspect}, body lines: #{body_lines.length}" if debug
+      puts "DEBUG: Match #{match_count} - indent: #{base_indent_size} spaces, type: #{mkdocs_type}, title: #{custom_title.inspect}, body lines: #{body_lines.length}" if debug
       
-      # Build the converted callout
+      # Build the converted callout, preserving the base indentation
       if body_lines.empty?
-        if custom_title
-          result << "> [!#{obsidian_type}] \"#{custom_title}\"\n"
+        if custom_title && !custom_title.empty?
+          result << "#{leading_indent}> [!#{obsidian_type}] \"#{custom_title}\"\n"
         else
-          result << "> [!#{obsidian_type}]\n"
+          result << "#{leading_indent}> [!#{obsidian_type}]\n"
         end
       else
-        if custom_title
-          result << "> [!#{obsidian_type}] \"#{custom_title}\"\n"
+        if custom_title && !custom_title.empty?
+          result << "#{leading_indent}> [!#{obsidian_type}] \"#{custom_title}\"\n"
         else
-          result << "> [!#{obsidian_type}]\n"
+          result << "#{leading_indent}> [!#{obsidian_type}]\n"
         end
-        # Add > prefix to each body line
+        # Add > prefix to each body line, removing the extra level of indentation
         body_lines.each do |body_line|
-          result << ">#{body_line}"
+          # Remove the base indent + one level (4 spaces or tab)
+          stripped = body_line.sub(/^#{Regexp.escape(leading_indent)}(?:    |\t)/, '')
+          result << "#{leading_indent}>#{stripped}"
         end
       end
     else
@@ -352,6 +439,73 @@ def generate_folder_index(folder_name)
   "---\ntitle: #{title}\n---\n"
 end
 
+# Convert internal markdown links (.md) to Discourse topic links
+def rewrite_internal_links(content, docs)
+  require "uri"
+
+  content.gsub(/\]\(([^)]+\.md)(#[^)]+)?\)/) do |match|
+    raw_link = $1
+    anchor = $2 || ""
+    # Strip any ./ or ../ from the beginning, but preserve subfolders
+    normalized = raw_link.gsub(%r{^\./}, "").gsub(%r{^\.\./}, "")
+    # Remove trailing .md
+    normalized = normalized.gsub(/\.md$/, "")
+
+    # Try percent-decoding (handles %20 etc)
+    begin
+      normalized_decoded = URI.decode_www_form_component(normalized)
+    rescue
+      normalized_decoded = normalized
+    end
+
+    candidates = []
+
+    # Strategy 1: exact match against doc.path without .md
+    candidates += docs.select { |d| d.path.sub(/\.md$/, "") == normalized_decoded }
+
+    # Strategy 2: ends_with (useful if docs have a different root)
+    if candidates.empty?
+      candidates += docs.select { |d| d.path.end_with?("#{normalized_decoded}.md") }
+    end
+
+    # Strategy 3: match by basename (e.g., linking to index.md or same-named file in subfolder)
+    if candidates.empty?
+      basename = File.basename(normalized_decoded)
+      candidates += docs.select { |d| File.basename(d.path, ".md") == basename }
+    end
+
+    # Strategy 4: index.md handling — if link pointed to a folder/index.md, allow folder match
+    if candidates.empty? && normalized_decoded.end_with?("/index")
+      folder = normalized_decoded.sub(/\/index$/, "")
+      candidates += docs.select { |d| File.dirname(d.path) == folder && File.basename(d.path, ".md") == "index" }
+    end
+
+    # Pick the best candidate (prefer exact match)
+    target_doc =
+      if candidates.any?
+        # prefer exact equality if present
+        exact = candidates.find { |d| d.path.sub(/\.md$/, "") == normalized_decoded }
+        exact || candidates.first
+      else
+        nil
+      end
+
+    if target_doc && target_doc.topic_id
+      # Return a Discourse link preserving the anchor
+      "](/t/-/#{target_doc.topic_id}?silent=true#{anchor})"
+    else
+      if VERBOSE
+        puts "⚠️ rewrite_internal_links: unresolved '#{raw_link}' -> normalized='#{normalized_decoded}'"
+        # show up to 10 possible docs to help debugging
+        sample = docs.first(10).map(&:path).join(", ")
+        puts "  sample docs: #{sample}"
+      end
+      # Return original match unchanged so the link doesn't become invalid text
+      match
+    end
+  end
+end
+
 # Initialize Gemini client if API key is available
 gemini_client = GEMINI_API_KEY ? GeminiClient.new(GEMINI_API_KEY) : nil
 
@@ -402,6 +556,7 @@ Dir
     frontmatter, content = Util.parse_md(content)
     
     # Convert MkDocs Material callouts to Obsidian format
+    content = convert_mkdocs_tabs_to_callouts(content)
     content = convert_mkdocs_to_obsidian_callouts(content)
     content = convert_material_icons_to_emojis(content)
 
@@ -417,6 +572,11 @@ Dir
 
     docs.push(LocalDoc.new(frontmatter:, path:, content:))
   end
+
+puts "Rewriting internal links..."
+docs.each do |doc|
+  doc.content = rewrite_internal_links(doc.content, docs)
+end
 
 puts "Validating local docs..."
 docs
@@ -487,10 +647,7 @@ docs.each do |doc|
 
   created_any = true
   puts "- creating '#{doc.external_id} with title '#{doc.frontmatter["title"]}'..."
-  
-  # Convert callouts before creating the topic
   converted_content = convert_mkdocs_to_obsidian_callouts(doc.content_with_uploads)
-  
   API.create_topic(
     external_id: doc.external_id,
     raw: converted_content,
@@ -524,7 +681,7 @@ docs.each do |doc|
     next
   end
 
-  puts "- updating '#{doc.external_id}' (topic_id: #{doc.topic_id})..."
+  puts "- updating '#{doc.external_id}' (topic_id: #{doc.topic_id})... new title: '#{doc.frontmatter["title"]}'"
   API.edit_post(
     post_id: doc.first_post_id,
     raw: converted_content,
