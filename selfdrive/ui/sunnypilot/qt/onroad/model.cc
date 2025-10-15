@@ -21,74 +21,73 @@ void ModelRendererSP::update_model(const cereal::ModelDataV2::Reader &model, con
   mapLineToPolygon(model.getLaneLines()[2], 0.2, -0.05, &right_blindspot_vertices, max_idx_barrier);
 }
 
-void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &surface_rect) {
+void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
   auto &sm = *(s->sm);
-  bool blindspot = s->scene.blindspot_ui;
 
-  if (blindspot) {
-    bool left_blindspot = sm["carState"].getCarState().getLeftBlindspot();
-    bool right_blindspot = sm["carState"].getCarState().getRightBlindspot();
-
-    //painter.setBrush(QColor::fromRgbF(1.0, 0.0, 0.0, 0.4));  // Red with alpha for blind spot
-
-    if (left_blindspot && !left_blindspot_vertices.isEmpty()) {
-      QLinearGradient gradient(0, 0, surface_rect.width(), 0); // Horizontal gradient from left to right
-      gradient.setColorAt(0.0, QColor(255, 165, 0, 102)); // Orange with alpha
-      gradient.setColorAt(1.0, QColor(255, 255, 0, 102)); // Yellow with alpha
-      painter.setBrush(gradient);
-      painter.drawPolygon(left_blindspot_vertices);
-    }
-
-    if (right_blindspot && !right_blindspot_vertices.isEmpty()) {
-      QLinearGradient gradient(surface_rect.width(), 0, 0, 0); // Horizontal gradient from right to left
-      gradient.setColorAt(0.0, QColor(255, 165, 0, 102)); // Orange with alpha
-      gradient.setColorAt(1.0, QColor(255, 255, 0, 102)); // Yellow with alpha
-      painter.setBrush(gradient);
-      painter.drawPolygon(right_blindspot_vertices);
-    }
+  if (sm.rcv_frame("liveCalibration") < s->scene.started_frame ||
+      sm.rcv_frame("modelV2") < s->scene.started_frame) {
+    return;
   }
 
-  bool rainbow = s->scene.rainbow_mode;
-  //float v_ego = sm["carState"].getCarState().getVEgo();
+  clip_region = surface_rect.adjusted(-CLIP_MARGIN, -CLIP_MARGIN, CLIP_MARGIN, CLIP_MARGIN);
+  experimental_mode = sm["selfdriveState"].getSelfdriveState().getExperimentalMode();
+  longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
+  path_offset_z = sm["liveCalibration"].getLiveCalibration().getHeight()[0];
 
-  if (rainbow) {
-    // Simple time-based animation
-    float time_offset = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count() / 1000.0f;
+  painter.save();
 
-    // simple linear gradient from bottom to top
-    QLinearGradient bg(0, surface_rect.height(), 0, 0);
+  const auto &model = sm["modelV2"].getModelV2();
+  const auto &radar_state = sm["radarState"].getRadarState();
+  const auto &lead_one = radar_state.getLeadOne();
+  const auto &car_state = sm["carState"].getCarState();
 
-    // evenly spaced colors across the spectrum
-    // The animation shifts the entire spectrum smoothly
-    float animation_speed = 40.0f; // speed vroom vroom
-    float hue_offset = fmod(time_offset * animation_speed, 360.0f);
+  update_model(model, lead_one);
+  drawLaneLines(painter);
 
-    // 6-8 color stops for smooth transitions more color makes it laggy
-    const int num_stops = 7;
-    for (int i = 0; i < num_stops; i++) {
-      float position = static_cast<float>(i) / (num_stops - 1);
-
-      float hue = fmod(hue_offset + position * 360.0f, 360.0f);
-      float saturation = 0.9f;
-      float lightness = 0.6f;
-
-      // Alpha fades out towards the far end of the path
-      float alpha = 0.8f * (1.0f - position * 0.3f);
-
-      QColor color = QColor::fromHslF(hue / 360.0f, saturation, lightness, alpha);
-      bg.setColorAt(position, color);
-    }
-
-    painter.setBrush(bg);
-    painter.drawPolygon(track_vertices);
+  if (s->scene.rainbow_mode) {
+    drawRainbowPath(painter, surface_rect);
   } else {
-    // Normal path rendering
     ModelRenderer::drawPath(painter, model, surface_rect.height());
   }
 
+  if (longitudinal_control && sm.alive("radarState")) {
+    update_leads(radar_state, model.getPosition());
+    const auto &lead_two = radar_state.getLeadTwo();
+    if (lead_one.getStatus()) {
+      drawLead(painter, lead_one, lead_vertices[0], surface_rect);
+    }
+    if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
+      drawLead(painter, lead_two, lead_vertices[1], surface_rect);
+    }
+  }
+
+  if (s->scene.blindspot_ui) {
+    const bool left_blindspot = car_state.getLeftBlindspot();
+    const bool right_blindspot = car_state.getRightBlindspot();
+    drawBlindspot(painter, surface_rect, left_blindspot, right_blindspot);
+  }
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
+
+  painter.restore();
+}
+
+void ModelRendererSP::drawBlindspot(QPainter &painter, const QRect &surface_rect, bool left_blindspot, bool right_blindspot) {
+  if (left_blindspot && !left_blindspot_vertices.isEmpty()) {
+    QLinearGradient gradient(0, 0, surface_rect.width(), 0); // Horizontal gradient from left to right
+    gradient.setColorAt(0.0, QColor(255, 165, 0, 102)); // Orange with alpha
+    gradient.setColorAt(1.0, QColor(255, 255, 0, 102)); // Yellow with alpha
+    painter.setBrush(gradient);
+    painter.drawPolygon(left_blindspot_vertices);
+  }
+
+  if (right_blindspot && !right_blindspot_vertices.isEmpty()) {
+    QLinearGradient gradient(surface_rect.width(), 0, 0, 0); // Horizontal gradient from right to left
+    gradient.setColorAt(0.0, QColor(255, 165, 0, 102)); // Orange with alpha
+    gradient.setColorAt(1.0, QColor(255, 255, 0, 102)); // Yellow with alpha
+    painter.setBrush(gradient);
+    painter.drawPolygon(right_blindspot_vertices);
+  }
 }
 
 void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
@@ -121,19 +120,16 @@ void ModelRendererSP::drawLeadStatus(QPainter &painter, int height, int width) {
   }
 
   if (has_lead_one) {
-    drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
+    drawLeadStatusPosition(painter, lead_one, lead_vertices[0], height, width);
   }
 
   if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
-    drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
+    drawLeadStatusPosition(painter, lead_two, lead_vertices[1], height, width);
   }
 }
 
-void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
-                                               const cereal::RadarState::LeadData::Reader &lead_data,
-                                               const QPointF &chevron_pos,
-                                               int height, int width,
-                                               const QString &label) {
+void ModelRendererSP::drawLeadStatusPosition(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
+                                             const QPointF &chevron_pos, int height, int width) {
   float d_rel = lead_data.getDRel();
   float v_rel = lead_data.getVRel();
   auto *s = uiState();
@@ -222,4 +218,37 @@ void ModelRendererSP::drawLeadStatusAtPosition(QPainter &painter,
   }
 
   painter.setPen(Qt::NoPen);
+}
+
+void ModelRendererSP::drawRainbowPath(QPainter &painter, const QRect &surface_rect) {
+  // Simple time-based animation
+  float time_offset = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count() / 1000.0f;
+
+  // simple linear gradient from bottom to top
+  QLinearGradient bg(0, surface_rect.height(), 0, 0);
+
+  // evenly spaced colors across the spectrum
+  // The animation shifts the entire spectrum smoothly
+  float animation_speed = 40.0f; // speed vroom vroom
+  float hue_offset = fmod(time_offset * animation_speed, 360.0f);
+
+  // 6-8 color stops for smooth transitions more color makes it laggy
+  const int num_stops = 7;
+  for (int i = 0; i < num_stops; i++) {
+    float position = static_cast<float>(i) / (num_stops - 1);
+
+    float hue = fmod(hue_offset + position * 360.0f, 360.0f);
+    float saturation = 0.9f;
+    float lightness = 0.6f;
+
+    // Alpha fades out towards the far end of the path
+    float alpha = 0.8f * (1.0f - position * 0.3f);
+
+    QColor color = QColor::fromHslF(hue / 360.0f, saturation, lightness, alpha);
+    bg.setColorAt(position, color);
+  }
+
+  painter.setBrush(bg);
+  painter.drawPolygon(track_vertices);
 }
