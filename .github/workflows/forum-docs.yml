@@ -27,6 +27,7 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true
+          working-directory: ./release/ci
       - run: bundle exec ./sync_docs.rb --dry-run
         working-directory: ./release/ci
 
@@ -40,5 +41,6 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true
+          working-directory: ./release/ci
       - run: bundle exec ./sync_docs.rb
         working-directory: ./release/ci
