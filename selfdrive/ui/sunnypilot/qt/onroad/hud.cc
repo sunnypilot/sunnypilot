@@ -152,8 +152,12 @@ void HudRendererSP::updateState(const UIState &s) {
 
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
 
-  allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
-                     sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
+  allow_e2e_alerts = sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
+  if (s.scene.quiet_visual_mode) {
+    allow_e2e_alerts &= sm["selfdriveState"].getSelfdriveState().getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL;
+  } else {
+    allow_e2e_alerts &= sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE;
+  }
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {

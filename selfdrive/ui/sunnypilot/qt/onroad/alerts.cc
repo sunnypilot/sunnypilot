@@ -20,13 +20,13 @@ OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t start
 }
 
 void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
-  bool hideAlerts = params.getBool("QuietModeUI");
+  auto s_sp = uiState();
   if (alert.size == cereal::SelfdriveState::AlertSize::NONE) {
     return;
   } else if (alert.size == cereal::SelfdriveState::AlertSize::FULL) {
     OnroadAlerts::paintEvent(event);
     return;
-  } else if (hideAlerts) {
+  } else if (s_sp->scene.quiet_visual_mode) {
     if (alert.status == cereal::SelfdriveState::AlertStatus::NORMAL) return;
   }
   static std::map<cereal::SelfdriveState::AlertSize, const int> alert_heights = {
@@ -45,7 +45,7 @@ void OnroadAlertsSP::paintEvent(QPaintEvent *event) {
   int margin = 40;
   int radius = 30;
 
-  const int dev_ui_info = uiStateSP()->scene.dev_ui_info;
+  const int dev_ui_info = s_sp->scene.dev_ui_info;
   const int v_adjustment = dev_ui_info > 1 && alert.size != cereal::SelfdriveState::AlertSize::FULL ? 40 : 0;
   const int h_adjustment = dev_ui_info > 0 && alert.size != cereal::SelfdriveState::AlertSize::FULL ? 230 : 0;
 

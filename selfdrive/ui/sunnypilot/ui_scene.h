@@ -21,4 +21,5 @@ typedef struct UISceneSP : UIScene {
   int chevron_info;
   bool blindspot_ui;
   bool rainbow_mode;
+  bool quiet_visual_mode;
 } UISceneSP;

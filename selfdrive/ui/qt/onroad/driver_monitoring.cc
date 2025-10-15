@@ -28,6 +28,13 @@ void DriverMonitorRenderer::updateState(const UIState &s) {
   auto &sm = *(s.sm);
   is_visible = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
                sm.rcv_frame("driverStateV2") > s.scene.started_frame;
+
+#ifdef SUNNYPILOT
+  if (s.scene.quiet_visual_mode) {
+    is_visible = sm["selfdriveState"].getSelfdriveState().getAlertStatus() == cereal::SelfdriveState::AlertStatus::NORMAL &&
+                 sm.rcv_frame("driverStateV2") > s.scene.started_frame;
+  }
+#endif
   if (!is_visible) return;
 
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
