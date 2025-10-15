@@ -84,4 +84,10 @@ def initialize_params(params) -> list[dict[str, Any]]:
     "HyundaiLongitudinalTuning"
   ])
 
+  # subaru
+  keys.extend([
+    "SubaruStopAndGo",
+    "SubaruStopAndGoManualParkingBrake",
+  ])
+
   return [{k: params.get(k, return_default=True)} for k in keys]
