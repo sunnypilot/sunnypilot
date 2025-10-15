@@ -122,6 +122,10 @@ void SpeedLimitSettings::refresh() {
 
     has_longitudinal_control = hasLongitudinalControl(CP);
     intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+
+    if (!has_longitudinal_control && CP_SP.getPcmCruiseSpeed()) {
+      params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));
+    }
   } else {
     has_longitudinal_control = false;
     intelligent_cruise_button_management_available = false;
@@ -148,7 +152,7 @@ void SpeedLimitSettings::refresh() {
     speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(getSpeedLimitModeValues()));
   } else {
     speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(
-      {SpeedLimitMode::OFF,SpeedLimitMode::INFORMATION, SpeedLimitMode::WARNING}));
+      {SpeedLimitMode::OFF, SpeedLimitMode::INFORMATION, SpeedLimitMode::WARNING}));
   }
 
   speed_limit_mode_settings->showDescription();
