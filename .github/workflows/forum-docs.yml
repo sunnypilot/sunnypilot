@@ -19,21 +19,21 @@ env:
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
 jobs:
-  dry_run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
-          working-directory: ./release/ci
-      - run: bundle exec ./sync_docs.rb --dry-run
-        working-directory: ./release/ci
+#  dry_run:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: ruby/setup-ruby@v1
+#        with:
+#          ruby-version: "3.3"
+#          bundler-cache: true
+#          working-directory: ./release/ci
+#      - run: bundle exec ./sync_docs.rb --dry-run
+#        working-directory: ./release/ci
 
   publish:
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
-    needs: dry_run
+#    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+#    needs: dry_run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
