@@ -104,6 +104,14 @@ void LongitudinalPanel::refresh(bool _offroad) {
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
     intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+
+    if (!has_longitudinal_control && !intelligent_cruise_button_management_available) {
+      params.remove("CustomAccIncrementsEnabled");
+      params.remove("IntelligentCruiseButtonManagement");
+      params.remove("DynamicExperimentalControl");
+      params.remove("SmartCruiseControlVision");
+      params.remove("SmartCruiseControlMap");
+    }
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
@@ -127,11 +135,9 @@ void LongitudinalPanel::refresh(bool _offroad) {
         customAccIncrement->setDescription(accEnabledDescription);
       }
     } else {
-      params.remove("CustomAccIncrementsEnabled");
       customAccIncrement->toggleFlipped(false);
       customAccIncrement->setDescription(accNoLongDescription);
       customAccIncrement->showDescription();
-      params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->toggleFlipped(false);
     }
   }
