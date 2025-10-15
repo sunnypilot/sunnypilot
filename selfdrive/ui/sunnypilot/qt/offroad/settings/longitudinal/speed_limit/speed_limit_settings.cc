@@ -123,7 +123,7 @@ void SpeedLimitSettings::refresh() {
     has_longitudinal_control = hasLongitudinalControl(CP);
     intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
 
-    if (!has_longitudinal_control && !intelligent_cruise_button_management_available) {
+    if (!has_longitudinal_control && CP_SP.getPcmCruiseSpeed()) {
       params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));
     }
   } else {
