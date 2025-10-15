@@ -340,6 +340,7 @@ struct OnroadEventSP @0xda96579883444c35 {
     speedLimitChanged @21;
     speedLimitPending @22;
     e2eChime @23;
+    laneChangeRoadEdge @24;
   }
 }
 
@@ -446,6 +447,8 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
 
 struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
+  leftLaneChangeEdgeBlock @1 :Bool;
+  rightLaneChangeEdgeBlock @2 :Bool;
 }
 
 enum TurnDirection {
