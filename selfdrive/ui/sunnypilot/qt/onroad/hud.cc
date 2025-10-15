@@ -12,15 +12,12 @@
 
 
 HudRendererSP::HudRendererSP() {
-  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
-  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {90, 90});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {90, 90});
 
-  int small_max = e2e_alert_small * 2 - 40;
-  int large_max = e2e_alert_large * 2 - 40;
-  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {small_max, small_max});
-  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
-  lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
-  lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
+  int size = e2e_alert_size * 2 - 40;
+  green_light_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {size, size});
+  lead_depart_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {size, size});
 }
 
 void HudRendererSP::updateState(const UIState &s) {
@@ -133,6 +130,9 @@ void HudRendererSP::updateState(const UIState &s) {
   carControlEnabled = car_control.getEnabled();
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
   pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
+
+  allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE and
+               sm.rcv_frame("driverStateV2") > s.scene.started_frame and not reversing;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -235,11 +235,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       e2eAlertFrame++;
       if (greenLightAlert) {
         alert_text = tr("GREEN\nLIGHT");
-        alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
+        alert_img = green_light_alert_img;
       }
       else if (leadDepartAlert) {
         alert_text = tr("LEAD VEHICLE\nDEPARTING");
-        alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
+        alert_img = lead_depart_alert_img;
       }
       drawE2eAlert(p, surface_rect);
     }
@@ -643,7 +643,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
   const int sign_margin = 12;
-  const int arrow_spacing = sign_margin * 3;
+  const int arrow_spacing = sign_margin * 1.4;
   int arrow_x = sign_rect.right() + arrow_spacing;
 
   int _set_speed = std::nearbyint(set_speed);
@@ -718,11 +718,11 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
-  int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
-  int x = surface_rect.center().x() + surface_rect.width() / 4;
+  if (not allow_e2e_alerts) return;
+
+  int x = surface_rect.right() - e2e_alert_size - (devUiInfo > 0 ? 180 : 100) - (UI_BORDER_SIZE * 3);
   int y = surface_rect.center().y() + 20;
-  x += devUiInfo > 0 ? 0 : 50;
-  QRect alertRect(x - size, y - size, size * 2, size * 2);
+  QRect alertRect(x - e2e_alert_size, y - e2e_alert_size, e2e_alert_size * 2, e2e_alert_size * 2);
 
   // Alert Circle
   QPoint center = alertRect.center();
@@ -731,7 +731,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
-  p.drawEllipse(center, size, size);
+  p.drawEllipse(center, e2e_alert_size, e2e_alert_size);
 
   // Alert Text
   QColor txtColor;
