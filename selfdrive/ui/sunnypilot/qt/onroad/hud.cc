@@ -132,7 +132,7 @@ void HudRendererSP::updateState(const UIState &s) {
   pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
 
   allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE and
-               sm.rcv_frame("driverStateV2") > s.scene.started_frame and not reversing;
+                     sm.rcv_frame("driverStateV2") > s.scene.started_frame and not reversing;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
