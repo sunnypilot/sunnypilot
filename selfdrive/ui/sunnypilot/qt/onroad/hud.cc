@@ -739,7 +739,7 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
-  if (not allow_e2e_alerts) return;
+  if (!allow_e2e_alerts) return;
 
   int x = surface_rect.right() - e2e_alert_size - (devUiInfo > 0 ? 180 : 100) - (UI_BORDER_SIZE * 3);
   int y = surface_rect.center().y() + 20;
