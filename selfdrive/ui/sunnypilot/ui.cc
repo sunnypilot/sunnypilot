@@ -66,6 +66,7 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.road_name = params.getBool("RoadNameToggle");
   s->scene.trueVEgoUI = params.getBool("TrueVEgoUI");
   s->scene.hideVEgoUI = params.getBool("HideVEgoUI");
+  s->scene.rocket_fuel = params.getBool("RocketFuel");
 
   // Onroad Screen Brightness
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
