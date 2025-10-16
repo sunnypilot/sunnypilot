@@ -21,6 +21,7 @@ public:
   SpeedLimitSettings(QWidget *parent = nullptr);
   void refresh();
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
 
 signals:
   void backPress();
