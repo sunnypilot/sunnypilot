@@ -133,9 +133,6 @@ class E2EAlertsHelper:
           if triggered:
             state = E2EStates.CONSUMED
 
-          elif not allowed:
-            state = E2EStates.INACTIVE
-
         elif state == E2EStates.CONSUMED:
           pass
 
