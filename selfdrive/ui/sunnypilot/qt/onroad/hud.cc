@@ -154,7 +154,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   allow_e2e_alerts = sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
   if (s.scene.quiet_visual_mode) {
-    allow_e2e_alerts &= sm["selfdriveState"].getSelfdriveState().getAlertStatus() != cereal::SelfdriveState::AlertStatus::NORMAL;
+    allow_e2e_alerts &= sm["selfdriveState"].getSelfdriveState().getAlertStatus() == cereal::SelfdriveState::AlertStatus::NORMAL;
   } else {
     allow_e2e_alerts &= sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE;
   }
