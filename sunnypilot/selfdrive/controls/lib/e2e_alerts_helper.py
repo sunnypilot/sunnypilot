@@ -35,8 +35,7 @@ class E2EAlertsHelper:
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
-    self.alert_allowed = False
-    self.green_light_alert_count = 0
+    self.green_light_trigger_count = 0
     self.last_lead_distance = -1
     self.last_moving_frame = -1
 
@@ -70,14 +69,14 @@ class E2EAlertsHelper:
     green_light_trigger = False
     if self.green_light_state == E2EStates.ARMED:
       if model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
-        self.green_light_alert_count += 1
+        self.green_light_trigger_count += 1
       else:
-        self.green_light_alert_count = 0
+        self.green_light_trigger_count = 0
 
-      if self.green_light_alert_count > 2:
+      if self.green_light_trigger_count > 2:
         green_light_trigger = True
     elif self.green_light_state != E2EStates.ARMED:
-      self.green_light_alert_count = 0
+      self.green_light_trigger_count = 0
 
     # Lead Departure Alert
     lead_depart_trigger = False
@@ -85,7 +84,7 @@ class E2EAlertsHelper:
       if self.last_lead_distance == -1 or lead_dRel < self.last_lead_distance:
         self.last_lead_distance = lead_dRel
 
-      if self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0) and self.alert_allowed:
+      if self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0):
         lead_depart_trigger = True
     elif self.lead_depart_state != E2EStates.ARMED:
       self.last_lead_distance = -1
