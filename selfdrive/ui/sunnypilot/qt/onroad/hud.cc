@@ -67,9 +67,9 @@ void HudRendererSP::updateState(const UIState &s) {
     smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
     smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
     smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
-    greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
-    leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
   }
+  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
+  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
