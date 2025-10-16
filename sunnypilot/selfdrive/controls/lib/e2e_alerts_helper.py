@@ -13,7 +13,7 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 GREEN_LIGHT_X_THRESHOLD = 30
-TRIGGER_TIMER_THRESHOLD = 10
+TRIGGER_TIMER_THRESHOLD = 0.5
 
 
 class E2EStates:
@@ -36,8 +36,8 @@ class E2EAlertsHelper:
     self.lead_depart_alert = False
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
-    self.green_light_trigger_count = 0
-    self.lead_depart_trigger_count = 0
+    self.green_light_trigger_timer = 0
+    self.lead_depart_trigger_timer = 0
     self.last_lead_distance = -1
     self.last_moving_frame = -1
 
@@ -71,14 +71,14 @@ class E2EAlertsHelper:
     green_light_trigger = False
     if self.green_light_state == E2EStates.ARMED:
       if model_x[max_idx] > GREEN_LIGHT_X_THRESHOLD:
-        self.green_light_trigger_count += 1
+        self.green_light_trigger_timer += 1
       else:
-        self.green_light_trigger_count = 0
+        self.green_light_trigger_timer = 0
 
-      if self.green_light_trigger_count > TRIGGER_TIMER_THRESHOLD:
+      if self.green_light_trigger_timer * DT_MDL > TRIGGER_TIMER_THRESHOLD:
         green_light_trigger = True
     elif self.green_light_state != E2EStates.ARMED:
-      self.green_light_trigger_count = 0
+      self.green_light_trigger_timer = 0
 
     # Lead Departure Alert
     lead_depart_trigger = False
@@ -87,15 +87,15 @@ class E2EAlertsHelper:
         self.last_lead_distance = lead_dRel
 
       if self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0):
-        self.lead_depart_trigger_count += 1
+        self.lead_depart_trigger_timer += 1
       else:
-        self.lead_depart_trigger_count = 0
+        self.lead_depart_trigger_timer = 0
 
-      if self.lead_depart_trigger_count > TRIGGER_TIMER_THRESHOLD:
+      if self.lead_depart_trigger_timer * DT_MDL > TRIGGER_TIMER_THRESHOLD:
         lead_depart_trigger = True
     elif self.lead_depart_state != E2EStates.ARMED:
       self.last_lead_distance = -1
-      self.lead_depart_trigger_count = 0
+      self.lead_depart_trigger_timer = 0
 
     return green_light_trigger, lead_depart_trigger
 
