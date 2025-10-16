@@ -43,7 +43,12 @@ class E2EAlertsHelper:
     self.last_moving_frame = -1
 
     self.allowed = False
+    self.last_allowed = False
     self.has_lead = False
+
+    self.lead_depart_arm_timer = 0
+    self.lead_depart_confirmed_lead = False
+    self.lead_depart_armed = False
 
   def _read_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -82,6 +87,21 @@ class E2EAlertsHelper:
       self.green_light_trigger_timer = 0
 
     # Lead Departure Alert
+    close_lead_valid = self.has_lead and lead_dRel < 8.0
+    if self.allowed and not self.last_allowed and close_lead_valid:
+      self.lead_depart_confirmed_lead = True
+    elif not self.allowed:
+      self.lead_depart_confirmed_lead = False
+
+    if self.allowed and self.lead_depart_confirmed_lead and close_lead_valid:
+      self.lead_depart_arm_timer += 1
+
+      if self.lead_depart_arm_timer * DT_MDL >= 1.0:
+        self.lead_depart_armed = True
+    else:
+      self.lead_depart_arm_timer = 0
+      self.lead_depart_armed = False
+
     lead_depart_trigger = False
     if self.lead_depart_state == E2EStates.ARMED:
       if self.last_lead_distance == -1 or lead_dRel < self.last_lead_distance:
@@ -97,6 +117,8 @@ class E2EAlertsHelper:
     elif self.lead_depart_state != E2EStates.ARMED:
       self.last_lead_distance = -1
       self.lead_depart_trigger_timer = 0
+
+    self.last_allowed = self.allowed
 
     return green_light_trigger, lead_depart_trigger
 
@@ -141,7 +163,7 @@ class E2EAlertsHelper:
     self.lead_depart_state, self.lead_depart_alert = self.update_state_machine(
       self.lead_depart_state,
       self.lead_depart_alert_enabled,
-      self.allowed and self.has_lead,
+      self.allowed and self.lead_depart_armed,
       lead_depart_trigger
     )
 
