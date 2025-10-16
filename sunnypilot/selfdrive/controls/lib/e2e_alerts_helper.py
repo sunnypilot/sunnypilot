@@ -13,6 +13,7 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 GREEN_LIGHT_X_THRESHOLD = 30
+TRIGGER_TIMER_THRESHOLD = 10
 
 
 class E2EStates:
@@ -36,6 +37,7 @@ class E2EAlertsHelper:
     self.lead_depart_alert_enabled = self._params.get_bool("LeadDepartAlert")
 
     self.green_light_trigger_count = 0
+    self.lead_depart_trigger_count = 0
     self.last_lead_distance = -1
     self.last_moving_frame = -1
 
@@ -73,7 +75,7 @@ class E2EAlertsHelper:
       else:
         self.green_light_trigger_count = 0
 
-      if self.green_light_trigger_count > 2:
+      if self.green_light_trigger_count > TRIGGER_TIMER_THRESHOLD:
         green_light_trigger = True
     elif self.green_light_state != E2EStates.ARMED:
       self.green_light_trigger_count = 0
@@ -85,9 +87,15 @@ class E2EAlertsHelper:
         self.last_lead_distance = lead_dRel
 
       if self.last_lead_distance != -1 and (lead_dRel - self.last_lead_distance > 1.0):
+        self.lead_depart_trigger_count += 1
+      else:
+        self.lead_depart_trigger_count = 0
+
+      if self.lead_depart_trigger_count > TRIGGER_TIMER_THRESHOLD:
         lead_depart_trigger = True
     elif self.lead_depart_state != E2EStates.ARMED:
       self.last_lead_distance = -1
+      self.lead_depart_trigger_count = 0
 
     return green_light_trigger, lead_depart_trigger
 
