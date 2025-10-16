@@ -23,11 +23,11 @@ SpeedLimitPolicy::SpeedLimitPolicy(QWidget *parent) : QWidget(parent) {
   ListWidgetSP *list = new ListWidgetSP(this);
 
   std::vector<QString> speed_limit_policy_texts{
-    SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::CAR_ONLY)],
-    SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::MAP_ONLY)],
-    SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::CAR_FIRST)],
-    SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::MAP_FIRST)],
-    SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::COMBINED)]
+    tr(SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::CAR_ONLY)].toStdString().c_str()),
+    tr(SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::MAP_ONLY)].toStdString().c_str()),
+    tr(SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::CAR_FIRST)].toStdString().c_str()),
+    tr(SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::MAP_FIRST)].toStdString().c_str()),
+    tr(SpeedLimitSourcePolicyTexts[static_cast<int>(SpeedLimitSourcePolicy::COMBINED)].toStdString().c_str())
   };
   speed_limit_policy = new ButtonParamControlSP(
     "SpeedLimitPolicy",

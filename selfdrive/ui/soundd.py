@@ -4,7 +4,7 @@ import time
 import wave
 
 
-from cereal import car, messaging
+from cereal import car, messaging, custom
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import Ratekeeper
@@ -26,7 +26,14 @@ AMBIENT_DB = 30 # DB where MIN_VOLUME is applied
 DB_SCALE = 30 # AMBIENT_DB + DB_SCALE is where MAX_VOLUME is applied
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
+AudibleAlertSP = custom.SelfdriveStateSP.AudibleAlert
 
+
+sound_list_sp: dict[int, tuple[str, int | None, float]] = {
+  # AudibleAlertSP, file name, play count (none for infinite)
+  AudibleAlertSP.promptSingleLow: ("prompt_single_low.wav", 1, MAX_VOLUME),
+  AudibleAlertSP.promptSingleHigh: ("prompt_single_high.wav", 1, MAX_VOLUME),
+}
 
 sound_list: dict[int, tuple[str, int | None, float]] = {
   # AudibleAlert, file name, play count (none for infinite)
@@ -40,6 +47,8 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
 
   AudibleAlert.warningSoft: ("warning_soft.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("warning_immediate.wav", None, MAX_VOLUME),
+
+  **sound_list_sp,
 }
 
 def check_selfdrive_timeout_alert(sm):

@@ -69,6 +69,48 @@ struct LeadData {
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
   intelligentCruiseButtonManagement @1 :IntelligentCruiseButtonManagement;
+
+  enum AudibleAlert {
+    none @0;
+
+    engage @1;
+    disengage @2;
+    refuse @3;
+
+    warningSoft @4;
+    warningImmediate @5;
+
+    prompt @6;
+    promptRepeat @7;
+    promptDistracted @8;
+
+    # unused, these are reserved for upstream events so we don't collide
+    reserved9 @9;
+    reserved10 @10;
+    reserved11 @11;
+    reserved12 @12;
+    reserved13 @13;
+    reserved14 @14;
+    reserved15 @15;
+    reserved16 @16;
+    reserved17 @17;
+    reserved18 @18;
+    reserved19 @19;
+    reserved20 @20;
+    reserved21 @21;
+    reserved22 @22;
+    reserved23 @23;
+    reserved24 @24;
+    reserved25 @25;
+    reserved26 @26;
+    reserved27 @27;
+    reserved28 @28;
+    reserved29 @29;
+    reserved30 @30;
+
+    promptSingleLow @31;
+    promptSingleHigh @32;
+  }
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -404,12 +446,12 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
 
 struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
-}
 
-enum TurnDirection {
-  none @0;
-  turnLeft @1;
-  turnRight @2;
+  enum TurnDirection {
+    none @0;
+    turnLeft @1;
+    turnRight @2;
+  }
 }
 
 struct CustomReserved10 @0xcb9fd56c7057593a {
