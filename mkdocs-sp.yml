@@ -51,6 +51,7 @@ markdown_extensions:
   - def_list
   - footnotes
   - md_in_html
+  - tables
   - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
@@ -124,16 +125,16 @@ nav:
               - URL Method: setup/url-method.md
               - SSH Method: setup/ssh-method.md
   - Features:
-      - Hyundai Longitudinal Tuning: features/hyundai-longitudinal-tuning.md
-      - Modified Assistive Driving Safety: features/mads.md
-      - Smart Cruise Control - Vision: features/scc-v.md
-      - Smart Cruise Control - Map: features/scc-m.md
-      - Speed Limit Assist: features/speed-limit-assist.md
+      - Auto Lane Change: features/auto-lane-change.md
       - Custom ACC Increments: features/custom-acc-increments.md
       - Dynamic Experimental Control: features/dynamic-experimental-control.md
-      - Auto Lane Change: features/auto-lane-change.md
-      - NNLC: features/nnlc.md
+      - Hyundai Longitudinal Tuning: features/hyundai-longitudinal-tuning.md
       - Intelligent Cruise Button Management: features/icbm.md
+      - Modular Assistive Driving System: features/mads.md
+      - Neutral Network Lateral Control: features/nnlc.md
+      - Smart Cruise Control - Map: features/scc-m.md
+      - Smart Cruise Control - Vision: features/scc-v.md
+      - Speed Limit - Assist: features/speed-limit-assist.md
   - Community:
       - Contributing: community/CONTRIBUTING.md
       - Workflow: community/WORKFLOW.md

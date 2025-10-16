@@ -5,7 +5,7 @@ description: Detailed documentation on the Auto Lane Change feature in sunnypilo
 
 # Auto Lane Change
 
-sunnypilot's Auto Lane Change feature allows the vehicle to automatically change lanes with minimal driver input.
+sunnypilot's Auto Lane Change feature allows the vehicle to automatically change lanes.
 
 ## Key Setting and How to Use
 
@@ -15,7 +15,6 @@ sunnypilot's Auto Lane Change feature allows the vehicle to automatically change
 
 ### Additional Related Settings
 - **Delay with Blind Spot:** This crucial safety feature adds a delay to the lane change if the vehicle's blind spot monitoring (BSM) system detects an object. The lane change will only proceed after the blind spot is clear.
-
 
 ## Important Considerations
 

@@ -1,9 +1,9 @@
 ---
-title: NNLC (Neural Network Lateral Control)
+title: Neural Network Lateral Control (NNLC)
 description: Detailed documentation on the NNLC feature in sunnypilot.
 ---
 
-# NNLC (Neural Network Lateral Control)
+# Neural Network Lateral Control (NNLC)
 
 sunnypilot's Neural Network Lateral Control (NNLC) is a feature that enhances the system's ability to steer a vehicle. It enhances the standard lateral controller with one based on a neural network trained on the vehicle's torque data, aiming for smoother and more precise steering adjustments.
 
