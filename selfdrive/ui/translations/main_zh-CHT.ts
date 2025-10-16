@@ -748,7 +748,7 @@ DEPARTING</source>
     </message>
     <message>
         <source>SPEED</source>
-        <translation>速度</translation>
+        <translation>道路</translation>
     </message>
     <message>
         <source>LIMIT</source>
@@ -781,6 +781,10 @@ DEPARTING</source>
     <message>
         <source>MAX</source>
         <translation>最高</translation>
+    </message>
+    <message>
+        <source>STOPPED</source>
+        <translation>停止時間</translation>
     </message>
 </context>
 <context>
@@ -1567,6 +1571,34 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Time remaining: </source>
         <translation>剩餘時間： </translation>
+    </message>
+    <message>
+        <source>Search Country</source>
+        <translation>搜尋國家/地區</translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all countries.</source>
+        <translation>請輸入搜尋關鍵字，或留空以列出所有國家/地區。</translation>
+    </message>
+    <message>
+        <source>Select Country</source>
+        <translation>選擇國家/地區</translation>
+    </message>
+    <message>
+        <source>Search State</source>
+        <translation>搜尋州/省</translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all states.</source>
+        <translation>請輸入搜尋關鍵字，或留空以列出所有州/省。</translation>
+    </message>
+    <message>
+        <source>Select State</source>
+        <translation>選擇州/省</translation>
+    </message>
+    <message>
+        <source>No results found for keywords: %1</source>
+        <translation>找不到關鍵字「%1」相關結果</translation>
     </message>
 </context>
 <context>
@@ -2805,6 +2837,22 @@ Bottom</source>
     <message>
         <source>Display real-time parameters and metrics from various sources.</source>
         <translation>顯示來自各種來源的即時參數和指標。</translation>
+    </message>
+    <message>
+        <source>When enabled, the speedometer on the onroad screen is not displayed.</source>
+        <translation>啟用時，行車畫面將不顯示車速錶。</translation>
+    </message>
+    <message>
+        <source>Display Turn Signals</source>
+        <translation>顯示方向燈（轉向指示）</translation>
+    </message>
+    <message>
+        <source>When enabled, visual turn indicators are drawn on the HUD.</source>
+        <translation>啟用時，抬頭顯示器 (HUD) 將繪製視覺方向指示燈。</translation>
+    </message>
+    <message>
+        <source>This feature requires openpilot longitudinal control to be available.</source>
+        <translation>此功能需要 openpilot 縱向控制功能可用。</translation>
     </message>
 </context>
 <context>
