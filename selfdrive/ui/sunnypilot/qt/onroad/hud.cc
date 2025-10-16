@@ -12,15 +12,12 @@
 
 
 HudRendererSP::HudRendererSP() {
-  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
-  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {90, 90});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {90, 90});
 
-  int small_max = e2e_alert_small * 2 - 40;
-  int large_max = e2e_alert_large * 2 - 40;
-  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {small_max, small_max});
-  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
-  lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
-  lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
+  int size = e2e_alert_size * 2 - 40;
+  green_light_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {size, size});
+  lead_depart_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {size, size});
 }
 
 void HudRendererSP::updateState(const UIState &s) {
@@ -70,9 +67,9 @@ void HudRendererSP::updateState(const UIState &s) {
     smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
     smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
     smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
-    greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
-    leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
   }
+  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
+  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -141,7 +138,7 @@ void HudRendererSP::updateState(const UIState &s) {
   steeringTorqueEps = car_state.getSteeringTorqueEps();
 
   isStandstill = car_state.getStandstill();
-  if (not s.scene.started) standstillElapsedTime = 0.0;
+  if (!s.scene.started) standstillElapsedTime = 0.0;
 
   // override stock current speed values
   float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
@@ -154,6 +151,9 @@ void HudRendererSP::updateState(const UIState &s) {
   rightBlindspot = car_state.getRightBlindspot();
 
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
+
+  allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
+                     sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -246,7 +246,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawRoadName(p, surface_rect);
 
     // Green Light & Lead Depart Alerts
-    if (greenLightAlert or leadDepartAlert) {
+    if (greenLightAlert || leadDepartAlert) {
       e2eAlertDisplayTimer = 3 * UI_FREQ;
       // reset onroad sleep timer for e2e alerts
       uiStateSP()->reset_onroad_sleep_timer();
@@ -256,11 +256,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       e2eAlertFrame++;
       if (greenLightAlert) {
         alert_text = tr("GREEN\nLIGHT");
-        alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
+        alert_img = green_light_alert_img;
       }
       else if (leadDepartAlert) {
         alert_text = tr("LEAD VEHICLE\nDEPARTING");
-        alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
+        alert_img = lead_depart_alert_img;
       }
       drawE2eAlert(p, surface_rect);
     }
@@ -278,7 +278,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // No Alerts displayed
     else {
       e2eAlertFrame = 0;
-      if (not isStandstill) standstillElapsedTime = 0.0;
+      if (!isStandstill) standstillElapsedTime = 0.0;
     }
 
     // Blinker
@@ -664,7 +664,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
   const int sign_margin = 12;
-  const int arrow_spacing = sign_margin * 3;
+  const int arrow_spacing = sign_margin * 1.4;
   int arrow_x = sign_rect.right() + arrow_spacing;
 
   int _set_speed = std::nearbyint(set_speed);
@@ -739,26 +739,26 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
-  int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
-  int x = surface_rect.center().x() + surface_rect.width() / 4;
+  if (!allow_e2e_alerts) return;
+
+  int x = surface_rect.right() - e2e_alert_size - (devUiInfo > 0 ? 180 : 100) - (UI_BORDER_SIZE * 3);
   int y = surface_rect.center().y() + 20;
-  x += devUiInfo > 0 ? 0 : 50;
-  QRect alertRect(x - size, y - size, size * 2, size * 2);
+  QRect alertRect(x - e2e_alert_size, y - e2e_alert_size, e2e_alert_size * 2, e2e_alert_size * 2);
 
   // Alert Circle
   QPoint center = alertRect.center();
   QColor frameColor;
-  if (not alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
+  if (!alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
   else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
-  p.drawEllipse(center, size, size);
+  p.drawEllipse(center, e2e_alert_size, e2e_alert_size);
 
   // Alert Text
   QColor txtColor;
   QFont font;
   int alert_bottom_adjustment;
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     font = InterFont(100, QFont::Bold);
     alert_bottom_adjustment = 5;
     txtColor = QColor(255, 255, 255, 255);
@@ -775,7 +775,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   textRect.moveBottom(alertRect.bottom() - alertRect.height() / alert_bottom_adjustment);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     // Alert Alternate Text
     p.setFont(InterFont(80, QFont::Bold));
     p.setPen(QColor(255, 175, 3, 240));
@@ -804,7 +804,7 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const bool hazard = leftBlinkerOn && rightBlinkerOn;
-  int blinkerStatus = hazard ? 2 : (leftBlinkerOn or rightBlinkerOn) ? 1 : 0;
+  int blinkerStatus = hazard ? 2 : (leftBlinkerOn || rightBlinkerOn) ? 1 : 0;
 
   if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
