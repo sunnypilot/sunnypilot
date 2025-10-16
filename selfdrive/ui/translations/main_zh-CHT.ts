@@ -756,11 +756,11 @@ DEPARTING</source>
     </message>
     <message>
         <source>SPEED</source>
-        <translation>道路</translation>
+        <translation>SPEED</translation>
     </message>
     <message>
         <source>LIMIT</source>
-        <translation>限速</translation>
+        <translation>LIMIT</translation>
     </message>
     <message>
         <source>Near</source>
