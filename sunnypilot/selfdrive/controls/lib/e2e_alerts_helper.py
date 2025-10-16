@@ -14,7 +14,7 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 GREEN_LIGHT_X_THRESHOLD = 30
 LEAD_DEPART_DIST_THRESHOLD = 1.0
-TRIGGER_TIMER_THRESHOLD = 0.5
+TRIGGER_TIMER_THRESHOLD = 0.3
 
 
 class E2EStates:
