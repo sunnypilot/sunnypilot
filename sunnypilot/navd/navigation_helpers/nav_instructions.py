@@ -81,7 +81,6 @@ class NavigationInstructions:
     if not route:
       self._no_route = True
       return None
-    steps = []
 
     geometry = [Coordinate(coord['latitude'], coord['longitude']) for coord in route['geometry']]
     cumulative_distances = [0.0]

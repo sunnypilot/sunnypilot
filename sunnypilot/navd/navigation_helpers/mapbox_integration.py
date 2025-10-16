@@ -13,7 +13,7 @@ class MapboxIntegration:
     return token
 
   def set_destination(self, postvars, current_lon, current_lat, bearing=None) -> tuple[dict, bool]:
-    if 'latitude' and 'longitude' in postvars:
+    if 'latitude' in postvars and 'longitude' in postvars:
       self.nav_confirmed(postvars, current_lon, current_lat, bearing)
       return postvars, True
 

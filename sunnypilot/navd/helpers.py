@@ -64,10 +64,7 @@ class Coordinate:
     haversine_dlon = math.sin(dlon / 2.0)
     haversine_dlon *= haversine_dlon
 
-    y = haversine_dlat \
-        + math.cos(math.radians(self.latitude)) \
-        * math.cos(math.radians(other.latitude)) \
-        * haversine_dlon
+    y = haversine_dlat + math.cos(math.radians(self.latitude)) * math.cos(math.radians(other.latitude)) * haversine_dlon
     x = 2 * math.asin(math.sqrt(y))
     return x * EARTH_MEAN_RADIUS
 
@@ -126,6 +123,8 @@ def string_to_direction(direction: str) -> str:
     if d in direction:
       if 'slight' in direction and d in MODIFIABLE_DIRECTIONS:
         return 'slight' + d.capitalize()
+      elif 'sharp' in direction and d in MODIFIABLE_DIRECTIONS:
+        return 'sharp' + d.capitalize()
       return d
   return 'none'
 
