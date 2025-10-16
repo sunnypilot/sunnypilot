@@ -39,7 +39,6 @@ class E2EAlertsHelper:
     self.green_light_alert_count = 0
     self.last_lead_distance = -1
     self.last_moving_frame = -1
-    self.last_standstill = False
 
     self.allowed = False
     self.has_lead = False
