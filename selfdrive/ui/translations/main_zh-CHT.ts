@@ -552,6 +552,14 @@ Steering lag calibration is complete.</source>
         <translation>行車開始後，關閉或降低裝置螢幕亮度。觸碰螢幕或顯示可見警示時，螢幕會自動變亮。</translation>
     </message>
     <message>
+        <source>Onroad Brightness</source>
+        <translation>行車畫面亮度</translation>
+    </message>
+    <message>
+        <source>Onroad Brightness Delay</source>
+        <translation>行車畫面亮度延遲</translation>
+    </message>
+    <message>
         <source>Interactivity Timeout</source>
         <translation>互動逾時</translation>
     </message>
@@ -922,6 +930,14 @@ DEPARTING</source>
     <message>
         <source>Enable custom Short &amp; Long press increments for cruise speed increase/decrease.</source>
         <translation>啟用自訂短按和長按的巡航速度增減量。</translation>
+    </message>
+    <message>
+        <source>Short press</source>
+        <translation>短按</translation>
+    </message>
+    <message>
+        <source>Long press</source>
+        <translation>長按</translation>
     </message>
     <message>
         <source>This feature can only be used with openpilot longitudinal control enabled.</source>
