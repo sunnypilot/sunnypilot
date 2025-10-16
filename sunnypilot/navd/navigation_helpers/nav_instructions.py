@@ -1,5 +1,6 @@
-from openpilot.common.params import Params
 from openpilot.common.constants import CV
+from openpilot.common.params import Params
+
 from openpilot.sunnypilot.navd.helpers import Coordinate, string_to_direction
 
 
@@ -12,7 +13,7 @@ class NavigationInstructions:
     self._no_route = False
 
   def get_route_progress(self, current_lat, current_lon) -> dict | None:
-    '''Get current position on route and progress information'''
+    """Get current position on route and progress information"""
     route = self.get_current_route()
     if not route or not route['geometry'] or not route['steps']:
       return None
@@ -20,30 +21,28 @@ class NavigationInstructions:
     self.coord.latitude = current_lat
     self.coord.longitude = current_lon
 
-    # Find closest point on the route polyline
+    # Find the closest point on the route relative to self
     closest_idx, min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
     closest_cumulative = route['cumulative_distances'][closest_idx]
 
-    # Find the current step idx: the highest idx where the step location cumulative <= closest_cumulative
+    # Find the current step index, which is the HIGHEST idx where the step location cumulative less/equal closest cumulative
     current_step_idx = max((idx for idx, step in enumerate(route['steps']) if step['cumulative_distance'] <= closest_cumulative), default=-1)
-    current_step = route['steps'][current_step_idx if current_step_idx >= 0 else 0] if route['steps'] else None
+    current_step = route['steps'][current_step_idx if current_step_idx >= 0 else 0]
 
-    # Next turn is the next step after current
+    # The next turn is the next step relative to our cumulative index
     next_turn_idx = current_step_idx + 1
     next_turn = route['steps'][next_turn_idx] if 0 <= next_turn_idx < len(route['steps']) else None
     next_turn_distance = max(0, next_turn['cumulative_distance'] - closest_cumulative) if next_turn else None
 
-    current_maxspeed = current_step['maxspeed'] if current_step else None
+    current_maxspeed = current_step['maxspeed']
 
-    distance_to_end_of_step = max(0, current_step['distance'] - (closest_cumulative - current_step['cumulative_distance'])) if current_step else None
+    distance_to_end_of_step = max(0, current_step['distance'] - (closest_cumulative - current_step['cumulative_distance']))
 
     # Calculate total remaining distance and time
     total_distance_remaining: float = max(0, route['total_distance'] - closest_cumulative)
-    total_time_remaining: float = 0.0
-    if current_step:
-      progress_in_step = (closest_cumulative - current_step['cumulative_distance']) / current_step['distance']
-      time_left_in_step = (1 - progress_in_step) * current_step['duration']
-      total_time_remaining = time_left_in_step + sum(step['duration'] for step in route['steps'][current_step_idx + 1 :])
+    progress_in_step = (closest_cumulative - current_step['cumulative_distance']) / current_step['distance']
+    time_left_in_step = (1 - progress_in_step) * current_step['duration']
+    total_time_remaining: float = time_left_in_step + sum(step['duration'] for step in route['steps'][current_step_idx + 1 :])
 
     all_maneuvers: list = []
     max_maneuvers = 2
@@ -97,7 +96,7 @@ class NavigationInstructions:
         'maneuver': step['maneuver'],
         'location': location,
         'cumulative_distance': cumulative_distances[closest_idx],
-        'maxspeed': maxspeed[closest_idx] if closest_idx < len(maxspeed) else None,
+        'maxspeed': maxspeed[min(closest_idx, len(maxspeed) - 1)],
         'modifier': string_to_direction(step['modifier']),
       })
     self._cached_route = {
@@ -123,8 +122,7 @@ class NavigationInstructions:
       distance = self.coord.distance_to(progress['next_turn']['location'])
       if distance <= 100:
         modifier = progress['next_turn']['modifier']
-        if modifier:
-          return str(modifier)
+        return str(modifier)
     return 'none'
 
   def get_current_speed_limit_from_progress(self, progress, is_metric: bool) -> int:

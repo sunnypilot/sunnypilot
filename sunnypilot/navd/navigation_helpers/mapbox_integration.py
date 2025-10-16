@@ -9,7 +9,7 @@ class MapboxIntegration:
     self.params = Params()
 
   def get_public_token(self) -> str:
-    token = str(self.params.get('MapboxToken', return_default=True))
+    token: str = self.params.get('MapboxToken', return_default=True)
     return token
 
   def set_destination(self, postvars, current_lon, current_lat, bearing=None) -> tuple[dict, bool]:
@@ -22,9 +22,9 @@ class MapboxIntegration:
       return postvars, False
 
     token = self.get_public_token()
-    query = f'https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(addr)}.json?access_token={token}&limit=1&proximity={current_lon},{current_lat}'
+    url = f'https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(addr)}.json?access_token={token}&limit=1&proximity={current_lon},{current_lat}'
     try:
-      response = requests.get(query, timeout=5)
+      response = requests.get(url, timeout=5)
       if response.status_code == 200:
         features = response.json()['features']
         if features:
@@ -33,7 +33,7 @@ class MapboxIntegration:
           self.nav_confirmed(postvars, current_lon, current_lat, bearing)
           return postvars, True
     except requests.RequestException:
-      pass  # Handle network errors without crashing service
+      pass  # Broad exception to handle network errors like no internet without crashing navd process.
     return postvars, False
 
   def nav_confirmed(self, postvars, start_lon, start_lat, bearing=None) -> None:
@@ -51,7 +51,8 @@ class MapboxIntegration:
       data['navData']['route'] = route_data
     self.params.put('MapboxSettings', data)
 
-  def generate_route(self, start_lon, start_lat, end_lon, end_lat, token, bearing=None) -> dict | None:
+  @staticmethod
+  def generate_route(start_lon, start_lat, end_lon, end_lat, token, bearing=None) -> dict | None:
     if not token:
       return None
 

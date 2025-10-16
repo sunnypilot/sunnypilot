@@ -1,7 +1,9 @@
+import os
+
+from openpilot.common.constants import CV
+
 from openpilot.sunnypilot.navd.navigation_helpers.mapbox_integration import MapboxIntegration
 from openpilot.sunnypilot.navd.navigation_helpers.nav_instructions import NavigationInstructions
-from openpilot.common.constants import CV
-import os
 
 
 class TestMapbox:
@@ -41,10 +43,6 @@ class TestMapbox:
     assert len(self.route['geometry']) > 0
     assert len(self.route['maxspeed']) > 0
 
-    maxspeed = [(speed, unit) for speed, unit in self.route['maxspeed'] if speed > 0]
-    print(f"Maxspeed: {maxspeed}")
-    modifiers = [step['modifier'] for step in self.route['steps']]
-    print(f"Modifiers: {modifiers}")
     if self.route and 'steps' in self.route:
       for step in self.route['steps']:
         assert 'modifier' in step
@@ -58,17 +56,16 @@ class TestMapbox:
     if self.route['steps']:
       turn_lat = self.route['steps'][1]['location'].latitude
       turn_lon = self.route['steps'][1]['location'].longitude
-      close_lat = turn_lat - 0.0008  # 80 ish meters before turn
+      close_lat = turn_lat - 0.0008  # 80 ish meters before the turn
       if progress and progress.get('next_turn'):
         expected_turn = progress['next_turn']['modifier']
         upcoming_close = self.nav.get_upcoming_turn_from_progress(progress, close_lat, turn_lon)
         if expected_turn:
-          assert upcoming_close == expected_turn == 'right', f"Should detect '{expected_turn}' turn when close to next turn location"
+          assert upcoming_close == expected_turn == 'right', "Should be a right turn upcoming"
 
   def test_route_progress_tracking(self):
     # Test route progress tracking
     progress = self.nav.get_route_progress(self.current_lat, self.current_lon)
-    print(f"Route progress: {progress}")
     assert progress is not None
     assert 'distance_from_route' in progress
     assert 'next_turn' in progress
