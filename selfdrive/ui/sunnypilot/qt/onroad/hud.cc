@@ -67,9 +67,9 @@ void HudRendererSP::updateState(const UIState &s) {
     smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
     smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
     smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
-    greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
-    leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
   }
+  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
+  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
@@ -138,7 +138,7 @@ void HudRendererSP::updateState(const UIState &s) {
   steeringTorqueEps = car_state.getSteeringTorqueEps();
 
   isStandstill = car_state.getStandstill();
-  if (not s.scene.started) standstillElapsedTime = 0.0;
+  if (!s.scene.started) standstillElapsedTime = 0.0;
 
   // override stock current speed values
   float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
@@ -246,7 +246,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawRoadName(p, surface_rect);
 
     // Green Light & Lead Depart Alerts
-    if (greenLightAlert or leadDepartAlert) {
+    if (greenLightAlert || leadDepartAlert) {
       e2eAlertDisplayTimer = 3 * UI_FREQ;
       // reset onroad sleep timer for e2e alerts
       uiStateSP()->reset_onroad_sleep_timer();
@@ -278,7 +278,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // No Alerts displayed
     else {
       e2eAlertFrame = 0;
-      if (not isStandstill) standstillElapsedTime = 0.0;
+      if (!isStandstill) standstillElapsedTime = 0.0;
     }
 
     // Blinker
@@ -748,7 +748,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   // Alert Circle
   QPoint center = alertRect.center();
   QColor frameColor;
-  if (not alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
+  if (!alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
   else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
@@ -758,7 +758,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   QColor txtColor;
   QFont font;
   int alert_bottom_adjustment;
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     font = InterFont(100, QFont::Bold);
     alert_bottom_adjustment = 5;
     txtColor = QColor(255, 255, 255, 255);
@@ -775,7 +775,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   textRect.moveBottom(alertRect.bottom() - alertRect.height() / alert_bottom_adjustment);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     // Alert Alternate Text
     p.setFont(InterFont(80, QFont::Bold));
     p.setPen(QColor(255, 175, 3, 240));
@@ -804,7 +804,7 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const bool hazard = leftBlinkerOn && rightBlinkerOn;
-  int blinkerStatus = hazard ? 2 : (leftBlinkerOn or rightBlinkerOn) ? 1 : 0;
+  int blinkerStatus = hazard ? 2 : (leftBlinkerOn || rightBlinkerOn) ? 1 : 0;
 
   if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
