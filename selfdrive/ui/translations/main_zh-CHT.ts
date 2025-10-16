@@ -752,7 +752,7 @@ DEPARTING</source>
     </message>
     <message>
         <source>LIMIT</source>
-        <translation>速限</translation>
+        <translation>限速</translation>
     </message>
     <message>
         <source>Near</source>
