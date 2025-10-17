@@ -7,6 +7,8 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
 
+#include "selfdrive/ui/sunnypilot/qt/util.h"
+
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   setStyleSheet(R"(
     #back_btn {
@@ -112,13 +114,13 @@ void LongitudinalPanel::refresh(bool _offroad) {
 
     has_longitudinal_control = hasLongitudinalControl(CP);
     is_pcm_cruise = CP.getPcmCruise();
-    intelligent_cruise_button_management_available = CP_SP.getIntelligentCruiseButtonManagementAvailable();
+    has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
 
-    if (!intelligent_cruise_button_management_available || has_longitudinal_control) {
+    if (!CP_SP.getIntelligentCruiseButtonManagementAvailable()) {
       params.remove("IntelligentCruiseButtonManagement");
     }
 
-    if (!has_longitudinal_control && CP_SP.getPcmCruiseSpeed()) {
+    if (!has_longitudinal_control && !has_icbm) {
       params.remove("CustomAccIncrementsEnabled");
       params.remove("DynamicExperimentalControl");
       params.remove("SmartCruiseControlVision");
@@ -127,7 +129,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
-    intelligent_cruise_button_management_available = false;
+    has_icbm = false;
   }
 
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
@@ -139,7 +141,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     customAccIncrement->setDescription(onroadOnlyDescription);
     customAccIncrement->showDescription();
   } else {
-    if (has_longitudinal_control || intelligent_cruise_button_management_available) {
+    if (has_longitudinal_control || has_icbm) {
       if (is_pcm_cruise) {
         customAccIncrement->setDescription(accPcmCruiseDisabledDescription);
         customAccIncrement->showDescription();
@@ -154,7 +156,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     }
   }
 
-  bool icbm_allowed = intelligent_cruise_button_management_available && !has_longitudinal_control;
+  bool icbm_allowed = has_icbm && !has_longitudinal_control;
   intelligentCruiseButtonManagement->setEnabled(icbm_allowed && offroad);
 
   // enable toggle when long is available and is not PCM cruise
