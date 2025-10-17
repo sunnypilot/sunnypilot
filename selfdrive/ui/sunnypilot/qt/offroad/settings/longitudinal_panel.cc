@@ -120,7 +120,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
       params.remove("IntelligentCruiseButtonManagement");
     }
 
-    if (!has_longitudinal_control && !has_icbm) {
+    if (!has_longitudinal_control && !CP_SP.getIntelligentCruiseButtonManagementAvailable()) {
       params.remove("CustomAccIncrementsEnabled");
       params.remove("DynamicExperimentalControl");
       params.remove("SmartCruiseControlVision");
