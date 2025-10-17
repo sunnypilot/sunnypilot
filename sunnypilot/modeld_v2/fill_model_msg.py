@@ -3,6 +3,7 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
+from openpilot.sunnypilot.models.helpers import plan_x_idxs_helper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_curvature_from_plan
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -118,8 +119,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   # action (includes lateral planning now)
   modelV2.action = action
 
-  # times at X_IDXS of edges and lines aren't used
-  LINE_T_IDXS: list[float] = []
+  # times at X_IDXS of edges and lines
+  LINE_T_IDXS: list[float] = plan_x_idxs_helper(ModelConstants, Plan, net_output_data)
 
   # lane lines
   modelV2.init('laneLines', 4)

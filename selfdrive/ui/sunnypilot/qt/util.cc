@@ -95,13 +95,12 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
     return list;
   }
 
-  QStringList search_terms = query.simplified().toLower().split(" ", QString::SkipEmptyParts);
+  QStringList search_terms = query.simplified().toLower().replace(QRegularExpression("[^a-zA-Z0-9\\s]"), " ").split(" ", QString::SkipEmptyParts);
   QStringList search_results;
 
   for (const QString &element : list) {
     if (std::all_of(search_terms.begin(), search_terms.end(), [&](const QString &term) {
           QString normalized_term = term.normalized(QString::NormalizationForm_KD).toLower();
-          normalized_term.remove(QRegularExpression("[^a-zA-Z0-9\\s]"));
           QString normalized_element = element.normalized(QString::NormalizationForm_KD).toLower();
           return normalized_element.contains(normalized_term, Qt::CaseInsensitive);
         })) {
