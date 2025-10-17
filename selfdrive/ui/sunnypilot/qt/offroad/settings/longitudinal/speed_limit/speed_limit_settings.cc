@@ -7,8 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/speed_limit/speed_limit_settings.h"
 
-#include "selfdrive/ui/sunnypilot/qt/util.h"
-
 SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent) {
   subPanelFrame = new QFrame();
   QVBoxLayout *subPanelLayout = new QVBoxLayout(subPanelFrame);
@@ -123,7 +121,7 @@ void SpeedLimitSettings::refresh() {
     cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
     has_longitudinal_control = hasLongitudinalControl(CP);
-    has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
+    has_icbm = CP_SP.getIntelligentCruiseButtonManagementAvailable();
 
     if (!has_longitudinal_control && CP_SP.getPcmCruiseSpeed()) {
       if (speed_limit_mode_param == SpeedLimitMode::ASSIST) {
