@@ -168,7 +168,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
         customAccIncrement->setDescription(accEnabledDescription);
       }
     } else {
-      customAccIncrement->toggleFlipped(false);
       customAccIncrement->setDescription(accNoLongDescription);
       customAccIncrement->showDescription();
     }
