@@ -116,8 +116,11 @@ void LongitudinalPanel::refresh(bool _offroad) {
     is_pcm_cruise = CP.getPcmCruise();
     has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
 
-    if (!CP_SP.getIntelligentCruiseButtonManagementAvailable()) {
+    if (CP_SP.getIntelligentCruiseButtonManagementAvailable() && !has_longitudinal_control && offroad) {
+      intelligentCruiseButtonManagement->setEnabled(true);
+    } else {
       params.remove("IntelligentCruiseButtonManagement");
+      intelligentCruiseButtonManagement->setEnabled(false);
     }
 
     if (!has_longitudinal_control && !CP_SP.getIntelligentCruiseButtonManagementAvailable()) {
@@ -157,7 +160,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
   }
 
   bool icbm_allowed = has_icbm && !has_longitudinal_control;
-  intelligentCruiseButtonManagement->setEnabled(icbm_allowed && offroad);
 
   // enable toggle when long is available and is not PCM cruise
   bool cai_allowed = (has_longitudinal_control && !is_pcm_cruise) || icbm_allowed;
