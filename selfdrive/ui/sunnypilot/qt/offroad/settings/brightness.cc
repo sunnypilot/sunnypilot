@@ -21,7 +21,7 @@ void Brightness::refresh() {
   const int brightness = QString::fromStdString(params.get("Brightness")).toInt();
   
   QString label;
-  if (brightness == 1) {
+  if (brightness == 1 || brightness == -5) {
     label = tr("Auto (Dark)");
   } else if (brightness == 0) {
     label = tr("Auto");
