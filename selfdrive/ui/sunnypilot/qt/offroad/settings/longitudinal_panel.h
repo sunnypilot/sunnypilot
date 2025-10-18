@@ -38,4 +38,8 @@ private:
   ParamControl *dynamicExperimentalControl = nullptr;
   SpeedLimitSettings *speedLimitScreen;
   PushButtonSP *speedLimitSettings;
+
+  ParamControlSP *vibePersonalityControl;
+  ParamControlSP *vibeAccelPersonalityControl;
+  ParamControlSP *vibeFollowPersonalityControl;
 };
