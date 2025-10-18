@@ -35,6 +35,7 @@ private:
   SpeedLimitPolicy *speedLimitPolicyScreen;
   ButtonParamControlSP *speed_limit_offset_settings;
   OptionControlSP *speed_limit_offset;
+  bool icbm_available = false;
 
   static QString offsetDescription(SpeedLimitOffsetType type = SpeedLimitOffsetType::NONE) {
     QString none_str = tr("⦿ None: No Offset");
