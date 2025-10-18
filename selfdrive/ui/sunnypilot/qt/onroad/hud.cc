@@ -12,19 +12,24 @@
 
 
 HudRendererSP::HudRendererSP() {
-  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {105, 105});
-  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {105, 105});
+  plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {90, 90});
+  minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {90, 90});
 
-  int small_max = e2e_alert_small * 2 - 40;
-  int large_max = e2e_alert_large * 2 - 40;
-  green_light_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {small_max, small_max});
-  green_light_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {large_max, large_max});
-  lead_depart_alert_small_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {small_max, small_max});
-  lead_depart_alert_large_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {large_max, large_max});
+  int size = e2e_alert_size * 2 - 40;
+  green_light_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {size, size});
+  lead_depart_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {size, size});
 }
 
 void HudRendererSP::updateState(const UIState &s) {
   HudRenderer::updateState(s);
+
+  float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
+  devUiInfo = s.scene.dev_ui_info;
+  roadName = s.scene.road_name;
+  showTurnSignals = s.scene.turn_signals;
+  speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
+  speedUnit = is_metric ? tr("km/h") : tr("mph");
+  standstillTimer = s.scene.standstill_timer;
 
   const SubMaster &sm = *(s.sm);
   const auto cs = sm["controlsState"].getControlsState();
@@ -32,25 +37,40 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
   const auto is_gps_location_external = sm.rcv_frame("gpsLocationExternal") > 1;
-  const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
+  const char *gps_source = is_gps_location_external ? "gpsLocationExternal" : "gpsLocation";
+  const auto gpsLocation = is_gps_location_external ? sm[gps_source].getGpsLocationExternal() : sm[gps_source].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto car_params = sm["carParams"].getCarParams();
   const auto car_params_sp = sm["carParamsSP"].getCarParamsSP();
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
 
-  float speedConv = is_metric ? MS_TO_KPH : MS_TO_MPH;
-  speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
-  speedLimitLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLast() * speedConv;
-  speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
-  speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
-  speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
-  speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
-  speedLimitSource = lp_sp.getSpeedLimit().getResolver().getSource();
-  speedLimitMode = static_cast<SpeedLimitMode>(s.scene.speed_limit_mode);
-  speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
-  speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
-  roadName = s.scene.road_name;
+  if (sm.updated("carParams")) {
+    steerControlType = car_params.getSteerControlType();
+  }
+
+  if (sm.updated("carParamsSP")) {
+    pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
+  }
+
+  if (sm.updated("longitudinalPlanSP")) {
+    speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
+    speedLimitLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLast() * speedConv;
+    speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
+    speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
+    speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
+    speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
+    speedLimitSource = lp_sp.getSpeedLimit().getResolver().getSource();
+    speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
+    speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
+    smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
+    smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
+    smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
+    smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
+  }
+  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
+  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
+
   if (sm.updated("liveMapDataSP")) {
     roadNameStr = QString::fromStdString(lmd.getRoadName());
     speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
@@ -66,7 +86,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
-  if (int(car_state.getGearShifter()) != 4) {
+  if (car_state.getGearShifter() != cereal::CarState::GearShifter::REVERSE) {
     reverse_delay = 0;
     reverse_allowed = false;
   } else {
@@ -78,46 +98,47 @@ void HudRendererSP::updateState(const UIState &s) {
 
   reversing = reverse_allowed;
 
+  if (sm.updated("liveParameters")) {
+    roll = sm["liveParameters"].getLiveParameters().getRoll();
+  }
+
+  if (sm.updated("deviceState")) {
+    memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
+  }
+
+  if (sm.updated(gps_source)) {
+    gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0;  // External reports accuracy, internal does not.
+    altitude = gpsLocation.getAltitude();
+    bearingAccuracyDeg = gpsLocation.getBearingAccuracyDeg();
+    bearingDeg = gpsLocation.getBearingDeg();
+  }
+
+  if (sm.updated("liveTorqueParameters")) {
+    torquedUseParams = ltp.getUseParams();
+    latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
+    frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
+    liveValid = ltp.getLiveValid();
+  }
+
   latActive = car_control.getLatActive();
+  actuators = car_control.getActuators();
+  longOverride = car_control.getCruiseControl().getOverride();
+  carControlEnabled = car_control.getEnabled();
+
   steerOverride = car_state.getSteeringPressed();
-
-  devUiInfo = s.scene.dev_ui_info;
-
-  speedUnit = is_metric ? tr("km/h") : tr("mph");
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
-  steerControlType = car_params.getSteerControlType();
-  actuators = car_control.getActuators();
   torqueLateral = steerControlType == cereal::CarParams::SteerControlType::TORQUE;
   angleSteers = car_state.getSteeringAngleDeg();
   desiredCurvature = cs.getDesiredCurvature();
   curvature = cs.getCurvature();
-  roll = sm["liveParameters"].getLiveParameters().getRoll();
-  memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
-  gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0;  // External reports accuracy, internal does not.
-  altitude = gpsLocation.getAltitude();
   vEgo = car_state.getVEgo();
   aEgo = car_state.getAEgo();
   steeringTorqueEps = car_state.getSteeringTorqueEps();
-  bearingAccuracyDeg = gpsLocation.getBearingAccuracyDeg();
-  bearingDeg = gpsLocation.getBearingDeg();
-  torquedUseParams = ltp.getUseParams();
-  latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
-  frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
-  liveValid = ltp.getLiveValid();
 
-  standstillTimer = s.scene.standstill_timer;
   isStandstill = car_state.getStandstill();
-  if (not s.scene.started) standstillElapsedTime = 0.0;
-  longOverride = car_control.getCruiseControl().getOverride();
-  smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
-  smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
-  smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
-  smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
-
-  greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
-  leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
+  if (!s.scene.started) standstillElapsedTime = 0.0;
 
   // override stock current speed values
   float v_ego = (v_ego_cluster_seen && !s.scene.trueVEgoUI) ? car_state.getVEgoCluster() : car_state.getVEgo();
@@ -128,11 +149,11 @@ void HudRendererSP::updateState(const UIState &s) {
   rightBlinkerOn = car_state.getRightBlinker();
   leftBlindspot = car_state.getLeftBlindspot();
   rightBlindspot = car_state.getRightBlindspot();
-  showTurnSignals = s.scene.turn_signals;
 
-  carControlEnabled = car_control.getEnabled();
   speedCluster = car_state.getCruiseState().getSpeedCluster() * speedConv;
-  pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
+
+  allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
+                     sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -225,7 +246,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     drawRoadName(p, surface_rect);
 
     // Green Light & Lead Depart Alerts
-    if (greenLightAlert or leadDepartAlert) {
+    if (greenLightAlert || leadDepartAlert) {
       e2eAlertDisplayTimer = 3 * UI_FREQ;
       // reset onroad sleep timer for e2e alerts
       uiStateSP()->reset_onroad_sleep_timer();
@@ -235,11 +256,11 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       e2eAlertFrame++;
       if (greenLightAlert) {
         alert_text = tr("GREEN\nLIGHT");
-        alert_img = devUiInfo > 0 ? green_light_alert_small_img : green_light_alert_large_img;
+        alert_img = green_light_alert_img;
       }
       else if (leadDepartAlert) {
         alert_text = tr("LEAD VEHICLE\nDEPARTING");
-        alert_img = devUiInfo > 0 ? lead_depart_alert_small_img : lead_depart_alert_large_img;
+        alert_img = lead_depart_alert_img;
       }
       drawE2eAlert(p, surface_rect);
     }
@@ -257,7 +278,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     // No Alerts displayed
     else {
       e2eAlertFrame = 0;
-      if (not isStandstill) standstillElapsedTime = 0.0;
+      if (!isStandstill) standstillElapsedTime = 0.0;
     }
 
     // Blinker
@@ -643,7 +664,7 @@ void HudRendererSP::drawRoadName(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) {
   const int sign_margin = 12;
-  const int arrow_spacing = sign_margin * 3;
+  const int arrow_spacing = sign_margin * 1.4;
   int arrow_x = sign_rect.right() + arrow_spacing;
 
   int _set_speed = std::nearbyint(set_speed);
@@ -718,26 +739,26 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
-  int size = devUiInfo > 0 ? e2e_alert_small : e2e_alert_large;
-  int x = surface_rect.center().x() + surface_rect.width() / 4;
+  if (!allow_e2e_alerts) return;
+
+  int x = surface_rect.right() - e2e_alert_size - (devUiInfo > 0 ? 180 : 100) - (UI_BORDER_SIZE * 3);
   int y = surface_rect.center().y() + 20;
-  x += devUiInfo > 0 ? 0 : 50;
-  QRect alertRect(x - size, y - size, size * 2, size * 2);
+  QRect alertRect(x - e2e_alert_size, y - e2e_alert_size, e2e_alert_size * 2, e2e_alert_size * 2);
 
   // Alert Circle
   QPoint center = alertRect.center();
   QColor frameColor;
-  if (not alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
+  if (!alert_alt_text.isEmpty()) frameColor = QColor(255, 255, 255, 75);
   else frameColor = pulseElement(e2eAlertFrame) ? QColor(255, 255, 255, 75) : QColor(0, 255, 0, 75);
   p.setPen(QPen(frameColor, 15));
   p.setBrush(QColor(0, 0, 0, 190));
-  p.drawEllipse(center, size, size);
+  p.drawEllipse(center, e2e_alert_size, e2e_alert_size);
 
   // Alert Text
   QColor txtColor;
   QFont font;
   int alert_bottom_adjustment;
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     font = InterFont(100, QFont::Bold);
     alert_bottom_adjustment = 5;
     txtColor = QColor(255, 255, 255, 255);
@@ -754,7 +775,7 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
   textRect.moveBottom(alertRect.bottom() - alertRect.height() / alert_bottom_adjustment);
   p.drawText(textRect, Qt::AlignCenter, alert_text);
 
-  if (not alert_alt_text.isEmpty()) {
+  if (!alert_alt_text.isEmpty()) {
     // Alert Alternate Text
     p.setFont(InterFont(80, QFont::Bold));
     p.setPen(QColor(255, 175, 3, 240));
@@ -783,7 +804,7 @@ void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const bool hazard = leftBlinkerOn && rightBlinkerOn;
-  int blinkerStatus = hazard ? 2 : (leftBlinkerOn or rightBlinkerOn) ? 1 : 0;
+  int blinkerStatus = hazard ? 2 : (leftBlinkerOn || rightBlinkerOn) ? 1 : 0;
 
   if (!leftBlinkerOn && !rightBlinkerOn) {
     blinkerFrameCounter = 0;
