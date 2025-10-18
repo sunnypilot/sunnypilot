@@ -26,7 +26,7 @@ private:
   bool has_longitudinal_control = false;
   bool is_pcm_cruise = false;
   bool has_icbm = false;;
-  bool offroad = false;
+  bool offroad = true;
 
   QStackedLayout *main_layout = nullptr;
   ScrollViewSP *cruisePanelScroller = nullptr;
