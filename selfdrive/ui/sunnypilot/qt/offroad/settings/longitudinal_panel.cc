@@ -161,7 +161,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
     customAccIncrement->showDescription();
   } else {
     if (has_longitudinal_control || has_icbm) {
-      if (is_pcm_cruise) {
+      if (has_longitudinal_control && is_pcm_cruise) {
         customAccIncrement->setDescription(accPcmCruiseDisabledDescription);
         customAccIncrement->showDescription();
       } else {
