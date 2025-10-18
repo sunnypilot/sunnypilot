@@ -42,6 +42,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "",
     this
   );
+  QObject::connect(intelligentCruiseButtonManagement, &ParamControlSP::toggleFlipped, this, &LongitudinalPanel::refresh);
   list->addItem(intelligentCruiseButtonManagement);
 
   dynamicExperimentalControl = new ParamControlSP(
@@ -115,21 +116,35 @@ void LongitudinalPanel::refresh(bool _offroad) {
     is_pcm_cruise = CP.getPcmCruise();
     has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
 
-    if (CP_SP.getIntelligentCruiseButtonManagementAvailable() && !has_longitudinal_control && offroad) {
-      intelligentCruiseButtonManagement->setEnabled(true);
+    if (CP_SP.getIntelligentCruiseButtonManagementAvailable() && !has_longitudinal_control) {
+      intelligentCruiseButtonManagement->setEnabled(offroad);
     } else {
       params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->setEnabled(false);
     }
 
-    if (!has_longitudinal_control && !has_icbm) {
+    if (has_longitudinal_control || has_icbm) {
+      // enable Custom ACC Increments when long is available and is not PCM cruise
+      customAccIncrement->setEnabled(((has_longitudinal_control && !is_pcm_cruise) || has_icbm) && offroad);
+      dynamicExperimentalControl->setEnabled(has_longitudinal_control);
+      SmartCruiseControlVision->setEnabled(true);
+      SmartCruiseControlMap->setEnabled(true);
+    } else {
       params.remove("CustomAccIncrementsEnabled");
       params.remove("DynamicExperimentalControl");
       params.remove("SmartCruiseControlVision");
       params.remove("SmartCruiseControlMap");
+      customAccIncrement->setEnabled(false);
+      dynamicExperimentalControl->setEnabled(false);
+      SmartCruiseControlVision->setEnabled(false);
+      SmartCruiseControlMap->setEnabled(false);
     }
 
     intelligentCruiseButtonManagement->refresh();
+    customAccIncrement->refresh();
+    dynamicExperimentalControl->refresh();
+    SmartCruiseControlVision->refresh();
+    SmartCruiseControlMap->refresh();
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
@@ -158,17 +173,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
     }
   }
-
-  bool icbm_allowed = has_icbm && !has_longitudinal_control;
-
-  // enable toggle when long is available and is not PCM cruise
-  bool cai_allowed = (has_longitudinal_control && !is_pcm_cruise) || icbm_allowed;
-  customAccIncrement->setEnabled(cai_allowed && !offroad);
-  customAccIncrement->refresh();
-
-  dynamicExperimentalControl->setEnabled(has_longitudinal_control);
-  SmartCruiseControlVision->setEnabled(has_longitudinal_control || icbm_allowed);
-  SmartCruiseControlMap->setEnabled(has_longitudinal_control || icbm_allowed);
 
   offroad = _offroad;
 }
