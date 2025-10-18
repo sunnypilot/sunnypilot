@@ -39,7 +39,7 @@ class TestSpeedLimitAssist:
     self.events_sp = EventsSP()
     CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2)
     self.sla = SpeedLimitAssist(CI.CP)
-    self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)
+    self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD[self.sla.pcm_op_long] / DT_MDL)
     self.pcm_long_max_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric][1]  # use 80 MPH for now
     self.speed_conv = CV.MS_TO_KPH if self.sla.is_metric else CV.MS_TO_MPH
 
@@ -114,7 +114,7 @@ class TestSpeedLimitAssist:
     self.sla.state = SpeedLimitAssistState.preActive
     self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
 
-    for _ in range(int(PRE_ACTIVE_GUARD_PERIOD / DT_MDL)):
+    for _ in range(int(PRE_ACTIVE_GUARD_PERIOD[self.sla.pcm_op_long] / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.inactive
 
