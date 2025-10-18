@@ -42,7 +42,6 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "",
     this
   );
-  intelligentCruiseButtonManagement->setConfirmation(true, false);
   list->addItem(intelligentCruiseButtonManagement);
 
   dynamicExperimentalControl = new ParamControlSP(
@@ -123,12 +122,14 @@ void LongitudinalPanel::refresh(bool _offroad) {
       intelligentCruiseButtonManagement->setEnabled(false);
     }
 
-    if (!has_longitudinal_control && !CP_SP.getIntelligentCruiseButtonManagementAvailable()) {
+    if (!has_longitudinal_control && !has_icbm) {
       params.remove("CustomAccIncrementsEnabled");
       params.remove("DynamicExperimentalControl");
       params.remove("SmartCruiseControlVision");
       params.remove("SmartCruiseControlMap");
     }
+
+    intelligentCruiseButtonManagement->refresh();
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
@@ -155,7 +156,6 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->toggleFlipped(false);
       customAccIncrement->setDescription(accNoLongDescription);
       customAccIncrement->showDescription();
-      intelligentCruiseButtonManagement->toggleFlipped(false);
     }
   }
 
