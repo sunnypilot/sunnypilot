@@ -34,6 +34,8 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
   speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
   speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
+  alert_1_str = ""
+  alert_2_str = ""
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
     # PCM long
@@ -41,22 +43,12 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     pcm_long_required_max = cst_low if speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[metric] else cst_high
     pcm_long_required_max_set_speed_conv = round(pcm_long_required_max * speed_conv)
     speed_unit = "km/h" if metric else "mph"
+
+    alert_1_str = "Speed Limit Assist: Activation Required"
     alert_2_str = f"Manually change set speed to {pcm_long_required_max_set_speed_conv} {speed_unit} to activate"
-  else:
-    # Non PCM long
-    v_cruise_cluster = CS.vCruiseCluster * CV.KPH_TO_MS
-
-    req_plus, req_minus = compare_cluster_target(v_cruise_cluster, speed_limit_final_last, metric)
-    arrow_str = ""
-    if req_plus:
-      arrow_str = "RES/+"
-    elif req_minus:
-      arrow_str = "SET/-"
-
-    alert_2_str = f"Operate the {arrow_str} cruise control button to activate"
 
   return Alert(
-    "Speed Limit Assist: Activation Required",
+    alert_1_str,
     alert_2_str,
     AlertStatus.normal, AlertSize.mid,
     Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleLow, .1)
