@@ -42,7 +42,9 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "",
     this
   );
-  QObject::connect(intelligentCruiseButtonManagement, &ParamControlSP::toggleFlipped, this, &LongitudinalPanel::refresh);
+  QObject::connect(intelligentCruiseButtonManagement, &ParamControlSP::toggleFlipped, this, [=](bool) {
+    refresh(offroad);
+  });
   list->addItem(intelligentCruiseButtonManagement);
 
   dynamicExperimentalControl = new ParamControlSP(
