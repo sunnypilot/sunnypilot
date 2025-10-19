@@ -454,7 +454,26 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   }
 }
 
-struct CustomReserved10 @0xcb9fd56c7057593a {
+struct Navigationd @0xcb9fd56c7057593a {
+  timestamp @0 :UInt64;
+  upcomingTurn @1 :Text;
+  currentSpeedLimit @2 :UInt64;
+  bannerInstructions @3 :Text;
+  distanceToNextTurn @4 :Float64;
+  routeProgressPercent @5 :Float64;
+  distanceFromRoute @6 :Float64;
+  routePositionCumulative @7 :Float64;
+  distanceToEndOfStep @8 :Float64;
+  totalDistanceRemaining @9 :Float64;
+  totalTimeRemaining @10 :Float64;
+  allManeuvers @11 :List(Maneuver);
+  valid @12 :Bool;
+
+  struct Maneuver {
+    distance @0 :Float64;
+    type @1 :Text;
+    modifier @2 :Text;
+  }
 }
 
 struct CustomReserved11 @0xc2243c65e0340384 {
