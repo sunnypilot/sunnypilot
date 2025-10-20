@@ -16,7 +16,7 @@ class TestMapbox:
     if token:
       cls.mapbox.params.put('MapboxToken', token)
 
-    # setup route
+    # route setup
     cls.current_lon, cls.current_lat = -119.17557, 34.23305
     cls.mapbox.params.put('MapboxRoute', '740 E Ventura Blvd. Camarillo, CA')
     cls.postvars = {"place_name": cls.mapbox.params.get('MapboxRoute')}
@@ -64,7 +64,6 @@ class TestMapbox:
           assert upcoming_close == expected_turn == 'right', "Should be a right turn upcoming"
 
   def test_route_progress_tracking(self):
-    # Test route progress tracking
     progress = self.nav.get_route_progress(self.current_lat, self.current_lon)
     assert progress is not None
     assert 'distance_from_route' in progress
@@ -80,7 +79,6 @@ class TestMapbox:
     assert progress['total_time_remaining'] >= 0
     assert isinstance(progress['all_maneuvers'], list)
 
-    # Test speed limit extraction
     speed_limit_metric = self.nav.get_current_speed_limit_from_progress(progress, True)
     speed_limit_imperial = self.nav.get_current_speed_limit_from_progress(progress, False)
     assert isinstance(speed_limit_metric, int)
