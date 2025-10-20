@@ -95,13 +95,12 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
     return list;
   }
 
-  QStringList search_terms = query.simplified().toLower().split(" ", QString::SkipEmptyParts);
+  QStringList search_terms = query.simplified().toLower().replace(QRegularExpression("[^a-zA-Z0-9\\s]"), " ").split(" ", QString::SkipEmptyParts);
   QStringList search_results;
 
   for (const QString &element : list) {
     if (std::all_of(search_terms.begin(), search_terms.end(), [&](const QString &term) {
           QString normalized_term = term.normalized(QString::NormalizationForm_KD).toLower();
-          normalized_term.remove(QRegularExpression("[^a-zA-Z0-9\\s]"));
           QString normalized_element = element.normalized(QString::NormalizationForm_KD).toLower();
           return normalized_element.contains(normalized_term, Qt::CaseInsensitive);
         })) {
@@ -122,4 +121,8 @@ std::optional<cereal::Event::Reader> loadCerealEvent(Params& params, const std::
     qInfo() << "invalid " << QString::fromStdString(_param) << ":" << e.getDescription().cStr();
     return std::nullopt;
   }
+}
+
+bool hasIntelligentCruiseButtonManagement(const cereal::CarParamsSP::Reader &car_params_sp) {
+  return car_params_sp.getIntelligentCruiseButtonManagementAvailable() && Params().getBool("IntelligentCruiseButtonManagement");
 }

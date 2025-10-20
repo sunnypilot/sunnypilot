@@ -36,7 +36,9 @@ private:
   void drawRoadName(QPainter &p, const QRect &surface_rect);
   void drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect);
   void drawSetSpeedSP(QPainter &p, const QRect &surface_rect);
-  void drawE2eAlert(QPainter &p, const QRect &surface_rect);
+  void drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text = "");
+  void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
+  void drawBlinker(QPainter &p, const QRect &surface_rect);
 
   bool lead_status;
   float lead_d_rel;
@@ -81,6 +83,7 @@ private:
   bool speedLimitValid;
   bool speedLimitLastValid;
   float speedLimitFinalLast;
+  cereal::LongitudinalPlanSP::SpeedLimit::Source speedLimitSource;
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
@@ -94,16 +97,27 @@ private:
   int speedLimitAssistFrame;
   QPixmap plus_arrow_up_img;
   QPixmap minus_arrow_down_img;
-  int e2e_alert_small = 250;
-  int e2e_alert_large = 300;
-  QPixmap green_light_alert_small_img;
-  QPixmap green_light_alert_large_img;
+  int e2e_alert_size = 250;
+  QPixmap green_light_alert_img;
   bool greenLightAlert;
   int e2eAlertFrame;
   int e2eAlertDisplayTimer = 0;
+  bool allow_e2e_alerts;
   bool leadDepartAlert;
-  QPixmap lead_depart_alert_small_img;
-  QPixmap lead_depart_alert_large_img;
+  QPixmap lead_depart_alert_img;
   QString alert_text;
   QPixmap alert_img;
+  bool hideVEgoUI;
+  bool leftBlinkerOn;
+  bool rightBlinkerOn;
+  bool leftBlindspot;
+  bool rightBlindspot;
+  int blinkerFrameCounter;
+  int lastBlinkerStatus;
+  bool showTurnSignals;
+
+  bool carControlEnabled;
+  float speedCluster = 0;
+  int icbm_active_counter = 0;
+  bool pcmCruiseSpeed = true;
 };
