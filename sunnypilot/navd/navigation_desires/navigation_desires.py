@@ -28,9 +28,8 @@ class NavigationDesires:
     self.update_params()
     self.sm.update(0)
     nav_msg = self.sm['navigationd']
-    if not self.nav_allowed or not nav_msg.valid or not lateral_active:
-      self.desire = log.Desire.none
-    else:
+    self.desire = log.Desire.none
+    if self.nav_allowed and nav_msg.valid and lateral_active:
       upcoming = nav_msg.upcomingTurn
       if upcoming == 'slightLeft' and (not CS.leftBlindspot or CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.keepLeft
