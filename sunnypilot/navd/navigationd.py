@@ -92,7 +92,6 @@ class Navigationd:
 
   def _build_navigation_message(self, banner_instructions, progress, nav_data):
     msg = custom.Navigationd.new_message()
-    msg.timestamp = int(time.monotonic() * 1000)
     msg.upcomingTurn = nav_data.get('upcoming_turn', 'none')
     msg.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
     msg.bannerInstructions = banner_instructions
