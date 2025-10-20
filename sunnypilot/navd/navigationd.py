@@ -1,5 +1,4 @@
 import math
-import time
 
 import cereal.messaging as messaging
 from cereal import custom
