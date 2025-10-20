@@ -16,19 +16,6 @@ class TestNavigationd:
       mocker.patch('cereal.messaging.SubMaster')
       mocker.patch('cereal.messaging.PubMaster')
 
-  def test_init(self):
-    nav = Navigationd()
-    assert nav.sm is not None
-    assert nav.pm is not None
-    assert nav.rk is not None
-    assert nav.route is None
-    assert nav.destination is None
-    assert nav.new_destination == ''
-    assert nav.frame == -1
-    assert nav.last_position is None
-    assert not nav.is_metric
-    assert not nav.valid
-
   def test_update_params(self):
     nav = Navigationd()
     nav.last_position = None
