@@ -13,8 +13,8 @@ from openpilot.common.git import get_commit, get_origin, get_branch, get_short_b
 RELEASE_SP_BRANCHES = ['release-c3', 'release']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
 MASTER_SP_BRANCHES = ['master']
-RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly'] + RELEASE_SP_BRANCHES
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
+RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly']
+TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + RELEASE_SP_BRANCHES + TESTED_SP_BRANCHES
 
 SP_BRANCH_MIGRATIONS = {
   ("tici", "staging-c3-new"): "staging-tici",
@@ -121,6 +121,10 @@ class BuildMetadata:
     return self.channel in RELEASE_BRANCHES
 
   @property
+  def release_sp_channel(self) -> bool:
+    return self.channel in RELEASE_SP_BRANCHES
+
+  @property
   def canonical(self) -> str:
     return f"{self.openpilot.version}-{self.openpilot.git_commit}-{self.openpilot.build_style}"
 
@@ -146,7 +150,7 @@ class BuildMetadata:
       return "staging"
     elif self.master_channel:
       return "master"
-    elif self.release_channel:
+    elif self.release_channel or self.release_sp_channel:
       return "release"
     else:
       return "feature"
