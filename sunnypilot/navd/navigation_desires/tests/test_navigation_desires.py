@@ -2,7 +2,7 @@ import pytest
 import types
 
 from cereal import log
-from openpilot.common.constants import CV
+from openpilot.common.params import Params
 
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.sunnypilot.navd.navigation_desires.navigation_desires import NavigationDesires
@@ -38,56 +38,54 @@ INTEGRATION_PARAMS: list[tuple] = [(carstate, upcoming, log.Desire.none, expecte
 def make_nav_msg(valid=False, upcoming='none'):
   return types.SimpleNamespace(valid=valid, upcomingTurn=upcoming)
 
+def params_setter(allowed: bool):
+  params = Params()
+  params.put("NavAllowed", allowed)
+
 @pytest.fixture
-def nav_desires(mocker):
-  mock_sm = mocker.Mock()
-  mock_sm.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=False))
-  mocker.patch('cereal.messaging.SubMaster', return_value=mock_sm)
-  return NavigationDesires()
-
-def test_navigation_desires_init(nav_desires):
-  assert nav_desires.desire == log.Desire.none
-  assert nav_desires.update_counter == -1
-  assert nav_desires.turn_speed_limit == 20 * CV.MPH_TO_MS
-
-@pytest.mark.parametrize("upcoming, carstate, expected", NAVIGATION_PARAMS)
-def test_navigation_desires_update(nav_desires, mocker, upcoming, carstate, expected):
-  nav_desires.sm.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming=upcoming))
-  nav_desires.update_counter = 5  # next update will call update, as 6 % 6 == 0 remainders
-  nav_desires.update(carstate, True)
-  assert nav_desires.desire == expected
-
-@pytest.mark.parametrize("msg_valid,lateral_active", [
-  (False, True),
-  (True, False),
-], ids=["invalid msg", "lateral inactive"])
-def test_navigation_desires_invalid_or_inactive(nav_desires, mocker, msg_valid, lateral_active):
-  nav_desires.sm.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=msg_valid, upcoming='slightLeft'))
-  nav_desires.update_counter = 5
-  nav_desires.update(make_car(), lateral_active)
-  assert nav_desires.desire == log.Desire.none
-
-def test_navigation_desires_get_desire(nav_desires):
-  nav_desires.desire = log.Desire.keepLeft
-  assert nav_desires.get_desire() == log.Desire.keepLeft
-
-@pytest.mark.parametrize("carstate, upcoming, current_desire, expected", INTEGRATION_PARAMS)
-def test_desire_helper_navigation_integration(mocker, carstate, upcoming, current_desire, expected):
+def mock_submaster(mocker):
   mock_sm = mocker.patch('cereal.messaging.SubMaster')
   mock_sm_instance = mocker.Mock()
   mock_sm.return_value = mock_sm_instance
-  mock_sm_instance.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming=upcoming))
+  mock_sm_instance.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=False))
+  params_setter(True)
+  return mock_sm_instance
 
+@pytest.mark.parametrize("upcoming, carstate, expected", NAVIGATION_PARAMS)
+def test_navigation_desires_update(mock_submaster, mocker, upcoming, carstate, expected):
+  nav_desires = NavigationDesires()
+  nav_desires.sm.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming=upcoming))
+  nav_desires.update(carstate, True)
+  assert nav_desires.desire == expected
+
+@pytest.mark.parametrize("msg_valid,lateral_active", [(False, True), (True, False)])
+def test_invalid_or_inactive(mock_submaster, mocker, msg_valid, lateral_active):
+  nav_desires = NavigationDesires()
+  nav_desires.sm.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=msg_valid, upcoming='slightLeft'))
+  nav_desires.update(make_car(), lateral_active)
+  assert nav_desires.desire == log.Desire.none
+
+def test_update(mock_submaster, mocker):
+  mock_submaster.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming='left'))
+  nav_desires = NavigationDesires()
+
+  nav_desires.update(make_car(leftBlinker=True), True)
+  assert nav_desires.get_desire() == log.Desire.turnLeft
+
+  params_setter(False)
+  nav_desires.param_counter = 59
+  nav_desires.update(make_car(leftBlinker=True), True)
+  assert nav_desires.desire == log.Desire.none
+
+@pytest.mark.parametrize("carstate, upcoming, current_desire, expected", INTEGRATION_PARAMS)
+def test_desire_helper(mock_submaster, mocker, carstate, upcoming, current_desire, expected):
+  mock_submaster.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming=upcoming))
   dh = DesireHelper()
-  dh.navigation_desires.update_counter = 11  # same thing as above, different number :)
   dh.desire = current_desire
 
-  if current_desire == log.Desire.laneChangeLeft:
+  if current_desire in (log.Desire.laneChangeLeft, log.Desire.laneChangeRight):
     dh.lane_change_state = log.LaneChangeState.laneChangeStarting
-    dh.lane_change_direction = log.LaneChangeDirection.left
-  elif current_desire == log.Desire.laneChangeRight:
-    dh.lane_change_state = log.LaneChangeState.laneChangeStarting
-    dh.lane_change_direction = log.LaneChangeDirection.right
+    dh.lane_change_direction = log.LaneChangeDirection.left if current_desire == log.Desire.laneChangeLeft else log.LaneChangeDirection.right
 
   dh.update(carstate, True, 1.0)
   assert dh.desire == expected
