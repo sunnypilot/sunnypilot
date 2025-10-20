@@ -13,7 +13,6 @@ class NavigationInstructions:
     self._no_route = False
 
   def get_route_progress(self, current_lat, current_lon) -> dict | None:
-    """Get current position on route and progress information"""
     route = self.get_current_route()
     if not route or not route['geometry'] or not route['steps']:
       return None
@@ -125,7 +124,8 @@ class NavigationInstructions:
         return str(modifier)
     return 'none'
 
-  def get_current_speed_limit_from_progress(self, progress, is_metric: bool) -> int:
+  @staticmethod
+  def get_current_speed_limit_from_progress(progress, is_metric: bool) -> int:
     if progress and progress['current_maxspeed']:
       speed, _ = progress['current_maxspeed']
       if is_metric:
