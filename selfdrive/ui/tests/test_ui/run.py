@@ -188,7 +188,7 @@ def setup_offroad_alert(click, pm: PubMaster, scroll=None):
 
 def setup_update_available(click, pm: PubMaster, scroll=None):
   Params().put_bool("UpdateAvailable", True)
-  release_notes_path = os.path.join(BASEDIR, "RELEASES.md")
+  release_notes_path = os.path.join(BASEDIR, "CHANGELOG.md")
   with open(release_notes_path) as file:
     release_notes = file.read().split('\n\n', 1)[0]
   Params().put("UpdaterNewReleaseNotes", release_notes + "\n")
