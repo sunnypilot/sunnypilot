@@ -55,7 +55,7 @@ git add -f .
 # include source commit hash and build date in commit
 GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse HEAD)
 DATETIME=$(date '+%Y-%m-%dT%H:%M:%S')
-SP_VERSION=$(awk -F\" '{print $2}' $SOURCE_DIR/common/version.h)
+SP_VERSION=$(awk -F\" '{print $2}' $SOURCE_DIR/sunnypilot/common/version.h)
 
 # Commit with detailed message
 git commit -a -m "sunnypilot v$VERSION
