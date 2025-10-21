@@ -60,7 +60,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
   bool disable_updates = params.getBool("DisableUpdates");
-  bool is_release = params.getBool("IsReleaseBranch") or params.getBool("IsReleaseSpBranch");
+  bool is_release = params.getBool("IsReleaseBranch") || params.getBool("IsReleaseSpBranch");
   bool is_tested = params.getBool("IsTestedBranch");
   bool is_development = params.getBool("IsDevelopmentBranch");
 
