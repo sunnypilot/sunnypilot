@@ -25,7 +25,7 @@ sunnypilot Version 2025.001.000 (2025-10-25)
     * If your vehicle isn’t fingerprinted automatically, you can still use the vehicle selector to get it working
   * sunnylink Integration
     * Cloud connectivity and settings backup/restore
-    * PENDING: The infrastructure is ready for remote setting management, including 
+    * PENDING: The infrastructure is ready for remote setting management, including remote driving model switching. An announcement will be made when this is ready to use in current and future releases.
   * External Storage Support
     * Expanded storage options
   * mapd Integration (thanks to @pfeiferj)
