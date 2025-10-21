@@ -455,19 +455,18 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
 }
 
 struct Navigationd @0xcb9fd56c7057593a {
-  timestamp @0 :UInt64;
-  upcomingTurn @1 :Text;
-  currentSpeedLimit @2 :UInt64;
-  bannerInstructions @3 :Text;
-  distanceToNextTurn @4 :Float64;
-  routeProgressPercent @5 :Float64;
-  distanceFromRoute @6 :Float64;
-  routePositionCumulative @7 :Float64;
-  distanceToEndOfStep @8 :Float64;
-  totalDistanceRemaining @9 :Float64;
-  totalTimeRemaining @10 :Float64;
-  allManeuvers @11 :List(Maneuver);
-  valid @12 :Bool;
+  upcomingTurn @0 :Text;
+  currentSpeedLimit @1 :UInt64;
+  bannerInstructions @2 :Text;
+  distanceToNextTurn @3 :Float64;
+  routeProgressPercent @4 :Float64;
+  distanceFromRoute @5 :Float64;
+  routePositionCumulative @6 :Float64;
+  distanceToEndOfStep @7 :Float64;
+  totalDistanceRemaining @8 :Float64;
+  totalTimeRemaining @9 :Float64;
+  allManeuvers @10 :List(Maneuver);
+  valid @11 :Bool;
 
   struct Maneuver {
     distance @0 :Float64;
