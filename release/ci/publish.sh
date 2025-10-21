@@ -30,7 +30,7 @@ if [ -z "$GIT_ORIGIN" ]; then
 fi
 
 # "Tagging"
-echo "#define COMMA_VERSION \"$VERSION\"" > ${OUTPUT_DIR}/common/version.h
+echo "#define SUNNYPILOT_VERSION \"$VERSION\"" > ${OUTPUT_DIR}/sunnypilot/common/version.h
 
 ## set git identity
 #source $DIR/identity.sh
