@@ -12,7 +12,7 @@ public:
   explicit DeveloperPanel(SettingsWindow *parent);
   void showEvent(QShowEvent *event) override;
 
-private:
+protected:
   Params params;
   ParamControl* adbToggle;
   ParamControl* joystickToggle;
