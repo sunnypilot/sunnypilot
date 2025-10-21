@@ -123,16 +123,24 @@ sunnypilot Version 2025.001.000 (2025-10-25)
   * Lateral Planner: Laneful Mode
   * Lateral: Custom Camera and Path Offsets
   * Toyota: Door Controls
-* New Contributors
-  * @discountchubbs made their first contribution in "ui: Error log button to Developer panel (#627)"
-  * @First made their first contribution in "NNLC: bump max similarity for higher accuracy (#704)"
-  * @nayan made their first contribution in "UI: Update AbstractControlSP_SELECTOR and OptionControlSP (#800)"
-  * @wtogamiwtogami made their first contribution in "Add TOYOTA_RAV4_PRIME NNLC tuning gen 1 (#850)"
+* New Contributors (sunnypilot/sunnypilot)
+  * @royjr made their first contribution in "NNLC: bump max similarity for higher accuracy (#704)"
+  * @nayan8teen made their first contribution in "UI: Update AbstractControlSP_SELECTOR and OptionControlSP (#800)"
+  * @wtogami made their first contribution in "TOYOTA_RAV4_PRIME NNLC tuning gen 1 (#850)"
   * @dparring made their first contribution in "FCA: Ram 1500 improvements (#797)"
   * @Kirito3481 made their first contribution in "Update ko-kr translation (#1167)"
-  * @michael-was-taken made their first contributio@dzid26 in "Reorder README tables: show -new branches first (#1191)"
-  * @dzid26 made their first contribution in "docs: clarify pedal press (#1289)"
+  * @michael-was-taken made their first contribution in "Reorder README tables: show -new branches first (#1191)"
+  * @dzid26 made their first contribution in "params: Fix loading delay on startup (#1297)"
   * @HazZelnutz made their first contribution in "Visuals: Turn signals on screen when blinker is used (#1291)"
+* New Contributors (sunnypilot/opendbc)
+  * @chrispypatt made their first contribution in "Toyota: SecOC Longitudinal Control (sunnypilot/opendbc#93)"
+  * @Discountchubbs made their first contribution in "Hyundai: EPS FW For 2022 KIA_NIRO_EV SCC (sunnypilot/opendbc#118)"
+  * @lukasloetkolben made their first contribution in "Tesla: enableBsm is always true (sunnypilot/opendbc#163)"
+  * @roenthomas made their first contribution in "Honda: int flag for modified EPS configs (sunnypilot/opendbc#254)"
+  * @AmyJeanes made their first contribution in "Tesla: Fix stock LKAS being blocked when MADS is enabled (sunnypilot/opendbc#286)"
+  * @mvl-boston made their first contribution in "Honda: Update Clarity brake to renamed DBC message name (sunnypilot/opendbc#282)"
+  * @dzid26 made their first contribution in "Tesla: Parse speed limit from CAN (sunnypilot/opendbc#308)"
+  * @firestar5683 made their first contribution in "GM: Non-ACC platforms with steering only support (sunnypilot/opendbc#229)"
 ************************
 * Synced with commaai's openpilot (v0.10.1)
   * master commit c9dbf97649a27117be6d5955a49e2d4253337288 (September 12, 2025)
