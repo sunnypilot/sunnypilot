@@ -163,6 +163,12 @@ def parse_banner_instructions(banners: Any, distance_to_maneuver: float = 0.0) -
   if field_valid(p, 'modifier'):
     instruction['maneuverModifier'] = p['modifier']
 
+  # Combine with secondary and/or sub for full text
+  if field_valid(current_banner, 'secondary') and p.get('type') == 'arrive':
+    instruction['maneuverPrimaryText'] += f" at {current_banner['secondary']['text']}"
+  if field_valid(current_banner, 'sub') and current_banner['sub'].get('type') == 'turn':
+    instruction['maneuverPrimaryText'] += f" onto {current_banner['sub']['text']}"
+
   # Secondary
   if field_valid(current_banner, 'secondary'):
     instruction['maneuverSecondaryText'] = current_banner['secondary']['text']
