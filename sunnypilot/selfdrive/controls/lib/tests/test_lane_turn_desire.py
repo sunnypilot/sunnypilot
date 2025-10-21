@@ -1,12 +1,27 @@
 import pytest
+
+import cereal.messaging
 from cereal import log, custom
 from openpilot.common.params import Params
 
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN
-from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
+
+
+class MockSubMaster:
+  def __init__(self, services): pass
+
+  def update(self, timeout): pass
+
+  def __getitem__(self, key):
+    return type('nav_msg', (), {'valid': False})()
+
+
+@pytest.fixture(autouse=True)
+def mock_submaster():
+  cereal.messaging.SubMaster = MockSubMaster
 
 
 @pytest.mark.parametrize("left_blinker,right_blinker,v_ego,blindspot_left,blindspot_right,expected", [
@@ -107,7 +122,6 @@ def set_lane_turn_params():
 ])
 def test_desire_helper_integration(carstate, lateral_active, lane_change_prob, expected_desire, set_lane_turn_params):
   dh = DesireHelper()
-  dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
   for _ in range(10):
     dh.update(carstate, lateral_active, lane_change_prob)
-  assert dh.desire == expected_desire  # The first four tests were unit tests to test the controller, where this tests the integration in desire helpers
+  assert dh.desire == expected_desire
