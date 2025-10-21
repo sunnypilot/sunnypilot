@@ -12,14 +12,13 @@ public:
   explicit DeveloperPanel(SettingsWindow *parent);
   void showEvent(QShowEvent *event) override;
 
-private:
+protected:
   Params params;
   ParamControl* adbToggle;
   ParamControl* joystickToggle;
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
   bool is_release;
-  bool is_release_sp;
   bool offroad = false;
 
 private slots:

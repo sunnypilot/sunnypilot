@@ -47,7 +47,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
 
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
-  is_release_sp = params.getBool("IsReleaseSpBranch");
 
   // Toggles should be not available to change in onroad state
   QObject::connect(uiState(), &UIState::offroadTransition, this, &DeveloperPanel::updateToggles);
@@ -94,7 +93,7 @@ void DeveloperPanel::updateToggles(bool _offroad) {
   experimentalLongitudinalToggle->refresh();
 
   // Handle specific controls visibility for release branches
-  joystickToggle->setVisible(!is_release && !is_release_sp);
+  joystickToggle->setVisible(!is_release);
 
   offroad = _offroad;
 }
