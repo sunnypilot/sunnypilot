@@ -52,7 +52,7 @@ sunnypilot Version 2025.001.000 (2025-10-25)
     * Expanded storage capabilities for data and model management
   * Mapd Integration
     * Download offline maps for Speed Limit Control (SLC)
-  * REMOVED ❌: Navigate on openpilot (NoO)
+  * ❌ REMOVED: Navigate on openpilot (NoO)
     * Navigate on openpilot (NoO) has been removed as upstream is prioritizing improving the driving model’s capabilities and simplifying the training stack.
     * The feature will return in a future release once model improvements from upstream make it more reliable.
 * User Interface Enhancements
