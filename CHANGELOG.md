@@ -124,15 +124,26 @@ sunnypilot Version 2025.001.000 (2025-10-25)
   * Lateral: Custom Camera and Path Offsets
   * Toyota: Door Controls
 * New Contributors
-  * @discountchubbs  made their first contribution in "ui: Error log button to Developer panel (#627)"
+  * @discountchubbs made their first contribution in "ui: Error log button to Developer panel (#627)"
   * @First made their first contribution in "NNLC: bump max similarity for higher accuracy (#704)"
-  * @nayan  made their first contribution in "UI: Update AbstractControlSP_SELECTOR and OptionControlSP (#800)"
+  * @nayan made their first contribution in "UI: Update AbstractControlSP_SELECTOR and OptionControlSP (#800)"
   * @wtogamiwtogami made their first contribution in "Add TOYOTA_RAV4_PRIME NNLC tuning gen 1 (#850)"
   * @dparring made their first contribution in "FCA: Ram 1500 improvements (#797)"
   * @Kirito3481 made their first contribution in "Update ko-kr translation (#1167)"
   * @michael-was-taken made their first contributio@dzid26 in "Reorder README tables: show -new branches first (#1191)"
   * @dzid26 made their first contribution in "docs: clarify pedal press (#1289)"
   * @HazZelnutz made their first contribution in "Visuals: Turn signals on screen when blinker is used (#1291)"
+************************
+* Synced with commaai's openpilot (v0.10.1)
+  * master commit c9dbf97649a27117be6d5955a49e2d4253337288 (September 12, 2025)
+* New driving model
+  * World Model: removed global localization inputs
+  * World Model: 2x the number of parameters
+  * World Model: trained on 4x the number of segments
+  * Driving Vision Model: trained on 4x the number of segments
+* Honda City 2023 support thanks to vanillagorillaa and drFritz!
+* Honda N-Box 2018 support thanks to miettal!
+* Honda Odyssey 2021-25 support thanks to csouers and MVL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
 ========================
