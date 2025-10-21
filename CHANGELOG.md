@@ -5,72 +5,51 @@ sunnypilot Version 2025.001.000 (2025-10-25)
   * Fully adopts upstream commaai’s openpilot, opendbc (car interface and safety), and panda test suites to ensure consistent safety compliance and reliability across all systems
   * Added regression testing to verify expected behavior and maintain stability across core modules
   * Aligns with comma.ai’s safety policy: preserving driver monitoring, actuation checks, and safety test suite coverage
-  * Some features have not yet been reimplemented in this rewrite and are temporarily disabled in this release. They will return in a future version once fully ported and validated:
-    * Visuals: Rocket Fuel
-    * Visuals: Displaying Braking Status
-    * Vehicle: Toyota - Enforce Stock Longitudinal Control
-    * Subaru: Increase Steering Torque
-    * Longitudinal: Acceleration Personality
-    * UI: Display CPU Temperature on Sidebar
-    * Lateral: Block Lane Change with Road Edge Detection
-    * UI: Display DM Camera in Reverse Gear
-    * UI: Auto-hide Selected UI Elements
-    * Visuals: Display End-to-End Longitudinal Status
-    * Toyota: Stop and Go Hack (alpha)
-    * Visuals: Onroad Settings
-    * Honda: Serial Steering Support
-    * Volkswagen: Non-ACC Platforms Support
-    * Longitudinal: Dynamic Personality
-    * Honda Nidec: Allow Stock Longitudinal Control
-    * Lateral Planner: Dynamic Lane Profile
-    * Lateral: Custom Camera and Path Offsets
-    * Toyota: Door Controls
+  * Some features have not yet been reimplemented in this rewrite and are temporarily disabled in this release. They may return in future releases once fully ported and validated. See the end of the changelog to get a list of what's not going to be present.
 * Major Features & Systems
   * Modular Assistive Driving System (MADS)
     * Complete driving assistance framework
   * Driving Model Manager
-    * Custom driving model selection with support for about 86 models (as of writing), from Optimus Prime (September 2023) up to The Cool People’s Models (October 2025)
-  * Neural Network Lateral Control (NNLC)
+    * Custom driving model selection with support for about 86 models (as of writing), from Night Strike (October 2023) up to The Cool People’s Models (October 2025)
+  * Neural Network Lateral Control (NNLC) (Formerly NNFF)
     * Advanced torque-based lateral control
   * Dynamic Experimental Control (DEC)
     * Intelligent longitudinal control adaptation
   * Speed Limit Assist (SLA)
-    * Comprehensive speed limit integration featuring `mapd` for offline map limits downloads, a Speed Limit Resolver for sourcing data (from car, map, combined, etc), on-screen UI for Speed Limit Information/Warning, and Speed Limit Assist (SLA) to adjust cruise speed automatically.
+    * Comprehensive speed limit integration featuring @pfeiferj's `mapd` for offline map limits downloads, a Speed Limit Resolver for sourcing data (from car, map, combined, etc), on-screen UI for Speed Limit Information/Warning, and Speed Limit Assist (SLA) to adjust cruise speed automatically.
   * Intelligent Cruise Button Management (ICBM)
     * System designed to manage the vehicle’s speed by sending cruise control button commands to the car’s ECU.
   * Smart Cruise Control Map & Vision (SCC-M / SCC-V)
-    * When using any form of long control (openpilot longitudinal or **ICBM**) it will control the speed at which you enter and perform a turn by leveraging map data (**SCC-M**) and/or by leveraging what the model sees about the curve ahead (**SCC-V**)
+    * When using any form of long control (openpilot longitudinal or ICBM) it will control the speed at which you enter and perform a turn by leveraging map data (SCC-M) and/or by leveraging what the model sees about the curve ahead (SCC-V)
   * Vehicle Selector
     * If your vehicle isn’t fingerprinted automatically, you can still use the vehicle selector to get it working
   * sunnylink Integration
     * Cloud connectivity and settings backup/restore
+    * PENDING: The infrastructure is ready for remote setting management, including 
   * External Storage Support
     * Expanded storage options
-  * mapd Integration
-    * Allow downloading maps for your area, which could be useful for Speed Limit Assist (SLA)
-  * ❌ REMOVED: Navigate on openpilot (NoO)
-    * Navigate on openpilot (NoO) has been removed as upstream is prioritizing improving the driving model’s capabilities and simplifying the training stack.
-    * The feature will return in a future release once model improvements from upstream make it more reliable.
+  * mapd Integration (thanks to @pfeiferj)
+    * Allow downloading OpenStreetMap databases for your area, which could be useful for Speed Limit Assist (SLA)
 * User Interface Enhancements
-  * Complete UI Redesign
+  * Complete UI Redesign from Default openpilot Experience
     * A total overhaul of the sunnypilot offroad user interface for a modern and intuitive experience.
   * New Settings Panels
     * Reorganized settings into dedicated panels: Steering, Longitudinal, Vehicle, Models, Visuals, Display, and Trips.
   * Advanced Controls Toggle
     * Out of the box experience has a slightly reduced set of settings for a lower barrier of entry, once you are ready, you can get a few extra settings by toggling on the Advanced Controls.
   * Models Panel
-    * A dedicated panel for model management, featuring a download manager, model folders, a **favorites** system, **fuzzy search**, and a **cache refresh** button.
+    * A dedicated panel for model management, featuring a download manager, model folders, a favorites system, fuzzy search, and a cache refresh button.
   * Visuals & Display
     * Extensive customization options including brightness controls, custom interactivity timeouts, green light indicator, lead vehicle indicator, on-screen turn signals, blind spot indicators, lead chevron info, standstill timer, road name display, and a Tesla-like 🌈 rainbow road path.
   * Screen Off while driving
     * Options to turn the screen off while driving and customize wake-up behavior for alerts.
   * Branch & Platform Selectors
-    * Improved software management with a **searchable branch selector** and a platform selector that displays the current fingerprint.
+    * Improved software management with a searchable branch selector and a platform selector that displays the current fingerprint.
   * Developer UI
     * An enhanced developer UI with better alert positioning and an integrated error log viewer.
   * Convenience Features
     * Added an “Exit Offroad” button, “Always Offroad” mode, Quiet Mode, and customizable max time offroad settings.
-  * OpenStreetMap Database Management
+  * OpenStreetMap Database Downloader
     * The OpenStreetMap database downloader now includes a search feature for easily finding areas.
 * Model and AI Improvements
   * Modular Model Backend
@@ -120,6 +99,30 @@ sunnypilot Version 2025.001.000 (2025-10-25)
 * Translations and Localization
   * Korean translation updates
   * Automated translation management system
+* ❌ Removed
+  * Navigate on openpilot (NoO)
+    * Navigate on openpilot (NoO) has been removed as upstream is prioritizing improving the driving model’s capabilities and simplifying the training stack.
+    * The feature may return in a future upstream release by comma.ai once model improvements from upstream make it more reliable.
+  * Visuals: Rocket Fuel
+  * Visuals: Displaying Braking Status
+  * Vehicle: Toyota - Enforce Stock Longitudinal Control
+  * Subaru: Increase Steering Torque
+  * Longitudinal: Acceleration Personality
+  * UI: Display CPU Temperature on Sidebar
+  * Lateral: Block Lane Change with Road Edge Detection
+  * UI: Display DM Camera in Reverse Gear
+  * UI: Auto-hide Selected UI Elements
+  * Visuals: Display End-to-End Longitudinal Status
+  * Toyota: Stop and Go Hack (alpha)
+  * Visuals: Onroad Settings
+  * Honda: Serial Steering Support
+  * Volkswagen: Non-ACC Platforms Support
+  * Longitudinal: Dynamic Personality
+  * Honda Nidec: Allow Stock Longitudinal Control
+  * Lateral Planner: Dynamic Lane Profile
+  * Lateral Planner: Laneful Mode
+  * Lateral: Custom Camera and Path Offsets
+  * Toyota: Door Controls
 * New Contributors
   * @discountchubbs  made their first contribution in "ui: Error log button to Developer panel (#627)"
   * @First made their first contribution in "NNLC: bump max similarity for higher accuracy (#704)"
