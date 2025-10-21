@@ -27,83 +27,107 @@ sunnypilot Version 2025.001.000 (2025-10-25)
     * Toyota: Door Controls
 * Major Features & Systems
   * Modular Assistive Driving System (MADS)
-    * Complete assistive driving framework enabling modular lateral and longitudinal control
+    * Complete driving assistance framework
   * Driving Model Manager
-    * Support for over 86 models, from Optimus Prime (September 2013) to The Cool People’s Models (October 2025)
-    * Simplified model management, caching, favorites, and dynamic loading
+    * Custom driving model selection with support for about 86 models (as of writing), from Optimus Prime (September 2023) up to The Cool People’s Models (October 2025)
   * Neural Network Lateral Control (NNLC)
-    * Advanced torque-based lateral control for smoother steering performance
+    * Advanced torque-based lateral control
   * Dynamic Experimental Control (DEC)
-    * Intelligent longitudinal control adaptation for varying driving conditions
+    * Intelligent longitudinal control adaptation
   * Speed Limit Assist (SLA)
-    * Comprehensive speed limit integration using mapd for offline map limit downloads
-    * Features Speed Limit Resolver, SLA automatic cruise speed adjustments, and enhanced UI display
-  * Intelligent Cruise Button Management (ICBM)
-    * Manages vehicle speed via ECU button emulation
-    * Supports Custom Stock Longitudinal Control and openpilot Long
-  * Smart Cruise Control Map & Vision (SCC-M / SCC-V)
-    * Map-based and vision-based curve speed control
-    * Dynamically adjusts entry and cornering speeds for enhanced safety
+    * Comprehensive speed limit integration featuring `mapd` for offline map limits downloads, a Speed Limit Resolver for sourcing data (from car, map, combined, etc), on-screen UI for Speed Limit Information/Warning, and Speed Limit Assist (SLA) to adjust cruise speed automatically.
+  * Intelligent Cruise Button Management (ICBM) -** System designed to manage the vehicle’s speed by sending cruise control button commands to the car’s ECU.
+  * Smart Cruise Control Map & Vision (SCC-M / SCC-V) -** When using any form of long control (openpilot longitudinal or **ICBM**) it will control the speed at which you enter and perform a turn by leveraging map data (**SCC-M**) and/or by leveraging what the model sees about the curve ahead (**SCC-V**)
   * Vehicle Selector
-    * Allows manual vehicle selection for unfingerprinted platforms
+    * If your vehicle isn’t fingerprinted automatically, you can still use the vehicle selector to get it working
   * sunnylink Integration
-    * Cloud settings backup and restore for registered users
+    * Cloud connectivity and settings backup/restore
   * External Storage Support
-    * Expanded storage capabilities for data and model management
-  * Mapd Integration
-    * Download offline maps for Speed Limit Control (SLC)
+    * Expanded storage options
+  * mapd Integration
+    * Allow downloading maps for your area, which could be useful for Speed Limit Assist (SLA)
   * ❌ REMOVED: Navigate on openpilot (NoO)
     * Navigate on openpilot (NoO) has been removed as upstream is prioritizing improving the driving model’s capabilities and simplifying the training stack.
     * The feature will return in a future release once model improvements from upstream make it more reliable.
 * User Interface Enhancements
-  * Complete UI redesign for a modern and intuitive experience
-  * New settings panels for Steering, Longitudinal, Vehicle, Models, Visuals, Display, and Trips
-  * Advanced Controls toggle for expanded configuration
-  * Models panel with fuzzy search, favorites, and cache refresh
-  * Visual customization options including green light indicator, lead vehicle info, blind spot indicators, rainbow road path, and more
-  * Screen Off While Driving option with wake-on-alert behavior
-  * Branch and Platform selectors with fingerprint display
-  * Developer UI enhancements with improved alert positioning and error log viewer
-  * Map Downloader search for specific regions
-  * Added convenience features including Exit Offroad button, Always Offroad mode, Quiet Mode, and customizable offroad timers
+  * Complete UI Redesign
+    * A total overhaul of the sunnypilot offroad user interface for a modern and intuitive experience.
+  * New Settings Panels
+    * Reorganized settings into dedicated panels: Steering, Longitudinal, Vehicle, Models, Visuals, Display, and Trips.
+  * Advanced Controls Toggle
+    * Out of the box experience has a slightly reduced set of settings for a lower barrier of entry, once you are ready, you can get a few extra settings by toggling on the Advanced Controls.
+  * Models Panel
+    * A dedicated panel for model management, featuring a download manager, model folders, a **favorites** system, **fuzzy search**, and a **cache refresh** button.
+  * Visuals & Display
+    * Extensive customization options including brightness controls, custom interactivity timeouts, green light indicator, lead vehicle indicator, on-screen turn signals, blind spot indicators, lead chevron info, standstill timer, road name display, and a Tesla-like 🌈 rainbow road path.
+  * Screen Off while driving
+    * Options to turn the screen off while driving and customize wake-up behavior for alerts.
+  * Branch & Platform Selectors
+    * Improved software management with a **searchable branch selector** and a platform selector that displays the current fingerprint.
+  * Developer UI
+    * An enhanced developer UI with better alert positioning and an integrated error log viewer.
+  * Convenience Features
+    * Added an “Exit Offroad” button, “Always Offroad” mode, Quiet Mode, and customizable max time offroad settings.
+  * OpenStreetMap Database Management
+    * The OpenStreetMap database downloader now includes a search feature for easily finding areas.
 * Model and AI Improvements
-  * Modular model backend supporting SNPE, thneed, and tinygrad runners
-  * Enhanced model outputs with turn desires for improved control precision
-  * Live parameter adjustment via UI
-  * Model caching and automatic refresh for seamless updates
+  * Modular Model Backend
+    * Major refactor of `modeld` to support modular runners (SNPE, thneed, tinygrad) and dynamic model inputs.
+  * Enhanced Model Outputs
+    * Models now provide additional outputs like “turn desires” for improved control.
+  * Live Parameter Adjustments
+    * Support for live delay adjustments and software delay controls directly from the UI.
+  * Model Management
+    * Added model caching, automatic refresh capabilities, and shape inference from inputs for better compatibility.
 * Control Systems
-  * Pause Lateral on Blinker option
-  * Custom ACC setpoint increments
-  * Steering on Brake Press customization
-  * Torque Lateral Control fine-tuning
-  * Automatic Lane Change toggle
+  * Pause Lateral on Blinker
+    * Option to temporarily pause lateral control when the turn signal is active.
+  * Custom ACC Setpoint Increments
+    * Configure custom increments for adjusting the ACC set speed for applicable vehicle platforms.
+  * Steering on Brake Press
+    * Customizable steering behavior when the brake pedal is pressed.
+  * Enforce Torque Lateral Control
+    * New customized settings for fine-tuning torque-based steering.
+  * Automatic Lane Change
+    * Support for automatic lane changes, including a mode to disable it.
 * Technical Infrastructure
-  * Custom cereal implementation for sunnypilot-specific messages
-  * Refactored car interface architecture for brand modularity
-  * Param Store caching for faster startup and live updates
-  * Improved exception handling and Sentry logging
-  * Docker and CI/CD enhancements with automated builds and releases
+  * Custom Cereal Implementation
+    * Migrated sunnypilot-specific events, car parameters, and car controls to a dedicated cereal for better compatibility and performance.
+  * Car Interface Abstractions
+    * Refactored car interfaces to support brand-specific settings and easier integration.
+  * Param Store Caching
+    * Implemented a cache for the parameter store to reduce startup times, with support for live parameter updates.
+  * Enhanced Error Handling
+    * Improved exception management and Sentry logging for better stability and debugging.
+  * Docker & CI/CD
+    * Full Docker image support, a dedicated GitHub runner service, and comprehensive improvements to the entire CI/CD pipeline for automated testing, building, and releasing.
 * Bug Fixes and Stability
-  * Registration requirement removed
-  * Improved Panda firmware handling for deprecated hardware
-  * Numerous bug fixes and performance optimizations
+  * Registration Requirement Removed
+    * No longer necessary to register the device to go onroad.
+  * Panda Firmware Checks
+    * Improved firmware checks to gracefully handle deprecated Panda devices.
+  * Numerous Fixes
+    * Addressed a wide range of bugs across the system for a more stable and reliable experience.
 * Developer Experience
   * CLion IDE integration and external tools
-  * Automated testing, model publishing, and release workflows
-  * Enhanced UI preview generation and code quality checks
+  * Comprehensive testing and build automation
+  * Model building and publishing automation
+  * UI preview generation and testing
+  * Release drafting and version management
+  * Code quality and maintenance workflows
 * Translations and Localization
   * Korean translation updates
   * Automated translation management system
 * New Contributors
-  * Made first contribution in UI: Error log button to Developer panel
-  * Made first contribution in: Add steering tuning improvements
-  * Made first contribution in: Refactor longitudinal control parameters
-  * @wtogami – Added UI element for blind spot indicator
-  * @dparring – Implemented dynamic AEM transitions
-  * @Kirito3481 – Improved model selector visuals
-  * @michael-was-taken – Added longitudinal gauge UI element
-  * @dzid26 – Enhanced road curvature detection
-  * @HazZelnutz – Fixed display refresh bug in offroad UI
+  * @discountchubbs  made their first contribution in "ui: Error log button to Developer panel (#627)"
+  * @First made their first contribution in "NNLC: bump max similarity for higher accuracy (#704)"
+  * @nayan  made their first contribution in "UI: Update AbstractControlSP_SELECTOR and OptionControlSP (#800)"
+  * @wtogamiwtogami made their first contribution in "Add TOYOTA_RAV4_PRIME NNLC tuning gen 1 (#850)"
+  * @dparring made their first contribution in "FCA: Ram 1500 improvements (#797)"
+  * @Kirito3481 made their first contribution in "Update ko-kr translation (#1167)"
+  * @michael-was-taken made their first contributio@dzid26 in "Reorder README tables: show -new branches first (#1191)"
+  * @dzid26 made their first contribution in "docs: clarify pedal press (#1289)"
+  * @HazZelnutz made their first contribution in "Visuals: Turn signals on screen when blinker is used (#1291)"
 
 sunnypilot - 0.9.8.0 (2024-xx-xx)
 ========================
