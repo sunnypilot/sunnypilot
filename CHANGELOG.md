@@ -1,6 +1,6 @@
 sunnypilot Version 2025.001.000 (2025-10-25)
 ========================
-* ♻️ Major rewrite
+* 🛠️ Major rewrite
   * Most features are intended to be identical to previous versions with slight improvements
   * Fully adopts upstream commaai’s openpilot, opendbc (car interface and safety), and panda test suites to ensure consistent safety compliance and reliability across all systems
   * Added regression testing to verify expected behavior and maintain stability across core modules
