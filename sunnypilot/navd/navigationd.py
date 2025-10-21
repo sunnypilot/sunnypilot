@@ -90,25 +90,25 @@ class Navigationd:
     return banner_instructions, progress, nav_data
 
   def _build_navigation_message(self, banner_instructions, progress, nav_data):
-    msg = custom.Navigationd.new_message()
-    msg.upcomingTurn = nav_data.get('upcoming_turn', 'none')
-    msg.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
-    msg.bannerInstructions = banner_instructions
-    msg.distanceToNextTurn = nav_data.get('distance_to_next_turn', 0.0)
-    msg.distanceToEndOfStep = nav_data.get('distance_to_end_of_step', 0.0)
-    msg.routeProgressPercent = nav_data.get('route_progress_percent', 0.0)
-    msg.distanceFromRoute = nav_data.get('distance_from_route', 0.0)
-    msg.routePositionCumulative = nav_data.get('route_position_cumulative', 0.0)
-    msg.totalDistanceRemaining = progress['total_distance_remaining'] if progress else 0.0
-    msg.totalTimeRemaining = progress['total_time_remaining'] if progress else 0.0
-    msg.valid = self.valid
+    msg = messaging.new_message('navigationd')
+    msg.navigationd.upcomingTurn = nav_data.get('upcoming_turn', 'none')
+    msg.navigationd.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
+    msg.navigationd.bannerInstructions = banner_instructions
+    msg.navigationd.distanceToNextTurn = nav_data.get('distance_to_next_turn', 0.0)
+    msg.navigationd.distanceToEndOfStep = nav_data.get('distance_to_end_of_step', 0.0)
+    msg.navigationd.routeProgressPercent = nav_data.get('route_progress_percent', 0.0)
+    msg.navigationd.distanceFromRoute = nav_data.get('distance_from_route', 0.0)
+    msg.navigationd.routePositionCumulative = nav_data.get('route_position_cumulative', 0.0)
+    msg.navigationd.totalDistanceRemaining = progress['total_distance_remaining'] if progress else 0.0
+    msg.navigationd.totalTimeRemaining = progress['total_time_remaining'] if progress else 0.0
+    msg.navigationd.valid = self.valid
 
     all_maneuvers = (
       [custom.Navigationd.Maneuver.new_message(distance=m['distance'], type=m['type'], modifier=m['modifier']) for m in progress['all_maneuvers']]
       if progress
       else []
     )
-    msg.allManeuvers = all_maneuvers
+    msg.navigationd.allManeuvers = all_maneuvers
 
     return msg
 
