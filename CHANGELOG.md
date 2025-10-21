@@ -1,12 +1,12 @@
 sunnypilot Version 2025.001.000 (2025-10-25)
 ========================
-* Major rewrite
+* ♻️ Major rewrite
   * Most features are intended to be identical to previous versions with slight improvements
   * Fully adopts upstream commaai’s openpilot, opendbc (car interface and safety), and panda test suites to ensure consistent safety compliance and reliability across all systems
   * Added regression testing to verify expected behavior and maintain stability across core modules
   * Aligns with comma.ai’s safety policy: preserving driver monitoring, actuation checks, and safety test suite coverage
   * Some features have not yet been reimplemented in this rewrite and are temporarily disabled in this release. They may return in future releases once fully ported and validated. See the end of the changelog to get a list of what's not going to be present.
-* Major Features & Systems
+* 🌟 Major Features & Systems
   * Modular Assistive Driving System (MADS)
     * Complete driving assistance framework
   * Driving Model Manager
