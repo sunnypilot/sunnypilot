@@ -28,6 +28,9 @@ def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarPara
 
   allowed = True
 
+  if CP.brand in ("tesla", ):
+    allowed = False
+
   if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
     allowed = False
 
