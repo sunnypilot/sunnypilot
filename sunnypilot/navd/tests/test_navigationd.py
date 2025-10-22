@@ -45,7 +45,7 @@ class TestNavigationd:
   def test_build_navigation_message(self):
     if self.is_darwin:
       nav = Navigationd()
-      msg = nav._build_navigation_message('', None, {})
+      msg = nav._build_navigation_message('', None, {}, True)
       assert msg.navigationd.bannerInstructions == ''
       assert msg.navigationd.totalDistanceRemaining == 0.0
       assert msg.navigationd.totalTimeRemaining == 0.0
@@ -53,7 +53,7 @@ class TestNavigationd:
     else:
       sm = messaging.SubMaster(['navigationd'])
       nav = Navigationd()
-      msg = nav._build_navigation_message('', None, {})
+      msg = nav._build_navigation_message('', None, {}, True)
 
       nav.pm.send('navigationd', msg)
       sm.update()

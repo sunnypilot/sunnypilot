@@ -89,8 +89,9 @@ class Navigationd:
 
     return banner_instructions, progress, nav_data
 
-  def _build_navigation_message(self, banner_instructions, progress, nav_data):
+  def _build_navigation_message(self, banner_instructions: str, progress: dict | None, nav_data: dict, valid: bool):
     msg = messaging.new_message('navigationd')
+    msg.valid = valid
     msg.navigationd.upcomingTurn = nav_data.get('upcoming_turn', 'none')
     msg.navigationd.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
     msg.navigationd.bannerInstructions = banner_instructions
@@ -127,7 +128,7 @@ class Navigationd:
       self._update_params()
       banner_instructions, progress, nav_data = self._update_navigation()
 
-      msg = self._build_navigation_message(banner_instructions, progress, nav_data)
+      msg = self._build_navigation_message(banner_instructions, progress, nav_data, self.sm.all_checks())
 
       self.pm.send('navigationd', msg)
       self.rk.keep_time()
