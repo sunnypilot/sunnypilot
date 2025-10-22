@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
@@ -21,7 +22,7 @@ def compare_cluster_target(v_cruise_cluster: float, target_set_speed: float, is_
   return req_plus, req_minus
 
 
-def set_speed_limit_assist_availability(CP, CP_SP, params) -> None:
+def set_speed_limit_assist_availability(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
   if params is None:
     params = Params()
 
