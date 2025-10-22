@@ -39,7 +39,7 @@ class NavigationInstructions:
 
     # Calculate total remaining distance and time
     total_distance_remaining: float = max(0, route['total_distance'] - closest_cumulative)
-    progress_in_step = (closest_cumulative - current_step['cumulative_distance']) / current_step['distance']
+    progress_in_step = (closest_cumulative - current_step['cumulative_distance']) / current_step['distance'] if current_step['distance'] > 0 else 1.0
     time_left_in_step = (1 - progress_in_step) * current_step['duration']
     total_time_remaining: float = time_left_in_step + sum(step['duration'] for step in route['steps'][current_step_idx + 1 :])
 

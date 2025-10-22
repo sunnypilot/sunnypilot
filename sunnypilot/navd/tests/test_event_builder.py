@@ -45,7 +45,7 @@ class TestEventBuilder:
   def test_upcoming_turn_override(self):
     nav_msg = custom.Navigationd.new_message()
     nav_msg.valid = True
-    nav_msg.bannerInstructions = 'Turn right'
+    nav_msg.bannerInstructions = 'Continue straight bro'
     nav_msg.upcomingTurn = 'left'
     nav_msg.allManeuvers = [
       custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='left')
