@@ -110,8 +110,7 @@ void SpeedLimitSettings::refresh() {
   SpeedLimitOffsetType offset_type_param = static_cast<SpeedLimitOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
   QString offsetLabel = QString::fromStdString(params.get("SpeedLimitValueOffset"));
 
-  bool has_longitudinal_control;
-  bool has_icbm;
+  bool sla_available;
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty() && !cp_sp_bytes.empty()) {
@@ -122,17 +121,20 @@ void SpeedLimitSettings::refresh() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
     cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
-    has_longitudinal_control = hasLongitudinalControl(CP);
-    has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
+    bool has_longitudinal_control = hasLongitudinalControl(CP);
+    bool has_icbm = hasIntelligentCruiseButtonManagement(CP_SP);
 
-    if (!has_longitudinal_control && !has_icbm) {
-      if (speed_limit_mode_param == SpeedLimitMode::ASSIST) {
-        params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));
-      }
+    /*
+     * Speed Limit Assist is available when:
+     * - has_longitudinal_control or has_icbm
+     */
+    sla_available = has_longitudinal_control || has_icbm;
+
+    if (!sla_available && speed_limit_mode_param == SpeedLimitMode::ASSIST) {
+      params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));
     }
   } else {
-    has_longitudinal_control = false;
-    has_icbm = false;
+    sla_available = false;
   }
 
   speed_limit_mode_settings->setDescription(modeDescription(speed_limit_mode_param));
@@ -152,7 +154,7 @@ void SpeedLimitSettings::refresh() {
     speed_limit_offset->showDescription();
   }
 
-  if (has_longitudinal_control || has_icbm) {
+  if (sla_available) {
     speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(getSpeedLimitModeValues()));
   } else {
     speed_limit_mode_settings->setEnableSelectedButtons(true, convertSpeedLimitModeValues(
