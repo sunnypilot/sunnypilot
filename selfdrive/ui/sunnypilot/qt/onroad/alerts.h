@@ -19,4 +19,7 @@ public:
 protected:
   void paintEvent(QPaintEvent *) override;
   Alert getAlert(const SubMaster &sm, uint64_t started_frame);
+
+private:
+  Params params;
 };
