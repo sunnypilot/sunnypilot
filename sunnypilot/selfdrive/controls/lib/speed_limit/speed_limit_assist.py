@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import time
 
 from cereal import custom, car
+from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
@@ -15,7 +16,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target, set_speed_limit_assist_availability
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -52,13 +53,15 @@ class SpeedLimitAssist:
   a_ego: float
   v_offset: float
 
-  def __init__(self, CP):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     self.params = Params()
     self.CP = CP
+    self.CP_SP = CP_SP
     self.frame = -1
     self.long_engaged_timer = 0
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
+    set_speed_limit_assist_availability(self.CP, self.CP_SP, self.params)
     self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
     self.long_enabled = False
     self.long_enabled_prev = False
@@ -140,6 +143,7 @@ class SpeedLimitAssist:
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.is_metric = self.params.get_bool("IsMetric")
+      set_speed_limit_assist_availability(self.CP, self.CP_SP, self.params)
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
   def update_car_state(self, CS: car.CarState) -> None:
