@@ -104,7 +104,7 @@ void LongitudinalPanel::hideEvent(QHideEvent *event) {
 }
 
 void LongitudinalPanel::refresh(bool _offroad) {
-  const QString icbm_description = tr("sunnypilot will attempt to manage the built-in cruise control buttons by emulating button presses for limited longitudinal control.");
+  const QString icbm_description = tr("When enabled, sunnypilot will attempt to manage the built-in cruise control buttons by emulating button presses for limited longitudinal control.");
 
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
