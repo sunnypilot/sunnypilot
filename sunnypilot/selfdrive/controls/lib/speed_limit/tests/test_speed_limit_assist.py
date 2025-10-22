@@ -4,9 +4,14 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from cereal import custom
 
+import pytest
+
+from cereal import custom
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.hyundai.values import CAR as HYUNDAI
+from opendbc.car.rivian.values import CAR as RIVIAN
+from opendbc.car.tesla.values import CAR as TESLA
 from opendbc.car.toyota.values import CAR as TOYOTA
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
@@ -30,14 +35,30 @@ SPEED_LIMITS = {
   'freeway': 80 * CV.MPH_TO_MS,      # 80 mph
 }
 
+DEFAULT_CAR = TOYOTA.TOYOTA_RAV4_TSS2
+
+
+@pytest.fixture
+def car_name(request):
+    # Used only when tests parametrize it
+    return getattr(request, "param", DEFAULT_CAR)
+
+
+@pytest.fixture(autouse=True)
+def set_car_name_on_instance(request, car_name):
+    # Attach to the test class instance before setup_method runs
+    instance = getattr(request, "instance", None)
+    if instance:
+        instance.car_name = car_name
+
 
 class TestSpeedLimitAssist:
 
-  def setup_method(self):
+  def setup_method(self, method):
     self.params = Params()
     self.reset_custom_params()
     self.events_sp = EventsSP()
-    CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2)
+    CI = self._setup_platform(self.car_name)
     self.sla = SpeedLimitAssist(CI.CP, CI.CP_SP)
     self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD[self.sla.pcm_op_long] / DT_MDL)
     self.pcm_long_max_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric][1]  # use 80 MPH for now
@@ -51,6 +72,7 @@ class TestSpeedLimitAssist:
     CP = CarInterface.get_non_essential_params(car_name)
     CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
     CI = CarInterface(CP, CP_SP)
+    CI.CP.openpilotLongitudinalControl = True  # always assume it's openpilot longitudinal
     sunnypilot_interfaces.setup_interfaces(CI, self.params)
     return CI
 
@@ -83,6 +105,17 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_enabled
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
+
+  @pytest.mark.parametrize("car_name", [TESLA.TESLA_MODEL_Y], indirect=True)
+  def test_disallowed_brands(self, car_name):
+    assert not self.sla.enabled
+
+    # stay disallowed even when the param may have changed from somewhere else
+    self.params.put("SpeedLimitMode", int(Mode.assist))
+    for _ in range(int(3. / DT_MDL)):
+      self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
+                      SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert not self.sla.enabled
 
   def test_disabled(self):
     self.params.put("SpeedLimitMode", int(Mode.off))
