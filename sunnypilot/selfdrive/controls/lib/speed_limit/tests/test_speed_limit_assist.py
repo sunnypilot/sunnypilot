@@ -15,6 +15,7 @@ from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
@@ -110,7 +111,7 @@ class TestSpeedLimitAssist:
 
     # stay disallowed even when the param may have changed from somewhere else
     self.params.put("SpeedLimitMode", int(Mode.assist))
-    for _ in range(int(3. / DT_MDL)):
+    for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
                       SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert not self.sla.enabled
