@@ -3,14 +3,10 @@ from cereal import custom
 from openpilot.sunnypilot.navd.event_builder import build_navigation_events
 
 
-class MockSM:
+class MockSM(dict):
   def __init__(self, nav_msg):
-    self.nav_msg = nav_msg
-
-  def __getitem__(self, key):
-    if key == 'navigationd':
-      return self.nav_msg
-    return None
+    super().__init__()
+    self['navigationd'] = nav_msg
 
 
 class TestEventBuilder:

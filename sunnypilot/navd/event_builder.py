@@ -8,8 +8,8 @@ from cereal import custom
 
 
 def build_navigation_events(sm) -> list:
-  nav_msg = sm['navigationd']
-  if not nav_msg.valid:
+  nav_msg = sm.get('navigationd')
+  if nav_msg is None or not nav_msg.valid:
     return []
 
   banner_message = _build_banner_message(nav_msg)
