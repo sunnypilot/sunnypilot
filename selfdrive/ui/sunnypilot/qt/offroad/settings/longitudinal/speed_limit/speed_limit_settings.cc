@@ -130,8 +130,8 @@ void SpeedLimitSettings::refresh() {
      * - has_longitudinal_control or has_icbm, and
      * - is not a release branch or not a disallowed brand
      */
-    bool sla_disallow_brand = CP.getBrand() != "tesla";
-    sla_available = (has_longitudinal_control || has_icbm) && (!is_release || sla_disallow_brand);
+    bool sla_disallow_brand = CP.getBrand() == "tesla";
+    sla_available = (has_longitudinal_control || has_icbm) && (!is_release || !sla_disallow_brand);
 
     if (!sla_available && speed_limit_mode_param == SpeedLimitMode::ASSIST) {
       params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));
