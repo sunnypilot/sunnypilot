@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 import time
 
 from cereal import custom, car
-from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
@@ -53,7 +52,7 @@ class SpeedLimitAssist:
   a_ego: float
   v_offset: float
 
-  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
+  def __init__(self, CP: car.CarParams, CP_SP: custom.CarParamsSP):
     self.params = Params()
     self.CP = CP
     self.CP_SP = CP_SP
