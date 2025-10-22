@@ -19,7 +19,6 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import SLA_DISALLOWED_BRANDS, set_speed_limit_assist_availability
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
   PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
@@ -75,6 +74,7 @@ class TestSpeedLimitAssist:
     return CI
 
   def reset_custom_params(self):
+    self.params.put("IsReleaseSpBranch", True)
     self.params.put("SpeedLimitMode", int(Mode.assist))
     self.params.put_bool("IsMetric", False)
     self.params.put("SpeedLimitOffsetType", 0)
@@ -104,16 +104,20 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
 
-  @pytest.mark.parametrize("car_name", [DEFAULT_CAR, TESLA.TESLA_MODEL_Y], indirect=True)
+  @pytest.mark.parametrize("car_name", [TESLA.TESLA_MODEL_Y], indirect=True)
   def test_disallowed_brands(self, car_name):
-    assert self.sla.enabled == set_speed_limit_assist_availability(self.sla.CP, self.sla.CP_SP, self.params)
+    """
+      Speed Limit Assist is disabled for the following brands and conditions:
+      - All Tesla and is a release branch
+    """
+    assert not self.sla.enabled
 
     # stay disallowed even when the param may have changed from somewhere else
     self.params.put("SpeedLimitMode", int(Mode.assist))
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
                       SPEED_LIMITS['city'], True, 0, self.events_sp)
-    assert self.sla.enabled == set_speed_limit_assist_availability(self.sla.CP, self.sla.CP_SP, self.params)
+    assert not self.sla.enabled
 
   def test_disabled(self):
     self.params.put("SpeedLimitMode", int(Mode.off))

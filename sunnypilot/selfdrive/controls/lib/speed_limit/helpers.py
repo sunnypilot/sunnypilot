@@ -10,8 +10,6 @@ from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 
-SLA_DISALLOWED_BRANDS = ("tesla", "rivian")
-
 
 def compare_cluster_target(v_cruise_cluster: float, target_set_speed: float, is_metric: bool) -> tuple[bool, bool]:
   speed_conv = CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH
@@ -29,9 +27,10 @@ def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarPara
     params = Params()
 
   is_release = params.get_bool("IsReleaseBranch") or params.get_bool("IsReleaseSpBranch")
+  disallow_in_release = CP.brand == "tesla" and is_release
   allowed = True
 
-  if CP.brand in SLA_DISALLOWED_BRANDS or (CP.brand == "tesla" and not is_release):
+  if disallow_in_release:
     allowed = False
 
   if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
