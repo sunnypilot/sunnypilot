@@ -105,7 +105,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 }
 
 void SpeedLimitSettings::refresh() {
-  bool is_release = params.getBool("IsReleaseBranch") || params.getBool("IsReleaseSpBranch");
+  bool is_release = params.getBool("IsReleaseSpBranch");
   bool is_metric_param = params.getBool("IsMetric");
   SpeedLimitMode speed_limit_mode_param = static_cast<SpeedLimitMode>(std::atoi(params.get("SpeedLimitMode").c_str()));
   SpeedLimitOffsetType offset_type_param = static_cast<SpeedLimitOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));

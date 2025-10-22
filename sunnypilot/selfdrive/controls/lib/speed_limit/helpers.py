@@ -26,7 +26,7 @@ def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarPara
   if params is None:
     params = Params()
 
-  is_release = params.get_bool("IsReleaseBranch") or params.get_bool("IsReleaseSpBranch")
+  is_release = params.get_bool("IsReleaseSpBranch")
   disallow_in_release = CP.brand == "tesla" and is_release
   allowed = True
 
