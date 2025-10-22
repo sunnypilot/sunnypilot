@@ -8,8 +8,6 @@ from cereal import custom
 
 
 def build_navigation_events(sm) -> list:
-  if 'navigationd' not in sm:
-    return []
   nav_msg = sm['navigationd']
   if not nav_msg.valid:
     return []
