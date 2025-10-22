@@ -127,7 +127,7 @@ void LongitudinalPanel::refresh(bool _offroad) {
       params.remove("IntelligentCruiseButtonManagement");
       intelligentCruiseButtonManagement->setEnabled(false);
 
-      const QString icbm_unavaialble = tr("Intelligent Cruise Button Management is currently unavailable on this car.");
+      const QString icbm_unavaialble = tr("Intelligent Cruise Button Management is currently unavailable on this platform.");
 
       QString long_desc = icbm_unavaialble;
       if (has_longitudinal_control) {
