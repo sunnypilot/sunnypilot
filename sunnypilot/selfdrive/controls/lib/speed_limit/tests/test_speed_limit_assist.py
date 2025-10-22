@@ -19,7 +19,7 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import SLA_DISALLOWED_BRANDS
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import SLA_DISALLOWED_BRANDS, set_speed_limit_assist_availability
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
   PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
@@ -106,12 +106,14 @@ class TestSpeedLimitAssist:
 
   @pytest.mark.parametrize("car_name", [DEFAULT_CAR, TESLA.TESLA_MODEL_Y], indirect=True)
   def test_disallowed_brands(self, car_name):
+    assert self.sla.enabled == set_speed_limit_assist_availability(self.sla.CP, self.sla.CP_SP, self.params)
+
     # stay disallowed even when the param may have changed from somewhere else
     self.params.put("SpeedLimitMode", int(Mode.assist))
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
                       SPEED_LIMITS['city'], True, 0, self.events_sp)
-    assert self.sla.enabled == (self.sla.CP.brand not in SLA_DISALLOWED_BRANDS)
+    assert self.sla.enabled == set_speed_limit_assist_availability(self.sla.CP, self.sla.CP_SP, self.params)
 
   def test_disabled(self):
     self.params.put("SpeedLimitMode", int(Mode.off))
