@@ -39,16 +39,14 @@ DEFAULT_CAR = TOYOTA.TOYOTA_RAV4_TSS2
 
 @pytest.fixture
 def car_name(request):
-    # Used only when tests parametrize it
-    return getattr(request, "param", DEFAULT_CAR)
+  return getattr(request, "param", DEFAULT_CAR)
 
 
 @pytest.fixture(autouse=True)
 def set_car_name_on_instance(request, car_name):
-    # Attach to the test class instance before setup_method runs
-    instance = getattr(request, "instance", None)
-    if instance:
-        instance.car_name = car_name
+  instance = getattr(request, "instance", None)
+  if instance:
+    instance.car_name = car_name
 
 
 class TestSpeedLimitAssist:
