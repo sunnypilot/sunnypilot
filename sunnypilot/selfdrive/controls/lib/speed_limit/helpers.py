@@ -31,9 +31,6 @@ def set_speed_limit_assist_availability(CP: structs.CarParams, CP_SP: structs.Ca
   if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
     allowed = False
 
-  if CP.brand in ('tesla', ):
-    allowed = False
-
   if not allowed:
     if params.get("SpeedLimitMode", return_default=True) == SpeedLimitMode.assist:
       params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
