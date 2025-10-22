@@ -9,8 +9,6 @@ import pytest
 
 from cereal import custom
 from opendbc.car.car_helpers import interfaces
-from opendbc.car.hyundai.values import CAR as HYUNDAI
-from opendbc.car.rivian.values import CAR as RIVIAN
 from opendbc.car.tesla.values import CAR as TESLA
 from opendbc.car.toyota.values import CAR as TOYOTA
 from openpilot.common.constants import CV
