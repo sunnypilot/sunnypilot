@@ -109,7 +109,8 @@ class TestSpeedLimitAssist:
   def test_disallowed_brands(self, car_name):
     """
       Speed Limit Assist is disabled for the following brands and conditions:
-      - All Tesla and is a release branch
+      - All Tesla and is a release branch;
+      - All Rivian
     """
     assert not self.sla.enabled
 
