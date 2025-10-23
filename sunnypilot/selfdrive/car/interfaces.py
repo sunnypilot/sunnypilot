@@ -11,7 +11,7 @@ from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import set_speed_limit_assist_availability
 
 import openpilot.system.sentry as sentry
 
@@ -87,8 +87,7 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
     params.remove("SmartCruiseControlVision")
     params.remove("SmartCruiseControlMap")
 
-    if params.get("SpeedLimitMode", return_default=True) == SpeedLimitMode.assist:
-      params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
+  set_speed_limit_assist_availability(CP, CP_SP, params)
 
 
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
