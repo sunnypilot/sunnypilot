@@ -8,8 +8,8 @@ from cereal import custom
 
 
 def build_navigation_events(sm) -> list:
-  nav_msg = sm['navigationd']
-  if not nav_msg.valid:
+  nav_msg = sm.get('navigationd')
+  if not nav_msg or not nav_msg.valid:
     return []
 
   banner_message = _build_banner_message(nav_msg)
@@ -35,10 +35,9 @@ def _build_banner_message(nav_msg):
   if m.distance >= 1000:
     return None
 
-  dist_str = f"{int(m.distance)}m"
-  next_m = nav_msg.allManeuvers[1] if len(nav_msg.allManeuvers) > 1 else m
   banner = nav_msg.bannerInstructions
 
+  next_m = nav_msg.allManeuvers[1] if len(nav_msg.allManeuvers) > 1 else m
   if next_m.modifier == 'sharp right' and 'Turn right' in banner:
     banner = banner.replace('Turn right', 'Take a sharp right')
   elif next_m.modifier == 'sharp left' and 'Turn left' in banner:
@@ -50,7 +49,12 @@ def _build_banner_message(nav_msg):
   elif next_m.modifier == 'uturn' and 'Turn' in banner:
     banner = banner.replace('Turn', 'Make a U-turn', 1)
 
-  return f"In {dist_str}, {banner}"
+  if 'Turn' in banner or 'Take' in banner or 'Make' in banner or 'arrive' in banner.lower():
+    base_msg = f"In {int(m.distance)}m, {banner}"
+  else:
+    base_msg = f"Continue on {banner} for {int(m.distance)}m"
+
+  return base_msg
 
 
 def _get_turning_message(upcoming_turn):
