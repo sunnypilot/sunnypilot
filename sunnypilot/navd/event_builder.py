@@ -18,15 +18,11 @@ def build_navigation_events(sm) -> list:
 
   if nav_msg.upcomingTurn != 'none':
     banner_message = _get_turning_message(nav_msg.upcomingTurn)
-    alert_size = 'small'
-  else:
-    alert_size = 'mid'
 
   return [{
     'name': custom.OnroadEventSP.EventName.navigationBanner,
     'type': 'warning',
     'message': banner_message,
-    'size': alert_size,
   }]
 
 

@@ -61,8 +61,7 @@ def navigation_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaste
   if not events:
     return Alert("", "", AlertStatus.normal, AlertSize.none, Priority.LOWEST, VisualAlert.none, AudibleAlert.none, 0.)
 
-  size = AlertSize.mid if events[0]['size'] == 'mid' else AlertSize.small
-  return Alert(events[0]['message'], "", AlertStatus.normal, size, Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.)
+  return Alert(events[0]['message'], "", AlertStatus.normal, AlertSize.small, Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.)
 
 
 class EventsSP(EventsBase):

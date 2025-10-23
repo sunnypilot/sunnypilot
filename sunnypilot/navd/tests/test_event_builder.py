@@ -26,7 +26,6 @@ class TestEventBuilder:
       'name': custom.OnroadEventSP.EventName.navigationBanner,
       'type': 'warning',
       'message': 'In 192m, Turn right onto West Esplanade Drive',
-      'size': 'mid'
     }]
     assert events == expected
 
@@ -56,7 +55,6 @@ class TestEventBuilder:
       'name': custom.OnroadEventSP.EventName.navigationBanner,
       'type': 'warning',
       'message': 'Turning Left',
-      'size': 'small'
     }]
     assert events == expected
 
@@ -75,6 +73,5 @@ class TestEventBuilder:
       'name': custom.OnroadEventSP.EventName.navigationBanner,
       'type': 'warning',
       'message': 'In 300m, Take a sharp right onto Main St',
-      'size': 'mid'
     }]
     assert events == expected
