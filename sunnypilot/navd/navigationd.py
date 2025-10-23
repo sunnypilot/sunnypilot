@@ -85,7 +85,7 @@ class Navigationd:
             self.allow_recompute = False
 
         if self.recompute_allowed:
-          self.reroute_counter += 1 if nav_data['distance_from_route'] > 25 else 0
+          self.reroute_counter += 1 if nav_data['distance_from_route'] > 100 else 0
 
     return banner_instructions, progress, nav_data
 
