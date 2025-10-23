@@ -95,7 +95,7 @@ class Navigationd:
     msg.navigationd.upcomingTurn = nav_data.get('upcoming_turn', 'none')
     msg.navigationd.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
     msg.navigationd.bannerInstructions = banner_instructions
-    msg.navigationd.distanceToNextTurn = nav_data.get('distance_to_next_turn', 0.0)
+    msg.navigationd.distanceToNextTurn = nav_data.get('distance_to_next_turn') or 0.0
     msg.navigationd.distanceToEndOfStep = nav_data.get('distance_to_end_of_step', 0.0)
     msg.navigationd.routeProgressPercent = nav_data.get('route_progress_percent', 0.0)
     msg.navigationd.distanceFromRoute = nav_data.get('distance_from_route', 0.0)
