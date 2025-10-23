@@ -9,6 +9,7 @@ import pytest
 
 from cereal import custom
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.rivian.values import CAR as RIVIAN
 from opendbc.car.tesla.values import CAR as TESLA
 from opendbc.car.toyota.values import CAR as TOYOTA
 from openpilot.common.constants import CV
@@ -104,11 +105,12 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
 
-  @pytest.mark.parametrize("car_name", [TESLA.TESLA_MODEL_Y], indirect=True)
+  @pytest.mark.parametrize("car_name", [RIVIAN.RIVIAN_R1_GEN1, TESLA.TESLA_MODEL_Y], indirect=True)
   def test_disallowed_brands(self, car_name):
     """
       Speed Limit Assist is disabled for the following brands and conditions:
-      - All Tesla and is a release branch
+      - All Tesla and is a release branch;
+      - All Rivian
     """
     assert not self.sla.enabled
 
