@@ -17,6 +17,8 @@ sunnypilot Version 2025.001.000 (2025-10-25)
     * Intelligent longitudinal control adaptation
   * Speed Limit Assist (SLA)
     * Comprehensive speed limit integration featuring @pfeiferj's `mapd` for offline map limits downloads, a Speed Limit Resolver for sourcing data (from car, map, combined, etc), on-screen UI for Speed Limit Information/Warning, and Speed Limit Assist (SLA) to adjust cruise speed automatically.
+    * Currently disabled for Tesla with sunnypilot Longitudinal Control in release and Rivian with sunnypilot Longitudinal Control in all branches
+      * May return in future releases
   * Intelligent Cruise Button Management (ICBM)
     * System designed to manage the vehicle’s speed by sending cruise control button commands to the car’s ECU.
   * Smart Cruise Control Map & Vision (SCC-M / SCC-V)

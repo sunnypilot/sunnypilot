@@ -105,6 +105,7 @@ SpeedLimitSettings::SpeedLimitSettings(QWidget *parent) : QStackedWidget(parent)
 }
 
 void SpeedLimitSettings::refresh() {
+  bool is_release = params.getBool("IsReleaseSpBranch");
   bool is_metric_param = params.getBool("IsMetric");
   SpeedLimitMode speed_limit_mode_param = static_cast<SpeedLimitMode>(std::atoi(params.get("SpeedLimitMode").c_str()));
   SpeedLimitOffsetType offset_type_param = static_cast<SpeedLimitOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
@@ -126,9 +127,13 @@ void SpeedLimitSettings::refresh() {
 
     /*
      * Speed Limit Assist is available when:
-     * - has_longitudinal_control or has_icbm
+     * - has_longitudinal_control or has_icbm, and
+     * - is not a release branch or not a disallowed brand, and
+     * - is not always disallowed
      */
-    sla_available = has_longitudinal_control || has_icbm;
+    bool sla_disallow_in_release = CP.getBrand() == "tesla" && is_release;
+    bool sla_always_disallow = CP.getBrand() == "rivian";
+    sla_available = (has_longitudinal_control || has_icbm) && !sla_disallow_in_release && !sla_always_disallow;
 
     if (!sla_available && speed_limit_mode_param == SpeedLimitMode::ASSIST) {
       params.put("SpeedLimitMode", std::to_string(static_cast<int>(SpeedLimitMode::WARNING)));

@@ -22,11 +22,17 @@ def compare_cluster_target(v_cruise_cluster: float, target_set_speed: float, is_
   return req_plus, req_minus
 
 
-def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarParamsSP, params: Params = None) -> None:
+def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarParamsSP, params: Params = None) -> bool:
   if params is None:
     params = Params()
 
+  is_release = params.get_bool("IsReleaseSpBranch")
+  disallow_in_release = CP.brand == "tesla" and is_release
+  always_disallow = CP.brand == "rivian"
   allowed = True
+
+  if disallow_in_release or always_disallow:
+    allowed = False
 
   if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
     allowed = False
@@ -34,3 +40,5 @@ def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarPara
   if not allowed:
     if params.get("SpeedLimitMode", return_default=True) == SpeedLimitMode.assist:
       params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
+
+  return allowed
