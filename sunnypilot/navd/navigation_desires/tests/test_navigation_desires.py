@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import pytest
 import types
 
@@ -21,7 +27,7 @@ NAVIGATION_PARAMS: list[tuple] = [
   ('slightLeft', make_car(vEgo=9, leftBlindspot=True), log.Desire.none),
   ('slightRight', make_car(vEgo=9, rightBlindspot=True), log.Desire.none),
   ('left', make_car(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False), log.Desire.turnLeft),
-  ('left', make_car(vEgo=5, leftBlinker=False), log.Desire.none),
+  ('left', make_car(vEgo=5, leftBlinker=False, rightBlinker=True), log.Desire.none),
   ('right', make_car(vEgo=6, rightBlinker=True, leftBlindspot=False), log.Desire.turnRight),
   ('right', make_car(vEgo=6, rightBlinker=True, rightBlindspot=True), log.Desire.none),
   ('left', make_car(vEgo=9, leftBlinker=True), log.Desire.none),

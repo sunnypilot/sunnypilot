@@ -1,5 +1,5 @@
 """
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
@@ -35,9 +35,9 @@ class NavigationDesires:
         self.desire = log.Desire.keepLeft
       elif upcoming == 'slightRight' and (not CS.rightBlindspot or CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.keepRight
-      elif upcoming == 'left' and CS.leftBlinker and not CS.rightBlinker and not CS.leftBlindspot and CS.vEgo < self._turn_speed_limit:
+      elif upcoming == 'left' and not CS.rightBlinker and not CS.leftBlindspot and CS.vEgo < self._turn_speed_limit:
         self.desire = log.Desire.turnLeft
-      elif upcoming == 'right' and CS.rightBlinker and not CS.leftBlinker and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit:
+      elif upcoming == 'right' and not CS.leftBlinker and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit:
         self.desire = log.Desire.turnRight
 
   def get_desire(self) -> log.Desire:
