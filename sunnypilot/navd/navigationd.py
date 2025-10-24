@@ -95,7 +95,8 @@ class Navigationd:
     msg.navigationd.valid = self.valid
 
     all_maneuvers = (
-      [custom.Navigationd.Maneuver.new_message(distance=m['distance'], type=m['type'], modifier=m['modifier']) for m in progress['all_maneuvers']]
+      [custom.Navigationd.Maneuver.new_message(distance=m['distance'], type=m['type'], modifier=m['modifier'],
+                                               instruction=m['instruction']) for m in progress['all_maneuvers']]
       if progress
       else []
     )

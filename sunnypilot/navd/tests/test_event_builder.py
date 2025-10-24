@@ -17,29 +17,17 @@ class TestEventBuilder:
     nav_msg.bannerInstructions = 'Turn right onto West Esplanade Drive'
     nav_msg.upcomingTurn = 'none'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=192.848, type='depart', modifier='none'),
-      custom.Navigationd.Maneuver.new_message(distance=192.64264487162754, type='turn', modifier='right')
+      custom.Navigationd.Maneuver.new_message(distance=192.848, type='depart', modifier='none', instruction='Depart'),
+      custom.Navigationd.Maneuver.new_message(distance=192.64264487162754, type='turn', modifier='right', instruction='Turn right onto West Esplanade Drive')
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
       'type': 'warning',
-      'message': 'In 192m, Turn right onto West Esplanade Drive',
+      'message': 'Turn right onto West Esplanade Drive in 192m',
     }]
     assert events == expected
-
-  def test_no_event_when_distance_too_far(self):
-    nav_msg = custom.Navigationd.new_message()
-    nav_msg.valid = True
-    nav_msg.bannerInstructions = 'Turn right'
-    nav_msg.upcomingTurn = 'none'
-    nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=1000.0, type='turn', modifier='right')
-    ]
-
-    events = build_navigation_events(MockSM(nav_msg))
-    assert events == []
 
   def test_upcoming_turn_override(self):
     nav_msg = custom.Navigationd.new_message()
@@ -47,7 +35,7 @@ class TestEventBuilder:
     nav_msg.bannerInstructions = 'Continue straight bro'
     nav_msg.upcomingTurn = 'left'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='left')
+      custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='left', instruction='Turn left')
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
@@ -64,14 +52,14 @@ class TestEventBuilder:
     nav_msg.bannerInstructions = 'Turn right onto Main St'
     nav_msg.upcomingTurn = 'none'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=300.0, type='turn', modifier='none'),
-      custom.Navigationd.Maneuver.new_message(distance=300.0, type='turn', modifier='sharp right')
+      custom.Navigationd.Maneuver.new_message(distance=300.0, type='turn', modifier='none', instruction='Turn right onto Main St'),
+      custom.Navigationd.Maneuver.new_message(distance=300.0, type='turn', modifier='sharp right', instruction='Take a sharp right onto Main St')
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
       'type': 'warning',
-      'message': 'In 300m, Take a sharp right onto Main St',
+      'message': 'Take a sharp right onto Main St in 300m',
     }]
     assert events == expected

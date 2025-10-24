@@ -28,9 +28,6 @@ def build_navigation_events(sm) -> list:
 
 def _build_banner_message(nav_msg):
   m = nav_msg.allManeuvers[0]
-  if m.distance >= 1000:
-    return None
-
   banner = nav_msg.bannerInstructions
 
   next_m = nav_msg.allManeuvers[1] if len(nav_msg.allManeuvers) > 1 else m
@@ -45,7 +42,11 @@ def _build_banner_message(nav_msg):
   elif next_m.modifier == 'uturn' and 'Turn' in banner:
     banner = banner.replace('Turn', 'Make a U-turn', 1)
 
-  if 'Turn' in banner or 'Take' in banner or 'Make' in banner or 'arrive' in banner.lower():
+  if 'Turn' in banner or 'Take' in banner or 'Make' in banner:
+    if 'onto' not in banner and 'onto' in m.instruction:
+      banner = m.instruction
+    base_msg = f"{banner} in {int(m.distance)}m"
+  elif 'arrive' in banner.lower() or 'destination' in banner.lower():
     base_msg = f"In {int(m.distance)}m, {banner}"
   else:
     base_msg = f"Continue on {banner} for {int(m.distance)}m"
