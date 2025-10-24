@@ -68,15 +68,10 @@ class TestMapbox:
     assert progress is not None
     assert 'distance_from_route' in progress
     assert 'next_turn' in progress
-    assert 'route_progress_percent' in progress
     assert 'current_maxspeed' in progress
-    assert 'total_distance_remaining' in progress
-    assert 'total_time_remaining' in progress
     assert 'all_maneuvers' in progress
+    assert 'distance_to_end_of_step' in progress
     assert progress['distance_from_route'] >= 0
-    assert 0 <= progress['route_progress_percent'] <= 100
-    assert progress['total_distance_remaining'] >= 0
-    assert progress['total_time_remaining'] >= 0
     assert isinstance(progress['all_maneuvers'], list)
 
     speed_limit_metric = self.nav.get_current_speed_limit_from_progress(progress, True)
