@@ -31,17 +31,10 @@ class NavigationInstructions:
     # The next turn is the next step relative to our cumulative index
     next_turn_idx = current_step_idx + 1
     next_turn = route['steps'][next_turn_idx] if 0 <= next_turn_idx < len(route['steps']) else None
-    next_turn_distance = max(0, next_turn['cumulative_distance'] - closest_cumulative) if next_turn else None
 
     current_maxspeed = current_step['maxspeed']
 
     distance_to_end_of_step = max(0, current_step['distance'] - (closest_cumulative - current_step['cumulative_distance']))
-
-    # Calculate total remaining distance and time
-    total_distance_remaining: float = max(0, route['total_distance'] - closest_cumulative)
-    progress_in_step = (closest_cumulative - current_step['cumulative_distance']) / current_step['distance'] if current_step['distance'] > 0 else 1.0
-    time_left_in_step = (1 - progress_in_step) * current_step['duration']
-    total_time_remaining: float = time_left_in_step + sum(step['duration'] for step in route['steps'][current_step_idx + 1 :])
 
     all_maneuvers: list = []
     max_maneuvers = 2
@@ -55,17 +48,12 @@ class NavigationInstructions:
 
     return {
       'distance_from_route': min_distance,
-      'route_position_cumulative': closest_cumulative,
       'current_step': current_step,
       'next_turn': next_turn,
-      'distance_to_next_turn': next_turn_distance,
-      'route_progress_percent': (closest_cumulative / max(1, route['total_distance'])) * 100,
       'current_maxspeed': current_maxspeed,
-      'distance_to_end_of_step': distance_to_end_of_step,
-      'total_distance_remaining': total_distance_remaining,
-      'total_time_remaining': total_time_remaining,
       'all_maneuvers': all_maneuvers,
       'current_step_idx': current_step_idx,
+      'distance_to_end_of_step': distance_to_end_of_step,
     }
 
   def get_current_route(self):

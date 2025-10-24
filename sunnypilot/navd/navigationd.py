@@ -73,11 +73,7 @@ class Navigationd:
           if parsed:
             banner_instructions = parsed['maneuverPrimaryText']
 
-        nav_data['distance_to_next_turn'] = progress['distance_to_next_turn']
-        nav_data['distance_to_end_of_step'] = progress['distance_to_end_of_step']
-        nav_data['route_progress_percent'] = progress['route_progress_percent']
         nav_data['distance_from_route'] = progress['distance_from_route']
-        nav_data['route_position_cumulative'] = progress['route_position_cumulative']
 
         # Don't recompute in last segment to prevent reroute loops
         if self.route:
@@ -95,13 +91,7 @@ class Navigationd:
     msg.navigationd.upcomingTurn = nav_data.get('upcoming_turn', 'none')
     msg.navigationd.currentSpeedLimit = nav_data.get('current_speed_limit', 0)
     msg.navigationd.bannerInstructions = banner_instructions
-    msg.navigationd.distanceToNextTurn = nav_data.get('distance_to_next_turn') or 0.0
-    msg.navigationd.distanceToEndOfStep = nav_data.get('distance_to_end_of_step', 0.0)
-    msg.navigationd.routeProgressPercent = nav_data.get('route_progress_percent', 0.0)
     msg.navigationd.distanceFromRoute = nav_data.get('distance_from_route', 0.0)
-    msg.navigationd.routePositionCumulative = nav_data.get('route_position_cumulative', 0.0)
-    msg.navigationd.totalDistanceRemaining = progress['total_distance_remaining'] if progress else 0.0
-    msg.navigationd.totalTimeRemaining = progress['total_time_remaining'] if progress else 0.0
     msg.navigationd.valid = self.valid
 
     all_maneuvers = (
@@ -128,7 +118,7 @@ class Navigationd:
       self._update_params()
       banner_instructions, progress, nav_data = self._update_navigation()
 
-      msg = self._build_navigation_message(banner_instructions, progress, nav_data, self.sm.all_checks())
+      msg = self._build_navigation_message(banner_instructions, progress, nav_data, valid=localizer_valid)
 
       self.pm.send('navigationd', msg)
       self.rk.keep_time()
