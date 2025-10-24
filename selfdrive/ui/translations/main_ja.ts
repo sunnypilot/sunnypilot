@@ -782,6 +782,10 @@ DEPARTING</source>
         <source>MAX</source>
         <translation type="unfinished">最大速度</translation>
     </message>
+    <message>
+        <source>STOPPED</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>HyundaiSettings</name>
@@ -957,6 +961,26 @@ DEPARTING</source>
     </message>
     <message>
         <source>Speed Limit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dynamic Experimental Control (DEC)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Intelligent Cruise Button Management is currently unavailable on this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disable the openpilot Longitudinal Control (alpha) toggle to allow Intelligent Cruise Button Management.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control is the default longitudinal control for this platform.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1568,6 +1592,34 @@ Warning: You are on a metered connection!</source>
         <source>Time remaining: </source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Search Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all countries.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all states.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No results found for keywords: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>PairingPopup</name>
@@ -1761,59 +1813,6 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>None</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fixed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Percent</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Car
-Only</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Map
-Only</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Car
-First</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Map
-First</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Combined
-Data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Information</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Warning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Assist</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2180,6 +2179,31 @@ Data</source>
         <source>⦿ Combined: Use combined Speed Limit data from Car &amp; OpenStreetMaps</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Car
+Only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Map
+Only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Car
+First</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Map
+First</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Combined
+Data</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SpeedLimitSettings</name>
@@ -2227,6 +2251,34 @@ Data</source>
         <source>⦿ Assist: Adjusts the vehicle&apos;s cruise speed based on the current road&apos;s speed limit when operating the +/- buttons.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>None</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Percent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Information</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Warning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Assist</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SshControl</name>
@@ -2272,6 +2324,37 @@ Data</source>
     <message>
         <source>Enable SSH</source>
         <translation>SSHの有効化</translation>
+    </message>
+</context>
+<context>
+    <name>SubaruSettings</name>
+    <message>
+        <source>Stop and Go (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop and Go for Manual Parking Brake (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental feature to enable auto-resume during stop-and-go for certain supported Subaru platforms.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This feature is currently not available on this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start the car to check car compatibility.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to toggle.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2574,14 +2657,6 @@ Data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2804,6 +2879,22 @@ Bottom</source>
     </message>
     <message>
         <source>Display real-time parameters and metrics from various sources.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, the speedometer on the onroad screen is not displayed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display Turn Signals</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, visual turn indicators are drawn on the HUD.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This feature requires openpilot longitudinal control to be available.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
