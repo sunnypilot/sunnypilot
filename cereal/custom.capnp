@@ -466,6 +466,7 @@ struct Navigationd @0xcb9fd56c7057593a {
     distance @0 :Float64;
     type @1 :Text;
     modifier @2 :Text;
+    instruction @3 :Text;
   }
 }
 
