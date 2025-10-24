@@ -44,7 +44,7 @@ class NavigationInstructions:
         distance = distance_to_end_of_step
       else:
         distance = step['cumulative_distance'] - closest_cumulative
-      all_maneuvers.append({'distance': distance, 'type': step['maneuver'], 'modifier': step['modifier']})
+      all_maneuvers.append({'distance': distance, 'type': step['maneuver'], 'modifier': step['modifier'], 'instruction': step['instruction']})
 
     return {
       'distance_from_route': min_distance,
@@ -85,6 +85,7 @@ class NavigationInstructions:
         'cumulative_distance': cumulative_distances[closest_idx],
         'maxspeed': maxspeed[min(closest_idx, len(maxspeed) - 1)],
         'modifier': string_to_direction(step['modifier']),
+        'instruction': step['instruction'],
       })
     self._cached_route = {
       'steps': steps,
