@@ -47,8 +47,6 @@ class TestNavigationd:
       nav = Navigationd()
       msg = nav._build_navigation_message('', None, {})
       assert msg.navigationd.bannerInstructions == ''
-      assert msg.navigationd.totalDistanceRemaining == 0.0
-      assert msg.navigationd.totalTimeRemaining == 0.0
       assert msg.navigationd.valid is False
     else:
       sm = messaging.SubMaster(['navigationd'])
@@ -60,6 +58,4 @@ class TestNavigationd:
       received_msg = sm['navigationd']
 
       assert received_msg.bannerInstructions == msg.navigationd.bannerInstructions
-      assert received_msg.totalDistanceRemaining == msg.navigationd.totalDistanceRemaining
-      assert received_msg.totalTimeRemaining == msg.navigationd.totalTimeRemaining
       assert received_msg.valid == msg.navigationd.valid

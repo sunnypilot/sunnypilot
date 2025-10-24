@@ -458,15 +458,9 @@ struct Navigationd @0xcb9fd56c7057593a {
   upcomingTurn @0 :Text;
   currentSpeedLimit @1 :UInt64;
   bannerInstructions @2 :Text;
-  distanceToNextTurn @3 :Float64;
-  routeProgressPercent @4 :Float64;
-  distanceFromRoute @5 :Float64;
-  routePositionCumulative @6 :Float64;
-  distanceToEndOfStep @7 :Float64;
-  totalDistanceRemaining @8 :Float64;
-  totalTimeRemaining @9 :Float64;
-  allManeuvers @10 :List(Maneuver);
-  valid @11 :Bool;
+  distanceFromRoute @3 :Float64;
+  allManeuvers @4 :List(Maneuver);
+  valid @5 :Bool;
 
   struct Maneuver {
     distance @0 :Float64;
