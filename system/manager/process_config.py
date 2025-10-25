@@ -192,13 +192,22 @@ if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
 
 if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-  copyparty_args = [f"-v{Paths.crash_log_root()}:/swaglogs:r"]
-  copyparty_args += [f"-v{Paths.log_root()}:/routes:r"]
-  copyparty_args += [f"-v{Paths.model_root()}:/models:rw"]
-  copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw"]
-  copyparty_args += ["-p8080"]
-  copyparty_args += ["-z"]
-  copyparty_args += ["-q"]
+
+  # Check if authentication is configured
+  password = Params().get("CopypartyPassword")
+  auth_suffix = ",admin" if password else ""
+
+  # Build volume arguments with conditional authentication
+  copyparty_args = [f"-v{Paths.crash_log_root()}:/swaglogs:r{auth_suffix}"]
+  copyparty_args += [f"-v{Paths.log_root()}:/routes:r{auth_suffix}"]
+  copyparty_args += [f"-v{Paths.model_root()}:/models:rw{auth_suffix}"]
+  copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw{auth_suffix}"]
+  copyparty_args += ["-p8080", "-z", "-q"]
+
+  # Add authentication if password is configured
+  if password:
+    copyparty_args += ["-a", f"admin:{password}"]
+
   procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}
