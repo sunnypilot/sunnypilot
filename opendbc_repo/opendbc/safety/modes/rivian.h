@@ -96,26 +96,22 @@ static void rivian_rx_hook(const CANPacket_t *msg) {
     // Cruise state
     if (msg->addr == 0x100U) {
       const int feature_status = msg->data[2] >> 5U;
-      pcm_cruise_check(feature_status == 1);
+      pcm_cruise_check(feature_status == 2);
     }
   }
 }
 
 static bool rivian_tx_hook(const CANPacket_t *msg) {
-  // Rivian utilizes more torque at low speed to maintain the same lateral accel
-  const TorqueSteeringLimits RIVIAN_STEERING_LIMITS = {
-    .max_torque = 350,
-    .dynamic_max_torque = true,
-    .max_torque_lookup = {
-      {9., 17., 17.},
-      {350, 250, 250},
+  const AngleSteeringLimits RIVIAN_ANGLE_LIMITS = {
+    .angle_deg_to_can = 10,
+    .angle_rate_up_lookup = {
+      {5., 25., 25.},
+      {25., 15., 5.},  // deg/s, faster at low speed
     },
-    .max_rate_up = 3,
-    .max_rate_down = 5,
-    .max_rt_delta = 125,
-    .driver_torque_multiplier = 2,
-    .driver_torque_allowance = 100,
-    .type = TorqueDriverLimited,
+    .angle_rate_down_lookup = {
+      {5., 25., 25.},
+      {50., 30., 10.},  // deg/s, faster recovery
+    },
   };
 
   const LongitudinalLimits RIVIAN_LONG_LIMITS = {
@@ -127,12 +123,15 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
   bool tx = true;
 
   if (msg->bus == 0U) {
-    // Steering control
-    if (msg->addr == 0x120U) {
-      int desired_torque = ((msg->data[2] << 3U) | (msg->data[3] >> 5U)) - 1024U;
-      bool steer_req = (msg->data[3] >> 4) & 1U;
+    // Angle-based steering control (Driver+)
+    if (msg->addr == 0x110U) {
+      // ACM_SteeringAngleRequest: bit 23, 15 bits, little endian, scale 0.1, offset -1638.4
+      // Bit 23 starts in byte 2 (bit 16-23), spans into byte 3 and 4
+      int desired_angle_raw = (msg->data[2] >> 7) | (msg->data[3] << 1) | ((msg->data[4] & 0x3F) << 9);
+      float desired_angle = (desired_angle_raw * 0.1) - 1638.4;
+      bool steer_req = ((msg->data[1] >> 5) & 3U) == 1U;  // ACM_EacEnabled == 1
 
-      if (steer_torque_cmd_checks(desired_torque, steer_req, RIVIAN_STEERING_LIMITS)) {
+      if (steer_angle_cmd_checks(desired_angle, steer_req, RIVIAN_ANGLE_LIMITS)) {
         tx = false;
       }
     }
@@ -151,11 +150,15 @@ static bool rivian_tx_hook(const CANPacket_t *msg) {
 
 static safety_config rivian_init(uint16_t param) {
   // SCCM_WheelTouch: for hiding hold wheel alert
-  // VDM_AdasSts: for canceling stock ACC
-  // 0x120 = ACM_lkaHbaCmd, 0x321 = SCCM_WheelTouch, 0x162 = VDM_AdasSts
-  static const CanMsg RIVIAN_TX_MSGS[] = {{0x120, 0, 8, .check_relay = true}, {0x321, 2, 7, .check_relay = true}, {0x162, 2, 8, .check_relay = true}};
-  // 0x160 = ACM_longitudinalRequest
-  static const CanMsg RIVIAN_LONG_TX_MSGS[] = {{0x120, 0, 8, .check_relay = true}, {0x321, 2, 7, .check_relay = true}, {0x160, 0, 5, .check_relay = true}};
+  // VDM_AdasSts: for canceling stock ACC and setting driver mode status
+  // EPASS_Status: for EPAS EAC status on bus 0
+  // ACM_SteeringControl: for angle-based steering (Driver+) on bus 0
+  // ACM_longitudinalRequest: for long interface enable on bus 0
+  // EPAS_AdasStatus: for EPAS EAC status on bus 0
+  // 0x110 = ACM_SteeringControl, 0x160 = ACM_longitudinalRequest, 0x321 = SCCM_WheelTouch, 0x162 = VDM_AdasSts, 0x360 = EPASS_Status, 0x390 = EPAS_AdasStatus
+  static const CanMsg RIVIAN_TX_MSGS[] = {{0x110, 0, 8, .check_relay = true}, {0x160, 0, 5, .check_relay = true}, {0x321, 2, 7, .check_relay = true}, {0x162, 2, 8, .check_relay = true}, {0x360, 0, 4, .check_relay = true}, {0x390, 0, 7, .check_relay = true}};
+  // 0x160 = ACM_longitudinalRequest (on bus 0 for both interface enable and actual long control)
+  static const CanMsg RIVIAN_LONG_TX_MSGS[] = {{0x110, 0, 8, .check_relay = true}, {0x160, 0, 5, .check_relay = true}, {0x321, 2, 7, .check_relay = true}, {0x162, 2, 8, .check_relay = true}, {0x360, 0, 4, .check_relay = true}, {0x390, 0, 7, .check_relay = true}};
 
   static RxCheck rivian_rx_checks[] = {
     {.msg = {{0x208, 0, 8, 50U, .max_counter = 14U}, { 0 }, { 0 }}},                                                             // ESP_Status (speed)
