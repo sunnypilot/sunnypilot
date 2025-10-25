@@ -134,6 +134,7 @@ sunnypilot Version 2025.001.000 (2025-10-25)
   * @michael-was-taken made their first contribution in "Reorder README tables: show -new branches first (#1191)"
   * @dzid26 made their first contribution in "params: Fix loading delay on startup (#1297)"
   * @HazZelnutz made their first contribution in "Visuals: Turn signals on screen when blinker is used (#1291)"
+  * @sirmuskrat made their first contribution in "ui: openpilot Longitudinal Control → sunnypilot Longitudinal Control (#1422)"
 * New Contributors (sunnypilot/opendbc)
   * @chrispypatt made their first contribution in "Toyota: SecOC Longitudinal Control (sunnypilot/opendbc#93)"
   * @Discountchubbs made their first contribution in "Hyundai: EPS FW For 2022 KIA_NIRO_EV SCC (sunnypilot/opendbc#118)"
