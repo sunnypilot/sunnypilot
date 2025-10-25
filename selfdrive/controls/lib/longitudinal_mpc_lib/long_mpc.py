@@ -336,20 +336,20 @@ class LongitudinalMpc:
 
     if self.dynamic_follow.is_enabled():
       t_follow = self.dynamic_follow.get_follow_distance_multiplier(v_ego)
-      print(f"DEBUG: dynamic_follow enabled, t_follow={t_follow:.3f}, v_ego={v_ego:.2f}, v_cruise={v_cruise:.2f}")
+      #print(f"DEBUG: dynamic_follow enabled, t_follow={t_follow:.3f}, v_ego={v_ego:.2f}, v_cruise={v_cruise:.2f}")
     else:
       t_follow = get_T_FOLLOW(personality)
-      print(f"DEBUG: dynamic_follow disabled, using personality t_follow={t_follow:.3f}, personality={personality}")
+      #print(f"DEBUG: dynamic_follow disabled, using personality t_follow={t_follow:.3f}, personality={personality}")
 
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     # Get acceleration limits
     if self.accel_controller.is_enabled():
       min_accel = self.accel_controller.get_min_accel(v_ego)
-      print(f"DEBUG: accel_enabled=True, min_accel={min_accel:.3f}")
+      #print(f"DEBUG: accel_enabled=True, min_accel={min_accel:.3f}")
     else:
       min_accel = CRUISE_MIN_ACCEL
-      print(f"DEBUG: accel_enabled=False, using stock min_accel={min_accel}")
+      #print(f"DEBUG: accel_enabled=False, using stock min_accel={min_accel}")
 
     a_cruise_min = min_accel
 
