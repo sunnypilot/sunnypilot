@@ -4,17 +4,22 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from cereal import custom
 
+import pytest
+
+from cereal import custom
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.rivian.values import CAR as RIVIAN
+from opendbc.car.tesla.values import CAR as TESLA
 from opendbc.car.toyota.values import CAR as TOYOTA
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
   PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
@@ -30,15 +35,29 @@ SPEED_LIMITS = {
   'freeway': 80 * CV.MPH_TO_MS,      # 80 mph
 }
 
+DEFAULT_CAR = TOYOTA.TOYOTA_RAV4_TSS2
+
+
+@pytest.fixture
+def car_name(request):
+  return getattr(request, "param", DEFAULT_CAR)
+
+
+@pytest.fixture(autouse=True)
+def set_car_name_on_instance(request, car_name):
+  instance = getattr(request, "instance", None)
+  if instance:
+    instance.car_name = car_name
+
 
 class TestSpeedLimitAssist:
 
-  def setup_method(self):
+  def setup_method(self, method):
     self.params = Params()
     self.reset_custom_params()
     self.events_sp = EventsSP()
-    CI = self._setup_platform(TOYOTA.TOYOTA_RAV4_TSS2)
-    self.sla = SpeedLimitAssist(CI.CP)
+    CI = self._setup_platform(self.car_name)
+    self.sla = SpeedLimitAssist(CI.CP, CI.CP_SP)
     self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD[self.sla.pcm_op_long] / DT_MDL)
     self.pcm_long_max_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric][1]  # use 80 MPH for now
     self.speed_conv = CV.MS_TO_KPH if self.sla.is_metric else CV.MS_TO_MPH
@@ -51,10 +70,12 @@ class TestSpeedLimitAssist:
     CP = CarInterface.get_non_essential_params(car_name)
     CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
     CI = CarInterface(CP, CP_SP)
+    CI.CP.openpilotLongitudinalControl = True  # always assume it's openpilot longitudinal
     sunnypilot_interfaces.setup_interfaces(CI, self.params)
     return CI
 
   def reset_custom_params(self):
+    self.params.put("IsReleaseSpBranch", True)
     self.params.put("SpeedLimitMode", int(Mode.assist))
     self.params.put_bool("IsMetric", False)
     self.params.put("SpeedLimitOffsetType", 0)
@@ -83,6 +104,22 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_enabled
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
+
+  @pytest.mark.parametrize("car_name", [RIVIAN.RIVIAN_R1_GEN1, TESLA.TESLA_MODEL_Y], indirect=True)
+  def test_disallowed_brands(self, car_name):
+    """
+      Speed Limit Assist is disabled for the following brands and conditions:
+      - All Tesla and is a release branch;
+      - All Rivian
+    """
+    assert not self.sla.enabled
+
+    # stay disallowed even when the param may have changed from somewhere else
+    self.params.put("SpeedLimitMode", int(Mode.assist))
+    for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL)):
+      self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
+                      SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert not self.sla.enabled
 
   def test_disabled(self):
     self.params.put("SpeedLimitMode", int(Mode.off))

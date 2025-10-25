@@ -17,10 +17,12 @@ sunnypilot Version 2025.001.000 (2025-10-25)
     * Intelligent longitudinal control adaptation
   * Speed Limit Assist (SLA)
     * Comprehensive speed limit integration featuring @pfeiferj's `mapd` for offline map limits downloads, a Speed Limit Resolver for sourcing data (from car, map, combined, etc), on-screen UI for Speed Limit Information/Warning, and Speed Limit Assist (SLA) to adjust cruise speed automatically.
+    * Currently disabled for Tesla with sunnypilot Longitudinal Control in release and Rivian with sunnypilot Longitudinal Control in all branches
+      * May return in future releases
   * Intelligent Cruise Button Management (ICBM)
     * System designed to manage the vehicle’s speed by sending cruise control button commands to the car’s ECU.
   * Smart Cruise Control Map & Vision (SCC-M / SCC-V)
-    * When using any form of long control (openpilot longitudinal or ICBM) it will control the speed at which you enter and perform a turn by leveraging map data (SCC-M) and/or by leveraging what the model sees about the curve ahead (SCC-V)
+    * When using any form of long control (sunnypilot longitudinal control or ICBM) it will control the speed at which you enter and perform a turn by leveraging map data (SCC-M) and/or by leveraging what the model sees about the curve ahead (SCC-V)
   * Vehicle Selector
     * If your vehicle isn’t fingerprinted automatically, you can still use the vehicle selector to get it working
   * sunnylink Integration
@@ -132,6 +134,7 @@ sunnypilot Version 2025.001.000 (2025-10-25)
   * @michael-was-taken made their first contribution in "Reorder README tables: show -new branches first (#1191)"
   * @dzid26 made their first contribution in "params: Fix loading delay on startup (#1297)"
   * @HazZelnutz made their first contribution in "Visuals: Turn signals on screen when blinker is used (#1291)"
+  * @sirmuskrat made their first contribution in "ui: openpilot Longitudinal Control → sunnypilot Longitudinal Control (#1422)"
 * New Contributors (sunnypilot/opendbc)
   * @chrispypatt made their first contribution in "Toyota: SecOC Longitudinal Control (sunnypilot/opendbc#93)"
   * @Discountchubbs made their first contribution in "Hyundai: EPS FW For 2022 KIA_NIRO_EV SCC (sunnypilot/opendbc#118)"

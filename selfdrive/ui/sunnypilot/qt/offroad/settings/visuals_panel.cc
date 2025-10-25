@@ -119,7 +119,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
   chevron_info_settings = new ButtonParamControlSP(
-    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
+    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
     "",
     chevron_info_settings_texts,
     200);
@@ -159,8 +159,8 @@ void VisualsPanel::refreshLongitudinalStatus() {
   }
 
   if (chevron_info_settings) {
-    QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).");
-    QString chevronNoLongDescription = tr("This feature requires openpilot longitudinal control to be available.");
+    QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control).");
+    QString chevronNoLongDescription = tr("This feature requires sunnypilot longitudinal control to be available.");
 
     if (has_longitudinal_control) {
       chevron_info_settings->setDescription(chevronEnabledDescription);
