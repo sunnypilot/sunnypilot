@@ -126,7 +126,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if mode == 'acc':
       if self.accel_controller.is_enabled():
         max_accel = self.accel_controller.get_max_accel(v_ego)
-        print(f"Vibe personality active - max accel: {max_accel:.3f}")
+        #print(f"Vibe personality active - max accel: {max_accel:.3f}")
         accel_clip = [ACCEL_MIN, max_accel]
       else:
         accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
