@@ -81,7 +81,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
   bool disable_updates = params.getBool("DisableUpdates");
-  bool is_release = params.getBool("IsReleaseBranch");
+  bool is_release = params.getBool("IsReleaseBranch") || params.getBool("IsReleaseSpBranch");
   bool is_tested = params.getBool("IsTestedBranch");
   bool is_development = params.getBool("IsDevelopmentBranch");
 
@@ -101,6 +101,9 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
   showAdvancedControls->setEnabled(true);
+
+  joystickToggle->setVisible(!is_release);
+  longManeuverToggle->setVisible(!is_release);
 }
 
 void DeveloperPanelSP::updateCopypartyPasswordButton() {
