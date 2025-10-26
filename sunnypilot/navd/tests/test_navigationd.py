@@ -66,5 +66,5 @@ class TestNavigationd:
     nav.route = {'580 Winchester dr, oxnard, CA': True}
     nav.cancel_route_counter = 30
     nav._update_params()
-    assert nav.route == None
-    assert nav.destination == None
+    assert nav.route is None
+    assert nav.destination is None
