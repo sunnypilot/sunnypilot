@@ -1,4 +1,5 @@
 import pytest
+import platform
 import json
 import random
 import time
@@ -10,6 +11,10 @@ from openpilot.common.params import Params
 from openpilot.common.transformations.coordinates import ecef2geodetic
 
 from openpilot.system.manager.process_config import managed_processes
+
+
+if platform.system() == 'Darwin':
+  pytest.skip("Skipping locationd test on macOS due to unsupported msgq.", allow_module_level=True)
 
 
 class TestLocationdProc:
