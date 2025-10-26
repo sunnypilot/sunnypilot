@@ -59,3 +59,12 @@ class TestNavigationd:
 
       assert received_msg.bannerInstructions == msg.navigationd.bannerInstructions
       assert received_msg.valid == msg.navigationd.valid
+
+  def test_cancel_route(self):
+    nav = Navigationd()
+    nav.last_position = Coordinate(latitude=37.0, longitude=128.0)
+    nav.route = {'580 Winchester dr, oxnard, CA': True}
+    nav.cancel_route_counter = 30
+    nav._update_params()
+    assert nav.route == None
+    assert nav.destination == None
