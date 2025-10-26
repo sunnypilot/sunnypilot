@@ -28,6 +28,7 @@ class Navigationd:
     self.recompute_allowed: bool = False
     self.allow_recompute: bool = False
     self.reroute_counter: int = 0
+    self.cancel_route_counter: int = 0
 
     self.frame: int = -1
     self.last_position: Coordinate | None = None
@@ -57,6 +58,12 @@ class Navigationd:
           self.route = self.nav_instructions.get_current_route()
           self.reroute_counter = 0
 
+      if self.cancel_route_counter == 30:
+        self.nav_instructions.clear_route_cache()
+        self.params.put('MapboxSettings', {"navData": {"current": {}, "route": {}}})
+        self.route = None
+        self.destination = None
+
       self.valid = self.route is not None
 
   def _update_navigation(self) -> tuple[str, dict | None, dict]:
@@ -74,14 +81,20 @@ class Navigationd:
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
+        large_distance = nav_data['distance_from_route'] > 100
+
+        if large_distance:
+          self.cancel_route_counter += 1
+          if self.recompute_allowed:
+            self.reroute_counter += 1
+        else:
+          self.cancel_route_counter = 0
+          self.reroute_counter = 0
 
         # Don't recompute in last segment to prevent reroute loops
         if self.route:
           if progress['current_step_idx'] == len(self.route['steps']) - 1:
             self.allow_recompute = False
-
-        if self.recompute_allowed:
-          self.reroute_counter += 1 if nav_data['distance_from_route'] > 100 else 0
 
     return banner_instructions, progress, nav_data
 
