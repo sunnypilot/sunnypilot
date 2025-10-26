@@ -1,3 +1,6 @@
+sunnypilot Version 2025.002.000 (2025-xx-xx)
+========================
+
 sunnypilot Version 2025.001.000 (2025-10-25)
 ========================
 * 🛠️ Major rewrite
