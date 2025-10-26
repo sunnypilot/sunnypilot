@@ -34,13 +34,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       false,
     },
     {
-      "DynamicExperimentalControl",
-      tr("Enable Dynamic Experimental Control"),
-      tr("Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal."),
-      "../assets/offroad/icon_blank.png",
-      false,
-    },
-    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage sunnypilot."),
@@ -195,7 +188,7 @@ void TogglesPanel::updateToggles() {
       const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
 
       QString long_desc = unavailable + " " + \
-                          tr("openpilot longitudinal control may come in a future update.");
+                          tr("sunnypilot longitudinal control may come in a future update.");
       if (CP.getAlphaLongitudinalAvailable()) {
         if (is_release) {
           long_desc = unavailable + " " + tr("An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.");

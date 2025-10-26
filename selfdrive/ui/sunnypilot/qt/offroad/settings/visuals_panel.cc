@@ -25,14 +25,69 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "BlindSpot",
       tr("Show Blind Spot Warnings"),
       tr("Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."),
-      "../assets/offroad/icon_monitoring.png",
+      "",
       false,
     },
     {
       "RainbowMode",
       tr("Enable Tesla Rainbow Mode"),
       RainbowizeWords(tr("A beautiful rainbow effect on the path the model wants to take.")) + "<br/><i>" + tr("It")+ " <b>" + tr("does not") + "</b> " + tr("affect driving in any way.") + "</i>",
-      "../assets/offroad/icon_monitoring.png",
+      "",
+      false,
+    },
+    {
+      "StandstillTimer",
+      tr("Enable Standstill Timer"),
+      tr("Show a timer on the HUD when the car is at a standstill."),
+      "",
+      false,
+    },
+    {
+      "RoadNameToggle",
+      tr("Display Road Name"),
+      tr("Displays the name of the road the car is traveling on. The OpenStreetMap database of the location must be downloaded from the OSM panel to fetch the road name."),
+      "",
+      false,
+    },
+    {
+      "GreenLightAlert",
+      tr("Green Traffic Light Alert (Beta)"),
+      QString("%1<br>"
+        "<h4>%2</h4><br>")
+        .arg(tr("A chime and on-screen alert will play when the traffic light you are waiting for turns green and you have no vehicle in front of you."))
+        .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "",
+      false,
+    },
+    {
+      "LeadDepartAlert",
+      tr("Lead Departure Alert (Beta)"),
+      QString("%1<br>"
+        "<h4>%2</h4><br>")
+        .arg(tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving."))
+        .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "",
+      false,
+    },
+    {
+      "TrueVEgoUI",
+      tr("Speedometer: Always Display True Speed"),
+      tr("Always display the true vehicle current speed from wheel speed sensors."),
+      "",
+      false,
+    },
+    {
+      "HideVEgoUI",
+      tr("Speedometer: Hide from Onroad Screen"),
+      tr("When enabled, the speedometer on the onroad screen is not displayed."),
+      "",
+      false,
+    },
+    {
+      "ShowTurnSignals",
+      tr("Display Turn Signals"),
+      tr("When enabled, visual turn indicators are drawn on the HUD."),
+      "",
       false,
     },
   };
@@ -64,7 +119,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
   chevron_info_settings = new ButtonParamControlSP(
-    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
+    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
     "",
     chevron_info_settings_texts,
     200);
@@ -85,6 +140,40 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   vlayout->addWidget(sunnypilotScroller);
 
   main_layout->addWidget(sunnypilotScreen);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &VisualsPanel::refreshLongitudinalStatus);
+
+  refreshLongitudinalStatus();
+}
+
+void VisualsPanel::refreshLongitudinalStatus() {
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    has_longitudinal_control = hasLongitudinalControl(CP);
+  } else {
+    has_longitudinal_control = false;
+  }
+
+  if (chevron_info_settings) {
+    QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control).");
+    QString chevronNoLongDescription = tr("This feature requires sunnypilot longitudinal control to be available.");
+
+    if (has_longitudinal_control) {
+      chevron_info_settings->setDescription(chevronEnabledDescription);
+    } else {
+      // Reset to "Off" when longitudinal not available
+      params.put("ChevronInfo", "0");
+      chevron_info_settings->setDescription(chevronNoLongDescription);
+    }
+
+    // Enable only when longitudinal is available
+    chevron_info_settings->setEnabled(has_longitudinal_control);
+    chevron_info_settings->refresh();
+  }
 }
 
 void VisualsPanel::paramsRefresh() {
