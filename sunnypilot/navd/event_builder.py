@@ -28,28 +28,21 @@ def build_navigation_events(sm) -> list:
 
 def _build_banner_message(nav_msg):
   m = nav_msg.allManeuvers[0]
-  banner = nav_msg.bannerInstructions
+  banner = m.instruction
+  dist = f'{int(m.distance)}m'
 
-  next_m = nav_msg.allManeuvers[1] if len(nav_msg.allManeuvers) > 1 else m
-  if next_m.modifier == 'sharp right' and 'Turn right' in banner:
-    banner = banner.replace('Turn right', 'Take a sharp right')
-  elif next_m.modifier == 'sharp left' and 'Turn left' in banner:
-    banner = banner.replace('Turn left', 'Take a sharp left')
-  elif next_m.modifier == 'slight right' and 'Turn right' in banner:
-    banner = banner.replace('Turn right', 'Take a slight right')
-  elif next_m.modifier == 'slight left' and 'Turn left' in banner:
-    banner = banner.replace('Turn left', 'Take a slight left')
-  elif next_m.modifier == 'uturn' and 'Turn' in banner:
-    banner = banner.replace('Turn', 'Make a U-turn', 1)
-
-  if 'Turn' in banner or 'Take' in banner or 'Make' in banner:
-    if 'onto' not in banner and 'onto' in m.instruction:
-      banner = m.instruction
-    base_msg = f"{banner} in {int(m.distance)}m"
-  elif 'arrive' in banner.lower() or 'destination' in banner.lower():
-    base_msg = f"In {int(m.distance)}m, {banner}"
+  if m.type == 'arrive':
+    base_msg = banner
+  elif m.modifier == 'left' and 'Turn left' not in banner:
+    base_msg = f'Turn left onto {banner} in {dist}'
+  elif m.modifier == 'right' and 'Turn right' not in banner:
+    base_msg = f'Turn right onto {banner} in {dist}'
+  elif 'Turn' in banner or 'Take' in banner or 'Make' in banner:
+    base_msg = f'{banner} in {dist}'
+  elif 'Continue' in banner:
+    base_msg = f'{banner} for {dist}'
   else:
-    base_msg = f"Continue on {banner} for {int(m.distance)}m"
+    base_msg = f'Continue on {banner} for {dist}'
 
   return base_msg
 
