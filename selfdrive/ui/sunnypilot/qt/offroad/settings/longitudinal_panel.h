@@ -18,13 +18,14 @@ class LongitudinalPanel : public QWidget {
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
   void refresh(bool _offroad);
 
 private:
   Params params;
   bool has_longitudinal_control = false;
   bool is_pcm_cruise = false;
-  bool intelligent_cruise_button_management_available = false;;
+  bool has_icbm = false;
   bool offroad = false;
 
   QStackedLayout *main_layout = nullptr;
@@ -34,6 +35,7 @@ private:
   ParamControl *SmartCruiseControlVision;
   ParamControl *SmartCruiseControlMap;
   ParamControl *intelligentCruiseButtonManagement = nullptr;
+  ParamControl *dynamicExperimentalControl = nullptr;
   SpeedLimitSettings *speedLimitScreen;
   PushButtonSP *speedLimitSettings;
 };

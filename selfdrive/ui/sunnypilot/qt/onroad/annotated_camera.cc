@@ -18,4 +18,10 @@ void AnnotatedCameraWidgetSP::updateState(const UIState &s) {
 void AnnotatedCameraWidgetSP::showEvent(QShowEvent *event) {
   AnnotatedCameraWidget::showEvent(event);
   ui_update_params_sp(uiState());
+  uiStateSP()->reset_onroad_sleep_timer(OnroadTimerStatusToggle::RESUME);
+}
+
+void AnnotatedCameraWidgetSP::hideEvent(QHideEvent *event) {
+  AnnotatedCameraWidget::hideEvent(event);
+  uiStateSP()->reset_onroad_sleep_timer(OnroadTimerStatusToggle::PAUSE);
 }
