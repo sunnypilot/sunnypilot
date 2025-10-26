@@ -79,7 +79,7 @@ jobs:
             is_stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
             echo "is_stable_branch=$is_stable_branch" >> $GITHUB_OUTPUT
 
-            stable_version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g');
+            stable_version=$(cat sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g');
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=${environment}" >> $GITHUB_OUTPUT
           fi
