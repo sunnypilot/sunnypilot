@@ -14,7 +14,7 @@ from openpilot.system.manager.process_config import managed_processes
 
 
 if platform.system() == 'Darwin':
-  pytest.skip("Skipping locationd test on macOS because msgq doesn't work.", allow_module_level=True)
+  pytest.skip("Skipping locationd test on macOS due to unsupported msgq.", allow_module_level=True)
 
 
 class TestLocationdProc:
