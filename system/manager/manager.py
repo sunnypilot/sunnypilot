@@ -20,7 +20,10 @@ from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
 
+from laica.system.manager import laica_manager_init
 
+
+@laica_manager_init
 def manager_init() -> None:
   save_bootlog()
 
