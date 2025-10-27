@@ -188,14 +188,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>가감속 제어 모드</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>openpilot 가감속 제어 (알파)</translation>
-    </message>
-    <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>경고: 이 차량에서 openpilot 가감속 제어는 알파 단계이며 자동 긴급 제동(AEB)을 비활성화합니다.</translation>
-    </message>
-    <message>
         <source>Enable ADB</source>
         <translation>ADB 사용</translation>
     </message>
@@ -204,10 +196,16 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>ADB(Android Debug Bridge)는 USB 또는 네트워크를 통해 기기에 연결할 수 있게 해줍니다. 자세한 내용은 https://docs.comma.ai/how-to/connect-to-comma 를 참고하세요.</translation>
     </message>
     <message>
-        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>이 차량에서는 openpilot의 가감속 제어 대신 sunnypilot이 차량의 내장 ACC를 기본값으로 사용합니다.
-이를 활성화하면 openpilot 가감속 제어로 전환합니다.
-openpilot 가감속 제어(알파)를 활성화할 때는 실험적 모드 활성화를 권장합니다.</translation>
+        <source>sunnypilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of sunnypilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -790,6 +788,10 @@ DEPARTING</source>
         <source>MAX</source>
         <translation>최대</translation>
     </message>
+    <message>
+        <source>STOPPED</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>HyundaiSettings</name>
@@ -810,10 +812,6 @@ DEPARTING</source>
         <translation>사용자 지정 가감속 튜닝</translation>
     </message>
     <message>
-        <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation>이 기능은 openpilot 가감속 제어가 활성화된 경우에만 사용할 수 있습니다.</translation>
-    </message>
-    <message>
         <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
         <translation>옵션을 선택하려면 기기 패널에서 &quot;항상 오프로드&quot;를 활성화하거나, 차량의 시동을 끄세요.</translation>
     </message>
@@ -830,8 +828,12 @@ DEPARTING</source>
         <translation>예측: 향후 주행 궤적 데이터를 활용해 필요한 조정을 미리 파악합니다.</translation>
     </message>
     <message>
-        <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation>openpilot 가감속 제어의 가속 부드러움을 조정하여 주행 경험을 세밀하게 조정하세요.</translation>
+        <source>This feature can only be used with sunnypilot longitudinal control enabled.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fine-tune your driving experience by adjusting acceleration smoothness with sunnypilot longitudinal control.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -928,10 +930,6 @@ DEPARTING</source>
         <translation>크루즈 속도 증가/감소 시 짧게 누르기 및 길게 누르기 단위를 개별 설정합니다.</translation>
     </message>
     <message>
-        <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation>이 기능은 openpilot의 가감속 제어가 활성화되어 있어야만 사용할 수 있습니다.</translation>
-    </message>
-    <message>
         <source>This feature is not supported on this platform due to vehicle limitations.</source>
         <translation>이 기능은 차량 제한으로 인해 이 플랫폼에서 지원되지 않습니다.</translation>
     </message>
@@ -966,6 +964,30 @@ DEPARTING</source>
     <message>
         <source>Speed Limit</source>
         <translation>속도 제한</translation>
+    </message>
+    <message>
+        <source>Dynamic Experimental Control (DEC)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
+        <translation type="unfinished">모델이 sunnypilot ACC 또는 sunnypilot End to End 가감속 제어를 언제 사용할지 결정하도록 토글을 활성화하세요.</translation>
+    </message>
+    <message>
+        <source>Intelligent Cruise Button Management is currently unavailable on this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disable the sunnypilot Longitudinal Control (alpha) toggle to allow Intelligent Cruise Button Management.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot Longitudinal Control is the default longitudinal control for this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This feature can only be used with sunnypilot longitudinal control enabled.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1582,6 +1604,34 @@ Warning: You are on a metered connection!</source>
     <message>
         <source>Time remaining: </source>
         <translation>남은 시간: </translation>
+    </message>
+    <message>
+        <source>Search Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all countries.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select Country</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter search keywords, or leave blank to list all states.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select State</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No results found for keywords: %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2293,6 +2343,37 @@ Data</source>
     </message>
 </context>
 <context>
+    <name>SubaruSettings</name>
+    <message>
+        <source>Stop and Go (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop and Go for Manual Parking Brake (Beta)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental feature to enable auto-resume during stop-and-go for certain supported Subaru platforms.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This feature is currently not available on this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start the car to check car compatibility.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to toggle.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>SunnylinkPanel</name>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
@@ -2540,10 +2621,6 @@ Data</source>
         <translation>차량의 순정 ACC가 가감속 제어에 사용되기 때문에, 이 차에서는 현재 실험 모드를 사용할 수 없습니다.</translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
-        <translation>openpilot의 가감속 제어 기능은 향후 업데이트에서 제공될 수 있습니다.</translation>
-    </message>
-    <message>
         <source>Aggressive</source>
         <translation>공격적</translation>
     </message>
@@ -2592,14 +2669,6 @@ Data</source>
         <translation>어댑티브 크루즈 컨트롤 및 차로 유지 운전자 보조를 위해 sunnypilot 시스템을 사용하세요. 이 기능을 사용하는 동안에는 항상 주의를 기울여야 합니다.</translation>
     </message>
     <message>
-        <source>Enable Dynamic Experimental Control</source>
-        <translation>동적 실험 제어 활성화</translation>
-    </message>
-    <message>
-        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
-        <translation>모델이 sunnypilot ACC 또는 sunnypilot End to End 가감속 제어를 언제 사용할지 결정하도록 토글을 활성화하세요.</translation>
-    </message>
-    <message>
         <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
         <translation>활성화하면, 가속 페달을 밟을 때 sunnypilot이 해제됩니다.</translation>
     </message>
@@ -2626,6 +2695,10 @@ Data</source>
     <message>
         <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
         <translation>실험 모드를 활성화하려면 sunnypilot 가감속 제어(알파) 토글을 켜세요.</translation>
+    </message>
+    <message>
+        <source>sunnypilot longitudinal control may come in a future update.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2736,10 +2809,6 @@ Data</source>
         <translation>역삼각형 아래에 측정 지표 표시</translation>
     </message>
     <message>
-        <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).</source>
-        <translation>앞차를 추적하는 역삼각형 아래에 유용한 측정 지표를 표시합니다. (openpilot 가감속 제어 기능이 있는 차량에만 해당됩니다)</translation>
-    </message>
-    <message>
         <source>Enable Tesla Rainbow Mode</source>
         <translation>테슬라 무지개 모드 사용</translation>
     </message>
@@ -2824,6 +2893,26 @@ Bottom</source>
     <message>
         <source>Display real-time parameters and metrics from various sources.</source>
         <translation>다양한 출처의 실시간 매개변수 및 측정 지표를 표시합니다.</translation>
+    </message>
+    <message>
+        <source>When enabled, the speedometer on the onroad screen is not displayed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display Turn Signals</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When enabled, visual turn indicators are drawn on the HUD.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This feature requires sunnypilot longitudinal control to be available.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
