@@ -192,6 +192,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   aTarget @5 :Float32;
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
+  accelPersonality @8 :AccelerationPersonality;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -203,7 +204,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       blended @1;
     }
   }
-
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
+  }
   struct SmartCruiseControl {
     vision @0 :Vision;
     map @1 :Map;
@@ -446,13 +451,14 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
 
 struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
-
+  leftLaneChangeEdgeBlock @1 :Bool;
+  rightLaneChangeEdgeBlock @2 :Bool;
+}
   enum TurnDirection {
     none @0;
     turnLeft @1;
     turnRight @2;
   }
-}
 
 struct CustomReserved10 @0xcb9fd56c7057593a {
 }

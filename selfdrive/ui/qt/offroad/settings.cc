@@ -106,7 +106,15 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                              "your steering wheel distance button."),
                                           "../assets/icons/speed_limit.png",
                                           longi_button_texts);
-
+  // accel controller
+  std::vector<QString> accel_personality_texts{tr("Sport"), tr("Normal"), tr("Eco")};
+  accel_personality_setting = new ButtonParamControlSP("AccelPersonality", tr("Acceleration Personality"),
+                                          tr("Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. "
+                                             "In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these "
+                                             "acceleration personality within Onroad Settings on the driving screen."),
+                                          "",
+                                          accel_personality_texts);
+  accel_personality_setting->showDescription();
   // set up uiState update for personality setting
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 
@@ -134,6 +142,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     // insert longitudinal personality after NDOG toggle
     if (param == "DisengageOnAccelerator") {
       addItem(long_personality_setting);
+      addItem(accel_personality_setting);
     }
   }
 
@@ -153,6 +162,13 @@ void TogglesPanel::updateState(const UIState &s) {
       long_personality_setting->setCheckedButton(static_cast<int>(personality));
     }
     uiState()->scene.personality = personality;
+  }
+  if (sm.updated("longitudinalPlanSP")) {
+    auto accel_personality = sm["longitudinalPlanSP"].getLongitudinalPlanSP().getAccelPersonality();
+    if (accel_personality != s.scene.accel_personality && s.scene.started && isVisible()) {
+      accel_personality_setting->setCheckedButton(static_cast<int>(accel_personality));
+    }
+    uiState()->scene.accel_personality = accel_personality;
   }
 }
 
@@ -200,10 +216,12 @@ void TogglesPanel::updateToggles() {
       experimental_mode_toggle->setEnabled(true);
       experimental_mode_toggle->setDescription(e2e_description);
       long_personality_setting->setEnabled(true);
+      accel_personality_setting->setEnabled(true);
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
       long_personality_setting->setEnabled(false);
+      accel_personality_setting->setEnabled(true);
       params.remove("ExperimentalMode");
 
       const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");

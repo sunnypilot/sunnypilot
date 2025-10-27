@@ -75,6 +75,22 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
+  // Acceleration Personality
+  AccelPersonalityControl = new ParamControlSP("AccelPersonalityEnabled",
+    tr("Acceleration Personality"),
+    tr("Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). "
+      "Adjust how aggressively the vehicle accelerates while maintaining smooth operation."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(AccelPersonalityControl);
+
+  // Dynamic Personality
+  DynamicPersonalityControl = new ParamControlSP("DynamicFollow",
+    tr("Following Distance Personality"),
+    tr("Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). "
+      "Fine-tune your comfort level in traffic situations."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(DynamicPersonalityControl);
+
   speedLimitSettings = new PushButtonSP(tr("Speed Limit"), 750, this);
   connect(speedLimitSettings, &QPushButton::clicked, [&]() {
     cruisePanelScroller->setLastScrollPosition();
@@ -164,6 +180,10 @@ void LongitudinalPanel::refresh(bool _offroad) {
     dynamicExperimentalControl->refresh();
     SmartCruiseControlVision->refresh();
     SmartCruiseControlMap->refresh();
+    AccelPersonalityControl->setEnabled(true);
+    DynamicPersonalityControl->setEnabled(true);
+    AccelPersonalityControl->refresh();
+    DynamicPersonalityControl->refresh();
   } else {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
