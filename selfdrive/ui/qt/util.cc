@@ -26,7 +26,8 @@ QString getVersion() {
   return version;
 }
 
-QString getBrand() {
+// Allow this function to be overridden by laica/ui/qt/util.cc
+__attribute__((weak)) QString getBrand() {
   return QObject::tr("sunnypilot");
 }
 

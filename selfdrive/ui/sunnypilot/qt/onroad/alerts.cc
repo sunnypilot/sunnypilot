@@ -12,7 +12,8 @@
 #include <QRect>
 #include <QFont>
 
-OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t started_frame) {
+// Allow this function to be overridden by laica/ui/qt/onroad/alerts.cc
+__attribute__((weak)) OnroadAlerts::Alert OnroadAlertsSP::getAlert(const SubMaster &sm, uint64_t started_frame) {
   OnroadAlerts::Alert alert = OnroadAlerts::getAlert(sm, started_frame);
   alert.text1.replace("openpilot", "sunnypilot");
   alert.text2.replace("openpilot", "sunnypilot");

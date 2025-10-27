@@ -1,0 +1,11 @@
+# Laica-specific UI overrides
+laica_qt_util = [
+  "qt/util.cc",
+]
+
+laica_qt_src = [
+  "qt/onroad/alerts.cc",
+]
+
+Export('laica_qt_util', 'laica_qt_src')
+

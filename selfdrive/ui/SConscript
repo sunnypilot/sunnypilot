@@ -18,10 +18,18 @@ if not GetOption('stock_ui'):
   SConscript(['sunnypilot/SConscript'])
   Import('sp_widgets_src', 'sp_qt_src', 'sp_qt_util')
 
+# Laica UI overrides
+laica_qt_util = []
+laica_qt_src = []
+SConscript(['../../laica/ui/SConscript'])
+Import('laica_qt_util', 'laica_qt_src')
+
 # FIXME: remove this once we're on 5.15 (24.04)
 qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
 
-qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"] + sp_qt_util, LIBS=base_libs)
+# Note: laica overrides are included FIRST so their symbols take precedence during linking
+# The base util.cc has weak symbols that will be overridden by laica's strong symbols
+qt_util = qt_env.Library("qt_util", [f"#laica/ui/{src}" for src in laica_qt_util] + ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"] + sp_qt_util, LIBS=base_libs)
 widgets_src = ["qt/widgets/input.cc", "qt/widgets/wifi.cc", "qt/prime_state.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
@@ -32,7 +40,8 @@ widgets = qt_env.Library("qt_widgets", widgets_src, LIBS=base_libs)
 Export('widgets')
 qt_libs = [widgets, qt_util] + base_libs
 
-qt_src = ["main.cc", "ui.cc", "qt/sidebar.cc", "qt/body.cc",
+# Note: laica overrides are included FIRST so their symbols take precedence during linking
+qt_src = [f"#laica/ui/{src}" for src in laica_qt_src] + ["main.cc", "ui.cc", "qt/sidebar.cc", "qt/body.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc", "qt/offroad/offroad_home.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/developer_panel.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc", "qt/offroad/firehose.cc",
