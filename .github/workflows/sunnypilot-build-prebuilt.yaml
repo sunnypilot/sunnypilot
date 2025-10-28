@@ -318,8 +318,11 @@ jobs:
           export VERSION="${{ needs.prepare_strategy.outputs.version }}"
           export branch_name="${{ env.SOURCE_BRANCH }}"
           export new_branch="${{ needs.prepare_strategy.outputs.new_branch }}"
+          export commit_sha="${{ github.sha }}"
+          export commit_short_sha="${{ github.sha }}"
+          export commit_short_sha="${commit_short_sha:0:7}"
           export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
-          export PUBLIC_REPO_URL="${{ vars.PUBLIC_REPO_URL }}"
+          export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
 
           MESSAGE=$(echo "${TEMPLATE}" | envsubst)
           echo "content<<EOF" >> $GITHUB_OUTPUT
