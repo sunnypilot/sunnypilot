@@ -41,7 +41,7 @@ def _build_banner_message(nav_msg):
   elif 'Continue' in banner:
     base_msg = f'{banner} for {dist}'
   else:
-    base_msg = f'Continue on {banner} for {dist}'
+    base_msg = f'{banner} for {dist}'
 
   return base_msg
 

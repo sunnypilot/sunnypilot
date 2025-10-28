@@ -61,6 +61,6 @@ class TestEventBuilder:
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'message': 'Continue on 1234 Apple Way for 80m'
+      'message': '1234 Apple Way for 80m'
     }]
     assert events == expected
