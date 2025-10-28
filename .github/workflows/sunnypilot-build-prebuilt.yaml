@@ -307,7 +307,7 @@ jobs:
 #    - build
 #    - publish
     runs-on: ubuntu-24.04
-    if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
+    #if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     steps:
       - uses: actions/checkout@v4
 
