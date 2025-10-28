@@ -35,7 +35,7 @@ runs:
       run: |
         # Create JSON payload
         PAYLOAD=$(jq -n \
-          --arg content "${{ inputs.message }}" \
+          --arg content '${{ inputs.message }}' \
           --arg topic_id "${{ inputs.topic-id }}" \
           '{topic_id: $topic_id, raw: $content}')
         
