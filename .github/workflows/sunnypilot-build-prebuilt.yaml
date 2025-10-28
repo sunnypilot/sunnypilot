@@ -304,11 +304,10 @@ jobs:
   notify:
     needs: 
     - prepare_strategy
-#    - build
-#    - publish
+    - build
+    - publish
     runs-on: ubuntu-24.04
-#    if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) && contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES), github.head_ref || github.ref_name) }}
-    if: ${{ (always() && !cancelled() && !failure()) && contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES), github.head_ref || github.ref_name) }}
+    if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) && contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES), github.head_ref || github.ref_name) }}
     steps:
       - uses: actions/checkout@v4
 
