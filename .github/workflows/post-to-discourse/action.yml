@@ -1,0 +1,69 @@
+name: 'Post to Discourse'
+description: 'Posts a message to a Discourse topic'
+
+inputs:
+  discourse-url:
+    description: 'Discourse instance URL (e.g., https://discourse.example.com)'
+    required: true
+  api-key:
+    description: 'Discourse API key'
+    required: true
+  api-username:
+    description: 'Discourse API username'
+    required: true
+  topic-id:
+    description: 'Discourse topic ID to post to'
+    required: true
+  message:
+    description: 'Message content (markdown supported)'
+    required: true
+
+outputs:
+  post-number:
+    description: 'The post number in the topic'
+    value: ${{ steps.post.outputs.post_number }}
+  post-url:
+    description: 'Direct URL to the post'
+    value: ${{ steps.post.outputs.post_url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Post to Discourse
+      id: post
+      shell: bash
+      run: |
+        # Create JSON payload
+        PAYLOAD=$(jq -n \
+          --arg content "${{ inputs.message }}" \
+          --arg topic_id "${{ inputs.topic-id }}" \
+          '{topic_id: $topic_id, raw: $content}')
+        
+        # Post to Discourse
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -X POST "${{ inputs.discourse-url }}/posts.json" \
+          -H "Content-Type: application/json" \
+          -H "Api-Key: ${{ inputs.api-key }}" \
+          -H "Api-Username: ${{ inputs.api-username }}" \
+          -d "$PAYLOAD")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          echo "✅ Successfully posted to Discourse!"
+          POST_NUMBER=$(echo "$BODY" | jq -r '.post_number // "unknown"')
+          POST_URL="${{ inputs.discourse-url }}/t/${{ inputs.topic-id }}/${POST_NUMBER}"
+        
+          echo "post_number=${POST_NUMBER}" >> $GITHUB_OUTPUT
+          echo "post_url=${POST_URL}" >> $GITHUB_OUTPUT
+        
+          echo "Topic ID: ${{ inputs.topic-id }}"
+          echo "Post number: ${POST_NUMBER}"
+          echo "URL: ${POST_URL}"
+        else
+          echo "❌ Failed to post to Discourse"
+          echo "HTTP Code: ${HTTP_CODE}"
+          echo "Response: ${BODY}"
+          exit 1
+        fi
