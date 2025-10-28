@@ -310,7 +310,7 @@ jobs:
     if: ${{ (always() && !cancelled() && !failure())
       && needs.publish.result == 'success'
       && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
-      && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES)[github.head_ref || github.ref_name] != null) }}
+      && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name] != null) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -345,7 +345,7 @@ jobs:
           discourse-url: ${{ vars.DISCOURSE_URL }}
           api-key: ${{ secrets.DISCOURSE_API_KEY }}
           api-username: "system"
-          topic-id: ${{ fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES)[github.head_ref || github.ref_name].topic_id }}
+          topic-id: ${{ fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name].topic_id }}
           message: ${{ steps.message.outputs.content }}
 
   manage-pr-labels:
