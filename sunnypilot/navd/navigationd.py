@@ -59,10 +59,10 @@ class Navigationd:
           self.reroute_counter = 0
 
       if self.cancel_route_counter == 30:
-        self.nav_instructions.clear_route_cache()
-        self.params.put('MapboxSettings', {"navData": {"current": {}, "route": {}}})
-        self.route = None
+        self.cancel_route_counter = 0
         self.destination = None
+        self.nav_instructions.clear_route_cache()
+        self.route = None
 
       self.valid = self.route is not None
 
