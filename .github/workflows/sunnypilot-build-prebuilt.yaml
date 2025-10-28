@@ -325,9 +325,11 @@ jobs:
           export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
 
           {
-              echo 'content<<EOFMARKER'
-              echo '${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}' | envsubst
-              echo 'EOFMARKER'
+            echo 'content<<EOFMARKER'
+            envsubst <<'TEMPLATE'
+            ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
+            TEMPLATE
+            echo 'EOFMARKER'
           } >> $GITHUB_OUTPUT
         shell: bash
 
