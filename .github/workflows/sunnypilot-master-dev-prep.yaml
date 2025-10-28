@@ -3,7 +3,7 @@ name: Build dev
 env:
   DEFAULT_SOURCE_BRANCH: "master"
   DEFAULT_TARGET_BRANCH: "master-dev"
-  PR_LABEL: "dev"
+  PR_LABEL: "dev-c3"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
