@@ -27,7 +27,7 @@ def build_navigation_events(sm) -> list:
 
 
 def _build_banner_message(nav_msg):
-  m = nav_msg.allManeuvers[0]
+  m = nav_msg.allManeuvers[1]
   banner = m.instruction
   dist = f'{int(m.distance)}m'
 
