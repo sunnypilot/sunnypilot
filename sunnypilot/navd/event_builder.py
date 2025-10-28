@@ -48,8 +48,8 @@ def _build_banner_message(nav_msg):
 
 def _get_turning_message(upcoming_turn):
   turn_messages = {
-    'left': 'Turning Left',
-    'right': 'Turning Right',
+    'left': 'Turning Left. Make sure to nudge the wheel!',
+    'right': 'Turning Right. Make sure to nudge the wheel!',
     'slightLeft': 'Keeping Left',
     'slightRight': 'Keeping Right',
     'sharpLeft': 'Sharp Left Turn',
