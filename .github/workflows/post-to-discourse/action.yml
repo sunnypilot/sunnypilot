@@ -35,8 +35,8 @@ runs:
       run: |
         # Create JSON payload
         PAYLOAD=$(jq -n \
-          --arg content ${{ toJson(inputs.message) }} \
-          --arg topic_id ${{ toJson(inputs.topic-id) }} \
+          --arg content "${{ inputs.message }}" \
+          --arg topic_id "${{ inputs.topic-id }}" \
           '{topic_id: $topic_id, raw: $content}')
         
         # Post to Discourse
