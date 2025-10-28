@@ -14,7 +14,7 @@ from openpilot.common.swaglog import cloudlog
 AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
-MAXMAX_ACCEL_PROFILES = {
+MAX_ACCEL_PROFILES = {
   AccelPersonality.eco:       [2.0,  1.99,  1.92, .850, .500, .33, .23, .125],   # eco
   AccelPersonality.normal:    [2.0,  1.99,  1.92, .850, .500, .33, .23, .125],   # normal
   AccelPersonality.sport:     [2.0,  2.00,  1.97, 1.00, .635, .48, .31, .165],    # sport
