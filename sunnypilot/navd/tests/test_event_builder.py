@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from cereal import custom
 
 from openpilot.sunnypilot.navd.event_builder import build_navigation_events
@@ -16,13 +22,13 @@ class TestEventBuilder:
     nav_msg.valid = True
     nav_msg.upcomingTurn = 'none'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=192.848, type='turn', modifier='right', instruction='West Esplanade Drive'),
+      custom.Navigationd.Maneuver.new_message(distance=192.84873284, type='turn', modifier='left', instruction='West Esplanade Drive'),
+      custom.Navigationd.Maneuver.new_message(distance=192.84809314, type='turn', modifier='right', instruction='West Esplanade Drive'),
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'type': 'warning',
       'message': 'Turn right onto West Esplanade Drive in 192m',
     }]
     assert events == expected
@@ -32,30 +38,14 @@ class TestEventBuilder:
     nav_msg.valid = True
     nav_msg.upcomingTurn = 'left'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='left', instruction='Turn left')
+      custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='right', instruction='950 Fremont Ave'),
+      custom.Navigationd.Maneuver.new_message(distance=50.0, type='turn', modifier='left', instruction='950 Fremont Ave'),
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'type': 'warning',
       'message': 'Turning Left',
-    }]
-    assert events == expected
-
-  def test_sharp_turn_enhancement(self):
-    nav_msg = custom.Navigationd.new_message()
-    nav_msg.valid = True
-    nav_msg.upcomingTurn = 'none'
-    nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=300.0, type='turn', modifier='none', instruction='Take a sharp right onto Main St'),
-    ]
-
-    events = build_navigation_events(MockSM(nav_msg))
-    expected = [{
-      'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'type': 'warning',
-      'message': 'Take a sharp right onto Main St in 300m',
     }]
     assert events == expected
 
@@ -64,13 +54,13 @@ class TestEventBuilder:
     nav_msg.valid = True
     nav_msg.upcomingTurn = 'none'
     nav_msg.allManeuvers = [
-      custom.Navigationd.Maneuver.new_message(distance=100.0, type='continue', modifier='straight', instruction='1234 Apple Way'),
+      custom.Navigationd.Maneuver.new_message(distance=100.0, type='right', modifier='Turn right', instruction='1234 Apple Way'),
+      custom.Navigationd.Maneuver.new_message(distance=80.0, type='continue', modifier='straight', instruction='1234 Apple Way'),
     ]
 
     events = build_navigation_events(MockSM(nav_msg))
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'type': 'warning',
-      'message': 'Continue on 1234 Apple Way for 100m'
+      'message': 'Continue on 1234 Apple Way for 80m'
     }]
     assert events == expected

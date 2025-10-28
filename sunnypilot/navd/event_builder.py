@@ -21,7 +21,6 @@ def build_navigation_events(sm) -> list:
 
   return [{
     'name': custom.OnroadEventSP.EventName.navigationBanner,
-    'type': 'warning',
     'message': banner_message,
   }]
 
