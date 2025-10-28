@@ -302,7 +302,10 @@ jobs:
             git push -f origin ${TAG}
 
   notify:
-    needs: [ build, publish ]
+    needs: 
+    - prepare_strategy
+#    - build
+#    - publish
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
     steps:
@@ -312,10 +315,10 @@ jobs:
         id: message
         run: |
           TEMPLATE='${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}'
-          export VERSION="${{ needs.build.outputs.version }}"
+          export VERSION="${{ needs.prepare_strategy.outputs.version }}"
           export branch_name="${{ env.SOURCE_BRANCH }}"
-          export new_branch="${{ needs.build.outputs.new_branch }}"
-          export extra_version_identifier="${{ needs.build.outputs.extra_version_identifier || github.run_number }}"
+          export new_branch="${{ needs.prepare_strategy.outputs.new_branch }}"
+          export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
           export PUBLIC_REPO_URL="${{ vars.PUBLIC_REPO_URL }}"
 
           MESSAGE=$(echo "${TEMPLATE}" | envsubst)
