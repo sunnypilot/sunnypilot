@@ -35,10 +35,15 @@ class NavigationDesires:
         self.desire = log.Desire.keepLeft
       elif upcoming == 'slightRight' and (not CS.rightBlindspot or CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.keepRight
-      elif upcoming == 'left' and not CS.rightBlinker and not CS.leftBlindspot and CS.vEgo < self._turn_speed_limit:
+      elif (upcoming == 'left' and CS.steeringPressed and CS.steeringTorque > 0 and not CS.rightBlinker
+            and not CS.leftBlindspot and CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.turnLeft
-      elif upcoming == 'right' and not CS.leftBlinker and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit:
+      elif (upcoming == 'right' and CS.steeringPressed and CS.steeringTorque < 0 and not CS.leftBlinker
+            and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.turnRight
+
+  # Note to reviewers: This change to require steering pressed (nudge basically) is intentional to prevent unwanted turns
+  # for those who don't have blind spot detection.
 
   def get_desire(self) -> log.Desire:
     return self.desire

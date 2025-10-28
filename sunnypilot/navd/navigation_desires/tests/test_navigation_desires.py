@@ -26,9 +26,9 @@ NAVIGATION_PARAMS: list[tuple] = [
   ('slightRight', make_car(), log.Desire.keepRight),
   ('slightLeft', make_car(vEgo=9, leftBlindspot=True), log.Desire.none),
   ('slightRight', make_car(vEgo=9, rightBlindspot=True), log.Desire.none),
-  ('left', make_car(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False), log.Desire.turnLeft),
+  ('left', make_car(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, steeringPressed=True, steeringTorque=1), log.Desire.turnLeft),
   ('left', make_car(vEgo=5, leftBlinker=False, rightBlinker=True), log.Desire.none),
-  ('right', make_car(vEgo=6, rightBlinker=True, leftBlindspot=False), log.Desire.turnRight),
+  ('right', make_car(vEgo=6, rightBlinker=True, leftBlindspot=False, steeringPressed=True, steeringTorque=-1), log.Desire.turnRight),
   ('right', make_car(vEgo=6, rightBlinker=True, rightBlindspot=True), log.Desire.none),
   ('left', make_car(vEgo=9, leftBlinker=True), log.Desire.none),
 ]
@@ -75,7 +75,7 @@ def test_update(mock_submaster, mocker):
   mock_submaster.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming='left'))
   nav_desires = NavigationDesires()
 
-  nav_desires.update(make_car(leftBlinker=True), True)
+  nav_desires.update(make_car(leftBlinker=True, steeringPressed=True, steeringTorque=1), True)
   assert nav_desires.get_desire() == log.Desire.turnLeft
 
   params_setter(False)
