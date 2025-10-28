@@ -30,16 +30,22 @@ def _build_banner_message(nav_msg):
   banner = m.instruction
   dist = f'{int(m.distance)}m'
 
-  if m.type == 'arrive':
+  if m.type == 'arrive' or m.type == 'depart':
     base_msg = banner
-  elif m.modifier == 'left' and 'Turn left' not in banner:
-    base_msg = f'Turn left onto {banner} in {dist}'
-  elif m.modifier == 'right' and 'Turn right' not in banner:
-    base_msg = f'Turn right onto {banner} in {dist}'
+  elif banner.startswith(('Continue', 'Drive', 'Head')):
+    base_msg = f'{banner} for {dist}'
+
+  # Not sure how I feel about these two below conditions right now.
+
+  # elif m.modifier == 'left' and 'Turn left' not in banner:
+  #   base_msg = f'Turn left onto {banner} in {dist}'
+  # elif m.modifier == 'right' and 'Turn right' not in banner:
+  #   base_msg = f'Turn right onto {banner} in {dist}'
+
   elif 'Turn' in banner or 'Take' in banner or 'Make' in banner:
     base_msg = f'{banner} in {dist}'
   else:
-    base_msg = f'{banner} for {dist}'
+    base_msg = f'Continue on {banner} for {dist}'
 
   return base_msg
 
