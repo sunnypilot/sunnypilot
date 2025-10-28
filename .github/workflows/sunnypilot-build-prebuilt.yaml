@@ -324,11 +324,14 @@ jobs:
           export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
           export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
 
+          MESSAGE=$(cat << 'EOF' | envsubst
+          ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
+          EOF
+          )
+          
           {
             echo 'content<<EOFMARKER'
-            envsubst <<'TEMPLATE'
-            ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
-            TEMPLATE
+            echo "$MESSAGE"
             echo 'EOFMARKER'
           } >> $GITHUB_OUTPUT
         shell: bash
