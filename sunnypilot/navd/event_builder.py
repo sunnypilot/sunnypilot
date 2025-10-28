@@ -38,8 +38,6 @@ def _build_banner_message(nav_msg):
     base_msg = f'Turn right onto {banner} in {dist}'
   elif 'Turn' in banner or 'Take' in banner or 'Make' in banner:
     base_msg = f'{banner} in {dist}'
-  elif 'Continue' in banner:
-    base_msg = f'{banner} for {dist}'
   else:
     base_msg = f'{banner} for {dist}'
 
