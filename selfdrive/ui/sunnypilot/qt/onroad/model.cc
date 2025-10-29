@@ -41,6 +41,7 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
   const auto &radar_state = sm["radarState"].getRadarState();
   const auto &lead_one = radar_state.getLeadOne();
   const auto &car_state = sm["carState"].getCarState();
+  const auto &car_control = sm["carControl"].getCarControl();
 
   update_model(model, lead_one);
   drawLaneLines(painter);
@@ -66,6 +67,11 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
     const bool left_blindspot = car_state.getLeftBlindspot();
     const bool right_blindspot = car_state.getRightBlindspot();
     drawBlindspot(painter, surface_rect, left_blindspot, right_blindspot);
+  }
+
+  if (s->scene.rocket_fuel) {
+    float accel = car_control.getActuators().getAccel();
+    drawRocketFuel(painter, surface_rect, accel);
   }
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
@@ -251,4 +257,21 @@ void ModelRendererSP::drawRainbowPath(QPainter &painter, const QRect &surface_re
 
   painter.setBrush(bg);
   painter.drawPolygon(track_vertices);
+}
+
+void ModelRendererSP::drawRocketFuel(QPainter &painter, const QRect &surface_rect, float accel) {
+  int widgetHeight = surface_rect.height();
+  float halfHeightAbs = std::abs(accel) * widgetHeight / 2.0f;
+  const float scannerWidth = 15;
+  QRect scannerRect;
+
+  if (accel > 0) {
+    painter.setBrush(QColor(0, 245, 0, 200));
+    scannerRect = QRect(0, widgetHeight / 2 - halfHeightAbs, scannerWidth, halfHeightAbs);
+  } else {
+    painter.setBrush(QColor(245, 0, 0, 200));
+    scannerRect = QRect(0, widgetHeight / 2, scannerWidth, halfHeightAbs);
+  }
+
+  painter.drawRect(scannerRect);
 }
