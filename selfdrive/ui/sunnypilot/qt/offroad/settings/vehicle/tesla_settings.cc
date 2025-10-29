@@ -11,16 +11,21 @@
 
 TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   constexpr int coopSteeringMinKmh = 23; // minimum speed for cooperative steering (enforced by Tesla firmware)
+  constexpr int oemSteeringMinKmh = 48; // minimum speed for OEM lane departure avoidance (enforced by Tesla firmware)
   bool is_metric = params.getBool("IsMetric");
   QString unit = is_metric ? "km/h" : "mph";
-  int display_value;
+  int display_value_coop;
+  int display_value_oem;
   if (is_metric) {
-    display_value = coopSteeringMinKmh;
+    display_value_coop = coopSteeringMinKmh;
+    display_value_oem = oemSteeringMinKmh;
   } else {
-    display_value = static_cast<int>(std::round(coopSteeringMinKmh * KM_TO_MILE));
+    display_value_coop = static_cast<int>(std::round(coopSteeringMinKmh * KM_TO_MILE));
+    display_value_oem = static_cast<int>(std::round(oemSteeringMinKmh * KM_TO_MILE));
   }
-  const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged. Only works above %1 %2.")
-                                .arg(display_value)
+  const QString coop_desc = tr("Allows the driver to provide limited steering input while openpilot is engaged.\n\nOnly works above %1 %3.\n\nWarning: May experience steering oscillations below %2 %3 during turns, recommend disabling if you experience these.")
+                                .arg(display_value_coop)
+                                .arg(display_value_oem)
                                 .arg(unit);
 
   coopSteeringToggle = new ParamControlSP(
@@ -32,6 +37,7 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   );
   list->addItem(coopSteeringToggle);
   coopSteeringToggle->showDescription();
+  coopSteeringToggle->setConfirmation(true, false);
 }
 
 void TeslaSettings::updateSettings() {
