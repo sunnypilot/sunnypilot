@@ -4,7 +4,7 @@ from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
-from openpilot.sunnypilot.navd.event_builder import build_navigation_events
+from openpilot.sunnypilot.navd.event_builder import EventBuilder
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -57,7 +57,7 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
 
 
 def navigation_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  events = build_navigation_events(sm)
+  events = EventBuilder.build_navigation_events(sm, metric)
   if not events:
     return Alert("", "", AlertStatus.normal, AlertSize.none, Priority.LOWEST, VisualAlert.none, AudibleAlert.none, 0.)
 
