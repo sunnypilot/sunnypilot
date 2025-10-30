@@ -31,8 +31,7 @@ class EventBuilder:
       if m.distance < NAV_CV.POINT_ONE_MILE:
         dist = f'{round((m.distance * NAV_CV.METERS_TO_FEET) / 50) * 50}ft,'
 
-
-    if m.type == 'arrive' or m.type == 'depart':
+    if m.type == 'arrive' or m.type == 'depart' or 'Your destination' in banner:
       base_msg = banner
     elif banner.startswith(('Continue', 'Drive', 'Head')):
       base_msg = f'For {dist} {banner}'
@@ -64,8 +63,6 @@ class EventBuilder:
       return []
 
     banner_message = EventBuilder._build_banner_message(metric, nav_msg)
-    if not banner_message:
-      return []
 
     if nav_msg.upcomingTurn != 'none':
       banner_message = EventBuilder._get_turning_message(nav_msg.upcomingTurn)
