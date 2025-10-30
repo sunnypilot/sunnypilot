@@ -19,7 +19,7 @@ class EventBuilder:
 
   @staticmethod
   def _build_banner_message(metric: bool, nav_msg):
-    m = nav_msg.allManeuvers[1]
+    m = nav_msg.allManeuvers[-1]
     banner = m.instruction
 
     if metric:
