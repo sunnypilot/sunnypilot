@@ -61,6 +61,16 @@ class TestEventBuilder:
     }]
     assert events == expected
 
+  def test_distance_condition_imperial(self):
+    nav_msg = self.create_nav_msg()
+    nav_msg.allManeuvers[1] = custom.Navigationd.Maneuver.new_message(distance=160.0, type='continue', modifier='straight', instruction='1234 Apple Way')
+    events = EventBuilder.build_navigation_events(MockSM(nav_msg), False)
+    expected = [{
+      'name': custom.OnroadEventSP.EventName.navigationBanner,
+      'message': 'For 500ft, Continue on 1234 Apple Way',
+    }]
+    assert events == expected
+
   def test_upcoming_turn_override(self):
     nav_msg = self.create_nav_msg(upcoming_turn='left')
     events = EventBuilder.build_navigation_events(MockSM(nav_msg))

@@ -28,8 +28,11 @@ class EventBuilder:
         dist = f'{int(m.distance)}m,'
     else:
       dist = f'{m.distance / NAV_CV.METERS_TO_MILE:.1f} mi,'
-      if m.distance < NAV_CV.QUARTER_MILE:
-        dist = f'{int(m.distance * NAV_CV.METERS_TO_FEET)}ft,'
+      if m.distance < NAV_CV.POINT_ONE_MILE:
+        if m.distance * NAV_CV.METERS_TO_FEET < 250.0:
+          dist = f'{round((m.distance * NAV_CV.METERS_TO_FEET) / 50) * 50}ft,'
+        else:
+          dist = f'{round((m.distance * NAV_CV.METERS_TO_FEET) / 100) * 100}ft,'
 
     if m.type == 'arrive' or m.type == 'depart':
       base_msg = banner
