@@ -28,7 +28,7 @@ class EventBuilder:
         dist = f'{int(m.distance)}m,'
     else:
       dist = f'{m.distance / NAV_CV.METERS_TO_MILE:.1f} mi,'
-      if (m.distance * NAV_CV.METERS_TO_FEET) < NAV_CV.QUARTER_MILE:
+      if m.distance < NAV_CV.QUARTER_MILE:
         dist = f'{int(m.distance * NAV_CV.METERS_TO_FEET)}ft,'
 
     if m.type == 'arrive' or m.type == 'depart':
