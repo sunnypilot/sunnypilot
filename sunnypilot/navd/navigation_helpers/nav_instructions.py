@@ -83,7 +83,7 @@ class NavigationInstructions:
         'maneuver': step['maneuver'],
         'location': location,
         'cumulative_distance': cumulative_distances[closest_idx],
-        'maxspeed': maxspeed[min(closest_idx, len(maxspeed) - 1)],
+        'maxspeed': maxspeed[min(closest_idx, len(maxspeed) - 1)] if len(maxspeed) > 0 else (0, 'kmh'),
         'modifier': string_to_direction(step['modifier']),
         'instruction': step['instruction'],
       })

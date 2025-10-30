@@ -33,7 +33,7 @@ private:
 
   static QString toggleDisableMsg(bool _offroad, bool _has_longitudinal_control) {
     if (!_has_longitudinal_control) {
-      return tr("This feature can only be used with openpilot longitudinal control enabled.");
+      return tr("This feature can only be used with sunnypilot longitudinal control enabled.");
     }
 
     if (!_offroad) {
@@ -57,7 +57,7 @@ private:
     }
 
     return QString("%1<br><br>%2<br>%3<br>%4<br>")
-             .arg(tr("Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control."))
+             .arg(tr("Fine-tune your driving experience by adjusting acceleration smoothness with sunnypilot longitudinal control."))
              .arg(off_str)
              .arg(dynamic_str)
              .arg(predictive_str);
