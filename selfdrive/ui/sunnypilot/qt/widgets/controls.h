@@ -390,7 +390,7 @@ class ButtonParamControlSP : public MultiButtonControlSP {
   Q_OBJECT
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false, bool advancedControl = false) : MultiButtonControlSP(title, desc, icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 380, const bool inline_layout = false, bool advancedControl = false) : MultiButtonControlSP(title, desc, icon,
                                                                                                                           button_texts, minimum_button_width, inline_layout, advancedControl) {
     key = param.toStdString();
     int value = atoi(params.get(key).c_str());

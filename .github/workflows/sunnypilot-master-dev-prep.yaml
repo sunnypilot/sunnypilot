@@ -3,7 +3,6 @@ name: Build dev
 env:
   DEFAULT_SOURCE_BRANCH: "master"
   DEFAULT_TARGET_BRANCH: "master-dev"
-  PR_LABEL: "dev"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
@@ -119,7 +118,7 @@ jobs:
           # Use GitHub API to get PRs with specific label, ordered by creation date
           PR_LIST=$(gh api graphql -f query='
             query($search_query:String!) {
-              search(query: $search_query, type:ISSUE, first:100) {
+              search(query: $search_query, type:ISSUE, first:40) {
                 nodes {
                   ... on PullRequest {
                     number
@@ -149,7 +148,7 @@ jobs:
                   }
                 }
               }
-            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${PR_LABEL},${PR_LABEL}-c3 draft:false sort:created-asc")
+            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${{ vars.PREBUILT_PR_LABEL }},${{ vars.PREBUILT_PR_LABEL }}-c3 draft:false sort:created-asc")
 
           PR_LIST=${PR_LIST//\'/}
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT

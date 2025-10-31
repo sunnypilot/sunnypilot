@@ -10,13 +10,13 @@ from cereal import custom, car
 from openpilot.common.params import Params
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
-from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target, set_speed_limit_assist_availability
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventNameSP = custom.OnroadEventSP.EventName
@@ -38,7 +38,7 @@ LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers
 LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
 LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on limit controllers.
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
-V_CRUISE_UNSET = 255
+V_CRUISE_UNSET = 255.
 
 CRUISE_BUTTONS_PLUS = (ButtonType.accelCruise, ButtonType.resumeCruise)
 CRUISE_BUTTONS_MINUS = (ButtonType.decelCruise, ButtonType.setCruise)
@@ -52,13 +52,15 @@ class SpeedLimitAssist:
   a_ego: float
   v_offset: float
 
-  def __init__(self, CP):
+  def __init__(self, CP: car.CarParams, CP_SP: custom.CarParamsSP):
     self.params = Params()
     self.CP = CP
+    self.CP_SP = CP_SP
     self.frame = -1
     self.long_engaged_timer = 0
     self.pre_active_timer = 0
     self.is_metric = self.params.get_bool("IsMetric")
+    set_speed_limit_assist_availability(self.CP, self.CP_SP, self.params)
     self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
     self.long_enabled = False
     self.long_enabled_prev = False
@@ -140,6 +142,7 @@ class SpeedLimitAssist:
   def update_params(self) -> None:
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.is_metric = self.params.get_bool("IsMetric")
+      set_speed_limit_assist_availability(self.CP, self.CP_SP, self.params)
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
   def update_car_state(self, CS: car.CarState) -> None:
