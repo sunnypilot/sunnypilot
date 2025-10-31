@@ -290,7 +290,7 @@ void SunnylinkPanel::updatePanel() {
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
 
-  sunnylinkUploaderEnabledBtn->setEnabled(max_current_sponsor_rule.roleTier == SponsorTier::Guardian && is_sunnylink_enabled);
+  sunnylinkUploaderEnabledBtn->setEnabled(max_current_sponsor_rule.roleTier >= SponsorTier::Novice && is_sunnylink_enabled);
 
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");
