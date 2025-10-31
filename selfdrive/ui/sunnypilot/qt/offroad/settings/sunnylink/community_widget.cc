@@ -118,7 +118,7 @@ SunnylinkCommunityPopup::SunnylinkCommunityPopup(QWidget* parent)
     "Scan the QR code on the right and join the discussion!"
   ), this);
   // Solarized base01 for body text
-  desc->setStyleSheet("font-size: 42px; color: #586E75;");
+  desc->setStyleSheet("font-size: 40px; color: #586E75;");
   desc->setWordWrap(true);
   leftLayout->addWidget(desc);
 
@@ -132,7 +132,7 @@ SunnylinkCommunityPopup::SunnylinkCommunityPopup(QWidget* parent)
 
   // QR code (smaller, fixed size)
   auto *qr = new SunnylinkCommunityQRWidget(this);
-  qr->setFixedSize(520, 520);
+  qr->setFixedSize(500, 500);
   rightLayout->addStretch();
   rightLayout->addWidget(qr, 0, Qt::AlignCenter);
   rightLayout->addStretch();
