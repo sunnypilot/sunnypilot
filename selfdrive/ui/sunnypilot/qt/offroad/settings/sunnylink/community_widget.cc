@@ -106,7 +106,7 @@ SunnylinkCommunityPopup::SunnylinkCommunityPopup(QWidget* parent)
 
   // Hype / intro paragraph
   const auto desc = new QLabel(tr(
-    "We're excited to announce our <b>sunnypilot Community Forum</b> (open beta)<br><br>"
+    "We're excited to announce our <b>sunnypilot Community Forum</b><br><br>"
     "Over the years, Discord just hasn't scaled well for our growing community.<br>"
     "It's noisy, unsearchable, and great discussions disappear too easily.<br>"
     "Our new community forum aims to fix that by making it easier to <b>find answers, share ideas, track feedback, report bugs, help newcomers</b> and more!<br><br>"
