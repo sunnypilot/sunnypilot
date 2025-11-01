@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import math
 
 import cereal.messaging as messaging
@@ -81,10 +87,11 @@ class Navigationd:
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
-        large_distance = nav_data['distance_from_route'] > 100
+        large_distance = progress['distance_from_route'] > 100
 
         if large_distance:
-          self.cancel_route_counter += 1
+          if progress['distance_from_route'] > 200:
+            self.cancel_route_counter += 1
           if self.recompute_allowed:
             self.reroute_counter += 1
         else:
