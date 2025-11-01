@@ -57,7 +57,7 @@ class TestEventBuilder:
     events = EventBuilder.build_navigation_events(MockSM(nav_msg), False)
     expected = [{
       'name': custom.OnroadEventSP.EventName.navigationBanner,
-      'message': 'For 0.1 mi, Continue on West Esplanade Drive',
+      'message': 'For 650ft, Continue on West Esplanade Drive',
     }]
     assert events == expected
 
