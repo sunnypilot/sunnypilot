@@ -23,15 +23,19 @@ MAX_ACCEL_BREAKPOINTS =       [0.,   4.,   6.,   9.,   16.,  25.,  30., 55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.0000002, -0.0000002, -0.24, -1.20],
-  AccelPersonality.normal: [-0.0000002, -0.0000002, -0.26, -1.20],
-  AccelPersonality.sport:  [-0.0000003, -0.0000003, -0.28, -1.20],
+  AccelPersonality.eco:    [-0.05, -0.08, -0.20, -0.24, -1.20],
+  AccelPersonality.normal: [-0.06, -0.10, -0.22, -0.26, -1.20],
+  AccelPersonality.sport:  [-0.08, -0.12, -0.24, -0.28, -1.20],
 }
-MIN_ACCEL_BREAKPOINTS =    [0.,    5.,    8.,      25.]
+MIN_ACCEL_BREAKPOINTS =    [0.,    4.,    6.,    8.,    25.]
 
-DECEL_SMOOTH_ALPHA = 0.08  # Very aggressive smoothing for decel (lower = smoother)
+DECEL_SMOOTH_ALPHA = 0.05  # Very aggressive smoothing for decel (lower = smoother)
 ACCEL_SMOOTH_ALPHA = 0.20  # Less aggressive for accel (higher = more responsive)
-MAX_DECEL_RATE = 0.15      # Maximum change in decel per timestep (m/s²)
+
+# Asymmetric rate limiting
+MAX_DECEL_INCREASE_RATE = 0.06  # When braking harder (m/s² per second)
+MAX_DECEL_DECREASE_RATE = 0.15  # When releasing brake (m/s² per second)
+
 
 
 class AccelPersonalityController:
@@ -104,9 +108,13 @@ class AccelPersonalityController:
     # VERY aggressive smoothing to min accel for ultra-smooth braking
     # Also add rate limiting as a safety net
     smoothed_decel = (DECEL_SMOOTH_ALPHA * target_min_accel + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel)
-    # Rate limit decel changes and/or prevent sudden jerks
-    max_change_per_step = MAX_DECEL_RATE * DT_MDL
+
+    #Asymmetric rate limiting
     decel_change = smoothed_decel - self.last_min_accel
+    if decel_change < 0:
+      max_change_per_step = MAX_DECEL_INCREASE_RATE * DT_MDL
+    else:
+      max_change_per_step = MAX_DECEL_DECREASE_RATE * DT_MDL
     decel_change = np.clip(decel_change, -max_change_per_step, max_change_per_step)
 
     self.last_min_accel = self.last_min_accel + decel_change
