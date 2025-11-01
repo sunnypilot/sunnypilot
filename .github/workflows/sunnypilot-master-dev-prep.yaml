@@ -42,7 +42,7 @@ jobs:
     if: (
       (github.event_name == 'workflow_dispatch')
       || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
+      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == vars.PREBUILT_PR_LABEL || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, vars.PREBUILT_PR_LABEL))))
       )
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
           (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
+          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == vars.PREBUILT_PR_LABEL || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, vars.PREBUILT_PR_LABEL))))
           )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
