@@ -7,10 +7,16 @@ See the LICENSE.md file in the root directory for more details.
 
 from parameterized import parameterized
 
+import cereal.messaging
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode, \
   AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
+
+class MockSubMaster:
+  def __init__(self, services):
+    pass
+
 
 AUTO_LANE_CHANGE_TIMER_COMBOS = [
   (AutoLaneChangeMode.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGELESS]),
@@ -23,6 +29,7 @@ AUTO_LANE_CHANGE_TIMER_COMBOS = [
 
 class TestAutoLaneChangeController:
   def setup_method(self):
+    cereal.messaging.SubMaster = MockSubMaster
     self.DH = DesireHelper()
     self.alc = AutoLaneChangeController(self.DH)
 
