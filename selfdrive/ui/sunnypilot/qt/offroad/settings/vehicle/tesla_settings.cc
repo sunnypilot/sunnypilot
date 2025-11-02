@@ -33,7 +33,7 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
 
   coopSteeringToggle = new ParamControlSP(
     "TeslaCoopSteering",
-    tr("Cooperative Steering"),
+    tr("Cooperative Steering (Beta)"),
     coop_desc,
     "",
     this
