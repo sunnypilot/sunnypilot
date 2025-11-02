@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <optional>
 #include <string>
@@ -389,7 +390,7 @@ class ButtonParamControlSP : public MultiButtonControlSP {
   Q_OBJECT
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false, bool advancedControl = false) : MultiButtonControlSP(title, desc, icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 380, const bool inline_layout = false, bool advancedControl = false) : MultiButtonControlSP(title, desc, icon,
                                                                                                                           button_texts, minimum_button_width, inline_layout, advancedControl) {
     key = param.toStdString();
     int value = atoi(params.get(key).c_str());
@@ -500,7 +501,7 @@ private:
 
   int getParamValueScaled() {
     const auto param_value = QString::fromStdString(params.get(key));
-    return static_cast<int>(param_value.toFloat() * 100);
+    return std::nearbyint(param_value.toFloat() * 100.0f);
   }
 
   void setParamValueScaled(const int new_value) {
@@ -544,10 +545,8 @@ public:
         main_layout->removeWidget(title_label);
         hlayout->addWidget(title_label, 1);
       }
-      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
-        main_layout->removeItem(spacingItem);
-        spacingItem = nullptr;
-      }
+      main_layout->removeItem(spacingItem);
+      spacingItem = nullptr;
     }
 
     label.setStyleSheet(label_enabled_style);

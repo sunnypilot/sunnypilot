@@ -58,7 +58,7 @@ class Controls(ControlsExt, ModelStateBase):
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
 
-    self.LoC = LongControl(self.CP)
+    self.LoC = LongControl(self.CP, self.CP_SP)
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
@@ -99,7 +99,6 @@ class Controls(ControlsExt, ModelStateBase):
 
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
 
-      self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
       self.LaC.extension.update_lateral_lag(self.lat_delay)
 
     long_plan = self.sm['longitudinalPlan']
@@ -116,7 +115,8 @@ class Controls(ControlsExt, ModelStateBase):
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
-    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
+    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and \
+                    (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
@@ -168,7 +168,7 @@ class Controls(ControlsExt, ModelStateBase):
       CC.orientationNED = self.calibrated_pose.orientation.xyz.tolist()
       CC.angularVelocity = self.calibrated_pose.angular_velocity.xyz.tolist()
 
-    CC.cruiseControl.override = CC.enabled and not CC.longActive and self.CP.openpilotLongitudinalControl
+    CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
     CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
     CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
 
@@ -232,6 +232,9 @@ class Controls(ControlsExt, ModelStateBase):
   def params_thread(self, evt):
     while not evt.is_set():
       self.get_params_sp()
+
+      if self.CP.lateralTuning.which() == 'torque':
+        self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
 
       time.sleep(0.1)
 

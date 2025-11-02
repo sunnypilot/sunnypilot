@@ -21,7 +21,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     paramsRefresh(param_name, param_value);
   });
 
-  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  is_sunnylink_enabled = params.getBool("SunnylinkEnabled");
   connect(uiStateSP(), &UIStateSP::sunnylinkRolesChanged, this, &SunnylinkPanel::updatePanel);
   connect(uiStateSP(), &UIStateSP::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updatePanel);
   connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
@@ -272,7 +272,7 @@ void SunnylinkPanel::updatePanel() {
   const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
   sunnylinkEnabledBtn->setEnabled(!is_onroad);
 
-  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  is_sunnylink_enabled = params.getBool("SunnylinkEnabled");
   bool is_sub = uiStateSP()->isSunnylinkSponsor() && is_sunnylink_enabled;
   auto max_current_sponsor_rule = uiStateSP()->sunnylinkSponsorRole();
   auto role_name = max_current_sponsor_rule.getSponsorTierString();

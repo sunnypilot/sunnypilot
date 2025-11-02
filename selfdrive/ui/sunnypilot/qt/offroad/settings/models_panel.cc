@@ -310,9 +310,8 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   QList<TreeNode> sortedModels;
   QSet<QString> modelFolders;
   QRegularExpression re("\\(([^)]*)\\)[^(]*$");
-  const auto bundles = model_manager.getAvailableBundles();
 
-  for (const auto &bundle : bundles) {
+  for (const auto &bundle : model_manager.getAvailableBundles()) {
     auto overrides = bundle.getOverrides();
     QString folder;
     for (const auto &override : overrides) {
@@ -392,7 +391,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     showResetParamsDialog();
   } else {
     // Find selected bundle and initiate download
-    for (const auto &bundle: bundles) {
+    for (const auto &bundle: model_manager.getAvailableBundles()) {
       if (QString::fromStdString(bundle.getRef()) == selectedBundleRef) {
         params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
         if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
