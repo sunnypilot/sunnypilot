@@ -90,7 +90,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)");
   sunnylinkUploaderEnabledBtn = new ParamControlSP(
     "EnableSunnylinkUploader",
-    tr("Enable sunnylink uploader (just for testing infrastructure)"),
+    tr("Enable sunnylink uploader (infrastructure test)"),
     sunnylinkUploaderDesc,
     "", nullptr, true);
   list->addItem(sunnylinkUploaderEnabledBtn);
