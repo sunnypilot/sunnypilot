@@ -17,6 +17,7 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.watchdog import WATCHDOG_FN
+from openpilot.system.hardware.hw import Paths
 
 ENABLE_WATCHDOG = os.getenv("NO_WATCHDOG") is None
 
@@ -274,6 +275,41 @@ class DaemonProcess(ManagerProcess):
 
   def stop(self, retry=True, block=True, sig=None) -> None:
     pass
+
+
+class CopypartyProcess(NativeProcess):
+  """Copyparty file server process with dynamic password configuration.
+  Rebuilds command-line arguments on each start to pick up password changes."""
+  def __init__(self, should_run):
+    self.sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    # Initialize with minimal args, will be rebuilt in start()
+    super().__init__(
+      "copyparty-sfx",
+      "third_party/copyparty",
+      ["./copyparty-sfx.py"],  # Base command only
+      should_run
+    )
+
+  def start(self) -> None:
+    # Rebuild arguments dynamically with current password
+    password = Params().get("CopypartyPassword")
+    auth_suffix = ",admin" if password else ""
+
+    # Build volume arguments with conditional authentication
+    args = [f"-v{Paths.crash_log_root()}:/swaglogs:r{auth_suffix}"]
+    args += [f"-v{Paths.log_root()}:/routes:r{auth_suffix}"]
+    args += [f"-v{Paths.model_root()}:/models:rw{auth_suffix}"]
+    args += [f"-v{self.sunnypilot_root}:/sunnypilot:rw{auth_suffix}"]
+    args += ["-p8080", "-z", "-q"]
+
+    if password:
+      args += ["-a", f"admin:{password}"]
+
+    # Update cmdline before starting
+    self.cmdline = ["./copyparty-sfx.py", *args]
+
+    # Call parent start() with updated cmdline
+    super().start()
 
 
 def ensure_running(procs: ValuesView[ManagerProcess], started: bool, params=None, CP: car.CarParams=None,

@@ -33,7 +33,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   addItem(enableCopyparty);
 
   // Copyparty Password
-  copypartyPasswordBtn = new ButtonControlSP(tr("Copyparty Password"), tr("SET"), tr("Set a password to secure access to your Copyparty file server. Leave empty for no password protection. Reboot required to apply changes."));
+  copypartyPasswordBtn = new ButtonControlSP(tr("Copyparty Password"), tr("SET"), tr("Set a password to secure access to your Copyparty file server. Leave empty for no password protection. Toggle the service off/on to apply changes."));
 
   connect(copypartyPasswordBtn, &ButtonControlSP::clicked, [=]() {
     QString current_password = QString::fromStdString(params.get("CopypartyPassword"));
@@ -44,9 +44,9 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
       params.put("CopypartyPassword", new_password.toStdString());
       updateCopypartyPasswordButton();
 
-      // Ask user if they want to reboot now to apply changes
-      if (ConfirmationDialog::confirm(tr("Password saved. Reboot now to apply changes?"), tr("Reboot"), this)) {
-        params.putBool("DoReboot", true);
+      // Inform user to toggle service to apply changes
+      if (params.getBool("EnableCopyparty")) {
+        ConfirmationDialog::alert(tr("Password saved. Change will take effect on next onroad/offroad transition. Toggle the Copyparty service to force apply the changes now."), this);
       }
     }
   });
