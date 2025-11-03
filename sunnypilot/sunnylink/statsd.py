@@ -25,7 +25,7 @@ from openpilot.common.realtime import Ratekeeper
 
 
 def sp_stats(end_event):
-  """Collect Sunnypilot-specific statistics and send as raw metrics."""
+  """Collect sunnypilot-specific statistics and send as raw metrics."""
   rk = Ratekeeper(.1, print_delay_threshold=None)
   statlogsp = StatLogSP(intercept=False)
   params = Params()
