@@ -3,11 +3,9 @@
 ## 🌞 What is sunnypilot?
 [sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 300+ supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
-## 💭 Join our Discord
-Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
-* https://discord.gg/sunnypilot
-
-  ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
+## 💭 Join our Forum
+Join the official sunnypilot community forum to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
+* https://community.sunnypilot.ai/
 
 ## Documentation
 https://docs.sunnypilot.ai/ is your one stop shop for everything from features to installation to FAQ about the sunnypilot
@@ -52,7 +50,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 > You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
 
 > [!NOTE]
-> Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+> Do you require further assistance with software installation? Join the [sunnypilot community forum](https://community.sunnypilot.ai/new-topic?category=general/qa) and create a topic in the General/Q&A Category channel.
 
 
 <details>
