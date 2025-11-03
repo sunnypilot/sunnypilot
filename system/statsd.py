@@ -96,7 +96,8 @@ class StatLogSP(StatLog):
     if self.comma_statlog:
       self.comma_statlog._send(metric)
 
-  def default_converter(self, obj):
+  @staticmethod
+  def default_converter(obj):
     if isinstance(obj, (datetime, date)):
       return obj.isoformat()
     if isinstance(obj, set):
