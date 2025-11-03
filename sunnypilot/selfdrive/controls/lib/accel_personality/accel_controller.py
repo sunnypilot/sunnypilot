@@ -9,14 +9,13 @@ from cereal import custom
 import numpy as np
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
-from openpilot.common.swaglog import cloudlog
 
 AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
   AccelPersonality.eco:       [2.0,  1.99,  1.92, .850, .500, .33, .23, .125],
-  AccelPersonality.normal:    [2.0,  1.99,  1.92, .850, .500, .33, .23, .125],
+  AccelPersonality.normal:    [2.0,  1.99,  1.70, .850, .500, .33, .23, .125],
   AccelPersonality.sport:     [2.0,  2.00,  1.97, 1.00, .635, .48, .31, .165],
 }
 MAX_ACCEL_BREAKPOINTS =       [0.,   4.,   6.,   9.,   16.,  25.,  30., 55.]
@@ -35,7 +34,6 @@ ACCEL_SMOOTH_ALPHA = 0.20  # Less aggressive for accel (higher = more responsive
 # Asymmetric rate limiting
 MAX_DECEL_INCREASE_RATE = 0.06  # When braking harder (m/s² per second)
 MAX_DECEL_DECREASE_RATE = 0.15  # When releasing brake (m/s² per second)
-
 
 
 class AccelPersonalityController:
@@ -61,10 +59,8 @@ class AccelPersonalityController:
         if personality_value in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
           self.accel_personality = personality_value
         else:
-          cloudlog.warning(f"Invalid personality value {personality_value}, using normal")
           self.accel_personality = AccelPersonality.normal
-    except (ValueError, TypeError) as e:
-      cloudlog.warning(f"Failed to load personality from params: {e}")
+    except (ValueError, TypeError):
       self.accel_personality = AccelPersonality.normal
 
   def _update_from_params(self):
@@ -78,12 +74,10 @@ class AccelPersonalityController:
 
   def set_accel_personality(self, personality: int):
     if personality not in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
-      cloudlog.error(f"Invalid personality {personality}, ignoring")
       return
 
     self.accel_personality = personality
     self.params.put(self.param_keys['personality'], str(personality))
-    cloudlog.info(f"Accel personality set to {personality}")
 
   def cycle_accel_personality(self) -> int:
     personalities = [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]
@@ -105,18 +99,18 @@ class AccelPersonalityController:
 
     # exponential smoothing to max accel
     self.last_max_accel = (ACCEL_SMOOTH_ALPHA * target_max_accel + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel)
+
     # VERY aggressive smoothing to min accel for ultra-smooth braking
-    # Also add rate limiting as a safety net
     smoothed_decel = (DECEL_SMOOTH_ALPHA * target_min_accel + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel)
 
-    #Asymmetric rate limiting
+    # asymmetric rate limiting
     decel_change = smoothed_decel - self.last_min_accel
     if decel_change < 0:
       max_change_per_step = MAX_DECEL_INCREASE_RATE * DT_MDL
     else:
       max_change_per_step = MAX_DECEL_DECREASE_RATE * DT_MDL
-    decel_change = np.clip(decel_change, -max_change_per_step, max_change_per_step)
 
+    decel_change = np.clip(decel_change, -max_change_per_step, max_change_per_step)
     self.last_min_accel = self.last_min_accel + decel_change
 
     if self.last_min_accel > self.last_max_accel:
@@ -135,7 +129,6 @@ class AccelPersonalityController:
 
   def set_enabled(self, enabled: bool):
     self.params.put_bool(self.param_keys['enabled'], enabled)
-    cloudlog.info(f"Accel personality controller {'enabled' if enabled else 'disabled'}")
 
   def toggle_enabled(self) -> bool:
     current = self.is_enabled()
