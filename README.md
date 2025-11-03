@@ -3,11 +3,9 @@
 ## 🌞 What is sunnypilot?
 [sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 300+ supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
-## 💭 Join our Discord
-Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
-* https://discord.gg/sunnypilot
-
-  ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
+## 💭 Join our Community Forum
+Join the official sunnypilot community forum to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
+* https://community.sunnypilot.ai/
 
 ## Documentation
 https://docs.sunnypilot.ai/ is your one stop shop for everything from features to installation to FAQ about the sunnypilot
@@ -16,13 +14,13 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 * A supported device to run this software
     * a [comma three](https://comma.ai/shop/products/three) or a [C3X](https://comma.ai/shop/comma-3x)
 * This software
-* One of [the 300+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
+* One of [the 325+ supported cars](https://github.com/sunnypilot/sunnypilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford, and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
 * A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
 
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
 ## Installation
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging-c3-new` branch.
+Please refer to [Recommended Branches](#recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging` branch.
 
 ### If you want to use our newest branches (our rewrite)
 > [!TIP]
@@ -31,28 +29,28 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://staging-c3-new.sunnypilot.ai```.
+  3. Input the installation URL per [Recommended Branches](#recommended-branches). Example: ```https://staging.sunnypilot.ai```.
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
-  1. On the comma three, go to `Settings` ▶️ `Software`.
+  1. On the comma three/3X, go to `Settings` ▶️ `Software`.
   2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
-  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging-c3-new`
+  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging`
 
-
-|      Branch      |                 Installation URL              |
-|:----------------:|:---------------------------------------------:|
-| `staging-c3-new` | `https://staging-c3-new.sunnypilot.ai`        |
-|   `dev-c3-new`   | `https://dev-c3-new.sunnypilot.ai`            |
-| `custom-branch`  | `https://install.sunnypilot.ai/{branch_name}` |
-| `release-c3-new` |            **Not yet available**.             |
+### Recommended Branches
+|      Branch     |                 Installation URL              |
+|:---------------:|:---------------------------------------------:|
+| `release`       | `https://release.sunnypilot.ai`               |
+| `staging`       | `https://staging.sunnypilot.ai`               |
+|   `dev`         | `https://dev.sunnypilot.ai`                   |
+| `custom-branch` | `https://install.sunnypilot.ai/{branch_name}` |
 
 > [!TIP]
-> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging-c3-new'.
+> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging'.
 
 > [!NOTE]
-> Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+> Do you require further assistance with software installation? Join the [sunnypilot community forum](https://community.sunnypilot.ai/new-topic?category=general/qa) and create a topic in the General/Q&A Category channel.
 
 
 <details>
