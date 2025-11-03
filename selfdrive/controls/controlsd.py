@@ -107,24 +107,14 @@ class Controls(ControlsExt, ModelStateBase):
     CC = car.CarControl.new_message()
     CC.enabled = self.sm['selfdriveState'].enabled
 
-    # Check which actuators can be enabled
-    standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
-
-    # Get which state to use for active lateral control
-    _lat_active = self.get_lat_active(self.sm)
-
-    CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
-                   (not standstill or self.CP.steerAtStandstill)
-    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and \
-                    (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
+    # Determine active states for lateral and longitudinal control
+    CC.latActive, CC.longActive = self._determine_control_states(CS)
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
 
-    # Enable blinkers while lane changing
-    if model_v2.meta.laneChangeState != LaneChangeState.off:
-      CC.leftBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.left
-      CC.rightBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.right
+    # Update blinkers during lane changes
+    self._update_blinkers(CC, model_v2)
 
     if not CC.latActive:
       self.LaC.reset()
@@ -135,6 +125,16 @@ class Controls(ControlsExt, ModelStateBase):
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, self.CP_SP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
+    # Update lateral control
+    lac_log = self._update_lateral_control(CC, actuators, CS, model_v2, lp)
+
+    # Validate actuators for NaNs/Infs
+    self._validate_actuators(actuators)
+
+    return CC, lac_log
+
+  def _update_lateral_control(self, CC, actuators, CS, model_v2, lp):
+    """Update lateral control system including curvature and steering calculations."""
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
     new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
@@ -146,32 +146,11 @@ class Controls(ControlsExt, ModelStateBase):
                                                        self.calibrated_pose, curvature_limited)  # TODO what if not available
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
-    # Ensure no NaNs/Infs
-    for p in ACTUATOR_FIELDS:
-      attr = getattr(actuators, p)
-      if not isinstance(attr, Number):
-        continue
 
-      if not math.isfinite(attr):
-        cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
-        setattr(actuators, p, 0.0)
+    return lac_log
 
-    return CC, lac_log
-
-  def publish(self, CC, lac_log):
-    CS = self.sm['carState']
-
-    # Orientation and angle rates can be useful for carcontroller
-    # Only calibrated (car) frame is relevant for the carcontroller
-    CC.currentCurvature = self.curvature
-    if self.calibrated_pose is not None:
-      CC.orientationNED = self.calibrated_pose.orientation.xyz.tolist()
-      CC.angularVelocity = self.calibrated_pose.angular_velocity.xyz.tolist()
-
-    CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
-    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
-    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
-
+  def _update_hud_control(self, CC, CS):
+    """Update HUD control settings."""
     hudControl = CC.hudControl
     hudControl.setSpeed = float(CS.vCruiseCluster * CV.KPH_TO_MS)
     hudControl.speedVisible = CC.enabled
@@ -185,6 +164,58 @@ class Controls(ControlsExt, ModelStateBase):
     if self.sm.valid['driverAssistance']:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
+
+  def _determine_control_states(self, CS):
+    """Determine if lateral and longitudinal control should be active."""
+    # Check which actuators can be enabled
+    standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
+
+    # Get which state to use for active lateral control
+    _lat_active = self.get_lat_active(self.sm)
+
+    lat_active = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
+                 (not standstill or self.CP.steerAtStandstill)
+    long_active = self.sm['selfdriveState'].enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and \
+                  (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
+
+    return lat_active, long_active
+
+  def _update_blinkers(self, CC, model_v2):
+    """Update blinker states during lane changes."""
+    if model_v2.meta.laneChangeState != LaneChangeState.off:
+      CC.leftBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.left
+      CC.rightBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.right
+
+  def _validate_actuators(self, actuators):
+    """Validate that actuator values are finite to prevent NaN/Inf propagation."""
+    for p in ACTUATOR_FIELDS:
+      attr = getattr(actuators, p)
+      if not isinstance(attr, Number):
+        continue
+
+      if not math.isfinite(attr):
+        cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
+        setattr(actuators, p, 0.0)
+
+  def _update_cruise_control(self, CC, CS):
+    """Update cruise control settings."""
+    CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
+    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
+    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
+
+  def publish(self, CC, lac_log):
+    CS = self.sm['carState']
+
+    # Orientation and angle rates can be useful for carcontroller
+    # Only calibrated (car) frame is relevant for the carcontroller
+    CC.currentCurvature = self.curvature
+    if self.calibrated_pose is not None:
+      CC.orientationNED = self.calibrated_pose.orientation.xyz.tolist()
+      CC.angularVelocity = self.calibrated_pose.angular_velocity.xyz.tolist()
+
+    self._update_cruise_control(CC, CS)
+
+    self._update_hud_control(CC, CS)
 
     if self.sm['selfdriveState'].active:
       CO = self.sm['carOutput']

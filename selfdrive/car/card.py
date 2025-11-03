@@ -91,46 +91,44 @@ class Car:
     is_release_sp = self.params.get_bool("IsReleaseSpBranch")
 
     if CI is None:
-      # wait for one pandaState and one CAN packet
-      print("Waiting for CAN messages...")
-      while True:
-        can = messaging.recv_one_retry(self.can_sock)
-        if len(can.can) > 0:
-          break
-
-      alpha_long_allowed = self.params.get_bool("AlphaLongitudinalEnabled")
-      num_pandas = len(messaging.recv_one_retry(self.sm.sock['pandaStates']).pandaStates)
-
-      cached_params = None
-      cached_params_raw = self.params.get("CarParamsCache")
-      if cached_params_raw is not None:
-        with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
-          cached_params = _cached_params
-
-      fixed_fingerprint = (self.params.get("CarPlatformBundle") or {}).get("platform", None)
-      init_params_list_sp = sunnypilot_interfaces.initialize_params(self.params)
-
-      self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params,
-                        fixed_fingerprint, init_params_list_sp, is_release_sp)
-      sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
-      self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP, self.CI.CP_SP)
-      self.CP = self.CI.CP
-      self.CP_SP = self.CI.CP_SP
-
-      # continue onto next fingerprinting step in pandad
-      self.params.put_bool("FirmwareQueryDone", True)
+      self._initialize_car_interface(is_release, is_release_sp)
     else:
       self.CI, self.CP, self.CP_SP = CI, CI.CP, CI.CP_SP
       self.RI = RI
 
-    self.CP.alternativeExperience = 0
-    # mads
-    set_alternative_experience(self.CP, self.CP_SP, self.params)
-    set_car_specific_params(self.CP, self.CP_SP, self.params)
+  def _initialize_car_interface(self, is_release, is_release_sp):
+    """Initialize the car interface and related components."""
+    # wait for one pandaState and one CAN packet
+    print("Waiting for CAN messages...")
+    while True:
+      can = messaging.recv_one_retry(self.can_sock)
+      if len(can.can) > 0:
+        break
 
-    # Dynamic Experimental Control
-    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+    alpha_long_allowed = self.params.get_bool("AlphaLongitudinalEnabled")
+    num_pandas = len(messaging.recv_one_retry(self.sm.sock['pandaStates']).pandaStates)
 
+    cached_params = None
+    cached_params_raw = self.params.get("CarParamsCache")
+    if cached_params_raw is not None:
+      with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
+        cached_params = _cached_params
+
+    fixed_fingerprint = (self.params.get("CarPlatformBundle") or {}).get("platform", None)
+    init_params_list_sp = sunnypilot_interfaces.initialize_params(self.params)
+
+    self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, is_release, num_pandas, cached_params,
+                      fixed_fingerprint, init_params_list_sp, is_release_sp)
+    sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
+    self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP, self.CI.CP_SP)
+    self.CP = self.CI.CP
+    self.CP_SP = self.CI.CP_SP
+
+    # continue onto next fingerprinting step in pandad
+    self.params.put_bool("FirmwareQueryDone", True)
+
+  def _setup_controller(self):
+    """Setup controller based on availability and params."""
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
     controller_available = self.CI.CC is not None and openpilot_enabled_toggle and not self.CP.dashcamOnly
     self.CP.passive = not controller_available or self.CP.dashcamOnly
@@ -138,7 +136,12 @@ class Car:
       safety_config = structs.CarParams.SafetyConfig()
       safety_config.safetyModel = structs.CarParams.SafetyModel.noOutput
       self.CP.safetyConfigs = [safety_config]
+    return controller_available
 
+  def _setup_secoc_key(self):
+    """Setup SecOC key if required and available."""
+    # Get is_release from params since we can't pass it from __init__ context
+    is_release = self.params.get_bool("IsReleaseBranch")
     if self.CP.secOcRequired and not is_release:
       # Copy user key if available
       try:
@@ -155,11 +158,14 @@ class Car:
         if len(saved_secoc_key) == 16:
           self.CP.secOcKeyAvailable = True
           self.CI.CS.secoc_key = saved_secoc_key
+          controller_available = self.CI.CC is not None and self.params.get_bool("OpenpilotEnabledToggle") and not self.CP.dashcamOnly
           if controller_available:
             self.CI.CC.secoc_key = saved_secoc_key
         else:
           cloudlog.warning("Saved SecOC key is invalid")
 
+  def _cache_car_params(self):
+    """Cache car parameters to params."""
     # Write previous route's CarParams
     prev_cp = self.params.get("CarParamsPersistent")
     if prev_cp is not None:
@@ -178,6 +184,20 @@ class Car:
     self.params.put("CarParamsSP", cp_sp_bytes)
     self.params.put_nonblocking("CarParamsSPCache", cp_sp_bytes)
     self.params.put_nonblocking("CarParamsSPPersistent", cp_sp_bytes)
+
+    self.CP.alternativeExperience = 0
+    # mads
+    set_alternative_experience(self.CP, self.CP_SP, self.params)
+    set_car_specific_params(self.CP, self.CP_SP, self.params)
+
+    # Dynamic Experimental Control
+    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+
+    self._setup_controller()
+
+    self._setup_secoc_key()
+
+    self._cache_car_params()
 
     self.mock_carstate = MockCarState()
     self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
