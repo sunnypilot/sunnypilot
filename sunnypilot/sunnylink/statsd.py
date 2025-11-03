@@ -30,7 +30,7 @@ def sp_stats(end_event):
   statlogsp = StatLogSP(intercept=False)
   params = Params()
 
-  # Collect Sunnypilot parameters
+  # Collect sunnypilot parameters
   stats_dict = {}
 
   param_keys = [
@@ -55,6 +55,7 @@ def sp_stats(end_event):
     'UptimeOffroad',
     'UptimeOnroad',
   ]
+
   while not end_event.is_set():
     try:
       for key in param_keys:
@@ -86,7 +87,7 @@ def stats_main(end_event):
   comma_dongle_id = Params().get("DongleId")
   sunnylink_dongle_id = Params().get("SunnylinkDongleId")
 
-  def get_influxdb_line(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
+  def get_influxdb_line(measurement: str, value: float | dict[str, float], timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
       res += f",{k}={str(v)}"
@@ -101,7 +102,7 @@ def stats_main(end_event):
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
-  def get_influxdb_line_raw(measurement: str, value: dict[str, float],  timestamp: datetime, tags: dict) -> str:
+  def get_influxdb_line_raw(measurement: str, value: dict[str, float], timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
       res += f",{k}={str(v)}"
@@ -247,4 +248,3 @@ def main():
 
 if __name__ == "__main__":
   main()
-
