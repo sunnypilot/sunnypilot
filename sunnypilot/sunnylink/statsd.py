@@ -30,6 +30,16 @@ def sp_stats(end_event):
   statlogsp = StatLogSP(intercept=False)
   params = Params()
 
+  def flatten_dict(d, parent_key='', sep='.'):
+    items = {}
+    for k, v in d.items():
+      new_key = f"{parent_key}{sep}{k}" if parent_key else k
+      if isinstance(v, dict):
+        items.update(flatten_dict(v, new_key, sep=sep))
+      else:
+        items[new_key] = v
+    return items
+
   # Collect sunnypilot parameters
   stats_dict = {}
 
@@ -70,8 +80,7 @@ def sp_stats(end_event):
           continue
 
         if isinstance(value, dict):
-          for subkey, subval in value.items():
-            stats_dict[f"{key}.{subkey}"] = subval
+          stats_dict.update(flatten_dict(value, key))
         else:
           stats_dict[key] = value
 
