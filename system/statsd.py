@@ -27,6 +27,7 @@ class METRIC_TYPE:
   SAMPLE = 'sa'
   RAW = 'r'
 
+
 class StatLog:
   def __init__(self):
     self.pid = None
