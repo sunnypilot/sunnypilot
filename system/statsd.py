@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
+import base64
+import json
 import os
+from decimal import Decimal
+
 import zmq
 import time
 import uuid
 from pathlib import Path
 from collections import defaultdict
-from datetime import datetime, UTC
+from datetime import datetime, UTC, date
 from typing import NoReturn
 
 from openpilot.common.params import Params
@@ -21,6 +25,7 @@ from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, 
 class METRIC_TYPE:
   GAUGE = 'g'
   SAMPLE = 'sa'
+  RAW = 'r'
 
 class StatLog:
   def __init__(self):
@@ -89,6 +94,19 @@ class StatLogSP(StatLog):
     super()._send(metric)
     if self.comma_statlog:
       self.comma_statlog._send(metric)
+
+  def default_converter(self, obj):
+    if isinstance(obj, (datetime, date)):
+      return obj.isoformat()
+    if isinstance(obj, set):
+      return list(obj)
+    if isinstance(obj, Decimal):
+      return float(obj)
+    return str(obj)  # fallback for unknown types
+
+  def raw(self, name: str, value: dict) -> None:
+    encoded_dict = base64.b64encode(json.dumps(value, default=self.default_converter).encode("utf-8")).decode("utf-8")
+    self._send(f"{name}:{encoded_dict}|{METRIC_TYPE.RAW}")
 
 
 def main() -> NoReturn:

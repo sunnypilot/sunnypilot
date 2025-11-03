@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+import base64
+import json
 import os
+import threading
+import traceback
+
 import zmq
 import time
 import uuid
@@ -18,8 +23,57 @@ from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
 from openpilot.system.statsd import METRIC_TYPE, StatLogSP
 
+from common.realtime import Ratekeeper
 
-def main() -> NoReturn:
+
+def sp_stats(end_event):
+  """Collect Sunnypilot-specific statistics and send as raw metrics."""
+  rk = Ratekeeper(1, print_delay_threshold=None)
+  statlogsp = StatLogSP(intercept=False)
+  params = Params()
+
+  # Collect Sunnypilot parameters
+  stats_dict = {}
+
+  param_keys = [
+    'SunnylinkEnabled',
+    'AutoLaneChangeBsmDelay',
+    'AutoLaneChangeTimer',
+    'CarPlatformBundle',
+    'DevUIInfo',
+    'EnableCopyparty',
+    'IntelligentCruiseButtonManagement',
+    'QuietMode',
+    'RainbowMode',
+    'ShowAdvancedControls',
+    'Mads',
+    'MadsMainCruiseAllowed',
+    'MadsSteeringMode',
+    'MadsUnifiedEngagementMode',
+    'ModelManager_Favs',
+    'EnableSunnylinkUploader',
+    'SunnylinkEnabled',
+    'InstallDate',
+    'UptimeOffroad',
+    'UptimeOnroad',
+  ]
+  while not end_event.is_set():
+    try:
+      for key in param_keys:
+        value = params.get(key)
+        if value is not None:
+          stats_dict[key] = value
+
+      # Send as raw metric (will be base64 encoded in the main loop)
+      if stats_dict:
+        statlogsp.raw('sunnypilot_params', stats_dict)
+    except Exception as e:
+      cloudlog.error(f"Exception {e}")
+    finally:
+      rk.keep_time()
+
+
+def stats_main(end_event) -> NoReturn:
   comma_dongle_id = Params().get("DongleId")
   sunnylink_dongle_id = Params().get("SunnylinkDongleId")
   def get_influxdb_line(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
@@ -32,7 +86,19 @@ def main() -> NoReturn:
       value = {'value': value}
 
     for k, v in value.items():
-      res += f"{k}={v},"
+      res += f"{k}={str(v)},"
+
+    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
+    return res
+
+  def get_influxdb_line_raw(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
+    res = f"{measurement}"
+    for k, v in tags.items():
+      res += f",{k}={str(v)}"
+    res += " "
+
+    for k, v in value.items():
+      res += f"{k}=\"{str(v)}\","
 
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
@@ -67,8 +133,9 @@ def main() -> NoReturn:
   last_flush_time = time.monotonic()
   gauges = {}
   samples: dict[str, list[float]] = defaultdict(list)
+  raws: dict = defaultdict()
   try:
-    while True:
+    while not end_event.is_set():
       started_prev = sm['deviceState'].started
       sm.update()
 
@@ -79,15 +146,20 @@ def main() -> NoReturn:
           try:
             metric_type = metric.split('|')[1]
             metric_name = metric.split(':')[0]
-            metric_value = float(metric.split('|')[0].split(':')[1])
+            metric_value_raw = metric.split('|')[0].split(':')[1]
 
             if metric_type == METRIC_TYPE.GAUGE:
+              metric_value = float(metric_value_raw)
               gauges[metric_name] = metric_value
             elif metric_type == METRIC_TYPE.SAMPLE:
+              metric_value = float(metric_value_raw)
               samples[metric_name].append(metric_value)
+            elif metric_type == METRIC_TYPE.RAW:
+              raws[metric_name] = metric_value_raw
             else:
               cloudlog.event("unknown metric type", metric_type=metric_type)
           except Exception:
+            print(traceback.format_exc())
             cloudlog.event("malformed metric", metric=metric)
         except zmq.error.Again:
           break
@@ -97,6 +169,10 @@ def main() -> NoReturn:
         result = ""
         current_time = datetime.now(UTC)
         tags['started'] = sm['deviceState'].started
+
+        for key, value in raws.items():
+          decoded_value = json.loads(base64.b64decode(value).decode('utf-8'))
+          result += get_influxdb_line_raw(key, decoded_value, current_time, tags)
 
         for key, value in gauges.items():
           result += get_influxdb_line(f"gauge.{key}", value, current_time, tags)
@@ -137,7 +213,28 @@ def main() -> NoReturn:
     ctx.term()
 
 
+def main():
+  rk = Ratekeeper(1, print_delay_threshold=None)
+  end_event = threading.Event()
+
+  threads = [
+    threading.Thread(target=stats_main, args=(end_event,)),
+    threading.Thread(target=sp_stats, args=(end_event,)),
+  ]
+
+  for t in threads:
+    t.start()
+
+  try:
+    while all(t.is_alive() for t in threads):
+      rk.keep_time()
+  finally:
+    end_event.set()
+
+  for t in threads:
+    t.join()
+
+
 if __name__ == "__main__":
   main()
-else:
-  statlogsp = StatLogSP(intercept=False)
+
