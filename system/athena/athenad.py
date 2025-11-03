@@ -744,17 +744,16 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
       cloudlog.exception("athena.log_handler.exception")
 
 
-def stat_handler(end_event: threading.Event) -> None:
-  STATS_DIR = Paths.stats_root()
+def stat_handler(end_event: threading.Event, stats_dir=Paths.stats_root()) -> None:
   last_scan = 0.0
 
   while not end_event.is_set():
     curr_scan = time.monotonic()
     try:
       if curr_scan - last_scan > 10:
-        stat_filenames = list(filter(lambda name: not name.startswith(tempfile.gettempprefix()), os.listdir(STATS_DIR)))
+        stat_filenames = list(filter(lambda name: not name.startswith(tempfile.gettempprefix()), os.listdir(stats_dir)))
         if len(stat_filenames) > 0:
-          stat_path = os.path.join(STATS_DIR, stat_filenames[0])
+          stat_path = os.path.join(stats_dir, stat_filenames[0])
           with open(stat_path) as f:
             jsonrpc = {
               "method": "storeStats",
