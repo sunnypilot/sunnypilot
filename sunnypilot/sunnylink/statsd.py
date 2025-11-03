@@ -16,53 +16,20 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.common.file_helpers import atomic_write_in_dir
 from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
+from openpilot.system.statsd import StatLog
+
+SUNNYPILOT_STATS_SOCKET = f"{STATS_SOCKET}_sp"
 
 
-class METRIC_TYPE:
-  GAUGE = 'g'
-  SAMPLE = 'sa'
-
-class StatLog:
+class StatLogSP(StatLog):
   def __init__(self):
-    self.pid = None
-    self.zctx = None
-    self.sock = None
-    self.stats_socket = STATS_SOCKET
-
-  def connect(self) -> None:
-    self.zctx = zmq.Context()
-    self.sock = self.zctx.socket(zmq.PUSH)
-    self.sock.setsockopt(zmq.LINGER, 10)
-    self.sock.connect(self.stats_socket)
-    self.pid = os.getpid()
-
-  def __del__(self):
-    if self.sock is not None:
-      self.sock.close()
-    if self.zctx is not None:
-      self.zctx.term()
-
-  def _send(self, metric: str) -> None:
-    if os.getpid() != self.pid:
-      self.connect()
-
-    try:
-      self.sock.send_string(metric, zmq.NOBLOCK)
-    except zmq.error.Again:
-      # drop :/
-      pass
-
-  def gauge(self, name: str, value: float) -> None:
-    self._send(f"{name}:{value}|{METRIC_TYPE.GAUGE}")
-
-  # Samples will be recorded in a buffer and at aggregation time,
-  # statistical properties will be logged (mean, count, percentiles, ...)
-  def sample(self, name: str, value: float):
-    self._send(f"{name}:{value}|{METRIC_TYPE.SAMPLE}")
+    super().__init__()
+    self.stats_socket = SUNNYPILOT_STATS_SOCKET
 
 
 def main() -> NoReturn:
-  dongle_id = Params().get("DongleId")
+  comma_dongle_id = Params().get("DongleId")
+  sunnylink_dongle_id = Params().get("SunnylinkDongleId")
   def get_influxdb_line(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
@@ -75,15 +42,16 @@ def main() -> NoReturn:
     for k, v in value.items():
       res += f"{k}={v},"
 
-    res += f"dongle_id=\"{dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
+    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\" comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
   # open statistics socket
   ctx = zmq.Context.instance()
   sock = ctx.socket(zmq.PULL)
   sock.bind(STATS_SOCKET)
+  sock.bind(SUNNYPILOT_STATS_SOCKET)
 
-  STATS_DIR = Paths.stats_root()
+  STATS_DIR = Paths.stats_sp_root()
 
   # initialize stats directory
   Path(STATS_DIR).mkdir(parents=True, exist_ok=True)
@@ -181,4 +149,4 @@ def main() -> NoReturn:
 if __name__ == "__main__":
   main()
 else:
-  statlog = StatLog()
+  statlogsp = StatLogSP()
