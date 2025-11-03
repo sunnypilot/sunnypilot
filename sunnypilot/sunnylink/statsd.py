@@ -22,8 +22,7 @@ from openpilot.common.file_helpers import atomic_write_in_dir
 from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
 from openpilot.system.statsd import METRIC_TYPE, StatLogSP
-
-from common.realtime import Ratekeeper
+from openpilot.common.realtime import Ratekeeper
 
 
 def sp_stats(end_event):
@@ -87,6 +86,7 @@ def sp_stats(end_event):
 def stats_main(end_event) -> NoReturn:
   comma_dongle_id = Params().get("DongleId")
   sunnylink_dongle_id = Params().get("SunnylinkDongleId")
+
   def get_influxdb_line(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
