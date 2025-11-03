@@ -42,7 +42,7 @@ def main() -> NoReturn:
     for k, v in value.items():
       res += f"{k}={v},"
 
-    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\" comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
+    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
   # open statistics socket
