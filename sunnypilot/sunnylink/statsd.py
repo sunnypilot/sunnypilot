@@ -16,7 +16,7 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.common.file_helpers import atomic_write_in_dir
 from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
-from openpilot.system.statsd import METRIC_TYPE
+from openpilot.system.statsd import METRIC_TYPE, StatLogSP
 
 
 def main() -> NoReturn:
@@ -140,4 +140,4 @@ def main() -> NoReturn:
 if __name__ == "__main__":
   main()
 else:
-  statlogsp = StatLogSP()
+  statlogsp = StatLogSP(intercept=False)

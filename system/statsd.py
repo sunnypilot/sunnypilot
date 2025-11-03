@@ -62,22 +62,33 @@ class StatLog:
 
 
 class StatLogSP(StatLog):
-  def __init__(self):
+  def __init__(self, intercept=True):
+    """
+    Initializes the class instance with an optional parameter to determine
+    if statistical logging should be configured or not.
+
+    :param intercept: A boolean flag that indicates whether to initialize
+        the `comma_statlog`. If True, the `comma_statlog` attribute is
+        instantiated as a `StatLog` object. Defaults to True.
+    """
     super().__init__()
-    self.comma_statlog = StatLog()
+    self.comma_statlog = StatLog() if intercept else None
     self.stats_socket = f"{STATS_SOCKET}_sp"
 
   def connect(self) -> None:
     super().connect()
-    self.comma_statlog.connect()
+    if self.comma_statlog:
+      self.comma_statlog.connect()
 
   def __del__(self):
     super().__del__()
-    self.comma_statlog.__del__()
+    if self.comma_statlog:
+      self.comma_statlog.__del__()
 
   def _send(self, metric: str) -> None:
     super()._send(metric)
-    self.comma_statlog._send(metric)
+    if self.comma_statlog:
+      self.comma_statlog._send(metric)
 
 
 def main() -> NoReturn:
@@ -200,4 +211,4 @@ def main() -> NoReturn:
 if __name__ == "__main__":
   main()
 else:
-  statlog = StatLogSP()
+  statlog = StatLogSP(intercept=True)
