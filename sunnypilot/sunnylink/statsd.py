@@ -83,7 +83,7 @@ def sp_stats(end_event):
       rk.keep_time()
 
 
-def stats_main(end_event) -> NoReturn:
+def stats_main(end_event):
   comma_dongle_id = Params().get("DongleId")
   sunnylink_dongle_id = Params().get("SunnylinkDongleId")
 
@@ -102,7 +102,7 @@ def stats_main(end_event) -> NoReturn:
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
-  def get_influxdb_line_raw(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
+  def get_influxdb_line_raw(measurement: str, value: dict[str, float],  timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
       res += f",{k}={str(v)}"
