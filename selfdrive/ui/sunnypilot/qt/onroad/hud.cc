@@ -15,6 +15,10 @@ HudRendererSP::HudRendererSP() {
   plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {90, 90});
   minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {90, 90});
 
+  nav_left_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_left", {176, 176});
+  nav_right_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_right", {176, 176});
+  nav_straight_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_straight", {176, 176});
+
   int size = e2e_alert_size * 2 - 40;
   green_light_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {size, size});
   lead_depart_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {size, size});
@@ -154,6 +158,47 @@ void HudRendererSP::updateState(const UIState &s) {
 
   allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
                      sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
+
+  // Navigationd
+  if (sm.updated("navigationd")) {
+    auto nav = sm["navigationd"].getNavigationd();
+    navigationValid = nav.getValid();
+    if (navigationValid && nav.getAllManeuvers().size() > 0) {
+      auto maneuver = nav.getAllManeuvers()[-1];
+      QString modifier = QString::fromStdString(maneuver.getModifier());
+      if (modifier == "left") navigationArrowType = "left";
+      else if (modifier == "right") navigationArrowType = "right";
+      else navigationArrowType = "straight";
+
+      float dist = maneuver.getDistance();
+      if (is_metric) {
+        if (dist < 1000) {
+          navigationDistance = QString::number((int)dist) + " m";
+        } else {
+          navigationDistance = QString::number(dist / 1000, 'f', 1) + " km";
+        }
+      } else {
+        float dist_ft = dist * 3.28084f;
+        if (dist_ft < 528) {
+          navigationDistance = QString::number((int)dist_ft) + " ft";
+        } else {
+          navigationDistance = QString::number(dist_ft / 5280, 'f', 1) + " mi";
+        }
+      }
+
+      QString instruction = QString::fromStdString(maneuver.getInstruction());
+      QStringList parts = instruction.split(" onto ");
+      if (parts.size() > 1) {
+        navigationStreet = parts[1].trimmed();
+      } else {
+        navigationStreet = instruction;
+      }
+    } else {
+      navigationStreet = "---";
+      navigationDistance = "---";
+      navigationArrowType = "straight";
+    }
+  }
 }
 
 void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
@@ -286,6 +331,8 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       drawBlinker(p, surface_rect);
     }
   }
+
+  drawNavigationHUD(p, surface_rect);
 
   p.restore();
 }
@@ -795,11 +842,15 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
 void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
   QString speedStr = QString::number(std::nearbyint(speed));
 
+  int speedX = surface_rect.left() + 120;
+  int speedY = surface_rect.center().y() - 50;
+  int unitsY = surface_rect.center().y();
+
   p.setFont(InterFont(176, QFont::Bold));
-  HudRenderer::drawText(p, surface_rect.center().x(), 210, speedStr);
+  HudRenderer::drawText(p, speedX, speedY, speedStr);
 
   p.setFont(InterFont(66));
-  HudRenderer::drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
+  HudRenderer::drawText(p, speedX, unitsY, is_metric ? tr("km/h") : tr("mph"), 200);
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
@@ -884,4 +935,36 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   }
 
   p.restore();
+}
+
+void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
+  int x = surface_rect.center().x();
+  int y = 50;
+  int arrowSize = 176;
+  int cy_offset = (navigationArrowType == "left" || navigationArrowType == "right") ? -20 : 0;
+  int cx = x - 100;
+  int cy = y + arrowSize/2 + cy_offset;
+
+  QPixmap arrow_img;
+  if (navigationArrowType == "left") {
+    arrow_img = nav_left_img;
+  } else if (navigationArrowType == "right") {
+    arrow_img = nav_right_img;
+  } else {
+    arrow_img = nav_straight_img;
+  }
+
+  p.drawPixmap(cx - arrowSize/2, cy - arrowSize/2, arrowSize, arrowSize, arrow_img);
+  int gap = (navigationArrowType == "left") ? -10 : 20;
+  int textX = cx + arrowSize/2 + gap;
+  int textY = y + arrowSize/2;
+
+  // Draw distance text
+  p.setFont(InterFont(80, QFont::Bold));
+  p.setPen(Qt::white);
+  p.drawText(textX, textY, navigationDistance);
+
+  p.setFont(InterFont(50));
+  int streetY = textY + 60;  // draw street name below distance text
+  p.drawText(textX, streetY, navigationStreet);
 }
