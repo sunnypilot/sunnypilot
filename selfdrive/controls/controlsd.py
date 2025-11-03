@@ -128,6 +128,9 @@ class Controls(ControlsExt, ModelStateBase):
     # Update lateral control
     lac_log = self._update_lateral_control(CC, actuators, CS, model_v2, lp)
 
+    # Validate actuators for NaNs/Infs
+    self._validate_actuators(actuators)
+
     return CC, lac_log
 
   def _update_lateral_control(self, CC, actuators, CS, model_v2, lp):
@@ -143,7 +146,7 @@ class Controls(ControlsExt, ModelStateBase):
                                                        self.calibrated_pose, curvature_limited)  # TODO what if not available
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
-    
+
     return lac_log
 
   def _update_hud_control(self, CC, CS):
@@ -174,7 +177,7 @@ class Controls(ControlsExt, ModelStateBase):
                  (not standstill or self.CP.steerAtStandstill)
     long_active = self.sm['selfdriveState'].enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and \
                   (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
-    
+
     return lat_active, long_active
 
   def _update_blinkers(self, CC, model_v2):
@@ -182,16 +185,6 @@ class Controls(ControlsExt, ModelStateBase):
     if model_v2.meta.laneChangeState != LaneChangeState.off:
       CC.leftBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.left
       CC.rightBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.right
-
-  def _update_cruise_control(self, CC, CS):
-    """Update cruise control settings."""
-    CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
-    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
-    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
-    # Validate actuators for NaNs/Infs
-    self._validate_actuators(actuators)
-
-    return CC, lac_log
 
   def _validate_actuators(self, actuators):
     """Validate that actuator values are finite to prevent NaN/Inf propagation."""
@@ -203,6 +196,12 @@ class Controls(ControlsExt, ModelStateBase):
       if not math.isfinite(attr):
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
+
+  def _update_cruise_control(self, CC, CS):
+    """Update cruise control settings."""
+    CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
+    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
+    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
 
   def publish(self, CC, lac_log):
     CS = self.sm['carState']

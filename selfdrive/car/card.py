@@ -138,8 +138,10 @@ class Car:
       self.CP.safetyConfigs = [safety_config]
     return controller_available
 
-  def _setup_secoc_key(self, is_release):
+  def _setup_secoc_key(self):
     """Setup SecOC key if required and available."""
+    # Get is_release from params since we can't pass it from __init__ context
+    is_release = self.params.get_bool("IsReleaseBranch")
     if self.CP.secOcRequired and not is_release:
       # Copy user key if available
       try:
@@ -191,9 +193,9 @@ class Car:
     # Dynamic Experimental Control
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 
-    controller_available = self._setup_controller()
+    self._setup_controller()
 
-    self._setup_secoc_key(is_release)
+    self._setup_secoc_key()
 
     self._cache_car_params()
 
