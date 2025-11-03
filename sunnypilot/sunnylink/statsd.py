@@ -40,8 +40,7 @@ def main() -> NoReturn:
   # open statistics socket
   ctx = zmq.Context.instance()
   sock = ctx.socket(zmq.PULL)
-  sock.bind(STATS_SOCKET)
-  sock.bind(SUNNYPILOT_STATS_SOCKET)
+  sock.bind(f"{STATS_SOCKET}_sp")
 
   STATS_DIR = Paths.stats_sp_root()
 
