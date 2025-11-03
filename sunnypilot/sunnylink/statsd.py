@@ -2,15 +2,15 @@
 import base64
 import json
 import os
-from decimal import Decimal
+import threading
+import traceback
 
 import zmq
 import time
 import uuid
 from pathlib import Path
 from collections import defaultdict
-from datetime import datetime, UTC, date
-from typing import NoReturn
+from datetime import datetime, UTC
 
 from openpilot.common.params import Params
 from cereal.messaging import SubMaster
@@ -20,100 +20,83 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.common.file_helpers import atomic_write_in_dir
 from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
+from openpilot.system.statsd import METRIC_TYPE, StatLogSP
+from openpilot.common.realtime import Ratekeeper
 
 
-class METRIC_TYPE:
-  GAUGE = 'g'
-  SAMPLE = 'sa'
-  RAW = 'r'
+def sp_stats(end_event):
+  """Collect sunnypilot-specific statistics and send as raw metrics."""
+  rk = Ratekeeper(.1, print_delay_threshold=None)
+  statlogsp = StatLogSP(intercept=False)
+  params = Params()
 
+  def flatten_dict(d, parent_key='', sep='.'):
+    items = {}
+    for k, v in d.items():
+      new_key = f"{parent_key}{sep}{k}" if parent_key else k
+      if isinstance(v, dict):
+        items.update(flatten_dict(v, new_key, sep=sep))
+      else:
+        items[new_key] = v
+    return items
 
-class StatLog:
-  def __init__(self):
-    self.pid = None
-    self.zctx = None
-    self.sock = None
-    self.stats_socket = STATS_SOCKET
+  # Collect sunnypilot parameters
+  stats_dict = {}
 
-  def connect(self) -> None:
-    self.zctx = zmq.Context.instance() or zmq.Context()
-    self.sock = self.zctx.socket(zmq.PUSH)
-    self.sock.setsockopt(zmq.LINGER, 10)
-    self.sock.connect(self.stats_socket)
-    self.pid = os.getpid()
+  param_keys = [
+    'SunnylinkEnabled',
+    'AutoLaneChangeBsmDelay',
+    'AutoLaneChangeTimer',
+    'CarPlatformBundle',
+    'DevUIInfo',
+    'EnableCopyparty',
+    'IntelligentCruiseButtonManagement',
+    'QuietMode',
+    'RainbowMode',
+    'ShowAdvancedControls',
+    'Mads',
+    'MadsMainCruiseAllowed',
+    'MadsSteeringMode',
+    'MadsUnifiedEngagementMode',
+    'ModelManager_Favs',
+    'EnableSunnylinkUploader',
+    'SunnylinkEnabled',
+    'InstallDate',
+    'UptimeOffroad',
+    'UptimeOnroad',
+  ]
 
-  def __del__(self):
-    if self.sock is not None:
-      self.sock.close()
-    if self.zctx is not None:
-      self.zctx.term()
-
-  def _send(self, metric: str) -> None:
-    if os.getpid() != self.pid:
-      self.connect()
-
+  while not end_event.is_set():
     try:
-      self.sock.send_string(metric, zmq.NOBLOCK)
-    except zmq.error.Again:
-      # drop :/
-      pass
+      for key in param_keys:
 
-  def gauge(self, name: str, value: float) -> None:
-    self._send(f"{name}:{value}|{METRIC_TYPE.GAUGE}")
+        try:
+          value = params.get(key)
+        except Exception as e:
+          stats_dict[key] = e
+          continue
 
-  # Samples will be recorded in a buffer and at aggregation time,
-  # statistical properties will be logged (mean, count, percentiles, ...)
-  def sample(self, name: str, value: float):
-    self._send(f"{name}:{value}|{METRIC_TYPE.SAMPLE}")
+        if value is None:
+          continue
 
+        if isinstance(value, dict):
+          stats_dict.update(flatten_dict(value, key))
+        else:
+          stats_dict[key] = value
 
-class StatLogSP(StatLog):
-  def __init__(self, intercept=True):
-    """
-    Initializes the class instance with an optional parameter to determine
-    if statistical logging should be configured or not.
-
-    :param intercept: A boolean flag that indicates whether to initialize
-        the `comma_statlog`. If True, the `comma_statlog` attribute is
-        instantiated as a `StatLog` object. Defaults to True.
-    """
-    super().__init__()
-    self.comma_statlog = StatLog() if intercept else None
-    self.stats_socket = f"{STATS_SOCKET}_sp"
-
-  def connect(self) -> None:
-    super().connect()
-    if self.comma_statlog:
-      self.comma_statlog.connect()
-
-  def __del__(self):
-    super().__del__()
-    if self.comma_statlog:
-      self.comma_statlog.__del__()
-
-  def _send(self, metric: str) -> None:
-    super()._send(metric)
-    if self.comma_statlog:
-      self.comma_statlog._send(metric)
-
-  @staticmethod
-  def default_converter(obj):
-    if isinstance(obj, (datetime, date)):
-      return obj.isoformat()
-    if isinstance(obj, set):
-      return list(obj)
-    if isinstance(obj, Decimal):
-      return float(obj)
-    return str(obj)  # fallback for unknown types
-
-  def raw(self, name: str, value: dict) -> None:
-    encoded_dict = base64.b64encode(json.dumps(value, default=self.default_converter).encode("utf-8")).decode("utf-8")
-    self._send(f"{name}:{encoded_dict}|{METRIC_TYPE.RAW}")
+      if stats_dict:
+        statlogsp.raw('sunnypilot_params', stats_dict)
+    except Exception as e:
+      cloudlog.error(f"Exception {e}")
+    finally:
+      rk.keep_time()
 
 
-def main() -> NoReturn:
-  dongle_id = Params().get("DongleId")
-  def get_influxdb_line(measurement: str, value: float | dict[str, float],  timestamp: datetime, tags: dict) -> str:
+def stats_main(end_event):
+  comma_dongle_id = Params().get("DongleId")
+  sunnylink_dongle_id = Params().get("SunnylinkDongleId")
+
+  def get_influxdb_line(measurement: str, value: float | dict[str, float], timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     for k, v in tags.items():
       res += f",{k}={str(v)}"
@@ -123,17 +106,29 @@ def main() -> NoReturn:
       value = {'value': value}
 
     for k, v in value.items():
-      res += f"{k}={v},"
+      res += f"{k}={str(v)},"
 
-    res += f"dongle_id=\"{dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
+    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
+    return res
+
+  def get_influxdb_line_raw(measurement: str, value: dict[str, float], timestamp: datetime, tags: dict) -> str:
+    res = f"{measurement}"
+    for k, v in tags.items():
+      res += f",{k}={str(v)}"
+    res += " "
+
+    for k, v in value.items():
+      res += f"{k}=\"{str(v)}\","
+
+    res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
   # open statistics socket
   ctx = zmq.Context.instance()
   sock = ctx.socket(zmq.PULL)
-  sock.bind(STATS_SOCKET)
+  sock.bind(f"{STATS_SOCKET}_sp")
 
-  STATS_DIR = Paths.stats_root()
+  STATS_DIR = Paths.stats_sp_root()
 
   # initialize stats directory
   Path(STATS_DIR).mkdir(parents=True, exist_ok=True)
@@ -158,8 +153,9 @@ def main() -> NoReturn:
   last_flush_time = time.monotonic()
   gauges = {}
   samples: dict[str, list[float]] = defaultdict(list)
+  raws: dict = defaultdict()
   try:
-    while True:
+    while not end_event.is_set():
       started_prev = sm['deviceState'].started
       sm.update()
 
@@ -170,15 +166,20 @@ def main() -> NoReturn:
           try:
             metric_type = metric.split('|')[1]
             metric_name = metric.split(':')[0]
-            metric_value = float(metric.split('|')[0].split(':')[1])
+            metric_value_raw = metric.split('|')[0].split(':')[1]
 
             if metric_type == METRIC_TYPE.GAUGE:
+              metric_value = float(metric_value_raw)
               gauges[metric_name] = metric_value
             elif metric_type == METRIC_TYPE.SAMPLE:
+              metric_value = float(metric_value_raw)
               samples[metric_name].append(metric_value)
+            elif metric_type == METRIC_TYPE.RAW:
+              raws[metric_name] = metric_value_raw
             else:
               cloudlog.event("unknown metric type", metric_type=metric_type)
           except Exception:
+            print(traceback.format_exc())
             cloudlog.event("malformed metric", metric=metric)
         except zmq.error.Again:
           break
@@ -188,6 +189,10 @@ def main() -> NoReturn:
         result = ""
         current_time = datetime.now(UTC)
         tags['started'] = sm['deviceState'].started
+
+        for key, value in raws.items():
+          decoded_value = json.loads(base64.b64decode(value).decode('utf-8'))
+          result += get_influxdb_line_raw(key, decoded_value, current_time, tags)
 
         for key, value in gauges.items():
           result += get_influxdb_line(f"gauge.{key}", value, current_time, tags)
@@ -228,7 +233,27 @@ def main() -> NoReturn:
     ctx.term()
 
 
+def main():
+  rk = Ratekeeper(1, print_delay_threshold=None)
+  end_event = threading.Event()
+
+  threads = [
+    threading.Thread(target=stats_main, args=(end_event,)),
+    threading.Thread(target=sp_stats, args=(end_event,)),
+  ]
+
+  for t in threads:
+    t.start()
+
+  try:
+    while all(t.is_alive() for t in threads):
+      rk.keep_time()
+  finally:
+    end_event.set()
+
+  for t in threads:
+    t.join()
+
+
 if __name__ == "__main__":
   main()
-else:
-  statlog = StatLogSP(intercept=True)

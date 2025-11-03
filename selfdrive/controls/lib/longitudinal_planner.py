@@ -51,12 +51,12 @@ def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
 
 
 class LongitudinalPlanner(LongitudinalPlannerSP):
-  def __init__(self, CP, init_v=0.0, init_a=0.0, dt=DT_MDL):
+  def __init__(self, CP, CP_SP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
     self.mpc = LongitudinalMpc(dt=dt)
     # TODO remove mpc modes when TR released
     self.mpc.mode = 'acc'
-    LongitudinalPlannerSP.__init__(self, self.CP, self.mpc)
+    LongitudinalPlannerSP.__init__(self, self.CP, CP_SP, self.mpc)
     self.fcw = False
     self.dt = dt
     self.allow_throttle = True

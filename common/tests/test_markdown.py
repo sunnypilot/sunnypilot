@@ -6,7 +6,7 @@ from openpilot.common.markdown import parse_markdown
 
 class TestMarkdown:
   def test_all_release_notes(self):
-    with open(os.path.join(BASEDIR, "RELEASES.md")) as f:
+    with open(os.path.join(BASEDIR, "CHANGELOG.md")) as f:
       release_notes = f.read().split("\n\n")
       assert len(release_notes) > 10
 
