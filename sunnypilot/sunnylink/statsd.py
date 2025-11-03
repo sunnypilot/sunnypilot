@@ -28,7 +28,7 @@ from common.realtime import Ratekeeper
 
 def sp_stats(end_event):
   """Collect Sunnypilot-specific statistics and send as raw metrics."""
-  rk = Ratekeeper(1, print_delay_threshold=None)
+  rk = Ratekeeper(.1, print_delay_threshold=None)
   statlogsp = StatLogSP(intercept=False)
   params = Params()
 
@@ -60,11 +60,22 @@ def sp_stats(end_event):
   while not end_event.is_set():
     try:
       for key in param_keys:
-        value = params.get(key)
-        if value is not None:
+
+        try:
+          value = params.get(key)
+        except Exception as e:
+          stats_dict[key] = e
+          continue
+
+        if value is None:
+          continue
+
+        if isinstance(value, dict):
+          for subkey, subval in value.items():
+            stats_dict[f"{key}.{subkey}"] = subval
+        else:
           stats_dict[key] = value
 
-      # Send as raw metric (will be base64 encoded in the main loop)
       if stats_dict:
         statlogsp.raw('sunnypilot_params', stats_dict)
     except Exception as e:
