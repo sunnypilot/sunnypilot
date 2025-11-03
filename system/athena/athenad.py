@@ -744,7 +744,8 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
       cloudlog.exception("athena.log_handler.exception")
 
 
-def stat_handler(end_event: threading.Event, stats_dir=Paths.stats_root()) -> None:
+def stat_handler(end_event: threading.Event, stats_dir=None) -> None:
+  stats_dir = stats_dir or Paths.stats_root()
   last_scan = 0.0
 
   while not end_event.is_set():
