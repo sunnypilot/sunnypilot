@@ -41,6 +41,10 @@ private:
   void drawBlinker(QPainter &p, const QRect &surface_rect);
   void drawNavigationHUD(QPainter &p, const QRect &surface_rect);
 
+  void drawStraightArrow(QPainter &p, int cx, int cy, int size);
+  void drawLeftArrow(QPainter &p, int cx, int cy, int size);
+  void drawRightArrow(QPainter &p, int cx, int cy, int size);
+
   bool lead_status;
   float lead_d_rel;
   float lead_v_rel;
@@ -126,7 +130,4 @@ private:
   QString navigationStreet;
   QString navigationDistance;
   QString navigationArrowType;
-  QPixmap nav_left_img;
-  QPixmap nav_right_img;
-  QPixmap nav_straight_img;
 };

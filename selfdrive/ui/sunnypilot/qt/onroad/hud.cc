@@ -15,10 +15,6 @@ HudRendererSP::HudRendererSP() {
   plus_arrow_up_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_plus_arrow_up", {90, 90});
   minus_arrow_down_img = loadPixmap("../../sunnypilot/selfdrive/assets/img_minus_arrow_down", {90, 90});
 
-  nav_left_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_left", {176, 176});
-  nav_right_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_right", {176, 176});
-  nav_straight_img = loadPixmap("../../sunnypilot/selfdrive/assets/nav_straight", {176, 176});
-
   int size = e2e_alert_size * 2 - 40;
   green_light_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/green_light.png", {size, size});
   lead_depart_alert_img = loadPixmap("../../sunnypilot/selfdrive/assets/images/lead_depart.png", {size, size});
@@ -194,8 +190,8 @@ void HudRendererSP::updateState(const UIState &s) {
         navigationStreet = instruction;
       }
     } else {
-      navigationStreet = "---";
-      navigationDistance = "---";
+      navigationStreet = "W. Gonzalez Blvd."; // sample fields for metadrive sim (@nayan)
+      navigationDistance = "5.8 mi";
       navigationArrowType = "straight";
     }
   }
@@ -943,21 +939,26 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
   int arrowSize = 176;
   int cy_offset = (navigationArrowType == "left" || navigationArrowType == "right") ? -20 : 0;
   int cx = x - 100;
-  int cy = y + arrowSize/2 + cy_offset;
+  int textY = y + arrowSize/2 + cy_offset;
+  int cy = (navigationArrowType == "straight") ? textY + 20 : textY + 60;  // make straight more centered-ish bc its big boy
 
-  QPixmap arrow_img;
+  p.save();
+  p.setPen(Qt::NoPen);
+  p.setBrush(Qt::white);
+
   if (navigationArrowType == "left") {
-    arrow_img = nav_left_img;
+    drawLeftArrow(p, cx, cy, arrowSize);
   } else if (navigationArrowType == "right") {
-    arrow_img = nav_right_img;
+    drawRightArrow(p, cx, cy, arrowSize);
   } else {
-    arrow_img = nav_straight_img;
+    drawStraightArrow(p, cx, cy, arrowSize);
   }
 
-  p.drawPixmap(cx - arrowSize/2, cy - arrowSize/2, arrowSize, arrowSize, arrow_img);
+  p.restore();
+
   int gap = (navigationArrowType == "left") ? -10 : 20;
   int textX = cx + arrowSize/2 + gap;
-  int textY = y + arrowSize/2;
+  if (navigationArrowType == "right") textX += 40;  // move that beech over for right arrow
 
   // Draw distance text
   p.setFont(InterFont(80, QFont::Bold));
@@ -967,4 +968,64 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
   p.setFont(InterFont(50));
   int streetY = textY + 60;  // draw street name below distance text
   p.drawText(textX, streetY, navigationStreet);
+}
+
+void HudRendererSP::drawStraightArrow(QPainter &p, int cx, int cy, int size) {
+  int rectWidth = size * 0.2;
+  int rectHeight = size * 0.6;
+  int rectX = cx - rectWidth / 2;
+  int rectY = cy - rectHeight / 2;
+  p.drawRect(rectX, rectY, rectWidth, rectHeight);
+
+  int triangleHeight = size * 0.3;
+  int triangleBaseWidth = rectWidth * 3;
+  QPolygon triangle;
+  triangle << QPoint(cx - triangleBaseWidth / 2, rectY)
+           << QPoint(cx + triangleBaseWidth / 2, rectY)
+           << QPoint(cx, rectY - triangleHeight);
+  p.drawPolygon(triangle);
+}
+
+void HudRendererSP::drawLeftArrow(QPainter &p, int cx, int cy, int size) {
+  int vertHeight = size * 0.6;
+  int vertWidth = size * 0.2;
+  int vertX = cx - vertWidth / 2;
+  int vertY = cy - vertHeight;
+  p.drawRect(vertX, vertY, vertWidth, vertHeight);
+
+  int horizWidth = size * 0.4;
+  int horizHeight = size * 0.2;
+  int horizX = cx - horizWidth + vertWidth / 2 + 1;  // 1 to adjust pix gap bc my math ain't mathing today
+  int horizY = cy - vertHeight - horizHeight / 2;
+  p.drawRect(horizX, horizY, horizWidth, horizHeight);
+
+  int triangleWidth = size * 0.4;
+  int triangleHeight = size * 0.4;
+  QPolygon triangle;
+  triangle << QPoint(horizX, horizY + horizHeight / 2 - triangleHeight / 2)
+           << QPoint(horizX, horizY + horizHeight / 2 + triangleHeight / 2)
+           << QPoint(horizX - triangleWidth, horizY + horizHeight / 2);
+  p.drawPolygon(triangle);  // I think i dislike qpolygons. they're mad annoying
+}
+
+void HudRendererSP::drawRightArrow(QPainter &p, int cx, int cy, int size) {
+  int vertHeight = size * 0.6;
+  int vertWidth = size * 0.2;
+  int vertX = cx - vertWidth / 2;
+  int vertY = cy - vertHeight;
+  p.drawRect(vertX, vertY, vertWidth, vertHeight);
+
+  int horizWidth = size * 0.4;
+  int horizHeight = size * 0.2;
+  int horizX = cx - vertWidth / 2;
+  int horizY = cy - vertHeight - horizHeight / 2;
+  p.drawRect(horizX, horizY, horizWidth, horizHeight);
+
+  int triangleWidth = size * 0.4;
+  int triangleHeight = size * 0.4;
+  QPolygon triangle;
+  triangle << QPoint(horizX + horizWidth, horizY + horizHeight / 2 - triangleHeight / 2)
+           << QPoint(horizX + horizWidth, horizY + horizHeight / 2 + triangleHeight / 2)
+           << QPoint(horizX + horizWidth + triangleWidth, horizY + horizHeight / 2);
+  p.drawPolygon(triangle);
 }
