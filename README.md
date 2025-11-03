@@ -16,7 +16,7 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 * A supported device to run this software
     * a [comma three](https://comma.ai/shop/products/three) or a [C3X](https://comma.ai/shop/comma-3x)
 * This software
-* One of [the 300+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
+* One of [the 325+ supported cars](https://github.com/sunnypilot/sunnypilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford, and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
 * A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
 
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
