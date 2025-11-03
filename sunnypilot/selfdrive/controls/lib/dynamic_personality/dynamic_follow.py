@@ -14,11 +14,11 @@ LongPersonality = log.LongitudinalPersonality
 
 # Follow distance profiles mapped to LongPersonality
 FOLLOW_PROFILES = {
-  LongPersonality.relaxed:    [1.50, 1.35, 1.60, 1.80, 1.90],
-  LongPersonality.standard:   [1.35, 1.25, 1.40, 1.55, 1.65],
-  LongPersonality.aggressive: [1.00, 0.85, 1.05, 1.25, 1.35],
+  LongPersonality.relaxed:    [1.50, 1.40, 1.55, 1.70, 1.80, 1.90],
+  LongPersonality.standard:   [1.35, 1.28, 1.38, 1.48, 1.58, 1.65],
+  LongPersonality.aggressive: [1.00, 0.90, 1.00, 1.15, 1.28, 1.35],
 }
-FOLLOW_BREAKPOINTS = [0., 14., 25., 36., 50.]
+FOLLOW_BREAKPOINTS = [0., 5., 8., 14., 25., 50.]
 
 SMOOTHING_BASE = 0.70  # Base smoothing factor (higher = smoother)
 SMOOTHING_RANGE = 0.25  # Additional smoothing at high speeds
@@ -73,10 +73,32 @@ class FollowDistanceController:
   def is_enabled(self) -> bool:
     return self.params.get_bool('DynamicFollow')
 
+  def set_enabled(self, enabled: bool):
+    self.params.put_bool('DynamicFollow', enabled)
+
   def toggle(self) -> bool:
     enabled = self.is_enabled()
-    self.params.put_bool('DynamicFollow', not enabled)
+    self.set_enabled(not enabled)
     return not enabled
+
+  def get_personality(self) -> int:
+    self._update_from_params()
+    return int(self.personality)
+
+  def set_personality(self, personality: int):
+    if personality not in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
+      return
+
+    self.personality = personality
+    self.params.put('LongitudinalPersonality', str(personality))
+    self.personality_change_cooldown = self.personality_cooldown_frames
+
+  def cycle_personality(self) -> int:
+    personalities = [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]
+    current_idx = personalities.index(self.personality)
+    next_personality = personalities[(current_idx + 1) % len(personalities)]
+    self.set_personality(next_personality)
+    return int(next_personality)
 
   def get_follow_distance_multiplier(self, v_ego: float) -> float:
     self._update_from_params()
@@ -93,5 +115,13 @@ class FollowDistanceController:
     self.current_multiplier = alpha * self.current_multiplier + (1.0 - alpha) * target
     return self.current_multiplier
 
+  def reset(self):
+    self.personality = LongPersonality.standard
+    self.frame = 0
+    self.current_multiplier = None
+    self.first_run = True
+    self.personality_change_cooldown = 0
+
   def update(self):
     self.frame += 1
+    self._update_from_params()
