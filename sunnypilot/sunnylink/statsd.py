@@ -16,15 +16,7 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.common.file_helpers import atomic_write_in_dir
 from openpilot.system.version import get_build_metadata
 from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, STATS_FLUSH_TIME_S
-from openpilot.system.statsd import StatLog
-
-SUNNYPILOT_STATS_SOCKET = f"{STATS_SOCKET}_sp"
-
-
-class StatLogSP(StatLog):
-  def __init__(self):
-    super().__init__()
-    self.stats_socket = SUNNYPILOT_STATS_SOCKET
+from openpilot.system.statsd import METRIC_TYPE
 
 
 def main() -> NoReturn:

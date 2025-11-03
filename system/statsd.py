@@ -30,7 +30,7 @@ class StatLog:
     self.stats_socket = STATS_SOCKET
 
   def connect(self) -> None:
-    self.zctx = zmq.Context()
+    self.zctx = zmq.Context.instance() or zmq.Context()
     self.sock = self.zctx.socket(zmq.PUSH)
     self.sock.setsockopt(zmq.LINGER, 10)
     self.sock.connect(self.stats_socket)
@@ -59,6 +59,25 @@ class StatLog:
   # statistical properties will be logged (mean, count, percentiles, ...)
   def sample(self, name: str, value: float):
     self._send(f"{name}:{value}|{METRIC_TYPE.SAMPLE}")
+
+
+class StatLogSP(StatLog):
+  def __init__(self):
+    super().__init__()
+    self.comma_statlog = StatLog()
+    self.stats_socket = f"{STATS_SOCKET}_sp"
+
+  def connect(self) -> None:
+    super().connect()
+    self.comma_statlog.connect()
+
+  def __del__(self):
+    super().__del__()
+    self.comma_statlog.__del__()
+
+  def _send(self, metric: str) -> None:
+    super()._send(metric)
+    self.comma_statlog._send(metric)
 
 
 def main() -> NoReturn:
@@ -181,4 +200,4 @@ def main() -> NoReturn:
 if __name__ == "__main__":
   main()
 else:
-  statlog = StatLog()
+  statlog = StatLogSP()
