@@ -11,7 +11,6 @@ import uuid
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, UTC
-from typing import NoReturn
 
 from openpilot.common.params import Params
 from cereal.messaging import SubMaster
