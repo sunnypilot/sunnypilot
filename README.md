@@ -20,7 +20,7 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
 ## Installation
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging` branch.
+Please refer to [Recommended Branches](#recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging` branch.
 
 ### If you want to use our newest branches (our rewrite)
 > [!TIP]
@@ -29,7 +29,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://staging.sunnypilot.ai```.
+  3. Input the installation URL per [Recommended Branches](#recommended-branches). Example: ```https://staging.sunnypilot.ai```.
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
@@ -38,6 +38,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
   4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging`
 
+### Recommended Branches
 |      Branch     |                 Installation URL              |
 |:---------------:|:---------------------------------------------:|
 | `release`       | `https://release.sunnypilot.ai`               |
