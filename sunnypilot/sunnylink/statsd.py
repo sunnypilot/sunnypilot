@@ -92,7 +92,7 @@ def sp_stats(end_event):
           stats_dict[key] = value
 
       if stats_dict:
-        statlogsp.raw('sunnypilot_params', stats_dict)
+        statlogsp.raw('sunnypilot.device_params', stats_dict)
     except Exception as e:
       cloudlog.error(f"Exception {e}")
     finally:
