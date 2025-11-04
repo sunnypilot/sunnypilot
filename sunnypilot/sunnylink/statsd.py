@@ -118,7 +118,7 @@ def stats_main(end_event):
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
-  def get_influxdb_line_raw(measurement: str, value: dict[str, str], timestamp: datetime, tags: dict) -> str:
+  def get_influxdb_line_raw(measurement: str, value: dict, timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
     try:
       custom_tags = ""
@@ -128,6 +128,10 @@ def stats_main(end_event):
 
       fields = ""
       for k, v in value.items():
+        # Skip complex types - only keep simple scalar values
+        if isinstance(v, (dict, list, bytes, bytearray)):
+          continue
+
         fields += f"{k}=\"{str(v)}\","
 
       res += f" {fields}"
