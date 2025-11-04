@@ -161,10 +161,8 @@ void HudRendererSP::updateState(const UIState &s) {
     navigationValid = nav.getValid();
     if (navigationValid && nav.getAllManeuvers().size() > 0) {
       auto maneuver = nav.getAllManeuvers()[-1];
-      QString modifier = QString::fromStdString(maneuver.getModifier());
-      if (modifier == "left") navigationArrowType = "left";
-      else if (modifier == "right") navigationArrowType = "right";
-      else navigationArrowType = "straight";
+      navigationModifier = QString::fromStdString(maneuver.getModifier());
+      navigationManeuverType = QString::fromStdString(maneuver.getType());
 
       float dist = maneuver.getDistance();
       if (is_metric) {
@@ -189,10 +187,22 @@ void HudRendererSP::updateState(const UIState &s) {
       } else {
         navigationStreet = instruction;
       }
+
+      // Get next maneuver if available
+      if (nav.getAllManeuvers().size() > 1) {
+        auto nextManeuver = nav.getAllManeuvers()[-2];
+        navigationNextModifier = QString::fromStdString(nextManeuver.getModifier());
+        navigationNextManeuverType = QString::fromStdString(nextManeuver.getType());
+        navigationHasNext = true;
+      } else {
+        navigationHasNext = false;
+      }
     } else {
       navigationStreet = "W. Gonzalez Blvd."; // sample fields for metadrive sim (@nayan)
       navigationDistance = "5.8 mi";
-      navigationArrowType = "straight";
+      navigationModifier = "straight";
+      navigationNextModifier = "right";
+      navigationHasNext = true;
     }
   }
 }
@@ -226,17 +236,17 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     if (smartCruiseControlMapEnabled) y_scc_m = orders[i++];
 
     // Smart Cruise Control - Vision
-    bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
-    if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
+    //bool scc_vision_active_pulse = pulseElement(smartCruiseControlVisionFrame);
+    //if ((smartCruiseControlVisionEnabled && !smartCruiseControlVisionActive) || (smartCruiseControlVisionActive && scc_vision_active_pulse)) {
       drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_v, "SCC-V");
-    }
+    //}
     smartCruiseControlVisionFrame = smartCruiseControlVisionActive ? (smartCruiseControlVisionFrame + 1) : 0;
 
     // Smart Cruise Control - Map
-    bool scc_map_active_pulse = pulseElement(smartCruiseControlMapFrame);
-    if ((smartCruiseControlMapEnabled && !smartCruiseControlMapActive) || (smartCruiseControlMapActive && scc_map_active_pulse)) {
+    //bool scc_map_active_pulse = pulseElement(smartCruiseControlMapFrame);
+    //if ((smartCruiseControlMapEnabled && !smartCruiseControlMapActive) || (smartCruiseControlMapActive && scc_map_active_pulse)) {
       drawSmartCruiseControlOnroadIcon(p, surface_rect, x_offset, y_scc_m, "SCC-M");
-    }
+    //}
     smartCruiseControlMapFrame = smartCruiseControlMapActive ? (smartCruiseControlMapFrame + 1) : 0;
 
     // Bottom Dev UI
@@ -349,7 +359,7 @@ bool HudRendererSP::pulseElement(int frame) {
 }
 
 void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
-  int x = surface_rect.center().x();
+  int x = surface_rect.left() + 860;
   int y = surface_rect.height() / 4;
 
   QString text = QString::fromStdString(name);
@@ -727,36 +737,41 @@ void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) 
 }
 
 void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
-  // Draw outer box + border to contain set speed
-  const QSize default_size = {172, 204};
-  QSize set_speed_size = is_metric ? QSize(200, 204) : default_size;
-  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+  // Combined speed display container - taller to fit both speeds
+  const int container_width = 172;
+  const int container_height = 280;
+  const int container_x = 60;
+  const int container_y = 45;
 
-  // Draw set speed box
+  QRect speed_container(container_x, container_y, container_width, container_height);
+
+  // Draw outer rounded rectangle container
   p.setPen(QPen(QColor(255, 255, 255, 75), 6));
   p.setBrush(QColor(0, 0, 0, 166));
-  p.drawRoundedRect(set_speed_rect, 32, 32);
+  p.drawRoundedRect(speed_container, 24, 24);
+
+  // ===== BOTTOM SECTION: MAX/SET SPEED =====
 
   // Colors based on status
-  QColor max_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+  QColor max_label_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
   QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
   if (is_cruise_set) {
     set_speed_color = QColor(255, 255, 255);
     if (speedLimitAssistActive) {
       set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
-      max_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+      max_label_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
     } else {
       if (status == STATUS_DISENGAGED) {
-        max_color = QColor(255, 255, 255);
+        max_label_color = QColor(255, 255, 255);
       } else if (status == STATUS_OVERRIDE) {
-        max_color = QColor(0x91, 0x9b, 0x95, 0xff);
+        max_label_color = QColor(0x91, 0x9b, 0x95, 0xff);
       } else {
-        max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+        max_label_color = QColor(0x80, 0xd8, 0xa6, 0xff);
       }
     }
   }
 
-  // Draw "MAX" or carState.cruiseState.speedCluster (when ICBM is active) text
+  // ICBM counter logic
   if (!pcmCruiseSpeed && carControlEnabled) {
     if (std::nearbyint(set_speed) != std::nearbyint(speedCluster)) {
       icbm_active_counter = 3 * UI_FREQ;
@@ -766,19 +781,25 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
   } else {
     icbm_active_counter = 0;
   }
-  int max_str_size = (icbm_active_counter != 0) ? 60 : 40;
-  int max_str_y = (icbm_active_counter != 0) ? 15 : 27;
+
+  // ===== DIVIDER LINE =====
+  int divider_y = container_y + 165;
+  p.setPen(QPen(QColor(255, 255, 255, 50), 2));
+  p.drawLine(container_x + 20, divider_y, container_x + container_width - 20, divider_y);
+
+  // Bottom section - MAX label
+  QRect max_label_rect(container_x, container_y + 175, container_width, 30);
+  p.setFont(InterFont(28, QFont::Normal));
+  p.setPen(max_label_color);
   QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
+  p.drawText(max_label_rect, Qt::AlignCenter, max_str);
 
-  p.setFont(InterFont(max_str_size, QFont::DemiBold));
-  p.setPen(max_color);
-  p.drawText(set_speed_rect.adjusted(0, max_str_y, 0, 0), Qt::AlignTop | Qt::AlignHCenter, max_str);
-
-  // Draw set speed
+  // Bottom section - Set speed value
+  QRect set_speed_rect(container_x, container_y + 210, container_width, 60);
   QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
-  p.setFont(InterFont(90, QFont::Bold));
+  p.setFont(InterFont(58, QFont::Bold));
   p.setPen(set_speed_color);
-  p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
+  p.drawText(set_speed_rect, Qt::AlignCenter, setSpeedStr);
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
@@ -836,17 +857,26 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
 }
 
 void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
+  // Draw in top section of the unified speed container
+  const int container_width = 172;
+  const int container_x = 60;
+  const int container_y = 45;
+
+  // ===== TOP SECTION: CURRENT SPEED =====
+
+  // Current speed value (larger and bolder)
   QString speedStr = QString::number(std::nearbyint(speed));
+  QRect current_speed_rect(container_x, container_y + 25, container_width, 90);
+  p.setFont(InterFont(85, QFont::Bold));
+  p.setPen(Qt::white);
+  p.drawText(current_speed_rect, Qt::AlignCenter, speedStr);
 
-  int speedX = surface_rect.left() + 120;
-  int speedY = surface_rect.center().y() - 50;
-  int unitsY = surface_rect.center().y();
-
-  p.setFont(InterFont(176, QFont::Bold));
-  HudRenderer::drawText(p, speedX, speedY, speedStr);
-
-  p.setFont(InterFont(66));
-  HudRenderer::drawText(p, speedX, unitsY, is_metric ? tr("km/h") : tr("mph"), 200);
+  // Speed unit label
+  QRect unit_rect(container_x, container_y + 115, container_width, 35);
+  p.setFont(InterFont(30, QFont::Normal));
+  p.setPen(QColor(180, 180, 180, 255));
+  QString unit = is_metric ? tr("km/h") : tr("mph");
+  p.drawText(unit_rect, Qt::AlignCenter, unit);
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
@@ -933,99 +963,245 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   p.restore();
 }
 
+QString HudRendererSP::getNavigationIconName(const QString &type, const QString &mod) {
+  // Map maneuver type and modifier to icon filename
+  // Icon naming convention: direction_{maneuver_type}_{modifier}.png
+
+  QString icon_name;
+
+  // Maneuver types that support all modifiers
+  if (type == "turn") {
+    // turn: uturn, sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "uturn") icon_name = "direction_uturn.png";
+    else if (mod == "sharp right") icon_name = "direction_turn_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_turn_right.png";
+    else if (mod == "slight right") icon_name = "direction_turn_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_turn_straight.png";
+    else if (mod == "slight left") icon_name = "direction_turn_slight_left.png";
+    else if (mod == "left") icon_name = "direction_turn_left.png";
+    else if (mod == "sharp left") icon_name = "direction_turn_sharp_left.png";
+  }
+  else if (type == "new name") {
+    // new name: sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "sharp right") icon_name = "direction_new_name_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_new_name_right.png";
+    else if (mod == "slight right") icon_name = "direction_new_name_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_new_name_straight.png";
+    else if (mod == "slight left") icon_name = "direction_new_name_slight_left.png";
+    else if (mod == "left") icon_name = "direction_new_name_left.png";
+    else if (mod == "sharp left") icon_name = "direction_new_name_sharp_left.png";
+  }
+  else if (type == "depart") {
+    // depart: right, straight, left
+    if (mod == "right") icon_name = "direction_depart_right.png";
+    else if (mod == "straight") icon_name = "direction_depart_straight.png";
+    else if (mod == "left") icon_name = "direction_depart_left.png";
+    else icon_name = "direction_depart.png"; // default depart
+  }
+  else if (type == "arrive") {
+    // arrive: right, straight, left
+    if (mod == "right") icon_name = "direction_arrive_right.png";
+    else if (mod == "straight") icon_name = "direction_arrive_straight.png";
+    else if (mod == "left") icon_name = "direction_arrive_left.png";
+    else icon_name = "direction_arrive.png"; // default arrive (flag)
+  }
+  else if (type == "merge") {
+    // merge: slight_right, straight, slight_left, left, right
+    if (mod == "slight right") icon_name = "direction_merge_slight_right.png";
+    else if (mod == "right") icon_name = "direction_merge_right.png";
+    else if (mod == "straight") icon_name = "direction_merge_straight.png";
+    else if (mod == "slight left") icon_name = "direction_merge_slight_left.png";
+    else if (mod == "left") icon_name = "direction_merge_left.png";
+  }
+  else if (type == "on ramp") {
+    // on ramp: sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "sharp right") icon_name = "direction_on_ramp_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_on_ramp_right.png";
+    else if (mod == "slight right") icon_name = "direction_on_ramp_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_on_ramp_straight.png";
+    else if (mod == "slight left") icon_name = "direction_on_ramp_slight_left.png";
+    else if (mod == "left") icon_name = "direction_on_ramp_left.png";
+    else if (mod == "sharp left") icon_name = "direction_on_ramp_sharp_left.png";
+  }
+  else if (type == "off ramp") {
+    // off ramp: slight_right, right, slight_left, left
+    if (mod == "slight right") icon_name = "direction_off_ramp_slight_right.png";
+    else if (mod == "right") icon_name = "direction_off_ramp_right.png";
+    else if (mod == "slight left") icon_name = "direction_off_ramp_slight_left.png";
+    else if (mod == "left") icon_name = "direction_off_ramp_left.png";
+  }
+  else if (type == "fork") {
+    // fork: slight_right, right, straight, slight_left, left
+    if (mod == "slight right") icon_name = "direction_fork_slight_right.png";
+    else if (mod == "right") icon_name = "direction_fork_right.png";
+    else if (mod == "straight") icon_name = "direction_fork_straight.png";
+    else if (mod == "slight left") icon_name = "direction_fork_slight_left.png";
+    else if (mod == "left") icon_name = "direction_fork_left.png";
+    else icon_name = "direction_fork.png"; // default fork
+  }
+  else if (type == "end of road") {
+    // end of road: right, left
+    if (mod == "right") icon_name = "direction_end_of_road_right.png";
+    else if (mod == "left") icon_name = "direction_end_of_road_left.png";
+  }
+  else if (type == "continue") {
+    // continue: uturn, right, slight_right, straight, slight_left, left
+    if (mod == "uturn") icon_name = "direction_continue_uturn.png";
+    else if (mod == "right") icon_name = "direction_continue_right.png";
+    else if (mod == "slight right") icon_name = "direction_continue_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_continue_straight.png";
+    else if (mod == "slight left") icon_name = "direction_continue_slight_left.png";
+    else if (mod == "left") icon_name = "direction_continue_left.png";
+    else icon_name = "direction_continue.png"; // default continue
+  }
+  else if (type == "roundabout") {
+    // roundabout: sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "sharp right") icon_name = "direction_roundabout_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_roundabout_right.png";
+    else if (mod == "slight right") icon_name = "direction_roundabout_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_roundabout_straight.png";
+    else if (mod == "slight left") icon_name = "direction_roundabout_slight_left.png";
+    else if (mod == "left") icon_name = "direction_roundabout_left.png";
+    else if (mod == "sharp left") icon_name = "direction_roundabout_sharp_left.png";
+    else icon_name = "direction_roundabout.png"; // default roundabout
+  }
+  else if (type == "rotary") {
+    // rotary: sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "sharp right") icon_name = "direction_rotary_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_rotary_right.png";
+    else if (mod == "slight right") icon_name = "direction_rotary_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_rotary_straight.png";
+    else if (mod == "slight left") icon_name = "direction_rotary_slight_left.png";
+    else if (mod == "left") icon_name = "direction_rotary_left.png";
+    else if (mod == "sharp left") icon_name = "direction_rotary_sharp_left.png";
+    else icon_name = "direction_rotary.png"; // default rotary
+  }
+  else if (type == "roundabout turn") {
+    // Use roundabout icons
+    if (mod == "sharp right") icon_name = "direction_roundabout_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_roundabout_right.png";
+    else if (mod == "slight right") icon_name = "direction_roundabout_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_roundabout_straight.png";
+    else if (mod == "slight left") icon_name = "direction_roundabout_slight_left.png";
+    else if (mod == "left") icon_name = "direction_roundabout_left.png";
+    else if (mod == "sharp left") icon_name = "direction_roundabout_sharp_left.png";
+    else icon_name = "direction_roundabout.png";
+  }
+  else if (type == "notification") {
+    // notification: sharp_right, right, slight_right, straight, slight_left, left, sharp_left
+    if (mod == "sharp right") icon_name = "direction_notification_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_notification_right.png";
+    else if (mod == "slight right") icon_name = "direction_notification_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_notification_straight.png";
+    else if (mod == "slight left") icon_name = "direction_notification_slight_left.png";
+    else if (mod == "left") icon_name = "direction_notification_left.png";
+    else if (mod == "sharp left") icon_name = "direction_notification_sharp_left.png";
+  }
+
+  // If no match found, return default based on modifier only
+  if (icon_name.isEmpty()) {
+    if (mod == "uturn") icon_name = "direction_uturn.png";
+    else if (mod == "sharp right") icon_name = "direction_turn_sharp_right.png";
+    else if (mod == "right") icon_name = "direction_turn_right.png";
+    else if (mod == "slight right") icon_name = "direction_turn_slight_right.png";
+    else if (mod == "straight") icon_name = "direction_continue_straight.png";
+    else if (mod == "slight left") icon_name = "direction_turn_slight_left.png";
+    else if (mod == "left") icon_name = "direction_turn_left.png";
+    else if (mod == "sharp left") icon_name = "direction_turn_sharp_left.png";
+    else icon_name = "direction_continue_straight.png"; // ultimate fallback
+  }
+
+  return icon_name;
+}
+
 void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
-  int x = surface_rect.center().x();
-  int y = 50;
-  int arrowSize = 176;
-  int cy_offset = (navigationArrowType == "left" || navigationArrowType == "right") ? -20 : 0;
-  int cx = x - 100;
-  int textY = y + arrowSize/2 + cy_offset;
-  int cy = (navigationArrowType == "straight") ? textY + 20 : textY + 60;  // make straight more centered-ish bc its big boy
+
+  // For local testing
+  /*
+  navigationValid = true;
+  navigationHasNext = true;
+
+  navigationStreet = "W. Gonzalez Blvd.";
+  navigationDistance = "5.8 mi";
+  navigationModifier = "right";
+  navigationManeuverType = "roundabout";
+  navigationNextModifier = "left";
+  navigationNextManeuverType = "arrive";
+  */
+
+  if (!navigationValid && navigationStreet.isEmpty()) return;
 
   p.save();
-  p.setPen(Qt::NoPen);
-  p.setBrush(Qt::white);
 
-  if (navigationArrowType == "left") {
-    drawLeftArrow(p, cx, cy, arrowSize);
-  } else if (navigationArrowType == "right") {
-    drawRightArrow(p, cx, cy, arrowSize);
-  } else {
-    drawStraightArrow(p, cx, cy, arrowSize);
+  const int container_width = 620;
+  const int container_height = 120;
+  const int container_x = (surface_rect.width() - container_width) / 2;
+  const int container_y = 80;
+  const int border_radius = 28;
+
+  QRect container_rect(container_x, container_y, container_width, container_height);
+
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.drawRoundedRect(container_rect, border_radius, border_radius);
+
+  // Navigation icon
+  const int icon_size = 80;
+  const int icon_padding = 20;
+  const int icon_x = container_x + icon_padding;
+  const int icon_y = container_y + (container_height - icon_size) / 2;
+
+  QString icon_name = getNavigationIconName(navigationManeuverType, navigationModifier);
+  QPixmap nav_icon = loadPixmap("../../sunnypilot/selfdrive/assets/navigation/" + icon_name, {icon_size, icon_size});
+
+  if (!nav_icon.isNull()) {
+    p.drawPixmap(icon_x, icon_y, nav_icon);
+  }
+
+  const int then_section_width = 90;
+  const int text_x = icon_x + icon_size + 20;
+  const int text_area_width = container_width - (text_x - container_x) - icon_padding - then_section_width;
+
+  // Street name
+  p.setFont(InterFont(45, QFont::Bold));
+  p.setPen(QColor(220, 220, 220, 255));
+  QFontMetrics fm(p.font());
+  QString truncated_street = fm.elidedText(navigationStreet, Qt::ElideRight, text_area_width);
+  QRect street_rect(text_x, container_y + 15, text_area_width, 50);
+  p.drawText(street_rect, Qt::AlignLeft | Qt::AlignVCenter, truncated_street);
+
+  // Distance
+  p.setFont(InterFont(36, QFont::Normal));
+  p.setPen(Qt::white);
+  QRect distance_rect(text_x, container_y + 70, text_area_width, 40);
+  p.drawText(distance_rect, Qt::AlignLeft | Qt::AlignVCenter, navigationDistance);
+
+  // Next Maneuver
+  if (navigationHasNext) {
+
+    const int divider_x = container_x + container_width - then_section_width - 5;
+    p.setPen(QPen(QColor(255, 255, 255, 50), 2));
+    p.drawLine(divider_x, container_y + 15, divider_x, container_y + container_height - 15);
+
+    const int then_x = divider_x + 10;
+    const int then_icon_size = 50;
+
+    QRect then_label_rect(then_x, container_y + 10, then_section_width - 15, 25);
+    p.setFont(InterFont(25, QFont::Normal));
+    p.setPen(QColor(180, 180, 180, 255));
+    p.drawText(then_label_rect, Qt::AlignCenter, tr("Then"));
+
+    // Next maneuver icon
+    const int then_icon_x = then_x + (then_section_width - 15 - then_icon_size) / 2;
+    const int then_icon_y = container_y + 45;
+
+    QString next_icon_name = getNavigationIconName(navigationNextManeuverType, navigationNextModifier);
+    QPixmap next_nav_icon = loadPixmap("../../sunnypilot/selfdrive/assets/navigation/" + next_icon_name, {then_icon_size, then_icon_size});
+
+    if (!next_nav_icon.isNull()) {
+      p.drawPixmap(then_icon_x, then_icon_y, next_nav_icon);
+    }
   }
 
   p.restore();
-
-  int gap = (navigationArrowType == "left") ? -10 : 20;
-  int textX = cx + arrowSize/2 + gap;
-  if (navigationArrowType == "right") textX += 40;  // move that beech over for right arrow
-
-  // Draw distance text
-  p.setFont(InterFont(80, QFont::Bold));
-  p.setPen(Qt::white);
-  p.drawText(textX, textY, navigationDistance);
-
-  p.setFont(InterFont(50));
-  int streetY = textY + 60;  // draw street name below distance text
-  p.drawText(textX, streetY, navigationStreet);
-}
-
-void HudRendererSP::drawStraightArrow(QPainter &p, int cx, int cy, int size) {
-  int rectWidth = size * 0.2;
-  int rectHeight = size * 0.6;
-  int rectX = cx - rectWidth / 2;
-  int rectY = cy - rectHeight / 2;
-  p.drawRect(rectX, rectY, rectWidth, rectHeight);
-
-  int triangleHeight = size * 0.3;
-  int triangleBaseWidth = rectWidth * 3;
-  QPolygon triangle;
-  triangle << QPoint(cx - triangleBaseWidth / 2, rectY)
-           << QPoint(cx + triangleBaseWidth / 2, rectY)
-           << QPoint(cx, rectY - triangleHeight);
-  p.drawPolygon(triangle);
-}
-
-void HudRendererSP::drawLeftArrow(QPainter &p, int cx, int cy, int size) {
-  int vertHeight = size * 0.6;
-  int vertWidth = size * 0.2;
-  int vertX = cx - vertWidth / 2;
-  int vertY = cy - vertHeight;
-  p.drawRect(vertX, vertY, vertWidth, vertHeight);
-
-  int horizWidth = size * 0.4;
-  int horizHeight = size * 0.2;
-  int horizX = cx - horizWidth + vertWidth / 2 + 1;  // 1 to adjust pix gap bc my math ain't mathing today
-  int horizY = cy - vertHeight - horizHeight / 2;
-  p.drawRect(horizX, horizY, horizWidth, horizHeight);
-
-  int triangleWidth = size * 0.4;
-  int triangleHeight = size * 0.4;
-  QPolygon triangle;
-  triangle << QPoint(horizX, horizY + horizHeight / 2 - triangleHeight / 2)
-           << QPoint(horizX, horizY + horizHeight / 2 + triangleHeight / 2)
-           << QPoint(horizX - triangleWidth, horizY + horizHeight / 2);
-  p.drawPolygon(triangle);  // I think i dislike qpolygons. they're mad annoying
-}
-
-void HudRendererSP::drawRightArrow(QPainter &p, int cx, int cy, int size) {
-  int vertHeight = size * 0.6;
-  int vertWidth = size * 0.2;
-  int vertX = cx - vertWidth / 2;
-  int vertY = cy - vertHeight;
-  p.drawRect(vertX, vertY, vertWidth, vertHeight);
-
-  int horizWidth = size * 0.4;
-  int horizHeight = size * 0.2;
-  int horizX = cx - vertWidth / 2;
-  int horizY = cy - vertHeight - horizHeight / 2;
-  p.drawRect(horizX, horizY, horizWidth, horizHeight);
-
-  int triangleWidth = size * 0.4;
-  int triangleHeight = size * 0.4;
-  QPolygon triangle;
-  triangle << QPoint(horizX + horizWidth, horizY + horizHeight / 2 - triangleHeight / 2)
-           << QPoint(horizX + horizWidth, horizY + horizHeight / 2 + triangleHeight / 2)
-           << QPoint(horizX + horizWidth + triangleWidth, horizY + horizHeight / 2);
-  p.drawPolygon(triangle);
 }

@@ -40,10 +40,7 @@ private:
   void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
   void drawBlinker(QPainter &p, const QRect &surface_rect);
   void drawNavigationHUD(QPainter &p, const QRect &surface_rect);
-
-  void drawStraightArrow(QPainter &p, int cx, int cy, int size);
-  void drawLeftArrow(QPainter &p, int cx, int cy, int size);
-  void drawRightArrow(QPainter &p, int cx, int cy, int size);
+  QString getNavigationIconName(const QString &type, const QString &mod);
 
   bool lead_status;
   float lead_d_rel;
@@ -129,5 +126,9 @@ private:
   bool navigationValid;
   QString navigationStreet;
   QString navigationDistance;
-  QString navigationArrowType;
+  QString navigationModifier;
+  QString navigationManeuverType;
+  QString navigationNextModifier;
+  QString navigationNextManeuverType;
+  bool navigationHasNext;
 };
