@@ -132,7 +132,7 @@ def stats_main(end_event):
         if isinstance(v, (dict, list, bytes, bytearray)):
           continue
 
-        fields += f"{k}=\"{str(v)}\","
+        fields += f"{k}={json.dumps(v)},"
 
       res += f" {fields}"
     except Exception as e:
