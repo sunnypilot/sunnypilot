@@ -32,9 +32,6 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP"
   });
 
-  // Initialize parameters including is_metric
-  ui_update_params_sp(this);
-
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
