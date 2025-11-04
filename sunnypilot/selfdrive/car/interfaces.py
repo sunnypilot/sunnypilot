@@ -103,7 +103,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   _cleanup_unsupported_params(CP, CP_SP)
 
   STATSLOGSP.raw('sunnypilot.car_params', CP.to_dict())
-  #STATSLOGSP.raw('sunnypilot_params.car_params_sp', CP_SP.to_dict()) #https://github.com/sunnypilot/opendbc/pull/361
+  # STATSLOGSP.raw('sunnypilot_params.car_params_sp', CP_SP.to_dict()) # https://github.com/sunnypilot/opendbc/pull/361
 
 
 def initialize_params(params) -> list[dict[str, Any]]:
@@ -118,6 +118,11 @@ def initialize_params(params) -> list[dict[str, Any]]:
   keys.extend([
     "SubaruStopAndGo",
     "SubaruStopAndGoManualParkingBrake",
+  ])
+
+  # tesla
+  keys.extend([
+    "TeslaCoopSteering",
   ])
 
   return [{k: params.get(k, return_default=True)} for k in keys]

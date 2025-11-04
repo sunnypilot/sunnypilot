@@ -79,11 +79,11 @@ QStringList SunnylinkSponsorPopup::getInstructions(bool sponsor_pair) {
     instructions << tr("Scan the QR code to login to your GitHub account")
                  << tr("Follow the prompts to complete the pairing process")
                  << tr("Re-enter the \"sunnylink\" panel to verify sponsorship status")
-                 << tr("If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot");
+                 << tr("If sponsorship status was not updated, please contact a moderator on our forum at https://community.sunnypilot.ai");
   } else {
     instructions << tr("Scan the QR code to visit sunnyhaibin's GitHub Sponsors page")
                  << tr("Choose your sponsorship tier and confirm your support")
-                 << tr("Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status");
+                 << tr("Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues");
   }
   return instructions;
 }
