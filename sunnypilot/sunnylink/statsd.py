@@ -48,6 +48,7 @@ def sp_stats(end_event):
     'AutoLaneChangeBsmDelay',
     'AutoLaneChangeTimer',
     'CarPlatformBundle',
+    'CurrentRoute',
     'DevUIInfo',
     'EnableCopyparty',
     'IntelligentCruiseButtonManagement',
