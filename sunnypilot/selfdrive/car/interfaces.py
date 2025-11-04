@@ -102,11 +102,8 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   _initialize_torque_lateral_control(CI, CP, enforce_torque, nnlc_enabled)
   _cleanup_unsupported_params(CP, CP_SP)
 
-  stats = {
-    "CP.carFingerprint": CP.carFingerprint,
-  }
-
-  STATSLOGSP.raw('sunnypilot_params.car_params', stats)
+  STATSLOGSP.raw('sunnypilot_params.car_params', CP.to_dict())
+  #STATSLOGSP.raw('sunnypilot_params.car_params_sp', CP_SP.to_dict()) #https://github.com/sunnypilot/opendbc/pull/361
 
 
 def initialize_params(params) -> list[dict[str, Any]]:
