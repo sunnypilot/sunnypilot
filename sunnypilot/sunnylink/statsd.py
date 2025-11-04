@@ -118,14 +118,22 @@ def stats_main(end_event):
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res
 
-  def get_influxdb_line_raw(measurement: str, value: dict[str, float], timestamp: datetime, tags: dict) -> str:
+  def get_influxdb_line_raw(measurement: str, value: dict[str, str], timestamp: datetime, tags: dict) -> str:
     res = f"{measurement}"
-    for k, v in tags.items():
-      res += f",{k}={str(v)}"
-    res += " "
+    try:
+      custom_tags = ""
+      for k, v in tags.items():
+        custom_tags += f",{k}={str(v)}"
+      res += custom_tags
 
-    for k, v in value.items():
-      res += f"{k}=\"{str(v)}\","
+      fields = ""
+      for k, v in value.items():
+        fields += f"{k}=\"{str(v)}\","
+
+      res += f" {fields}"
+    except Exception as e:
+      cloudlog.error(f"Unable to get influxdb line for: {value}")
+      res += f",invalid=1 reason={e},"
 
     res += f"sunnylink_dongle_id=\"{sunnylink_dongle_id}\",comma_dongle_id=\"{comma_dongle_id}\" {int(timestamp.timestamp() * 1e9)}\n"
     return res

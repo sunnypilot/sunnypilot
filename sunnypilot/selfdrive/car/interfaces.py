@@ -15,6 +15,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import set_
 
 import openpilot.system.sentry as sentry
 
+from sunnypilot.sunnylink.statsd import STATSLOGSP
+
 
 def log_fingerprint(CP: structs.CarParams) -> None:
   if CP.carFingerprint == "MOCK":
@@ -99,6 +101,12 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   _initialize_intelligent_cruise_button_management(CP, CP_SP, params)
   _initialize_torque_lateral_control(CI, CP, enforce_torque, nnlc_enabled)
   _cleanup_unsupported_params(CP, CP_SP)
+
+  stats = {
+    "CP.carFingerprint": CP.carFingerprint,
+  }
+
+  STATSLOGSP.raw('sunnypilot_params.car_params', stats)
 
 
 def initialize_params(params) -> list[dict[str, Any]]:
