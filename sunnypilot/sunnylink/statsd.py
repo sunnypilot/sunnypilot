@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import base64
+import hashlib
 import json
 import os
 import threading
@@ -12,6 +13,8 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, UTC
 
+import cereal.messaging as messaging
+from cereal import car, custom
 from openpilot.common.params import Params
 from cereal.messaging import SubMaster
 from openpilot.system.hardware.hw import Paths
@@ -30,23 +33,39 @@ def sp_stats(end_event):
   statlogsp = StatLogSP(intercept=False)
   params = Params()
 
-  def flatten_dict(d, parent_key='', sep='.'):
-    items = {}
-    if isinstance(d, dict):
-      for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-        items.update(flatten_dict(v, new_key, sep=sep))
-    elif isinstance(d, (list, tuple)):
-      for i, v in enumerate(d):
-        new_key = f"{parent_key}[{i}]"
-        items.update(flatten_dict(v, new_key, sep=sep))
+  def norm_leaf(v):
+    if isinstance(v, (bool, int, float, str)) or v is None:
+      return v
+    if isinstance(v, (bytes, bytearray)):
+      try:
+        return v.decode("utf-8", "replace")
+      except Exception:
+        return v.hex()
+    return str(v)
+
+  def flatten_any(obj, parent_key=""):
+    out = {}
+    if isinstance(obj, dict):
+      for k, v in obj.items():
+        nk = f"{parent_key}.{k}" if parent_key else k
+        out.update(flatten_any(v, nk))
+    elif isinstance(obj, (list, tuple)):
+      for i, v in enumerate(obj):
+        nk = f"{parent_key}.{i}" if parent_key else str(i)
+        out.update(flatten_any(v, nk))
     else:
-      items[parent_key] = d
-    return items
+      out[parent_key] = norm_leaf(obj)
+    return out
+
+  def digest_bytes(raw: bytes) -> dict:
+    return {"len": len(raw), "sha256": hashlib.sha256(raw).hexdigest()[:16]}
+
+  def capnp_to_flat(param_key: str, raw: bytes, struct):
+    msg = messaging.log_from_bytes(raw, struct)
+    d = msg.to_dict()
+    return {f"{param_key}.{k}": v for k, v in flatten_any(d).items()}
 
   # Collect sunnypilot parameters
-  stats_dict = {}
-
   param_keys = [
     'SunnylinkEnabled',
     'AutoLaneChangeBsmDelay',
@@ -72,26 +91,43 @@ def sp_stats(end_event):
     'UptimeOnroad',
   ]
 
+  capnp_map = {
+    "CarParams": car.CarParams,
+    "CarParamsSP": custom.CarParamsSP,
+  }
+
   while not end_event.is_set():
+    stats_dict = {}
     try:
       for key in param_keys:
-
         try:
           value = params.get(key)
         except Exception as e:
-          stats_dict[key] = e
+          stats_dict[f"{key}.__error"] = str(e)
           continue
 
         if value is None:
           continue
 
+        if key in capnp_map and isinstance(value, (bytes, bytearray)):
+          struct = capnp_map[key]
+          try:
+            stats_dict.update(capnp_to_flat(key, value, struct))
+          except Exception:
+            for dk, dv in digest_bytes(value).items():
+              stats_dict[f"{key}.{dk}"] = dv
+          continue
+
         if isinstance(value, (dict, list, tuple)):
-          stats_dict.update(flatten_dict(value, key))
+          stats_dict.update(flatten_any(value, key))
+        elif isinstance(value, (bytes, bytearray)):
+          stats_dict[key] = norm_leaf(value)
         else:
           stats_dict[key] = value
 
       if stats_dict:
-        statlogsp.raw('sunnypilot_params', stats_dict)
+        statlogsp.raw("sunnypilot_params", stats_dict)
+
     except Exception as e:
       cloudlog.error(f"Exception {e}")
     finally:
