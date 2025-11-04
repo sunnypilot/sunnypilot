@@ -23,11 +23,12 @@ from openpilot.system.loggerd.config import STATS_DIR_FILE_LIMIT, STATS_SOCKET, 
 from openpilot.system.statsd import METRIC_TYPE, StatLogSP
 from openpilot.common.realtime import Ratekeeper
 
+STATSLOGSP = StatLogSP(intercept=False)
 
 def sp_stats(end_event):
   """Collect sunnypilot-specific statistics and send as raw metrics."""
   rk = Ratekeeper(.1, print_delay_threshold=None)
-  statlogsp = StatLogSP(intercept=False)
+  statlogsp = STATSLOGSP
   params = Params()
 
   def flatten_dict(d, parent_key='', sep='.'):
