@@ -32,12 +32,16 @@ def sp_stats(end_event):
 
   def flatten_dict(d, parent_key='', sep='.'):
     items = {}
-    for k, v in d.items():
-      new_key = f"{parent_key}{sep}{k}" if parent_key else k
-      if isinstance(v, dict):
+    if isinstance(d, dict):
+      for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
         items.update(flatten_dict(v, new_key, sep=sep))
-      else:
-        items[new_key] = v
+    elif isinstance(d, (list, tuple)):
+      for i, v in enumerate(d):
+        new_key = f"{parent_key}[{i}]"
+        items.update(flatten_dict(v, new_key, sep=sep))
+    else:
+      items[parent_key] = d
     return items
 
   # Collect sunnypilot parameters
@@ -81,7 +85,7 @@ def sp_stats(end_event):
         if value is None:
           continue
 
-        if isinstance(value, dict):
+        if isinstance(value, (dict, list, tuple)):
           stats_dict.update(flatten_dict(value, key))
         else:
           stats_dict[key] = value
