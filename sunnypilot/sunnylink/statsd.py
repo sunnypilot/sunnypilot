@@ -12,6 +12,8 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, UTC
 
+import cereal.messaging as messaging
+from cereal import car, custom
 from openpilot.common.params import Params
 from cereal.messaging import SubMaster
 from openpilot.system.hardware.hw import Paths
@@ -41,16 +43,21 @@ def sp_stats(end_event):
         new_key = f"{parent_key}[{i}]"
         items.update(flatten_dict(v, new_key, sep=sep))
     else:
+      if isinstance(d, (bytes, bytearray)):
+        try:
+          d = d.decode('utf-8', 'replace')
+        except Exception:
+          d = d.hex()
       items[parent_key] = d
     return items
 
   # Collect sunnypilot parameters
-  stats_dict = {}
-
   param_keys = [
     'SunnylinkEnabled',
     'AutoLaneChangeBsmDelay',
     'AutoLaneChangeTimer',
+    'CarParams',
+    'CarParamsSP',
     'CarPlatformBundle',
     'CurrentRoute',
     'DevUIInfo',
@@ -74,15 +81,31 @@ def sp_stats(end_event):
 
   while not end_event.is_set():
     try:
+      stats_dict = {}
       for key in param_keys:
-
         try:
           value = params.get(key)
         except Exception as e:
-          stats_dict[key] = e
+          stats_dict[f"{key}.__error"] = str(e)
           continue
 
         if value is None:
+          continue
+
+        if key == 'CarParams' and isinstance(value, (bytes, bytearray)):
+          try:
+            d = messaging.log_from_bytes(value, car.CarParams).to_dict()
+            stats_dict.update(flatten_dict(d, key))
+          except Exception as e:
+            stats_dict[f"{key}.__error"] = str(e)
+          continue
+
+        if key == 'CarParamsSP' and isinstance(value, (bytes, bytearray)):
+          try:
+            d = messaging.log_from_bytes(value, custom.CarParamsSP).to_dict()
+            stats_dict.update(flatten_dict(d, key))
+          except Exception as e:
+            stats_dict[f"{key}.__error"] = str(e)
           continue
 
         if isinstance(value, (dict, list, tuple)):
