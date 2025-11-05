@@ -128,8 +128,8 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
   painter.setBrush(bg);
   painter.drawPolygon(track_vertices);
 
-  LongFuel(painter,height, width);
-  LateralFuel(painter, height, width);
+  //LongFuel(painter,height, width);
+  //LateralFuel(painter, height, width);
 }
 
 void ModelRenderer::updatePathGradient(QLinearGradient &bg) {
