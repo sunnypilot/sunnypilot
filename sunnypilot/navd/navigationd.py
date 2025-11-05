@@ -12,6 +12,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 
+from openpilot.sunnypilot.navd.constants import NAV_CV
 from openpilot.sunnypilot.navd.helpers import Coordinate, parse_banner_instructions
 from openpilot.sunnypilot.navd.navigation_helpers.mapbox_integration import MapboxIntegration
 from openpilot.sunnypilot.navd.navigation_helpers.nav_instructions import NavigationInstructions
@@ -64,6 +65,7 @@ class Navigationd:
           self.destination = self.new_destination
           self.nav_instructions.clear_route_cache()
           self.route = self.nav_instructions.get_current_route()
+          self.cancel_route_counter = 0
           self.reroute_counter = 0
 
       if self.cancel_route_counter == 30:
@@ -82,6 +84,7 @@ class Navigationd:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):
         nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude, self.last_position.longitude)
         nav_data['current_speed_limit'] = self.nav_instructions.get_current_speed_limit_from_progress(progress, self.is_metric)
+        arrived = self.nav_instructions.arrived_at_destination(progress)
 
         if progress['current_step']:
           parsed = parse_banner_instructions(progress['current_step']['bannerInstructions'], progress['distance_to_end_of_step'])
@@ -92,10 +95,11 @@ class Navigationd:
         large_distance = progress['distance_from_route'] > 100
 
         if large_distance:
-          if progress['distance_from_route'] > 200:
-            self.cancel_route_counter += 1
+          self.cancel_route_counter = self.cancel_route_counter + 1 if progress['distance_from_route'] > NAV_CV.QUARTER_MILE else 0
           if self.recompute_allowed:
             self.reroute_counter += 1
+        elif arrived:
+          self.cancel_route_counter += 1
         else:
           self.cancel_route_counter = 0
           self.reroute_counter = 0
