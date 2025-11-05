@@ -43,7 +43,7 @@ class NavigationInstructions:
     distance_to_end_of_step = max(0, current_step['distance'] - (closest_cumulative - current_step['cumulative_distance']))
 
     all_maneuvers: list = []
-    max_maneuvers = 2
+    max_maneuvers = 3
     for idx in range(current_step_idx, min(current_step_idx + max_maneuvers, len(route['steps']))):
       step = route['steps'][idx]
       if idx == current_step_idx:
