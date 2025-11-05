@@ -160,7 +160,7 @@ void HudRendererSP::updateState(const UIState &s) {
     auto nav = sm["navigationd"].getNavigationd();
     navigationValid = nav.getValid();
     if (navigationValid && nav.getAllManeuvers().size() > 0) {
-      auto maneuver = nav.getAllManeuvers()[-1];
+      auto maneuver = nav.getAllManeuvers()[0];
       navigationModifier = QString::fromStdString(maneuver.getModifier());
       navigationManeuverType = QString::fromStdString(maneuver.getType());
 
@@ -190,7 +190,7 @@ void HudRendererSP::updateState(const UIState &s) {
 
       // Get next maneuver if available
       if (nav.getAllManeuvers().size() > 1) {
-        auto nextManeuver = nav.getAllManeuvers()[-2];
+        auto nextManeuver = nav.getAllManeuvers()[1];
         navigationNextModifier = QString::fromStdString(nextManeuver.getModifier());
         navigationNextManeuverType = QString::fromStdString(nextManeuver.getType());
         navigationHasNext = true;
@@ -198,11 +198,11 @@ void HudRendererSP::updateState(const UIState &s) {
         navigationHasNext = false;
       }
     } else {
-      navigationStreet = "W. Gonzalez Blvd."; // sample fields for metadrive sim (@nayan)
-      navigationDistance = "5.8 mi";
-      navigationModifier = "straight";
-      navigationNextModifier = "right";
-      navigationHasNext = true;
+      navigationStreet = "";
+      navigationDistance = "";
+      navigationModifier = "";
+      navigationNextModifier = "";
+      navigationHasNext = false;
     }
   }
 }
