@@ -160,7 +160,8 @@ void HudRendererSP::updateState(const UIState &s) {
     auto nav = sm["navigationd"].getNavigationd();
     navigationValid = nav.getValid();
     if (navigationValid && nav.getAllManeuvers().size() > 0) {
-      auto maneuver = nav.getAllManeuvers()[0];
+      int currManeuverIdx = nav.getAllManeuvers().size() > 1 ? 1 : 0;
+      auto maneuver = nav.getAllManeuvers()[currManeuverIdx];
       navigationModifier = QString::fromStdString(maneuver.getModifier());
       navigationManeuverType = QString::fromStdString(maneuver.getType());
 
@@ -189,20 +190,14 @@ void HudRendererSP::updateState(const UIState &s) {
       }
 
       // Get next maneuver if available
-      if (nav.getAllManeuvers().size() > 1) {
-        auto nextManeuver = nav.getAllManeuvers()[1];
+      if (nav.getAllManeuvers().size() > 2) {
+        auto nextManeuver = nav.getAllManeuvers()[2];
         navigationNextModifier = QString::fromStdString(nextManeuver.getModifier());
         navigationNextManeuverType = QString::fromStdString(nextManeuver.getType());
         navigationHasNext = true;
       } else {
         navigationHasNext = false;
       }
-    } else {
-      navigationStreet = "";
-      navigationDistance = "";
-      navigationModifier = "";
-      navigationNextModifier = "";
-      navigationHasNext = false;
     }
   }
 }
@@ -1129,7 +1124,7 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
   // navigationNextManeuverType = "arrive";
 
 
-  if (!navigationValid && navigationStreet.isEmpty()) return;
+  if (!navigationValid) return;
 
   p.save();
 
