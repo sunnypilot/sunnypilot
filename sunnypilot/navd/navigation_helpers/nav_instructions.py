@@ -129,7 +129,7 @@ class NavigationInstructions:
         return int(round(speed * CV.KPH_TO_MPH))
     return 0
 
-  def arrived_at_destination(progress) -> bool:
+  def arrived_at_destination(self, progress) -> bool:
     if progress['all_maneuvers'][0]['type'] == 'arrive':
       return True
     return False
