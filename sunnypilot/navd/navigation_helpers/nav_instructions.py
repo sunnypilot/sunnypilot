@@ -132,4 +132,6 @@ class NavigationInstructions:
   def arrived_at_destination(self, progress) -> bool:
     if progress['all_maneuvers'][0]['type'] == 'arrive':
       return True
+    elif progress['all_maneuvers'][0]['instruction'].startswith('Your destination'):
+      return True
     return False
