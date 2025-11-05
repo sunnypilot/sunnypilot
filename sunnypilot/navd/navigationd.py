@@ -31,6 +31,7 @@ class Navigationd:
     self.destination: str | None = None
     self.new_destination: str = ''
 
+    self.allow_navigation: bool = False
     self.recompute_allowed: bool = False
     self.allow_recompute: bool = False
     self.reroute_counter: int = 0
@@ -46,6 +47,7 @@ class Navigationd:
     if self.last_position is not None:
       self.frame += 1
       if self.frame % 9 == 0:
+        self.allow_navigation = self.params.get('AllowNavigation', return_default=True)
         self.is_metric = self.params.get('IsMetric', return_default=True)
         self.new_destination = self.params.get('MapboxRoute')
         self.recompute_allowed = self.params.get('MapboxRecompute', return_default=True)
@@ -76,7 +78,7 @@ class Navigationd:
     banner_instructions: str = ''
     progress: dict | None = None
     nav_data: dict = {}
-    if self.last_position is not None:
+    if self.allow_navigation and self.last_position is not None:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):
         nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude, self.last_position.longitude)
         nav_data['current_speed_limit'] = self.nav_instructions.get_current_speed_limit_from_progress(progress, self.is_metric)
@@ -102,6 +104,11 @@ class Navigationd:
         if self.route:
           if progress['current_step_idx'] == len(self.route['steps']) - 1:
             self.allow_recompute = False
+    else:
+      banner_instructions = ''
+      progress = None
+      nav_data = {}
+      self.valid = False
 
     return banner_instructions, progress, nav_data
 
