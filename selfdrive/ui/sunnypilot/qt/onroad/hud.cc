@@ -354,8 +354,8 @@ bool HudRendererSP::pulseElement(int frame) {
 }
 
 void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
-  int x = surface_rect.left() + 820;
-  int y = surface_rect.height() / 4;
+  int x = 618;
+  int y = 420;
 
   QString text = QString::fromStdString(name);
   QFont font = InterFont(36, QFont::Bold);
@@ -899,7 +899,7 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const int circleRadius = 60;
   const int arrowLength = 60;
   const int x_gap = 160;
-  const int y_offset = 272;
+  const int y_offset = 300;
 
   const int centerX = surface_rect.center().x();
 
