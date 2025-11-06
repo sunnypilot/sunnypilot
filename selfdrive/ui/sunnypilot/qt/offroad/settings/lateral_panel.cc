@@ -120,6 +120,36 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     updateToggles(offroad);
   });
 
+#pragma region hkg angle tuning
+  list->addItem(vertical_space());
+  list->addItem(horizontal_line());
+  list->addItem(vertical_space());
+
+  // HKG Angle Tuning
+  // angleTuningToggle = new ParamControl(
+  //   "AngleTuning",
+  //   tr("Modular Assistive Driving System (MADS)"),
+  //   tr("Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement."),
+  //   "");
+  // angleTuningToggle->setConfirmation(true, false);
+  // list->addItem(angleTuningToggle);
+
+  angleTuningSettingsButton = new PushButtonSP(tr("Customize ANGLE Tuning"));
+  angleTuningSettingsButton->setObjectName("angle_btn");
+  connect(angleTuningSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(angleTuningWidget);
+  });
+  // QObject::connect(angleTuningToggle, &ToggleControl::toggleFlipped, angleTuningSettingsButton, &PushButtonSP::setEnabled);
+
+  angleTuningWidget = new AngleTunningSettings(this);
+  connect(angleTuningWidget, &AngleTunningSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(angleTuningSettingsButton);
+#pragma endregion
+
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
@@ -127,6 +157,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
+  main_layout->addWidget(angleTuningWidget);
   main_layout->addWidget(laneChangeWidget);
   main_layout->addWidget(torqueLateralControlWidget);
 
@@ -188,6 +219,7 @@ void LateralPanel::updateToggles(bool _offroad) {
 
   madsToggle->setEnabled(_offroad);
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+  // angleTuningSettingsButton->setEnabled(angleTuningToggle->isToggled());
 
   torqueLateralControlToggle->setEnabled(_offroad && torque_allowed && !nnlcToggle->isToggled());
   torqueLateralControlSettingsButton->setEnabled(torqueLateralControlToggle->isToggled());
