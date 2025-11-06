@@ -78,7 +78,6 @@ class Navigationd:
 
   def _update_navigation(self) -> tuple[str, dict | None, dict]:
     banner_instructions: str = ''
-    progress: dict | None = None
     nav_data: dict = {}
     if self.allow_navigation and self.last_position is not None:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):

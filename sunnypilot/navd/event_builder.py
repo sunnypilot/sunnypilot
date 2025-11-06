@@ -19,7 +19,7 @@ class EventBuilder:
 
   @staticmethod
   def _build_banner_message(metric: bool, nav_msg):
-    m = nav_msg.allManeuvers[-1]
+    m = nav_msg.allManeuvers[1] if len(nav_msg.allManeuvers) > 1 else nav_msg.allManeuvers[0]
     banner = m.instruction
 
     if metric:
@@ -45,8 +45,8 @@ class EventBuilder:
   @staticmethod
   def _get_turning_message(upcoming_turn):
     turn_messages = {
-      'left': 'Turning Left. Make sure to nudge the wheel!',
-      'right': 'Turning Right. Make sure to nudge the wheel!',
+      'left': 'Turning Left, Make sure to nudge the wheel',
+      'right': 'Turning Right, Make sure to nudge the wheel',
       'slightLeft': 'Keeping Left',
       'slightRight': 'Keeping Right',
       'sharpLeft': 'Sharp Left Turn',

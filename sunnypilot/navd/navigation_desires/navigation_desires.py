@@ -22,9 +22,9 @@ class NavigationDesires:
   def update_params(self):
     self.param_counter += 1
     if self.param_counter % 60 == 0:  # every 3 seconds at 20hz
-      self.nav_allowed = self._params.get("NavAllowed", return_default=True)
+      self.nav_allowed = self._params.get("NavDesiresAllowed", return_default=True)
 
-  def update(self, CS: car.CarState, lateral_active: bool):
+  def update(self, CS: car.CarState, lateral_active: bool) -> log.Desire:
     self.update_params()
     self.sm.update(0)
     nav_msg = self.sm['navigationd']
@@ -41,9 +41,4 @@ class NavigationDesires:
       elif (upcoming == 'right' and CS.steeringPressed and CS.steeringTorque < 0 and not CS.leftBlinker
             and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.turnRight
-
-  # Note to reviewers: This change to require steering pressed (nudge basically) is intentional to prevent unwanted turns
-  # for those who don't have blind spot detection.
-
-  def get_desire(self) -> log.Desire:
     return self.desire

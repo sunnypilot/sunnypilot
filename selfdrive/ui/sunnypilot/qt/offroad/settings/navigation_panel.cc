@@ -49,7 +49,7 @@ NavigationPanel::NavigationPanel(QWidget* parent) : QWidget(parent) {
   list->addItem(mapbox_recompute);
 
   // Nav Allowed
-  nav_allowed = new ParamControlSP("NavAllowed", tr("Navigation Allowed"), tr("Allow navigation features"), "", this);
+  nav_allowed = new ParamControlSP("NavDesiresAllowed", tr("Navigation Allowed"), tr("Allow navigation features"), "", this);
   list->addItem(nav_allowed);
 
   // Nav Events
