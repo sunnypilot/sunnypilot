@@ -5,6 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 #include <QPainterPath>
+#include <cmath>
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/hud.h"
 
@@ -168,14 +169,24 @@ void HudRendererSP::updateState(const UIState &s) {
       float dist = maneuver.getDistance();
       if (is_metric) {
         if (dist < 1000) {
-          navigationDistance = QString::number((int)dist) + " m";
+          if (dist < 500) {
+            navigationDistance = QString::number(std::round(dist / 25.0) * 25) + " m";
+          }
+          else {
+            navigationDistance = QString::number(std::round(dist / 50.0) * 50) + " m";
+          }
         } else {
           navigationDistance = QString::number(dist / 1000, 'f', 1) + " km";
         }
       } else {
         float dist_ft = dist * 3.28084f;
-        if (dist_ft < 528) {
-          navigationDistance = QString::number((int)dist_ft) + " ft";
+        if (dist_ft < 1000) {
+          if (dist_ft <= 100){
+            navigationDistance = QString::number((std::round(dist_ft / 10.0) * 10)) + " ft";
+          }
+          else {
+            navigationDistance = QString::number((std::round(dist_ft / 50.0) * 50)) + " ft";
+          }
         } else {
           navigationDistance = QString::number(dist_ft / 5280, 'f', 1) + " mi";
         }
