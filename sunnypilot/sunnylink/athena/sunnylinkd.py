@@ -16,8 +16,9 @@ from functools import partial
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware.hw import Paths
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
+  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler, stat_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection, WebSocketConnectionClosedException)
 
@@ -51,7 +52,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
               threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
               # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
-              # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
+              threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
             ] + [
               threading.Thread(target=jsonrpc_handler, args=(end_event, partial(startLocalProxy, end_event),), name=f'worker_{x}')
               for x in range(HANDLER_THREADS)
