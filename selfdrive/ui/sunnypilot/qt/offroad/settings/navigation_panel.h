@@ -35,5 +35,4 @@ private:
   ButtonControl* mapbox_route;
   ParamControlSP* mapbox_recompute;
   ParamControlSP* nav_allowed;
-  ParamControlSP* nav_events;
 };

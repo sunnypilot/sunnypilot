@@ -194,7 +194,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"MapboxRoute", {PERSISTENT, STRING}},
     {"MapboxRecompute", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"NavDesiresAllowed", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"NavEvents", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // Neural Network Lateral Control
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},

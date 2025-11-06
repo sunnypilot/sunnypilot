@@ -49,18 +49,13 @@ NavigationPanel::NavigationPanel(QWidget* parent) : QWidget(parent) {
   list->addItem(mapbox_recompute);
 
   // Nav Allowed
-  nav_allowed = new ParamControlSP("NavDesiresAllowed", tr("Navigation Allowed"), tr("Allow navigation features"), "", this);
+  nav_allowed = new ParamControlSP("NavDesiresAllowed", tr("Navigation Allowed"), tr("Allow navigation to automatically take turns"), "", this);
   list->addItem(nav_allowed);
-
-  // Nav Events
-  nav_events = new ParamControlSP("NavEvents", tr("Navigation Events"), tr("Enable navigation event notifications"), "", this);
-  list->addItem(nav_events);
 }
 
 void NavigationPanel::updateNavigationVisibility(bool state) {
   mapbox_recompute->setVisible(state);
   nav_allowed->setVisible(state);
-  nav_events->setVisible(state);
 }
 
 void NavigationPanel::showEvent(QShowEvent *event) {
@@ -81,5 +76,4 @@ void NavigationPanel::refresh() {
 
   mapbox_recompute->refresh();
   nav_allowed->refresh();
-  nav_events->refresh();
 }
