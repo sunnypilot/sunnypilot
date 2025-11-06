@@ -188,6 +188,7 @@ void HudRendererSP::updateState(const UIState &s) {
       } else {
         navigationStreet = instruction;
       }
+      navigationStreet = navigationStreet.replace(".", "");
 
       // Get next maneuver if available
       if (nav.getAllManeuvers().size() > 2) {
