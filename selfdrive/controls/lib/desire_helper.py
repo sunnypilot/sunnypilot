@@ -61,7 +61,6 @@ class DesireHelper:
   def update(self, carstate, lateral_active, lane_change_prob):
     self.alc.update_params()
     self.lane_turn_controller.update_params()
-    self.navigation_desires.update(carstate, lateral_active)
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
@@ -147,6 +146,6 @@ class DesireHelper:
 
     self.alc.update_state()
 
-    nav_desire = self.navigation_desires.get_desire()
+    nav_desire = self.navigation_desires.update(carstate, lateral_active)
     if nav_desire != log.Desire.none and (self.desire == log.Desire.none or self.desire in (log.Desire.turnLeft, log.Desire.turnRight)):
       self.desire = nav_desire
