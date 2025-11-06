@@ -46,7 +46,7 @@ def make_nav_msg(valid=False, upcoming='none'):
 
 def params_setter(allowed: bool):
   params = Params()
-  params.put("NavAllowed", allowed)
+  params.put("NavDesiresAllowed", allowed)
 
 @pytest.fixture
 def mock_submaster(mocker):
@@ -75,8 +75,7 @@ def test_update(mock_submaster, mocker):
   mock_submaster.__getitem__ = mocker.Mock(return_value=make_nav_msg(valid=True, upcoming='left'))
   nav_desires = NavigationDesires()
 
-  nav_desires.update(make_car(leftBlinker=True, steeringPressed=True, steeringTorque=1), True)
-  assert nav_desires.get_desire() == log.Desire.turnLeft
+  assert nav_desires.update(make_car(leftBlinker=True, steeringPressed=True, steeringTorque=1), True) == log.Desire.turnLeft
 
   params_setter(False)
   nav_desires.param_counter = 59
