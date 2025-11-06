@@ -43,7 +43,7 @@ class NavigationInstructions:
     distance_to_end_of_step = max(0, current_step['distance'] - (closest_cumulative - current_step['cumulative_distance']))
 
     all_maneuvers: list = []
-    max_maneuvers = 2
+    max_maneuvers = 3
     for idx in range(current_step_idx, min(current_step_idx + max_maneuvers, len(route['steps']))):
       step = route['steps'][idx]
       if idx == current_step_idx:
@@ -128,3 +128,11 @@ class NavigationInstructions:
       else:
         return int(round(speed * CV.KPH_TO_MPH))
     return 0
+
+  @staticmethod
+  def arrived_at_destination(progress) -> bool:
+    if progress['all_maneuvers'][0]['type'] == 'arrive':
+      return True
+    elif progress['all_maneuvers'][0]['instruction'].startswith('Your destination'):
+      return True
+    return False

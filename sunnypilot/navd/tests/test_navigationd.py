@@ -9,7 +9,7 @@ import pytest
 
 import cereal.messaging as messaging
 
-from sunnypilot.navd.navigationd import Navigationd
+from openpilot.sunnypilot.navd.navigationd import Navigationd
 from openpilot.sunnypilot.navd.helpers import Coordinate
 
 
