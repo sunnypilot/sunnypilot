@@ -367,7 +367,7 @@ bool HudRendererSP::pulseElement(int frame) {
 
 void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
   int base_x = navigationValid ? 618 : surface_rect.center().x();
-  int y = 420;
+  int y = navigationValid ? 420 : surface_rect.height() / 4;
 
   QString text = QString::fromStdString(name);
   QFont font = InterFont(36, QFont::Bold);
