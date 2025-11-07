@@ -114,7 +114,7 @@ class NavigationInstructions:
       self.coord.latitude = current_lat
       self.coord.longitude = current_lon
       distance = self.coord.distance_to(progress['next_turn']['location'])
-      if distance <= 100:
+      if distance <= 30.0:
         modifier = progress['next_turn']['modifier']
         return str(modifier)
     return 'none'
