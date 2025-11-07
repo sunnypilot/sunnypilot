@@ -34,9 +34,6 @@ SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require 
 DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
-sunnylink_dongle_id = params.get("SunnylinkDongleId")
-sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
-
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
@@ -133,6 +130,8 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
 
 
 def ws_queue(end_event: threading.Event) -> None:
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   resume_requested = False
   tries = 0
 
@@ -234,6 +233,9 @@ def saveParams(params_to_update: dict[str, str], compression: bool = False) -> N
 
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
+
   cloudlog.debug("athena.startLocalProxy.starting")
   ws = create_connection(
     remote_ws_uri,
@@ -255,6 +257,8 @@ def main(exit_event: threading.Event = None):
     cloudlog.info("Waiting for sunnylink registration to complete")
     time.sleep(10)
 
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = f"{SUNNYLINK_ATHENA_HOST}"
