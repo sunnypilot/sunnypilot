@@ -366,7 +366,7 @@ bool HudRendererSP::pulseElement(int frame) {
 }
 
 void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &surface_rect, int x_offset, int y_offset, std::string name) {
-  int x = 618;
+  int base_x = navigationValid ? 618 : surface_rect.center().x();
   int y = 420;
 
   QString text = QString::fromStdString(name);
@@ -379,7 +379,7 @@ void HudRendererSP::drawSmartCruiseControlOnroadIcon(QPainter &p, const QRect &s
   int box_width = 160;
   int box_height = fm.height() + padding_v * 2;
 
-  QRectF bg_rect(x - (box_width / 2) + x_offset,
+  QRectF bg_rect(base_x - (box_width / 2) + x_offset,
                  y - (box_height / 2) + y_offset,
                  box_width, box_height);
 
@@ -744,40 +744,6 @@ void HudRendererSP::drawSpeedLimitPreActiveArrow(QPainter &p, QRect &sign_rect) 
 }
 
 void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
-  // Combined speed display container - taller to fit both speeds
-  const int container_width = 200;
-  const int container_height = 320;
-  const int container_x = 40;
-  const int container_y = 45;
-
-  QRect speed_container(container_x, container_y, container_width, container_height);
-
-  // Draw outer rounded rectangle container
-  p.setPen(QPen(QColor(255, 255, 255, 75), 6));
-  p.setBrush(QColor(0, 0, 0, 166));
-  p.drawRoundedRect(speed_container, 24, 24);
-
-  // ===== BOTTOM SECTION: MAX/SET SPEED =====
-
-  // Colors based on status
-  QColor max_label_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
-  QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
-  if (is_cruise_set) {
-    set_speed_color = QColor(255, 255, 255);
-    if (speedLimitAssistActive) {
-      set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
-      max_label_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
-    } else {
-      if (status == STATUS_DISENGAGED) {
-        max_label_color = QColor(255, 255, 255);
-      } else if (status == STATUS_OVERRIDE) {
-        max_label_color = QColor(0x91, 0x9b, 0x95, 0xff);
-      } else {
-        max_label_color = QColor(0x80, 0xd8, 0xa6, 0xff);
-      }
-    }
-  }
-
   // ICBM counter logic
   if (!pcmCruiseSpeed && carControlEnabled) {
     if (std::nearbyint(set_speed) != std::nearbyint(speedCluster)) {
@@ -789,24 +755,101 @@ void HudRendererSP::drawSetSpeedSP(QPainter &p, const QRect &surface_rect) {
     icbm_active_counter = 0;
   }
 
-  // ===== DIVIDER LINE =====
-  int divider_y = container_y + 190;
-  p.setPen(QPen(QColor(255, 255, 255, 50), 2));
-  p.drawLine(container_x + 20, divider_y, container_x + container_width - 20, divider_y);
+  if (!navigationValid) {
+    // Original positions when navigation is not valid
+    const QSize default_size = {172, 204};
+    QSize set_speed_size = is_metric ? QSize(200, 204) : default_size;
+    QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
 
-  // Bottom section - MAX label
-  QRect max_label_rect(container_x, container_y + 200, container_width, 35);
-  p.setFont(InterFont(32, QFont::Normal));
-  p.setPen(max_label_color);
-  QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
-  p.drawText(max_label_rect, Qt::AlignCenter, max_str);
+    // Draw set speed box
+    p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+    p.setBrush(QColor(0, 0, 0, 166));
+    p.drawRoundedRect(set_speed_rect, 32, 32);
 
-  // Bottom section - Set speed value
-  QRect set_speed_rect(container_x, container_y + 240, container_width, 70);
-  QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
-  p.setFont(InterFont(68, QFont::Bold));
-  p.setPen(set_speed_color);
-  p.drawText(set_speed_rect, Qt::AlignCenter, setSpeedStr);
+    // Colors based on status
+    QColor max_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+    QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
+    if (is_cruise_set) {
+      set_speed_color = QColor(255, 255, 255);
+      if (speedLimitAssistActive) {
+        set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
+        max_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+      } else {
+        if (status == STATUS_DISENGAGED) {
+          max_color = QColor(255, 255, 255);
+        } else if (status == STATUS_OVERRIDE) {
+          max_color = QColor(0x91, 0x9b, 0x95, 0xff);
+        } else {
+          max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+        }
+      }
+    }
+
+    // Draw "MAX" or carState.cruiseState.speedCluster (when ICBM is active) text
+    int max_str_size = (icbm_active_counter != 0) ? 60 : 40;
+    int max_str_y = (icbm_active_counter != 0) ? 15 : 27;
+    QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
+
+    p.setFont(InterFont(max_str_size, QFont::DemiBold));
+    p.setPen(max_color);
+    p.drawText(set_speed_rect.adjusted(0, max_str_y, 0, 0), Qt::AlignTop | Qt::AlignHCenter, max_str);
+
+    // Draw set speed
+    QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
+    p.setFont(InterFont(90, QFont::Bold));
+    p.setPen(set_speed_color);
+    p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
+  } else {
+    // Modified positions when navigation is valid
+    const int container_width = 200;
+    const int container_height = 320;
+    const int container_x = 40;
+    const int container_y = 45;
+
+    QRect speed_container(container_x, container_y, container_width, container_height);
+
+    // Draw outer rounded rectangle container
+    p.setPen(QPen(QColor(255, 255, 255, 75), 6));
+    p.setBrush(QColor(0, 0, 0, 166));
+    p.drawRoundedRect(speed_container, 24, 24);
+
+    // Colors based on status
+    QColor max_label_color = QColor(0xa6, 0xa6, 0xa6, 0xff);
+    QColor set_speed_color = QColor(0x72, 0x72, 0x72, 0xff);
+    if (is_cruise_set) {
+      set_speed_color = QColor(255, 255, 255);
+      if (speedLimitAssistActive) {
+        set_speed_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0, 0xff, 0, 0xff);
+        max_label_color = longOverride ? QColor(0x91, 0x9b, 0x95, 0xff) : QColor(0x80, 0xd8, 0xa6, 0xff);
+      } else {
+        if (status == STATUS_DISENGAGED) {
+          max_label_color = QColor(255, 255, 255);
+        } else if (status == STATUS_OVERRIDE) {
+          max_label_color = QColor(0x91, 0x9b, 0x95, 0xff);
+        } else {
+          max_label_color = QColor(0x80, 0xd8, 0xa6, 0xff);
+        }
+      }
+    }
+
+    int divider_y = container_y + 190;
+    p.setPen(QPen(QColor(255, 255, 255, 50), 2));
+    p.drawLine(container_x + 20, divider_y, container_x + container_width - 20, divider_y);
+
+    // max label
+    QRect max_label_rect(container_x, container_y + 200, container_width, 35);
+    p.setFont(InterFont(32, QFont::Normal));
+    p.setPen(max_label_color);
+    QString max_str = (icbm_active_counter != 0) ? QString::number(std::nearbyint(speedCluster)) : tr("MAX");
+    p.drawText(max_label_rect, Qt::AlignCenter, max_str);
+
+    // Set speed value
+    QRect set_speed_rect(container_x, container_y + 240, container_width, 70);
+    QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(set_speed)) : "–";
+    p.setFont(InterFont(68, QFont::Bold));
+    p.setPen(set_speed_color);
+    p.drawText(set_speed_rect, Qt::AlignCenter, setSpeedStr);
+  }
 }
 
 void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text) {
@@ -864,26 +907,34 @@ void HudRendererSP::drawE2eAlert(QPainter &p, const QRect &surface_rect, const Q
 }
 
 void HudRendererSP::drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect) {
-  // Draw in top section of the unified speed container
-  const int container_width = 200;
-  const int container_x = 40;
-  const int container_y = 45;
+  if (!navigationValid) {
+    QString speedStr = QString::number(std::nearbyint(speed));
 
-  // ===== TOP SECTION: CURRENT SPEED =====
+    p.setFont(InterFont(176, QFont::Bold));
+    HudRenderer::drawText(p, surface_rect.center().x(), 210, speedStr);
 
-  // Current speed value (larger and bolder)
-  QString speedStr = QString::number(std::nearbyint(speed));
-  QRect current_speed_rect(container_x, container_y + 30, container_width, 100);
-  p.setFont(InterFont(100, QFont::Bold));
-  p.setPen(Qt::white);
-  p.drawText(current_speed_rect, Qt::AlignCenter, speedStr);
+    p.setFont(InterFont(66));
+    HudRenderer::drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
+  } else {
+    // Modified positions when navigation is valid
+    const int container_width = 200;
+    const int container_x = 40;
+    const int container_y = 45;
 
-  // Speed unit label
-  QRect unit_rect(container_x, container_y + 130, container_width, 40);
-  p.setFont(InterFont(35, QFont::Normal));
-  p.setPen(QColor(180, 180, 180, 255));
-  QString unit = is_metric ? tr("km/h") : tr("mph");
-  p.drawText(unit_rect, Qt::AlignCenter, unit);
+    // Current speed value
+    QString speedStr = QString::number(std::nearbyint(speed));
+    QRect current_speed_rect(container_x, container_y + 30, container_width, 100);
+    p.setFont(InterFont(100, QFont::Bold));
+    p.setPen(Qt::white);
+    p.drawText(current_speed_rect, Qt::AlignCenter, speedStr);
+
+    // Speed unit label
+    QRect unit_rect(container_x, container_y + 130, container_width, 40);
+    p.setFont(InterFont(35, QFont::Normal));
+    p.setPen(QColor(180, 180, 180, 255));
+    QString unit = is_metric ? tr("km/h") : tr("mph");
+    p.drawText(unit_rect, Qt::AlignCenter, unit);
+  }
 }
 
 void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
