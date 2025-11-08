@@ -954,7 +954,7 @@ void HudRendererSP::drawBlinker(QPainter &p, const QRect &surface_rect) {
   const int circleRadius = 60;
   const int arrowLength = 60;
   const int x_gap = 160;
-  const int y_offset = 300;
+  const int y_offset = navigationValid ? 352 : 300;
 
   const int centerX = surface_rect.center().x();
 
@@ -1025,11 +1025,6 @@ QString HudRendererSP::getNavigationIconName(const QString &type, const QString 
     icon_map["turn|left"] = "direction_turn_left.png";
     icon_map["turn|sharp left"] = "direction_turn_sharp_left.png";
 
-    icon_map["depart|right"] = "direction_depart_right.png";
-    icon_map["depart|straight"] = "direction_depart_straight.png";
-    icon_map["depart|left"] = "direction_depart_left.png";
-    icon_map["depart|"] = "direction_depart.png";
-
     icon_map["arrive|right"] = "direction_arrive_right.png";
     icon_map["arrive|straight"] = "direction_arrive_straight.png";
     icon_map["arrive|left"] = "direction_arrive_left.png";
@@ -1067,24 +1062,20 @@ QString HudRendererSP::getNavigationIconName(const QString &type, const QString 
   QString normalized_type = type;
   if (normalized_type == "rotary") {
     normalized_type = "roundabout";
-  }
-  if (normalized_type == "new name") {
+  } else if (normalized_type == "new name") {
     normalized_type = "turn";
-  }
-  if (normalized_type == "continue") {
+  } else if (normalized_type == "continue") {
     normalized_type = "turn";
   }
 
-  QString icon_name = icon_map.value(normalized_type + "|" + mod);
-  if (icon_name.isEmpty()) {
-    icon_name = icon_map.value(type + "|");
+  QString icon_name;
+  QStringList keys = {normalized_type + "|" + mod, normalized_type + "|", "turn|" + mod};
+  for (const QString &key : keys) {
+    icon_name = icon_map.value(key);
+    if (!icon_name.isEmpty()) break;
   }
   if (icon_name.isEmpty()) {
-    // fallback to turn
-    icon_name = icon_map.value("turn|" + mod);
-    if (icon_name.isEmpty()) {
-      icon_name = "direction_turn_straight.png";
-    }
+    icon_name = "direction_turn_straight.png";
   }
   return icon_name;
 }
@@ -1096,7 +1087,7 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
   const int container_width = 1080;
   const int container_height = 225;
   const int container_x = (surface_rect.width() - container_width) / 2;
-  const int container_y = 80;
+  const int container_y = 62;
   const int border_radius = 42;
 
   QRect container_rect(container_x, container_y, container_width, container_height);
