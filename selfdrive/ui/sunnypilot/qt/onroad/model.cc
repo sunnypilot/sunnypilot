@@ -8,6 +8,12 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/model.h"
 
 
+void ModelRendererSP::drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius) {
+  painter.setBrush(QColor(255, 255, 255, 200));
+  painter.setPen(Qt::NoPen);
+  painter.drawEllipse(pos, radius, radius);
+}
+
 void ModelRendererSP::update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) {
   ModelRenderer::update_model(model, lead);
   const auto &model_position = model.getPosition();
@@ -67,6 +73,26 @@ void ModelRendererSP::draw(QPainter &painter, const QRect &surface_rect) {
     const bool right_blindspot = car_state.getRightBlindspot();
     drawBlindspot(painter, surface_rect, left_blindspot, right_blindspot);
   }
+
+  if (s->scene.visual_radar_tracks) {
+    if (sm.alive("liveTracks") && sm.rcv_frame("liveTracks") >= s->scene.started_frame) {
+      const auto &tracks = sm["liveTracks"].getLiveTracks().getPoints();
+      for (const auto &track : tracks) {
+        if (!std::isfinite(track.getDRel()) || !std::isfinite(track.getYRel())) continue;
+        float t_lag = s->scene.visual_radar_tracks_delay;
+        float d_pred = track.getDRel();
+        float y_pred = track.getYRel();
+        if (t_lag > 0.0f) {
+          d_pred += track.getVRel() * t_lag + 0.5f * track.getARel() * t_lag * t_lag;
+        }
+        QPointF screen_pt;
+        if (mapToScreen(d_pred, -y_pred, path_offset_z, &screen_pt)) {
+          drawRadarPoint(painter, screen_pt, track.getVRel(), 10.0f);
+        }
+      }
+    }
+  }
+
   drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
   painter.restore();
