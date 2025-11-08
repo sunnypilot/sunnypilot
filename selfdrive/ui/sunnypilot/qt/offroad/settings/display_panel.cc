@@ -36,7 +36,7 @@ DisplayPanel::DisplayPanel(QWidget *parent) : QWidget(parent) {
   interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
                                    tr("Apply a custom timeout for settings UI."
                                       "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
-                                   "", {0, 120}, 10, true, nullptr, false);
+                                   "", {999999, 1000000}, 1000000, true, nullptr, false);
 
   connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
     refresh();
