@@ -2635,7 +2635,7 @@ Data</source>
     </message>
     <message>
         <source>Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues</source>
-        <translation>Присоединяйтесь к нашему сообществу на форуме по адресу https://community.sunnypilot.ai и свяжитесь с модератором, если у вас есть вопросы/translation>
+        <translation>Присоединяйтесь к нашему сообществу на форуме по адресу https://community.sunnypilot.ai и свяжитесь с модератором, если у вас есть вопросы</translation>
     </message>
 </context>
 <context>
