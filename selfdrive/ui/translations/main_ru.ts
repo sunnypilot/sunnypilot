@@ -710,7 +710,7 @@ This is the time after which settings UI closes automatically if user is not int
     </message>
     <message>
         <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
-        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;ОТКЛЮЧЕНО&lt;/span&gt;: подключитесь к белимитной сети</translation>
+        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;ОТКЛЮЧЕНО&lt;/span&gt;: подключитесь к безлимитной сети</translation>
     </message>
     <message>
         <source>Firehose Mode</source>
