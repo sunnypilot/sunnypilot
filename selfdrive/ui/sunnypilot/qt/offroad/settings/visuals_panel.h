@@ -32,4 +32,14 @@ protected:
  ButtonParamControlSP *dev_ui_settings;
 
  bool has_longitudinal_control = false;
+
+ OptionControlSP *visual_radar_tracks_delay_settings;
+ ButtonParamControlSP *visual_wide_cam_settings;
+ int visual_style_value = 0;
+ int visual_style_overhead_value = 0;
+ ButtonParamControlSP *visual_style_settings;
+ ButtonParamControlSP *visual_style_zoom_settings;
+ ButtonParamControlSP *visual_style_overhead_settings;
+ ButtonParamControlSP *visual_style_overhead_zoom_settings;
+ OptionControlSP *visual_style_overhead_threshold_settings;
 };

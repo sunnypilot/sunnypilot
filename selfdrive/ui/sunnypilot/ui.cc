@@ -29,7 +29,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
     "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
     "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-    "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP", "navigationd"
+    "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP", "navigationd", "liveTracks"
   });
 
   // update timer
@@ -44,6 +44,14 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   });
   param_watcher->addParam("DevUIInfo");
   param_watcher->addParam("StandstillTimer");
+  param_watcher->addParam("VisualRadarTracks");
+  param_watcher->addParam("VisualRadarTracksDelay");
+  param_watcher->addParam("VisualWideCam");
+  param_watcher->addParam("VisualStyle");
+  param_watcher->addParam("VisualStyleZoom");
+  param_watcher->addParam("VisualStyleOverhead");
+  param_watcher->addParam("VisualStyleOverheadZoom");
+  param_watcher->addParam("VisualStyleOverheadThreshold");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -76,6 +84,17 @@ void ui_update_params_sp(UIStateSP *s) {
   s->scene.chevron_info = std::atoi(params.get("ChevronInfo").c_str());
   s->scene.blindspot_ui = params.getBool("BlindSpot");
   s->scene.rainbow_mode = params.getBool("RainbowMode");
+
+  s->scene.visual_radar_tracks = QString::fromStdString(params.get("VisualRadarTracks")).toInt();
+  s->scene.visual_radar_tracks_delay = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
+
+  s->scene.visual_wide_cam = QString::fromStdString(params.get("VisualWideCam")).toInt();
+
+  s->scene.visual_style = QString::fromStdString(params.get("VisualStyle")).toInt();
+  s->scene.visual_style_zoom = QString::fromStdString(params.get("VisualStyleZoom")).toInt();
+  s->scene.visual_style_overhead = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
+  s->scene.visual_style_overhead_zoom = QString::fromStdString(params.get("VisualStyleOverheadZoom")).toInt();
+  s->scene.visual_style_overhead_threshold = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
 }
 
 void UIStateSP::reset_onroad_sleep_timer(OnroadTimerStatusToggle toggleTimerStatus) {

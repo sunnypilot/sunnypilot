@@ -172,6 +172,14 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ShowTurnSignals", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TrueVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualRadarTracks", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualRadarTracksDelay", {PERSISTENT | BACKUP, FLOAT, "0.0"}},
+    {"VisualWideCam", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyle", {PERSISTENT | BACKUP, INT, "0"}},
+    {"VisualStyleZoom", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyleOverhead", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyleOverheadZoom", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"VisualStyleOverheadThreshold", {PERSISTENT | BACKUP, INT, "20"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},

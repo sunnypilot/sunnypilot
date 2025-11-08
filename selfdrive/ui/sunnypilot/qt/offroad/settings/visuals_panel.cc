@@ -11,6 +11,18 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   param_watcher = new ParamWatcher(this);
   connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
     paramsRefresh();
+    if (param_name == "VisualStyle") {
+      visual_style_value = param_value.toInt();
+    } else if (param_name == "VisualStyleOverhead") {
+      visual_style_overhead_value = param_value.toInt();
+    } else if (param_name == "VisualRadarTracks") {
+      bool radar_tracks_enabled = param_value.toInt() != 0;
+      visual_radar_tracks_delay_settings->setVisible(radar_tracks_enabled);
+    }
+    visual_style_zoom_settings->setVisible(visual_style_value != 0);
+    visual_style_overhead_settings->setVisible(visual_style_value != 0);
+    visual_style_overhead_zoom_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
+    visual_style_overhead_threshold_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
   });
 
   main_layout = new QStackedLayout(this);
@@ -90,6 +102,13 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
       "",
       false,
     },
+    {
+      "VisualRadarTracks",
+      tr("Show Radar Tracks"),
+      tr("Shows what the cars radar sees."),
+      "",
+      false,
+    },
   };
 
   // Add regular toggles first
@@ -116,6 +135,111 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     param_watcher->addParam(param);
   }
 
+  // Visuals: Radar Tracks Delay
+  visual_radar_tracks_delay_settings = new OptionControlSP("VisualRadarTracksDelay", tr("Adjust Visual Radar Tracks Delay"),
+                                      tr("Delays radar tracks to better match what you see through the camera."),
+                                      "", {0, 100}, 10, false, nullptr, true);
+
+  connect(visual_radar_tracks_delay_settings, &OptionControlSP::updateLabels, [=]() {
+    float radar_tracks_delay_value = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
+    visual_radar_tracks_delay_settings->setLabel(QString::number(radar_tracks_delay_value, 'f', 1) + " s");
+  });
+
+  float radar_tracks_delay_value = QString::fromStdString(params.get("VisualRadarTracksDelay")).toFloat();
+  visual_radar_tracks_delay_settings->setLabel(QString::number(radar_tracks_delay_value, 'f', 1) + " s");
+
+  list->addItem(visual_radar_tracks_delay_settings);
+
+  // Wide Cam
+  std::vector<QString> visual_wide_cam_settings_texts{tr("Auto"), tr("On"), tr("Off")};
+  visual_wide_cam_settings = new ButtonParamControlSP(
+    "VisualWideCam", tr("Wide Cam"), tr("Override the wide cam view regardless of experimental mode status."),
+    "",
+    visual_wide_cam_settings_texts,
+    250);
+  list->addItem(visual_wide_cam_settings);
+
+  // Visual Style
+  std::vector<QString> visual_style_settings_texts{tr("Default"), tr("Minimal"), tr("Vision")};
+  visual_style_settings = new ButtonParamControlSP(
+    "VisualStyle", tr("Visual Style"),
+    tr(
+      "Switch between different on-road visualization layouts."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Default:</b> Standard OpenPilot layout with camera and path view.</li>"
+      "<li><b>Minimal:</b> Clean interface without camera feed or extra elements.</li>"
+      "<li><b>Vision:</b> Experimental layout that focuses on model perception and environment.</li>"
+      "</ul>"
+    ),
+    "",
+    visual_style_settings_texts,
+    380);
+  list->addItem(visual_style_settings);
+
+  // Visual Style Zoom
+  std::vector<QString> visual_style_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_zoom_settings = new ButtonParamControlSP(
+    "VisualStyleZoom", tr("Visual Style Zoom"),
+    tr(
+      "Enables dynamic zooming based on driving speed in the selected visual style."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps the zoom fixed.</li>"
+      "<li><b>Enabled:</b> Zooms in at low speed and out at high speed.</li>"
+      "<li><b>Inverted:</b> Reverses the zoom behavior.</li>"
+      "</ul>"
+    ),
+    "",
+    visual_style_zoom_settings_texts,
+    380);
+  list->addItem(visual_style_zoom_settings);
+
+  // Visual Style Overhead
+  std::vector<QString> visual_style_overhead_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_overhead_settings = new ButtonParamControlSP(
+    "VisualStyleOverhead", tr("Visual Style Overhead"),
+    tr(
+      "Toggles an overhead (top-down) camera view for a 2D-style perspective."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps the standard forward 3D view.</li>"
+      "<li><b>Enabled:</b> Switches to overhead view when active.</li>"
+      "<li><b>Inverted:</b> Reverses when the transition happens.</li>"
+      "</ul>"
+    ),
+    "",
+    visual_style_overhead_settings_texts,
+    380);
+  list->addItem(visual_style_overhead_settings);
+
+  // Visual Style Overhead Zoom
+  std::vector<QString> visual_style_overhead_zoom_settings_texts{tr("Disabled"), tr("Enabled"), tr("Inverted")};
+  visual_style_overhead_zoom_settings = new ButtonParamControlSP(
+    "VisualStyleOverheadZoom", tr("Visual Style Overhead Zoom"),
+    tr(
+      "Controls zooming behavior while in overhead mode."
+      "<ul style='margin-left: 10px; margin-top: 4px;'>"
+      "<li><b>Disabled:</b> Keeps a fixed zoom level in overhead mode.</li>"
+      "<li><b>Enabled:</b> Zooms dynamically based on speed while overhead.</li>"
+      "<li><b>Inverted:</b> Opposite zoom direction.</li>"
+      "</ul>"
+    ),
+    "",
+    visual_style_overhead_zoom_settings_texts,
+    380);
+  list->addItem(visual_style_overhead_zoom_settings);
+
+  // Visual Style Overhead Threshold
+  visual_style_overhead_threshold_settings = new OptionControlSP(
+    "VisualStyleOverheadThreshold", tr("Visual Style Overhead Threshold"),
+    tr("Sets the speed (in mph) where the display transitions between normal and overhead view."),
+    "", {10, 80}, 5, false, nullptr, false);
+  auto updateThresholdLabel = [=]() {
+    int mph = QString::fromStdString(params.get("VisualStyleOverheadThreshold")).toInt();
+    visual_style_overhead_threshold_settings->setLabel(QString("%1 mph").arg(mph));
+  };
+  connect(visual_style_overhead_threshold_settings, &OptionControlSP::updateLabels, updateThresholdLabel);
+  updateThresholdLabel();
+  list->addItem(visual_style_overhead_threshold_settings);
+
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
   chevron_info_settings = new ButtonParamControlSP(
@@ -135,6 +259,19 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     dev_ui_settings_texts,
     380);
   list->addItem(dev_ui_settings);
+
+  bool radar_tracks_enabled = QString::fromStdString(params.get("VisualRadarTracks")).toInt() != 0;
+  visual_radar_tracks_delay_settings->setVisible(radar_tracks_enabled);
+  param_watcher->addParam("VisualRadarTracks");
+
+  visual_style_value = QString::fromStdString(params.get("VisualStyle")).toInt();
+  visual_style_overhead_value = QString::fromStdString(params.get("VisualStyleOverhead")).toInt();
+  visual_style_zoom_settings->setVisible(visual_style_value != 0);
+  visual_style_overhead_settings->setVisible(visual_style_value != 0);
+  visual_style_overhead_zoom_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
+  visual_style_overhead_threshold_settings->setVisible(visual_style_value != 0 && visual_style_overhead_value != 0);
+  param_watcher->addParam("VisualStyle");
+  param_watcher->addParam("VisualStyleOverhead");
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
@@ -190,5 +327,20 @@ void VisualsPanel::paramsRefresh() {
   }
   if (dev_ui_settings) {
     dev_ui_settings->refresh();
+  }
+  if (visual_wide_cam_settings) {
+    visual_wide_cam_settings->refresh();
+  }
+  if (visual_style_settings) {
+    visual_style_settings->refresh();
+  }
+  if (visual_style_zoom_settings) {
+    visual_style_zoom_settings->refresh();
+  }
+  if (visual_style_overhead_settings) {
+    visual_style_overhead_settings->refresh();
+  }
+  if (visual_style_overhead_zoom_settings) {
+    visual_style_overhead_zoom_settings->refresh();
   }
 }
