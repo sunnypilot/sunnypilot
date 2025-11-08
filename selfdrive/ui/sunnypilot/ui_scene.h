@@ -18,6 +18,9 @@ typedef struct UISceneSP : UIScene {
   bool trueVEgoUI;
   bool hideVEgoUI;
   bool turn_signals = false;
+  int chevron_info;
+  bool blindspot_ui;
+  bool rainbow_mode;
   int visual_radar_tracks = 0;
   float visual_radar_tracks_delay = 0;
   int visual_wide_cam = 0;

@@ -243,7 +243,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visuals: Display Metrics below Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
   chevron_info_settings = new ButtonParamControlSP(
-    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
+    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
     "",
     chevron_info_settings_texts,
     200);
@@ -277,6 +277,40 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   vlayout->addWidget(sunnypilotScroller);
 
   main_layout->addWidget(sunnypilotScreen);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &VisualsPanel::refreshLongitudinalStatus);
+
+  refreshLongitudinalStatus();
+}
+
+void VisualsPanel::refreshLongitudinalStatus() {
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    has_longitudinal_control = hasLongitudinalControl(CP);
+  } else {
+    has_longitudinal_control = false;
+  }
+
+  if (chevron_info_settings) {
+    QString chevronEnabledDescription = tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control).");
+    QString chevronNoLongDescription = tr("This feature requires sunnypilot longitudinal control to be available.");
+
+    if (has_longitudinal_control) {
+      chevron_info_settings->setDescription(chevronEnabledDescription);
+    } else {
+      // Reset to "Off" when longitudinal not available
+      params.put("ChevronInfo", "0");
+      chevron_info_settings->setDescription(chevronNoLongDescription);
+    }
+
+    // Enable only when longitudinal is available
+    chevron_info_settings->setEnabled(has_longitudinal_control);
+    chevron_info_settings->refresh();
+  }
 }
 
 void VisualsPanel::paramsRefresh() {

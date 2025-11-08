@@ -21,7 +21,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     paramsRefresh(param_name, param_value);
   });
 
-  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  is_sunnylink_enabled = params.getBool("SunnylinkEnabled");
   connect(uiStateSP(), &UIStateSP::sunnylinkRolesChanged, this, &SunnylinkPanel::updatePanel);
   connect(uiStateSP(), &UIStateSP::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updatePanel);
   connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
@@ -90,7 +90,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   QString sunnylinkUploaderDesc = tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (only for highest tiers, and does NOT bring ANY benefit to you. We are just testing data volume.)");
   sunnylinkUploaderEnabledBtn = new ParamControlSP(
     "EnableSunnylinkUploader",
-    tr("[Don't use] Enable sunnylink uploader"),
+    tr("Enable sunnylink uploader (infrastructure test)"),
     sunnylinkUploaderDesc,
     "", nullptr, true);
   list->addItem(sunnylinkUploaderEnabledBtn);
@@ -272,7 +272,7 @@ void SunnylinkPanel::updatePanel() {
   const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
   sunnylinkEnabledBtn->setEnabled(!is_onroad);
 
-  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  is_sunnylink_enabled = params.getBool("SunnylinkEnabled");
   bool is_sub = uiStateSP()->isSunnylinkSponsor() && is_sunnylink_enabled;
   auto max_current_sponsor_rule = uiStateSP()->sunnylinkSponsorRole();
   auto role_name = max_current_sponsor_rule.getSponsorTierString();
@@ -290,7 +290,10 @@ void SunnylinkPanel::updatePanel() {
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
 
-  sunnylinkUploaderEnabledBtn->setEnabled(max_current_sponsor_rule.roleTier == SponsorTier::Guardian && is_sunnylink_enabled);
+  bool can_do_uploads = max_current_sponsor_rule.roleTier >= SponsorTier::Novice && is_sunnylink_enabled;
+  sunnylinkUploaderEnabledBtn->setVisible(can_do_uploads);
+  sunnylinkUploaderEnabledBtn->setEnabled(can_do_uploads);
+  
 
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");
