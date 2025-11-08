@@ -744,7 +744,7 @@ class PanelBackButton : public QPushButton {
   Q_OBJECT
 
 public:
-  PanelBackButton(const QString &label = "Back", QWidget *parent = nullptr) : QPushButton(label, parent) {
+  PanelBackButton(const QString &label = "", QWidget *parent = nullptr) : QPushButton(label.isEmpty() ? tr("Back") : label, parent) {
     setObjectName("back_btn");
     setFixedSize(400, 100);
   }
@@ -760,13 +760,13 @@ inline QString RainbowizeWords(const QString &text) {
     "#A78BFA",  // soft lavender
     "#F78FB3"   // rose pink
   };
-    
+
     QString result;
     QStringList words = text.split(' ');
-    
+
     for (int i = 0; i < words.size(); ++i) {
       result += QString("<font color='%1'>%2</font> ").arg(colors[i % colors.size()]).arg(words[i].toHtmlEscaped());
     }
-    
+
     return result.trimmed();
   }
