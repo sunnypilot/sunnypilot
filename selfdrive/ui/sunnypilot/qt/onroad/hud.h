@@ -39,6 +39,8 @@ private:
   void drawE2eAlert(QPainter &p, const QRect &surface_rect, const QString &alert_alt_text = "");
   void drawCurrentSpeedSP(QPainter &p, const QRect &surface_rect);
   void drawBlinker(QPainter &p, const QRect &surface_rect);
+  void drawNavigationHUD(QPainter &p, const QRect &surface_rect);
+  QString getNavigationIconName(const QString &type, const QString &mod);
 
   bool lead_status;
   float lead_d_rel;
@@ -120,4 +122,13 @@ private:
   float speedCluster = 0;
   int icbm_active_counter = 0;
   bool pcmCruiseSpeed = true;
+
+  bool navigationValid;
+  QString navigationStreet;
+  QString navigationDistance;
+  QString navigationModifier;
+  QString navigationManeuverType;
+  QString navigationNextModifier;
+  QString navigationNextManeuverType;
+  bool navigationHasNext;
 };

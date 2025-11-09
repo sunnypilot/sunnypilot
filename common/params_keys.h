@@ -198,6 +198,14 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ModelManager_LastSyncTime", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, INT, "0"}},
     {"ModelManager_ModelsCache", {PERSISTENT | BACKUP, JSON}},
 
+    // Navigation params
+    {"AllowNavigation", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"MapboxToken", {PERSISTENT | BACKUP, STRING}},
+    {"MapboxSettings", {CLEAR_ON_MANAGER_START, JSON}},
+    {"MapboxRoute", {PERSISTENT, STRING}},
+    {"MapboxRecompute", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"NavDesiresAllowed", {PERSISTENT | BACKUP, BOOL, "0"}},
+
     // Neural Network Lateral Control
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},
 

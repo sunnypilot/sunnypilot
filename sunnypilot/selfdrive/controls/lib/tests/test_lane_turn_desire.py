@@ -1,4 +1,6 @@
 import pytest
+
+import cereal.messaging
 from cereal import log, custom
 from openpilot.common.params import Params
 
@@ -9,6 +11,20 @@ from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeC
 
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
+
+
+class MockSubMaster:
+  def __init__(self, services): pass
+
+  def update(self, timeout): pass
+
+  def __getitem__(self, key):
+    return type('nav_msg', (), {'valid': False})()
+
+
+@pytest.fixture(autouse=True)
+def mock_submaster():
+  cereal.messaging.SubMaster = MockSubMaster
 
 
 @pytest.mark.parametrize("left_blinker,right_blinker,v_ego,blindspot_left,blindspot_right,expected", [

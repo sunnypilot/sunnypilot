@@ -126,6 +126,8 @@ def string_to_direction(direction: str) -> str:
     if d in direction:
       if 'slight' in direction and d in MODIFIABLE_DIRECTIONS:
         return 'slight' + d.capitalize()
+      elif 'sharp' in direction and d in MODIFIABLE_DIRECTIONS:
+        return 'sharp' + d.capitalize()
       return d
   return 'none'
 
