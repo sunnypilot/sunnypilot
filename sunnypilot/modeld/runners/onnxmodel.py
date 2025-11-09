@@ -12,7 +12,7 @@ ORT_TYPES_TO_NP_TYPES = {'tensor(float16)': np.float16, 'tensor(float)': np.floa
 def attributeproto_fp16_to_fp32(attr):
   """
   Convert ONNX attribute from float16 to float32 format.
-  
+
   Args:
     attr: ONNX attribute to convert
   """
@@ -23,10 +23,10 @@ def attributeproto_fp16_to_fp32(attr):
 def convert_fp16_to_fp32(onnx_path_or_bytes):
   """
   Convert ONNX model from float16 to float32 precision.
-  
+
   Args:
     onnx_path_or_bytes: Path to ONNX file or raw ONNX bytes
-    
+
   Returns:
     bytes: Serialized ONNX model with float32 precision
   """
@@ -53,11 +53,11 @@ def convert_fp16_to_fp32(onnx_path_or_bytes):
 def create_ort_session(path, fp16_to_fp32):
   """
   Create an ONNX Runtime session with appropriate execution provider.
-  
+
   Args:
     path: Path to ONNX model file
     fp16_to_fp32: Whether to convert model from fp16 to fp32
-    
+
   Returns:
     ort.InferenceSession: Configured ONNX Runtime session
   """
@@ -91,7 +91,7 @@ def create_ort_session(path, fp16_to_fp32):
 class ONNXModel(RunModel):
   """
   ONNX model runner implementation.
-  
+
   This class implements the RunModel interface for ONNX models, providing
   methods to run inference using ONNX Runtime with various execution providers.
   """

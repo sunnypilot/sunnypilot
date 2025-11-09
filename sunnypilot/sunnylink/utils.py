@@ -61,7 +61,7 @@ def get_api_token():
   params = Params()
   sunnylink_dongle_id = params.get("SunnylinkDongleId")
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
-  token = sunnylink_api.get_token()
+  sunnylink_api.get_token()
   print("API Token retrieved successfully")
 
 
