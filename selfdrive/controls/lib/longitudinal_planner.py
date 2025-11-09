@@ -155,6 +155,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     # Get new v_cruise and a_desired from Smart Cruise Control and Speed Limit Assist
     v_cruise, self.a_desired = LongitudinalPlannerSP.update_targets(self, sm, self.v_desired_filter.x, self.a_desired, v_cruise)
 
+    if sm.valid['mapdOut']:
+      if sm['mapdOut'].suggestedSpeed > 0 and v_cruise > sm['mapdOut'].suggestedSpeed:
+        v_cruise = sm['mapdOut'].suggestedSpeed
+
     if force_slow_decel:
       v_cruise = 0.0
 

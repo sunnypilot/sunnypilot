@@ -91,6 +91,7 @@ _services: dict[str, tuple] = {
   "modelDataV2SP": (True, 20.),
   "navigationd": (True, 3.),
   "liveLocationKalman": (True, 20.),
+  "mapdOut": (True, 20., 0.1),
 
   # debug
   "uiDebug": (True, 0., 1),

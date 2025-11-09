@@ -239,6 +239,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LaneTurnDesire", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"LaneTurnValue", {PERSISTENT | BACKUP, FLOAT, "19.0"}},
 
+
+	  // mapd v020
+	  {"MapdSettings", {PERSISTENT | BACKUP, JSON}},
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},
     {"MapdVersion", {PERSISTENT, STRING}},

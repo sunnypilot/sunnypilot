@@ -496,11 +496,11 @@ struct CustomReserved15 @0xbd443b539493bc68 {
 struct CustomReserved16 @0xfc6241ed8877b611 {
 }
 
-struct CustomReserved17 @0xa30662f84033036c {
+struct MapdExtendedOut @0xa30662f84033036c {
 }
 
-struct CustomReserved18 @0xc86a3d38d13eb3ef {
+struct MapdIn @0xc86a3d38d13eb3ef {
 }
 
-struct CustomReserved19 @0xa4f1eb3323f5f582 {
+struct MapdOut @0xa4f1eb3323f5f582 {
 }
