@@ -176,7 +176,12 @@ void HudRendererSP::updateState(const UIState &s) {
             navigationDistance = QString::number(std::round(dist / 50.0) * 50) + " m";
           }
         } else {
-          navigationDistance = QString::number(dist / 1000, 'f', 1) + " km";
+          float dist_km = dist / 1000;
+          if (dist_km >= 10.0) {
+            navigationDistance = QString::number(std::floor(dist_km)) + " km";
+          } else {
+            navigationDistance = QString::number(dist_km, 'f', 1) + " km";
+          }
         }
       } else {
         float dist_ft = dist * 3.28084f;
@@ -188,7 +193,12 @@ void HudRendererSP::updateState(const UIState &s) {
             navigationDistance = QString::number((std::round(dist_ft / 50.0) * 50)) + " ft";
           }
         } else {
-          navigationDistance = QString::number(dist_ft / 5280, 'f', 1) + " mi";
+          float dist_mi = dist_ft / 5280;
+          if (dist_mi >= 10.0) {
+            navigationDistance = QString::number(std::floor(dist_mi)) + " mi";
+          } else {
+            navigationDistance = QString::number(dist_mi, 'f', 1) + " mi";
+          }
         }
       }
 
@@ -1086,9 +1096,14 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
 
   const int container_width = 1080;
   const int container_height = 225;
-  const int container_x = (surface_rect.width() - container_width) / 2;
+  int container_x = (surface_rect.width() - container_width) / 2;
   const int container_y = 62;
   const int border_radius = 42;
+
+
+  if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+    container_x += 190;
+  }
 
   QRect container_rect(container_x, container_y, container_width, container_height);
 
@@ -1112,7 +1127,7 @@ void HudRendererSP::drawNavigationHUD(QPainter &p, const QRect &surface_rect) {
   // Distance
   p.setFont(InterFont(48, QFont::Bold));
   p.setPen(Qt::white);
-  QRect distance_rect(icon_x, icon_y + icon_size, icon_size, 38);
+  QRect distance_rect(icon_x - 25, icon_y + icon_size, icon_size + 50, 38);
   p.drawText(distance_rect, Qt::AlignCenter, navigationDistance);
 
   const int then_section_width = 180;
