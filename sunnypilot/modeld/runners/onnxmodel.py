@@ -10,11 +10,26 @@ from openpilot.sunnypilot.modeld.runners.runmodel_pyx import RunModel
 ORT_TYPES_TO_NP_TYPES = {'tensor(float16)': np.float16, 'tensor(float)': np.float32, 'tensor(uint8)': np.uint8}
 
 def attributeproto_fp16_to_fp32(attr):
+  """
+  Convert ONNX attribute from float16 to float32 format.
+  
+  Args:
+    attr: ONNX attribute to convert
+  """
   float32_list = np.frombuffer(attr.raw_data, dtype=np.float16)
   attr.data_type = 1
   attr.raw_data = float32_list.astype(np.float32).tobytes()
 
 def convert_fp16_to_fp32(onnx_path_or_bytes):
+  """
+  Convert ONNX model from float16 to float32 precision.
+  
+  Args:
+    onnx_path_or_bytes: Path to ONNX file or raw ONNX bytes
+    
+  Returns:
+    bytes: Serialized ONNX model with float32 precision
+  """
   if isinstance(onnx_path_or_bytes, bytes):
     model = onnx.load_from_string(onnx_path_or_bytes)
   elif isinstance(onnx_path_or_bytes, str):
@@ -36,6 +51,16 @@ def convert_fp16_to_fp32(onnx_path_or_bytes):
   return model.SerializeToString()
 
 def create_ort_session(path, fp16_to_fp32):
+  """
+  Create an ONNX Runtime session with appropriate execution provider.
+  
+  Args:
+    path: Path to ONNX model file
+    fp16_to_fp32: Whether to convert model from fp16 to fp32
+    
+  Returns:
+    ort.InferenceSession: Configured ONNX Runtime session
+  """
   os.environ["OMP_NUM_THREADS"] = "4"
   os.environ["OMP_WAIT_POLICY"] = "PASSIVE"
 
@@ -64,6 +89,12 @@ def create_ort_session(path, fp16_to_fp32):
 
 
 class ONNXModel(RunModel):
+  """
+  ONNX model runner implementation.
+  
+  This class implements the RunModel interface for ONNX models, providing
+  methods to run inference using ONNX Runtime with various execution providers.
+  """
   def __init__(self, path, output, runtime, use_tf8, cl_context):
     self.inputs = {}
     self.output = output

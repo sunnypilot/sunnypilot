@@ -62,7 +62,7 @@ def get_api_token():
   sunnylink_dongle_id = params.get("SunnylinkDongleId")
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   token = sunnylink_api.get_token()
-  print(f"API Token: {token}")
+  print("API Token retrieved successfully")
 
 
 def get_param_as_byte(param_name: str, params=None, get_default=False) -> bytes | None:
