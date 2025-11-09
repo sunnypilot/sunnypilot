@@ -105,9 +105,9 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
 
   // Lane Turn Desire toggle
   lane_turn_desire_toggle = new ParamControlSP("LaneTurnDesire", tr("Use Lane Turn Desires"),
-                            "If you’re driving at 20 mph (32 km/h) or below and have your blinker on, "
+                            tr("If you’re driving at 20 mph (32 km/h) or below and have your blinker on, "
                             "the car will plan a turn in that direction at the nearest drivable path. "
-                            "This prevents situations (like at red lights) where the car might plan the wrong turn direction.",
+                            "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
                              "../assets/offroad/icon_shell.png");
   list->addItem(lane_turn_desire_toggle);
 
@@ -117,7 +117,7 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   const float K = 1.609344f;
   int per_value_change_scaled = is_metric_initial ? static_cast<int>(std::round((1.0f / K) * 100.0f)) : 100; // 100 -> 1 mph
   lane_turn_value_control = new OptionControlSP("LaneTurnValue", tr("Adjust Lane Turn Speed"),
-    tr("Set the maximum speed for lane turn desires. Default is 19 %1.").arg(is_metric_initial ? "km/h" : "mph"),
+    tr("Set the maximum speed for lane turn desires. Default is 19 %1.").arg(is_metric_initial ? tr("km/h") : tr("mph")),
     "", {5 * 100, max_value_mph * 100}, per_value_change_scaled, false, nullptr, true, true);
   lane_turn_value_control->showDescription();
   list->addItem(lane_turn_value_control);
@@ -173,7 +173,7 @@ void ModelsPanel::refreshLaneTurnValueControl() {
   if (!lane_turn_value_control) return;
   float stored_mph = QString::fromStdString(params.get("LaneTurnValue")).toFloat();
   bool is_metric = params.getBool("IsMetric");
-  QString unit = is_metric ? "km/h" : "mph";
+  QString unit = is_metric ? tr("km/h") : tr("mph");
   float display_value = stored_mph;
   if (is_metric) {
     display_value = stored_mph * 1.609344f;

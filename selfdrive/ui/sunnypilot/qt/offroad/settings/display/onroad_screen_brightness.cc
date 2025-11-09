@@ -19,14 +19,14 @@ OnroadScreenBrightnessControl::OnroadScreenBrightnessControl(const QString &para
 
   onroadScreenOffTimer = new OptionControlSP(
     "OnroadScreenOffTimer",
-    "Onroad Brightness Delay",
+    tr("Onroad Brightness Delay"),
     "",
     "",
     {0, 11}, 1, true, &onroadScreenOffTimerOptions);
 
   onroadScreenBrightness = new OptionControlSP(
     "OnroadScreenOffBrightness",
-    "Onroad Brightness",
+    tr("Onroad Brightness"),
     "",
     "",
     {0, 90}, 10, true);
@@ -44,11 +44,11 @@ OnroadScreenBrightnessControl::OnroadScreenBrightnessControl(const QString &para
 void OnroadScreenBrightnessControl::refresh() {
   // Driving Screen Off Timer
   int valTimer = std::atoi(params.get("OnroadScreenOffTimer").c_str());
-  std::string labelTimer = (valTimer < 60 ? std::to_string(valTimer) + "s" : std::to_string(valTimer / 60) + "m");
+  std::string labelTimer = (valTimer < 60 ? std::to_string(valTimer) + tr("s").toStdString() : std::to_string(valTimer / 60) + tr("m").toStdString());
   onroadScreenOffTimer->setLabel(QString::fromStdString(labelTimer));
 
   // Driving Screen Off Brightness
   std::string valBrightness = params.get("OnroadScreenOffBrightness");
-  std::string labelBrightness = (valBrightness == "0" ? " Screen Off" : valBrightness + "%");
+  std::string labelBrightness = (valBrightness == "0" ? tr(" Screen Off").toStdString() : valBrightness + "%");
   onroadScreenBrightness->setLabel(QString::fromStdString(labelBrightness));
 }

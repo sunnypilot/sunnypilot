@@ -744,7 +744,7 @@ class PanelBackButton : public QPushButton {
   Q_OBJECT
 
 public:
-  PanelBackButton(const QString &label = "Back", QWidget *parent = nullptr) : QPushButton(label, parent) {
+  PanelBackButton(const QString &label = "", QWidget *parent = nullptr) : QPushButton(label.isEmpty() ? tr("Back") : label, parent) {
     setObjectName("back_btn");
     setFixedSize(400, 100);
   }
