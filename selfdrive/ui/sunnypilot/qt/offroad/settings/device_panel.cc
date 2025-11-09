@@ -7,7 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/device_panel.h"
 
-#include "common/watchdog.h"
 #include "selfdrive/ui/qt/qt_window.h"
 
 DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
@@ -70,7 +69,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
       // put language setting, exit Qt UI, and trigger fast restart
       params.put("LanguageSetting", langs[selection].toStdString());
       qApp->exit(18);
-      watchdog_kick(0);
     }
   });
 

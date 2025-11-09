@@ -55,99 +55,6 @@ env = Environment(
   },
   CC='clang',
   CXX='clang++',
-lenv = {
-  "PATH": os.environ['PATH'],
-  "PYTHONPATH": Dir("#").abspath + ':' + Dir(f"#third_party/acados").abspath,
-
-  "ACADOS_SOURCE_DIR": Dir("#third_party/acados").abspath,
-  "ACADOS_PYTHON_INTERFACE_PATH": Dir("#third_party/acados/acados_template").abspath,
-  "TERA_PATH": Dir("#").abspath + f"/third_party/acados/{arch}/t_renderer"
-}
-
-rpath = []
-
-if arch == "larch64":
-  cpppath = [
-    "#third_party/opencl/include",
-  ]
-
-  libpath = [
-    "/usr/local/lib",
-    "/system/vendor/lib64",
-    f"#third_party/acados/{arch}/lib",
-  ]
-
-  libpath += [
-    "#third_party/snpe/larch64",
-    "#third_party/libyuv/larch64/lib",
-    "/usr/lib/aarch64-linux-gnu"
-  ]
-  cflags = ["-DQCOM2", "-mcpu=cortex-a57"]
-  cxxflags = ["-DQCOM2", "-mcpu=cortex-a57"]
-  rpath += ["/usr/local/lib"]
-else:
-  cflags = []
-  cxxflags = []
-  cpppath = []
-  rpath += []
-
-  # MacOS
-  if arch == "Darwin":
-    libpath = [
-      f"#third_party/libyuv/{arch}/lib",
-      f"#third_party/acados/{arch}/lib",
-      f"{brew_prefix}/lib",
-      f"{brew_prefix}/opt/openssl@3.0/lib",
-      "/System/Library/Frameworks/OpenGL.framework/Libraries",
-    ]
-
-    cflags += ["-DGL_SILENCE_DEPRECATION"]
-    cxxflags += ["-DGL_SILENCE_DEPRECATION"]
-    cpppath += [
-      f"{brew_prefix}/include",
-      f"{brew_prefix}/opt/openssl@3.0/include",
-    ]
-  # Linux
-  else:
-    libpath = [
-      f"#third_party/acados/{arch}/lib",
-      f"#third_party/libyuv/{arch}/lib",
-      "/usr/lib",
-      "/usr/local/lib",
-    ]
-
-    if arch == "x86_64":
-      libpath += [
-        f"#third_party/snpe/{arch}"
-      ]
-      rpath += [
-        Dir(f"#third_party/snpe/{arch}").abspath,
-      ]
-
-if GetOption('asan'):
-  ccflags = ["-fsanitize=address", "-fno-omit-frame-pointer"]
-  ldflags = ["-fsanitize=address"]
-elif GetOption('ubsan'):
-  ccflags = ["-fsanitize=undefined"]
-  ldflags = ["-fsanitize=undefined"]
-else:
-  ccflags = []
-  ldflags = []
-
-# no --as-needed on mac linker
-if arch != "Darwin":
-  ldflags += ["-Wl,--as-needed", "-Wl,--no-undefined"]
-
-if not GetOption('stock_ui'):
-  cflags += ["-DSUNNYPILOT"]
-  cxxflags += ["-DSUNNYPILOT"]
-
-ccflags_option = GetOption('ccflags')
-if ccflags_option:
-  ccflags += ccflags_option.split(' ')
-
-env = Environment(
-  ENV=lenv,
   CCFLAGS=[
     "-g",
     "-fPIC",
@@ -161,8 +68,8 @@ env = Environment(
     "-Wno-reorder-init-list",
     "-Wno-vla-cxx-extension",
   ],
-  CFLAGS=["-std=gnu11"],
-  CXXFLAGS=["-std=c++1z"],
+  CFLAGS=["-std=gnu11", "-DSUNNYPILOT"],
+  CXXFLAGS=["-std=c++1z", "-DSUNNYPILOT"],
   CPPPATH=[
     "#",
     "#msgq",
@@ -192,6 +99,10 @@ env = Environment(
   tools=["default", "cython", "compilation_db", "rednose_filter"],
   toolpath=["#site_scons/site_tools", "#rednose_repo/site_scons/site_tools"],
 )
+
+#if not GetOption('stock_ui'):
+#  cflags += ["-DSUNNYPILOT"]
+#  cxxflags += ["-DSUNNYPILOT"]
 
 # Arch-specific flags and paths
 if arch == "larch64":

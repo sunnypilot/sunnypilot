@@ -7,7 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 
-#include "common/watchdog.h"
 
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
@@ -51,10 +50,6 @@ void UIStateSP::update() {
   update_sockets(this);
   update_state(this);
   updateStatus();
-
-  if (sm->frame % UI_FREQ == 0) {
-    watchdog_kick(nanos_since_boot());
-  }
   emit uiUpdate(*this);
 }
 

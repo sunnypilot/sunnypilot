@@ -7,7 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
 
-#include "common/watchdog.h"
 #include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include <QtConcurrent>
@@ -215,7 +214,6 @@ void SunnylinkPanel::handleBackupProgress() {
         restore_request_started = false;
         if (ConfirmationDialog::alert(tr("Settings restored. Confirm to restart the interface."), this)) {
           qApp->exit(18);
-          watchdog_kick(0);
         }
       } else {
         restoreSettings->setEnabled(!is_onroad && !restore_request_pending && is_sunnylink_enabled);
