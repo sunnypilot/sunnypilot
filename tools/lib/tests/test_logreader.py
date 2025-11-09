@@ -48,7 +48,7 @@ def setup_source_scenario(mocker, is_internal=False):
 
 
 class TestLogReader:
-  @parameterized.expand([
+  @pytest.mark.parametrize("identifier, expected", [
     (f"{TEST_ROUTE}", ALL_SEGS),
     (f"{TEST_ROUTE.replace('/', '|')}", ALL_SEGS),
     (f"{TEST_ROUTE}--0", [0]),
