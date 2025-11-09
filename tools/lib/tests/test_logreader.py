@@ -72,7 +72,10 @@ class TestLogReader:
     (f"https://useradmin.comma.ai/?onebox={TEST_ROUTE.replace('/', '|')}", ALL_SEGS),
     (f"https://useradmin.comma.ai/?onebox={TEST_ROUTE.replace('/', '%7C')}", ALL_SEGS),
   ])
-  def test_indirect_parsing(self, identifier, expected):
+  def test_indirect_parsing(self, mocker, identifier, expected):
+    # Mock the API call to avoid external network requests in tests
+    max_seg_mock = mocker.patch("openpilot.tools.lib.route.get_max_seg_number_cached")
+    max_seg_mock.return_value = NUM_SEGS - 1  # Since segments are 0-indexed, max segment is NUM_SEGS - 1
     parsed = parse_indirect(identifier)
     sr = SegmentRange(parsed)
     assert list(sr.seg_idxs) == expected, identifier
