@@ -22,20 +22,20 @@ def make_car(vEgo=0, leftBlinker=False, rightBlinker=False, leftBlindspot=False,
   )
 
 NAVIGATION_PARAMS: list[tuple] = [
-  ('slightLeft', make_car(), log.Desire.keepLeft),
-  ('slightRight', make_car(), log.Desire.keepRight),
+  ('slightLeft', make_car(steeringPressed=True, steeringTorque=1), log.Desire.keepLeft),
+  ('slightRight', make_car(steeringPressed=True, steeringTorque=-1), log.Desire.keepRight),
   ('slightLeft', make_car(vEgo=9, leftBlindspot=True), log.Desire.none),
   ('slightRight', make_car(vEgo=9, rightBlindspot=True), log.Desire.none),
-  ('left', make_car(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, steeringPressed=True, steeringTorque=1), log.Desire.turnLeft),
+  ('left', make_car(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False), log.Desire.turnLeft),
   ('left', make_car(vEgo=5, leftBlinker=False, rightBlinker=True), log.Desire.none),
-  ('right', make_car(vEgo=6, rightBlinker=True, leftBlindspot=False, steeringPressed=True, steeringTorque=-1), log.Desire.turnRight),
+  ('right', make_car(vEgo=6, rightBlinker=True, leftBlindspot=False), log.Desire.turnRight),
   ('right', make_car(vEgo=6, rightBlinker=True, rightBlindspot=True), log.Desire.none),
   ('left', make_car(vEgo=9, leftBlinker=True), log.Desire.none),
 ]
 
 INTEGRATION_PARAMS: list[tuple] = [(carstate, upcoming, log.Desire.none, expected) for upcoming, carstate, expected in NAVIGATION_PARAMS] + [
-  (make_car(vEgo=9, leftBlinker=True, steeringPressed=True, steeringTorque=1), 'slightLeft', log.Desire.turnLeft, log.Desire.keepLeft),
-  (make_car(vEgo=9, rightBlinker=True, steeringPressed=True, steeringTorque=-1), 'slightRight', log.Desire.turnRight, log.Desire.keepRight),
+  (make_car(vEgo=6, leftBlinker=True, steeringPressed=True, steeringTorque=1), 'slightLeft', log.Desire.turnLeft, log.Desire.keepLeft),
+  (make_car(vEgo=5, rightBlinker=True, steeringPressed=True, steeringTorque=-1), 'slightRight', log.Desire.turnRight, log.Desire.keepRight),
   (make_car(vEgo=9, leftBlinker=True), 'slightLeft', log.Desire.laneChangeLeft, log.Desire.laneChangeLeft),
   (make_car(vEgo=9, rightBlinker=True), 'slightRight', log.Desire.laneChangeRight, log.Desire.laneChangeRight),
   (make_car(vEgo=9), 'none', log.Desire.none, log.Desire.none),
