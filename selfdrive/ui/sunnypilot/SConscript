@@ -35,6 +35,7 @@ qt_src = [
   "sunnypilot/qt/offroad/settings/software_panel.cc",
   "sunnypilot/qt/offroad/settings/sunnylink_panel.cc",
   "sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink/community_widget.cc",
   "sunnypilot/qt/offroad/settings/trips_panel.cc",
   "sunnypilot/qt/offroad/settings/vehicle_panel.cc",
   "sunnypilot/qt/offroad/settings/visuals_panel.cc",
