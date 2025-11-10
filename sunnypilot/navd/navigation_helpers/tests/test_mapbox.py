@@ -54,17 +54,17 @@ class TestMapbox:
         assert 'modifier' in step
 
   def test_upcoming_turn_detection(self):
-    upcoming = self.nav.get_upcoming_turn_from_progress(self.progress, self.current_lat, self.current_lon)
+    upcoming = self.nav.get_upcoming_turn_from_progress(self.progress, self.current_lat, self.current_lon, v_ego=40.0)
     assert isinstance(upcoming, str)
     assert upcoming == 'none'
 
     if self.route['steps']:
       turn_lat = self.route['steps'][1]['location'].latitude
       turn_lon = self.route['steps'][1]['location'].longitude
-      close_lat = turn_lat - 0.00025  # slightly before the turn
+      close_lat = turn_lat - 0.000175  # slightly before the turn
       if self.progress and self.progress.get('next_turn'):
         expected_turn = self.progress['next_turn']['modifier']
-        upcoming_close = self.nav.get_upcoming_turn_from_progress(self.progress, close_lat, turn_lon)
+        upcoming_close = self.nav.get_upcoming_turn_from_progress(self.progress, close_lat, turn_lon, v_ego=0.0)
         if expected_turn:
           assert upcoming_close == expected_turn == 'right', "Should be a right turn upcoming"
 
