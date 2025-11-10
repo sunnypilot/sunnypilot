@@ -44,8 +44,6 @@ void HudRendererSP::updateState(const UIState &s) {
   const auto car_params = sm["carParams"].getCarParams();
   const auto car_params_sp = sm["carParamsSP"].getCarParamsSP();
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
-  const auto lmd = sm["liveMapDataSP"].getLiveMapDataSP();
-
   if (sm.updated("carParams")) {
     steerControlType = car_params.getSteerControlType();
   }
@@ -54,36 +52,79 @@ void HudRendererSP::updateState(const UIState &s) {
     pcmCruiseSpeed = car_params_sp.getPcmCruiseSpeed();
   }
 
-  if (sm.updated("longitudinalPlanSP")) {
-    speedLimit = lp_sp.getSpeedLimit().getResolver().getSpeedLimit() * speedConv;
-    speedLimitLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLast() * speedConv;
-    speedLimitOffset = lp_sp.getSpeedLimit().getResolver().getSpeedLimitOffset() * speedConv;
-    speedLimitValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitValid();
-    speedLimitLastValid = lp_sp.getSpeedLimit().getResolver().getSpeedLimitLastValid();
-    speedLimitFinalLast = lp_sp.getSpeedLimit().getResolver().getSpeedLimitFinalLast() * speedConv;
-    speedLimitSource = lp_sp.getSpeedLimit().getResolver().getSource();
-    speedLimitAssistState = lp_sp.getSpeedLimit().getAssist().getState();
-    speedLimitAssistActive = lp_sp.getSpeedLimit().getAssist().getActive();
-    smartCruiseControlVisionEnabled = lp_sp.getSmartCruiseControl().getVision().getEnabled();
-    smartCruiseControlVisionActive = lp_sp.getSmartCruiseControl().getVision().getActive();
-    smartCruiseControlMapEnabled = lp_sp.getSmartCruiseControl().getMap().getEnabled();
-    smartCruiseControlMapActive = lp_sp.getSmartCruiseControl().getMap().getActive();
-  }
+  if (sm.alive("mapdOut") && sm.rcv_frame("mapdOut") > 0) {
+    const auto mapd = sm["mapdOut"].getMapdOut();
+
+    // Road name can come from wayName, wayRef, or roadName
+    wayName = QString::fromStdString(mapd.getWayName());
+    wayRef = QString::fromStdString(mapd.getWayRef());
+    QString mapdRoadName = QString::fromStdString(mapd.getRoadName());
+
+    if (!mapdRoadName.isEmpty()) {
+      roadNameStr = mapdRoadName;
+    } else if (!wayRef.isEmpty() && !wayName.isEmpty()) {
+      roadNameStr = wayRef + " - " + wayName;
+    } else if (!wayName.isEmpty()) {
+      roadNameStr = wayName;
+    } else if (!wayRef.isEmpty()) {
+      roadNameStr = wayRef;
+    } else {
+      roadNameStr = "";
+    }
+
   greenLightAlert = lp_sp.getE2eAlerts().getGreenLightAlert();
   leadDepartAlert = lp_sp.getE2eAlerts().getLeadDepartAlert();
 
-  if (sm.updated("liveMapDataSP")) {
-    roadNameStr = QString::fromStdString(lmd.getRoadName());
-    speedLimitAheadValid = lmd.getSpeedLimitAheadValid();
-    speedLimitAhead = lmd.getSpeedLimitAhead() * speedConv;
-    speedLimitAheadDistance = lmd.getSpeedLimitAheadDistance();
+    tileLoaded = mapd.getTileLoaded();
+
+    float mapdSpeedLimitRaw = mapd.getSpeedLimit();
+    float mapdOffsetRaw = mapd.getSpeedLimitOffset();
+
+
+    mapdSpeedLimit = mapdSpeedLimitRaw * speedConv;
+    speedLimit = mapdSpeedLimit;
+    speedLimitLast = mapdSpeedLimit;
+    speedLimitOffset = mapdOffsetRaw * speedConv;
+    speedLimitValid = tileLoaded && mapdSpeedLimitRaw > 0;
+    speedLimitLastValid = speedLimitValid;
+    speedLimitFinalLast = mapdSpeedLimit + speedLimitOffset;
+
+    if (tileLoaded) {
+      speedLimitSource = 1;  // MAP
+    } else {
+      speedLimitSource = 0;  // NONE
+    }
+
+    float nextSpeedLimitRaw = mapd.getNextSpeedLimit();
+    speedLimitAheadValid = nextSpeedLimitRaw > 0 && tileLoaded;
+    speedLimitAhead = nextSpeedLimitRaw * speedConv;
+    speedLimitAheadDistance = mapd.getNextSpeedLimitDistance();
+
     if (speedLimitAheadDistance < speedLimitAheadDistancePrev && speedLimitAheadValidFrame < SPEED_LIMIT_AHEAD_VALID_FRAME_THRESHOLD) {
       speedLimitAheadValidFrame++;
     } else if (speedLimitAheadDistance > speedLimitAheadDistancePrev && speedLimitAheadValidFrame > 0) {
       speedLimitAheadValidFrame--;
     }
+
+    // SCC data from mapd
+    suggestedSpeed = mapd.getSuggestedSpeed() * speedConv;
+    visionCurveSpeed = mapd.getVisionCurveSpeed() * speedConv;
+    curveSpeed = mapd.getCurveSpeed() * speedConv;
+
+    smartCruiseControlVisionEnabled = visionCurveSpeed > 0;
+    smartCruiseControlVisionActive = visionCurveSpeed > 0 && visionCurveSpeed < speedLimit;
+
+    smartCruiseControlMapEnabled = curveSpeed > 0;
+    smartCruiseControlMapActive = curveSpeed > 0 && curveSpeed < speedLimit;
+
+    advisorySpeed = mapd.getAdvisorySpeed() * speedConv;
+    nextAdvisorySpeed = mapd.getNextAdvisorySpeed() * speedConv;
+    nextAdvisorySpeedDistance = mapd.getNextAdvisorySpeedDistance();
   }
   speedLimitAheadDistancePrev = speedLimitAheadDistance;
+
+  speedLimitAssistState = 0;
+  speedLimitAssistActive = false;
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -108,7 +149,7 @@ void HudRendererSP::updateState(const UIState &s) {
   }
 
   if (sm.updated(gps_source)) {
-    gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0;  // External reports accuracy, internal does not.
+    gpsAccuracy = is_gps_location_external ? gpsLocation.getHorizontalAccuracy() : 1.0;
     altitude = gpsLocation.getAltitude();
     bearingAccuracyDeg = gpsLocation.getBearingAccuracyDeg();
     bearingDeg = gpsLocation.getBearingDeg();
@@ -282,7 +323,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
     const int sign_height = 204;
     QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
-    if (speedLimitAssistState == cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+    if (speedLimitAssistState == 1) {
       speedLimitAssistFrame++;
       showSpeedLimit = speed_limit_assist_pre_active_pulse;
       drawSpeedLimitPreActiveArrow(p, sign_rect);
@@ -295,7 +336,7 @@ void HudRendererSP::draw(QPainter &p, const QRect &surface_rect) {
       drawSpeedLimitSigns(p, sign_rect);
 
       // do not show during SLA's preActive state
-      if (speedLimitAssistState != cereal::LongitudinalPlanSP::SpeedLimit::AssistState::PRE_ACTIVE) {
+      if (speedLimitAssistState != 1) {
         drawUpcomingSpeedLimit(p);
       }
     }
@@ -635,7 +676,7 @@ void HudRendererSP::drawSpeedLimitSigns(QPainter &p, QRect &sign_rect) {
 
 void HudRendererSP::drawUpcomingSpeedLimit(QPainter &p) {
   bool speed_limit_ahead = speedLimitAheadValid && speedLimitAhead > 0 && speedLimitAhead != speedLimit && speedLimitAheadValidFrame > 0 &&
-                           speedLimitSource == cereal::LongitudinalPlanSP::SpeedLimit::Source::MAP;
+                           tileLoaded;
   if (!speed_limit_ahead) {
     return;
   }

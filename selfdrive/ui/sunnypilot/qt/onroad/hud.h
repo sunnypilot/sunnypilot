@@ -85,7 +85,7 @@ private:
   bool speedLimitValid;
   bool speedLimitLastValid;
   float speedLimitFinalLast;
-  cereal::LongitudinalPlanSP::SpeedLimit::Source speedLimitSource;
+  int speedLimitSource;  // 0=NONE, 1=MAP
   bool speedLimitAheadValid;
   float speedLimitAhead;
   float speedLimitAheadDistance;
@@ -94,7 +94,7 @@ private:
   SpeedLimitMode speedLimitMode = SpeedLimitMode::OFF;
   bool roadName;
   QString roadNameStr;
-  cereal::LongitudinalPlanSP::SpeedLimit::AssistState speedLimitAssistState;
+  int speedLimitAssistState;  // 0=NONE, 1=PRE_ACTIVE, etc.
   bool speedLimitAssistActive;
   int speedLimitAssistFrame;
   QPixmap plus_arrow_up_img;
@@ -131,4 +131,15 @@ private:
   QString navigationNextModifier;
   QString navigationNextManeuverType;
   bool navigationHasNext;
+
+  QString wayName;
+  QString wayRef;
+  float mapdSpeedLimit;
+  float advisorySpeed;
+  float nextAdvisorySpeed;
+  float nextAdvisorySpeedDistance;
+  float suggestedSpeed;
+  float visionCurveSpeed;
+  float curveSpeed;
+  bool tileLoaded;
 };
