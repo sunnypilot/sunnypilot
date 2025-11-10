@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import math
+import numpy as np
 
 import cereal.messaging as messaging
 from cereal import custom
@@ -93,7 +94,9 @@ class Navigationd:
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
-        large_distance = progress['distance_from_route'] > 100
+        speed_breakpoints: list = [0.0, 5.0, 10.0, 20.0, 40.0]
+        distance_list: list = [100.0, 125.0, 150.0, 200.0, 250.0]
+        large_distance: bool = progress['distance_from_route'] > float(np.interp(v_ego, speed_breakpoints, distance_list))
 
         if large_distance:
           self.cancel_route_counter = self.cancel_route_counter + 1 if progress['distance_from_route'] > NAV_CV.QUARTER_MILE else 0
@@ -101,6 +104,7 @@ class Navigationd:
             self.reroute_counter += 1
         elif arrived:
           self.cancel_route_counter += 1
+          self.recompute_allowed = False
         else:
           self.cancel_route_counter = 0
           self.reroute_counter = 0
@@ -108,7 +112,8 @@ class Navigationd:
         # Don't recompute in last segment to prevent reroute loops
         if self.route:
           if progress['current_step_idx'] == len(self.route['steps']) - 1:
-            self.allow_recompute = False
+            self.recompute_allowed = False
+            self.allow_navigation = False
     else:
       banner_instructions = ''
       progress = None
