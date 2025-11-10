@@ -48,7 +48,7 @@ class Navigationd:
   def _update_params(self):
     if self.last_position is not None:
       self.frame += 1
-      if self.frame % 9 == 0:
+      if self.frame % 15 == 0:
         self.allow_navigation = self.params.get('AllowNavigation', return_default=True)
         self.is_metric = self.params.get('IsMetric', return_default=True)
         self.new_destination = self.params.get('MapboxRoute')
