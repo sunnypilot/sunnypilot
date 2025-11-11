@@ -145,7 +145,7 @@ class Navigationd:
     cloudlog.warning('navigationd init')
 
     while True:
-      self.sm.update()
+      self.sm.update(0)
       location = self.sm['liveLocationKalman']
       localizer_valid = location.positionGeodetic.valid if location else False
 
