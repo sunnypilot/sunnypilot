@@ -4,6 +4,8 @@ Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of oth
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import numpy as np
+
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
 
@@ -109,12 +111,17 @@ class NavigationInstructions:
     self._route_loaded = False
     self._no_route = False
 
-  def get_upcoming_turn_from_progress(self, progress, current_lat, current_lon) -> str:
+  def get_upcoming_turn_from_progress(self, progress, current_lat, current_lon, v_ego: float) -> str:
     if progress and progress['next_turn']:
+      speed_breakpoints: list = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+      distance_breakpoints: list = [20, 25, 30, 45, 60, 75, 90, 105, 120]
+      distance_interp = np.interp(v_ego, speed_breakpoints, distance_breakpoints)
+
       self.coord.latitude = current_lat
       self.coord.longitude = current_lon
       distance = self.coord.distance_to(progress['next_turn']['location'])
-      if distance <= 30.0:
+
+      if distance <= distance_interp:
         modifier = progress['next_turn']['modifier']
         return str(modifier)
     return 'none'
