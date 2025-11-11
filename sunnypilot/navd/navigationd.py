@@ -77,12 +77,11 @@ class Navigationd:
 
       self.valid = self.route is not None
 
-  def _update_navigation(self) -> tuple[str, dict | None, dict]:
+  def _update_navigation(self, v_ego) -> tuple[str, dict | None, dict]:
     banner_instructions: str = ''
     nav_data: dict = {}
     if self.allow_navigation and self.last_position is not None:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):
-        v_ego = max(self.sm['carState'].vEgo, 0.)
         nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude,
                                                                                           self.last_position.longitude, v_ego)
         nav_data['current_speed_limit'] = self.nav_instructions.get_current_speed_limit_from_progress(progress, self.is_metric)
@@ -111,8 +110,7 @@ class Navigationd:
         # Don't recompute in last segment to prevent reroute loops
         if self.route:
           if progress['current_step_idx'] == len(self.route['steps']) - 1:
-            self.recompute_allowed = False
-            self.allow_navigation = False
+            self.reroute_counter = 0
     else:
       banner_instructions = ''
       progress = None
@@ -145,6 +143,7 @@ class Navigationd:
 
     while True:
       self.sm.update(0)
+      v_ego = self.sm['carState'].vEgo
       location = self.sm['liveLocationKalman']
       localizer_valid = location.positionGeodetic.valid if location else False
 
@@ -153,7 +152,7 @@ class Navigationd:
         self.last_position = Coordinate(location.positionGeodetic.value[0], location.positionGeodetic.value[1])
 
       self._update_params()
-      banner_instructions, progress, nav_data = self._update_navigation()
+      banner_instructions, progress, nav_data = self._update_navigation(v_ego)
 
       msg = self._build_navigation_message(banner_instructions, progress, nav_data, valid=localizer_valid)
 
