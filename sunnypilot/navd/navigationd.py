@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import math
+import numpy as np
 
 import cereal.messaging as messaging
 from cereal import custom
@@ -24,7 +25,7 @@ class Navigationd:
     self.mapbox = MapboxIntegration()
     self.nav_instructions = NavigationInstructions()
 
-    self.sm = messaging.SubMaster(['liveLocationKalman'])
+    self.sm = messaging.SubMaster(['carState', 'liveLocationKalman'])
     self.pm = messaging.PubMaster(['navigationd'])
     self.rk = Ratekeeper(3) # 3 Hz
 
@@ -81,7 +82,9 @@ class Navigationd:
     nav_data: dict = {}
     if self.allow_navigation and self.last_position is not None:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):
-        nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude, self.last_position.longitude)
+        v_ego = max(self.sm['carState'].vEgo, 0.)
+        nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude,
+                                                                                          self.last_position.longitude, v_ego)
         nav_data['current_speed_limit'] = self.nav_instructions.get_current_speed_limit_from_progress(progress, self.is_metric)
         arrived = self.nav_instructions.arrived_at_destination(progress)
 
@@ -91,7 +94,9 @@ class Navigationd:
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
-        large_distance = progress['distance_from_route'] > 160
+        speed_breakpoints: list = [0.0, 5.0, 10.0, 20.0, 40.0]
+        distance_list: list = [100.0, 125.0, 150.0, 200.0, 250.0]
+        large_distance: bool = progress['distance_from_route'] > float(np.interp(v_ego, speed_breakpoints, distance_list))
 
         if large_distance:
           self.cancel_route_counter = self.cancel_route_counter + 1 if progress['distance_from_route'] > NAV_CV.QUARTER_MILE else 0
@@ -99,7 +104,6 @@ class Navigationd:
             self.reroute_counter += 1
         elif arrived:
           self.cancel_route_counter += 1
-          self.recompute_allowed = False
         else:
           self.cancel_route_counter = 0
           self.reroute_counter = 0
@@ -107,7 +111,8 @@ class Navigationd:
         # Don't recompute in last segment to prevent reroute loops
         if self.route:
           if progress['current_step_idx'] == len(self.route['steps']) - 1:
-            self.allow_recompute = False
+            self.recompute_allowed = False
+            self.allow_navigation = False
     else:
       banner_instructions = ''
       progress = None
@@ -139,7 +144,7 @@ class Navigationd:
     cloudlog.warning('navigationd init')
 
     while True:
-      self.sm.update()
+      self.sm.update(0)
       location = self.sm['liveLocationKalman']
       localizer_valid = location.positionGeodetic.valid if location else False
 

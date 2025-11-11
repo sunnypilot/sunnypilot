@@ -35,10 +35,10 @@ class NavigationDesires:
       #   self.desire = log.Desire.keepLeft
       # elif upcoming == 'slightRight' and (not CS.rightBlindspot or CS.vEgo < self._turn_speed_limit):
       #   self.desire = log.Desire.keepRight
-      if (upcoming == 'left' and CS.steeringPressed and CS.steeringTorque > 0 and not CS.rightBlinker
+      if (upcoming == 'left' and not CS.rightBlinker
             and not CS.leftBlindspot and CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.turnLeft
-      elif (upcoming == 'right' and CS.steeringPressed and CS.steeringTorque < 0 and not CS.leftBlinker
+      elif (upcoming == 'right' and not CS.leftBlinker
             and not CS.rightBlindspot and CS.vEgo < self._turn_speed_limit):
         self.desire = log.Desire.turnRight
     return self.desire
