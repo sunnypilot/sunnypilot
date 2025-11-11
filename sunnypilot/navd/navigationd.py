@@ -91,7 +91,7 @@ class Navigationd:
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
-        large_distance = progress['distance_from_route'] > 100
+        large_distance = progress['distance_from_route'] > 160
 
         if large_distance:
           self.cancel_route_counter = self.cancel_route_counter + 1 if progress['distance_from_route'] > NAV_CV.QUARTER_MILE else 0
@@ -99,6 +99,7 @@ class Navigationd:
             self.reroute_counter += 1
         elif arrived:
           self.cancel_route_counter += 1
+          self.recompute_allowed = False
         else:
           self.cancel_route_counter = 0
           self.reroute_counter = 0
