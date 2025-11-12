@@ -76,12 +76,12 @@ env = Environment(
     "#third_party",
     "#third_party/json11",
     "#third_party/linux/include",
-    "#third_party/snpe/include",
     "#third_party/acados/include",
     "#third_party/acados/include/blasfeo/include",
     "#third_party/acados/include/hpipm/include",
     "#third_party/catch2/include",
     "#third_party/libyuv/include",
+    "#third_party/snpe/include",
   ],
   LIBPATH=[
     "#common",
@@ -111,6 +111,7 @@ if arch == "larch64":
     "/usr/local/lib",
     "/system/vendor/lib64",
     "/usr/lib/aarch64-linux-gnu",
+    "#third_party/snpe/larch64",
   ])
   arch_flags = ["-D__TICI__", "-mcpu=cortex-a57"]
   env.Append(CCFLAGS=arch_flags)
@@ -133,6 +134,14 @@ else:
     "/usr/lib",
     "/usr/local/lib",
   ])
+
+  if arch == "x86_64":
+    env.Append(LIBPATH=[
+      f"#third_party/snpe/{arch}"
+    ])
+    env.Append(RPATH=[
+      Dir(f"#third_party/snpe/{arch}").abspath,
+    ])
 
 # Sanitizers and extra CCFLAGS from CLI
 if GetOption('asan'):
