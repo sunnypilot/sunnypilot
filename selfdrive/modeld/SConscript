@@ -31,6 +31,11 @@ commonmodel_lib = lenv.Library('commonmodel', common_src)
 lenvCython.Program('models/commonmodel_pyx.so', 'models/commonmodel_pyx.pyx', LIBS=[commonmodel_lib, *cython_libs], FRAMEWORKS=frameworks)
 tinygrad_files = ["#"+x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**", recursive=True, root_dir=env.Dir("#").abspath) if 'pycache' not in x]
 
+# Skip model compilation if larch64 (linux tici aarch64) but /dev/kgsl-3d0 does not exist.
+# Speeds up native C3X builds in dockerized-agnos. Models must instead be copied in separately from workflow.
+if arch == "larch64" and not os.path.exists('/dev/kgsl-3d0'):
+  Return()
+
 # Get model metadata
 for model_name in ['driving_vision', 'driving_policy']:
   fn = File(f"models/{model_name}").abspath
