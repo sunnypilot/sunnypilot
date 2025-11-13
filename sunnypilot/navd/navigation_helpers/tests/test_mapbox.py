@@ -24,12 +24,11 @@ class TestMapbox:
 
     # route setup
     cls.current_lon, cls.current_lat = -119.17557, 34.23305
-    cls.current_bearing = 90
     cls.mapbox.params.put('MapboxRoute', '740 E Ventura Blvd. Camarillo, CA')
     cls.postvars = {"place_name": cls.mapbox.params.get('MapboxRoute')}
     cls.postvars, cls.valid_addr = cls.mapbox.set_destination(cls.postvars, cls.current_lon, cls.current_lat)
     cls.route = cls.nav.get_current_route()
-    cls.progress = cls.nav.get_route_progress(cls.current_lat, cls.current_lon, cls.current_bearing)
+    cls.progress = cls.nav.get_route_progress(cls.current_lat, cls.current_lon)
 
   def test_set_destination(self):
     assert self.valid_addr
@@ -86,13 +85,14 @@ class TestMapbox:
     assert isinstance(speed_limit_imperial, int)
 
   def test_arrival_detection(self):
-    is_arrived = self.nav.arrived_at_destination(self.progress)
+    is_arrived = self.nav.arrived_at_destination(self.progress, 2.0)
     assert isinstance(is_arrived, bool)
     assert not is_arrived
 
   def test_bearing_misalign(self):
     lat = self.route['steps'][1]['location'].latitude
     lon = self.route['steps'][1]['location'].longitude
-    progress = self.nav.get_route_progress(lat, lon, 45)
-    # based on math: closest_idx: 7, normalized bearing: 45 route_bearing: 180.5486953778888, expected differential: 135.54869538
-    assert progress['route_bearing_misalign']
+    self.nav.get_route_progress(lat, lon)
+    route_bearing_misaligned = self.nav.route_bearing_misalign(self.route, 45, 5.0)
+    # based on math: closest index: 7, normalized bearing: 45 route bearing: 180.5486953778888, expected differential: 135.54869538
+    assert route_bearing_misaligned

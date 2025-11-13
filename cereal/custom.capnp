@@ -457,14 +457,14 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
 
 struct Navigationd @0xcb9fd56c7057593a {
   upcomingTurn @0 :Text;
-  currentSpeedLimit @1 :UInt64;
+  currentSpeedLimit @1 :UInt16;
   bannerInstructions @2 :Text;
-  distanceFromRoute @3 :Float64;
+  distanceFromRoute @3 :Float32;
   allManeuvers @4 :List(Maneuver);
   valid @5 :Bool;
 
   struct Maneuver {
-    distance @0 :Float64;
+    distance @0 :Float32;
     type @1 :Text;
     modifier @2 :Text;
     instruction @3 :Text;
