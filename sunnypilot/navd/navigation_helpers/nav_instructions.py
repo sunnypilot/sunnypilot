@@ -99,6 +99,7 @@ class NavigationInstructions:
         'instruction': step['instruction'],
       })
     self._cached_route = {
+      'bearings': [bearing_between_two_points(geometry[i], geometry[i+2]) for i in range(len(geometry)-2)],
       'steps': steps,
       'total_distance': route['totalDistance'],
       'total_duration': route['totalDuration'],
@@ -120,9 +121,7 @@ class NavigationInstructions:
     if v_ego < 5.0:
       route_bearing_misalign = False
     elif self.closest_idx > 0 and self.closest_idx < len(route['geometry']) -1:
-      current_coord = route['geometry'][self.closest_idx - 1]
-      future_coord = route['geometry'][self.closest_idx + 1]
-      route_bearing = bearing_between_two_points(current_coord, future_coord)
+      route_bearing = route['bearings'][self.closest_idx -1]
       current_bearing_normalized = (bearing + 360) % 360
       bearing_difference = abs(current_bearing_normalized - route_bearing)
 
