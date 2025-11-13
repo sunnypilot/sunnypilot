@@ -16,8 +16,9 @@ from functools import partial
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware.hw import Paths
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler
+  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler, stat_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection, WebSocketConnectionClosedException)
 
@@ -33,9 +34,6 @@ SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require 
 DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
-sunnylink_dongle_id = params.get("SunnylinkDongleId")
-sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
-
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
@@ -51,7 +49,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
               threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
               # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
-              # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
+              threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
             ] + [
               threading.Thread(target=jsonrpc_handler, args=(end_event, partial(startLocalProxy, end_event),), name=f'worker_{x}')
               for x in range(HANDLER_THREADS)
@@ -132,6 +130,8 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
 
 
 def ws_queue(end_event: threading.Event) -> None:
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   resume_requested = False
   tries = 0
 
@@ -179,11 +179,28 @@ def getParamsAllKeys() -> list[str]:
 
 
 @dispatcher.add_method
+def getParamsAllKeysV1() -> dict[str, str]:
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+
+  params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
+  for key in available_keys:
+    value = get_param_as_byte(key, get_default=True)
+    params_dict["params"].append({
+      "key": key,
+      "type": int(params.get_type(key).value),
+      "default_value": base64.b64encode(value).decode('utf-8') if value else None,
+    })
+
+  return {"keys": json.dumps(params_dict.get("params", []))}
+
+
+@dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
   params = Params()
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
   try:
-    param_keys_validated = [key for key in params_keys if key in getParamsAllKeys()]
+    param_keys_validated = [key for key in params_keys if key in available_keys]
     params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
     for key in param_keys_validated:
       value = get_param_as_byte(key)
@@ -216,6 +233,9 @@ def saveParams(params_to_update: dict[str, str], compression: bool = False) -> N
 
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
+
   cloudlog.debug("athena.startLocalProxy.starting")
   ws = create_connection(
     remote_ws_uri,
@@ -237,6 +257,8 @@ def main(exit_event: threading.Event = None):
     cloudlog.info("Waiting for sunnylink registration to complete")
     time.sleep(10)
 
+  sunnylink_dongle_id = params.get("SunnylinkDongleId")
+  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = f"{SUNNYLINK_ATHENA_HOST}"

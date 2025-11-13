@@ -21,6 +21,7 @@ public:
   SpeedLimitSettings(QWidget *parent = nullptr);
   void refresh();
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
 
 signals:
   void backPress();
@@ -34,6 +35,7 @@ private:
   SpeedLimitPolicy *speedLimitPolicyScreen;
   ButtonParamControlSP *speed_limit_offset_settings;
   OptionControlSP *speed_limit_offset;
+  bool icbm_available = false;
 
   static QString offsetDescription(SpeedLimitOffsetType type = SpeedLimitOffsetType::NONE) {
     QString none_str = tr("⦿ None: No Offset");

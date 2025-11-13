@@ -23,9 +23,6 @@ private:
   Params params;
   ParamControlSP *showAdvancedControls;
   ParamControlSP *useRaylib;
-  bool is_development;
-  bool is_release;
-  bool is_tested;
 
 private slots:
   void updateToggles(bool offroad);
