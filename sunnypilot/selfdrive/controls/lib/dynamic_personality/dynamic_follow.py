@@ -14,16 +14,16 @@ LongPersonality = log.LongitudinalPersonality
 
 # Follow distance profiles mapped to LongPersonality
 FOLLOW_PROFILES = {
-  LongPersonality.relaxed:    [1.45, 1.48, 1.52, 1.60, 1.68, 1.75],
-  LongPersonality.standard:   [1.35, 1.38, 1.42, 1.50, 1.58, 1.65],
-  LongPersonality.aggressive: [1.20, 1.24, 1.28, 1.38, 1.46, 1.52],
+  LongPersonality.relaxed:    [1.30, 1.30, 1.405, 1.40, 1.80],
+  LongPersonality.standard:   [1.15, 1.15, 1.285, 1.28, 1.45],
+  LongPersonality.aggressive: [0.97, 0.97, 1.084, 1.07, 1.15],
 }
-FOLLOW_BREAKPOINTS = [0., 8., 12., 18., 25., 50.]
+FOLLOW_BREAKPOINTS =          [0.,   8.,   9,    17.,  25.]
 
 SMOOTHING_BASE = 0.70  # Base smoothing factor (higher = smoother)
 SMOOTHING_RANGE = 0.25  # Additional smoothing at high speeds
 SMOOTHING_SPEED_THRESHOLD = 36.0  # m/s (~80 mph) for max smoothing
-PERSONALITY_CHANGE_COOLDOWN_S = 2.0
+PERSONALITY_CHANGE_COOLDOWN_S = 0.1
 
 
 class FollowDistanceController:
