@@ -125,7 +125,7 @@ class NavigationInstructions:
       current_bearing_normalized = (bearing + 360) % 360
       bearing_difference = abs(current_bearing_normalized - route_bearing)
 
-      if min(bearing_difference, 360 - bearing_difference) > 91:
+      if min(bearing_difference, 360 - bearing_difference) > 110:
         route_bearing_misalign = True  # flag for recompute/cancellation
     return route_bearing_misalign
 

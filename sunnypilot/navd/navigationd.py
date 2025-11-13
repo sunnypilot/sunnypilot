@@ -68,7 +68,7 @@ class Navigationd:
 
       if self.cancel_route_counter == 30:
         self.cancel_route_counter = 0
-        self.destination = None
+        self.params.put_nonblocking("MapboxRoute", "")
         self.nav_instructions.clear_route_cache()
         self.route = None
 

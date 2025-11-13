@@ -73,12 +73,12 @@ class Coordinate:
 
 
 def bearing_between_two_points(point_one: Coordinate, point_two: Coordinate) -> float:
-    dlon = math.radians(point_two.longitude - point_one.longitude)
-    bearing_radians = math.atan2(math.sin(dlon)* math.cos(point_two.latitude), math.cos(point_one.latitude) * math.sin(point_two.latitude) -
-                                 math.sin(point_one.latitude) * math.cos(point_two.latitude) * math.cos(dlon))
-    bearing_degrees = math.degrees(bearing_radians)
-    bearing_normalized = (bearing_degrees + 360) % 360
-    return bearing_normalized
+  dlon = math.radians(point_two.longitude - point_one.longitude)
+  bearing_radians = math.atan2(math.sin(dlon)* math.cos(point_two.latitude), math.cos(point_one.latitude) * math.sin(point_two.latitude) -
+                               math.sin(point_one.latitude) * math.cos(point_two.latitude) * math.cos(dlon))
+  bearing_degrees = math.degrees(bearing_radians)
+  bearing_normalized = (bearing_degrees + 360) % 360
+  return bearing_normalized
 
 
 def minimum_distance(a: Coordinate, b: Coordinate, p: Coordinate):
