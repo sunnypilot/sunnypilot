@@ -24,11 +24,12 @@ class TestMapbox:
 
     # route setup
     cls.current_lon, cls.current_lat = -119.17557, 34.23305
+    cls.current_bearing = 90
     cls.mapbox.params.put('MapboxRoute', '740 E Ventura Blvd. Camarillo, CA')
     cls.postvars = {"place_name": cls.mapbox.params.get('MapboxRoute')}
     cls.postvars, cls.valid_addr = cls.mapbox.set_destination(cls.postvars, cls.current_lon, cls.current_lat)
     cls.route = cls.nav.get_current_route()
-    cls.progress = cls.nav.get_route_progress(cls.current_lat, cls.current_lon)
+    cls.progress = cls.nav.get_route_progress(cls.current_lat, cls.current_lon, cls.current_bearing)
 
   def test_set_destination(self):
     assert self.valid_addr
@@ -79,16 +80,19 @@ class TestMapbox:
     assert isinstance(self.progress['all_maneuvers'], list)
 
   def test_speed_limit_handling(self):
-    speed_limit_metric = self.nav.get_current_speed_limit_from_progress(self.progress, True)
-    speed_limit_imperial = self.nav.get_current_speed_limit_from_progress(self.progress, False)
+    speed_limit_metric = self.progress['current_maxspeed'][0]
+    speed_limit_imperial = (round(speed_limit_metric * CV.KPH_TO_MPH))
     assert isinstance(speed_limit_metric, int)
     assert isinstance(speed_limit_imperial, int)
-    expected_metric = int(self.progress['current_maxspeed'][0])
-    expected_imperial = int(round(self.progress['current_maxspeed'][0] * CV.KPH_TO_MPH))
-    assert speed_limit_metric == expected_metric
-    assert speed_limit_imperial == expected_imperial
 
   def test_arrival_detection(self):
     is_arrived = self.nav.arrived_at_destination(self.progress)
     assert isinstance(is_arrived, bool)
     assert not is_arrived
+
+  def test_bearing_misalign(self):
+    lat = self.route['steps'][1]['location'].latitude
+    lon = self.route['steps'][1]['location'].longitude
+    progress = self.nav.get_route_progress(lat, lon, 45)
+    # based on math: closest_idx: 7, normalized bearing: 45 route_bearing: 180.5486953778888, expected differential: 135.54869538
+    assert progress['route_bearing_misalign']

@@ -68,9 +68,18 @@ class TestNavigationd:
 
   def test_cancel_route(self):
     nav = Navigationd()
-    nav.last_position = Coordinate(latitude=37.0, longitude=128.0)
     nav.route = {'580 Winchester dr, oxnard, CA': True}
-    nav.cancel_route_counter = 30
-    nav._update_params()
+    nav.cancel_route_counter = 29
+    nav.route['steps'] = [0, 1, 2, 3]
+    nav._offroute_check({'distance_from_route': 405, 'current_step_idx': 0, 'current_maxspeed': (50, 'kmh')}, False, 5.0)
     assert nav.route is None
-    assert nav.destination is None
+    assert nav.cancel_route_counter == 0
+
+  def test_cancel_on_arrival(self):
+    nav = Navigationd()
+    nav.route = {'580 Winchester dr, oxnard, CA': True}
+    nav.cancel_route_counter = 29
+    nav.route['steps'] = [0, 1, 2, 3]
+    nav._offroute_check({'distance_from_route': 0, 'current_step_idx': 0, 'current_maxspeed': (15, 'mph')}, True, 3.0)
+    assert nav.route is None
+    assert nav.cancel_route_counter == 0
