@@ -11,17 +11,18 @@ WiFiPromptWidget::WiFiPromptWidget(QWidget *parent) : QFrame(parent) {
   main_layout->setContentsMargins(56, 40, 56, 40);
   main_layout->setSpacing(42);  
   
-  QLabel *title = new QLabel(tr("<span style='font-family: \"Noto Color Emoji\";'>🔥</span> Firehose Mode <span style='font-family: Noto Color Emoji;'>🔥</span>"));
-  title->setStyleSheet("font-size: 64px; font-weight: 500;");
+  community_popup = new SunnylinkCommunityPopup(this);
+  QLabel *title = new QLabel(tr("sunnypilot Community"));
+  title->setStyleSheet("font-size: 56px; font-weight: 500;");
   main_layout->addWidget(title);
 
-  QLabel *desc = new QLabel(tr("Maximize your training data uploads to improve openpilot's driving models."));
+  QLabel *desc = new QLabel(tr("Need help or have ideas?<br><b>Join</b> our community now!"));
   desc->setStyleSheet("font-size: 40px; font-weight: 400;");
   desc->setWordWrap(true);
   main_layout->addWidget(desc);
 
-  QPushButton *settings_btn = new QPushButton(tr("Open"));
-  connect(settings_btn, &QPushButton::clicked, [=]() { emit openSettings(1, "FirehosePanel"); });
+  QPushButton *settings_btn = new QPushButton(tr("Learn More"));
+  connect(settings_btn, &QPushButton::clicked, [=]() { community_popup->exec(); });
   settings_btn->setStyleSheet(R"(
     QPushButton {
       font-size: 48px;

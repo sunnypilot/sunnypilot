@@ -302,36 +302,51 @@ jobs:
             git push -f origin ${TAG}
 
   notify:
-    needs: [ build, publish ]
+    needs: 
+    - prepare_strategy
+    - build
+    - publish
     runs-on: ubuntu-24.04
-    if: ${{ (always() && !cancelled() && !failure()) && needs.publish.result == 'success' && !failure() && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
+    if: ${{ (always() && !cancelled() && !failure())
+      && needs.publish.result == 'success'
+      && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+      && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name] != null) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Alpine Linux environment
-        uses: jirutka/setup-alpine@v1.2.0
-        with:
-          packages: 'jq gettext curl'
 
-      - name: Send Discord Notification
-        env:
-          DISCORD_WEBHOOK: ${{ contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES), env.SOURCE_BRANCH) && secrets.DISCORD_DEV_FEEDBACK_CHANNEL_WEBHOOK || secrets.DISCORD_DEV_PRIVATE_CHANNEL_WEBHOOK }}
+      - name: Prepare notification message
+        id: message
         run: |
-          TEMPLATE='${{ vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
-          export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
-          export VERSION="${{ needs.build.outputs.version }}"
-          export branch_name=${{ env.SOURCE_BRANCH }}
-          export new_branch=${{ needs.build.outputs.new_branch }}
-          export extra_version_identifier=${{ needs.build.outputs.extra_version_identifier || github.run_number}}
-          echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
-          curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
+          TEMPLATE='${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}'
+          export VERSION="${{ needs.prepare_strategy.outputs.version }}"
+          export branch_name="${{ env.SOURCE_BRANCH }}"
+          export new_branch="${{ needs.prepare_strategy.outputs.new_branch }}"
+          export commit_sha="${{ github.sha }}"
+          export commit_short_sha="${{ github.sha }}"
+          export commit_short_sha="${commit_short_sha:0:7}"
+          export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
+          export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
 
-          echo ""
-          echo "----   ℹ️ To update the list of branches that notify to dev-feedback  -----"
-          echo ""
-          echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/DEV_FEEDBACK_NOTIFICATION_BRANCHES"
-          echo "2. Current value: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
-          echo "3. Update as needed (JSON array with no spaces)"
-        shell: alpine.sh {0}
+          MESSAGE=$(cat << 'EOF' | envsubst
+          ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
+          EOF
+          )
+          
+          {
+            echo 'content<<EOFMARKER'
+            echo "$MESSAGE"
+            echo 'EOFMARKER'
+          } >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Post to Discourse
+        uses: ./.github/workflows/post-to-discourse
+        with:
+          discourse-url: ${{ vars.DISCOURSE_URL }}
+          api-key: ${{ secrets.DISCOURSE_API_KEY }}
+          api-username: "system"
+          topic-id: ${{ fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name].topic_id }}
+          message: ${{ steps.message.outputs.content }}
 
   manage-pr-labels:
     name: Remove prebuilt label
