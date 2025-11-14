@@ -1,9 +1,14 @@
 import jwt
+import os
 import requests
 import unicodedata
 from datetime import datetime, timedelta, UTC
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.version import get_version
+
+       # name : jwt signature algorithm
+KEYS = {"id_rsa" : "RS256",
+        "id_ecdsa" : "ES256"}
 
 
 class BaseApi:
@@ -11,8 +16,7 @@ class BaseApi:
     self.dongle_id = dongle_id
     self.api_host = api_host
     self.user_agent = user_agent
-    with open(f'{Paths.persist_root()}/comma/id_rsa') as f:
-      self.private_key = f.read()
+    self.jwt_algorithm, self.private_key, _ = self.get_key_pair()
 
   def get(self, *args, **kwargs):
     return self.request('GET', *args, **kwargs)
@@ -34,7 +38,7 @@ class BaseApi:
     }
     if payload_extra is not None:
       payload.update(payload_extra)
-    token = jwt.encode(payload, self.private_key, algorithm='RS256')
+    token = jwt.encode(payload, self.private_key, algorithm=self.jwt_algorithm)
     if isinstance(token, bytes):
       token = token.decode('utf8')
     return token
@@ -56,3 +60,11 @@ class BaseApi:
     headers['User-Agent'] = self.user_agent + version
 
     return requests.request(method, f"{self.api_host}/{endpoint}", timeout=timeout, headers=headers, json=json, params=params)
+
+  @staticmethod
+  def get_key_pair():
+    for key in KEYS:
+      if os.path.isfile(Paths.persist_root() + f'/comma/{key}') and os.path.isfile(Paths.persist_root() + f'/comma/{key}.pub'):
+        with open(Paths.persist_root() + f'/comma/{key}') as private, open(Paths.persist_root() + f'/comma/{key}.pub') as public:
+          return KEYS[key], private.read(), public.read()
+    return None, None, None
