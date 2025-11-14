@@ -44,6 +44,7 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   });
   param_watcher->addParam("DevUIInfo");
   param_watcher->addParam("StandstillTimer");
+  param_watcher->addParam("IsMetric");
 }
 
 // This method overrides completely the update method from the parent class intentionally.
@@ -60,6 +61,10 @@ void UIStateSP::update() {
 
 void ui_update_params_sp(UIStateSP *s) {
   auto params = Params();
+
+  // Update base UI parameters including is_metric
+  ui_update_params(s);
+
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.standstill_timer = params.getBool("StandstillTimer");
   s->scene.speed_limit_mode = std::atoi(params.get("SpeedLimitMode").c_str());
