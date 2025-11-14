@@ -32,6 +32,7 @@ function install_ubuntu_common_requirements() {
     libcurl4-openssl-dev \
     git \
     git-lfs \
+    file \
     ffmpeg \
     libavformat-dev \
     libavcodec-dev \
