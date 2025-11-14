@@ -7,13 +7,12 @@
 
 #pragma once
 
-#include "selfdrive/ui/qt/offroad/settings.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
-#include "selfdrive/ui/qt/widgets/input.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
-#include "selfdrive/ui/sunnypilot/qt/util.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <vector>
 
+#include "selfdrive/ui/qt/offroad/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class NavigationPanel : public QWidget {
   Q_OBJECT
@@ -33,6 +32,11 @@ private:
   ParamControlSP* allow_navigation;
   ButtonControl* mapbox_token;
   ButtonControl* mapbox_route;
+  ButtonControl* clear_route;
   ParamControlSP* mapbox_recompute;
   ParamControlSP* nav_allowed;
+  MultiButtonControlSP* favorites_selector;
+  std::vector<ButtonControl*> set_buttons;
+  ButtonControl* add_fav;
+  ButtonControl* remove_fav;
 };
