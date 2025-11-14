@@ -108,8 +108,8 @@ class LatControlTorque(LatControl):
       # Lateral acceleration torque controller extension updates
       # Overrides pid_log.error and output_torque
       pid_log, output_torque = self.extension.update(CS, VM, self.pid, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
-                                                     desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel,
-                                                     desired_curvature, actual_curvature, steer_limited_by_safety, output_torque)
+                                                     future_desired_lateral_accel, measurement, lateral_accel_deadzone, gravity_adjusted_future_lateral_accel,
+                                                     desired_curvature, measured_curvature, steer_limited_by_safety, output_torque)
 
       pid_log.active = True
       pid_log.p = float(self.pid.p)
