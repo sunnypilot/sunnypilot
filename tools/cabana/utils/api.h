@@ -5,7 +5,6 @@
 #include <QString>
 #include <QTimer>
 
-#include "util.h"
 #include "common/util.h"
 
 namespace CommaApi {
@@ -24,11 +23,10 @@ class HttpRequest : public QObject {
   Q_OBJECT
 
 public:
-  enum class Method {GET, DELETE, POST, PUT};
+  enum class Method {GET, DELETE};
 
   explicit HttpRequest(QObject* parent, bool create_jwt = true, int timeout = 20000);
-  virtual void sendRequest(const QString &requestURL, Method method);
-  void sendRequest(const QString &requestURL) { sendRequest(requestURL, Method::GET);}
+  void sendRequest(const QString &requestURL, const Method method = Method::GET);
   bool active() const;
   bool timeout() const;
 
@@ -37,14 +35,13 @@ signals:
 
 protected:
   QNetworkReply *reply = nullptr;
+
+private:
   static QNetworkAccessManager *nam();
   QTimer *networkTimer = nullptr;
   bool create_jwt;
-  virtual QNetworkRequest prepareRequest(const QString& requestURL);
-  [[nodiscard]] virtual QString GetJwtToken() const { return CommaApi::create_jwt(); }
-  [[nodiscard]] virtual QString GetUserAgent() const { return getUserAgent(); }
 
-protected slots:
+private slots:
   void requestTimeout();
   void requestFinished();
 };
