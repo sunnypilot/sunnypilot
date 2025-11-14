@@ -14,8 +14,8 @@ class Api:
   def post(self, *args, **kwargs):
     return self.service.post(*args, **kwargs)
 
-  def get_token(self, expiry_hours=1):
-    return self.service.get_token(expiry_hours)
+  def get_token(self, payload_extra=None, expiry_hours=1):
+    return self.service.get_token(payload_extra, expiry_hours)
 
 
 def api_get(endpoint, method='GET', timeout=None, access_token=None, **params):

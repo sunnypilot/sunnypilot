@@ -23,7 +23,7 @@ class BaseApi:
   def request(self, method, endpoint, timeout=None, access_token=None, **params):
     return self.api_get(endpoint, method=method, timeout=timeout, access_token=access_token, **params)
 
-  def _get_token(self, expiry_hours=1, **extra_payload):
+  def _get_token(self, payload_extra=None, expiry_hours=1, **extra_payload):
     now = datetime.now(UTC).replace(tzinfo=None)
     payload = {
       'identity': self.dongle_id,
@@ -32,13 +32,15 @@ class BaseApi:
       'exp': now + timedelta(hours=expiry_hours),
       **extra_payload
     }
+    if payload_extra is not None:
+      payload.update(payload_extra)
     token = jwt.encode(payload, self.private_key, algorithm='RS256')
     if isinstance(token, bytes):
       token = token.decode('utf8')
     return token
 
-  def get_token(self, expiry_hours=1):
-    return self._get_token(expiry_hours)
+  def get_token(self, payload_extra=None, expiry_hours=1):
+    return self._get_token(payload_extra, expiry_hours)
 
   def remove_non_ascii_chars(self, text):
     normalized_text = unicodedata.normalize('NFD', text)
