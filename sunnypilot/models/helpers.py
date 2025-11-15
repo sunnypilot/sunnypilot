@@ -13,7 +13,7 @@ import numpy as np
 from openpilot.common.params import Params
 from cereal import custom
 from openpilot.sunnypilot.modeld.constants import Meta, MetaTombRaider, MetaSimPose
-from openpilot.sunnypilot.modeld.runners import ModelRunner
+from openpilot.sunnypilot.modeld.runners import THNEED, ONNX
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
@@ -124,12 +124,12 @@ def _get_model():
 
 def get_model_path():
   if USE_ONNX:
-    return {ModelRunner.ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
+    return {ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
 
   if model := _get_model():
-    return {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/{model.artifact.fileName}"}
+    return {THNEED: f"{CUSTOM_MODEL_PATH}/{model.artifact.fileName}"}
 
-  return {ModelRunner.THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
+  return {THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
 
 
 def load_metadata():
