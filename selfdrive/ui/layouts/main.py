@@ -10,6 +10,9 @@ from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.layouts.onboarding import OnboardingWindow
 
+from openpilot.common.params import Params
+if Params().get_bool("sunnypilot_ui"):
+  from openpilot.selfdrive.ui.sunnypilot.layouts.settings.settings import SettingsLayoutSP as SettingsLayout
 
 class MainState(IntEnum):
   HOME = 0
