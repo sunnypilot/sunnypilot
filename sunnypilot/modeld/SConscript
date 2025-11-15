@@ -1,10 +1,10 @@
 import glob
 
-Import('env', 'envCython', 'arch', 'cereal', 'messaging', 'common', 'gpucommon', 'visionipc', 'transformations')
+Import('env', 'envCython', 'arch', 'cereal', 'messaging', 'common', 'visionipc', 'transformations')
 lenv = env.Clone()
 lenvCython = envCython.Clone()
 
-libs = [cereal, messaging, visionipc, gpucommon, common, 'capnp', 'kj', 'pthread']
+libs = [cereal, messaging, visionipc, common, 'capnp', 'kj', 'pthread']
 frameworks = []
 
 common_src = [
@@ -54,6 +54,6 @@ lenvCython.Program('runners/snpemodel_pyx.so', 'runners/snpemodel_pyx.pyx', LIBS
 lenvCython.Program('models/commonmodel_pyx.so', 'models/commonmodel_pyx.pyx', LIBS=[commonmodel_lib, *cython_libs], FRAMEWORKS=frameworks)
 
 if arch == "larch64":
-  thneed_lib = env.SharedLibrary('thneed', thneed_src, LIBS=[gpucommon, common, 'OpenCL', 'dl'])
+  thneed_lib = env.SharedLibrary('thneed', thneed_src, LIBS=[common, 'OpenCL', 'dl'])
   thneedmodel_lib = env.Library('thneedmodel', ['runners/thneedmodel.cc'])
-  lenvCython.Program('runners/thneedmodel_pyx.so', 'runners/thneedmodel_pyx.pyx', LIBS=envCython["LIBS"]+[thneedmodel_lib, thneed_lib, gpucommon, common, 'dl', 'OpenCL'])
+  lenvCython.Program('runners/thneedmodel_pyx.so', 'runners/thneedmodel_pyx.pyx', LIBS=envCython["LIBS"]+[thneedmodel_lib, thneed_lib, common, 'dl', 'OpenCL'])
