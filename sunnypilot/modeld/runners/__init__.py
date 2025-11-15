@@ -36,4 +36,4 @@ def ModelRunner(paths, *args, **kwargs) -> ModelRunnerInterface:
     raise Exception("Couldn't select a model runner, make sure to pass at least one valid model path")
 
   runner = Runner(str(paths[runner_type]), *args, **kwargs)
-  return cast(ModelRunnerInterface, runner)  # Cast if mypy complains about the Protocol match
+  return cast(ModelRunnerInterface, runner)
