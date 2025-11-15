@@ -7,28 +7,12 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/brightness.h"
 
-// Map of Brightness Options
-const QMap<QString, QString> Brightness::brightness_options = {
-  {"0", "1"},  // Auto (Dark)
-  {"1", "0"},  // Auto
-  {"2", "10"},
-  {"3", "20"},
-  {"4", "30"},
-  {"5", "40"},
-  {"6", "50"},
-  {"7", "60"},
-  {"8", "70"},
-  {"9", "80"},
-  {"10", "90"},
-  {"11", "100"}
-};
-
 Brightness::Brightness() : OptionControlSP(
   "Brightness",
   tr("Global Brightness"),
   tr("Overrides the brightness of the device. This applies to both onroad and offroad screens. "),
   "../assets/offroad/icon_blank.png",
-  {0, 11}, 1, true, &brightness_options) {
+  {-5, 100}, 5, true) {
 
   refresh();
 }
@@ -37,10 +21,10 @@ void Brightness::refresh() {
   const int brightness = QString::fromStdString(params.get("Brightness")).toInt();
   
   QString label;
-  if (brightness == 1) {
-    label = tr("Auto (Dark)");
-  } else if (brightness == 0) {
+  if (brightness == 0) {
     label = tr("Auto");
+  } else if (brightness < 5) {
+    label = tr("Auto (Dark)");
   } else {
     const int value = brightness;
     label = QString("%1").arg(value);
