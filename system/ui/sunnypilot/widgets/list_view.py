@@ -16,7 +16,7 @@ class ToggleActionSP(ToggleAction):
     self.toggle = ToggleSP(initial_state=initial_state, param=param)
 
 class ListItemSP(ListItem):
-  def __init__(self, title: str = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
+  def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
                description_visible: bool = False, callback: Callable | None = None,
                action_item: ItemAction | None = None):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
@@ -91,7 +91,7 @@ class ListItemSP(ListItem):
       )
       self._html_renderer.render(description_rect)
 
-def toggle_item_sp(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
+def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
