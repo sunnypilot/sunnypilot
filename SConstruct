@@ -103,7 +103,7 @@ if arch == "larch64":
     "/usr/lib/aarch64-linux-gnu",
     "#third_party/snpe/larch64",
   ])
-  arch_flags = ["-D__TICI__", "-mcpu=cortex-a57", "-DQCOM2", "-mcpu=cortex-a57"]
+  arch_flags = ["-D__TICI__", "-mcpu=cortex-a57", "-DQCOM2"]
   env.Append(CCFLAGS=arch_flags)
   env.Append(CXXFLAGS=arch_flags)
 elif arch == "Darwin":
