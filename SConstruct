@@ -103,7 +103,7 @@ if arch == "larch64":
     "/usr/lib/aarch64-linux-gnu",
     "#third_party/snpe/larch64",
   ])
-  arch_flags = ["-D__TICI__", "-mcpu=cortex-a57"]
+  arch_flags = ["-D__TICI__", "-mcpu=cortex-a57", "-DQCOM2"]
   env.Append(CCFLAGS=arch_flags)
   env.Append(CXXFLAGS=arch_flags)
 elif arch == "Darwin":
@@ -223,6 +223,8 @@ if arch == "larch64":
 SConscript(['third_party/SConscript'])
 
 SConscript(['selfdrive/SConscript'])
+
+SConscript(['sunnypilot/SConscript'])
 
 if Dir('#tools/cabana/').exists() and GetOption('extras'):
   SConscript(['tools/replay/SConscript'])
