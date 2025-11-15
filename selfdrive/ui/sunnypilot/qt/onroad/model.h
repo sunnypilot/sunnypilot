@@ -28,4 +28,6 @@ private:
 
   // Lead status animation
   float lead_status_alpha = 0.0f;
+
+  void drawRadarPoint(QPainter &painter, const QPointF &pos, float v_rel, float radius = 10.0f);
 };

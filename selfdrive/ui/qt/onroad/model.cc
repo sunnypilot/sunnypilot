@@ -1,4 +1,5 @@
 #include "selfdrive/ui/qt/onroad/model.h"
+#include <algorithm>
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
@@ -49,8 +50,14 @@ void ModelRenderer::update_leads(const cereal::RadarState::Reader &radar_state, 
 }
 
 void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) {
+  auto *s = uiState();
   const auto &model_position = model.getPosition();
-  float max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+  float max_distance;
+  if (s->scene.visual_style == 0) {
+    max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+  } else {
+    max_distance = std::clamp(*(model_position.getX().end() - 1), MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+  }
 
   // update lane lines
   const auto &lane_lines = model.getLaneLines();
@@ -58,7 +65,11 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   int max_idx = get_path_length_idx(lane_lines[0], max_distance);
   for (int i = 0; i < std::size(lane_line_vertices); i++) {
     lane_line_probs[i] = line_probs[i];
-    mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    if (s->scene.visual_style == 2) {
+      mapLineToPolygon(lane_lines[i], 0.075 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(lane_lines[i], 0.025 * lane_line_probs[i], 0, &lane_line_vertices[i], max_idx);
+    }
   }
 
   // update road edges
@@ -66,7 +77,11 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
   const auto &edge_stds = model.getRoadEdgeStds();
   for (int i = 0; i < std::size(road_edge_vertices); i++) {
     road_edge_stds[i] = edge_stds[i];
-    mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
+    if (s->scene.visual_style == 2) {
+      mapLineToPolygon(road_edges[i], 0.1, 0, &road_edge_vertices[i], max_idx);
+    } else {
+      mapLineToPolygon(road_edges[i], 0.025, 0, &road_edge_vertices[i], max_idx);
+    }
   }
 
   // update path
@@ -79,16 +94,112 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
 }
 
 void ModelRenderer::drawLaneLines(QPainter &painter) {
-  // lanelines
-  for (int i = 0; i < std::size(lane_line_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
-    painter.drawPolygon(lane_line_vertices[i]);
-  }
+  auto *s = uiState();
+  if (s->scene.visual_style == 2) {
+    QRectF r = clip_region;
 
-  // road edges
-  for (int i = 0; i < std::size(road_edge_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
-    painter.drawPolygon(road_edge_vertices[i]);
+    qreal horizonY = r.bottom();
+    if (!road_edge_vertices[0].isEmpty() || !road_edge_vertices[1].isEmpty()) {
+      qreal leftH  = r.top();
+      qreal rightH = r.top();
+
+      if (!road_edge_vertices[0].isEmpty()) {
+        leftH = std::numeric_limits<qreal>::max();
+        for (const QPointF &pt : road_edge_vertices[0]) {
+          if (pt.y() < leftH) leftH = pt.y();
+        }
+      }
+
+      if (!road_edge_vertices[1].isEmpty()) {
+        rightH = std::numeric_limits<qreal>::max();
+        for (const QPointF &pt : road_edge_vertices[1]) {
+          if (pt.y() < rightH) rightH = pt.y();
+        }
+      }
+
+      horizonY = std::max(leftH, rightH);
+    }
+
+    painter.fillRect(QRectF(r.left(), horizonY + 0, r.width(), r.bottom() - (horizonY + 0)), QColor("#111111"));
+
+    auto buildFill = [&](const QPolygonF &edgeRibbon, bool isLeftSide) -> QPolygonF {
+      if (edgeRibbon.isEmpty()) return {};
+
+      QMap<int, QPointF> byY;
+      for (const QPointF &pt : edgeRibbon) {
+        int yi = int(std::round(pt.y()));
+        if (!byY.contains(yi)) {
+          byY[yi] = pt;
+        } else {
+          if (isLeftSide) {
+            if (pt.x() > byY[yi].x()) byY[yi] = pt;
+          } else {
+            if (pt.x() < byY[yi].x()) byY[yi] = pt;
+          }
+        }
+      }
+      if (byY.isEmpty()) return {};
+
+      QPolygonF curve;
+      for (auto it = byY.cbegin(); it != byY.cend(); ++it) {
+        curve << it.value();
+      }
+      if (curve.size() < 2) return {};
+
+      const qreal topY = curve.first().y();
+      QPolygonF fill;
+      if (isLeftSide) {
+        fill << QPointF(r.left(), topY);
+        for (const QPointF &pt : curve) fill << pt;
+        fill << QPointF(r.left(), r.bottom());
+      } else {
+        fill << QPointF(r.right(), topY);
+        for (const QPointF &pt : curve) fill << pt;
+        fill << QPointF(r.right(), r.bottom());
+      }
+      return fill;
+    };
+
+    QPolygonF leftFill  = buildFill(road_edge_vertices[0], true);
+    QPolygonF rightFill = buildFill(road_edge_vertices[1], false);
+
+    if (!leftFill.isEmpty()) {
+      painter.setBrush(QColor("#222222"));
+      painter.drawPolygon(leftFill);
+    }
+    if (!rightFill.isEmpty()) {
+      painter.setBrush(QColor("#222222"));
+      painter.drawPolygon(rightFill);
+    }
+
+    for (int i = 0; i < std::size(lane_line_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(0.902, 0.902, 0.902, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
+      painter.drawPolygon(lane_line_vertices[i]);
+    }
+
+    for (int i = 0; i < std::size(road_edge_vertices); ++i) {
+      painter.setBrush(QColor(0x55, 0x55, 0x55, 255));
+      painter.drawPolygon(road_edge_vertices[i]);
+    }
+
+    QLinearGradient bgGrad(r.left(), horizonY - 100, r.left(), horizonY + 100);
+    bgGrad.setColorAt(0.0, QColor("#000000"));
+    bgGrad.setColorAt(0.5, QColor("#111111"));
+    bgGrad.setColorAt(1.0, QColor("#111111"));
+    painter.fillRect(QRectF(r.left(), horizonY - 200, r.width(), 200), bgGrad);
+
+  } else {
+    // lanelines
+    for (int i = 0; i < std::size(lane_line_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
+      painter.drawPolygon(lane_line_vertices[i]);
+    }
+
+    // road edges
+    for (int i = 0; i < std::size(road_edge_vertices); ++i) {
+      painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
+      painter.drawPolygon(road_edge_vertices[i]);
+    }
   }
 }
 
@@ -175,6 +286,7 @@ QColor ModelRenderer::blendColors(const QColor &start, const QColor &end, float 
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
                              const QPointF &vd, const QRect &surface_rect) {
+  auto *s = uiState();
   const float speedBuff = 10.;
   const float leadBuff = 40.;
   const float d_rel = lead_data.getDRel();
@@ -197,20 +309,133 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   float g_yo = sz / 10;
 
   QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
-  painter.setBrush(QColor(218, 202, 37, 255));
+  if (s->scene.visual_style == 2) {
+    painter.setBrush(QColor(0xE6, 0xE6, 0xE6, 255));
+  } else {
+    painter.setBrush(QColor(218, 202, 37, 255));
+  }
   painter.drawPolygon(glow, std::size(glow));
 
   // chevron
   QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
-  painter.setBrush(QColor(201, 34, 49, fillAlpha));
+  if (s->scene.visual_style == 2) {
+    painter.setBrush(QColor(0, 0, 0, fillAlpha));
+  } else {
+    painter.setBrush(QColor(201, 34, 49, fillAlpha));
+  }
   painter.drawPolygon(chevron, std::size(chevron));
 }
 
-// Projects a point in car to space to the corresponding point in full frame image space.
+float mapRange(float x, float in_min, float in_max, float out_min, float out_max) {
+  if (in_min < in_max) {
+    x = std::clamp(x, in_min, in_max);
+  } else {
+    x = std::clamp(x, in_max, in_min);
+  }
+  return out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min);
+}
+
+// Projects a point in car space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+  float blend_speed_mph = fabsf(sm["carState"].getCarState().getVEgo() * 2.23694f);
+
   Eigen::Vector3f input(in_x, in_y, in_z);
+
+  if ((s->scene.visual_style_zoom == 1 || s->scene.visual_style_zoom == 2) && s->scene.visual_style != 0) {
+    float zoom_start = 20.0f;
+    float zoom_end   = 50.0f;
+
+    if (s->scene.visual_style_zoom == 2) {
+      std::swap(zoom_start, zoom_end);
+    }
+
+    float IN_X_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 24.0f);
+    float IN_Y_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 1.0f, 2.0f);
+    float IN_Z_OFFSET = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 5.0f);
+    float PITCH_DEG   = mapRange(blend_speed_mph, zoom_start, zoom_end, 0.0f, 5.0f);
+
+    input = Eigen::Vector3f(in_x + IN_X_OFFSET, in_y / IN_Y_OFFSET, in_z + IN_Z_OFFSET);
+    Eigen::AngleAxisf pitch_rot(PITCH_DEG * M_PI / 180.0f, Eigen::Vector3f::UnitY());
+    input = pitch_rot * input;
+  }
+
   auto pt = car_space_transform * input;
-  *out = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+  bool normal_valid = (pt.z() > 1e-3f &&
+                       std::isfinite(pt.x()) && std::isfinite(pt.y()));
+  QPointF normal_view;
+  if (normal_valid) {
+    normal_view = QPointF(pt.x() / pt.z(), pt.y() / pt.z());
+  }
+
+  const float base_scale_x = 20.0f;
+  const float base_scale_y = 15.0f;
+  const float y_offset = 450.0f;
+
+  float factor_scale_x = 0.0f;
+  if (blend_speed_mph > 0.0f) {
+    if (s->scene.visual_style_overhead_zoom == 1) {
+      factor_scale_x = mapRange(blend_speed_mph, 0.0f, 50.0f, 30.0f, 0.0f);
+    } else if (s->scene.visual_style_overhead_zoom == 2) {
+      factor_scale_x = mapRange(blend_speed_mph, 50.0f, 0.0f, 30.0f, 0.0f);
+    }
+  }
+
+  float scale_x = base_scale_x + factor_scale_x;
+  float scale_y = base_scale_y;
+
+  QPointF topdown_view(
+    clip_region.center().x() + in_y * scale_x,
+    (clip_region.bottom() - y_offset) - in_x * scale_y
+  );
+
+  if ((s->scene.visual_style_overhead == 1 || s->scene.visual_style_overhead == 2) && s->scene.visual_style != 0) {
+    static float blend = 0.0f;
+    static float target_blend = 0.0f;
+    static double last_t = millis_since_boot();
+
+    const bool inverted = (s->scene.visual_style_overhead == 2);
+    const float threshold = s->scene.visual_style_overhead_threshold;
+    const float hysteresis = 5.0f;
+
+    if (!inverted) {
+      if (target_blend < 0.5f && blend_speed_mph > threshold) {
+        target_blend = 1.0f;
+      } else if (target_blend > 0.5f && blend_speed_mph < threshold - hysteresis) {
+        target_blend = 0.0f;
+      }
+    } else {
+      if (target_blend < 0.5f && blend_speed_mph < threshold) {
+        target_blend = 1.0f;
+      } else if (target_blend > 0.5f && blend_speed_mph > threshold + hysteresis) {
+        target_blend = 0.0f;
+      }
+    }
+
+    double now = millis_since_boot();
+    double dt = (now - last_t) / 1000.0;
+    last_t = now;
+
+    const float transition_time = 1.50f;
+    float step = dt / transition_time;
+
+    if (blend < target_blend) {
+      blend = std::min(blend + step, target_blend);
+    } else if (blend > target_blend) {
+      blend = std::max(blend - step, target_blend);
+    }
+
+    if (!normal_valid) return false;
+    *out = QPointF(
+      (1 - blend) * normal_view.x() + blend * topdown_view.x(),
+      (1 - blend) * normal_view.y() + blend * topdown_view.y()
+    );
+  } else {
+    if (!normal_valid) return false;
+    *out = normal_view;
+  }
+
   return clip_region.contains(*out);
 }
 
