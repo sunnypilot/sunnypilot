@@ -7,3 +7,6 @@ from msgq.visionipc.visionipc cimport cl_context
 cdef extern from "sunnypilot/modeld/runners/thneedmodel.h":
   cdef cppclass ThneedModel:
     ThneedModel(string, float*, size_t, int, bool, cl_context)
+    void addInput(string, float*, int)
+    void execute()
+    void* getCLBuffer(string)

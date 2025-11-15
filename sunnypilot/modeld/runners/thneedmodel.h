@@ -5,6 +5,12 @@
 #include <memory>
 #include <cassert>
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
+
 #include "common/swaglog.h"
 #include "sunnypilot/modeld/thneed/thneed.h"
 

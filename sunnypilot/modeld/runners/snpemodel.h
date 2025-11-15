@@ -6,6 +6,12 @@
 #include <vector>
 #include <cassert>
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
+
 #include <DlContainer/IDlContainer.hpp>
 #include <DlSystem/DlError.hpp>
 #include <DlSystem/ITensor.hpp>
@@ -17,6 +23,10 @@
 #include <SNPE/SNPEFactory.hpp>
 
 #include "common/swaglog.h"
+
+#define USE_CPU_RUNTIME 0
+#define USE_GPU_RUNTIME 1
+#define USE_DSP_RUNTIME 2
 
 struct ModelInput {
   const std::string name;
