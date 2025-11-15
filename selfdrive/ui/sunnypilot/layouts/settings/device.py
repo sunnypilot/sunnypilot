@@ -38,7 +38,7 @@ class DeviceLayoutSP(DeviceLayout):
 
   def _hide_item(self, item):
     return (item.title in {"Driver Camera", "Regulatory", "Review Training Guide", "Change Language"}
-            or (isinstance(item.action_item, DualButtonAction) and item.action_item.left_text == "Reboot"))
+            or (isinstance(item.action_item, DualButtonAction)))
 
   def _initialize_items(self):
 

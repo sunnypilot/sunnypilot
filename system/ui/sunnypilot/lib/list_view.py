@@ -7,9 +7,10 @@ from collections.abc import Callable
 
 from openpilot.common.params import Params
 from openpilot.system.ui.sunnypilot.lib.toggle import ToggleSP
-import openpilot.system.ui.sunnypilot.lib.styles as styles
 from openpilot.system.ui.sunnypilot.lib.option_control import OptionControlSP
+from openpilot.system.ui.widgets.list_view import _resolve_value
 
+import openpilot.system.ui.sunnypilot.lib.styles as styles
 style = styles.Default
 
 
@@ -23,29 +24,6 @@ class ListItemSP(ListItem):
                description_visible: bool = False, callback: Callable | None = None,
                action_item: ItemAction | None = None):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
-
-  def get_item_height(self, font: rl.Font, max_width: int) -> float:
-    if not self.is_visible:
-      return 0
-
-    total_width = self._rect.width - (2 * style.ITEM_PADDING)  # Full width minus padding
-    max_width = int(total_width - (2 * style.ITEM_PADDING))
-
-    current_description = self.get_description()
-    if self.description_visible and current_description:
-      if (
-              not self._wrapped_description
-              or current_description != self._prev_description
-              or max_width != self._prev_max_width
-      ):
-        self._prev_max_width = max_width
-        self._prev_description = current_description
-
-        wrapped_lines = wrap_text(self._font, current_description, style.ITEM_DESC_FONT_SIZE, max_width)
-        self._wrapped_description = "\n".join(wrapped_lines)
-        self._description_height = len(wrapped_lines) * style.ITEM_DESC_FONT_SIZE + 10
-      return style.ITEM_BASE_HEIGHT + self._description_height - (style.ITEM_BASE_HEIGHT - style.ITEM_DESC_V_OFFSET) + style.ITEM_PADDING
-    return style.ITEM_BASE_HEIGHT
 
   def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
     if not self.action_item:
@@ -106,16 +84,16 @@ class ListItemSP(ListItem):
               self.callback()
 
     # Draw description if visible
-    current_description = self.get_description()
-    if self.description_visible and current_description and self._wrapped_description:
-      rl.draw_text_ex(
-        self._font,
-        self._wrapped_description,
-        rl.Vector2(content_x, self._rect.y + style.ITEM_DESC_V_OFFSET),
-        style.ITEM_DESC_FONT_SIZE,
-        0,
-        style.ITEM_DESC_TEXT_COLOR,
+    if self.description_visible:
+      content_width = int(self._rect.width - style.ITEM_PADDING * 2)
+      description_height = self._html_renderer.get_total_height(content_width)
+      description_rect = rl.Rectangle(
+        self._rect.x + style.ITEM_PADDING,
+        self._rect.y + style.ITEM_DESC_V_OFFSET,
+        content_width,
+        description_height
       )
+      self._html_renderer.render(description_rect)
 
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, param: str | None, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
@@ -130,14 +108,14 @@ class MultipleButtonActionSP(MultipleButtonAction):
     button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
     clicked = -1
 
-    for i, text in enumerate(self.buttons):
+    for i, _text in enumerate(self.buttons):
       button_x = rect.x + i * (self.button_width + spacing)
       button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
 
       # Check button state
       mouse_pos = rl.get_mouse_position()
       is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
-      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self._is_pressed
+      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed
       is_selected = i == self.selected_button
 
       # Button colors
@@ -154,13 +132,14 @@ class MultipleButtonActionSP(MultipleButtonAction):
       rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
 
       # Draw text
+      text = _resolve_value(_text, "")
       text_size = measure_text_cached(self._font, text, 40)
       text_x = button_x + (self.button_width - text_size.x) / 2
       text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
       rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, style.ITEM_TEXT_COLOR)
 
       # Handle click
-      if is_hovered and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT) and self._is_pressed:
+      if is_hovered and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed:
         clicked = i
 
     if clicked >= 0:

@@ -21,15 +21,6 @@ INNER_PADDING = 10
 TOP_PADDING = 25
 
 class OptionControlSP(Widget):
-    """
-    Raylib implementation of OptionControlSP widget for adjusting numeric values
-    with increment/decrement buttons and a label showing the current value.
-
-    This widget provides a user interface component similar to the C++ OptionControlSP
-    from the sunnypilot project, allowing users to adjust numeric values within a
-    specified range.
-    """
-
     def __init__(self, param: str, min_value: int, max_value: int,
                  value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                  on_value_changed: Callable[[int], None] | None = None,
