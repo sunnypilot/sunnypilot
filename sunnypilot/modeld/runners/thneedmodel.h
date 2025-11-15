@@ -39,7 +39,7 @@ public:
         return;
       }
     }
-    // Assuming LOGE is defined somewhere, but since we're duplicating, perhaps use assert or remove
+    LOGE("Tried to update input `%s` but no input with this name exists", name.c_str());
     assert(false);
   }
 };
