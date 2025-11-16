@@ -15,17 +15,16 @@ class ToggleActionSP(ToggleAction):
     self.toggle = ToggleSP(initial_state=initial_state, param=param)
 
 class MultipleButtonActionSP(MultipleButtonAction):
-  def __init__(self, param: str | None, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
+  def __init__(self, param: str | None, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param_key = param
     self.params = Params()
     if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default = True))
 
-  def _render(self, rect: rl.Rectangle) -> bool:
+  def _render(self, rect: rl.Rectangle):
     spacing = style.ITEM_PADDING
     button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
-    clicked = -1
 
     for i, _text in enumerate(self.buttons):
       button_x = rect.x + i * (self.button_width + spacing)
@@ -143,8 +142,8 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
-def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str], selected_index: int = 0,
-                            button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = "",
-                            param: str | None = None) -> ListItem:
+def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
+                            selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
+                            icon: str = "", param: str | None = None) -> ListItem:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
