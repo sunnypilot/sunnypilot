@@ -4,8 +4,8 @@ Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of oth
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import math
-import numpy as np
+from math import degrees
+from numpy import interp
 
 import cereal.messaging as messaging
 from cereal import custom
@@ -25,7 +25,7 @@ class Navigationd:
     self.mapbox = MapboxIntegration()
     self.nav_instructions = NavigationInstructions()
 
-    self.sm = messaging.SubMaster(['carState', 'liveLocationKalman'])
+    self.sm = messaging.SubMaster(['carControlSP', 'liveLocationKalman'])
     self.pm = messaging.PubMaster(['navigationd'])
     self.rk = Ratekeeper(3) # 3 Hz
 
@@ -42,7 +42,6 @@ class Navigationd:
     self.frame: int = -1
     self.last_position: Coordinate | None = None
     self.last_bearing: float | None = None
-    self.is_metric: bool = False
     self.valid: bool = False
 
   def _update_params(self):
@@ -50,18 +49,16 @@ class Navigationd:
       self.frame += 1
       if self.frame % 15 == 0:
         self.allow_navigation = self.params.get('AllowNavigation', return_default=True)
-        self.is_metric = self.params.get('IsMetric', return_default=True)
         self.new_destination = self.params.get('MapboxRoute')
         self.recompute_allowed = self.params.get('MapboxRecompute', return_default=True)
 
       self.allow_recompute: bool = (self.new_destination != self.destination and self.new_destination != '') or (
-        self.recompute_allowed and self.reroute_counter > 9 and self.route
-      )
+        self.recompute_allowed and self.reroute_counter > 9 and self.route)
 
       if self.allow_recompute:
         postvars = {'place_name': self.new_destination}
         postvars, valid_addr = self.mapbox.set_destination(postvars, self.last_position.longitude, self.last_position.latitude, self.last_bearing)
-        cloudlog.debug(f'Set new destination to: {self.new_destination}, valid: {valid_addr}')
+
         if valid_addr:
           self.destination = self.new_destination
           self.nav_instructions.clear_route_cache()
@@ -71,7 +68,7 @@ class Navigationd:
 
       if self.cancel_route_counter == 30:
         self.cancel_route_counter = 0
-        self.destination = None
+        self.params.put_nonblocking("MapboxRoute", "")
         self.nav_instructions.clear_route_cache()
         self.route = None
 
@@ -80,13 +77,14 @@ class Navigationd:
   def _update_navigation(self) -> tuple[str, dict | None, dict]:
     banner_instructions: str = ''
     nav_data: dict = {}
-    if self.allow_navigation and self.last_position is not None:
+    if self.allow_navigation and self.route and self.last_position is not None:
       if progress := self.nav_instructions.get_route_progress(self.last_position.latitude, self.last_position.longitude):
-        v_ego = max(self.sm['carState'].vEgo, 0.)
+        v_ego = float(max(self.sm['carControlSP'].speed, 0.0))
         nav_data['upcoming_turn'] = self.nav_instructions.get_upcoming_turn_from_progress(progress, self.last_position.latitude,
                                                                                           self.last_position.longitude, v_ego)
-        nav_data['current_speed_limit'] = self.nav_instructions.get_current_speed_limit_from_progress(progress, self.is_metric)
-        arrived = self.nav_instructions.arrived_at_destination(progress)
+        speed_limit, _ = progress['current_maxspeed']
+        nav_data['current_speed_limit'] = speed_limit
+        arrived = self.nav_instructions.arrived_at_destination(progress, v_ego)
 
         if progress['current_step']:
           parsed = parse_banner_instructions(progress['current_step']['bannerInstructions'], progress['distance_to_end_of_step'])
@@ -96,29 +94,33 @@ class Navigationd:
         nav_data['distance_from_route'] = progress['distance_from_route']
         speed_breakpoints: list = [0.0, 5.0, 10.0, 20.0, 40.0]
         distance_list: list = [100.0, 125.0, 150.0, 200.0, 250.0]
-        large_distance: bool = progress['distance_from_route'] > float(np.interp(v_ego, speed_breakpoints, distance_list))
+        large_distance: bool = progress['distance_from_route'] > float(interp(v_ego, speed_breakpoints, distance_list))
 
-        if large_distance:
+        route_bearing_misalign: bool = self.nav_instructions.route_bearing_misalign(self.route, self.last_bearing, v_ego)
+
+        if large_distance and not arrived:
           self.cancel_route_counter = self.cancel_route_counter + 1 if progress['distance_from_route'] > NAV_CV.QUARTER_MILE else 0
           if self.recompute_allowed:
             self.reroute_counter += 1
         elif arrived:
           self.cancel_route_counter += 1
           self.recompute_allowed = False
+        elif route_bearing_misalign:
+          self.cancel_route_counter += 1
+          if self.recompute_allowed:
+            self.reroute_counter += 1
         else:
           self.cancel_route_counter = 0
           self.reroute_counter = 0
 
         # Don't recompute in last segment to prevent reroute loops
-        if self.route:
-          if progress['current_step_idx'] == len(self.route['steps']) - 1:
-            self.recompute_allowed = False
-            self.allow_navigation = False
+        if progress['current_step_idx'] == len(self.route['steps']) - 1:
+          self.recompute_allowed = False
+          self.allow_navigation = False
     else:
       banner_instructions = ''
       progress = None
       nav_data = {}
-      self.valid = False
 
     return banner_instructions, progress, nav_data
 
@@ -138,7 +140,6 @@ class Navigationd:
       else []
     )
     msg.navigationd.allManeuvers = all_maneuvers
-
     return msg
 
   def run(self):
@@ -150,7 +151,7 @@ class Navigationd:
       localizer_valid = location.positionGeodetic.valid if location else False
 
       if localizer_valid:
-        self.last_bearing = math.degrees(location.calibratedOrientationNED.value[2])
+        self.last_bearing = degrees(location.calibratedOrientationNED.value[2])
         self.last_position = Coordinate(location.positionGeodetic.value[0], location.positionGeodetic.value[1])
 
       self._update_params()
