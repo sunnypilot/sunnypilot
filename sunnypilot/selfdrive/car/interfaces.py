@@ -15,7 +15,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import set_
 
 import openpilot.system.sentry as sentry
 
-from sunnypilot.sunnylink.statsd import STATSLOGSP
+from openpilot.sunnypilot.sunnylink.statsd import STATSLOGSP
 
 
 def log_fingerprint(CP: structs.CarParams) -> None:
