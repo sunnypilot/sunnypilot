@@ -1,9 +1,11 @@
 import pyray as rl
 
 from collections.abc import Callable
+from openpilot.common.params import Params
+from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
-from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction
+from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
 from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
@@ -11,6 +13,54 @@ class ToggleActionSP(ToggleAction):
   def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True, param: str | None = None):
     ToggleAction.__init__(self, initial_state, width, enabled)
     self.toggle = ToggleSP(initial_state=initial_state, param=param)
+
+class MultipleButtonActionSP(MultipleButtonAction):
+  def __init__(self, param: str | None, buttons: list[str], button_width: int, selected_index: int = 0, callback: Callable = None):
+    MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
+    self.param_key = param
+    self.params = Params()
+    if self.param_key:
+      self.selected_button = int(self.params.get(self.param_key, return_default = True))
+
+  def _render(self, rect: rl.Rectangle) -> bool:
+    spacing = style.ITEM_PADDING
+    button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
+    clicked = -1
+
+    for i, _text in enumerate(self.buttons):
+      button_x = rect.x + i * (self.button_width + spacing)
+      button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+
+      # Check button state
+      mouse_pos = rl.get_mouse_position()
+      is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
+      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed
+      is_selected = i == self.selected_button
+
+      # Button colors
+      if is_selected:
+        bg_color = style.ON_BG_COLOR
+        if is_pressed:
+          bg_color = style.ON_HOVER_BG_COLOR
+      elif is_pressed:
+        bg_color = style.OFF_HOVER_BG_COLOR
+      else:
+        bg_color = style.OFF_BG_COLOR
+
+      # Draw button
+      rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
+
+      # Draw text
+      text = _resolve_value(_text, "")
+      text_size = measure_text_cached(self._font, text, 40)
+      text_x = button_x + (self.button_width - text_size.x) / 2
+      text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, style.ITEM_TEXT_COLOR)
+
+  def _handle_mouse_release(self, mouse_pos: MousePos):
+    MultipleButtonAction._handle_mouse_release(self, mouse_pos)
+    if self.param_key:
+      self.params.put(self.param_key, self.selected_button)
 
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
@@ -92,3 +142,9 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
+
+def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str], selected_index: int = 0,
+                            button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = "",
+                            param: str | None = None) -> ListItem:
+  action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
+  return ListItemSP(title=title, description=description, icon=icon, action_item=action)
