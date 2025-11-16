@@ -116,6 +116,26 @@ class Tici(HardwareBase):
   def get_serial(self):
     return self.get_cmdline()['androidboot.serialno']
 
+  def get_voltage(self):
+    with open("/sys/class/hwmon/hwmon1/in1_input") as f:
+      return int(f.read())
+
+  def get_current(self):
+    with open("/sys/class/hwmon/hwmon1/curr1_input") as f:
+      return int(f.read())
+
+  def set_ir_power(self, percent: int):
+    if self.get_device_type() in ("tici", "tizi"):
+      return
+
+    value = int((percent / 100) * 300)
+    with open("/sys/class/leds/led:switch_2/brightness", "w") as f:
+      f.write("0\n")
+    with open("/sys/class/leds/led:torch_2/brightness", "w") as f:
+      f.write(f"{value}\n")
+    with open("/sys/class/leds/led:switch_2/brightness", "w") as f:
+      f.write(f"{value}\n")
+
   def get_network_type(self):
     try:
       primary_connection = self.nm.Get(NM, 'PrimaryConnection', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
@@ -399,12 +419,13 @@ class Tici(HardwareBase):
     sudo_write("f", "/proc/irq/default_smp_affinity")
 
     # move these off the default core
-    affine_irq(1, "msm_drm")   # display
     affine_irq(1, "msm_vidc")  # encoders
     affine_irq(1, "i2c_geni")  # sensors
 
     # *** GPU config ***
     # https://github.com/commaai/agnos-kernel-sdm845/blob/master/arch/arm64/boot/dts/qcom/sdm845-gpu.dtsi#L216
+    affine_irq(5, "fts_ts")    # touch
+    affine_irq(5, "msm_drm")   # display
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/min_pwrlevel")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/max_pwrlevel")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_bus_on")
