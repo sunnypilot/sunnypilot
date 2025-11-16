@@ -87,8 +87,7 @@ class Navigationd:
         arrived = self.nav_instructions.arrived_at_destination(progress, v_ego)
 
         if progress['current_step']:
-          parsed = parse_banner_instructions(progress['current_step']['bannerInstructions'], progress['distance_to_end_of_step'])
-          if parsed:
+          if parsed := parse_banner_instructions(progress['current_step']['bannerInstructions'], progress['distance_to_end_of_step']):
             banner_instructions = parsed['maneuverPrimaryText']
 
         nav_data['distance_from_route'] = progress['distance_from_route']
