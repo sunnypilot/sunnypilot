@@ -14,12 +14,12 @@ LongPersonality = log.LongitudinalPersonality
 
 # Follow distance profiles mapped to LongPersonality
 FOLLOW_PROFILES = {
-  LongPersonality.relaxed:    [1.25, 1.30, 1.405, 1.40, 1.90, 1.89],
-  LongPersonality.standard:   [1.14, 1.15, 1.288, 1.28, 1.45, 1.44],
-  LongPersonality.aggressive: [0.97, 0.97, 1.100, 1.09, 1.16, 1.15],
+  LongPersonality.relaxed:    [1.50, 1.50, 1.66, 1.64, 1.89],
+  LongPersonality.standard:   [1.30, 1.30, 1.46, 1.44, 1.50],
+  LongPersonality.aggressive: [0.97, 0.97, 1.25, 1.23, 1.28],
 }
 
-FOLLOW_BREAKPOINTS =          [0.,   7.,   8,    17.,  22.,  36]
+FOLLOW_BREAKPOINTS =          [0.,   3.,   4,    25.,  36]
 
 SMOOTHING_BASE = 0.70  # Base smoothing factor (higher = smoother)
 SMOOTHING_RANGE = 0.25  # Additional smoothing at high speeds
