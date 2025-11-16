@@ -292,6 +292,7 @@ def create_screenshots():
     with OpenpilotPrefix():
       params = Params()
       params.put("DongleId", "123456789012345")
+      params.put_bool("sunnypilot_ui", True)
 
       # Set branch name
       params.put("UpdaterCurrentDescription", VERSION)
