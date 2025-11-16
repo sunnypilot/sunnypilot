@@ -8,7 +8,7 @@ from numpy import interp
 
 from openpilot.common.params import Params
 
-from openpilot.sunnypilot.navd.helpers import Coordinate, bearing_between_two_points, string_to_direction
+from openpilot.sunnypilot.navd.helpers import Coordinate, bearing_between_two_points, string_to_direction, distance_along_geometry
 
 
 class NavigationInstructions:
@@ -33,7 +33,7 @@ class NavigationInstructions:
 
     # Find the closest point on the route relative to self
     self.closest_idx, self.min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
-    closest_cumulative = route['cumulative_distances'][self.closest_idx]
+    closest_cumulative = distance_along_geometry(route['geometry'], self.coord)
 
     # Find the current step index, which is the HIGHEST idx where the step location cumulative less/equal closest cumulative
     current_step_idx = max((idx for idx, step in enumerate(route['steps']) if step['cumulative_distance'] <= closest_cumulative), default=-1)
