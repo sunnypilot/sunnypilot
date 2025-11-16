@@ -8,6 +8,7 @@ from openpilot.system.hardware import TICI
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.egl import init_egl, create_egl_image, destroy_egl_image, bind_egl_image_to_texture, EGLImage
 from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.ui_state import ui_state
 
 CONNECTION_RETRY_INTERVAL = 0.2  # seconds between connection attempts
 
@@ -67,6 +68,7 @@ else:
 class CameraView(Widget):
   def __init__(self, name: str, stream_type: VisionStreamType):
     super().__init__()
+    # TODO: implement a receiver and connect thread
     self._name = name
     # Primary stream
     self.client = VisionIpcClient(name, stream_type, conflate=True)
@@ -102,6 +104,20 @@ class CameraView(Widget):
       temp_image = rl.gen_image_color(1, 1, rl.BLACK)
       self.egl_texture = rl.load_texture_from_image(temp_image)
       rl.unload_image(temp_image)
+
+    ui_state.add_offroad_transition_callback(self._offroad_transition)
+
+  def _offroad_transition(self):
+    # Reconnect if not first time going onroad
+    if ui_state.is_onroad() and self.frame is not None:
+      # Prevent old frames from showing when going onroad. Qt has a separate thread
+      # which drains the VisionIpcClient SubSocket for us. Re-connecting is not enough
+      # and only clears internal buffers, not the message queue.
+      self.frame = None
+      self.available_streams.clear()
+      if self.client:
+        del self.client
+      self.client = VisionIpcClient(self._name, self._stream_type, conflate=True)
 
   def _set_placeholder_color(self, color: rl.Color):
     """Set a placeholder color to be drawn when no frame is available."""
@@ -139,6 +155,8 @@ class CameraView(Widget):
     if self.shader and self.shader.id:
       rl.unload_shader(self.shader)
 
+    self.frame = None
+    self.available_streams.clear()
     self.client = None
 
   def __del__(self):
@@ -175,6 +193,9 @@ class CameraView(Widget):
     if buffer:
       self._texture_needs_update = True
       self.frame = buffer
+    elif not self.client.is_connected():
+      # ensure we clear the displayed frame when the connection is lost
+      self.frame = None
 
     if not self.frame:
       self._draw_placeholder(rect)

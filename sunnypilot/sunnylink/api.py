@@ -34,10 +34,10 @@ class SunnylinkApi(BaseApi):
     sunnylinkId, commaId = self._resolve_dongle_ids()
     return self.api_get(f"ws/{sunnylinkId}/resume_queued", "POST", timeout, access_token=self.get_token(), **kwargs)
 
-  def get_token(self, expiry_hours=1):
+  def get_token(self, payload_extra=None, expiry_hours=1):
     # Add your additional data here
     additional_data = {}
-    return super()._get_token(expiry_hours, **additional_data)
+    return super()._get_token(payload_extra, expiry_hours, **additional_data)
 
   def _status_update(self, message):
     print(message)

@@ -18,9 +18,9 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version
 
 from cereal import messaging, custom
-from sunnypilot.sunnylink.api import SunnylinkApi
-from sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
-from sunnypilot.sunnylink.utils import get_param_as_byte, save_param_from_base64_encoded_string
+from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
+from openpilot.sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
+from openpilot.sunnypilot.sunnylink.utils import get_param_as_byte, save_param_from_base64_encoded_string
 
 
 class OperationType(Enum):
