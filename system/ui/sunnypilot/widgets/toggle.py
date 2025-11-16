@@ -1,4 +1,5 @@
 import pyray as rl
+from collections.abc import Callable
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.widgets.toggle import Toggle
@@ -9,12 +10,12 @@ KNOB_RADIUS = style.TOGGLE_BG_HEIGHT / 2 - KNOB_PADDING
 SYMBOL_SIZE = KNOB_RADIUS / 2
 
 class ToggleSP(Toggle):
-  def __init__(self, initial_state=False, param: str | None = None):
+  def __init__(self, initial_state=False, callback: Callable[[bool], None] | None = None, param: str | None = None):
     self.param_key = param
     self.params = Params()
     if self.param_key:
         initial_state = self.params.get_bool(self.param_key)
-    Toggle.__init__(self, initial_state)
+    Toggle.__init__(self, initial_state, callback)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
       super()._handle_mouse_release(mouse_pos)
