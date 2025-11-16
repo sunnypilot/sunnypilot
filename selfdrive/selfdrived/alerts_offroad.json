@@ -41,6 +41,10 @@
     "text": "OpenStreetMap database is out of date. New maps must be downloaded if you wish to continue using OpenStreetMap data for Enhanced Speed Control and road name display.\n\n%1",
     "severity": 0
   },
+  "Offroad_DriverMonitoringUncertain": {
+    "text": "openpilot detected poor visibility for driver monitoring. Ensure the device has a clear view of the driver. This can be checked using Settings -> Device -> Driver Camera Preview. Extreme lighting conditions and/or unconventional mounting positions may also trigger this alert.",
+    "severity": 0
+  },
   "Offroad_ExcessiveActuation": {
     "text": "openpilot detected excessive %1 actuation on your last drive. Please contact support at https://comma.ai/support and share your device's Dongle ID for troubleshooting.",
     "severity": 1,
