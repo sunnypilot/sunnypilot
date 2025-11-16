@@ -4,10 +4,7 @@ from collections.abc import Callable
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction
-
-
-import openpilot.system.ui.sunnypilot.lib.styles as styles
-style = styles.Default
+from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
 class ToggleActionSP(ToggleAction):

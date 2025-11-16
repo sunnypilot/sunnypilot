@@ -2,9 +2,11 @@ import pyray as rl
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.widgets.toggle import Toggle
-import openpilot.system.ui.sunnypilot.lib.styles as styles
+from openpilot.system.ui.sunnypilot.lib.styles import style
 
-style = styles.Default
+KNOB_PADDING = 5
+KNOB_RADIUS = style.TOGGLE_BG_HEIGHT / 2 - KNOB_PADDING
+SYMBOL_SIZE = KNOB_RADIUS / 2
 
 class ToggleSP(Toggle):
   def __init__(self, initial_state=False, param: str | None = None):
@@ -44,30 +46,24 @@ class ToggleSP(Toggle):
     # Draw actual background
     rl.draw_rectangle_rounded(bg_rect, 1.0, 10, bg_color)
 
-    # Draw knob to sit inside the background
-    knob_padding = 5
-    knob_radius = style.TOGGLE_BG_HEIGHT / 2 - knob_padding
+    left_edge = bg_rect.x + KNOB_PADDING
+    right_edge = bg_rect.x + bg_rect.width - KNOB_PADDING
 
-    left_edge = bg_rect.x + knob_padding
-    right_edge = bg_rect.x + bg_rect.width - knob_padding
-
-    knob_travel_distance = right_edge - left_edge - 2 * knob_radius
-    min_knob_x = left_edge + knob_radius
+    knob_travel_distance = right_edge - left_edge - 2 * KNOB_RADIUS
+    min_knob_x = left_edge + KNOB_RADIUS
     knob_x = min_knob_x + knob_travel_distance * self._progress
     knob_y = self._rect.y + style.TOGGLE_BG_HEIGHT / 2
 
-    rl.draw_circle(int(knob_x), int(knob_y), knob_radius, knob_color)
-
-    symbol_size = knob_radius / 2
+    rl.draw_circle(int(knob_x), int(knob_y), KNOB_RADIUS, knob_color)
 
     if self._state and (self._enabled or self._progress > 0.5):
         # Draw checkmark when toggle is ON
-        start_x = knob_x - symbol_size * 0.8
+        start_x = knob_x - SYMBOL_SIZE * 0.8
         start_y = knob_y
-        mid_x = knob_x - symbol_size * 0.1
-        mid_y = knob_y + symbol_size * 0.6
-        end_x = knob_x + symbol_size * 0.8
-        end_y = knob_y - symbol_size * 0.5
+        mid_x = knob_x - SYMBOL_SIZE * 0.1
+        mid_y = knob_y + SYMBOL_SIZE * 0.6
+        end_x = knob_x + SYMBOL_SIZE * 0.8
+        end_y = knob_y - SYMBOL_SIZE * 0.5
 
         rl.draw_line_ex(
             rl.Vector2(int(start_x), int(start_y)),
@@ -83,8 +79,7 @@ class ToggleSP(Toggle):
         )
     else:
         # Draw X when toggle is OFF
-        x_size_factor = 0.65
-        x_offset = symbol_size * x_size_factor
+        x_offset = SYMBOL_SIZE * 0.65
 
         rl.draw_line_ex(
             rl.Vector2(int(knob_x - x_offset), int(knob_y - x_offset)),
