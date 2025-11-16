@@ -79,16 +79,20 @@ class TestMapbox:
     assert isinstance(self.progress['all_maneuvers'], list)
 
   def test_speed_limit_handling(self):
-    speed_limit_metric = self.nav.get_current_speed_limit_from_progress(self.progress, True)
-    speed_limit_imperial = self.nav.get_current_speed_limit_from_progress(self.progress, False)
+    speed_limit_metric = self.progress['current_maxspeed'][0]
+    speed_limit_imperial = (round(speed_limit_metric * CV.KPH_TO_MPH))
     assert isinstance(speed_limit_metric, int)
     assert isinstance(speed_limit_imperial, int)
-    expected_metric = int(self.progress['current_maxspeed'][0])
-    expected_imperial = int(round(self.progress['current_maxspeed'][0] * CV.KPH_TO_MPH))
-    assert speed_limit_metric == expected_metric
-    assert speed_limit_imperial == expected_imperial
 
   def test_arrival_detection(self):
-    is_arrived = self.nav.arrived_at_destination(self.progress)
+    is_arrived = self.nav.arrived_at_destination(self.progress, 2.0)
     assert isinstance(is_arrived, bool)
     assert not is_arrived
+
+  def test_bearing_misalign(self):
+    lat = self.route['steps'][1]['location'].latitude
+    lon = self.route['steps'][1]['location'].longitude
+    self.nav.get_route_progress(lat, lon)
+    route_bearing_misaligned = self.nav.route_bearing_misalign(self.route, 45, 5.0)
+    # based on math: closest index: 7, normalized bearing: 45 route bearing: 180.5486953778888, expected differential: 135.54869538
+    assert route_bearing_misaligned

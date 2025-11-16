@@ -4,21 +4,23 @@ Copyright (c) 2021-, James Vecellio, Haibin Wen, sunnypilot, and a number of oth
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import numpy as np
+from numpy import interp
 
-from openpilot.common.constants import CV
 from openpilot.common.params import Params
 
-from openpilot.sunnypilot.navd.helpers import Coordinate, string_to_direction
+from openpilot.sunnypilot.navd.helpers import Coordinate, bearing_between_two_points, distance_along_geometry, string_to_direction
 
 
 class NavigationInstructions:
   def __init__(self):
     self.coord = Coordinate(0, 0)
     self.params = Params()
+
     self._cached_route = None
     self._route_loaded = False
     self._no_route = False
+
+    self.closest_idx: float = 0
 
   def get_route_progress(self, current_lat, current_lon) -> dict | None:
     route = self.get_current_route()
@@ -29,8 +31,8 @@ class NavigationInstructions:
     self.coord.longitude = current_lon
 
     # Find the closest point on the route relative to self
-    closest_idx, min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
-    closest_cumulative = route['cumulative_distances'][closest_idx]
+    self.closest_idx, min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
+    closest_cumulative = distance_along_geometry(route['geometry'], self.coord)
 
     # Find the current step index, which is the HIGHEST idx where the step location cumulative less/equal closest cumulative
     current_step_idx = max((idx for idx, step in enumerate(route['steps']) if step['cumulative_distance'] <= closest_cumulative), default=-1)
@@ -96,6 +98,7 @@ class NavigationInstructions:
         'instruction': step['instruction'],
       })
     self._cached_route = {
+      'bearings': [bearing_between_two_points(geometry[i], geometry[i+2]) for i in range(len(geometry)-2)],
       'steps': steps,
       'total_distance': route['totalDistance'],
       'total_duration': route['totalDuration'],
@@ -111,11 +114,25 @@ class NavigationInstructions:
     self._route_loaded = False
     self._no_route = False
 
+  def route_bearing_misalign(self, route, bearing, v_ego) -> bool:
+    route_bearing_misalign:bool = False
+
+    if v_ego < 5.0:
+      route_bearing_misalign = False
+    elif 0 < self.closest_idx < len(route['geometry']) -1:
+      route_bearing = route['bearings'][self.closest_idx -1]
+      current_bearing_normalized = (bearing + 360) % 360
+      bearing_difference = abs(current_bearing_normalized - route_bearing)
+
+      if min(bearing_difference, 360 - bearing_difference) > 95:
+        route_bearing_misalign = True  # flag for recompute/cancellation
+    return route_bearing_misalign
+
   def get_upcoming_turn_from_progress(self, progress, current_lat, current_lon, v_ego: float) -> str:
     if progress and progress['next_turn']:
       speed_breakpoints: list = [0, 5, 10, 15, 20, 25, 30, 35, 40]
       distance_breakpoints: list = [20, 25, 30, 45, 60, 75, 90, 105, 120]
-      distance_interp = np.interp(v_ego, speed_breakpoints, distance_breakpoints)
+      distance_interp = interp(v_ego, speed_breakpoints, distance_breakpoints)
 
       self.coord.latitude = current_lat
       self.coord.longitude = current_lon
@@ -127,19 +144,9 @@ class NavigationInstructions:
     return 'none'
 
   @staticmethod
-  def get_current_speed_limit_from_progress(progress, is_metric: bool) -> int:
-    if progress and progress['current_maxspeed']:
-      speed, _ = progress['current_maxspeed']
-      if is_metric:
-        return int(speed)
-      else:
-        return int(round(speed * CV.KPH_TO_MPH))
-    return 0
-
-  @staticmethod
-  def arrived_at_destination(progress) -> bool:
-    if progress['all_maneuvers'][0]['type'] == 'arrive':
-      return True
-    elif progress['all_maneuvers'][0]['instruction'].startswith('Your destination'):
-      return True
+  def arrived_at_destination(progress, v_ego) -> bool:
+    if v_ego < 1.0:
+      maneuvers = progress['all_maneuvers'][0]
+      if maneuvers['type'] == 'arrive' or maneuvers['instruction'].startswith('Your destination'):
+        return True
     return False
