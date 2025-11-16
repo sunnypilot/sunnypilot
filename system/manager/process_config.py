@@ -5,7 +5,7 @@ import platform
 from cereal import car, custom
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
-from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
+from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess, CopypartyProcess
 from openpilot.system.hardware.hw import Paths
 
 from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH
@@ -192,14 +192,6 @@ if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
 
 if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
-  sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-  copyparty_args = [f"-v{Paths.crash_log_root()}:/swaglogs:r"]
-  copyparty_args += [f"-v{Paths.log_root()}:/routes:r"]
-  copyparty_args += [f"-v{Paths.model_root()}:/models:rw"]
-  copyparty_args += [f"-v{sunnypilot_root}:/sunnypilot:rw"]
-  copyparty_args += ["-p8080"]
-  copyparty_args += ["-z"]
-  copyparty_args += ["-q"]
-  procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
+  procs += [CopypartyProcess(and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}
