@@ -14,7 +14,7 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.8, 1.96, 1.60, .805, .520, .32, .23, .110],
+  AccelPersonality.eco:      [1.9, 1.96, 1.60, .805, .520, .32, .23, .110],
   AccelPersonality.normal:   [2.0, 1.98, 1.74, .850, .560, .40, .29, .158],
   AccelPersonality.sport:    [2.0, 2.00, 2.00, 2.00, .999, .70, .40, .200],
 }
@@ -26,7 +26,7 @@ MIN_ACCEL_PROFILES = {
   AccelPersonality.normal: [-1.20, -1.20, -1.20],
   AccelPersonality.sport:  [-1.30, -1.40, -1.40],
 }
-MIN_ACCEL_BREAKPOINTS =    [5.,    14.,   36.]
+MIN_ACCEL_BREAKPOINTS =    [5.,    10.,   36.] 
 
 
 DECEL_SMOOTH_ALPHA = 0.02  # Very aggressive smoothing for decel (lower = smoother)
