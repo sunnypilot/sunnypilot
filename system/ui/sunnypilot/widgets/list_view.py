@@ -8,9 +8,10 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
 class ToggleActionSP(ToggleAction):
-  def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True, param: str | None = None):
-    ToggleAction.__init__(self, initial_state, width, enabled)
-    self.toggle = ToggleSP(initial_state=initial_state, param=param)
+  def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True,
+               callback: Callable[[bool], None] | None = None, param: str | None = None):
+    ToggleAction.__init__(self, initial_state, width, enabled, callback)
+    self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
@@ -90,5 +91,5 @@ class ListItemSP(ListItem):
 
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
-  action = ToggleActionSP(initial_state=initial_state, enabled=enabled, param=param)
+  action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
