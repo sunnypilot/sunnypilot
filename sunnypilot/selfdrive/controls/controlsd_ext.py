@@ -4,21 +4,27 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import cereal.messaging as messaging
 from cereal import log, custom
 
 from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 
 
-class ControlsExt:
+class ControlsExt(ModelStateBase):
   def __init__(self, CP: structs.CarParams, params: Params):
+    ModelStateBase.__init__(self)
     self.CP = CP
     self.params = params
+    self._param_update_time: float = 0.0
     self.blinker_pause_lateral = BlinkerPauseLateral()
-    self.get_params_sp()
 
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
@@ -27,8 +33,14 @@ class ControlsExt:
     self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
 
-  def get_params_sp(self) -> None:
-    self.blinker_pause_lateral.get_params()
+  def get_params_sp(self, sm: messaging.SubMaster) -> None:
+    if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
+      self.blinker_pause_lateral.get_params()
+
+      if self.CP.lateralTuning.which() == 'torque':
+        self.lat_delay = get_lat_delay(self.params, sm["liveDelay"].lateralDelay)
+
+      self._param_update_time = time.monotonic()
 
   def get_lat_active(self, sm: messaging.SubMaster) -> bool:
     if self.blinker_pause_lateral.update(sm['carState']):
