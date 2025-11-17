@@ -11,6 +11,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 
 if Params().get_bool("sunnypilot_ui"):
   from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp as toggle_item
+  from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp as multiple_button_item
 
 PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
 
