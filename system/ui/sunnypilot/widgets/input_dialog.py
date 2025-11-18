@@ -25,11 +25,11 @@ class InputDialogSP:
     self.keyboard.set_text(self.current_text)
 
     def internal_callback(result: DialogResult):
+      text = self.keyboard.text if result == DialogResult.CONFIRM else ""
       if result == DialogResult.CONFIRM:
-        text = self.keyboard.text
         if self.param:
           self._params.put(self.param, text)
-        if self.callback:
-          self.callback(result, text)
+      if self.callback:
+        self.callback(result, text)
 
     gui_app.set_modal_overlay(self.keyboard, internal_callback)

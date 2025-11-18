@@ -13,7 +13,7 @@ class TestInputDialog:
 
   def test_input_dialog_int(self):
     gui_app.init_window("test window")
-    dialog = InputDialogSP("title", current_text="current_text", param="MapTargetVelocities")  # some rando param, sorry sunny bc its your's
+    dialog = InputDialogSP("title", current_text="current_text", param="MapTargetVelocities")  # some rando param, sorry sunny bc it's yours
     dialog.show()
 
     dialog.keyboard._render_return_status = 1
