@@ -285,7 +285,7 @@ class ModelRenderer(Widget):
     self._blend_filter.update(int(allow_throttle))
 
     if self._rainbow_path:
-      time_offset = time.time()
+      time_offset = time.monotonic()
       hue_offset = (time_offset * 50.0) % 360.0
 
       segment_colors = []
