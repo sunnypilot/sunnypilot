@@ -1,4 +1,5 @@
 import colorsys
+import time
 import numpy as np
 import pyray as rl
 from cereal import messaging, car
@@ -46,6 +47,7 @@ class ModelRenderer(Widget):
     super().__init__()
     self._longitudinal_control = False
     self._experimental_mode = False
+    self._rainbow_path = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
     self._prev_allow_throttle = True
     self._lane_line_probs = np.zeros(4, dtype=np.float32)
@@ -75,6 +77,7 @@ class ModelRenderer(Widget):
     if car_params := Params().get("CarParams"):
       cp = messaging.log_from_bytes(car_params, car.CarParams)
       self._longitudinal_control = cp.openpilotLongitudinalControl
+    self._rainbow_path = True #Params().get_bool("RainbowMode")
 
   def set_transform(self, transform: np.ndarray):
     self._car_space_transform = transform.astype(np.float32)
@@ -281,7 +284,30 @@ class ModelRenderer(Widget):
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
 
-    if self._experimental_mode:
+    if self._rainbow_path:
+      time_offset = time.time()
+      hue_offset = (time_offset * 50.0) % 360.0
+
+      segment_colors = []
+      gradient_stops = []
+      num_segments = 8
+
+      for i in range(num_segments):
+        position = i / (num_segments - 1)
+        hue = (hue_offset + position * 360.0) % 360.0
+        alpha = 0.8 * (1.0 - position * 0.3)
+        color = self._hsla_to_color(hue / 360.0, 0.9, 0.6, alpha)
+        gradient_stops.append(position)
+        segment_colors.append(color)
+
+      gradient = Gradient(
+        start=(0.0, 1.0),
+        end=(0.0, 0.0),
+        colors=segment_colors,
+        stops=gradient_stops,
+      )
+      draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
+    elif self._experimental_mode:
       # Draw with acceleration coloring
       if len(self._exp_gradient.colors) > 1:
         draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
