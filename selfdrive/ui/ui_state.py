@@ -50,6 +50,8 @@ class UIState:
         "selfdriveState",
         "longitudinalPlan",
         "rawAudioData",
+        "liveDelay",
+        "modelManagerSP",
       ]
     )
 
