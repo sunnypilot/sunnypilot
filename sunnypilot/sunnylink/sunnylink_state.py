@@ -2,7 +2,6 @@ from enum import IntEnum
 import threading
 import time
 import json
-from typing import Dict, Any
 
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
@@ -29,7 +28,7 @@ class User:
   updated_at: int
   token_hash: str
 
-  def __init__(self, json_data: Dict[str, Any]):
+  def __init__(self, json_data):
     self.device_id = json_data.get("device_id")
     self.user_id = json_data.get("user_id")
     self.created_at = json_data.get("created_at")
@@ -40,7 +39,7 @@ class Role:
   role_type: str
   role_tier: str
 
-  def __init__(self, json_data: Dict[str, Any]):
+  def __init__(self, json_data):
     self.role_type = json_data.get("role_type")
     self.role_tier = json_data.get("role_tier")
 
@@ -53,10 +52,10 @@ def _parse_roles(roles: str) -> list[Role]:
         role = Role(r)
         lst_roles.append(role)
       except Exception as e:
-        print(f"Failed to parse role {r}: {e}")
+        cloudlog.exception(f"Failed to parse role {r}: {e}")
     return lst_roles
   except Exception as e:
-    print(f"Error parsing roles: {e}")
+    cloudlog.exception(f"Error parsing roles: {e}")
     return []
 
 
@@ -69,10 +68,10 @@ def _parse_users(users: str) -> list[User]:
         user = User(u)
         lst_users.append(user)
       except Exception as e:
-        print(f"Failed to parse user {u}: {e}")
+        cloudlog.exception(f"Failed to parse user {u}: {e}")
     return lst_users
   except Exception as e:
-    print(f"Error parsing users: {e}")
+    cloudlog.exception(f"Error parsing users: {e}")
     return []
 
 
@@ -112,8 +111,7 @@ class SunnylinkState:
         if RoleType[role.role_type.upper()] == RoleType.SPONSOR:
           role_tier = max(role_tier, SponsorTier[role.role_tier.upper()])
       except Exception as e:
-        print(f"Error parsing role {role}: {e} for dongle id {self.sunnylink_dongle_id}")
-        pass
+        cloudlog.exception(f"Error parsing role {role}: {e} for dongle id {self.sunnylink_dongle_id}")
     return role_tier
 
   def _fetch_roles(self) -> None:
@@ -130,9 +128,9 @@ class SunnylinkState:
         with self._lock:
           if sponsor_tier != self.sponsor_tier:
             self.sponsor_tier = sponsor_tier
-            print(f"Sunnylink sponsor tier updated to {sponsor_tier.name}")
+            cloudlog.info(f"Sunnylink sponsor tier updated to {sponsor_tier.name}")
     except Exception as e:
-      print(f"Failed to fetch sunnylink roles: {e} for dongle id {self.sunnylink_dongle_id}")
+      cloudlog.exception(f"Failed to fetch sunnylink roles: {e} for dongle id {self.sunnylink_dongle_id}")
 
   def _fetch_users(self) -> None:
     if not self.sunnylink_dongle_id or self.sunnylink_dongle_id == UNREGISTERED_SUNNYLINK_DONGLE_ID:
@@ -147,7 +145,7 @@ class SunnylinkState:
         with self._lock:
           _parse_users(users)
     except Exception as e:
-      print(f"Failed to fetch sunnylink users: {e} for dongle id {self.sunnylink_dongle_id}")
+      cloudlog.exception(f"Failed to fetch sunnylink users: {e} for dongle id {self.sunnylink_dongle_id}")
 
   def _worker_thread(self) -> None:
     while self._running:
