@@ -47,7 +47,7 @@ class IntelligentCruiseButtonManagement:
 
   @property
   def v_cruise_equal(self) -> bool:
-    return self.v_target == self.v_cruise_cluster
+    return abs(self.v_target - self.v_cruise_cluster) < 0.1
 
   def update_calculations(self, CS: car.CarState, LP_SP: custom.LongitudinalPlanSP) -> None:
     speed_conv = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
