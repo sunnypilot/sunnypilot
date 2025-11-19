@@ -126,7 +126,9 @@ class NavigationLayout(Widget):
     self._remove_dialog = MultiOptionDialog(tr("Remove Favorite"), list(favorites_obj.keys()))
     gui_app.set_modal_overlay(self._remove_dialog, callback=self._handle_remove_favorite)
 
-  def _render(self, rect): self._scroller.render(rect)
+  def _render(self, rect):
+    self._scroller.render(rect)
+    self.refresh()
 
   def update_navigation_visibility(self, state):
     for item in (self.mapbox_recompute_toggle, self.nav_allowed_toggle, self.set_home_item, self.set_work_item, self.add_fav_item, self.remove_fav_item):
