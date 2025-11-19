@@ -162,6 +162,7 @@ def stats_main(end_event):
     'dirty': build_metadata.openpilot.is_dirty,
     'origin': build_metadata.openpilot.git_normalized_origin,
     'deviceType': HARDWARE.get_device_type(),
+    'countryCode': 'unknown',
   }
 
   # subscribe to deviceState for started state
