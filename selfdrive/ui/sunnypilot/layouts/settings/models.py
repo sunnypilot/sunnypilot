@@ -1,4 +1,6 @@
 import os
+import re
+import pyray as rl
 
 from cereal import messaging, car, custom
 from openpilot.common.params import Params
@@ -6,14 +8,15 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.list_view import button_item, text_item
-from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
+from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
+from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 
 
 class ModelsLayout(Widget):
@@ -34,10 +37,10 @@ class ModelsLayout(Widget):
     self.current_model_item = button_item(tr("Current Model"), tr("SELECT"), "", self._handle_current_model_clicked)
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "", self._refresh_models)
     self.clear_cache_item = button_item(tr("Clear Model Cache"), tr("CLEAR"), "", self._clear_cache)
-    self.supercombo_label = text_item("", "")
-    self.navigation_label = text_item("", "")
-    self.vision_label = text_item("", "")
-    self.policy_label = text_item("", "")
+    self.supercombo_label = progress_item(tr("Driving Model"))
+    self.navigation_label = progress_item(tr("Navigation Model"))
+    self.vision_label = progress_item(tr("Vision Model"))
+    self.policy_label = progress_item(tr("Policy Model"))
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
                                                   tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, " +
                                                      "the car will plan a turn in that direction at the nearest drivable path. " +
@@ -61,6 +64,9 @@ class ModelsLayout(Widget):
       self.current_model_item,
       self.refresh_item,
       self.clear_cache_item,
+      self.supercombo_label,
+      self.vision_label,
+      self.policy_label,
       self.lane_turn_desire_toggle,
       self.lane_turn_value_control,
       self.lagd_toggle,
@@ -69,6 +75,7 @@ class ModelsLayout(Widget):
 
   def _render(self, rect):
     self._scroller.render(rect)
+    self.update_labels()
 
   def show_event(self):
     self._scroller.show_event()
@@ -120,22 +127,15 @@ class ModelsLayout(Widget):
   def handle_bundle_download_progress(self):
     labels = {
         custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
-        custom.ModelManagerSP.Model.Type.navigation: self.navigation_label,
         custom.ModelManagerSP.Model.Type.vision: self.vision_label,
         custom.ModelManagerSP.Model.Type.policy: self.policy_label,
     }
 
     for label in labels.values():
-      if label in self.items:
-        self.items.remove(label)
+      label.set_visible(False)
 
     if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
       return
-
-    if self.supercombo_label not in self.items:
-      index = self.items.index(self.clear_cache_item) + 1
-      for i, label in enumerate(labels.values()):
-        self.items.insert(index + i, label)
 
     show_selected = (self.model_manager.selectedBundle and
                      (self.is_downloading() or
@@ -147,22 +147,33 @@ class ModelsLayout(Widget):
 
     for model in models:
       model_name = bundle.displayName
-      label = labels.get(model.type)
+      model_type = model.type.raw if hasattr(model.type, 'raw') else model.type
+      label = labels.get(model_type)
       if label:
+        label.set_visible(True)
         progress = model.artifact.downloadProgress
+
+        text_color = rl.BLACK
+        show_progress = False
+
         if progress.status == custom.ModelManagerSP.DownloadStatus.downloading:
           text = f"{int(progress.progress)}% - {model_name}"
+          show_progress = True
         elif progress.status == custom.ModelManagerSP.DownloadStatus.downloaded:
           status = tr("downloaded") if download_status_changed else tr("ready")
           text = f"{model_name} - {status}"
+          text_color = rl.Color(51, 171, 76, 255)
         elif progress.status == custom.ModelManagerSP.DownloadStatus.cached:
           status = tr("from cache") if download_status_changed else tr("ready")
           text = f"{model_name} - {status}"
+          text_color = rl.Color(51, 171, 76, 255)
         elif progress.status == custom.ModelManagerSP.DownloadStatus.failed:
           text = f"download failed - {model_name}"
+          text_color = rl.RED
         else:
           text = f"pending - {model_name}"
-        label.action_item.set_text(text)
+
+        label.action_item.update(progress.progress, text, show_progress, text_color)
 
     self.prev_download_status = self.download_status
 
@@ -188,22 +199,44 @@ class ModelsLayout(Widget):
 
   def _handle_current_model_clicked(self):
     bundles = self.model_manager.availableBundles
-    options = [tr("Default")] + [bundle.displayName for bundle in bundles]
+    folders = {}
+    for bundle in bundles:
+      overrides = {override.key: override.value for override in bundle.overrides}
+      folder = overrides.get("folder", "")
+      folders.setdefault(folder, []).append(bundle)
 
-    dialog = MultiOptionDialog(tr("Select a Model"), options, self.get_active_model_name())
+    sorted_folders = sorted(folders.items(), key=lambda item: max((b.index for b in item[1]), default=-1), reverse=True)
+
+    folders_list = [TreeFolder("", [TreeNode("", tr("Default"), "Default", -1)])]
+    for folder, bundles_in_folder in sorted_folders:
+      bundles_in_folder.sort(key=lambda b: b.index, reverse=True)
+      folder_display = folder
+      if bundles_in_folder:
+        latest_bundle = bundles_in_folder[0]
+        match = re.search(r'\(([^)]*)\)[^(]*$', latest_bundle.displayName)
+        if match:
+          folder_display += f" - (Updated: {match.group(1)})"
+      nodes = [TreeNode(folder, bundle.displayName, bundle.ref, bundle.index) for bundle in bundles_in_folder]
+      folders_list.append(TreeFolder(folder_display, nodes))
+
+    if (fav_str := self._params.get("ModelManager_Favs")):
+      fav_refs = set(fav_str.split(';'))
+      if fav_bundles := [b for b in bundles if b.ref in fav_refs]:
+        folders_list.insert(1, TreeFolder("Favorites", [TreeNode("", b.displayName, b.ref, b.index) for b in fav_bundles]))
+
+    dialog = TreeOptionDialog(tr("Select a Model"), folders_list, self.get_active_model_ref(), "ModelManager_Favs")
 
     def callback(result):
       if result == DialogResult.CONFIRM:
-        selected_option = dialog.selection
-        if selected_option == tr("Default"):
+        selected_ref = dialog.selection_ref
+        if selected_ref == "Default":
           self._params.remove("ModelManager_ActiveBundle")
           self.show_reset_params_dialog()
         else:
-          selected_bundle = next(bundle for bundle in bundles if bundle.displayName == selected_option)
-          self._params.put("ModelManager_DownloadIndex", str(selected_bundle.index))
+          selected_bundle = next(b for b in bundles if b.ref == selected_ref)
+          self._params.put("ModelManager_DownloadIndex", selected_bundle.index)
           if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
             self.show_reset_params_dialog()
-
         self.update_labels()
 
     gui_app.set_modal_overlay(dialog, callback=callback)
@@ -222,7 +255,7 @@ class ModelsLayout(Widget):
       self._params.put_bool("ModelManager_ClearCache", True)
 
   def show_reset_params_dialog(self):
-    confirm_msg = tr("Model download has started in the background. We STRONGLY suggest you to reset calibration. Would you like to do that now?")
+    confirm_msg = tr("Model download has started in the background. We suggest you to reset calibration. Would you like to do that now?")
     dialog = ConfirmDialog(confirm_msg, tr("Reset Calibration"), tr("Cancel"))
     gui_app.set_modal_overlay(dialog, callback=self._reset_params_callback)
 
