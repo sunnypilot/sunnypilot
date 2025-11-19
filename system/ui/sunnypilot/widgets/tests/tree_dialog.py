@@ -34,52 +34,47 @@ class TreeItemWidget(Button):
     self.is_favorite = is_favorite
     self._favorite_callback = favorite_callback
 
+  @property
+  def _star_rect(self):
+    return rl.Rectangle(self._rect.x + self._rect.width - 50, self._rect.y + (self._rect.height - 40) / 2, 40, 40)
+
   def _render(self, rect):
     super()._render(rect)
     if not self.is_folder and self._favorite_callback:
-      star_rect = rl.Rectangle(rect.x + rect.width - 50, rect.y + (rect.height - 40) / 2, 40, 40)
-      gui_label(star_rect, "☆", 70, style.ITEM_TEXT_COLOR if self.is_favorite else style.ITEM_DISABLED_TEXT_COLOR)
+      gui_label(self._star_rect, "☆", 70, style.ITEM_TEXT_COLOR if self.is_favorite else style.ITEM_DISABLED_TEXT_COLOR)
 
   def _handle_mouse_release(self, mouse_pos):
-    if not self.is_folder and self._favorite_callback:
-      star_rect = rl.Rectangle(self._rect.x + self._rect.width - 50, self._rect.y + (self._rect.height - 40) / 2, 40, 40)
-      if rl.check_collision_point_rec(mouse_pos, star_rect):
-        self._favorite_callback()
-        return True
+    if not self.is_folder and self._favorite_callback and rl.check_collision_point_rec(mouse_pos, self._star_rect):
+      self._favorite_callback()
+      return True
     return super()._handle_mouse_release(mouse_pos)
-
 
 
 class TreeOptionDialog(MultiOptionDialog):
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM):
     super().__init__(title, [], "", option_font_weight)
     self.folders = folders
-    self.current_ref = current_ref
     self.selection_ref = current_ref
     self.fav_param = fav_param
     self.expanded = set()
     self.params = Params()
-    fav_str = self.params.get(fav_param) or ""
-    self.favorites = set(fav_str.split(';')) if fav_str else set()
+    val = self.params.get(fav_param) if fav_param else None
+    self.favorites = set(val.split(';')) if val else set()
     self._build_visible_items()
 
   def _build_visible_items(self):
     self.visible_items = []
     for folder in self.folders:
-      is_expanded = folder.folder in self.expanded or folder.folder == ""
-      toggle_text = "-" if is_expanded and folder.folder else "+"
+      is_expanded = folder.folder in self.expanded or not folder.folder
       if folder.folder:
-        item = TreeItemWidget(f"{toggle_text} {folder.folder}", "", True, 0, lambda f=folder: self._toggle_folder(f))
-        self.visible_items.append(item)
+        self.visible_items.append(TreeItemWidget(f"{'-' if is_expanded else '+'} {folder.folder}", "", True, 0, lambda f=folder: self._toggle_folder(f)))
+
       if is_expanded:
         for node in folder.nodes:
-          is_fav = node.ref in self.favorites
-          indent = 1 if folder.folder else 0
-          item = TreeItemWidget(node.display_name, node.ref, False, indent,
+          self.visible_items.append(TreeItemWidget(node.display_name, node.ref, False, 1 if folder.folder else 0,
                                 lambda n=node: self._select_node(n),
                                 lambda n=node: self._toggle_favorite(n),
-                                is_fav)
-          self.visible_items.append(item)
+                                node.ref in self.favorites))
 
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
@@ -92,8 +87,7 @@ class TreeOptionDialog(MultiOptionDialog):
       else:
         self.expanded.add(folder.folder)
         if folder == self.folders[-1]:
-          current_offset = self.scroller.scroll_panel.offset
-          self.scroller.scroll_panel.set_offset(current_offset - 200)
+          self.scroller.scroll_panel.set_offset(self.scroller.scroll_panel.offset - 200)
       self._build_visible_items()
 
   def _select_node(self, node):
@@ -103,19 +97,18 @@ class TreeOptionDialog(MultiOptionDialog):
   def _toggle_favorite(self, node):
     if node.ref in self.favorites:
       self.favorites.remove(node.ref)
-      fav_folder = next((fav for fav in self.folders if fav.folder == "Favorites"), None)
-      if fav_folder:
-        fav_folder.nodes = [n for n in fav_folder.nodes if n.ref != node.ref]
-        if not fav_folder.nodes:
-          self.folders.remove(fav_folder)
     else:
       self.favorites.add(node.ref)
-      fav_folder = next((fav for fav in self.folders if fav.folder == "Favorites"), None)
-      if not fav_folder:
-        fav_folder = TreeFolder("Favorites", [])
-        self.folders.insert(1, fav_folder)
-      fav_folder.nodes.append(TreeNode("", node.display_name, node.ref, node.index))
-      fav_folder.nodes.sort(key=lambda n: n.index, reverse=True)
+
     if self.fav_param:
       self.params.put(self.fav_param, ';'.join(self.favorites))
+
+    self.folders = [f for f in self.folders if f.folder != "Favorites"]
+    if self.favorites:
+      all_nodes = [n for f in self.folders for n in f.nodes]
+      fav_nodes = [TreeNode("", n.display_name, n.ref, n.index) for n in all_nodes if n.ref in self.favorites]
+      fav_nodes.sort(key=lambda n: n.index, reverse=True)
+      if fav_nodes:
+        self.folders.insert(1 if len(self.folders) > 0 else 0, TreeFolder("Favorites", fav_nodes))
+
     self._build_visible_items()
