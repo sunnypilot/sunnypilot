@@ -9,15 +9,13 @@ class UIStateSP(UIState):
   def _initialize(self):
     UIState._initialize(self)
     self.params = Params()
-    self.sm = messaging.SubMaster(
-      [
-        "modelV2", "controlsState", "liveCalibration", "deviceState", "carParams",
-        "driverMonitoringState", "carState", "roadCameraState", "managerState",
-        "selfdriveState", "longitudinalPlan", "rawAudioData",
-        "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-        "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-        "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP"
-      ])
+    op_services = self.sm.services
+    sp_services = [
+      "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
+      "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
+      "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP"
+    ]
+    self.sm = messaging.SubMaster(op_services + sp_services)
 
   def update(self) -> None:
     UIState.update(self)
