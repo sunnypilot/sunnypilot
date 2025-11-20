@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class Base:
   # Widget/Control Base Dimensions
   ITEM_BASE_HEIGHT = 170
-  ITEM_PADDING = 30
+  ITEM_PADDING = 20
   ITEM_TEXT_FONT_SIZE = 50
   ITEM_DESC_FONT_SIZE = 40
   ITEM_DESC_V_OFFSET = 150
