@@ -156,10 +156,9 @@ class SunnylinkLayout(Widget):
 
   def update(self):
     self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
-    self._sunnylink_uploader_toggle.set_enabled(self._sunnylink_enabled)
-    self._sunnylink_backup_restore_buttons.set_enabled(self._sunnylink_enabled)
-    self._sponsor_btn.set_enabled(self._sunnylink_enabled)
-    self._pair_btn.set_enabled(self._sunnylink_enabled)
+    self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
+    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled)
+    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
   def _render(self, rect):
