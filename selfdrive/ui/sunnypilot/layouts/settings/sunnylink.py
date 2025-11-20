@@ -26,8 +26,6 @@ class SunnylinkLayout(Widget):
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
-    ui_state_sp.add_ui_update_callback(self.update)
-
   def _initialize_items(self):
     self._sunnylink_toggle = toggle_item_sp(
       title=tr("Enable sunnylink"),
@@ -119,7 +117,7 @@ class SunnylinkLayout(Widget):
 
     if self._backup_in_progress:
       if backup_status == custom.BackupManagerSP.Status.inProgress:
-        text = tr(f"Backup in progress {backup_progress}%")
+        text = tr(f"Backing up {backup_progress}%")
         self._backup_btn.set_text(text)
 
       elif backup_status == custom.BackupManagerSP.Status.failed:
@@ -127,7 +125,7 @@ class SunnylinkLayout(Widget):
         self._backup_btn.set_enabled(not ui_state_sp.is_onroad())
         self._backup_btn.set_text(tr("Backup Failed"))
 
-      elif backup_status == custom.BackupManagerSP.Status.completed and self._backup_in_progress:
+      elif backup_status == custom.BackupManagerSP.Status.completed:
         self._backup_in_progress = False
         dialog = alert_dialog(tr("Settings backup completed."))
         gui_app.set_modal_overlay(dialog)
@@ -135,9 +133,8 @@ class SunnylinkLayout(Widget):
 
     elif self._restore_in_progress:
       if restore_status == custom.BackupManagerSP.Status.inProgress:
-        self._restore_in_progress = True
         self._restore_btn.set_enabled(False)
-        text = tr(f"Restore in progress {restore_progress}%")
+        text = tr(f"Restoring {restore_progress}%")
         self._restore_btn.set_text(text)
 
       elif restore_status == custom.BackupManagerSP.Status.failed:
@@ -147,11 +144,11 @@ class SunnylinkLayout(Widget):
         dialog = alert_dialog(tr("Unable to restore the settings, try again later."))
         gui_app.set_modal_overlay(dialog)
 
-      elif restore_status == custom.BackupManagerSP.Status.completed and self._restore_in_progress:
+      elif restore_status == custom.BackupManagerSP.Status.completed:
         self._restore_in_progress = False
         dialog = alert_dialog(tr("Settings restored. Confirm to restart the interface."))
         gui_app.set_modal_overlay(dialog, callback=lambda: {
-          gui_app.close()
+          gui_app.request_close()
         })
 
     else:
@@ -178,6 +175,7 @@ class SunnylinkLayout(Widget):
 
   def _render(self, rect):
     self._scroller.render(rect)
+    self.update()
 
   def show_event(self):
     self._scroller.show_event()
