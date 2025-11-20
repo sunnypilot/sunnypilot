@@ -168,6 +168,6 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
-                            icon: str = "", param: str | None = None, inline: bool = True) -> ListItem:
+                            icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
