@@ -20,116 +20,102 @@ class NavigationLayout(Widget):
     super().__init__()
     self.navd = Navigationd()
     self._params = Params()
-    self._initialize_items()
-    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
-  def _initialize_items(self):
-    self.items = [
-      button_item("Mapbox token", "Edit", "Enter your mapbox public token", partial(self._show_param_input_dialog, "MapboxToken", "Enter Mapbox Token")),
-      button_item("Mapbox route", "Edit", "", partial(self._show_param_input_dialog, "MapboxRoute", "Enter Mapbox Route")),
-      button_item("Clear current route", "Clear", "", self.clear_route),
-      multiple_button_item_sp("Favorites", "Select favorite route", ["Home", "Work", "Favorites"], 0, callback=self._favorites_callback),
-      button_item("Set Home", "Set", "", partial(self._open_favorite_dialog, "home", "Set Home Route")),
-      button_item("Set Work", "Set", "", partial(self._open_favorite_dialog, "work", "Set Work Route")),
+    self.mapbox_token_item = button_item("Mapbox token", "Edit", "Enter your mapbox public token",
+                                         partial(self._show_param_input, "MapboxToken", "Enter Mapbox Token"))
+    self.mapbox_route_item = button_item("Mapbox route", "Edit", "",
+                                         partial(self._show_param_input, "MapboxRoute", "Enter Mapbox Route"))
+
+    self.vis_items = [
+      button_item("Set Home", "Set", "", partial(self._open_fav_dialog, "home", "Set Home Route")),
+      button_item("Set Work", "Set", "", partial(self._open_fav_dialog, "work", "Set Work Route")),
       button_item("Add Favorite", "Add", "Add a new favorite", self._add_fav),
       button_item("Remove Favorite", "Remove", "Remove a favorite", self._remove_fav),
-      toggle_item_sp("Allow navigation", "Enable navigation service", callback=self.update_navigation_visibility, param="AllowNavigation"),
       toggle_item_sp("Mapbox recompute", "Enable automatic route recomputation", param="MapboxRecompute"),
       toggle_item_sp("Navigation allowed", "Allow navigation to automatically take turns", param="NavDesiresAllowed"),
     ]
-    (self.mapbox_token_item, self.mapbox_route_item, _, _, self.set_home_item, self.set_work_item, self.add_fav_item, self.remove_fav_item,
-     self.allow_navigation_toggle, self.mapbox_recompute_toggle, self.nav_allowed_toggle) = self.items
 
-  def _show_param_input_dialog(self, param_name, title):
-    current_text = self._params.get(param_name, return_default=True) or ""
-    InputDialogSP(title, current_text=current_text, param=param_name).show()
+    self.items = [
+      self.mapbox_token_item, self.mapbox_route_item,
+      button_item("Clear current route", "Clear", "", self.clear_route),
+      multiple_button_item_sp("Favorites", "Select favorite route", ["Home", "Work", "Favorites"], 0, callback=self._favorites_callback),
+      *self.vis_items[:4],
+      toggle_item_sp("Allow navigation", "Enable navigation service", callback=self._update_navigation_visibility, param="AllowNavigation"),
+      *self.vis_items[4:],
+    ]
+    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
+
+  @property
+  def _favs(self):
+    try:
+      return json.loads(self._params.get("MapboxFavorites") or "{}")
+    except Exception:
+      return {}
+
+  def _show_param_input(self, param, title):
+    InputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
 
   def clear_route(self):
     self.navd.route = None
     self._params.remove("MapboxRoute")
 
-  def _favorite_input_callback(self, fav_key, result, text):
-    if result == DialogResult.CONFIRM and text:
-      self._update_favorite_from_text(text, fav_key)
+  def _handle_save_fav(self, key, is_fav, res, text):
+    if res == DialogResult.CONFIRM and text:
+      favs = self._favs
+      (favs.setdefault("favorites", {}) if is_fav else favs)[key] = text
+      self._params.put("MapboxFavorites", json.dumps(favs))
 
-  def _open_favorite_dialog(self, fav_key, title):
-    InputDialogSP(title, current_text=self._get_favorites().get(fav_key, ""), callback=partial(self._favorite_input_callback, fav_key)).show()
+  def _open_fav_dialog(self, key, title):
+    InputDialogSP(title, current_text=self._favs.get(key, ""), callback=partial(self._handle_save_fav, key, False)).show()
+
+  def _add_fav_name_cb(self, res, name):
+    if res == DialogResult.CONFIRM and name:
+      InputDialogSP(f"Set Route for {name}", "", callback=partial(self._handle_save_fav, name, True), min_text_size=1).show()
 
   def _add_fav(self):
-    InputDialogSP("Favorite Name", "", callback=self._handle_favorite_name_input, min_text_size=1).show()
+    InputDialogSP("Favorite Name", "", callback=self._add_fav_name_cb, min_text_size=1).show()
 
-  def _handle_favorite_name_input(self, result, name):
-    if result == DialogResult.CONFIRM and name:
-      InputDialogSP(f"Set Route for {name}", "",
-                    callback=lambda res, text: self._update_favorite_from_text(text, name, is_fav=True) if res == DialogResult.CONFIRM and text else None,
-                    min_text_size=1).show()
-
-  def _update_favorite_from_text(self, text, key, is_fav=False):
-    if not text:
-      return
-    obj = self._get_favorites()
-    if is_fav:
-      obj.setdefault("favorites", {})[key] = text
-    else:
-      obj[key] = text
-    self._params.put("MapboxFavorites", json.dumps(obj))
-
-  def _get_favorites(self):
-    favs_str = self._params.get("MapboxFavorites", "{}")
-    try:
-      return json.loads(favs_str)
-    except Exception:
-      return {}
-
-  def _handle_select_favorite(self, result):
-    if result == DialogResult.CONFIRM and self._select_dialog.selection:
-      route = self._get_favorites().get("favorites", {}).get(self._select_dialog.selection, "")
-      if route:
-        self._params.put("MapboxRoute", route)
-    gui_app.set_modal_overlay(None)
+  def _set_mapbox_route_cb(self, favorites, selection):
+    self._params.put("MapboxRoute", favorites[selection])
 
   def _favorites_callback(self, index):
-    favs = self._get_favorites()
-    if index in (0, 1):
-      route = favs.get("home" if index == 0 else "work", "")
-      if route:
+    favs = self._favs
+    if index < 2:
+      if route := favs.get(["home", "work"][index]):
         self._params.put("MapboxRoute", route)
-      return
-
-    favorites_obj = favs.get("favorites", {})
-    if not favorites_obj:
+    elif favorites := favs.get("favorites"):
+      self._show_list_dialog(tr("Select Favorite"), list(favorites.keys()), partial(self._set_mapbox_route_cb, favorites))
+    else:
       gui_app.set_modal_overlay(alert_dialog(tr("No custom favorites set")))
-      return
-    self._select_dialog = MultiOptionDialog(tr("Select Favorite"), list(favorites_obj.keys()))
-    gui_app.set_modal_overlay(self._select_dialog, callback=self._handle_select_favorite)
-    return
 
-  def _handle_remove_favorite(self, result):
-    if result == DialogResult.CONFIRM and self._remove_dialog.selection:
-      favs = self._get_favorites()
-      favorites_obj = favs.get("favorites", {})
-      if favorites_obj.pop(self._remove_dialog.selection, None) is not None:
-        favs["favorites"] = favorites_obj
-        self._params.put("MapboxFavorites", json.dumps(favs))
-    gui_app.set_modal_overlay(None)
+  def _remove_fav_cb(self, selection):
+    favs = self._favs
+    if favs.get("favorites", {}).pop(selection, None):
+      self._params.put("MapboxFavorites", json.dumps(favs))
 
   def _remove_fav(self):
-    favorites_obj = self._get_favorites().get("favorites", {})
-    if not favorites_obj:
+    if favorites := self._favs.get("favorites"):
+      self._show_list_dialog(tr("Remove Favorite"), list(favorites.keys()), self._remove_fav_cb)
+    else:
       gui_app.set_modal_overlay(alert_dialog(tr("No custom favorites to remove")))
-      return
-    self._remove_dialog = MultiOptionDialog(tr("Remove Favorite"), list(favorites_obj.keys()))
-    gui_app.set_modal_overlay(self._remove_dialog, callback=self._handle_remove_favorite)
 
-  def update_navigation_visibility(self, state):
-    for item in (self.mapbox_recompute_toggle, self.nav_allowed_toggle, self.set_home_item, self.set_work_item, self.add_fav_item, self.remove_fav_item):
+  def _list_dialog_cb(self, callback, res):
+    if res == DialogResult.CONFIRM and self._dialog.selection:
+      callback(self._dialog.selection)
+    gui_app.set_modal_overlay(None)
+
+  def _show_list_dialog(self, title, items, callback):
+    self._dialog = MultiOptionDialog(title, items)
+    gui_app.set_modal_overlay(self._dialog, callback=partial(self._list_dialog_cb, callback))
+
+  def _update_navigation_visibility(self, state):
+    for item in self.vis_items:
       item.set_visible(state)
 
   def _update_state(self):
-    super()._update_state()
-    self.mapbox_token_item.action_item.set_value(self._params.get("MapboxToken", "") or "Mapbox token not set")
-    self.mapbox_route_item.action_item.set_value(self._params.get("MapboxRoute", "") or "Destination not set")
-    self.update_navigation_visibility(self._params.get_bool("AllowNavigation"))
+    self.mapbox_token_item.action_item.set_value(self._params.get("MapboxToken") or "Mapbox token not set")
+    self.mapbox_route_item.action_item.set_value(self._params.get("MapboxRoute") or "Destination not set")
+    self._update_navigation_visibility(self._params.get_bool("AllowNavigation"))
 
   def _render(self, rect):
     self._scroller.render(rect)
