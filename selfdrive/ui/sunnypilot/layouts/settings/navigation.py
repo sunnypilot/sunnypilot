@@ -18,15 +18,15 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, mul
 class NavigationLayout(Widget):
   def __init__(self):
     super().__init__()
-    self.navd = Navigationd()
+    self._navd = Navigationd()
     self._params = Params()
 
-    self.mapbox_token_item = button_item("Mapbox token", "Edit", "Enter your mapbox public token",
+    self._mapbox_token_item = button_item("Mapbox token", "Edit", "Enter your mapbox public token",
                                          partial(self._show_param_input, "MapboxToken", "Enter Mapbox Token"))
-    self.mapbox_route_item = button_item("Mapbox route", "Edit", "",
+    self._mapbox_route_item = button_item("Mapbox route", "Edit", "",
                                          partial(self._show_param_input, "MapboxRoute", "Enter Mapbox Route"))
 
-    self.vis_items = [
+    self._vis_items = [
       button_item("Set Home", "Set", "", partial(self._open_fav_dialog, "home", "Set Home Route")),
       button_item("Set Work", "Set", "", partial(self._open_fav_dialog, "work", "Set Work Route")),
       button_item("Add Favorite", "Add", "Add a new favorite", self._add_fav),
@@ -36,12 +36,12 @@ class NavigationLayout(Widget):
     ]
 
     self.items = [
-      self.mapbox_token_item, self.mapbox_route_item,
+      self._mapbox_token_item, self._mapbox_route_item,
       button_item("Clear current route", "Clear", "", self._clear_route),
       multiple_button_item_sp("Favorites", "Select favorite route", ["Home", "Work", "Favorites"], 0, callback=self._favorites_callback),
-      *self.vis_items[:4],
+      *self._vis_items[:4],
       toggle_item_sp("Allow navigation", "Enable navigation service", callback=self._update_navigation_visibility, param="AllowNavigation"),
-      *self.vis_items[4:],
+      *self._vis_items[4:],
     ]
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
@@ -56,7 +56,7 @@ class NavigationLayout(Widget):
     InputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
 
   def _clear_route(self):
-    self.navd.route = None
+    self._navd.route = None
     self._params.remove("MapboxRoute")
 
   def _handle_save_fav(self, key, is_fav, res, text):
@@ -109,12 +109,12 @@ class NavigationLayout(Widget):
     gui_app.set_modal_overlay(self._dialog, callback=partial(self._list_dialog_cb, callback))
 
   def _update_navigation_visibility(self, state):
-    for item in self.vis_items:
+    for item in self._vis_items:
       item.set_visible(state)
 
   def _update_state(self):
-    self.mapbox_token_item.action_item.set_value(self._params.get("MapboxToken") or "Mapbox token not set")
-    self.mapbox_route_item.action_item.set_value(self._params.get("MapboxRoute") or "Destination not set")
+    self._mapbox_token_item.action_item.set_value(self._params.get("MapboxToken") or "Mapbox token not set")
+    self._mapbox_route_item.action_item.set_value(self._params.get("MapboxRoute") or "Destination not set")
     self._update_navigation_visibility(self._params.get_bool("AllowNavigation"))
 
   def _render(self, rect):
