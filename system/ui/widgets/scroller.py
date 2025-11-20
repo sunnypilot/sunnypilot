@@ -17,8 +17,8 @@ class LineSeparator(Widget):
     self._rect.width = parent_rect.width
 
   def _render(self, _):
-    rl.draw_line(int(self._rect.x) + LINE_PADDING, int(self._rect.y),
-                 int(self._rect.x + self._rect.width) - LINE_PADDING, int(self._rect.y),
+    rl.draw_line(int(self._rect.x), int(self._rect.y),
+                 int(self._rect.x + self._rect.width), int(self._rect.y),
                  LINE_COLOR)
 
 
