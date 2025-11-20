@@ -11,6 +11,7 @@ from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.toggle import ON_COLOR
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
@@ -131,9 +132,9 @@ class ModelsLayout(Widget):
         if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
           text, show = f"{int(p.progress)}% - {name}", True
         elif p.status == custom.ModelManagerSP.DownloadStatus.downloaded:
-          text, color = f"{name} - {tr('downloaded') if status_changed else tr('ready')}", rl.Color(51, 171, 76, 255)
+          text, color = f"{name} - {tr('downloaded') if status_changed else tr('ready')}", ON_COLOR
         elif p.status == custom.ModelManagerSP.DownloadStatus.cached:
-          text, color = f"{name} - {tr('from cache') if status_changed else tr('ready')}", rl.Color(51, 171, 76, 255)
+          text, color = f"{name} - {tr('from cache') if status_changed else tr('ready')}", ON_COLOR
         elif p.status == custom.ModelManagerSP.DownloadStatus.failed:
           text, color = f"download failed - {name}", rl.RED
 
