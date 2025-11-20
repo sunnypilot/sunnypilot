@@ -48,7 +48,7 @@ class ListItemSP(ListItem):
         style.TOGGLE_WIDTH,
         style.TOGGLE_HEIGHT
       )
-      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING
+      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
 
       # Draw title
       if self.title:
