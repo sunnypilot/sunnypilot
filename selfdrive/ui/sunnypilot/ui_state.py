@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from openpilot.selfdrive.ui.ui_state import UIState
 from cereal import messaging
 from openpilot.common.params import Params
@@ -19,9 +21,17 @@ class UIStateSP(UIState):
     ]
     self.sm = messaging.SubMaster(op_services + sp_services)
 
+    # Callbacks
+    self._ui_update_callbacks: list[Callable[[], None]] = []
+
+  def add_ui_update_callback(self, callback: Callable[[], None]):
+    self._ui_update_callbacks.append(callback)
+
   def update(self) -> None:
     UIState.update(self)
     self.sunnylink_state.start()
+    for callback in self._ui_update_callbacks:
+      callback()
 
   def _update_status(self) -> None:
     UIState._update_status(self)

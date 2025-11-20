@@ -1,9 +1,5 @@
-import asyncio
-import threading
-import time
-
-from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.sunnylink.backups.manager import BackupManagerSP
+from cereal import custom
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
@@ -24,12 +20,13 @@ class SunnylinkLayout(Widget):
     self._sunnylink_pairing_dialog: SunnylinkPairingDialog | None = None
     self._restore_in_progress = False
     self._backup_in_progress = False
-    self._sunnylink_backup_manager = BackupManagerSP()
-
-    self.sunnylink_enabled = self._params.get_bool("SunnylinkEnabled")
+    self._sunnylink_backup_manager = ui_state_sp.sm["backupManagerSP"]
+    self._sunnylink_enabled = self._params.get_bool("SunnylinkEnabled")
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
+
+    ui_state_sp.add_ui_update_callback(self.handle_backup_restore_progress)
 
   def _initialize_items(self):
     self._sunnylink_toggle = toggle_item_sp(
@@ -85,9 +82,8 @@ class SunnylinkLayout(Widget):
     gui_app.set_modal_overlay(self._sunnylink_pairing_dialog, callback=lambda result: setattr(self, '_sunnylink_pairing_dialog', None))
 
   def _handle_backup_btn(self):
-    gui_app.set_modal_overlay(alert_dialog(message=tr("Backup functionality is currently not available."
-                                                      " It will be back once all settings are implemented on raylib.")))
-    # self._backup_btn.set_enabled(False)
+    gui_app.set_modal_overlay(alert_dialog(message=tr("Backup functionality is currently not available.") +
+                                                   tr(" It will be back once all settings are implemented on raylib.")))
     # backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup")
     # gui_app.set_modal_overlay(backup_dialog, callback=self._backup_handler)
 
@@ -98,61 +94,68 @@ class SunnylinkLayout(Widget):
 
   def _backup_handler(self, dialog_result: int):
     if dialog_result == DialogResult.CONFIRM:
-      try:
-        self._backup_in_progress = True
-        self._backup_btn.set_enabled(False)
-        threading.Thread(target=lambda: asyncio.run(self._create_backup()), daemon=True).start()
-        threading.Thread(target=self._backup_progress_updater, daemon=True).start()
-      except Exception as e:
-        cloudlog.exception(f"Failed to start backup: {e}")
-
-  def _backup_progress_updater(self):
-    try:
-      while self._backup_in_progress:
-        self._backup_btn.set_text(tr("Backup in progress - ") + str(self._sunnylink_backup_manager.progress) + "%")
-        time.sleep(0.1)
-    except Exception:
-      pass
-    finally:
-      self._backup_btn.set_text(tr("Backup Settings"))
-
-  async def _create_backup(self):
-    try:
-      await self._sunnylink_backup_manager.create_backup()
-    except Exception as e:
-        cloudlog.exception(f"Failed to create backup: {e}")
-    finally:
-      self._backup_btn.set_enabled(True)
-      self._backup_in_progress = False
+      self._backup_in_progress = True
+      self._backup_btn.set_enabled(False)
+      self._params.put_bool("BackupManager_CreateBackup", True)
 
   def _restore_handler(self, dialog_result: int):
     if dialog_result == DialogResult.CONFIRM:
-      try:
+      self._restore_in_progress = True
+      self._restore_btn.set_enabled(False)
+      self._params.put("BackupManager_RestoreVersion", "latest")
+
+  def handle_backup_restore_progress(self):
+    backup_status = self._sunnylink_backup_manager.backupStatus
+    restore_status = self._sunnylink_backup_manager.restoreStatus
+    backup_progress = self._sunnylink_backup_manager.backupProgress
+    restore_progress = self._sunnylink_backup_manager.restoreProgress
+
+    print(f"Backup status: {backup_status}, Restore status: {restore_status}")
+    print(f"Backup progress: {backup_progress}, Restore progress: {restore_progress}")
+
+    if self._backup_in_progress:
+      if backup_status == custom.BackupManagerSP.Status.inProgress:
+        text = tr(f"Backup in progress {backup_progress}%")
+        self._backup_btn.set_text(text)
+
+      elif backup_status == custom.BackupManagerSP.Status.failed:
+        self._backup_in_progress = False
+        self._backup_btn.set_enabled(not ui_state_sp.is_onroad())
+        self._backup_btn.set_text(tr("Backup Failed"))
+
+      elif backup_status == custom.BackupManagerSP.Status.completed and self._backup_in_progress:
+        self._backup_in_progress = False
+        dialog = alert_dialog(tr("Settings backup completed."))
+        gui_app.set_modal_overlay(dialog)
+        self._backup_btn.set_enabled(not ui_state_sp.is_onroad())
+
+    elif self._restore_in_progress:
+      if restore_status == custom.BackupManagerSP.Status.inProgress:
         self._restore_in_progress = True
         self._restore_btn.set_enabled(False)
-        threading.Thread(target=lambda: asyncio.run(self._restore_backup()), daemon=True).start()
-        threading.Thread(target=self._restore_progress_updater, daemon=True).start()
-      except Exception as e:
-        cloudlog.exception(f"Failed to start restore: {e}")
+        text = tr(f"Restore in progress {restore_progress}%")
+        self._restore_btn.set_text(text)
 
-  def _restore_progress_updater(self):
-    try:
-      while self._restore_in_progress:
-        self._restore_btn.set_text(tr("Restoring... ") + str(self._sunnylink_backup_manager.progress) + "%")
-        time.sleep(0.1)
-    except Exception:
-      pass
-    finally:
+      elif restore_status == custom.BackupManagerSP.Status.failed:
+        self._restore_in_progress = False
+        self._restore_btn.set_enabled(not ui_state_sp.is_onroad())
+        self._restore_btn.set_text(tr("Restore Failed"))
+        dialog = alert_dialog(tr("Unable to restore the settings, try again later."))
+        gui_app.set_modal_overlay(dialog)
+
+      elif restore_status == custom.BackupManagerSP.Status.completed and self._restore_in_progress:
+        self._restore_in_progress = False
+        dialog = alert_dialog(tr("Settings restored. Confirm to restart the interface."))
+        gui_app.set_modal_overlay(dialog, callback=lambda: {
+          gui_app.close()
+        })
+
+    else:
+      can_enable =  self._sunnylink_enabled and not ui_state_sp.is_onroad()
+      self._backup_btn.set_enabled(can_enable)
+      self._backup_btn.set_text(tr("Backup Settings"))
+      self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
-
-  async def _restore_backup(self):
-    try:
-      await self._sunnylink_backup_manager.restore_backup()
-    except Exception as e:
-        cloudlog.exception(f"Failed to restore backup: {e}")
-    finally:
-      self._restore_btn.set_enabled(True)
-      self._restore_in_progress = False
 
   def _render(self, rect):
     self._scroller.render(rect)
