@@ -133,8 +133,8 @@ class ListItemSP(ListItem):
     else:
       if self.title:
         # Draw main text
-        item_y = self._rect.y + style.ITEM_PADDING if self.inline else self._rect.y + style.ITEM_PADDING * 1.5
         self._text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
+        item_y = self._rect.y + (style.ITEM_BASE_HEIGHT - self._text_size.y) // 2 if self.inline else self._rect.y + style.ITEM_PADDING * 1.5
         rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, style.ITEM_TEXT_COLOR)
 
         # Draw right item if present
