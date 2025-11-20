@@ -47,6 +47,9 @@ class MultipleButtonActionSP(MultipleButtonAction):
       else:
         bg_color = style.OFF_BG_COLOR
 
+      if not self.enabled:
+        bg_color = style.DISABLED_OFF_BG_COLOR
+
       # Draw button
       rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
 
@@ -55,7 +58,8 @@ class MultipleButtonActionSP(MultipleButtonAction):
       text_size = measure_text_cached(self._font, text, 40)
       text_x = button_x + (self.button_width - text_size.x) / 2
       text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
-      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, style.ITEM_TEXT_COLOR)
+      text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, text_color)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     MultipleButtonAction._handle_mouse_release(self, mouse_pos)
