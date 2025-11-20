@@ -26,7 +26,7 @@ class SunnylinkLayout(Widget):
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
-    ui_state_sp.add_ui_update_callback(self.handle_backup_restore_progress)
+    ui_state_sp.add_ui_update_callback(self.update)
 
   def _initialize_items(self):
     self._sunnylink_toggle = toggle_item_sp(
@@ -110,9 +110,6 @@ class SunnylinkLayout(Widget):
     backup_progress = self._sunnylink_backup_manager.backupProgress
     restore_progress = self._sunnylink_backup_manager.restoreProgress
 
-    print(f"Backup status: {backup_status}, Restore status: {restore_status}")
-    print(f"Backup progress: {backup_progress}, Restore progress: {restore_progress}")
-
     if self._backup_in_progress:
       if backup_status == custom.BackupManagerSP.Status.inProgress:
         text = tr(f"Backup in progress {backup_progress}%")
@@ -156,6 +153,14 @@ class SunnylinkLayout(Widget):
       self._backup_btn.set_text(tr("Backup Settings"))
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
+
+  def update(self):
+    self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
+    self._sunnylink_uploader_toggle.set_enabled(self._sunnylink_enabled)
+    self._sunnylink_backup_restore_buttons.set_enabled(self._sunnylink_enabled)
+    self._sponsor_btn.set_enabled(self._sunnylink_enabled)
+    self._pair_btn.set_enabled(self._sunnylink_enabled)
+    self.handle_backup_restore_progress()
 
   def _render(self, rect):
     self._scroller.render(rect)
