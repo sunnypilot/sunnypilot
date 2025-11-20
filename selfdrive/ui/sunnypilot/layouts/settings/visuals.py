@@ -6,10 +6,11 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
 
 CHEVRON_INFO_DESCRIPTION = {
-  "enabled": tr_noop("Display useful metrics below the chevron that tracks the lead car ") +
-             tr_noop("only applicable to cars with sunnypilot longitudinal control."),
+  "enabled": tr_noop("Display useful metrics below the chevron that tracks the lead car " +
+                     "only applicable to cars with sunnypilot longitudinal control."),
   "disabled": tr_noop("This feature requires sunnypilot longitudinal control to be available.")
 }
+
 
 
 class VisualsLayout(Widget):
@@ -23,14 +24,14 @@ class VisualsLayout(Widget):
   def _initialize_items(self):
     self._blind_spot_toggle = toggle_item_sp(
       title=lambda: tr("Show Blind Spot Warnings"),
-      description=tr("Enabling this will display warnings when a vehicle is detected in your ") +
-                   tr("blind spot as long as your car has BSM supported."),
+      description=tr("Enabling this will display warnings when a vehicle is detected in your " +
+                     "blind spot as long as your car has BSM supported."),
       param="BlindSpot",
     )
     self._rainbow_toggle = toggle_item_sp(
       title=lambda: tr("Enable Tesla Rainbow Mode"),
-      description=lambda: tr("A beautiful rainbow effect on the path the model wants to take. ") +
-                          tr("It does not affect driving in any way."),
+      description=lambda: tr("A beautiful rainbow effect on the path the model wants to take. " +
+                             "It does not affect driving in any way."),
       param="RainbowMode",
     )
     self._standstill_timer_toggle = toggle_item_sp(
@@ -41,20 +42,24 @@ class VisualsLayout(Widget):
     self._roadname_toggle = toggle_item_sp(
       param="RoadNameToggle",
       title=lambda: tr("Display Road Name"),
-      description=lambda: tr("Displays the name of the road the car is traveling on. ") +
-                          tr("The OpenStreetMap database of the location must be downloaded from the OSM panel to fetch the road name."),
+      description=lambda: tr("Displays the name of the road the car is traveling on." +
+                             "<br>The OpenStreetMap database of the location must be downloaded from " +
+                             "the OSM panel to fetch the road name."),
     )
     self._green_light_toggle = toggle_item_sp(
       param="GreenLightAlert",
       title=lambda: tr("Green Traffic Light Alert (Beta)"),
-      description=lambda: tr("A chime and on-screen alert will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. ") +
-                          tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."),
+      description=lambda: tr("A chime and on-screen alert will play when the traffic light you are waiting for " +
+                             "turns green and you have no vehicle in front of you." +
+                             "<br>Note: This chime is only designed as a notification. " +
+                             "It is the driver's responsibility to observe their environment and make decisions accordingly."),
     )
     self._lead_depart_toggle = toggle_item_sp(
       param="LeadDepartAlert",
       title=lambda: tr("Lead Departure Alert (Beta)"),
-     description=lambda: tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving. ") +
-                         tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."),
+     description=lambda: tr("A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving." +
+                            "<br>Note: This chime is only designed as a notification. " +
+                            "It is the driver's responsibility to observe their environment and make decisions accordingly."),
     )
     self._true_vego_ui_toggle = toggle_item_sp(
       param="TrueVEgoUI",
