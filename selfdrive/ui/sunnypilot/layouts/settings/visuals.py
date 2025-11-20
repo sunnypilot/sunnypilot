@@ -78,14 +78,18 @@ class VisualsLayout(Widget):
       description=tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
       buttons=[tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")],
       param="ChevronInfo",
+      inline=False,
     )
+    self._chevron_info.action_item.set_enabled(False)
     self._dev_ui_info = multiple_button_item_sp(
       title=tr("Developer UI"),
       description=tr("Display real-time parameters and metrics from various sources."),
       buttons=[tr("Off"), tr("Right"), tr("Right & Bottom")],
       param="DevUIInfo",
-      button_width=350
+      button_width=350,
+      inline=False
     )
+    self._dev_ui_info.action_item.set_enabled(False)
 
     items = [
       self._blind_spot_toggle,
