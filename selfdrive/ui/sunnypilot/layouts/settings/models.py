@@ -4,6 +4,7 @@ import pyray as rl
 
 from cereal import messaging, car, custom
 from openpilot.common.params import Params
+from openpilot.common.constants import CV
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -41,37 +42,27 @@ class ModelsLayout(Widget):
     self.navigation_label = progress_item(tr("Navigation Model"))
     self.vision_label = progress_item(tr("Vision Model"))
     self.policy_label = progress_item(tr("Policy Model"))
-    self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
-                                                  tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, " +
-                                                     "the car will plan a turn in that direction at the nearest drivable path. " +
-                                                     "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
-                                                  callback=self._on_lane_turn_desire_changed, param="LaneTurnDesire")
-    max_value_mph = 20
-    is_metric = self._params.get_bool("IsMetric")
-    per_value_change = 100 if not is_metric else int(round(100 / 1.609344))
-    self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 5 * 100, max_value_mph * 100,
-                                                  tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
-                                                  per_value_change, None, True, "", style.BUTTON_WIDTH, None, True,
-                                                  lambda v: self._format_lane_turn_label(v / 100))
-    self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", callback=self._on_lagd_changed, param="LagdToggle")
-    self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
-                                        tr("Adjust the software delay when Live Learning Steer Delay is toggled off. " +
-                                           "The default software delay value is 0.2"),
-                                        1, None, True, "", style.BUTTON_WIDTH, None, True,
-                                        lambda v: f"{v/100:.2f}s")
 
-    self.items = [
-      self.current_model_item,
-      self.refresh_item,
-      self.clear_cache_item,
-      self.supercombo_label,
-      self.vision_label,
-      self.policy_label,
-      self.lane_turn_desire_toggle,
-      self.lane_turn_value_control,
-      self.lagd_toggle,
-      self.delay_control,
-    ]
+    self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
+      tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. " +
+         "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
+      callback=lambda s: self.lane_turn_value_control.set_visible(s), param="LaneTurnDesire")
+
+    self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
+      tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
+      int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
+      lambda v: self._format_lane_turn_label(v / 100))
+
+    self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "",
+      callback=lambda s: (self.delay_control.set_visible(not s), self._update_lagd_description()), param="LagdToggle")
+
+    self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
+      tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
+      1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v/100:.2f}s")
+
+    self.items = [self.current_model_item, self.refresh_item, self.clear_cache_item, self.supercombo_label,
+                  self.vision_label, self.policy_label, self.lane_turn_desire_toggle, self.lane_turn_value_control,
+                  self.lagd_toggle, self.delay_control]
 
   def _render(self, rect):
     self._scroller.render(rect)
@@ -82,98 +73,71 @@ class ModelsLayout(Widget):
     self.update_labels()
 
   def update_labels(self):
+    self._update_lane_turn_step()
     self.update_model_manager_state()
     self.handle_bundle_download_progress()
     self.current_model_item.action_item.set_value(self.get_active_model_internal_name())
     self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
     self._update_lagd_description()
 
+  def _update_lane_turn_step(self):
+    new_step = int(round(100 / CV.MPH_TO_KPH)) if self._params.get_bool("IsMetric") else 100
+    if self.lane_turn_value_control.action_item.option_control.value_change_step != new_step:
+      self.lane_turn_value_control.action_item.option_control.value_change_step = new_step
+
   def _update_lagd_description(self):
-    desc = tr("Enable this for the car to learn and adapt its steering response time. " +
-              "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.")
+    desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
+              "Keeping this on provides the stock openpilot experience.")
     if self._params.get_bool("LagdToggle"):
-      live_delay = ui_state.sm["liveDelay"].lateralDelay
-      desc += f"<br><br><b>{tr('Live Steer Delay:')} {live_delay:.3f} s"
-    else:
-      car_params_bytes = self._params.get("CarParamsPersistent")
-      if car_params_bytes:
-        carparams = messaging.log_from_bytes(car_params_bytes, car.CarParams)
-        steer_delay = carparams.steerActuatorDelay
-        software_delay = float(self._params.get("LagdToggleDelay", "0.2"))
-        total_lag = steer_delay + software_delay
-        desc += (f"<br><br><b>{tr('Actuator Delay:')} {steer_delay:.2f} s + " +
-                 f"{tr('Software Delay:')} {software_delay:.2f} s = " +
-                 f"{tr('Total Delay:')} {total_lag:.2f} s")
+      desc += f"<br><br><b>{tr('Live Steer Delay:')} {ui_state.sm['liveDelay'].lateralDelay:.3f} s"
+    elif (cp := self._params.get("CarParamsPersistent")):
+      cp = messaging.log_from_bytes(cp, car.CarParams)
+      sw_delay = float(self._params.get("LagdToggleDelay", "0.2"))
+      desc += (f"<br><br><b>{tr('Actuator Delay:')} {cp.steerActuatorDelay:.2f} s + {tr('Software Delay:')} {sw_delay:.2f} s = " +
+               f"{tr('Total Delay:')} {cp.steerActuatorDelay + sw_delay:.2f} s")
     self.lagd_toggle.set_description(desc)
-
-  def _on_lane_turn_desire_changed(self, state):
-    self.lane_turn_value_control.set_visible(state)
-
-  def _on_lagd_changed(self, state):
-    self.delay_control.set_visible(not state)
-    self._update_lagd_description()
 
   def _format_lane_turn_label(self, mph):
     is_metric = self._params.get_bool("IsMetric")
-    unit = "km/h" if is_metric else "mph"
-    display_value = mph
-    if is_metric:
-      display_value *= 1.609344
-    return f"{int(round(display_value))} {unit}"
+    return f"{int(round(mph * (CV.MPH_TO_KPH if is_metric else 1)))} {'km/h' if is_metric else 'mph'}"
 
   def update_model_manager_state(self):
     self.model_manager = ui_state.sm["modelManagerSP"]
 
   def handle_bundle_download_progress(self):
-    labels = {
-        custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
-        custom.ModelManagerSP.Model.Type.vision: self.vision_label,
-        custom.ModelManagerSP.Model.Type.policy: self.policy_label,
-    }
-
-    for label in labels.values():
-      label.set_visible(False)
+    labels = {custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
+              custom.ModelManagerSP.Model.Type.vision: self.vision_label,
+              custom.ModelManagerSP.Model.Type.policy: self.policy_label}
+    for l in labels.values():
+      l.set_visible(False)
 
     if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
       return
 
-    show_selected = (self.model_manager.selectedBundle and
-                     (self.is_downloading() or
-                      self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed))
-    bundle = self.model_manager.selectedBundle if show_selected else self.model_manager.activeBundle
-    models = bundle.models
+    bundle = self.model_manager.activeBundle
+    if (sb := self.model_manager.selectedBundle) and (self.is_downloading() or sb.status == custom.ModelManagerSP.DownloadStatus.failed):
+      bundle = sb
+
     self.download_status = bundle.status
-    download_status_changed = self.prev_download_status != self.download_status
+    status_changed = self.prev_download_status != self.download_status
 
-    for model in models:
-      model_name = bundle.displayName
-      model_type = model.type.raw if hasattr(model.type, 'raw') else model.type
-      label = labels.get(model_type)
-      if label:
+    for model in bundle.models:
+      if label := labels.get(model.type.raw if hasattr(model.type, 'raw') else model.type):
         label.set_visible(True)
-        progress = model.artifact.downloadProgress
+        p = model.artifact.downloadProgress
+        name = bundle.displayName
 
-        text_color = rl.BLACK
-        show_progress = False
+        text, show, color = f"pending - {name}", False, rl.BLACK
+        if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
+          text, show = f"{int(p.progress)}% - {name}", True
+        elif p.status == custom.ModelManagerSP.DownloadStatus.downloaded:
+          text, color = f"{name} - {tr('downloaded') if status_changed else tr('ready')}", rl.Color(51, 171, 76, 255)
+        elif p.status == custom.ModelManagerSP.DownloadStatus.cached:
+          text, color = f"{name} - {tr('from cache') if status_changed else tr('ready')}", rl.Color(51, 171, 76, 255)
+        elif p.status == custom.ModelManagerSP.DownloadStatus.failed:
+          text, color = f"download failed - {name}", rl.RED
 
-        if progress.status == custom.ModelManagerSP.DownloadStatus.downloading:
-          text = f"{int(progress.progress)}% - {model_name}"
-          show_progress = True
-        elif progress.status == custom.ModelManagerSP.DownloadStatus.downloaded:
-          status = tr("downloaded") if download_status_changed else tr("ready")
-          text = f"{model_name} - {status}"
-          text_color = rl.Color(51, 171, 76, 255)
-        elif progress.status == custom.ModelManagerSP.DownloadStatus.cached:
-          status = tr("from cache") if download_status_changed else tr("ready")
-          text = f"{model_name} - {status}"
-          text_color = rl.Color(51, 171, 76, 255)
-        elif progress.status == custom.ModelManagerSP.DownloadStatus.failed:
-          text = f"download failed - {model_name}"
-          text_color = rl.RED
-        else:
-          text = f"pending - {model_name}"
-
-        label.action_item.update(progress.progress, text, show_progress, text_color)
+        label.action_item.update(p.progress, text, show, color)
 
     self.prev_download_status = self.download_status
 
