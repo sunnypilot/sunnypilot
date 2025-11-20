@@ -37,7 +37,7 @@ class NavigationLayout(Widget):
 
     self.items = [
       self.mapbox_token_item, self.mapbox_route_item,
-      button_item("Clear current route", "Clear", "", self.clear_route),
+      button_item("Clear current route", "Clear", "", self._clear_route),
       multiple_button_item_sp("Favorites", "Select favorite route", ["Home", "Work", "Favorites"], 0, callback=self._favorites_callback),
       *self.vis_items[:4],
       toggle_item_sp("Allow navigation", "Enable navigation service", callback=self._update_navigation_visibility, param="AllowNavigation"),
@@ -55,7 +55,7 @@ class NavigationLayout(Widget):
   def _show_param_input(self, param, title):
     InputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
 
-  def clear_route(self):
+  def _clear_route(self):
     self.navd.route = None
     self._params.remove("MapboxRoute")
 
