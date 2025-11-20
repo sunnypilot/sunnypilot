@@ -1,8 +1,15 @@
-from openpilot.system.ui.lib.multilang import tr
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, multiple_button_item_sp
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
+
+CHEVRON_INFO_DESCRIPTION = {
+  "enabled": tr_noop("Display useful metrics below the chevron that tracks the lead car ") +
+             tr_noop("only applicable to cars with sunnypilot longitudinal control."),
+  "disabled": tr_noop("This feature requires sunnypilot longitudinal control to be available.")
+}
 
 
 class VisualsLayout(Widget):
@@ -16,13 +23,13 @@ class VisualsLayout(Widget):
   def _initialize_items(self):
     self._blind_spot_toggle = toggle_item_sp(
       title=lambda: tr("Show Blind Spot Warnings"),
-      description=(
-        "Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."),
+      description=tr("Enabling this will display warnings when a vehicle is detected in your ") +
+                   tr("blind spot as long as your car has BSM supported."),
       param="BlindSpot",
     )
     self._rainbow_toggle = toggle_item_sp(
       title=lambda: tr("Enable Tesla Rainbow Mode"),
-      description=lambda: tr("A beautiful rainbow effect on the path the model wants to take.") +
+      description=lambda: tr("A beautiful rainbow effect on the path the model wants to take. ") +
                           tr("It does not affect driving in any way."),
       param="RainbowMode",
     )
@@ -66,7 +73,7 @@ class VisualsLayout(Widget):
     )
     self._chevron_info = multiple_button_item_sp(
       title=lambda: tr("Display Metrics Below Chevron"),
-      description=lambda: tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
+      description="",
       buttons=[lambda: tr("Off"), lambda: tr("Distance"), lambda: tr("Speed"), lambda: tr("Time"), lambda: tr("All")],
       param="ChevronInfo",
       inline=False
@@ -97,7 +104,15 @@ class VisualsLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
-    self.hide_for_now()
+    if ui_state_sp.has_longitudinal_control:
+      self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["enabled"]))
+      self._chevron_info.action_item.set_enabled(True)
+    else:
+      self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["disabled"]))
+      self._chevron_info.action_item.set_enabled(False)
+      self._params.put("ChevronInfo", 0)
+
+    #self.hide_for_now()
 
   def hide_for_now(self):
     self._blind_spot_toggle.set_visible(False)
@@ -117,3 +132,4 @@ class VisualsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
+    self._chevron_info.show_description(not ui_state_sp.has_longitudinal_control)

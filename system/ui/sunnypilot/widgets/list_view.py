@@ -33,8 +33,8 @@ class MultipleButtonActionSP(MultipleButtonAction):
 
       # Check button state
       mouse_pos = rl.get_mouse_position()
-      is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
-      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed
+      mouse_pos = rl.get_mouse_position()
+      is_pressed = rl.check_collision_point_rec(mouse_pos, button_rect) and self.enabled and self.is_pressed
       is_selected = i == self.selected_button
 
       # Button colors
@@ -74,6 +74,9 @@ class ListItemSP(ListItem):
     self.inline = inline
     if not self.inline:
       self._rect.height += style.ITEM_BASE_HEIGHT/1.75
+
+  def show_description(self, show: bool):
+    self._set_description_visible(show)
 
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
@@ -162,12 +165,12 @@ class ListItemSP(ListItem):
       self._html_renderer.render(description_rect)
 
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
-                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
+                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
-                            icon: str = "", param: str | None = None, inline: bool = True) -> ListItem:
+                            icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
