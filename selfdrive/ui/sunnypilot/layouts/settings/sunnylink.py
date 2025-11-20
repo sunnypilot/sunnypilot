@@ -164,6 +164,7 @@ class SunnylinkLayout(Widget):
   def update(self):
     self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
     self._sunnylink_toggle.action_item.set_enabled(not ui_state_sp.is_onroad())
+    self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
@@ -175,13 +176,8 @@ class SunnylinkLayout(Widget):
     self._pair_btn.action_item.set_text(pair_btn_text)
     self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
 
-  def update_sunnylink_status(self):
-    self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
-
   def _render(self, rect):
     self._scroller.render(rect)
-    self.update_sunnylink_status()
 
   def show_event(self):
     self._scroller.show_event()
-    self.update_sunnylink_status()
