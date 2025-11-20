@@ -112,7 +112,7 @@ class VisualsLayout(Widget):
       self._chevron_info.action_item.set_enabled(False)
       self._params.put("ChevronInfo", 0)
 
-    #self.hide_for_now()
+    self.hide_for_now()
 
   def hide_for_now(self):
     self._blind_spot_toggle.set_visible(False)
