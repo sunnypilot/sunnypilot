@@ -19,6 +19,9 @@ class ListItemSP(ListItem):
                action_item: ItemAction | None = None):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
 
+  def show_description(self, show: bool):
+    self._set_description_visible(show)
+
   def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
     if not self.action_item:
       return rl.Rectangle(0, 0, 0, 0)
