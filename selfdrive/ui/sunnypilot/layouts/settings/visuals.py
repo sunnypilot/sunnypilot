@@ -69,6 +69,7 @@ class VisualsLayout(Widget):
       description=lambda: tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with sunnypilot longitudinal control)."),
       buttons=[lambda: tr("Off"), lambda: tr("Distance"), lambda: tr("Speed"), lambda: tr("Time"), lambda: tr("All")],
       param="ChevronInfo",
+      inline=False
     )
     self._dev_ui_info = multiple_button_item_sp(
       title=lambda: tr("Developer UI"),
