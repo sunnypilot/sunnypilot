@@ -158,7 +158,8 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
 
-  def update(self):
+  def _update_state(self):
+    super()._update_state()
     self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
     self._sunnylink_toggle.action_item.set_enabled(not ui_state_sp.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
@@ -175,7 +176,6 @@ class SunnylinkLayout(Widget):
 
   def _render(self, rect):
     self._scroller.render(rect)
-    self.update()
 
   def show_event(self):
     self._scroller.show_event()
