@@ -43,11 +43,10 @@ class NavigationLayout(Widget):
   def _show_param_input_dialog(self, param_name, title):
     current_text = self._params.get(param_name, return_default=True) or ""
     InputDialogSP(title, current_text=current_text, param=param_name).show()
-    self.refresh()
 
   def clear_route(self):
     self.navd.route = None
-    self._params.remove("MapboxRoute") or self.refresh()
+    self._params.remove("MapboxRoute")
 
   def _favorite_input_callback(self, fav_key, result, text):
     if result == DialogResult.CONFIRM and text:
@@ -74,7 +73,6 @@ class NavigationLayout(Widget):
     else:
       obj[key] = text
     self._params.put("MapboxFavorites", json.dumps(obj))
-    self.refresh()
 
   def _get_favorites(self):
     favs_str = self._params.get("MapboxFavorites", "{}")
@@ -88,7 +86,6 @@ class NavigationLayout(Widget):
       route = self._get_favorites().get("favorites", {}).get(self._select_dialog.selection, "")
       if route:
         self._params.put("MapboxRoute", route)
-        self.refresh()
     gui_app.set_modal_overlay(None)
 
   def _favorites_callback(self, index):
@@ -97,7 +94,6 @@ class NavigationLayout(Widget):
       route = favs.get("home" if index == 0 else "work", "")
       if route:
         self._params.put("MapboxRoute", route)
-        self.refresh()
       return
 
     favorites_obj = favs.get("favorites", {})
@@ -115,7 +111,6 @@ class NavigationLayout(Widget):
       if favorites_obj.pop(self._remove_dialog.selection, None) is not None:
         favs["favorites"] = favorites_obj
         self._params.put("MapboxFavorites", json.dumps(favs))
-        self.refresh()
     gui_app.set_modal_overlay(None)
 
   def _remove_fav(self):
@@ -126,19 +121,18 @@ class NavigationLayout(Widget):
     self._remove_dialog = MultiOptionDialog(tr("Remove Favorite"), list(favorites_obj.keys()))
     gui_app.set_modal_overlay(self._remove_dialog, callback=self._handle_remove_favorite)
 
-  def _render(self, rect):
-    self._scroller.render(rect)
-    self.refresh()
-
   def update_navigation_visibility(self, state):
     for item in (self.mapbox_recompute_toggle, self.nav_allowed_toggle, self.set_home_item, self.set_work_item, self.add_fav_item, self.remove_fav_item):
       item.set_visible(state)
 
-  def refresh(self):
+  def _update_state(self):
+    super()._update_state()
     self.mapbox_token_item.action_item.set_value(self._params.get("MapboxToken", "") or "Mapbox token not set")
     self.mapbox_route_item.action_item.set_value(self._params.get("MapboxRoute", "") or "Destination not set")
     self.update_navigation_visibility(self._params.get_bool("AllowNavigation"))
 
+  def _render(self, rect):
+    self._scroller.render(rect)
+
   def show_event(self):
     self._scroller.show_event()
-    self.refresh()
