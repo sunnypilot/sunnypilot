@@ -5,7 +5,7 @@ from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
 from openpilot.system.ui.widgets.network import NavButton
-from openpilot.system.ui.widgets.scroller import Scroller, LineSeparator
+from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
 
