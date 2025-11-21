@@ -20,7 +20,8 @@ class SimpleButtonActionSP(ItemAction):
   def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
                enabled: bool | Callable[[], bool] = True, button_width: int | None = None):
     super().__init__(width=button_width, enabled=enabled)
-    self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL, text_padding=0)
+    self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
+                                border_radius=20)
 
   def set_touch_valid_callback(self, touch_callback: Callable[[], bool]) -> None:
     super().set_touch_valid_callback(touch_callback)
