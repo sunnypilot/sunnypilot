@@ -88,6 +88,15 @@ class DisplayLayout(Widget):
     self._onroad_brightness_timer.set_visible(self._onroad_brightness_toggle.action_item.get_state())
     self._onroad_brightness.set_visible(self._onroad_brightness_toggle.action_item.get_state())
 
+    self.hide_for_now()
+
+  def hide_for_now(self):
+    self._onroad_brightness_toggle.set_visible(False)
+    self._onroad_brightness_timer.set_visible(False)
+    self._onroad_brightness.set_visible(False)
+    self._global_brightness.set_visible(False)
+    self._interactivity_timeout.set_visible(False)
+
   def _render(self, rect):
     self._scroller.render(rect)
 
