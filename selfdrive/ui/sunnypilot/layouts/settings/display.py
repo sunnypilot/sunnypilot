@@ -1,6 +1,6 @@
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
-from openpilot.system.ui.widgets.scroller import Scroller, LineSeparator
+from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.widgets import Widget
 from openpilot.common.params import Params
 
