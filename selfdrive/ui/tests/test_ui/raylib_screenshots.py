@@ -149,7 +149,7 @@ def setup_experimental_mode_description(click, pm: PubMaster):
 
 def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster):
   setup_settings_developer(click, pm)
-  click(2000, 960)  # toggle openpilot longitudinal control
+  click(650, 960)  # toggle openpilot longitudinal control
 
 
 def setup_onroad(click, pm: PubMaster):
