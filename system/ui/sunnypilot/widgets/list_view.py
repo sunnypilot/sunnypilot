@@ -7,6 +7,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, ButtonAction, MultipleButtonAction, _resolve_value
+from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP
 from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
@@ -184,6 +185,18 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
+
+def option_item_sp(title: str | Callable[[], str], param: str,
+                   min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
+                   value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
+                   enabled: bool | Callable[[], bool] = True,
+                   icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[int, int] | None = None,
+                   use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None) -> ListItemSP:
+  action = OptionControlSP(
+    param, min_value, max_value, value_change_step,
+    enabled, on_value_changed, value_map, label_width, use_float_scaling, label_callback
+  )
+  return ListItemSP(title=title, description=description, action_item=action, icon=icon)
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
