@@ -10,7 +10,7 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.list_view import button_item
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
 from openpilot.selfdrive.ui.ui_state import ui_state
 
