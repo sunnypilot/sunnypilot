@@ -81,6 +81,9 @@ class ListItemSP(ListItem):
       height = height + style.ITEM_BASE_HEIGHT/1.75
     return height
 
+  def show_description(self, show: bool):
+    self._set_description_visible(show)
+
   def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
     if not self.action_item:
       return rl.Rectangle(0, 0, 0, 0)
