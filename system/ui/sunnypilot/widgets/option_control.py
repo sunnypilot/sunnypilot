@@ -77,6 +77,9 @@ class OptionControlSP(ItemAction):
         value = self.current_value
 
         if callable(self.label_callback):
+          if self.value_map:
+              return self.label_callback(self.value_map[value])
+          else:
             return self.label_callback(value)
 
         if self.value_map:
