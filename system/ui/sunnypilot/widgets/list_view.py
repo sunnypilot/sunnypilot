@@ -19,7 +19,7 @@ class ToggleActionSP(ToggleAction):
 
 class SimpleButtonActionSP(ItemAction):
   def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
-               enabled: bool | Callable[[], bool] = True, button_width: int | None = None):
+               enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH):
     super().__init__(width=button_width, enabled=enabled)
     self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
                                 border_radius=20)
@@ -186,6 +186,11 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
+def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
+                          enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH) -> ListItemSP:
+  action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
+  return ListItemSP(title="", callback=callback, description="", action_item=action)
+
 def option_item_sp(title: str | Callable[[], str], param: str,
                    min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
                    value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
@@ -203,8 +208,3 @@ def multiple_button_item_sp(title: str | Callable[[], str], description: str| Ca
                             icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
-
-def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
-                          enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH) -> ListItemSP:
-  action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
-  return ListItemSP(title="", callback=callback, description="", action_item=action)
