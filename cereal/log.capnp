@@ -2166,7 +2166,8 @@ struct DriverStateV2 {
     leftBlinkProb @7 :Float32;
     rightBlinkProb @8 :Float32;
     sunglassesProb @9 :Float32;
-    notReadyProb @12 :List(Float32);
+    phoneProb @13 :Float32;
+    notReadyProbDEPRECATED @12 :List(Float32);
     occludedProbDEPRECATED @10 :Float32;
     readyProbDEPRECATED @11 :List(Float32);
   }
@@ -2225,6 +2226,8 @@ struct DriverMonitoringState @0xb83cda094a1da284 {
   isActiveMode @16 :Bool;
   isRHD @4 :Bool;
   uncertainCount @19 :UInt32;
+  phoneProbOffset @20 :Float32;
+  phoneProbValidCount @21 :UInt32;
 
   isPreviewDEPRECATED @15 :Bool;
   rhdCheckedDEPRECATED @5 :Bool;
