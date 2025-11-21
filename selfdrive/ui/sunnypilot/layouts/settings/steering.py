@@ -1,9 +1,9 @@
 from enum import IntEnum
 import pyray as rl
 
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, button_item_sp
-from openpilot.system.ui.widgets.list_view import button_item
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget
@@ -33,19 +33,68 @@ class SteeringLayout(Widget):
       title=lambda: tr("Modular Assistive Driving System (MADS)"),
       description=lambda: tr("Enable the beloved MADS feature. " +
                              "Disable toggle to revert back to stock sunnypilot engagement/disengagement."),
-      callback=lambda state: self._mads_settings_button.set_visible(state)
     )
-    self._mads_settings_button = button_item_sp(
-      title=lambda: tr("Customize MADS Settings"),
-      button_text=lambda: tr("MADS"),
+    self._mads_settings_button = simple_button_item_sp(
+      button_text=lambda: tr("Customize MADS"),
+      button_width=600
     )
-    self._mads_settings_button.set_visible(False)
+    self._lane_change_settings_button = simple_button_item_sp(
+      button_text=lambda: tr("Customize Lane Change"),
+      button_width=800
+    )
+    self._blinker_control_toggle = toggle_item_sp(
+      param="BlinkerPauseLateralControl",
+      description=lambda: tr("Pause lateral control with blinker when traveling below the desired speed selected."),
+      title=lambda: tr("Pause Lateral Control with Blinker"),
+    )
+    self._blinker_control_options = option_item_sp(
+      param="BlinkerMinLateralControlSpeed",
+      title=lambda: tr("Minimum Speed to Pause Lateral Control"),
+      min_value=0,
+      max_value=255,
+      value_change_step=5,
+      description="",
+      label_callback=lambda speed: f'{speed} {"km/h" if ui_state_sp.is_metric else "mph"}'
+    )
+    self._torque_control_toggle = toggle_item_sp(
+      param="EnforceTorqueControl",
+      title=lambda: tr("Enforce Torque Lateral Control"),
+      description=lambda: tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
+    )
+    self._torque_customization_button = simple_button_item_sp(
+      button_text=lambda: tr("Customize Torque Params"),
+      button_width=850
+    )
+    self._nnlc_toggle = toggle_item_sp(
+      param="NeuralNetworkLateralControl",
+      title=lambda: tr("Neural Network Lateral Control (NNLC)"),
+      description=""
+    )
+
     items = [
       self._mads_toggle,
       self._mads_settings_button,
       LineSeparator(),
+      self._lane_change_settings_button,
+      LineSeparator(),
+      self._blinker_control_toggle,
+      self._blinker_control_options,
+      LineSeparator(),
+      self._torque_control_toggle,
+      self._torque_customization_button,
+      LineSeparator(),
+      self._nnlc_toggle
     ]
     return items
+
+  def _update_state(self):
+    super()._update_state()
+    self._mads_toggle.action_item.set_enabled(ui_state_sp.is_offroad())
+    self._mads_settings_button.action_item.set_enabled(ui_state_sp.is_offroad())
+    self._mads_settings_button.set_visible(self._mads_toggle.action_item.get_state())
+    self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
+    self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())
+
 
   def _render(self, rect):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)
