@@ -5,6 +5,7 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, ButtonAction, MultipleButtonAction, _resolve_value
 from openpilot.system.ui.sunnypilot.lib.styles import style
 
@@ -14,6 +15,19 @@ class ToggleActionSP(ToggleAction):
                callback: Callable[[bool], None] | None = None, param: str | None = None):
     ToggleAction.__init__(self, initial_state, width, enabled, callback)
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
+
+class SimpleButtonActionSP(ItemAction):
+  def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
+               enabled: bool | Callable[[], bool] = True, button_width: int | None = None):
+    super().__init__(width=button_width, enabled=enabled)
+    self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL, text_padding=0)
+
+  def set_touch_valid_callback(self, touch_callback: Callable[[], bool]) -> None:
+    super().set_touch_valid_callback(touch_callback)
+    self.button_action.set_touch_valid_callback(touch_callback)
+
+  def _render(self, rect: rl.Rectangle):
+    self.button_action.render(rect)
 
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, param: str | None, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None):
@@ -72,7 +86,7 @@ class ListItemSP(ListItem):
                action_item: ItemAction | None = None, inline: bool = True):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
     self._is_left_action_item = (isinstance(self.action_item, ToggleAction) or
-                                (isinstance(self.action_item, ButtonAction)))
+                                isinstance(self.action_item, SimpleButtonActionSP))
     self.inline = inline
     if not self.inline:
       self._rect.height += style.ITEM_BASE_HEIGHT/1.75
@@ -122,7 +136,7 @@ class ListItemSP(ListItem):
       left_rect = rl.Rectangle(
         content_x,
         self._rect.y + (style.ITEM_BASE_HEIGHT - style.TOGGLE_HEIGHT) // 2,
-        style.TOGGLE_WIDTH if isinstance(self.action_item, ToggleAction) else style.BUTTON_WIDTH,
+        self.action_item.rect.width,
         style.TOGGLE_HEIGHT
       )
       text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
@@ -170,13 +184,13 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
-def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
-                callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItemSP:
-  action = ButtonAction(text=button_text, enabled=enabled)
-  return ListItemSP(title=title, description=description, action_item=action, callback=callback)
-
 def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
+
+def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
+                          enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH) -> ListItemSP:
+  action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
+  return ListItemSP(title="", callback=callback, description="", action_item=action)
