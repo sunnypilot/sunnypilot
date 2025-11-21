@@ -7,7 +7,7 @@ from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import Sunn
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.common.params import Params
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
