@@ -68,7 +68,10 @@ class OptionControlSP(ItemAction):
             if self.value_map:
                 self.params.put(self.param_key, self.value_map[value])
             else:
-                self.params.put(self.param_key, value)
+                if self.use_float_scaling:
+                  self.params.put(self.param_key, value / 100.0)
+                else:
+                  self.params.put(self.param_key, value)
             if self.on_value_changed:
                 self.on_value_changed(value)
 

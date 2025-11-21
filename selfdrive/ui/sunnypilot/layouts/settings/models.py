@@ -83,8 +83,8 @@ class ModelsLayout(Widget):
 
   def _update_lane_turn_step(self):
     new_step = int(round(100 / CV.MPH_TO_KPH)) if self._params.get_bool("IsMetric") else 100
-    if self.lane_turn_value_control.action_item.option_control.value_change_step != new_step:
-      self.lane_turn_value_control.action_item.option_control.value_change_step = new_step
+    if self.lane_turn_value_control.action_item.value_change_step != new_step:
+      self.lane_turn_value_control.action_item.value_change_step = new_step
 
   def _update_lagd_description(self):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
