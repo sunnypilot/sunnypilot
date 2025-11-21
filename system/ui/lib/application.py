@@ -19,6 +19,8 @@ from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.ui.lib.multilang import multilang
 from openpilot.common.realtime import Ratekeeper
 
+from openpilot.system.ui.sunnypilot.lib.application import GuiApplicationExt
+
 _DEFAULT_FPS = int(os.getenv("FPS", {'tizi': 20}.get(HARDWARE.get_device_type(), 60)))
 FPS_LOG_INTERVAL = 5  # Seconds between logging FPS drops
 FPS_DROP_THRESHOLD = 0.9  # FPS drop threshold for triggering a warning
@@ -186,7 +188,7 @@ class MouseState:
         self._prev_mouse_event[slot] = ev
 
 
-class GuiApplication:
+class GuiApplication(GuiApplicationExt):
   def __init__(self, width: int | None = None, height: int | None = None):
     self._fonts: dict[FontWeight, rl.Font] = {}
     self._width = width if width is not None else GuiApplication._default_width()
