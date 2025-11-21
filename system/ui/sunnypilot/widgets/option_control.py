@@ -166,7 +166,6 @@ class OptionControlSP(ItemAction):
         rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), VALUE_FONT_SIZE, 0, text_color)
 
     def _handle_mouse_release(self, mouse_pos: MousePos):
-        value_changed = False
         if self._minus_enabled and rl.check_collision_point_rec(mouse_pos, self.minus_btn_rect):
             self.current_value -= self.value_change_step
             self.current_value = max(self.min_value, self.current_value)
