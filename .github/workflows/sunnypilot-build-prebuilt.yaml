@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       wait_for_tests:
-        description: 'Wait for selfdrive_tests to finish'
+        description: 'Wait for tests to finish'
         required: false
         type: boolean
         default: false
@@ -99,7 +99,7 @@ jobs:
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         with:
-          workflow: selfdrive_tests.yaml # The workflow file to monitor
+          workflow: tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
           should-wait-for-start: ${{ github.event_name == 'push' && 'true' || 'false' }}
 
