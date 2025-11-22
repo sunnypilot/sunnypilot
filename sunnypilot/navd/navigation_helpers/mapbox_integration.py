@@ -111,3 +111,16 @@ class MapboxIntegration:
       'geometry': [{'longitude': coord[0], 'latitude': coord[1]} for coord in route['geometry']['coordinates']],
       'maxspeed': maxspeed,
     }
+
+  def get_autocomplete_suggestions(self, text: str, current_lon: float | None, current_lat: float | None) -> list[dict]:
+    if not text:
+      return []
+    token = self.get_public_token()
+    url = f'https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(text)}.json?access_token={token}&autocomplete=true&limit=5'
+    if current_lon is not None and current_lat is not None:
+      url += f'&proximity={current_lon},{current_lat}'
+    try:
+      response = requests.get(url, timeout=5)
+      return response.json().get('features', []) if response.status_code == 200 else []
+    except requests.RequestException:
+      return []
