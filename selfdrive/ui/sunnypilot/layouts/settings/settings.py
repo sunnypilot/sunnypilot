@@ -9,6 +9,7 @@ from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
 from openpilot.system.ui.lib.application import gui_app,MousePos
 from openpilot.system.ui.lib.multilang import tr_noop
+from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets.network import NetworkUI
@@ -98,7 +99,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
         # Draw background if selected
         if is_selected:
           self.container_rect = rl.Rectangle(
-            content_x - 20, rect.y, OP.SIDEBAR_WIDTH - 70, OP.NAV_BTN_HEIGHT
+            content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT
           )
           rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
 
@@ -124,7 +125,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     # Close button
     close_btn_rect = rl.Rectangle(
-      rect.x + (rect.width - OP.CLOSE_BTN_SIZE) / 2, rect.y + 60, OP.CLOSE_BTN_SIZE, OP.CLOSE_BTN_SIZE
+      rect.x + style.ITEM_PADDING * 3, rect.y + style.ITEM_PADDING * 2, style.CLOSE_BTN_SIZE, style.CLOSE_BTN_SIZE
     )
 
     pressed = (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and
@@ -163,7 +164,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Draw navigation section with scroller
     nav_rect = rl.Rectangle(
       rect.x,
-      rect.y + 300,  # Starting Y position for nav items
+      self._close_btn_rect.height + style.ITEM_PADDING * 4,  # Starting Y position for nav items
       rect.width,
       rect.height - 300  # Remaining height after close button
     )
