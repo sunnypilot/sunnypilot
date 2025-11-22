@@ -20,6 +20,9 @@ class ListItemSP(ListItem):
                action_item: ItemAction | None = None):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
 
+  def show_description(self, show: bool):
+    self._set_description_visible(show)
+
   def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
     if not self.action_item:
       return rl.Rectangle(0, 0, 0, 0)
@@ -49,7 +52,7 @@ class ListItemSP(ListItem):
         style.TOGGLE_WIDTH,
         style.TOGGLE_HEIGHT
       )
-      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING
+      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
 
       # Draw title
       if self.title:
@@ -91,7 +94,7 @@ class ListItemSP(ListItem):
       self._html_renderer.render(description_rect)
 
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
-                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
+                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
