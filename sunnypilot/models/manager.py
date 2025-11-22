@@ -63,6 +63,9 @@ class ModelManagerSP:
             f.write(chunk)
             bytes_downloaded += len(chunk)
 
+            if not self.params.get("ModelManager_DownloadIndex"):
+              raise Exception("Download cancelled")
+
             if total_size > 0:
               progress = (bytes_downloaded / total_size) * 100
               model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
@@ -176,6 +179,7 @@ class ModelManagerSP:
               cloudlog.exception(e)
             finally:
               self.params.remove("ModelManager_DownloadIndex")
+              self.selected_bundle = None
 
         if self.params.get("ModelManager_ClearCache"):
             self.clear_model_cache()
