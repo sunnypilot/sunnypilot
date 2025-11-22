@@ -19,7 +19,7 @@ class Base:
   ITEM_DESC_V_OFFSET = 150
 
   # Toggle Control
-  TOGGLE_HEIGHT = 100
+  TOGGLE_HEIGHT = 120
   TOGGLE_WIDTH = int(TOGGLE_HEIGHT * 1.75)
   TOGGLE_BG_HEIGHT = TOGGLE_HEIGHT - 20
 
@@ -29,7 +29,7 @@ class DefaultStyleSP(Base):
   # Base Colors
   BASE_BG_COLOR = rl.Color(57, 57, 57, 255)  # Grey
   ON_BG_COLOR = rl.Color(28, 101, 186, 255)  # Blue
-  OFF_BG_COLOR = BASE_BG_COLOR
+  OFF_BG_COLOR = rl.Color(70, 70, 70, 255)  # Lighter Grey
   ON_HOVER_BG_COLOR = rl.Color(17, 78, 150, 255)  # Dark Blue
   OFF_HOVER_BG_COLOR = rl.Color(21, 21, 21, 255)  # Dark gray
   DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255)  # Dull Blue
