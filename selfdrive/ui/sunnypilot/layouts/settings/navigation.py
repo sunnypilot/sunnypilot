@@ -12,6 +12,7 @@ from openpilot.system.ui.widgets.scroller import Scroller
 
 from openpilot.sunnypilot.navd.navigationd import Navigationd
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.nav_text_autofill import AutofillInputDialogSP
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, multiple_button_item_sp
 
 
@@ -53,7 +54,10 @@ class NavigationLayout(Widget):
       return {}
 
   def _show_param_input(self, param, title):
-    InputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
+    if param == "MapboxRoute":
+      AutofillInputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
+    else:
+      InputDialogSP(title, current_text=self._params.get(param, return_default=True) or "", param=param).show()
 
   def _clear_route(self):
     self._navd.route = None
