@@ -1,13 +1,20 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from dataclasses import dataclass
 from enum import IntEnum
+
+import pyray as rl
 from openpilot.selfdrive.ui.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.device import DeviceLayoutSP
 from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
-from openpilot.system.ui.lib.application import gui_app,MousePos
+from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr_noop
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -23,12 +30,13 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import Steering
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import DisplayLayout
-#from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
+
+# from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
 
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
-OP.PanelType = IntEnum( # type: ignore
+OP.PanelType = IntEnum(  # type: ignore
   "PanelType",
   [es.name for es in OP.PanelType] + [
     "SUNNYLINK",
@@ -43,7 +51,8 @@ OP.PanelType = IntEnum( # type: ignore
     "VEHICLE",
   ],
   start=0,
-  )
+)
+
 
 @dataclass
 class PanelInfo(OP.PanelInfo):
@@ -56,7 +65,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     self._nav_items: list[Widget] = []
 
     # Create sidebar scroller
-    self._sidebar_scroller = Scroller([], spacing=0, line_separator = False, pad_end=False)
+    self._sidebar_scroller = Scroller([], spacing=0, line_separator=False, pad_end=False)
 
     # Panel configuration
     wifi_manager = WifiManager()
@@ -74,7 +83,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
       OP.PanelType.VISUALS: PanelInfo(tr_noop("Visuals"), VisualsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
       OP.PanelType.DISPLAY: PanelInfo(tr_noop("Display"), DisplayLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_display.png"),
       OP.PanelType.OSM: PanelInfo(tr_noop("OSM"), OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
-      #OP.PanelType.NAVIGATION: PanelInfo(tr_noop("Navigation"), NavigationLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
+      # OP.PanelType.NAVIGATION: PanelInfo(tr_noop("Navigation"), NavigationLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       OP.PanelType.TRIPS: PanelInfo(tr_noop("Trips"), TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
       OP.PanelType.VEHICLE: PanelInfo(tr_noop("Vehicle"), VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
       OP.PanelType.FIREHOSE: PanelInfo(tr_noop("Firehose"), FirehoseLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_firehose.png"),
@@ -138,7 +147,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
       close_btn_rect.y + (close_btn_rect.height - self._close_icon.height) / 2,
       self._close_icon.width,
       self._close_icon.height,
-      )
+    )
     rl.draw_texture_pro(
       self._close_icon,
       rl.Rectangle(0, 0, self._close_icon.width, self._close_icon.height),
@@ -171,7 +180,6 @@ class SettingsLayoutSP(OP.SettingsLayout):
     if self._nav_items:
       self._sidebar_scroller.render(nav_rect)
       return
-
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
     # Check close button
