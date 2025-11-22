@@ -9,6 +9,9 @@ from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.selfdrive.ui.ui_state import ui_state
 
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp as toggle_item
+
 PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
 
 # Description constants
