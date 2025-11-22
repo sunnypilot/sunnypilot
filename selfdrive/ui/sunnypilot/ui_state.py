@@ -38,6 +38,7 @@ class UIStateSP(UIState):
 
   def update_params(self) -> None:
     UIState.update_params(self)
+    self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
 
 # Global instance
 ui_state_sp = UIStateSP()

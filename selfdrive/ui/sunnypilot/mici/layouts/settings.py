@@ -36,6 +36,5 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     items.insert(1, sunnylink_btn)
     self._scroller._items.clear()
-    self._scroller._snap_items = True
     for item in items:
       self._scroller.add_widget(item)
