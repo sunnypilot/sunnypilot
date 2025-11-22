@@ -40,13 +40,14 @@ class ModelsLayout(Widget):
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self.current_model_item = button_item(tr("Current Model"), tr("SELECT"), "", self._handle_current_model_clicked)
-    self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "", self._refresh_models)
-    self.clear_cache_item = button_item(tr("Clear Model Cache"), tr("CLEAR"), "", self._clear_cache)
+    self.current_model_item = button_item(tr("Current Model"), tr("Select"), "", self._handle_current_model_clicked)
+    self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "", self._refresh_models)
+    self.clear_cache_item = button_item(tr("Clear Model Cache"), tr("Clear"), "", self._clear_cache)
     self.supercombo_label = progress_item(tr("Driving Model"))
     self.navigation_label = progress_item(tr("Navigation Model"))
     self.vision_label = progress_item(tr("Vision Model"))
     self.policy_label = progress_item(tr("Policy Model"))
+    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", self._cancel_download)
 
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
       tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. " +
@@ -66,24 +67,8 @@ class ModelsLayout(Widget):
       1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v/100:.2f}s")
 
     self.items = [self.current_model_item, self.refresh_item, self.clear_cache_item, self.supercombo_label,
-                  self.vision_label, self.policy_label, self.lane_turn_desire_toggle, self.lane_turn_value_control,
+                  self.vision_label, self.policy_label, self.cancel_download_item, self.lane_turn_desire_toggle, self.lane_turn_value_control,
                   self.lagd_toggle, self.delay_control]
-
-  def _render(self, rect):
-    self._scroller.render(rect)
-    self.update_labels()
-
-  def show_event(self):
-    self._scroller.show_event()
-    self.update_labels()
-
-  def update_labels(self):
-    self._update_lane_turn_step()
-    self.update_model_manager_state()
-    self.handle_bundle_download_progress()
-    self.current_model_item.action_item.set_value(self.get_active_model_internal_name())
-    self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
-    self._update_lagd_description()
 
   def _set_init_oc_value(self, control, param_key, default, scale=100):
     value_str = self._params.get(param_key, default)
@@ -121,6 +106,8 @@ class ModelsLayout(Widget):
     for l in labels.values():
       l.set_visible(False)
 
+    self.cancel_download_item.set_visible(False)
+
     if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
       return
 
@@ -130,6 +117,8 @@ class ModelsLayout(Widget):
 
     self.download_status = bundle.status
     status_changed = self.prev_download_status != self.download_status
+
+    self.cancel_download_item.set_visible(bool(sb) and bool(self._params.get("ModelManager_DownloadIndex")))
 
     for model in bundle.models:
       if label := labels.get(model.type.raw if hasattr(model.type, 'raw') else model.type):
@@ -211,7 +200,6 @@ class ModelsLayout(Widget):
           self._params.put("ModelManager_DownloadIndex", selected_bundle.index)
           if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
             self.show_reset_params_dialog()
-        self.update_labels()
 
     gui_app.set_modal_overlay(dialog, callback=callback)
 
@@ -238,6 +226,9 @@ class ModelsLayout(Widget):
       self._params.remove("CalibrationParams")
       self._params.remove("LiveTorqueParameters")
 
+  def _cancel_download(self):
+    self._params.remove("ModelManager_DownloadIndex")
+
   def calculate_cache_size(self):
     model_dir = CUSTOM_MODEL_PATH
     if not os.path.exists(model_dir):
@@ -248,3 +239,20 @@ class ModelsLayout(Widget):
       if os.path.isfile(path):
         total_size += os.path.getsize(path)
     return total_size / (1024 * 1024)
+
+  def _update_state(self):
+    self.update_labels()
+
+  def _render(self, rect):
+    self._scroller.render(rect)
+
+  def show_event(self):
+    self._scroller.show_event()
+
+  def update_labels(self):
+    self._update_lane_turn_step()
+    self.update_model_manager_state()
+    self.handle_bundle_download_progress()
+    self.current_model_item.action_item.set_value(self.get_active_model_internal_name())
+    self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
+    self._update_lagd_description()
