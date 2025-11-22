@@ -43,11 +43,11 @@ class ModelsLayout(Widget):
     self.current_model_item = button_item(tr("Current Model"), tr("Select"), "", self._handle_current_model_clicked)
     self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "", self._refresh_models)
     self.clear_cache_item = button_item(tr("Clear Model Cache"), tr("Clear"), "", self._clear_cache)
+    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", self._cancel_download)
     self.supercombo_label = progress_item(tr("Driving Model"))
     self.navigation_label = progress_item(tr("Navigation Model"))
     self.vision_label = progress_item(tr("Vision Model"))
     self.policy_label = progress_item(tr("Policy Model"))
-    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", self._cancel_download)
 
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
       tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. " +
@@ -66,8 +66,8 @@ class ModelsLayout(Widget):
       tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
       1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v/100:.2f}s")
 
-    self.items = [self.current_model_item, self.refresh_item, self.clear_cache_item, self.supercombo_label,
-                  self.vision_label, self.policy_label, self.cancel_download_item, self.lane_turn_desire_toggle, self.lane_turn_value_control,
+    self.items = [self.current_model_item, self.refresh_item, self.clear_cache_item, self.cancel_download_item, self.supercombo_label,
+                  self.vision_label, self.policy_label, self.lane_turn_desire_toggle, self.lane_turn_value_control,
                   self.lagd_toggle, self.delay_control]
 
   def _set_init_oc_value(self, control, param_key, default, scale=100):
