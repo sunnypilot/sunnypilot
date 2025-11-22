@@ -118,6 +118,9 @@ class MiciHomeLayout(Widget):
     self._branch_label = MiciLabel("", font_size=36, color=rl.GRAY, font_weight=FontWeight.ROMAN, elide_right=False, scroll=True)
     self._version_commit_label = MiciLabel("", font_size=36, color=rl.GRAY, font_weight=FontWeight.ROMAN)
 
+    if gui_app.sunnypilot_ui():
+      self._openpilot_label.set_text("sunnypilot")
+
   def show_event(self):
     self._version_text = self._get_version_text()
     self._update_network_status(ui_state.sm['deviceState'])
