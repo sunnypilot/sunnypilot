@@ -18,6 +18,7 @@ from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.test.helpers import with_processes
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.updated.updated import parse_release_notes
+from openpilot.system.version import terms_version, training_version
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -148,7 +149,7 @@ def setup_experimental_mode_description(click, pm: PubMaster):
 
 def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster):
   setup_settings_developer(click, pm)
-  click(2000, 960)  # toggle openpilot longitudinal control
+  click(650, 960)  # toggle openpilot longitudinal control
 
 
 def setup_onroad(click, pm: PubMaster):
@@ -246,6 +247,7 @@ CASES = {
 class TestUI:
   def __init__(self):
     os.environ["SCALE"] = os.getenv("SCALE", "1")
+    os.environ["BIG"] = "1"
     sys.modules["mouseinfo"] = False
 
   def setup(self):
@@ -296,6 +298,10 @@ def create_screenshots():
       # Set branch name
       params.put("UpdaterCurrentDescription", VERSION)
       params.put("UpdaterNewDescription", VERSION)
+
+      # Set terms and training version (to skip onboarding)
+      params.put("HasAcceptedTerms", terms_version)
+      params.put("CompletedTrainingVersion", training_version)
 
       if name == "homescreen_paired":
         params.put("PrimeType", 0)  # NONE
