@@ -1,6 +1,12 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from collections.abc import Callable
+
+import pyray as rl
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction
@@ -13,11 +19,15 @@ class ToggleActionSP(ToggleAction):
     ToggleAction.__init__(self, initial_state, width, enabled, callback)
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
+
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
                description_visible: bool = False, callback: Callable | None = None,
                action_item: ItemAction | None = None):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
+
+  def show_description(self, show: bool):
+    self._set_description_visible(show)
 
   def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
     if not self.action_item:
@@ -48,7 +58,7 @@ class ListItemSP(ListItem):
         style.TOGGLE_WIDTH,
         style.TOGGLE_HEIGHT
       )
-      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING
+      text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
 
       # Draw title
       if self.title:
@@ -89,7 +99,8 @@ class ListItemSP(ListItem):
       )
       self._html_renderer.render(description_rect)
 
+
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
-                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItem:
+                   callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
