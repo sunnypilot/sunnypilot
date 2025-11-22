@@ -33,6 +33,10 @@ class ModelsLayout(Widget):
     self._initialize_items()
     self.lane_turn_value_control.set_visible(self._params.get_bool("LaneTurnDesire"))
     self.delay_control.set_visible(not self._params.get_bool("LagdToggle"))
+
+    self._set_init_oc_value(self.lane_turn_value_control, "LaneTurnValue", "19.0")
+    self._set_init_oc_value(self.delay_control, "LagdToggleDelay", "0.2")
+
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
@@ -80,6 +84,11 @@ class ModelsLayout(Widget):
     self.current_model_item.action_item.set_value(self.get_active_model_internal_name())
     self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
     self._update_lagd_description()
+
+  def _set_init_oc_value(self, control, param_key, default, scale=100):
+    value_str = self._params.get(param_key, default)
+    value = int(float(value_str) * scale)
+    control.action_item.set_value(value)
 
   def _update_lane_turn_step(self):
     new_step = int(round(100 / CV.MPH_TO_KPH)) if self._params.get_bool("IsMetric") else 100
