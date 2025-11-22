@@ -137,7 +137,7 @@ class ModelsLayout(Widget):
         p = model.artifact.downloadProgress
         name = bundle.displayName
 
-        text, show, color = f"pending - {name}", False, rl.BLACK
+        text, show, color = f"pending - {name}", False, rl.GRAY
         if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
           text, show = f"{int(p.progress)}% - {name}", True
         elif p.status == custom.ModelManagerSP.DownloadStatus.downloaded:
