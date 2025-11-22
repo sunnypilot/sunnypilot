@@ -3,6 +3,7 @@ import threading
 import time
 import json
 
+from cereal import messaging
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID, SunnylinkApi
@@ -86,6 +87,7 @@ class SunnylinkState:
     self._lock = threading.Lock()
     self._running = False
     self._thread = None
+    self._sm = messaging.SubMaster(['deviceState'])
 
     self._roles: list[Role] = []
     self._users: list[User] = []
@@ -149,8 +151,9 @@ class SunnylinkState:
 
   def _worker_thread(self) -> None:
     while self._running:
-      self._fetch_roles()
-      self._fetch_users()
+      if self.is_connected():
+        self._fetch_roles()
+        self._fetch_users()
 
       for _ in range(int(self.FETCH_INTERVAL / self.SLEEP_INTERVAL)):
         if not self._running:
@@ -183,6 +186,10 @@ class SunnylinkState:
     with self._lock:
       is_paired = any(user.user_id not in self.NOT_PAIRED_USERNAMES for user in self._users)
       return is_paired
+
+  def is_connected(self) -> bool:
+    network_type = self._sm["deviceState"].networkType
+    return bool(network_type != 0)
 
   def __del__(self):
     self.stop()
