@@ -23,8 +23,9 @@ class ToggleActionSP(ToggleAction):
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
                description_visible: bool = False, callback: Callable | None = None,
-               action_item: ItemAction | None = None):
+               action_item: ItemAction | None = None, title_color: rl.Color = style.ITEM_TEXT_COLOR):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
+    self.title_color = title_color
 
   def show_description(self, show: bool):
     self._set_description_visible(show)
@@ -64,7 +65,7 @@ class ListItemSP(ListItem):
       if self.title:
         text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
         item_y = self._rect.y + (style.ITEM_BASE_HEIGHT - text_size.y) // 2
-        rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, style.ITEM_TEXT_COLOR)
+        rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, self.title_color)
 
       # Render toggle and handle callback
       if self.action_item.render(left_rect) and self.action_item.enabled:
@@ -76,7 +77,7 @@ class ListItemSP(ListItem):
         # Draw main text
         text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
         item_y = self._rect.y + (style.ITEM_BASE_HEIGHT - text_size.y) // 2
-        rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, style.ITEM_TEXT_COLOR)
+        rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, self.title_color)
 
         # Draw right item if present
         if self.action_item:

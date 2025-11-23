@@ -47,5 +47,10 @@ class DefaultStyleSP(Base):
   TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
   TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255)  # Lighter Grey
 
+  # Vehicle Description Colors
+  GREEN = rl.Color(0, 241, 0, 255)
+  BLUE = rl.Color(0, 134, 233, 255)
+  YELLOW = rl.Color(255, 213, 0, 255)
+
 
 style = DefaultStyleSP
