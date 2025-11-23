@@ -18,9 +18,9 @@ from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
 from opendbc.sunnypilot.car.platform_list import CAR_LIST_JSON_OUT
 from openpilot.system.ui.sunnypilot.lib.styles import style
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 
 
 class LegendWidget(Widget):

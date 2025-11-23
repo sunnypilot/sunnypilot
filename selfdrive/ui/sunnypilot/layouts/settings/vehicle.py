@@ -4,20 +4,19 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from openpilot.common.params import Params
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import ButtonAction
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 from openpilot.selfdrive.ui.sunnypilot.layouts.vehicle_settings.platform_selector import PlatformSelector, LegendWidget
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 
 
 class VehicleLayout(Widget):
   def __init__(self):
     super().__init__()
-    self._params = Params()
     self._platform_selector = PlatformSelector(self._update_brand_settings)
 
     self._vehicle_item = ListItemSP(title=self._platform_selector.text, action_item=ButtonAction(text=tr("Select")),
@@ -31,7 +30,7 @@ class VehicleLayout(Widget):
   def _update_brand_settings(self):
     self._vehicle_item._title = self._platform_selector.text
     self._vehicle_item.title_color = self._platform_selector.color
-    vehicle_text = tr("Remove") if self._params.get("CarPlatformBundle") else tr("Select")
+    vehicle_text = tr("Remove") if ui_state_sp.params.get("CarPlatformBundle") else tr("Select")
     self._vehicle_item.action_item.set_text(vehicle_text)
 
   def _update_state(self):
