@@ -24,6 +24,10 @@ class Base:
   TOGGLE_WIDTH = int(TOGGLE_HEIGHT * 1.75)
   TOGGLE_BG_HEIGHT = TOGGLE_HEIGHT - 20
 
+  # Button Control
+  BUTTON_WIDTH = 250
+  BUTTON_HEIGHT = 100
+
 
 @dataclass
 class DefaultStyleSP(Base):
