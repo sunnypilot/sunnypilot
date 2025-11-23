@@ -72,10 +72,10 @@ class SteeringLayout(Widget):
     )
 
     items = [
+      self._lane_change_settings_button,
+      LineSeparator(),
       self._mads_toggle,
       self._mads_settings_button,
-      LineSeparator(),
-      self._lane_change_settings_button,
       LineSeparator(),
       self._blinker_control_toggle,
       self._blinker_control_options,
