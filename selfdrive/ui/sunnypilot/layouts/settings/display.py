@@ -2,7 +2,6 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
-from openpilot.common.params import Params
 
 onroad_brightness_timer_values = {
   0: 15,
@@ -23,7 +22,6 @@ class DisplayLayout(Widget):
   def __init__(self):
     super().__init__()
 
-    self._params = Params()
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
