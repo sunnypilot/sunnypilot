@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import pyray as rl
 
 from cereal import messaging, car, custom
@@ -9,7 +10,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.list_view import button_item
+from openpilot.system.ui.widgets.list_view import button_item, ButtonAction, ListItem
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -21,6 +22,11 @@ from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 
 
+class NoElide(ButtonAction):
+  def get_width_hint(self):
+    return super().get_width_hint() + 20
+
+
 class ModelsLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -29,13 +35,15 @@ class ModelsLayout(Widget):
     self.download_status = None
     self.prev_download_status = None
     self.model_dialog = None
+    self.last_cache_calc_time = 0
+    self.cached_size = 0.0
 
-    self.current_model_item = button_item(tr("Current Model"), tr("Select"), "", self._handle_current_model_clicked)
+    self.current_model_item = ListItem(tr("Current Model"), "", action_item=NoElide(tr("Select"), enabled=True), callback=self._handle_current_model_clicked)
     self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "", lambda: (
       self._params.put("ModelManager_LastSyncTime", 0),
       gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))
     ))
-    self.clear_cache_item = button_item(tr("Clear Model Cache"), tr("Clear"), "", self._clear_cache)
+    self.clear_cache_item = ListItem(tr("Clear Model Cache"), "", action_item=NoElide(tr("Clear"), enabled=True), callback=self._clear_cache)
     self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", lambda: self._params.remove("ModelManager_DownloadIndex"))
 
     self.supercombo_label = progress_item(tr("Driving Model"))
@@ -129,7 +137,7 @@ class ModelsLayout(Widget):
     for bundle in bundles:
       folders.setdefault(next((ov_ride.value for ov_ride in bundle.overrides if ov_ride.key == "folder"), ""), []).append(bundle)
 
-    folders_list = [TreeFolder("", [TreeNode("", tr("Default"), "Default", -1)])]
+    folders_list = [TreeFolder("", [TreeNode("", tr("Default Model"), "Default", -1)])]
     for folder, bundles in sorted(folders.items(), key=lambda x: max((bundle.index for bundle in x[1]), default=-1), reverse=True):
       bundles.sort(key=lambda bundle: bundle.index, reverse=True)
       name = folder + (f" - (Updated: {m.group(1)})" if bundles and (m := re.search(r'\(([^)]*)\)[^(]*$', bundles[0].displayName)) else "")
@@ -171,10 +179,12 @@ class ModelsLayout(Widget):
     gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration"), tr("Cancel")), callback=_callback)
 
   def _calculate_cache_size(self):
-    if not os.path.exists(CUSTOM_MODEL_PATH):
-      return 0.0
-    return sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)
-               if os.path.isfile(os.path.join(CUSTOM_MODEL_PATH, file))) / (1024 * 1024)
+    if (_time := time.monotonic()) - self.last_cache_calc_time > 0.2:
+      self.last_cache_calc_time = _time
+      self.cached_size = 0
+      if os.path.exists(CUSTOM_MODEL_PATH):
+        self.cached_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
+    return self.cached_size
 
   def _update_state(self):
     new_step = int(round(100 / CV.MPH_TO_KPH)) if self._params.get_bool("IsMetric") else 100
@@ -183,7 +193,7 @@ class ModelsLayout(Widget):
 
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default"
+    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default Model"
     self.current_model_item.action_item.set_value(active_name)
     self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
     self._update_lagd_description()
