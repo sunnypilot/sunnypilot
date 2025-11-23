@@ -153,47 +153,57 @@ def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster, scroll=None):
   setup_settings_developer(click, pm, scroll=scroll)
   click(650, 960)  # toggle openpilot longitudinal control
 
+
 def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   click(278, 600)
+
 
 def setup_settings_models(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   click(278, 950)
 
+
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   click(278, 1040)
+
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-40, 278, 950)
   click(278, 1040)
 
+
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 330)
+
 
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 450)
 
+
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 600)
+
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 720)
 
+
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 845)
+
 
 def setup_onroad(click, pm: PubMaster, scroll=None):
   ds = messaging.new_message('deviceState')
