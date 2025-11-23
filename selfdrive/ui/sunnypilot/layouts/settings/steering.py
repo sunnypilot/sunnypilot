@@ -7,22 +7,25 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, sim
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget
-from openpilot.common.params import Params
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.lane_change_settings import LaneChangeSettingsLayout
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.mads_settings import MadsSettingsLayout
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.torque_settings import TorqueSettingsLayout
+
 
 class PanelType(IntEnum):
   STEERING = 0
   MADS = 1
   LANE_CHANGE = 2
   TORQUE_CONTROL = 3
-  PAUSE_BLINKER = 4
 
 class SteeringLayout(Widget):
   def __init__(self):
     super().__init__()
 
-    self._params = Params()
     self._current_panel = PanelType.STEERING
-    self._back_button = NavButton(tr("Back"))
+    self._lane_change_settings_layout = LaneChangeSettingsLayout(lambda: self._set_current_panel(PanelType.STEERING))
+    self._mads_settings_layout = MadsSettingsLayout(lambda: self._set_current_panel(PanelType.STEERING))
+    self._torque_control_layout = TorqueSettingsLayout(lambda: self._set_current_panel(PanelType.STEERING))
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=False, spacing=0)
@@ -36,11 +39,13 @@ class SteeringLayout(Widget):
     )
     self._mads_settings_button = simple_button_item_sp(
       button_text=lambda: tr("Customize MADS"),
-      button_width=600
+      button_width=600,
+      callback=lambda: self._set_current_panel(PanelType.MADS)
     )
     self._lane_change_settings_button = simple_button_item_sp(
       button_text=lambda: tr("Customize Lane Change"),
-      button_width=800
+      button_width=800,
+      callback=lambda: self._set_current_panel(PanelType.LANE_CHANGE)
     )
     self._blinker_control_toggle = toggle_item_sp(
       param="BlinkerPauseLateralControl",
@@ -63,7 +68,8 @@ class SteeringLayout(Widget):
     )
     self._torque_customization_button = simple_button_item_sp(
       button_text=lambda: tr("Customize Torque Params"),
-      button_width=850
+      button_width=850,
+      callback=lambda: self._set_current_panel(PanelType.TORQUE_CONTROL)
     )
     self._nnlc_toggle = toggle_item_sp(
       param="NeuralNetworkLateralControl",
@@ -87,6 +93,9 @@ class SteeringLayout(Widget):
     ]
     return items
 
+  def _set_current_panel(self, panel: PanelType):
+    self._current_panel = panel
+
   def _update_state(self):
     super()._update_state()
     self._mads_toggle.action_item.set_enabled(ui_state_sp.is_offroad())
@@ -97,12 +106,15 @@ class SteeringLayout(Widget):
 
 
   def _render(self, rect):
-    self._back_button.set_position(self._rect.x, self._rect.y + 20)
-    self._back_button.render()
-    # subtract button
-    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40,
-                                rect.width, rect.height - self._back_button.rect.height - 40)
-    self._scroller.render(content_rect)
+    if self._current_panel == PanelType.LANE_CHANGE:
+      self._lane_change_settings_layout.render(rect)
+    elif self._current_panel == PanelType.MADS:
+      self._mads_settings_layout.render(rect)
+    elif self._current_panel == PanelType.TORQUE_CONTROL:
+      self._torque_control_layout.render(rect)
+    else:
+      self._scroller.render(rect)
 
   def show_event(self):
+    self._set_current_panel(PanelType.STEERING)
     self._scroller.show_event()
