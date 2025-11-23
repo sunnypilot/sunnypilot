@@ -9,7 +9,6 @@ from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDial
 from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget, DialogResult
-from openpilot.common.params import Params
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
 
@@ -17,11 +16,10 @@ class SunnylinkLayout(Widget):
   def __init__(self):
     super().__init__()
 
-    self._params = Params()
     self._sunnylink_pairing_dialog: SunnylinkPairingDialog | None = None
     self._restore_in_progress = False
     self._backup_in_progress = False
-    self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
+    self._sunnylink_enabled = ui_state_sp.params.get("SunnylinkEnabled")
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
@@ -31,7 +29,8 @@ class SunnylinkLayout(Widget):
       title=tr("Enable sunnylink"),
       description=tr(
         "This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that."),
-      param="SunnylinkEnabled"
+      param="SunnylinkEnabled",
+      callback=self._sunnylink_toggle_callback
     )
     self._sponsor_btn = button_item(
       title=tr("Sponsor Status"),
@@ -75,7 +74,7 @@ class SunnylinkLayout(Widget):
     return items
 
   def _handle_pair_btn(self, sponsor_pairing: bool = False):
-    sunnylink_dongle_id = self._params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
+    sunnylink_dongle_id = ui_state_sp.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
     if sunnylink_dongle_id == UNREGISTERED_SUNNYLINK_DONGLE_ID:
       gui_app.set_modal_overlay(alert_dialog(message=tr("sunnylink Dongle ID not found. ") +
                                                      tr("This may be due to weak internet connection or sunnylink registration issue. ") +
@@ -85,10 +84,8 @@ class SunnylinkLayout(Widget):
       gui_app.set_modal_overlay(self._sunnylink_pairing_dialog, callback=lambda result: setattr(self, '_sunnylink_pairing_dialog', None))
 
   def _handle_backup_btn(self):
-    gui_app.set_modal_overlay(alert_dialog(message=tr("Backup functionality is currently not available.") +
-                                                   tr(" It will be back once all settings are implemented on raylib.")))
-    # backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup")
-    # gui_app.set_modal_overlay(backup_dialog, callback=self._backup_handler)
+    backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup")
+    gui_app.set_modal_overlay(backup_dialog, callback=self._backup_handler)
 
   def _handle_restore_btn(self):
     self._restore_btn.set_enabled(False)
@@ -99,13 +96,13 @@ class SunnylinkLayout(Widget):
     if dialog_result == DialogResult.CONFIRM:
       self._backup_in_progress = True
       self._backup_btn.set_enabled(False)
-      self._params.put_bool("BackupManager_CreateBackup", True)
+      ui_state_sp.params.put_bool("BackupManager_CreateBackup", True)
 
   def _restore_handler(self, dialog_result: int):
     if dialog_result == DialogResult.CONFIRM:
       self._restore_in_progress = True
       self._restore_btn.set_enabled(False)
-      self._params.put("BackupManager_RestoreVersion", "latest")
+      ui_state_sp.params.put("BackupManager_RestoreVersion", "latest")
 
   def handle_backup_restore_progress(self):
     sunnylink_backup_manager = ui_state_sp.sm["backupManagerSP"]
@@ -158,9 +155,13 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
 
+  def _sunnylink_toggle_callback(self, state: bool):
+    ui_state_sp.params.put_bool("SunnylinkEnabled", state)
+    ui_state_sp.update_params()
+
   def _update_state(self):
     super()._update_state()
-    self._sunnylink_enabled = self._params.get("SunnylinkEnabled")
+    self._sunnylink_enabled = ui_state_sp.sunnylink_enabled
     self._sunnylink_toggle.action_item.set_enabled(not ui_state_sp.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
@@ -178,4 +179,6 @@ class SunnylinkLayout(Widget):
     self._scroller.render(rect)
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
+    ui_state_sp.update_params()
