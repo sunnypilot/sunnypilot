@@ -3,7 +3,6 @@ from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, multiple_button_item_sp
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
-from openpilot.common.params import Params
 
 CHEVRON_INFO_DESCRIPTION = {
   "enabled": tr_noop("Display useful metrics below the chevron that tracks the lead car " +
@@ -17,7 +16,6 @@ class VisualsLayout(Widget):
   def __init__(self):
     super().__init__()
 
-    self._params = Params()
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
@@ -115,7 +113,7 @@ class VisualsLayout(Widget):
     else:
       self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["disabled"]))
       self._chevron_info.action_item.set_enabled(False)
-      self._params.put("ChevronInfo", 0)
+      ui_state_sp.params.put("ChevronInfo", 0)
 
     self.hide_for_now()
 
