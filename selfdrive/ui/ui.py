@@ -9,8 +9,7 @@ from openpilot.selfdrive.ui.layouts.main import MainLayout
 from openpilot.selfdrive.ui.mici.layouts.main import MiciMainLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 
-from openpilot.common.params import Params
-if Params().get_bool("sunnypilot_ui"):
+if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp as ui_state
 
 def main():
