@@ -1,0 +1,63 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from opendbc.car.subaru.values import CAR, SubaruFlags
+
+
+class SubaruSettings:
+  def __init__(self):
+    self.ui_state = None
+    self.offroad = False
+    self.is_subaru = False
+    self.has_stop_and_go = False
+
+    self.stop_and_go_toggle = toggle_item_sp(tr("Stop and Go (Beta)"), "", param="SubaruStopAndGo", callback=self._on_toggle_changed)
+
+    self.stop_and_go_manual_parking_brake_toggle = toggle_item_sp(tr("Stop and Go for Manual Parking Brake (Beta)"), "",
+                                                                  param="SubaruStopAndGoManualParkingBrake", callback=self._on_toggle_changed)
+
+    self.items = [self.stop_and_go_toggle, self.stop_and_go_manual_parking_brake_toggle]
+
+  def _on_toggle_changed(self, _):
+    self.update_settings()
+
+  def stop_and_go_disabled_msg(self):
+    if self.is_subaru and not self.has_stop_and_go:
+      return tr("This feature is currently not available on this platform.")
+    elif not self.offroad:
+      return tr("Enable Always Offroad in Device panel, or turn vehicle off to toggle.")
+
+  def update_settings(self):
+    self.is_subaru = False
+    self.has_stop_and_go = False
+
+    bundle = self.ui_state.params.get("CarPlatformBundle")
+    if bundle:
+      platform = bundle.get("platform")
+      config = CAR[platform].config
+      self.is_subaru = True
+      self.has_stop_and_go = not (config.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
+    elif self.ui_state.CP:
+      self.is_subaru = True
+      self.has_stop_and_go = not (self.ui_state.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
+
+    disabled_msg = self.stop_and_go_disabled_msg()
+    descriptions = [
+      tr("Experimental feature to enable auto-resume during stop-and-go for certain supported Subaru platforms."),
+      tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. " +
+         "Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!")
+    ]
+
+    for toggle, desc in zip([self.stop_and_go_toggle, self.stop_and_go_manual_parking_brake_toggle], descriptions, strict=True):
+      toggle.action_item.set_enabled(self.has_stop_and_go and self.offroad)
+      toggle.set_description(f"<b>{disabled_msg}</b><br><br>{desc}" if disabled_msg else desc)
+
+  def update_state(self, ui_state):
+    self.ui_state = ui_state
+    self.offroad = ui_state.params.get_bool("IsOffroad")
+    self.update_settings()

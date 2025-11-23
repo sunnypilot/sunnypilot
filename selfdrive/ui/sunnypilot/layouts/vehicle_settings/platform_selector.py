@@ -9,8 +9,6 @@ import pyray as rl
 from collections.abc import Callable
 from functools import partial
 
-from cereal import car
-from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -20,6 +18,7 @@ from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
 from opendbc.sunnypilot.car.platform_list import CAR_LIST_JSON_OUT
 from openpilot.system.ui.sunnypilot.lib.styles import style
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
 
@@ -57,7 +56,6 @@ class PlatformSelector(Button):
   def __init__(self, on_platform_change: Callable[[], None] | None = None):
     super().__init__(tr("Vehicle"), self._on_clicked, button_style=ButtonStyle.NORMAL)
     self.set_rect(rl.Rectangle(0, 0, 0, 120))
-    self._params = Params()
 
     with open(CAR_LIST_JSON_OUT) as car_list_json:
       self._platforms = json.load(car_list_json)
@@ -75,8 +73,8 @@ class PlatformSelector(Button):
     self._rect.width = parent_rect.width
 
   def _on_clicked(self):
-    if self._params.get("CarPlatformBundle"):
-      self._params.remove("CarPlatformBundle")
+    if ui_state_sp.params.get("CarPlatformBundle"):
+      ui_state_sp.params.remove("CarPlatformBundle")
       self.refresh(self._offroad)
       if self._on_platform_change:
         self._on_platform_change()
@@ -85,7 +83,7 @@ class PlatformSelector(Button):
 
   def _set_platform(self, platform_name):
     if data := self._platforms.get(platform_name):
-      self._params.put("CarPlatformBundle", {**data, "name": platform_name})
+      ui_state_sp.params.put("CarPlatformBundle", {**data, "name": platform_name})
       self.refresh(self._offroad)
       if self._on_platform_change:
         self._on_platform_change()
@@ -116,15 +114,14 @@ class PlatformSelector(Button):
     self._platform = tr("Unrecognized Vehicle")
     self.set_text(tr("No vehicle selected"))
 
-    if bundle := self._params.get("CarPlatformBundle"):
+    if bundle := ui_state_sp.params.get("CarPlatformBundle"):
       self._platform = bundle.get("name", "")
       self.brand = bundle.get("brand", "")
       self.set_text(self._platform)
       self.color = style.BLUE
-    elif cp_bytes := self._params.get("CarParamsPersistent"):
-      with car.CarParams.from_bytes(cp_bytes) as CP:
-        if CP.carFingerprint != "MOCK":
-          self._platform = CP.carFingerprint
-          self.set_text(self._platform)
-          self.color = style.GREEN
+    elif ui_state_sp.CP and ui_state_sp.CP.carFingerprint != "MOCK":
+      self._platform = ui_state_sp.CP.carFingerprint
+      self.brand = ui_state_sp.CP.brand
+      self.set_text(self._platform)
+      self.color = style.GREEN
     self.set_enabled(True)
