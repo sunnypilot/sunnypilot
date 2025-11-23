@@ -9,7 +9,7 @@ import pyray as rl
 from collections.abc import Callable
 from functools import partial
 
- from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
