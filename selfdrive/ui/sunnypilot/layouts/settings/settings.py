@@ -60,6 +60,43 @@ class PanelInfo(OP.PanelInfo):
   icon: str = ""
 
 
+class NavButton(Widget):
+  def __init__(self, parent, p_type, p_info):
+    super().__init__()
+    self.parent = parent
+    self.panel_type = p_type
+    self.panel_info = p_info
+
+  def _render(self, rect):
+    is_selected = self.panel_type == self.parent._current_panel
+    text_color = OP.TEXT_SELECTED if is_selected else OP.TEXT_NORMAL
+    content_x = rect.x + 90
+    text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
+
+    # Draw background if selected
+    if is_selected:
+      self.container_rect = rl.Rectangle(
+        content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT
+      )
+      rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
+
+    if self.panel_info.icon:
+      icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
+      rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2),
+                      rl.WHITE)
+      content_x += ICON_SIZE + 20
+
+    # Draw button text (right-aligned)
+    text_pos = rl.Vector2(
+      content_x,
+      rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
+    )
+    rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
+
+    # Store button rect for click detection
+    self.panel_info.button_rect = rect
+
+
 class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
@@ -90,44 +127,6 @@ class SettingsLayoutSP(OP.SettingsLayout):
       OP.PanelType.FIREHOSE: PanelInfo(tr_noop("Firehose"), FirehoseLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_firehose.png"),
       OP.PanelType.DEVELOPER: PanelInfo(tr_noop("Developer"), DeveloperLayout(), icon="icons/shell.png"),
     }
-
-  def _create_nav_button(self, panel_type: OP.PanelType, panel_info: PanelInfo) -> Widget:
-    class NavButton(Widget):
-      def __init__(self, parent, p_type, p_info):
-        super().__init__()
-        self.parent = parent
-        self.panel_type = p_type
-        self.panel_info = p_info
-
-      def _render(self, rect):
-        is_selected = self.panel_type == self.parent._current_panel
-        text_color = OP.TEXT_SELECTED if is_selected else OP.TEXT_NORMAL
-        content_x = rect.x + 90
-        text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
-
-        # Draw background if selected
-        if is_selected:
-          self.container_rect = rl.Rectangle(
-            content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT
-          )
-          rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
-
-        if self.panel_info.icon:
-          icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
-          rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2), rl.WHITE)
-          content_x += ICON_SIZE + 20
-
-        # Draw button text (right-aligned)
-        text_pos = rl.Vector2(
-          content_x,
-          rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
-        )
-        rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
-
-        # Store button rect for click detection
-        self.panel_info.button_rect = rect
-
-    return NavButton(self, panel_type, panel_info)
 
   def _draw_sidebar(self, rect: rl.Rectangle):
     rl.draw_rectangle_rec(rect, OP.SIDEBAR_COLOR)
@@ -164,7 +163,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Navigation buttons with scroller
     if not self._nav_items:
       for panel_type, panel_info in self._panels.items():
-        nav_button = self._create_nav_button(panel_type, panel_info)
+        nav_button = NavButton(self, panel_type, panel_info)
         nav_button.rect.width = rect.width - 100  # Full width minus padding
         nav_button.rect.height = OP.NAV_BTN_HEIGHT
         self._nav_items.append(nav_button)
