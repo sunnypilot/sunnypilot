@@ -172,7 +172,7 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-140, 278, 950)
-  click(278, 990)
+  click(278, 820)  # scrolling bounce moves the slider a bit more than expected, so we adjust for the offset
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
