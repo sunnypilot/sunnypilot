@@ -1,14 +1,22 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from dataclasses import dataclass
 from enum import IntEnum
+
+import pyray as rl
 from openpilot.selfdrive.ui.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.device import DeviceLayoutSP
 from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
-from openpilot.system.ui.lib.application import gui_app,MousePos
+from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr_noop
+from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets.network import NetworkUI
@@ -23,12 +31,13 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import Steering
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import DisplayLayout
-#from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
+
+# from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
 
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
-OP.PanelType = IntEnum( # type: ignore
+OP.PanelType = IntEnum(  # type: ignore
   "PanelType",
   [es.name for es in OP.PanelType] + [
     "SUNNYLINK",
@@ -43,11 +52,49 @@ OP.PanelType = IntEnum( # type: ignore
     "VEHICLE",
   ],
   start=0,
-  )
+)
+
 
 @dataclass
 class PanelInfo(OP.PanelInfo):
   icon: str = ""
+
+
+class NavButton(Widget):
+  def __init__(self, parent, p_type, p_info):
+    super().__init__()
+    self.parent = parent
+    self.panel_type = p_type
+    self.panel_info = p_info
+
+  def _render(self, rect):
+    is_selected = self.panel_type == self.parent._current_panel
+    text_color = OP.TEXT_SELECTED if is_selected else OP.TEXT_NORMAL
+    content_x = rect.x + 90
+    text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
+
+    # Draw background if selected
+    if is_selected:
+      self.container_rect = rl.Rectangle(
+        content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT
+      )
+      rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
+
+    if self.panel_info.icon:
+      icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
+      rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2),
+                      rl.WHITE)
+      content_x += ICON_SIZE + 20
+
+    # Draw button text (right-aligned)
+    text_pos = rl.Vector2(
+      content_x,
+      rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
+    )
+    rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
+
+    # Store button rect for click detection
+    self.panel_info.button_rect = rect
 
 
 class SettingsLayoutSP(OP.SettingsLayout):
@@ -56,7 +103,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     self._nav_items: list[Widget] = []
 
     # Create sidebar scroller
-    self._sidebar_scroller = Scroller([], spacing=0, line_separator = False, pad_end=False)
+    self._sidebar_scroller = Scroller([], spacing=0, line_separator=False, pad_end=False)
 
     # Panel configuration
     wifi_manager = WifiManager()
@@ -74,57 +121,19 @@ class SettingsLayoutSP(OP.SettingsLayout):
       OP.PanelType.VISUALS: PanelInfo(tr_noop("Visuals"), VisualsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
       OP.PanelType.DISPLAY: PanelInfo(tr_noop("Display"), DisplayLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_display.png"),
       OP.PanelType.OSM: PanelInfo(tr_noop("OSM"), OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
-      #OP.PanelType.NAVIGATION: PanelInfo(tr_noop("Navigation"), NavigationLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
+      # OP.PanelType.NAVIGATION: PanelInfo(tr_noop("Navigation"), NavigationLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       OP.PanelType.TRIPS: PanelInfo(tr_noop("Trips"), TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
       OP.PanelType.VEHICLE: PanelInfo(tr_noop("Vehicle"), VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
       OP.PanelType.FIREHOSE: PanelInfo(tr_noop("Firehose"), FirehoseLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_firehose.png"),
       OP.PanelType.DEVELOPER: PanelInfo(tr_noop("Developer"), DeveloperLayout(), icon="icons/shell.png"),
     }
 
-  def _create_nav_button(self, panel_type: OP.PanelType, panel_info: PanelInfo) -> Widget:
-    class NavButton(Widget):
-      def __init__(self, parent, p_type, p_info):
-        super().__init__()
-        self.parent = parent
-        self.panel_type = p_type
-        self.panel_info = p_info
-
-      def _render(self, rect):
-        is_selected = self.panel_type == self.parent._current_panel
-        text_color = OP.TEXT_SELECTED if is_selected else OP.TEXT_NORMAL
-        content_x = rect.x + 90
-        text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
-
-        # Draw background if selected
-        if is_selected:
-          self.container_rect = rl.Rectangle(
-            content_x - 20, rect.y, OP.SIDEBAR_WIDTH - 70, OP.NAV_BTN_HEIGHT
-          )
-          rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
-
-        if self.panel_info.icon:
-          icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
-          rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2), rl.WHITE)
-          content_x += ICON_SIZE + 20
-
-        # Draw button text (right-aligned)
-        text_pos = rl.Vector2(
-          content_x,
-          rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
-        )
-        rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
-
-        # Store button rect for click detection
-        self.panel_info.button_rect = rect
-
-    return NavButton(self, panel_type, panel_info)
-
   def _draw_sidebar(self, rect: rl.Rectangle):
     rl.draw_rectangle_rec(rect, OP.SIDEBAR_COLOR)
 
     # Close button
     close_btn_rect = rl.Rectangle(
-      rect.x + (rect.width - OP.CLOSE_BTN_SIZE) / 2, rect.y + 60, OP.CLOSE_BTN_SIZE, OP.CLOSE_BTN_SIZE
+      rect.x + style.ITEM_PADDING * 3, rect.y + style.ITEM_PADDING * 2, style.CLOSE_BTN_SIZE, style.CLOSE_BTN_SIZE
     )
 
     pressed = (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and
@@ -138,7 +147,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
       close_btn_rect.y + (close_btn_rect.height - self._close_icon.height) / 2,
       self._close_icon.width,
       self._close_icon.height,
-      )
+    )
     rl.draw_texture_pro(
       self._close_icon,
       rl.Rectangle(0, 0, self._close_icon.width, self._close_icon.height),
@@ -154,7 +163,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Navigation buttons with scroller
     if not self._nav_items:
       for panel_type, panel_info in self._panels.items():
-        nav_button = self._create_nav_button(panel_type, panel_info)
+        nav_button = NavButton(self, panel_type, panel_info)
         nav_button.rect.width = rect.width - 100  # Full width minus padding
         nav_button.rect.height = OP.NAV_BTN_HEIGHT
         self._nav_items.append(nav_button)
@@ -163,7 +172,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Draw navigation section with scroller
     nav_rect = rl.Rectangle(
       rect.x,
-      rect.y + 300,  # Starting Y position for nav items
+      self._close_btn_rect.height + style.ITEM_PADDING * 4,  # Starting Y position for nav items
       rect.width,
       rect.height - 300  # Remaining height after close button
     )
@@ -171,7 +180,6 @@ class SettingsLayoutSP(OP.SettingsLayout):
     if self._nav_items:
       self._sidebar_scroller.render(nav_rect)
       return
-
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
     # Check close button
@@ -187,3 +195,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
         return True
 
     return False
+
+  def show_event(self):
+    super().show_event()
+    self._panels[self._current_panel].instance.show_event()
+    self._sidebar_scroller.show_event()
