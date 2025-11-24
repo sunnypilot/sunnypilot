@@ -67,7 +67,7 @@ class LaneChangeSettingsLayout(Widget):
     self._update_toggles()
 
   def _update_toggles(self):
-    enableBSM = ui_state_sp.CP and ui_state_sp.CP.enableBsm
-    if not enableBSM:
+    enable_bsm = ui_state_sp.CP and ui_state_sp.CP.enableBsm
+    if not enable_bsm:
         ui_state_sp.params.remove("AutoLaneChangeBsmDelay")
-    self._bsm_delay.set_visible(enableBSM and int(ui_state_sp.params.get("AutoLaneChangeTimer")) > 0)
+    self._bsm_delay.set_visible(enable_bsm and int(ui_state_sp.params.get("AutoLaneChangeTimer")) > 0)
