@@ -1,20 +1,22 @@
 import pyray as rl
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from openpilot.common.params import Params
-from openpilot.system.ui.lib.application import FontWeight
+from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
 from openpilot.system.ui.sunnypilot.lib.styles import style
+from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
 from openpilot.system.ui.sunnypilot.widgets.helpers.star_icon import draw_star
+from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
 
 @dataclass
 class TreeNode:
-  folder: str
-  display_name: str
   ref: str
-  index: int
+  data: dict = field(default_factory=dict)
 
 @dataclass
 class TreeFolder:
@@ -52,7 +54,8 @@ class TreeItemWidget(Button):
 
 
 class TreeOptionDialog(MultiOptionDialog):
-  def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM):
+  def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
+               get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None):
     super().__init__(title, [], "", option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
@@ -61,25 +64,48 @@ class TreeOptionDialog(MultiOptionDialog):
     self.params = Params()
     val = self.params.get(fav_param) if fav_param else None
     self.favorites = set(val.split(';')) if val else set()
+
+    self.query = ""
+    self.search_prompt = search_prompt if search_prompt else tr("Search")
+    self.get_folders_fn = get_folders_fn
+    self.on_exit = on_exit
+    self.display_func = display_func or (lambda node: node.data.get('display_name', node.ref))
+    self.search_funcs = search_funcs or [lambda node: node.data.get('display_name', ''), lambda node: node.data.get('short_name', '')]
+
     self._build_visible_items()
 
-  def _build_visible_items(self):
-    self.visible_items = []
-    for folder in self.folders:
-      is_expanded = folder.folder in self.expanded or not folder.folder
-      if folder.folder:
-        self.visible_items.append(TreeItemWidget(f"{'-' if is_expanded else '+'} {folder.folder}", "", True, 0, lambda f=folder: self._toggle_folder(f)))
+  def _on_search_clicked(self):
+    def _on_search_confirm(result, text):
+      if result == DialogResult.CONFIRM:
+        self.query = text
+        self._build_visible_items()
+      gui_app.set_modal_overlay(self, callback=self.on_exit)
 
-      if is_expanded:
-        for node in folder.nodes:
-          self.visible_items.append(TreeItemWidget(node.display_name, node.ref, False, 1 if folder.folder else 0,
-                                lambda n=node: self._select_node(n),
-                                lambda n=node: self._toggle_favorite(n),
-                                node.ref in self.favorites))
+    InputDialogSP(tr("Enter search query"), current_text=self.query, callback=_on_search_confirm).show()
+
+  def _build_visible_items(self, reset_scroll=True):
+    self.visible_items = [TreeItemWidget(self.query or self.search_prompt, "search_bar", False, 0, self._on_search_clicked)]
+
+    for folder in self.folders:
+      nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [f(node) for f in self.search_funcs])]
+      if not nodes and self.query:
+        continue
+
+      expanded = folder.folder in self.expanded or not folder.folder or bool(self.query)
+      if folder.folder:
+        self.visible_items.append(TreeItemWidget(f"{'-' if expanded else '+'} {folder.folder}", "", True, 0, lambda f=folder: self._toggle_folder(f)))
+
+      if expanded:
+        for node in nodes:
+          cb = None if node.ref == "Default" else lambda n=node: self._toggle_favorite(n)
+          self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
+                                                   lambda n=node: self._select_node(n), cb, node.ref in self.favorites))
 
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
     self.scroller._items = self.visible_items
+    if reset_scroll:
+      self.scroller.scroll_panel.set_offset(0)
 
   def _toggle_folder(self, folder):
     if folder.folder:
@@ -89,10 +115,10 @@ class TreeOptionDialog(MultiOptionDialog):
         self.expanded.add(folder.folder)
         if folder == self.folders[-1]:
           self.scroller.scroll_panel.set_offset(self.scroller.scroll_panel.offset - 200)
-      self._build_visible_items()
+      self._build_visible_items(reset_scroll=False)
 
   def _select_node(self, node):
-    self.selection = node.display_name
+    self.selection = self.display_func(node)
     self.selection_ref = node.ref
 
   def _toggle_favorite(self, node):
@@ -100,11 +126,7 @@ class TreeOptionDialog(MultiOptionDialog):
     if self.fav_param:
       self.params.put(self.fav_param, ';'.join(self.favorites))
 
-    self.folders = [f for f in self.folders if f.folder != "Favorites"]
-    if self.favorites:
-      fav_nodes = sorted([TreeNode("", n.display_name, n.ref, n.index) for f in self.folders for n in f.nodes if n.ref in self.favorites],
-                         key=lambda n: n.index, reverse=True)
-      if fav_nodes:
-        self.folders.insert(1 if len(self.folders) > 0 else 0, TreeFolder("Favorites", fav_nodes))
+    if self.get_folders_fn:
+      self.folders = self.get_folders_fn(self.favorites)
 
-    self._build_visible_items()
+    self._build_visible_items(reset_scroll=False)
