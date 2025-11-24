@@ -1,6 +1,12 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from collections.abc import Callable
+
+import pyray as rl
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -164,8 +170,9 @@ class ListItemSP(ListItem):
       description_rect = rl.Rectangle(self._rect.x + style.ITEM_PADDING, desc_y, content_width, description_height)
       self._html_renderer.render(description_rect)
 
+
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
-                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
+                   callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
