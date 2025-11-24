@@ -18,12 +18,6 @@ class LaneChangeSettingsLayout(Widget):
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self._bsm_delay = toggle_item_sp(
-      param="AutoLaneChangeBsmDelay",
-      title=lambda: tr("Auto Lane Change: Delay with Blind Spot"),
-      description=lambda: tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring " +
-                             "(BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
-    )
     self._lane_change_timer = option_item_sp(
       title=lambda: tr("Auto Lane Change by Blinker"),
       param="AutoLaneChangeTimer",
@@ -42,6 +36,12 @@ class LaneChangeSettingsLayout(Widget):
                       f"2 {tr("s")}" if x == 4 else
                       f"3 {tr("s")}")
     )
+    self._bsm_delay = toggle_item_sp(
+      param="AutoLaneChangeBsmDelay",
+      title=lambda: tr("Auto Lane Change: Delay with Blind Spot"),
+      description=lambda: tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring " +
+                             "(BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
+    )
 
     items = [
       self._lane_change_timer,
@@ -51,6 +51,7 @@ class LaneChangeSettingsLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
+    self._update_toggles()
 
   def _render(self, rect):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)
@@ -62,3 +63,11 @@ class LaneChangeSettingsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
+    ui_state_sp.update_params()
+    self._update_toggles()
+
+  def _update_toggles(self):
+    enableBSM = ui_state_sp.CP and ui_state_sp.CP.enableBsm
+    if not enableBSM:
+        ui_state_sp.params.remove("AutoLaneChangeBsmDelay")
+    self._bsm_delay.set_visible(enableBSM and int(ui_state_sp.params.get("AutoLaneChangeTimer")) > 0)
