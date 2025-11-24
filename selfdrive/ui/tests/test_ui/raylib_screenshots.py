@@ -171,8 +171,8 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-400, 278, 950)
-  click(278, 690)
+  scroll(-140, 278, 950)
+  click(278, 990)
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
@@ -183,8 +183,8 @@ def setup_settings_visuals(click, pm: PubMaster, scroll=None):
 
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-400, 278, 950)
-  click(278, 900)
+  scroll(-1000, 278, 950)
+  click(278, 420)
 
 
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
