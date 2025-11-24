@@ -197,6 +197,14 @@ class ModelsLayout(Widget):
     self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
     self._update_lagd_description()
 
+    if not ui_state_sp.is_offroad():
+      self.current_model_item.action_item.set_enabled(False)
+      self.current_model_item.set_description(tr("Only available when vehicle is off, or always offroad mode is on"))
+    else:
+      self.current_model_item.action_item.set_enabled(True)
+      self.current_model_item.set_description("")
+
+
   def _render(self, rect):
     self._scroller.render(rect)
 
