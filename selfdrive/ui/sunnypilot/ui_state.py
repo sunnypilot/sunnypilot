@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from openpilot.selfdrive.ui.ui_state import UIState
-from cereal import messaging
+from cereal import messaging, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 
@@ -38,6 +38,9 @@ class UIStateSP(UIState):
 
   def update_params(self) -> None:
     UIState.update_params(self)
+    CP_SP_bytes = self.params.get("CarParamsSPPersistent")
+    if CP_SP_bytes is not None:
+      self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
 
 # Global instance
