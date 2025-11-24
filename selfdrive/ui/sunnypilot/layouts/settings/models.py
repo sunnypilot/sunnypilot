@@ -39,16 +39,17 @@ class ModelsLayout(Widget):
     self.cached_size = 0.0
 
     self.current_model_item = ListItem(tr("Current Model"), "", action_item=NoElide(tr("Select"), enabled=True), callback=self._handle_current_model_clicked)
+
+    self.supercombo_label = progress_item(tr("Driving Model"))
+    self.vision_label = progress_item(tr("Vision Model"))
+    self.policy_label = progress_item(tr("Policy Model"))
+
     self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "", lambda: (
       self._params.put("ModelManager_LastSyncTime", 0),
       gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))
     ))
     self.clear_cache_item = ListItem(tr("Clear Model Cache"), "", action_item=NoElide(tr("Clear"), enabled=True), callback=self._clear_cache)
     self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", lambda: self._params.remove("ModelManager_DownloadIndex"))
-
-    self.supercombo_label = progress_item(tr("Driving Model"))
-    self.vision_label = progress_item(tr("Vision Model"))
-    self.policy_label = progress_item(tr("Policy Model"))
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
       tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
@@ -67,9 +68,9 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "",
       callback=lambda s: (self.delay_control.set_visible(not s), self._update_lagd_description()), param="LagdToggle")
 
-    self.items = [self.current_model_item, self.refresh_item, self.clear_cache_item, self.cancel_download_item, self.supercombo_label,
-                  self.vision_label, self.policy_label, self.lane_turn_desire_toggle, self.lane_turn_value_control,
-                  self.lagd_toggle, self.delay_control]
+    self.items = [self.current_model_item, self.cancel_download_item, self.supercombo_label, self.vision_label,
+                  self.policy_label, self.refresh_item, self.clear_cache_item, self.lane_turn_desire_toggle,
+                  self.lane_turn_value_control, self.lagd_toggle, self.delay_control]
 
     self.lane_turn_value_control.set_visible(self._params.get_bool("LaneTurnDesire"))
     self.delay_control.set_visible(not self._params.get_bool("LagdToggle"))
