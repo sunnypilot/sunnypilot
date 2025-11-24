@@ -57,7 +57,7 @@ def setup_settings(click, pm: PubMaster, scroll=None):
 
 
 def close_settings(click, pm: PubMaster, scroll=None):
-  click(240, 216)
+  click(140, 120)
 
 
 def setup_settings_network(click, pm: PubMaster, scroll=None):
@@ -72,7 +72,7 @@ def setup_settings_network_advanced(click, pm: PubMaster, scroll=None):
 
 def setup_settings_toggles(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 720)
+  click(278, 620)
 
 
 def setup_settings_software(click, pm: PubMaster, scroll=None):
