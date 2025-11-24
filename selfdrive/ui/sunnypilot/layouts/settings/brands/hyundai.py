@@ -47,5 +47,5 @@ class HyundaiSettings:
 
   def update_state(self, ui_state):
     self.ui_state = ui_state
-    self.offroad = ui_state.params.get_bool("IsOffroad")
+    self.offroad = ui_state.is_offroad()
     self.update_settings()

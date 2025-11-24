@@ -9,9 +9,9 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import ButtonAction
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
-from openpilot.selfdrive.ui.sunnypilot.layouts.vehicle_settings.platform_selector import PlatformSelector, LegendWidget
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.brands.factory import BrandSettingsFactory
+from openpilot.selfdrive.ui.sunnypilot.layouts.vehicle_settings.platform_selector import PlatformSelector, LegendWidget
 from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 
 
