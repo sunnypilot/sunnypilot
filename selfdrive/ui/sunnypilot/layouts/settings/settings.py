@@ -195,3 +195,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
         return True
 
     return False
+
+  def show_event(self):
+    super().show_event()
+    self._panels[self._current_panel].instance.show_event()
+    self._sidebar_scroller.show_event()
