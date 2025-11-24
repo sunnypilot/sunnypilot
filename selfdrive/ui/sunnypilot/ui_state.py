@@ -13,7 +13,7 @@ class UIStateSP(UIState):
     sp_services = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-      "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP"
+      "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP", "liveDelay",
     ]
     self.sm = messaging.SubMaster(op_services + sp_services)
 

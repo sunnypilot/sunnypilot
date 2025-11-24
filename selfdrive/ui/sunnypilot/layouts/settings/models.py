@@ -3,7 +3,7 @@ import re
 import time
 import pyray as rl
 
-from cereal import messaging, car, custom
+from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.constants import CV
 from openpilot.system.ui.lib.multilang import tr
@@ -13,13 +13,13 @@ from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDial
 from openpilot.system.ui.widgets.list_view import button_item, ButtonAction, ListItem
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
-from openpilot.selfdrive.ui.ui_state import ui_state
 
 from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
+from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
 
 
 class NoElide(ButtonAction):
@@ -83,12 +83,11 @@ class ModelsLayout(Widget):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
               "Keeping this on provides the stock openpilot experience.")
     if self._params.get_bool("LagdToggle"):
-      desc += f"<br>{tr('Live Steer Delay:')} {ui_state.sm['liveDelay'].lateralDelay:.3f} s"
-    elif (cp := self._params.get("CarParamsPersistent")):
-      cp = messaging.log_from_bytes(cp, car.CarParams)
+      desc += f"<br>{tr('Live Steer Delay:')} {ui_state_sp.sm['liveDelay'].lateralDelay:.3f} s"
+    elif ui_state_sp.CP:
       sw_delay = float(self._params.get("LagdToggleDelay", "0.2"))
-      desc += (f"<br>{tr('Actuator Delay:')} {cp.steerActuatorDelay:.2f} s + {tr('Software Delay:')} {sw_delay:.2f} s = " +
-               f"{tr('Total Delay:')} {cp.steerActuatorDelay + sw_delay:.2f} s")
+      desc += (f"<br>{tr('Actuator Delay:')} {ui_state_sp.CP.steerActuatorDelay:.2f} s + {tr('Software Delay:')} {sw_delay:.2f} s = " +
+               f"{tr('Total Delay:')} {ui_state_sp.CP.steerActuatorDelay + sw_delay:.2f} s")
     self.lagd_toggle.set_description(desc)
 
   def _handle_bundle_download_progress(self):
@@ -191,7 +190,7 @@ class ModelsLayout(Widget):
     if self.lane_turn_value_control.action_item.value_change_step != new_step:
       self.lane_turn_value_control.action_item.value_change_step = new_step
 
-    self.model_manager = ui_state.sm["modelManagerSP"]
+    self.model_manager = ui_state_sp.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
     active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default Model"
     self.current_model_item.action_item.set_value(active_name)
