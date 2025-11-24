@@ -116,7 +116,7 @@ def setup_settings_developer(click, pm: PubMaster, scroll=None):
 
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 1040)
+  click(278, 950)
 
 
 def setup_keyboard(click, pm: PubMaster, scroll=None):
