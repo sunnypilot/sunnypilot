@@ -78,7 +78,7 @@ def setup_settings_toggles(click, pm: PubMaster, scroll=None):
 def setup_settings_software(click, pm: PubMaster, scroll=None):
   put_update_params(Params())
   setup_settings(click, pm)
-  click(278, 845)
+  click(278, 730)
 
 
 def setup_settings_software_download(click, pm: PubMaster, scroll=None):
@@ -106,7 +106,7 @@ def setup_settings_software_branch_switcher(click, pm: PubMaster, scroll=None):
 def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 950)
+  click(278, 850)
 
 
 def setup_settings_developer(click, pm: PubMaster, scroll=None):
@@ -156,7 +156,7 @@ def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster, scroll=None):
 
 def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 600)
+  click(278, 510)
 
 
 def setup_settings_models(click, pm: PubMaster, scroll=None):
@@ -166,13 +166,13 @@ def setup_settings_models(click, pm: PubMaster, scroll=None):
 
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 1040)
+  click(278, 950)
 
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-40, 278, 950)
-  click(278, 1040)
+  scroll(-400, 278, 950)
+  click(278, 670)
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
@@ -183,26 +183,26 @@ def setup_settings_visuals(click, pm: PubMaster, scroll=None):
 
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
-  click(278, 450)
+  scroll(-400, 278, 950)
+  click(278, 900)
 
 
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 600)
+  click(278, 520)
 
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 720)
+  click(278, 630)
 
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 845)
+  click(278, 750)
 
 
 def setup_onroad(click, pm: PubMaster, scroll=None):
