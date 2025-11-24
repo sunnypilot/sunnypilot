@@ -110,7 +110,7 @@ class PlatformSelector(Button):
   def refresh(self, offroad):
     self._offroad = offroad
     self.brand = ""
-    self.color = style.YELLOW,
+    self.color = style.YELLOW
     self._platform = tr("Unrecognized Vehicle")
     self.set_text(tr("No vehicle selected"))
 
