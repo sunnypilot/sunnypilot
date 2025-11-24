@@ -161,7 +161,7 @@ def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
 
 def setup_settings_models(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 950)
+  click(278, 840)
 
 
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
@@ -172,7 +172,7 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-400, 278, 950)
-  click(278, 670)
+  click(278, 690)
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
