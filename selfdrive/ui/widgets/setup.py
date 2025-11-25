@@ -8,7 +8,6 @@ from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
-from openpilot.system.ui.widgets.label import Label
 
 
 class SetupWidget(Widget):
@@ -23,13 +22,6 @@ class SetupWidget(Widget):
       button_style=ButtonStyle.PRIMARY
     )
 
-    # NOTE: halign REMOVED because it crashes the UI
-    self._side_label = Label(
-      lambda: tr("Hey there..."),
-      font_weight=FontWeight.MEDIUM,
-      font_size=64
-    )
-
   def set_open_settings_callback(self, callback):
     self._open_settings_callback = callback
 
@@ -37,8 +29,12 @@ class SetupWidget(Widget):
     if not ui_state.prime_state.is_paired():
       self._render_registration(rect)
     else:
-      self._render_side_prompt(rect)
+      # 🔥 FIREHOSE BOX REMOVED – DO NOTHING WHEN PAIRED
+      pass
 
+  # -----------------------------
+  # Registration / pairing screen
+  # -----------------------------
   def _render_registration(self, rect: rl.Rectangle):
 
     rl.draw_rectangle_rounded(
@@ -51,10 +47,12 @@ class SetupWidget(Widget):
     y = rect.y + 48
     w = rect.width - 128
 
+    # Title
     font = gui_app.font(FontWeight.BOLD)
     rl.draw_text_ex(font, tr("Finish Setup"), rl.Vector2(x, y), 75, 0, rl.WHITE)
     y += 113
 
+    # Description
     desc = tr("Pair your device with Konik Stable (stable.konik.ai)")
     light_font = gui_app.font(FontWeight.NORMAL)
     wrapped = wrap_text(light_font, desc, 50, int(w))
@@ -66,54 +64,9 @@ class SetupWidget(Widget):
     button_rect = rl.Rectangle(x, y + 30, w, 200)
     self._pair_device_btn.render(button_rect)
 
-  def _render_side_prompt(self, rect: rl.Rectangle):
-    """
-    Box aligned EXACTLY under Chill Mode button.
-    Uses the same column width & x-position.
-    """
-
-    # This rect is too tall.
-    # We need the same vertical offset as HomeLayout uses for the driving mode tile.
-
-    TILE_HEIGHT = 125 + 40   # driving mode height (125) + bottom spacing (40)
-
-    # X alignment identical to Chill mode tile
-    x = rect.x + 56
-    w = rect.width - 112
-
-    # Y position directly under the Chill Mode button
-    y = rect.y + TILE_HEIGHT + 40
-
-    BOX_HEIGHT = 200
-
-    # Draw background box
-    rl.draw_rectangle_rounded(
-        rl.Rectangle(x, y, w, BOX_HEIGHT),
-        0.04, 20,
-        rl.Color(51, 51, 51, 255)
-    )
-
-    # ---- Title ----
-    title_y = y + 35
-    self._side_label.render(
-        rl.Rectangle(x + 30, title_y, w - 60, 64)
-    )
-
-    # ---- Description ----
-    desc = tr("Hope you're having a great day!")
-    desc_font = gui_app.font(FontWeight.NORMAL)
-
-    desc_y = title_y + 80
-
-    rl.draw_text_ex(
-        desc_font,
-        desc,
-        rl.Vector2(x + 30, desc_y),
-        40,
-        0,
-        rl.WHITE
-    )
-
+  # -----------------------------
+  # Pairing dialog handler
+  # -----------------------------
   def _show_pairing(self):
     if not system_time_valid():
       dlg = alert_dialog(tr("Please connect to Wi-Fi to complete initial pairing"))
