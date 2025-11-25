@@ -23,29 +23,22 @@ class SetupWidget(Widget):
       button_style=ButtonStyle.PRIMARY
     )
 
-    # Center-aligned title label
+    # NOTE: halign REMOVED because it crashes the UI
     self._side_label = Label(
       lambda: tr("Hey there..."),
       font_weight=FontWeight.MEDIUM,
-      font_size=64,
-      halign="center"
+      font_size=64
     )
 
   def set_open_settings_callback(self, callback):
     self._open_settings_callback = callback
 
-  # -----------------------------
-  #   Main render switch
-  # -----------------------------
   def _render(self, rect: rl.Rectangle):
     if not ui_state.prime_state.is_paired():
       self._render_registration(rect)
     else:
       self._render_side_prompt(rect)
 
-  # -----------------------------
-  #   Setup screen (pairing)
-  # -----------------------------
   def _render_registration(self, rect: rl.Rectangle):
 
     rl.draw_rectangle_rounded(
@@ -58,12 +51,10 @@ class SetupWidget(Widget):
     y = rect.y + 48
     w = rect.width - 128
 
-    # Title
     font = gui_app.font(FontWeight.BOLD)
     rl.draw_text_ex(font, tr("Finish Setup"), rl.Vector2(x, y), 75, 0, rl.WHITE)
     y += 113
 
-    # Description
     desc = tr("Pair your device with Konik Stable (stable.konik.ai)")
     light_font = gui_app.font(FontWeight.NORMAL)
     wrapped = wrap_text(light_font, desc, 50, int(w))
@@ -78,29 +69,29 @@ class SetupWidget(Widget):
   def _render_side_prompt(self, rect: rl.Rectangle):
     """Simple hardcoded box with left-aligned text."""
 
-    # Hardcoded box size
+    # Hardcoded rectangle
     box_width = 900
     box_height = 260
 
-    # Position box centered horizontally
+    # Centered horizontally
     box_x = rect.x + (rect.width - box_width) / 2
     box_y = rect.y + 40
 
-    # Draw background box
     rl.draw_rectangle_rounded(
-        rl.Rectangle(box_x, box_y, box_width, box_height),
-        0.04, 20,
-        rl.Color(51, 51, 51, 255)
+      rl.Rectangle(box_x, box_y, box_width, box_height),
+      0.04, 20,
+      rl.Color(51, 51, 51, 255)
     )
 
-    # ------- Title (LEFT ALIGNED) -------
-    title_x = box_x + 40   # left padding
+    # ---- LEFT-ALIGNED TITLE ----
+    title_x = box_x + 40
     title_y = box_y + 35
+
     self._side_label.render(
-        rl.Rectangle(title_x, title_y, box_width - 80, 64)
+      rl.Rectangle(title_x, title_y, box_width - 80, 64)
     )
 
-    # ------- Description (LEFT ALIGNED) -------
+    # ---- LEFT-ALIGNED DESCRIPTION ----
     desc = tr("Hope you're having a great day!")
     desc_font = gui_app.font(FontWeight.NORMAL)
 
@@ -108,12 +99,12 @@ class SetupWidget(Widget):
     desc_y = title_y + 80
 
     rl.draw_text_ex(
-        desc_font,
-        desc,
-        rl.Vector2(desc_x, desc_y),
-        40,
-        0,
-        rl.WHITE
+      desc_font,
+      desc,
+      rl.Vector2(desc_x, desc_y),
+      40,
+      0,
+      rl.WHITE
     )
 
   def _show_pairing(self):
