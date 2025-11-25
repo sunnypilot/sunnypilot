@@ -105,7 +105,7 @@ def setup_settings_software_branch_switcher(click, pm: PubMaster, scroll=None):
 
 def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 850)
 
 
@@ -115,7 +115,7 @@ def setup_settings_developer(click, pm: PubMaster, scroll=None):
   Params().put("CarParamsPersistent", CP.to_bytes())
 
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 950)
 
 
@@ -177,31 +177,31 @@ def setup_settings_cruise(click, pm: PubMaster, scroll=None):
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 330)
 
 
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 420)
 
 
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 520)
 
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 630)
 
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-878, 278, 950)
   click(278, 750)
 
 
