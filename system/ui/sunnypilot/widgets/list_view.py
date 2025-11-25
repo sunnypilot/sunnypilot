@@ -21,6 +21,7 @@ class ToggleActionSP(ToggleAction):
     ToggleAction.__init__(self, initial_state, width, enabled, callback)
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
+
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, param: str | None, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
@@ -68,6 +69,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
     MultipleButtonAction._handle_mouse_release(self, mouse_pos)
     if self.param_key:
       self.params.put(self.param_key, self.selected_button)
+
 
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
@@ -173,7 +175,8 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
-def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
+
+def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
