@@ -341,10 +341,11 @@ class TestUI:
     pyautogui.mouseDown(self.ui.left + x, self.ui.top + y, *args, **kwargs)
     time.sleep(0.01)
     pyautogui.mouseUp(self.ui.left + x, self.ui.top + y, *args, **kwargs)
+    time.sleep(UI_DELAY)
 
   def scroll(self, clicks, x, y, *args, **kwargs):
     pyautogui.scroll(clicks, self.ui.left + x, self.ui.top + y, *args, **kwargs)
-    time.sleep(1.0)
+    time.sleep(UI_DELAY)
 
   @with_processes(["ui"])
   def test_ui(self, name, setup_case):
