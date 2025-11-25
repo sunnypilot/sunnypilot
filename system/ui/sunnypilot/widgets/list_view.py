@@ -28,7 +28,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
     self.params = Params()
     if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default=True))
-    self._anim_x = None
+    self._anim_x: float | None = None
 
   def _render(self, rect: rl.Rectangle):
 
