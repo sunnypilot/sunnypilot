@@ -148,6 +148,7 @@ class DeveloperLayout(Widget):
     self._params.put_bool("ShowDebugInfo", state)
     gui_app.set_show_touches(state)
     gui_app.set_show_fps(state)
+    gui_app.set_show_mouse_coords(state)
 
   def _on_enable_adb(self, state: bool):
     self._params.put_bool("AdbEnabled", state)
