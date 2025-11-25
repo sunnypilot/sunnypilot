@@ -17,7 +17,7 @@ class SetupWidget(Widget):
     self._open_settings_callback = None
     self._pairing_dialog: PairingDialog | None = None
     self._pair_device_btn = Button(lambda: tr("Pair device"), self._show_pairing, button_style=ButtonStyle.PRIMARY)
-    self._firehose_label = Label(lambda: tr("Hey there..."), font_weight=FontWeight.MEDIUM, font_size=64)
+    self._side_label = Label(lambda: tr("Hey there..."), font_weight=FontWeight.MEDIUM, font_size=64)
 
   def set_open_settings_callback(self, callback):
     self._open_settings_callback = callback
@@ -26,7 +26,7 @@ class SetupWidget(Widget):
     if not ui_state.prime_state.is_paired():
       self._render_registration(rect)
     else:
-      self._render_firehose_prompt(rect)
+      self._render_side_prompt(rect)
 
   def _render_registration(self, rect: rl.Rectangle):
     """Render registration prompt."""
@@ -53,10 +53,8 @@ class SetupWidget(Widget):
     button_rect = rl.Rectangle(x, y + 30, w, 200)
     self._pair_device_btn.render(button_rect)
 
-  def _render_firehose_prompt(self, rect: rl.Rectangle):
+  def _render_side_prompt(self, rect: rl.Rectangle):
     """Render firehose prompt widget."""
-
-    rl.draw_rectangle_rounded(rl.Rectangle(rect.x, rect.y, rect.width, 500), 0.04, 20, rl.Color(51, 51, 51, 255))
 
     # Content margins (56, 40, 56, 40)
     x = rect.x + 56
@@ -64,20 +62,31 @@ class SetupWidget(Widget):
     w = rect.width - 112
     spacing = 42
 
-    # Title with fire emojis
-    self._firehose_label.render(rl.Rectangle(rect.x, y, rect.width, 64))
-    y += 64 + spacing
-
-    # Description
+    # Calculate dynamic height -----------------------------------------
     desc_font = gui_app.font(FontWeight.NORMAL)
-    desc_text = tr("Hope you're having a great day! 😁")
+    desc_text = tr("Hope you're having a great day!")
     wrapped_desc = wrap_text(desc_font, desc_text, 40, int(w))
 
-    for line in wrapped_desc:
-      rl.draw_text_ex(desc_font, line, rl.Vector2(x, y), 40, 0, rl.WHITE)
-      y += 40 * FONT_SCALE
+    title_h = 64
+    desc_h = len(wrapped_desc) * 40 * FONT_SCALE
+    box_height = 40 + title_h + spacing + desc_h + spacing
 
-    y += spacing
+    # Draw background box
+    rl.draw_rectangle_rounded(
+        rl.Rectangle(rect.x, rect.y, rect.width, box_height),
+        0.04, 20,
+        rl.Color(51, 51, 51, 255)
+    )
+    # -----------------------------------------------------------------
+
+    # Render title
+    self._side_label.render(rl.Rectangle(rect.x + 56, y, rect.width - 112, 64))
+    y += 64 + spacing
+
+    # Render description
+    for line in wrapped_desc:
+        rl.draw_text_ex(desc_font, line, rl.Vector2(x, y), 40, 0, rl.WHITE)
+        y += 40 * FONT_SCALE
 
   def _show_pairing(self):
     if not system_time_valid():
