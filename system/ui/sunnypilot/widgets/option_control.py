@@ -7,16 +7,12 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.widgets.list_view import ItemAction
 
 # Dimensions and styling constants
-BUTTON_WIDTH = 80
-BUTTON_HEIGHT = 80
-LABEL_WIDTH = 200
+BUTTON_WIDTH = 100
+LABEL_WIDTH = 350
 BUTTON_SPACING = 25
 VALUE_FONT_SIZE = 50
 BUTTON_FONT_SIZE = 60
-BUTTON_CORNER_RADIUS = 20
 CONTAINER_PADDING = 20
-INNER_PADDING = 10
-TOP_PADDING = 25
 
 class OptionControlSP(ItemAction):
     def __init__(self, param: str, min_value: int, max_value: int,
@@ -52,10 +48,8 @@ class OptionControlSP(ItemAction):
         self._font = gui_app.font(FontWeight.MEDIUM)
 
         # Layout rectangles for components
-        self.minus_btn_rect = rl.Rectangle(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
-        self.label_rect = rl.Rectangle(0, 0, self.label_width, BUTTON_HEIGHT)
-        self.plus_btn_rect = rl.Rectangle(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
-        self.container_rect = rl.Rectangle(0, 0, 0, 0)
+        self.minus_btn_rect = rl.Rectangle(0, 0, 0, 0)
+        self.plus_btn_rect = rl.Rectangle(0, 0, 0, 0)
 
     def get_value(self) -> int:
         """Get the current value of the control"""
@@ -97,79 +91,66 @@ class OptionControlSP(ItemAction):
         return str(value)
 
     def _render(self, rect: rl.Rectangle):
-        if self._rect.width == 0 or self._rect.height == 0 or not self.is_visible:
-            return
+      if self._rect.width == 0 or self._rect.height == 0 or not self.is_visible:
+        return
 
-        # Calculate total control width
-        control_width = (BUTTON_WIDTH * 2) + self.label_width + (BUTTON_SPACING * 2)
-        total_width = control_width + (CONTAINER_PADDING * 2)
-        self._rect.width = total_width
+      control_width = (BUTTON_WIDTH * 2) + self.label_width + (BUTTON_SPACING * 2)
+      total_width = control_width + (CONTAINER_PADDING * 2)
+      self._rect.width = total_width
 
-        # Position the control in the parent rectangle
-        start_x = self._rect.x + self._rect.width - control_width - (CONTAINER_PADDING * 2)
+      start_x = self._rect.x + self._rect.width - control_width - (CONTAINER_PADDING * 2)
+      component_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
+      self.container_rect = rl.Rectangle(start_x, component_y, total_width, style.BUTTON_HEIGHT)
 
-        self.container_rect = rl.Rectangle(start_x, self._rect.y + TOP_PADDING, total_width, BUTTON_HEIGHT + (CONTAINER_PADDING * 2))
+      # background
+      bg_color = rl.color_from_normalized((0.2, 0.2, 0.2, 1.0))  # Dark Grey
+      rl.draw_rectangle_rounded(self.container_rect, 0.2, 20, bg_color)
 
-        component_y = self._rect.y + TOP_PADDING + CONTAINER_PADDING
-        start_x = self.container_rect.x + CONTAINER_PADDING
+      # minus button
+      self.minus_btn_rect = rl.Rectangle(self.container_rect.x, component_y, BUTTON_WIDTH + CONTAINER_PADDING, style.BUTTON_HEIGHT)
 
-        # Minus button
-        self.minus_btn_rect = rl.Rectangle(start_x, component_y, BUTTON_WIDTH, BUTTON_HEIGHT)
+      # label
+      label_x = self.container_rect.x + CONTAINER_PADDING + BUTTON_WIDTH + BUTTON_SPACING
+      self.label_rect = rl.Rectangle(label_x, component_y, self.label_width, style.BUTTON_HEIGHT)
 
-        # Value label
-        label_x = start_x + BUTTON_WIDTH + BUTTON_SPACING
-        self.label_rect = rl.Rectangle(label_x, component_y, self.label_width, BUTTON_HEIGHT)
+      # plus button
+      plus_x = label_x + self.label_width + BUTTON_SPACING
+      self.plus_btn_rect = rl.Rectangle(plus_x, component_y, BUTTON_WIDTH + CONTAINER_PADDING, style.BUTTON_HEIGHT)
 
-        # Plus button
-        plus_x = label_x + self.label_width + BUTTON_SPACING
-        self.plus_btn_rect = rl.Rectangle(plus_x, component_y, BUTTON_WIDTH, BUTTON_HEIGHT)
+      self._minus_enabled = self.enabled and self.current_value > self.min_value
+      self._plus_enabled = self.enabled and self.current_value < self.max_value
 
-        rl.draw_rectangle_rounded(self.container_rect, 1, BUTTON_CORNER_RADIUS, style.OPTIONCONTROL_CONTAINER_BG)
-
-        self._minus_enabled = self.enabled and self.current_value > self.min_value
-        self._plus_enabled = self.enabled and self.current_value < self.max_value
-
-        self._render_button(self.minus_btn_rect, "-", self._minus_enabled)
-        self._render_value_label()
-        self._render_button(self.plus_btn_rect, "+", self._plus_enabled)
+      self._render_button(self.minus_btn_rect, "-", self._minus_enabled)
+      self._render_value_label()
+      self._render_button(self.plus_btn_rect, "+", self._plus_enabled)
 
     def _render_button(self, rect: rl.Rectangle, text: str, enabled: bool):
-        mouse_pos = rl.get_mouse_position()
-        is_hovered = rl.check_collision_point_rec(mouse_pos, rect) and self._touch_valid()
-        is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT)
+      mouse_pos = rl.get_mouse_position()
+      is_pressed = (rl.check_collision_point_rec(mouse_pos, rect) and
+                    self._touch_valid() and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT))
 
-        # Determine button colors based on state
-        if not enabled:
-            bg_color = style.OPTIONCONTROL_BTN_DISABLED
-            text_color = style.OPTIONCONTROL_TEXT_DISABLED
-        elif is_pressed:
-            bg_color = style.OPTIONCONTROL_BTN_PRESSED
-            text_color = style.OPTIONCONTROL_TEXT_PRESSED
-        else:
-            bg_color = style.OPTIONCONTROL_BTN_ENABLED
-            text_color = style.OPTIONCONTROL_TEXT_ENABLED
+      text_color = style.ITEM_TEXT_COLOR if enabled else style.ITEM_DISABLED_TEXT_COLOR
 
-        # Draw button background
-        rl.draw_rectangle_rounded(rect, 1, BUTTON_CORNER_RADIUS, bg_color)
+      # highlight
+      if enabled and is_pressed:
+        rl.draw_rectangle_rounded(rect, 0.2, 20, style.ON_BG_COLOR)
 
-        # Draw button text
-        text_size = measure_text_cached(self._font, text, BUTTON_FONT_SIZE)
-        text_x = rect.x + (rect.width - text_size.x) / 2
-        text_y = rect.y + (rect.height - text_size.y) / 2
-        rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), BUTTON_FONT_SIZE, 0, text_color)
+      # button text
+      text_size = measure_text_cached(self._font, text, BUTTON_FONT_SIZE)
+      text_x = rect.x + (rect.width - text_size.x) / 2
+      text_y = rect.y + (rect.height - text_size.y) / 2
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), BUTTON_FONT_SIZE, 0, text_color)
 
     def _render_value_label(self):
-        """Render the current value label"""
-        text = self.get_displayed_value()
-        text_color = style.OPTIONCONTROL_TEXT_ENABLED if self.enabled else style.OPTIONCONTROL_TEXT_DISABLED
+      """Render the current value label"""
+      text = self.get_displayed_value()
+      text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
 
-        # Calculate text position centered in the label area
-        text_size = measure_text_cached(self._font, text, VALUE_FONT_SIZE)
-        text_x = self.label_rect.x + (self.label_rect.width - text_size.x) / 2
-        text_y = self.label_rect.y + (self.label_rect.height - text_size.y) / 2
+      text_size = measure_text_cached(self._font, text, VALUE_FONT_SIZE)
+      text_x = self.label_rect.x + (self.label_rect.width - text_size.x) / 2
+      text_y = self.label_rect.y + (self.label_rect.height - text_size.y) / 2
 
-        # Draw the text
-        rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), VALUE_FONT_SIZE, 0, text_color)
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), VALUE_FONT_SIZE, 0, text_color)
 
     def _handle_mouse_release(self, mouse_pos: MousePos):
         if self._minus_enabled and rl.check_collision_point_rec(mouse_pos, self.minus_btn_rect):

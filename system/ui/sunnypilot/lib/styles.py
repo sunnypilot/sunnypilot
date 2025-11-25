@@ -49,7 +49,7 @@ class DefaultStyleSP(Base):
 
   # Button Control
   BUTTON_WIDTH = 250
-  BUTTON_HEIGHT = 100
+  BUTTON_HEIGHT = 115
 
   # Option Control
   OPTIONCONTROL_CONTAINER_BG = OFF_BG_COLOR

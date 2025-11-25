@@ -10,7 +10,7 @@ import pyray as rl
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction
-from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP
+from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
@@ -110,7 +110,7 @@ def option_item_sp(title: str | Callable[[], str], param: str,
                    min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
                    value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
-                   icon: str = "", label_width: int = style.BUTTON_WIDTH, value_map: dict[int, int] | None = None,
+                   icon: str = "", label_width: int = LABEL_WIDTH, value_map: dict[int, int] | None = None,
                    use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None) -> ListItemSP:
   action = OptionControlSP(
     param, min_value, max_value, value_change_step,
