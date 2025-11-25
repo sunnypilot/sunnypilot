@@ -21,9 +21,9 @@ third_party/acados/*/t_renderer filter=lfs diff=lfs merge=lfs -text
 third_party/qt5/larch64/bin/lrelease filter=lfs diff=lfs merge=lfs -text
 third_party/qt5/larch64/bin/lupdate filter=lfs diff=lfs merge=lfs -text
 third_party/catch2/include/catch2/catch.hpp filter=lfs diff=lfs merge=lfs -text
-selfdrive/assets/images/experimental.png -filter -diff -merge -text
-selfdrive/assets/images/experimental.svg -filter -diff -merge -text
-selfdrive/assets/images/microphone.png -filter -diff -merge -text
+selfdrive/assets/icons/experimental.png -filter -diff -merge -text
+selfdrive/assets/icons/experimental.svg -filter -diff -merge -text
+selfdrive/assets/icons/microphone.png -filter -diff -merge -text
 selfdrive/assets/images/button_flag.png -filter -diff -merge
 selfdrive/assets/images/button_home.png -filter -diff -merge
 selfdrive/assets/images/spinner_comma.png -filter -diff -merge
