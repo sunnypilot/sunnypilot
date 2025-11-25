@@ -180,11 +180,11 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"TrueVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // toyota specific params
-    {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"ToyotaEnhancedBsm", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"ToyotaTSS2Long", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"ToyotaEnhancedBsm", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"ToyotaTSS2Long", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"ToyotaStockLongitudinal", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"ToyotaDriveMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaDriveMode", {PERSISTENT | BACKUP, BOOL, "1"}},
 
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
@@ -223,7 +223,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SubaruStopAndGoManualParkingBrake", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaCoopSteering", {PERSISTENT | BACKUP, BOOL, "0"}},
 
-    {"DynamicExperimentalControl", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"DynamicExperimentalControl", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"BlindSpot", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // sunnypilot model params
@@ -262,8 +262,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // Smart Cruise Control
     {"MapTargetVelocities", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
-    {"SmartCruiseControlMap", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"SmartCruiseControlMap", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "1"}},
 
     // Torque lateral control custom params
     {"CustomTorqueParams", {PERSISTENT | BACKUP , BOOL}},
