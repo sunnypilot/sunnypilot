@@ -14,19 +14,19 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.96, 1.96, 1.68, .660, .540, .32, .23, .110],
-  AccelPersonality.normal:   [1.98, 1.98, 1.78, .730, .570, .38, .27, .155],
-  AccelPersonality.sport:    [2.00, 2.00, 1.90, .960, .800, .60, .40, .200],
+  AccelPersonality.eco:      [1.30, 1.20, 1.00, .650, .460, .32, .23, .110],
+  AccelPersonality.normal:   [1.80, 1.75, 1.65, .762, .521, .38, .27, .155],
+  AccelPersonality.sport:    [2.00, 2.00, 1.85, .999, .700, .55, .34, .181],
 }
 MAX_ACCEL_BREAKPOINTS =      [0.,  4.,   6.,   9.,   16.,  25., 30., 55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.02, -1.20, -1.20],
-  AccelPersonality.normal: [-0.03, -1.30, -1.30],
-  AccelPersonality.sport:  [-1.20, -1.40, -1.40],
+  AccelPersonality.eco:    [-0.50, -0.50, -1.20],
+  AccelPersonality.normal: [-0.55, -0.55, -1.30],
+  AccelPersonality.sport:  [-0.60, -0.60, -1.40],
 }
-MIN_ACCEL_BREAKPOINTS =    [5.,    14.,   36.]
+MIN_ACCEL_BREAKPOINTS =    [5.,    14.,   25.]
 
 
 DECEL_SMOOTH_ALPHA = 0.03  # Very aggressive smoothing for decel (lower = smoother)
