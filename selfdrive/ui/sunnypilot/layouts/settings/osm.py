@@ -80,7 +80,7 @@ class OSMLayout(Widget):
     is_country = region_type == "Country"
     btn = self._country_btn if is_country else self._state_btn
     btn.set_enabled(False)
-    btn.action_item.set_text(tr(f"Fetching {region_type} list..."))
+    btn.action_item.set_text(tr("Fetching..."))
     threading.Thread(target=self._do_select_region, args=(region_type, btn)).start()
 
   def _do_select_region(self, region_type, btn):
