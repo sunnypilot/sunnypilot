@@ -1,7 +1,7 @@
 import requests
 
-from sunnypilot.models.tinygrad_ref import get_tinygrad_ref
-from sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.tinygrad_ref import get_tinygrad_ref
+from openpilot.sunnypilot.models.fetcher import ModelFetcher
 
 
 def fetch_tinygrad_ref():

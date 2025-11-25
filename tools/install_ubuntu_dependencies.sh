@@ -20,18 +20,25 @@ fi
 # Install common packages
 function install_ubuntu_common_requirements() {
   $SUDO apt-get update
+
+  # normal stuff, mostly for the bare docker image
   $SUDO apt-get install -y --no-install-recommends \
     ca-certificates \
     clang \
     build-essential \
-    gcc-arm-none-eabi \
-    liblzma-dev \
-    capnproto \
-    libcapnp-dev \
     curl \
+    libssl-dev \
     libcurl4-openssl-dev \
+    locales \
     git \
     git-lfs \
+    xvfb
+
+  # TODO: vendor the rest of these in third_party/
+  $SUDO apt-get install -y --no-install-recommends \
+    gcc-arm-none-eabi \
+    capnproto \
+    libcapnp-dev \
     ffmpeg \
     libavformat-dev \
     libavcodec-dev \
@@ -41,20 +48,16 @@ function install_ubuntu_common_requirements() {
     libbz2-dev \
     libeigen3-dev \
     libffi-dev \
-    libglew-dev \
     libgles2-mesa-dev \
     libglfw3-dev \
     libglib2.0-0 \
     libjpeg-dev \
     libqt5charts5-dev \
     libncurses5-dev \
-    libssl-dev \
     libusb-1.0-0-dev \
     libzmq3-dev \
     libzstd-dev \
     libsqlite3-dev \
-    libsystemd-dev \
-    locales \
     opencl-headers \
     ocl-icd-libopencl1 \
     ocl-icd-opencl-dev \
@@ -64,7 +67,7 @@ function install_ubuntu_common_requirements() {
     libqt5serialbus5-dev  \
     libqt5x11extras5-dev \
     libqt5opengl5-dev \
-    xvfb
+    gettext
 }
 
 # Install Ubuntu 24.04 LTS packages
@@ -74,8 +77,6 @@ function install_ubuntu_lts_latest_requirements() {
   $SUDO apt-get install -y --no-install-recommends \
     g++-12 \
     qtbase5-dev \
-    qtchooser \
-    qt5-qmake \
     qtbase5-dev-tools \
     python3-dev \
     python3-venv
@@ -115,6 +116,11 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="3801", ATTRS{idProduct}=="ddcc", MODE="0666"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="3801", ATTRS{idProduct}=="ddee", MODE="0666"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="bbaa", ATTRS{idProduct}=="ddcc", MODE="0666"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="bbaa", ATTRS{idProduct}=="ddee", MODE="0666"
+EOF
+
+    # Setup adb udev rules
+    $SUDO tee /etc/udev/rules.d/50-comma-adb.rules > /dev/null <<EOF
+SUBSYSTEM=="usb", ATTR{idVendor}=="04d8", ATTR{idProduct}=="1234", ENV{adb_user}="yes"
 EOF
 
     $SUDO udevadm control --reload-rules && $SUDO udevadm trigger || true

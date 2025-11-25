@@ -109,7 +109,7 @@ jobs:
           GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
         run: |
           echo "Cloning GitLab"
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
           cd gitlab_docs
           echo "checkout models/${RECOMPILED_DIR}"
           git sparse-checkout set --no-cone models/${RECOMPILED_DIR}

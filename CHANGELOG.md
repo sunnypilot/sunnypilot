@@ -1,5 +1,29 @@
-sunnypilot Version 2025.002.000 (2025-xx-xx)
+sunnypilot Version 2025.003.000 (20xx-xx-xx)
 ========================
+
+sunnypilot Version 2025.002.000 (2025-11-06)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * models: bump model json to v8 by @Discountchubbs
+  * Bug: Model UI Crash Fix by @nayan8teen
+  * controlsd: add `CP_SP` to `get_pid_accel_limits` by @THERoenPR
+  * sunnylink: update uploader button logic to support novice tier and above by @devtekve
+  * Tesla: Coop Steering by @AmyJeanes
+  * ui: update discord references and add forum widget by @devtekve
+  * ui: Fix spacing in sunnylink panel by @devtekve
+  * docs: Update README installation branches and discord links by @mpurnell1 in
+  * stats: sunnylink integration by @devtekve
+  * bug: Fix initial registration for sunnylink by @devtekve
+* What's Changed (sunnypilot/opendbc)
+  * Honda: add brake hold messages for Clarity by @mvl-boston
+  * interface: add `CP_SP` to `get_pid_accel_limits` method signature by @roenthomas
+  * Honda: use fixed accel min/max constants for Gas Interceptor by @roenthomas
+  * Tesla: Coop Steering by @AmyJeanes
+* New Contributors (sunnypilot/sunnypilot)
+  * @THERoenPR made their first contribution in "controlsd: add `CP_SP` to `get_pid_accel_limits`"
+  * @AmyJeanes made their first contribution in "Tesla: Coop Steering"
+  * @mpurnell1 made their first contribution in "docs: Update README installation branches and discord links"
+* Full Changelog: https://github.com/sunnypilot/sunnypilot/compare/v2025.001.000...v2025.002.000
 
 sunnypilot Version 2025.001.000 (2025-10-25)
 ========================

@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Firehose (Default)"
+#define DEFAULT_MODEL "The Cool People (Default)"
