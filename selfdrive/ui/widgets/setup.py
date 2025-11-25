@@ -67,26 +67,33 @@ class SetupWidget(Widget):
     self._pair_device_btn.render(button_rect)
 
   def _render_side_prompt(self, rect: rl.Rectangle):
-    """Prompt box aligned exactly with Driving Mode button."""
+    """
+    Box aligned EXACTLY under Chill Mode button.
+    Uses the same column width & x-position.
+    """
 
-    # Same padding as all Home widgets
+    # This rect is too tall.
+    # We need the same vertical offset as HomeLayout uses for the driving mode tile.
+
+    TILE_HEIGHT = 125 + 40   # driving mode height (125) + bottom spacing (40)
+
+    # X alignment identical to Chill mode tile
     x = rect.x + 56
     w = rect.width - 112
 
-    # Hardcoded height (like your sample)
-    h = 230
+    # Y position directly under the Chill Mode button
+    y = rect.y + TILE_HEIGHT + 40
 
-    # Vertical position below the Driving Mode button
-    y = rect.y + 40
+    BOX_HEIGHT = 200
 
     # Draw background box
     rl.draw_rectangle_rounded(
-        rl.Rectangle(x, y, w, h),
+        rl.Rectangle(x, y, w, BOX_HEIGHT),
         0.04, 20,
         rl.Color(51, 51, 51, 255)
     )
 
-    # ---- Title (left aligned) ----
+    # ---- Title ----
     title_y = y + 35
     self._side_label.render(
         rl.Rectangle(x + 30, title_y, w - 60, 64)
@@ -97,6 +104,7 @@ class SetupWidget(Widget):
     desc_font = gui_app.font(FontWeight.NORMAL)
 
     desc_y = title_y + 80
+
     rl.draw_text_ex(
         desc_font,
         desc,
