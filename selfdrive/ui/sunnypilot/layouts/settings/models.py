@@ -59,7 +59,8 @@ class ModelsLayout(Widget):
     self.policy_label = progress_item(tr("Policy Model"))
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "",
-                                    lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0), gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))))
+                                    lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
+                                             gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))))
 
     self.clear_cache_item = ListItem(tr("Clear Model Cache"), "", action_item=NoElide(tr("Clear"), enabled=True), callback=self._clear_cache)
 
@@ -68,10 +69,12 @@ class ModelsLayout(Widget):
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
                                                 tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
                                                 int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
-                                                lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.params.get_bool('IsMetric') else 1)))} {'km/h' if ui_state.params.get_bool('IsMetric') else 'mph'}")
+                                                lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.params.get_bool('IsMetric') else 1)))}" +
+                                                          f" {'km/h' if ui_state.params.get_bool('IsMetric') else 'mph'}")
 
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
-                                                tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. " +
+                                                tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on," +
+                                                   " the car will plan a turn in that direction at the nearest drivable path. " +
                                                     "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
                                                 callback=lambda s: self.lane_turn_value_control.set_visible(s), param="LaneTurnDesire")
 
