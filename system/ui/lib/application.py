@@ -627,22 +627,12 @@ class GuiApplication(GuiApplicationExt):
         rl.draw_circle(int(mouse_pos.x), int(mouse_pos.y), 5, color)
 
   def _draw_mouse_coordinates(self):
-    # Get current mouse position - either from last event or current position
-    if hasattr(rl, 'get_mouse_position'):  # For PC/desktop environments
-      mouse_pos = rl.get_mouse_position()
-      x = mouse_pos.x / self._scale if self._scale != 1.0 else mouse_pos.x
-      y = mouse_pos.y / self._scale if self._scale != 1.0 else mouse_pos.y
-    elif len(self._mouse_events) > 0:  # Use last event if available
-      mouse_pos = self._last_mouse_event.pos
-      x = mouse_pos.x
-      y = mouse_pos.y
-    else:  # Fallback to last known position
-      mouse_pos = self._last_mouse_event.pos
-      x = mouse_pos.x
-      y = mouse_pos.y
+    mouse_pos = rl.get_mouse_position()
+    x = mouse_pos.x / self._scale if self._scale != 1.0 else mouse_pos.x
+    y = mouse_pos.y / self._scale if self._scale != 1.0 else mouse_pos.y
 
     # Format the coordinates as text
-    coords_text = f"X:{int(x)},Y:{int(y)}"
+    coords_text = f"X:{int(x)}, Y:{int(y)}"
 
     # Draw the text right next to the FPS counter
     fps_width = 80  # Approximate width of FPS text
