@@ -4,27 +4,189 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import datetime
+import platform
+import threading
+import shutil
+import requests
+from pathlib import Path
+from time import monotonic
+
 from openpilot.common.params import Params
+from openpilot.system.hardware import HARDWARE
+from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets.list_view import ButtonAction, ListItem, text_item
+from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeFolder, TreeNode, TreeOptionDialog
+from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
+from openpilot.system.ui.widgets import DialogResult, Widget
+from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.ui_state import ui_state
+
+MAP_PATH = Path.home() / ".comma/media/0/osm/offline" if HARDWARE.get_device_type() == "pc" else Path("/data/media/0/osm/offline")
+
+
+class NoElide(ButtonAction):
+  def get_width_hint(self):
+    return super().get_width_hint() + 20
 
 
 class OSMLayout(Widget):
   def __init__(self):
     super().__init__()
-
-    self._params = Params()
-    items = self._initialize_items()
-    self._scroller = Scroller(items, line_separator=True, spacing=0)
+    self._current_percent = 0
+    self._last_map_size_update = 0
+    self._cached_map_size = 0
+    self._mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else ui_state.params
+    self._initialize_items()
+    self._progress.set_visible(False)
+    self._state_btn.set_visible(False)
+    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    items = [
+    self._mapd_version = text_item(tr("Mapd Version"), lambda: ui_state.params.get("MapdVersion") or "Loading...")
+    self._delete_maps_btn = ListItem(tr("Downloaded Maps"), action_item=NoElide(tr("DELETE"), enabled=True), callback=self._delete_maps)
+    self._progress = progress_item(tr("Downloading Map"))
+    self._update_btn = ListItem(tr("Database Update"), action_item=NoElide(tr("CHECK"), enabled=True), callback=self._update_db)
+    self._country_btn = ListItem(tr("Country"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("Country"))
+    self._state_btn = ListItem(tr("State"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("State"))
 
-    ]
-    return items
+    self.items = [self._mapd_version, self._delete_maps_btn, self._progress, self._update_btn, self._country_btn, self._state_btn]
 
-  def _render(self, rect):
-    self._scroller.render(rect)
+  def _show_confirm(self, msg, confirm_text, func):
+    gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
+
+  def _delete_maps(self):
+    def _do_delete():
+      if MAP_PATH.exists():
+        shutil.rmtree(MAP_PATH)
+      self._last_map_size_update = 0  # Force update after delete
+      self._delete_maps_btn.set_enabled(True)
+      self._delete_maps_btn.action_item.set_text(tr("DELETE"))
+      self._update_map_size()
+
+    self._show_confirm(tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"),
+                       tr("Yes, delete all the maps."), lambda: [
+      self._delete_maps_btn.set_enabled(False), self._delete_maps_btn.action_item.set_text("Deleting..."),
+      threading.Thread(target=_do_delete).start()
+    ])
+
+  def _update_db(self):
+    self._show_confirm(tr("This will start the download process and it might take a while to complete."), tr("Start Download"),
+                       lambda: ui_state.params.put_bool("OsmDbUpdatesCheck", True))
+
+  def _select_region(self, region_type):
+    is_country = region_type == "Country"
+    btn = self._country_btn if is_country else self._state_btn
+    btn.set_enabled(False)
+    btn.action_item.set_text(tr(f"Fetching {region_type} list..."))
+    threading.Thread(target=self._do_select_region, args=(region_type, btn)).start()
+
+  def _do_select_region(self, region_type, btn):
+    base_url = "https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/"
+    url = base_url + ("nation_bounding_boxes.json" if region_type == "Country" else "us_states_bounding_boxes.json")
+    try:
+      data = requests.get(url, timeout=10).json()
+      locations = sorted([TreeNode(ref=k, data={'display_name': v['full_name']}) for k, v in data.items()], key=lambda n: n.data['display_name'])
+    except Exception:
+      locations = []
+
+    btn.set_enabled(True)
+    btn.action_item.set_text(tr("SELECT"))
+
+    key = "OsmLocation" if region_type == "Country" else "OsmState"
+    current = ui_state.params.get(f"{key}Name") or ""
+
+    def on_select(res, ref):
+      if res != DialogResult.CONFIRM or not ref:
+        return
+      if region_type == "Country":
+        ui_state.params.put_bool("OsmLocal", True)
+        ui_state.params.remove("OsmStateName")
+        ui_state.params.remove("OsmStateTitle")
+
+      ui_state.params.put(f"{key}Name", ref)
+      name = next((n.data['display_name'] for n in locations if n.ref == ref), ref)
+      ui_state.params.put(f"{key}Title", name)
+
+      if ref == "US" and region_type == "Country":
+        self._select_region("State")
+      else:
+        self._update_db()
+
+    folder_name = "Countries" if region_type == "Country" else "States"
+    dialog = TreeOptionDialog(tr(f"Select {region_type}"), [TreeFolder(folder=folder_name, nodes=locations)], current_ref=current)
+    dialog.on_exit = lambda res: on_select(res, dialog.selection_ref)
+    gui_app.set_modal_overlay(dialog, callback=lambda res: on_select(res, dialog.selection_ref))
+
+  def _update_map_size(self):
+    now = monotonic()
+    if now - self._last_map_size_update >= 0.5:
+      size = 0
+      if MAP_PATH.exists():
+        for f in MAP_PATH.rglob('*'):
+          try:
+            size += f.stat().st_size
+          except OSError:
+            pass
+      self._cached_map_size = size
+      self._last_map_size_update = now
+    value = f"{self._cached_map_size / 1024**2:.2f} MB" if self._cached_map_size < 1024**3 else f"{self._cached_map_size / 1024**3:.2f} GB"
+    self._delete_maps_btn.action_item.set_value(value)
+
+  def _update_labels(self):
+    self._mapd_version.action_item.set_text(ui_state.params.get("MapdVersion") or "Loading...")
+    self._update_map_size()
+
+    downloading = bool(self._mem_params.get("OSMDownloadLocations"))
+    self._country_btn.set_enabled(not downloading)
+    self._state_btn.set_enabled(not downloading)
+    self._state_btn.set_visible(ui_state.params.get("OsmLocationName") == "US")
+    self._update_btn.set_visible(bool(ui_state.params.get("OsmLocationName")))
+
+    self._country_btn.action_item.set_value(ui_state.params.get("OsmLocationTitle") or "")
+    self._state_btn.action_item.set_value(ui_state.params.get("OsmStateTitle") or "")
+
+    pending = ui_state.params.get_bool("OsmDbUpdatesCheck")
+    if downloading or pending:
+      self._progress.set_visible(True)
+      progress = ui_state.params.get("OSMDownloadProgress")
+      total = progress.get('total_files', 0) if progress else 0
+      done = progress.get('downloaded_files', 0) if progress else 0
+      failed = total > 0 and not downloading and done < total
+
+      if failed:
+        text = "0% - Downloading Maps"
+        btn_text = tr("Error: Invalid download. Retry.")
+        self._current_percent = 0
+      elif total > 0 and downloading and done < total:
+        self._current_percent = min(self._current_percent + 2, (done / total) * 100)
+        text = f"{int(100.0 * done / total)}% - Downloading Maps"
+        btn_text = f"{done}/{total} ({int(100.0 * done / total)}%)"
+      else:
+        self._current_percent = 0
+        text = "0% - Downloading Maps"
+        btn_text = tr("Download starting...") if pending else tr("Download complete!")
+
+      self._progress.action_item.update(self._current_percent, text, show_progress=total > 0 and downloading and not failed)
+      self._update_btn.action_item.set_text(tr("REFRESH") if downloading else tr("CHECK"))
+      self._update_btn.action_item.set_value(btn_text)
+    else:
+      self._progress.set_visible(False)
+      self._update_btn.action_item.set_text(tr("CHECK"))
+      ts = ui_state.params.get("OsmDownloadedDate")
+      try:
+        dt = datetime.datetime.fromtimestamp(float(ts))
+        self._update_btn.action_item.set_value(dt.strftime("%Y-%m-%d %H:%M:%S"))
+      except (ValueError, TypeError):
+        self._update_btn.action_item.set_value("")
 
   def show_event(self):
     self._scroller.show_event()
+
+  def _update_state(self):
+    self._update_labels()
+
+  def _render(self, rect):
+    self._scroller.render(rect)

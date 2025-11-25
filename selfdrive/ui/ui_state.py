@@ -32,6 +32,11 @@ class UIState:
 
   def _initialize(self):
     self.params = Params()
+    sunnypilot_items = [
+      "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP",
+     "gpsLocation", "liveTorqueParameters",
+      "carStateSP",  "liveMapDataSP", "carParamsSP", "liveDelay",
+    ]
     self.sm = messaging.SubMaster(
       [
         "modelV2",
@@ -55,7 +60,7 @@ class UIState:
         "carControl",
         "liveParameters",
         "rawAudioData",
-      ]
+      ] + sunnypilot_items
     )
 
     self.prime_state = PrimeState()
