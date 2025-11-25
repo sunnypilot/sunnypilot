@@ -1,0 +1,3 @@
+experimental.png -filter -diff -merge
+experimental.svg -filter -diff -merge
+microphone.png -filter -diff -merge
