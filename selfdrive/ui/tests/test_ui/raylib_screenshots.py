@@ -151,7 +151,7 @@ def setup_experimental_mode_description(click, pm: PubMaster, scroll=None):
 
 def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster, scroll=None):
   setup_settings_developer(click, pm, scroll=scroll)
-  click(650, 960)  # toggle openpilot longitudinal control
+  click(650, 960)  # toggle sunnypilot longitudinal control
 
 
 def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
