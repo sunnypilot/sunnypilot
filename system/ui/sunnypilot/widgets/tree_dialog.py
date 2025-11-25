@@ -97,7 +97,7 @@ class TreeOptionDialog(MultiOptionDialog):
 
       if expanded:
         for node in nodes:
-          cb = None if node.ref == "Default" else lambda n=node: self._toggle_favorite(n)
+          cb = self.fav_param and node.ref != "Default" and (lambda n=node: self._toggle_favorite(n)) or None
           self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
                                                    lambda n=node: self._select_node(n), cb, node.ref in self.favorites))
 
