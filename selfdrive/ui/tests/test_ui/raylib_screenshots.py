@@ -351,6 +351,7 @@ class TestUI:
     self.setup()
     time.sleep(UI_DELAY)  # wait for UI to start
     setup_case(self.click, self.pm, self.scroll)
+    time.sleep(UI_DELAY)
     self.screenshot(name)
 
 
