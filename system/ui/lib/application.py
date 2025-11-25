@@ -190,7 +190,6 @@ class MouseState:
 
 class GuiApplication(GuiApplicationExt):
   def __init__(self, width: int | None = None, height: int | None = None):
-    GuiApplicationExt.__init__(self)
     self._fonts: dict[FontWeight, rl.Font] = {}
     self._width = width if width is not None else GuiApplication._default_width()
     self._height = height if height is not None else GuiApplication._default_height()
@@ -227,6 +226,8 @@ class GuiApplication(GuiApplicationExt):
     self._profile_render_frames = PROFILE_RENDER
     self._render_profiler = None
     self._render_profile_start_time = None
+
+    GuiApplicationExt.__init__(self)
 
   @property
   def frame(self):
@@ -469,7 +470,7 @@ class GuiApplication(GuiApplicationExt):
           self._draw_touch_points()
 
         if self._show_mouse_coords:
-          self._draw_mouse_coordinates(gui_app.font(FontWeight.NORMAL))
+          self._draw_mouse_coordinates(gui_app.font(FontWeight.SEMI_BOLD))
 
         if self._grid_size > 0:
           self._draw_grid()
