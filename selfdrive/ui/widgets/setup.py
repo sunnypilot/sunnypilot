@@ -76,42 +76,45 @@ class SetupWidget(Widget):
     self._pair_device_btn.render(button_rect)
 
   def _render_side_prompt(self, rect: rl.Rectangle):
-    """Render simple fixed prompt box."""
+    """Simple hardcoded box with left-aligned text."""
 
-    # Hardcoded fixed box size
-    box_width = 880
+    # Hardcoded box size
+    box_width = 900
     box_height = 260
 
-    # Center it horizontally
+    # Position box centered horizontally
     box_x = rect.x + (rect.width - box_width) / 2
     box_y = rect.y + 40
 
-    # Draw background
+    # Draw background box
     rl.draw_rectangle_rounded(
         rl.Rectangle(box_x, box_y, box_width, box_height),
         0.04, 20,
         rl.Color(51, 51, 51, 255)
     )
 
-    # -----------------------------
-    # Render Title (centered manually)
-    # -----------------------------
+    # ------- Title (LEFT ALIGNED) -------
+    title_x = box_x + 40   # left padding
     title_y = box_y + 35
-    title_rect = rl.Rectangle(box_x + 40, title_y, box_width - 80, 64)
-    self._side_label.render(title_rect)
+    self._side_label.render(
+        rl.Rectangle(title_x, title_y, box_width - 80, 64)
+    )
 
-    # -----------------------------
-    # Render Description
-    # -----------------------------
+    # ------- Description (LEFT ALIGNED) -------
     desc = tr("Hope you're having a great day!")
     desc_font = gui_app.font(FontWeight.NORMAL)
+
+    desc_x = box_x + 40
     desc_y = title_y + 80
 
-    # Center the description manually
-    text_width = rl.measure_text_ex(desc_font, desc, 40, 0).x
-    text_x = box_x + (box_width - text_width) / 2
-
-    rl.draw_text_ex(desc_font, desc, rl.Vector2(text_x, desc_y), 40, 0, rl.WHITE)
+    rl.draw_text_ex(
+        desc_font,
+        desc,
+        rl.Vector2(desc_x, desc_y),
+        40,
+        0,
+        rl.WHITE
+    )
 
   def _show_pairing(self):
     if not system_time_valid():
