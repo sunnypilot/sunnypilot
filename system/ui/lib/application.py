@@ -38,6 +38,7 @@ SCALE = float(os.getenv("SCALE", "1.0"))
 GRID_SIZE = int(os.getenv("GRID", "0"))
 PROFILE_RENDER = int(os.getenv("PROFILE_RENDER", "0"))
 PROFILE_STATS = int(os.getenv("PROFILE_STATS", "100"))  # Number of functions to show in profile output
+SHOW_MOUSE_COORDS = os.getenv("SHOW_MOUSE_COORDS") == "1"
 
 GL_VERSION = """
 #version 300 es
@@ -222,6 +223,7 @@ class GuiApplication(GuiApplicationExt):
     self._mouse_history: deque[MousePosWithTime] = deque(maxlen=MOUSE_THREAD_RATE)
     self._show_touches = SHOW_TOUCHES
     self._show_fps = SHOW_FPS
+    self._show_mouse_coords = SHOW_MOUSE_COORDS
     self._grid_size = GRID_SIZE
     self._profile_render_frames = PROFILE_RENDER
     self._render_profiler = None
@@ -236,6 +238,9 @@ class GuiApplication(GuiApplicationExt):
 
   def set_show_fps(self, show: bool):
     self._show_fps = show
+
+  def set_show_mouse_coords(self, show: bool):
+    self._show_mouse_coords = show
 
   @property
   def target_fps(self):
@@ -467,6 +472,9 @@ class GuiApplication(GuiApplicationExt):
         if self._show_touches:
           self._draw_touch_points()
 
+        if self._show_mouse_coords:
+          self._draw_mouse_coordinates()
+
         if self._grid_size > 0:
           self._draw_grid()
 
@@ -617,6 +625,31 @@ class GuiApplication(GuiApplicationExt):
         perc = idx / len(self._mouse_history)
         color = rl.Color(min(int(255 * (1.5 - perc)), 255), int(min(255 * (perc + 0.5), 255)), 50, 255)
         rl.draw_circle(int(mouse_pos.x), int(mouse_pos.y), 5, color)
+
+  def _draw_mouse_coordinates(self):
+    # Get current mouse position - either from last event or current position
+    if hasattr(rl, 'get_mouse_position'):  # For PC/desktop environments
+      mouse_pos = rl.get_mouse_position()
+      x = mouse_pos.x / self._scale if self._scale != 1.0 else mouse_pos.x
+      y = mouse_pos.y / self._scale if self._scale != 1.0 else mouse_pos.y
+    elif len(self._mouse_events) > 0:  # Use last event if available
+      mouse_pos = self._last_mouse_event.pos
+      x = mouse_pos.x
+      y = mouse_pos.y
+    else:  # Fallback to last known position
+      mouse_pos = self._last_mouse_event.pos
+      x = mouse_pos.x
+      y = mouse_pos.y
+
+    # Format the coordinates as text
+    coords_text = f"X:{int(x)},Y:{int(y)}"
+
+    # Draw the text right next to the FPS counter
+    fps_width = 80  # Approximate width of FPS text
+    if self._show_fps:
+      rl.draw_text(coords_text, 10 + fps_width, 10, 20, rl.WHITE)
+    else:
+      rl.draw_text(coords_text, 10, 10, 20, rl.WHITE)
 
   def _draw_grid(self):
     grid_color = rl.Color(60, 60, 60, 255)
