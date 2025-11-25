@@ -9,6 +9,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
+from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.hardware import HARDWARE, PC
 
@@ -21,7 +22,7 @@ class UIStatus(Enum):
   OVERRIDE = "override"
 
 
-class UIState:
+class UIState(UIStateSP):
   _instance: 'UIState | None' = None
 
   def __new__(cls):
@@ -32,7 +33,9 @@ class UIState:
 
   def _initialize(self):
     self.params = Params()
+    UIStateSP.__init__(self)
     self.sm = messaging.SubMaster(
+      list(set(
       [
         "modelV2",
         "controlsState",
@@ -55,7 +58,7 @@ class UIState:
         "carControl",
         "liveParameters",
         "rawAudioData",
-      ]
+      ] + self.sp_services))
     )
 
     self.prime_state = PrimeState()
@@ -110,7 +113,9 @@ class UIState:
     self._update_status()
     if time.monotonic() - self._param_update_time > 5.0:
       self.update_params()
+      UIStateSP.update_params(self)
     device.update()
+    UIStateSP.update(self)
 
   def _update_state(self) -> None:
     # Handle panda states updates

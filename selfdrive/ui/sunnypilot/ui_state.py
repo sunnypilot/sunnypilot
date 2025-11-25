@@ -1,34 +1,22 @@
-from openpilot.selfdrive.ui.ui_state import UIState
+
 from cereal import messaging, custom
 from openpilot.common.params import Params
 
 
-class UIStateSP(UIState):
-  _instance: 'UIStateSP | None' = None
+class UIStateSP:
 
-  def _initialize(self):
-    UIState._initialize(self)
+  def __init__(self):
     self.params = Params()
-    op_services = self.sm.services
-    sp_services = [
+    self.sp_services = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-      "carControl", "gpsLocationExternal", "gpsLocation", "liveTorqueParameters",
-      "carStateSP", "liveParameters", "liveMapDataSP", "carParamsSP"
+      "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP"
     ]
-    self.sm = messaging.SubMaster(op_services + sp_services)
 
   def update(self) -> None:
-    UIState.update(self)
-
-  def _update_status(self) -> None:
-    UIState._update_status(self)
+    pass
 
   def update_params(self) -> None:
-    UIState.update_params(self)
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
-
-# Global instance
-ui_state_sp = UIStateSP()
