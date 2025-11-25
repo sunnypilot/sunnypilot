@@ -54,13 +54,19 @@ class SetupWidget(Widget):
     self._pair_device_btn.render(button_rect)
 
   def _render_side_prompt(self, rect: rl.Rectangle):
-    """Render firehose prompt widget."""
+    """Render side prompt widget (centered box)."""
 
-    # Content margins (56, 40, 56, 40)
-    x = rect.x + 56
-    y = rect.y + 40
-    w = rect.width - 112
+    # Box styling
+    horizontal_padding = 56
+    vertical_padding = 40
     spacing = 42
+
+    # Choose a box width (like OP's Driving Mode cards)
+    box_width = min(rect.width * 0.8, 900)  # 80% of space, capped at 900px
+    box_x = rect.x + (rect.width - box_width) / 2
+
+    # Text container width
+    w = box_width - (horizontal_padding * 2)
 
     # Calculate dynamic height -----------------------------------------
     desc_font = gui_app.font(FontWeight.NORMAL)
@@ -69,23 +75,37 @@ class SetupWidget(Widget):
 
     title_h = 64
     desc_h = len(wrapped_desc) * 40 * FONT_SCALE
-    box_height = 40 + title_h + spacing + desc_h + spacing
+    box_height = (
+        vertical_padding       # top margin
+        + title_h
+        + spacing
+        + desc_h
+        + vertical_padding     # bottom margin
+    )
 
-    # Draw background box
+    # Draw background box (centered)
     rl.draw_rectangle_rounded(
-        rl.Rectangle(rect.x, rect.y, rect.width, box_height),
+        rl.Rectangle(box_x, rect.y, box_width, box_height),
         0.04, 20,
         rl.Color(51, 51, 51, 255)
     )
-    # -----------------------------------------------------------------
 
-    # Render title
-    self._side_label.render(rl.Rectangle(rect.x + 56, y, rect.width - 112, 64))
-    y += 64 + spacing
+    # --------------------------------------------------------------
+    # Render content inside the centered box
+    # --------------------------------------------------------------
 
-    # Render description
+    # Initial Y inside the box
+    y = rect.y + vertical_padding
+
+    # Title centered in the box
+    self._side_label.render(
+        rl.Rectangle(box_x + horizontal_padding, y, w, title_h)
+    )
+    y += title_h + spacing
+
+    # Description text (centered horizontally)
     for line in wrapped_desc:
-        rl.draw_text_ex(desc_font, line, rl.Vector2(x, y), 40, 0, rl.WHITE)
+        rl.draw_text_ex(desc_font, line, rl.Vector2(box_x + horizontal_padding, y), 40, 0, rl.WHITE)
         y += 40 * FONT_SCALE
 
   def _show_pairing(self):
