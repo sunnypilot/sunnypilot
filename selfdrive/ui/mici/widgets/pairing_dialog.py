@@ -25,7 +25,7 @@ class PairingDialog(NavWidget):
     self._last_qr_generation = float("-inf")
 
     self._txt_pair = gui_app.texture("icons_mici/settings/device/pair.png", 84, 64)
-    self._pair_label = MiciLabel("pair with comma connect", 48, font_weight=FontWeight.BOLD,
+    self._pair_label = MiciLabel("pair with konik stable", 48, font_weight=FontWeight.BOLD,
                                  color=rl.Color(255, 255, 255, int(255 * 0.9)), line_height=40, wrap_text=True)
 
   def _get_pairing_url(self) -> str:
@@ -35,7 +35,7 @@ class PairingDialog(NavWidget):
     except Exception as e:
       cloudlog.warning(f"Failed to get pairing token: {e}")
       token = ""
-    return f"https://connect.comma.ai/?pair={token}"
+    return f"https://stable.konik.ai/?pair={token}"
 
   def _generate_qr_code(self) -> None:
     try:
