@@ -93,7 +93,7 @@ class ListItemSP(ListItem):
 
     if not self.inline:
       action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
-      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.style.BUTTON_HEIGHT)
+      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
 
     right_width = self.action_item.rect.width
     if right_width == 0:  # Full width action (like DualButtonAction)
