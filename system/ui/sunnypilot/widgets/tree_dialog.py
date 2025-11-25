@@ -28,7 +28,7 @@ class TreeItemWidget(Button):
   def __init__(self, text, ref, is_folder=False, indent_level=0, click_callback=None, favorite_callback=None, is_favorite=False):
     super().__init__(text, click_callback, button_style=ButtonStyle.NORMAL,
                      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-                     text_padding=20 + indent_level * 70, elide_right=True)
+                     text_padding=20 + indent_level * 90, elide_right=True)
     self.text = text
     self.ref = ref
     self.is_folder = is_folder
