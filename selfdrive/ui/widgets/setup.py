@@ -75,70 +75,44 @@ class SetupWidget(Widget):
     button_rect = rl.Rectangle(x, y + 30, w, 200)
     self._pair_device_btn.render(button_rect)
 
-  # -----------------------------
-  #   Centered side widget
-  # -----------------------------
   def _render_side_prompt(self, rect: rl.Rectangle):
+    """Render simple fixed prompt box."""
 
-    # Style and consistent spacing
-    horizontal_padding = 56
-    vertical_padding = 40
-    spacing = 42
+    # Hardcoded fixed box size
+    box_width = 880
+    box_height = 260
 
-    # Box width similar to OP tiles
-    box_width = min(rect.width * 0.8, 900)
+    # Center it horizontally
     box_x = rect.x + (rect.width - box_width) / 2
+    box_y = rect.y + 40
 
-    # Text width inside the box
-    w = box_width - (horizontal_padding * 2)
-
-    # Description text
-    desc_font = gui_app.font(FontWeight.NORMAL)
-    desc_text = tr("Hope you're having a great day!")
-    wrapped_desc = wrap_text(desc_font, desc_text, 40, int(w))
-
-    # Dynamic box height
-    title_h = 64
-    desc_h = len(wrapped_desc) * (40 * FONT_SCALE)
-
-    box_height = (
-      vertical_padding +
-      title_h +
-      spacing +
-      desc_h +
-      vertical_padding
-    )
-
-    # Draw the centered background box
+    # Draw background
     rl.draw_rectangle_rounded(
-      rl.Rectangle(box_x, rect.y, box_width, box_height),
-      0.04, 20,
-      rl.Color(51, 51, 51, 255)
+        rl.Rectangle(box_x, box_y, box_width, box_height),
+        0.04, 20,
+        rl.Color(51, 51, 51, 255)
     )
 
     # -----------------------------
-    #   Render content inside box
+    # Render Title (centered manually)
     # -----------------------------
-    y = rect.y + vertical_padding
+    title_y = box_y + 35
+    title_rect = rl.Rectangle(box_x + 40, title_y, box_width - 80, 64)
+    self._side_label.render(title_rect)
 
-    # Centered title inside the box
-    self._side_label.render(
-      rl.Rectangle(box_x + horizontal_padding, y, w, title_h)
-    )
+    # -----------------------------
+    # Render Description
+    # -----------------------------
+    desc = tr("Hope you're having a great day!")
+    desc_font = gui_app.font(FontWeight.NORMAL)
+    desc_y = title_y + 80
 
-    y += title_h + spacing
+    # Center the description manually
+    text_width = rl.measure_text_ex(desc_font, desc, 40, 0).x
+    text_x = box_x + (box_width - text_width) / 2
 
-    # Center the description text manually
-    for line in wrapped_desc:
-      # Measure text width so we can center it
-      tw = rl.measure_text_ex(desc_font, line, 40, 0).x
-      text_x = box_x + (box_width - tw) / 2
-      rl.draw_text_ex(desc_font, line, rl.Vector2(text_x, y), 40, 0, rl.WHITE)
-      y += 40 * FONT_SCALE
+    rl.draw_text_ex(desc_font, desc, rl.Vector2(text_x, desc_y), 40, 0, rl.WHITE)
 
-  # -----------------------------
-  #   Pairing Dialog
-  # -----------------------------
   def _show_pairing(self):
     if not system_time_valid():
       dlg = alert_dialog(tr("Please connect to Wi-Fi to complete initial pairing"))
