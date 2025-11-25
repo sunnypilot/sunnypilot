@@ -32,11 +32,10 @@ class MultipleButtonActionSP(MultipleButtonAction):
 
   def _render(self, rect: rl.Rectangle):
 
-    button_height = style.BUTTON_HEIGHT + 15
-    button_y = rect.y + (rect.height - button_height) / 2
+    button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
 
     total_width = len(self.buttons) * self.button_width
-    track_rect = rl.Rectangle(rect.x, button_y, total_width, button_height)
+    track_rect = rl.Rectangle(rect.x, button_y, total_width, style.BUTTON_HEIGHT)
 
     bg_color = style.BASE_BG_COLOR if self.enabled else style.DISABLED_OFF_BG_COLOR
     text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
@@ -51,7 +50,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
       self._anim_x = target_x
     self._anim_x += (target_x - self._anim_x) * 0.2
 
-    highlight_rect = rl.Rectangle(self._anim_x, button_y, self.button_width, button_height)
+    highlight_rect = rl.Rectangle(self._anim_x, button_y, self.button_width, style.BUTTON_HEIGHT)
     rl.draw_rectangle_rounded(highlight_rect, 0.2, 20, highlight_color)
 
     # text
@@ -61,7 +60,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
       text = _resolve_value(_text, "")
       text_size = measure_text_cached(self._font, text, 40)
       text_x = button_x + (self.button_width - text_size.x) / 2
-      text_y = button_y + (button_height - text_size.y) / 2
+      text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
 
       rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, text_color)
 
@@ -94,7 +93,7 @@ class ListItemSP(ListItem):
 
     if not self.inline:
       action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
-      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
+      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.style.BUTTON_HEIGHT)
 
     right_width = self.action_item.rect.width
     if right_width == 0:  # Full width action (like DualButtonAction)
