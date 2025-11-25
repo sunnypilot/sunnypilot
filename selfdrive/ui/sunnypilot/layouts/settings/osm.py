@@ -115,8 +115,7 @@ class OSMLayout(Widget):
       else:
         self._update_db()
 
-    folder_name = "Countries" if region_type == "Country" else "States"
-    dialog = TreeOptionDialog(tr(f"Select {region_type}"), [TreeFolder(folder=folder_name, nodes=locations)], current_ref=current)
+    dialog = TreeOptionDialog(tr(f"Select {region_type}"), [TreeFolder(folder="", nodes=locations)], current_ref=current, search_prompt="Perform a search?")
     dialog.on_exit = lambda res: on_select(res, dialog.selection_ref)
     gui_app.set_modal_overlay(dialog, callback=lambda res: on_select(res, dialog.selection_ref))
 
