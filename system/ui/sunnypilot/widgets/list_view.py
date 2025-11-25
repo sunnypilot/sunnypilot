@@ -28,43 +28,41 @@ class MultipleButtonActionSP(MultipleButtonAction):
     self.params = Params()
     if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default=True))
+    self._anim_x = None
 
   def _render(self, rect: rl.Rectangle):
-    spacing = style.ITEM_PADDING
-    button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
 
+    button_height = style.BUTTON_HEIGHT + 15
+    button_y = rect.y + (rect.height - button_height) / 2
+
+    total_width = len(self.buttons) * self.button_width
+    track_rect = rl.Rectangle(rect.x, button_y, total_width, button_height)
+
+    bg_color = style.BASE_BG_COLOR if self.enabled else style.DISABLED_OFF_BG_COLOR
+    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
+    highlight_color = style.ON_BG_COLOR if self.enabled else style.DISABLED_ON_BG_COLOR
+
+    # background
+    rl.draw_rectangle_rounded(track_rect, 0.2, 20, bg_color)
+
+    # highlight with animation
+    target_x = rect.x + self.selected_button * self.button_width
+    if not self._anim_x:
+      self._anim_x = target_x
+    self._anim_x += (target_x - self._anim_x) * 0.2
+
+    highlight_rect = rl.Rectangle(self._anim_x, button_y, self.button_width, button_height)
+    rl.draw_rectangle_rounded(highlight_rect, 0.2, 20, highlight_color)
+
+    # text
     for i, _text in enumerate(self.buttons):
-      button_x = rect.x + i * (self.button_width + spacing)
-      button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+      button_x = rect.x + i * self.button_width
 
-      # Check button state
-      mouse_pos = rl.get_mouse_position()
-      is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
-      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed
-      is_selected = i == self.selected_button
-
-      # Button colors
-      if is_selected:
-        bg_color = style.ON_BG_COLOR
-        if is_pressed:
-          bg_color = style.ON_HOVER_BG_COLOR
-      elif is_pressed:
-        bg_color = style.OFF_HOVER_BG_COLOR
-      else:
-        bg_color = style.OFF_BG_COLOR
-
-      if not self.enabled:
-        bg_color = style.DISABLED_OFF_BG_COLOR
-
-      # Draw button
-      rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
-
-      # Draw text
       text = _resolve_value(_text, "")
       text_size = measure_text_cached(self._font, text, 40)
       text_x = button_x + (self.button_width - text_size.x) / 2
-      text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
-      text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
+      text_y = button_y + (button_height - text_size.y) / 2
+
       rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, text_color)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
