@@ -67,44 +67,43 @@ class SetupWidget(Widget):
     self._pair_device_btn.render(button_rect)
 
   def _render_side_prompt(self, rect: rl.Rectangle):
-    """Simple hardcoded box with left-aligned text."""
+    """Prompt box aligned exactly with Driving Mode button."""
 
-    # Hardcoded rectangle
-    box_width = 900
-    box_height = 260
+    # Same padding as all Home widgets
+    x = rect.x + 56
+    w = rect.width - 112
 
-    # Centered horizontally
-    box_x = rect.x + (rect.width - box_width) / 2
-    box_y = rect.y + 40
+    # Hardcoded height (like your sample)
+    h = 230
 
+    # Vertical position below the Driving Mode button
+    y = rect.y + 40
+
+    # Draw background box
     rl.draw_rectangle_rounded(
-      rl.Rectangle(box_x, box_y, box_width, box_height),
-      0.04, 20,
-      rl.Color(51, 51, 51, 255)
+        rl.Rectangle(x, y, w, h),
+        0.04, 20,
+        rl.Color(51, 51, 51, 255)
     )
 
-    # ---- LEFT-ALIGNED TITLE ----
-    title_x = box_x + 40
-    title_y = box_y + 35
-
+    # ---- Title (left aligned) ----
+    title_y = y + 35
     self._side_label.render(
-      rl.Rectangle(title_x, title_y, box_width - 80, 64)
+        rl.Rectangle(x + 30, title_y, w - 60, 64)
     )
 
-    # ---- LEFT-ALIGNED DESCRIPTION ----
+    # ---- Description ----
     desc = tr("Hope you're having a great day!")
     desc_font = gui_app.font(FontWeight.NORMAL)
 
-    desc_x = box_x + 40
     desc_y = title_y + 80
-
     rl.draw_text_ex(
-      desc_font,
-      desc,
-      rl.Vector2(desc_x, desc_y),
-      40,
-      0,
-      rl.WHITE
+        desc_font,
+        desc,
+        rl.Vector2(x + 30, desc_y),
+        40,
+        0,
+        rl.WHITE
     )
 
   def _show_pairing(self):
