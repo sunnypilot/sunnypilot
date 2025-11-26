@@ -2,7 +2,7 @@ import base64
 
 import pyray as rl
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID, API_HOST
 from openpilot.system.ui.lib.application import FontWeight, gui_app
@@ -36,7 +36,7 @@ class SunnylinkPairingDialog(PairingDialog):
     return qr_string
 
   def _update_state(self):
-    if ui_state_sp.sunnylink_state.is_paired():
+    if ui_state.sunnylink_state.is_paired():
       gui_app.set_modal_overlay(None)
 
   def _render(self, rect: rl.Rectangle) -> int:

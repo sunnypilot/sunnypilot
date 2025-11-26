@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import custom
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
@@ -26,7 +26,7 @@ class SunnylinkLayout(Widget):
     self._sunnylink_pairing_dialog: SunnylinkPairingDialog | None = None
     self._restore_in_progress = False
     self._backup_in_progress = False
-    self._sunnylink_enabled = ui_state_sp.params.get("SunnylinkEnabled")
+    self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
@@ -81,7 +81,7 @@ class SunnylinkLayout(Widget):
     return items
 
   def _handle_pair_btn(self, sponsor_pairing: bool = False):
-    sunnylink_dongle_id = ui_state_sp.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
+    sunnylink_dongle_id = ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
     if sunnylink_dongle_id == UNREGISTERED_SUNNYLINK_DONGLE_ID:
       gui_app.set_modal_overlay(alert_dialog(message=tr("sunnylink Dongle ID not found. ") +
                                                      tr("This may be due to weak internet connection or sunnylink registration issue. ") +
@@ -103,16 +103,16 @@ class SunnylinkLayout(Widget):
     if dialog_result == DialogResult.CONFIRM:
       self._backup_in_progress = True
       self._backup_btn.set_enabled(False)
-      ui_state_sp.params.put_bool("BackupManager_CreateBackup", True)
+      ui_state.params.put_bool("BackupManager_CreateBackup", True)
 
   def _restore_handler(self, dialog_result: int):
     if dialog_result == DialogResult.CONFIRM:
       self._restore_in_progress = True
       self._restore_btn.set_enabled(False)
-      ui_state_sp.params.put("BackupManager_RestoreVersion", "latest")
+      ui_state.params.put("BackupManager_RestoreVersion", "latest")
 
   def handle_backup_restore_progress(self):
-    sunnylink_backup_manager = ui_state_sp.sm["backupManagerSP"]
+    sunnylink_backup_manager = ui_state.sm["backupManagerSP"]
 
     backup_status = sunnylink_backup_manager.backupStatus
     restore_status = sunnylink_backup_manager.restoreStatus
@@ -126,14 +126,14 @@ class SunnylinkLayout(Widget):
 
       elif backup_status == custom.BackupManagerSP.Status.failed:
         self._backup_in_progress = False
-        self._backup_btn.set_enabled(not ui_state_sp.is_onroad())
+        self._backup_btn.set_enabled(not ui_state.is_onroad())
         self._backup_btn.set_text(tr("Backup Failed"))
 
       elif backup_status == custom.BackupManagerSP.Status.completed:
         self._backup_in_progress = False
         dialog = alert_dialog(tr("Settings backup completed."))
         gui_app.set_modal_overlay(dialog)
-        self._backup_btn.set_enabled(not ui_state_sp.is_onroad())
+        self._backup_btn.set_enabled(not ui_state.is_onroad())
 
     elif self._restore_in_progress:
       if restore_status == custom.BackupManagerSP.Status.inProgress:
@@ -143,7 +143,7 @@ class SunnylinkLayout(Widget):
 
       elif restore_status == custom.BackupManagerSP.Status.failed:
         self._restore_in_progress = False
-        self._restore_btn.set_enabled(not ui_state_sp.is_onroad())
+        self._restore_btn.set_enabled(not ui_state.is_onroad())
         self._restore_btn.set_text(tr("Restore Failed"))
         dialog = alert_dialog(tr("Unable to restore the settings, try again later."))
         gui_app.set_modal_overlay(dialog)
@@ -156,31 +156,31 @@ class SunnylinkLayout(Widget):
         })
 
     else:
-      can_enable =  self._sunnylink_enabled and not ui_state_sp.is_onroad()
+      can_enable =  self._sunnylink_enabled and not ui_state.is_onroad()
       self._backup_btn.set_enabled(can_enable)
       self._backup_btn.set_text(tr("Backup Settings"))
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
 
   def _sunnylink_toggle_callback(self, state: bool):
-    ui_state_sp.params.put_bool("SunnylinkEnabled", state)
-    ui_state_sp.update_params()
+    ui_state.params.put_bool("SunnylinkEnabled", state)
+    ui_state.update_params()
 
   def _update_state(self):
     super()._update_state()
-    self._sunnylink_enabled = ui_state_sp.sunnylink_enabled
-    self._sunnylink_toggle.action_item.set_enabled(not ui_state_sp.is_onroad())
+    self._sunnylink_enabled = ui_state.sunnylink_enabled
+    self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
-    sponsor_btn_text = tr("THANKS ♥") if ui_state_sp.sunnylink_state.is_sponsor() else tr("SPONSOR")
+    sponsor_btn_text = tr("THANKS ♥") if ui_state.sunnylink_state.is_sponsor() else tr("SPONSOR")
     self._sponsor_btn.action_item.set_text(sponsor_btn_text)
-    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state_sp.sunnylink_state.is_sponsor())
+    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_sponsor())
 
-    pair_btn_text = tr("Paired") if ui_state_sp.sunnylink_state.is_paired() else tr("Not Paired")
+    pair_btn_text = tr("Paired") if ui_state.sunnylink_state.is_paired() else tr("Not Paired")
     self._pair_btn.action_item.set_text(pair_btn_text)
-    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state_sp.sunnylink_state.is_paired())
+    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_paired())
 
   def _render(self, rect):
     self._scroller.render(rect)
@@ -188,4 +188,4 @@ class SunnylinkLayout(Widget):
   def show_event(self):
     super().show_event()
     self._scroller.show_event()
-    ui_state_sp.update_params()
+    ui_state.update_params()
