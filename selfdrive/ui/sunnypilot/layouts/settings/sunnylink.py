@@ -176,11 +176,11 @@ class SunnylinkLayout(Widget):
 
     sponsor_btn_text = tr("THANKS ♥") if ui_state_sp.sunnylink_state.is_sponsor() else tr("SPONSOR")
     self._sponsor_btn.action_item.set_text(sponsor_btn_text)
-    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled)
+    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state_sp.sunnylink_state.is_sponsor())
 
     pair_btn_text = tr("Paired") if ui_state_sp.sunnylink_state.is_paired() else tr("Not Paired")
     self._pair_btn.action_item.set_text(pair_btn_text)
-    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
+    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state_sp.sunnylink_state.is_paired())
 
   def _render(self, rect):
     self._scroller.render(rect)
