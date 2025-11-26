@@ -21,7 +21,7 @@ from openpilot.common.realtime import Ratekeeper
 
 from openpilot.system.ui.sunnypilot.lib.application import GuiApplicationExt
 
-_DEFAULT_FPS = int(os.getenv("FPS", 60)) #THISS BETTER WORK
+_DEFAULT_FPS = int(os.getenv("FPS", 60))  # default target fps used for monitoring
 FPS_LOG_INTERVAL = 5  # Seconds between logging FPS drops
 FPS_DROP_THRESHOLD = 0.9  # FPS drop threshold for triggering a warning
 FPS_CRITICAL_THRESHOLD = 0.5  # Critical threshold for triggering strict actions
@@ -255,9 +255,8 @@ class GuiApplication(GuiApplicationExt):
       self._set_log_callback()
       rl.set_trace_log_level(rl.TraceLogLevel.LOG_WARNING)
 
-      flags = rl.ConfigFlags.FLAG_MSAA_4X_HINT
-      if ENABLE_VSYNC:
-        flags |= rl.ConfigFlags.FLAG_VSYNC_HINT
+      # Always enable VSYNC and MSAA; let the GPU/display handle pacing
+      flags = rl.ConfigFlags.FLAG_MSAA_4X_HINT | rl.ConfigFlags.FLAG_VSYNC_HINT
       rl.set_config_flags(flags)
 
       rl.init_window(self._scaled_width, self._scaled_height, title)
@@ -267,9 +266,11 @@ class GuiApplication(GuiApplicationExt):
       if needs_render_texture:
         self._render_texture = rl.load_render_texture(self._width, self._height)
         rl.set_texture_filter(self._render_texture.texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
-      rl.set_target_fps(fps)
 
+      # Let VSYNC drive frame timing; keep fps only for monitoring/logging
+      rl.set_target_fps(0)
       self._target_fps = fps
+
       self._set_styles()
       self._load_fonts()
       self._patch_text_functions()
@@ -429,7 +430,8 @@ class GuiApplication(GuiApplicationExt):
         if not self._should_render:
           if PC:
             rl.poll_input_events()
-          time.sleep(1 / self._target_fps)
+          # When not rendering, a small sleep avoids a tight spin without fighting VSYNC
+          time.sleep(0.01)
           yield False
           continue
 
