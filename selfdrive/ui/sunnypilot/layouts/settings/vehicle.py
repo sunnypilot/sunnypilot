@@ -10,7 +10,7 @@ from openpilot.system.ui.widgets.list_view import ButtonAction
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 from openpilot.selfdrive.ui.sunnypilot.layouts.vehicle_settings.platform_selector import PlatformSelector, LegendWidget
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 
 
@@ -30,7 +30,7 @@ class VehicleLayout(Widget):
   def _update_brand_settings(self):
     self._vehicle_item._title = self._platform_selector.text
     self._vehicle_item.title_color = self._platform_selector.color
-    vehicle_text = tr("Remove") if ui_state_sp.params.get("CarPlatformBundle") else tr("Select")
+    vehicle_text = tr("Remove") if ui_state.params.get("CarPlatformBundle") else tr("Select")
     self._vehicle_item.action_item.set_text(vehicle_text)
 
   def _update_state(self):

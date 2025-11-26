@@ -20,7 +20,7 @@ from opendbc.sunnypilot.car.platform_list import CAR_LIST_JSON_OUT
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 
 
 class LegendWidget(Widget):
@@ -73,8 +73,8 @@ class PlatformSelector(Button):
     self._rect.width = parent_rect.width
 
   def _on_clicked(self):
-    if ui_state_sp.params.get("CarPlatformBundle"):
-      ui_state_sp.params.remove("CarPlatformBundle")
+    if ui_state.params.get("CarPlatformBundle"):
+      ui_state.params.remove("CarPlatformBundle")
       self.refresh(self._offroad)
       if self._on_platform_change:
         self._on_platform_change()
@@ -83,7 +83,7 @@ class PlatformSelector(Button):
 
   def _set_platform(self, platform_name):
     if data := self._platforms.get(platform_name):
-      ui_state_sp.params.put("CarPlatformBundle", {**data, "name": platform_name})
+      ui_state.params.put("CarPlatformBundle", {**data, "name": platform_name})
       self.refresh(self._offroad)
       if self._on_platform_change:
         self._on_platform_change()
@@ -114,14 +114,14 @@ class PlatformSelector(Button):
     self._platform = tr("Unrecognized Vehicle")
     self.set_text(tr("No vehicle selected"))
 
-    if bundle := ui_state_sp.params.get("CarPlatformBundle"):
+    if bundle := ui_state.params.get("CarPlatformBundle"):
       self._platform = bundle.get("name", "")
       self.brand = bundle.get("brand", "")
       self.set_text(self._platform)
       self.color = style.BLUE
-    elif ui_state_sp.CP and ui_state_sp.CP.carFingerprint != "MOCK":
-      self._platform = ui_state_sp.CP.carFingerprint
-      self.brand = ui_state_sp.CP.brand
+    elif ui_state.CP and ui_state.CP.carFingerprint != "MOCK":
+      self._platform = ui_state.CP.carFingerprint
+      self.brand = ui_state.CP.brand
       self.set_text(self._platform)
       self.color = style.GREEN
     self.set_enabled(True)
