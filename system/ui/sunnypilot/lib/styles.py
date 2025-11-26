@@ -47,4 +47,5 @@ class DefaultStyleSP(Base):
   TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
   TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255)  # Lighter Grey
 
+
 style = DefaultStyleSP
