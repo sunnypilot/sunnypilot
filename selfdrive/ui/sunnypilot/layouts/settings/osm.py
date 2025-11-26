@@ -92,6 +92,9 @@ class OSMLayout(Widget):
     except Exception:
       locations = []
 
+    if region_type == "State":
+      locations.insert(0, TreeNode(ref="All", data={'display_name': tr("Download all states")}))
+
     btn.set_enabled(True)
     btn.action_item.set_text(tr("SELECT"))
 
