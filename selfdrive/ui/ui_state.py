@@ -186,6 +186,7 @@ class UIState(UIStateSP):
         self.has_longitudinal_control = self.CP.openpilotLongitudinalControl
     UIStateSP.update_params(self)
     self._param_update_time = time.monotonic()
+    UIStateSP.update_params(self)
 
 
 class Device:
