@@ -94,7 +94,7 @@ class OSMLayout(Widget):
       locations = []
 
     if region_type == "State":
-      locations.insert(0, TreeNode(ref="All", data={'display_name': tr("All states (~4.8 GB)")}))
+      locations.insert(0, TreeNode(ref="All", data={'display_name': tr("All states (~5.2 GB)")}))
 
     btn.set_enabled(True)
     btn.action_item.set_text(tr("SELECT"))
