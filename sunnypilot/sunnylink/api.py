@@ -3,7 +3,6 @@ import os
 import random
 import time
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import jwt
 from openpilot.common.api.base import BaseApi
@@ -81,23 +80,19 @@ class SunnylinkApi(BaseApi):
     if sunnylink_dongle_id not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
       return sunnylink_dongle_id
 
-    privkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa")
-    pubkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa.pub")
+    jwt_algo, private_key, public_key = BaseApi.get_key_pair()
 
     start_time = time.monotonic()
     successful_registration = False
-    if not pubkey_path.is_file():
+    if not public_key:
       sunnylink_dongle_id = UNREGISTERED_SUNNYLINK_DONGLE_ID
       self._status_update("Public key not found, setting dongle ID to unregistered.")
     else:
       Params().put("LastSunnylinkPingTime", 0)  # Reset the last ping time to 0 if we are trying to register
-      with pubkey_path.open() as f1, privkey_path.open() as f2:
-        public_key = f1.read()
-        private_key = f2.read()
 
       backoff = 1
       while True:
-        register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm='RS256')
+        register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm=jwt_algo)
         try:
           if verbose or time.monotonic() - start_time < timeout / 2:
             self._status_update("Registering device to sunnylink...")
