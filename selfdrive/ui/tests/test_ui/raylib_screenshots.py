@@ -171,8 +171,8 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-2, 278, 950)
-  click(278, 1000)
+  scroll(-4, 278, 950)
+  click(278, 860)
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
