@@ -41,8 +41,10 @@ class OSMLayout(Widget):
     self._cached_map_size = 0
     self._mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else ui_state.params
     self._initialize_items()
+    self._update_map_size()
     self._progress.set_visible(False)
     self._state_btn.set_visible(False)
+    self._mapd_version.action_item.set_text(ui_state.params.get("MapdVersion") or "Loading...")
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
@@ -140,9 +142,6 @@ class OSMLayout(Widget):
     gui_app.set_modal_overlay(dialog, callback=lambda res: self._handle_region_selection(region_type, locations, key, res, dialog.selection_ref))
 
   def _update_labels(self):
-    self._mapd_version.action_item.set_text(ui_state.params.get("MapdVersion") or "Loading...")
-    self._update_map_size()
-
     downloading = bool(self._mem_params.get("OSMDownloadLocations"))
     self._country_btn.set_enabled(not downloading)
     self._state_btn.set_enabled(not downloading)
@@ -154,6 +153,8 @@ class OSMLayout(Widget):
 
     pending = ui_state.params.get_bool("OsmDbUpdatesCheck")
     if downloading or pending:
+      if downloading:
+        self._update_map_size()
       self._progress.set_visible(True)
       progress = ui_state.params.get("OSMDownloadProgress")
       total = progress.get('total_files', 0) if progress else 0
@@ -171,7 +172,7 @@ class OSMLayout(Widget):
       else:
         self._current_percent = 0
         text = "0% - Downloading Maps"
-        btn_text = tr("Download starting...") if pending else tr("Download complete!")
+        btn_text = tr("Downloading Maps...")
 
       self._progress.action_item.update(self._current_percent, text, show_progress=total > 0 and downloading and not failed)
       self._update_btn.action_item.set_text(tr("Refresh") if downloading else tr("Check"))
