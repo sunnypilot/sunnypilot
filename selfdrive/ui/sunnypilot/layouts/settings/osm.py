@@ -58,20 +58,36 @@ class OSMLayout(Widget):
   def _show_confirm(self, msg, confirm_text, func):
     gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
 
-  def _delete_maps(self):
-    def _do_delete():
+  def _update_map_size(self):
+    now = monotonic()
+    if now - self._last_map_size_update >= 0.5:
+      size = 0
       if MAP_PATH.exists():
-        shutil.rmtree(MAP_PATH)
-      self._last_map_size_update = 0
-      self._delete_maps_btn.set_enabled(True)
-      self._delete_maps_btn.action_item.set_text(tr("Delete"))
-      self._update_map_size()
+        try:
+          size = sum(file.stat().st_size for file in MAP_PATH.rglob('*') if file.is_file())
+        except OSError:
+          pass
+      self._cached_map_size = size
+      self._last_map_size_update = now
+    value = f"{self._cached_map_size / 1024**2:.2f} MB" if self._cached_map_size < 1024**3 else f"{self._cached_map_size / 1024**3:.2f} GB"
+    self._delete_maps_btn.action_item.set_value(value)
 
+  def _do_delete_maps(self):
+    if MAP_PATH.exists():
+      shutil.rmtree(MAP_PATH)
+    self._last_map_size_update = 0
+    self._delete_maps_btn.set_enabled(True)
+    self._delete_maps_btn.action_item.set_text(tr("Delete"))
+    self._update_map_size()
+
+  def _on_confirm_delete_maps(self):
+    self._delete_maps_btn.set_enabled(False)
+    self._delete_maps_btn.action_item.set_text("Deleting...")
+    threading.Thread(target=self._do_delete_maps).start()
+
+  def _delete_maps(self):
     self._show_confirm(tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"),
-                       tr("Yes, delete all the maps."), lambda: [
-      self._delete_maps_btn.set_enabled(False), self._delete_maps_btn.action_item.set_text("Deleting..."),
-      threading.Thread(target=_do_delete).start()
-    ])
+                       tr("Yes, delete all the maps."), self._on_confirm_delete_maps)
 
   def _update_db(self):
     self._show_confirm(tr("This will start the download process and it might take a while to complete."), tr("Start Download"),
@@ -83,6 +99,23 @@ class OSMLayout(Widget):
     btn.set_enabled(False)
     btn.action_item.set_text(tr("Fetching..."))
     threading.Thread(target=self._do_select_region, args=(region_type, btn)).start()
+
+  def _handle_region_selection(self, region_type, locations, key, res, ref):
+    if res != DialogResult.CONFIRM or not ref:
+      return
+    if region_type == "Country":
+      ui_state.params.put_bool("OsmLocal", True)
+      ui_state.params.remove("OsmStateName")
+      ui_state.params.remove("OsmStateTitle")
+
+    ui_state.params.put(f"{key}Name", ref)
+    name = next((n.data['display_name'] for n in locations if n.ref == ref), ref)
+    ui_state.params.put(f"{key}Title", name)
+
+    if ref == "US" and region_type == "Country":
+      self._select_region("State")
+    else:
+      self._update_db()
 
   def _do_select_region(self, region_type, btn):
     base_url = "https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/"
@@ -102,41 +135,9 @@ class OSMLayout(Widget):
     key = "OsmLocation" if region_type == "Country" else "OsmState"
     current = ui_state.params.get(f"{key}Name") or ""
 
-    def on_select(res, ref):
-      if res != DialogResult.CONFIRM or not ref:
-        return
-      if region_type == "Country":
-        ui_state.params.put_bool("OsmLocal", True)
-        ui_state.params.remove("OsmStateName")
-        ui_state.params.remove("OsmStateTitle")
-
-      ui_state.params.put(f"{key}Name", ref)
-      name = next((n.data['display_name'] for n in locations if n.ref == ref), ref)
-      ui_state.params.put(f"{key}Title", name)
-
-      if ref == "US" and region_type == "Country":
-        self._select_region("State")
-      else:
-        self._update_db()
-
     dialog = TreeOptionDialog(tr(f"Select {region_type}"), [TreeFolder(folder="", nodes=locations)], current_ref=current, search_prompt="Perform a search?")
-    dialog.on_exit = lambda res: on_select(res, dialog.selection_ref)
-    gui_app.set_modal_overlay(dialog, callback=lambda res: on_select(res, dialog.selection_ref))
-
-  def _update_map_size(self):
-    now = monotonic()
-    if now - self._last_map_size_update >= 0.5:
-      size = 0
-      if MAP_PATH.exists():
-        for f in MAP_PATH.rglob('*'):
-          try:
-            size += f.stat().st_size
-          except OSError:
-            pass
-      self._cached_map_size = size
-      self._last_map_size_update = now
-    value = f"{self._cached_map_size / 1024**2:.2f} MB" if self._cached_map_size < 1024**3 else f"{self._cached_map_size / 1024**3:.2f} GB"
-    self._delete_maps_btn.action_item.set_value(value)
+    dialog.on_exit = lambda res: self._handle_region_selection(region_type, locations, key, res, dialog.selection_ref)
+    gui_app.set_modal_overlay(dialog, callback=lambda res: self._handle_region_selection(region_type, locations, key, res, dialog.selection_ref))
 
   def _update_labels(self):
     self._mapd_version.action_item.set_text(ui_state.params.get("MapdVersion") or "Loading...")
