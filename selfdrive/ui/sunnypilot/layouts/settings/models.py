@@ -199,7 +199,7 @@ class ModelsLayout(Widget):
     gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration"), tr("Cancel")), callback=_callback)
 
   def _calculate_cache_size(self):
-    if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.2:
+    if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
       self.cached_size = 0
       if os.path.exists(CUSTOM_MODEL_PATH):
