@@ -156,7 +156,7 @@ class UpdateOpenpilotBigButton(BigButton):
     self._txt_update_icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     self._txt_reboot_icon = gui_app.texture("icons_mici/settings/device/reboot.png", 64, 64)
     self._txt_up_to_date_icon = gui_app.texture("icons_mici/settings/device/up_to_date.png", 64, 64)
-    super().__init__("update openpilot", "", self._txt_update_icon)
+    super().__init__("update sunnypilot", "", self._txt_update_icon)
 
     self._waiting_for_updater_t: float | None = None
     self._hide_value_t: float | None = None
@@ -193,7 +193,7 @@ class UpdateOpenpilotBigButton(BigButton):
     if value:
       self.set_text("")
     else:
-      self.set_text("update openpilot")
+      self.set_text("update sunnypilot")
 
   def _update_state(self):
     if ui_state.started:
@@ -294,7 +294,7 @@ class DeviceLayoutMici(NavWidget):
     reset_calibration_btn = BigButton("reset calibration", "", "icons_mici/settings/device/lkas.png")
     reset_calibration_btn.set_click_callback(lambda: _engaged_confirmation_callback(reset_calibration_callback, "reset"))
 
-    uninstall_openpilot_btn = BigButton("uninstall openpilot", "", "icons_mici/settings/device/uninstall.png")
+    uninstall_openpilot_btn = BigButton("uninstall sunnypilot", "", "icons_mici/settings/device/uninstall.png")
     uninstall_openpilot_btn.set_click_callback(lambda: _engaged_confirmation_callback(uninstall_openpilot_callback, "uninstall"))
 
     reboot_btn = BigCircleButton("icons_mici/settings/device/reboot.png", red=False)

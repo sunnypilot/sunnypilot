@@ -701,7 +701,7 @@ class Setup(Widget):
 
     except urllib.error.HTTPError as e:
       if e.code == 409:
-        error_msg = "Incompatible openpilot version"
+        error_msg = "Incompatible sunnypilot version"
         self.download_failed(self.download_url, error_msg)
     except Exception:
       error_msg = "Invalid URL"
