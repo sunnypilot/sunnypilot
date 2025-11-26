@@ -38,13 +38,13 @@ class TreeItemWidget(Button):
 
   @property
   def _star_rect(self):
-    return rl.Rectangle(self._rect.x + self._rect.width - 65, self._rect.y + (self._rect.height - 40) / 2, 40, 40)
+    return rl.Rectangle(self._rect.x + self._rect.width - 90, self._rect.y + (self._rect.height - 40) / 2, 40, 40)
 
   def _render(self, rect):
     super()._render(rect)
     if not self.is_folder and self._favorite_callback:
       draw_star(self._star_rect.x + self._star_rect.width / 2, self._star_rect.y + self._star_rect.height / 2,
-                25, self.is_favorite, style.ON_BG_COLOR if self.is_favorite else rl.GRAY)
+                35, self.is_favorite, style.ON_BG_COLOR if self.is_favorite else rl.GRAY)
 
   def _handle_mouse_release(self, mouse_pos):
     if not self.is_folder and self._favorite_callback and rl.check_collision_point_rec(mouse_pos, self._star_rect):
