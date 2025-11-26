@@ -1,10 +1,9 @@
 from collections.abc import Callable
 import pyray as rl
 
-from opendbc_repo.opendbc.safety.tests.test_hyundai import TestHyundaiLegacySafetyEV
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
@@ -31,10 +30,10 @@ class LaneChangeSettingsLayout(Widget):
                       tr("Off") if x == -1 else
                       tr("Nudge") if x == 0 else
                       tr("Nudgeless") if x == 1 else
-                      f"0.5 {tr("s")}" if x == 2 else
-                      f"1 {tr("s")}" if x == 3 else
-                      f"2 {tr("s")}" if x == 4 else
-                      f"3 {tr("s")}")
+                      f"0.5 {tr('s')}" if x == 2 else
+                      f"1 {tr('s')}" if x == 3 else
+                      f"2 {tr('s')}" if x == 4 else
+                      f"3 {tr('s')}")
     )
     self._bsm_delay = toggle_item_sp(
       param="AutoLaneChangeBsmDelay",
@@ -63,11 +62,11 @@ class LaneChangeSettingsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
-    ui_state_sp.update_params()
+    ui_state.update_params()
     self._update_toggles()
 
   def _update_toggles(self):
-    enable_bsm = ui_state_sp.CP and ui_state_sp.CP.enableBsm
+    enable_bsm = ui_state.CP and ui_state.CP.enableBsm
     if not enable_bsm:
-        ui_state_sp.params.remove("AutoLaneChangeBsmDelay")
-    self._bsm_delay.set_visible(enable_bsm and int(ui_state_sp.params.get("AutoLaneChangeTimer")) > 0)
+        ui_state.params.remove("AutoLaneChangeBsmDelay")
+    self._bsm_delay.set_visible(enable_bsm and int(ui_state.params.get("AutoLaneChangeTimer")) > 0)

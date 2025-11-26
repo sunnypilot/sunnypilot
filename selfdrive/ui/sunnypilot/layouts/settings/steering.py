@@ -4,15 +4,11 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from openpilot.common.params import Params
-from openpilot.system.ui.widgets.scroller_tici import Scroller
 from enum import IntEnum
-import pyray as rl
 
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
-from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.lane_change_settings import LaneChangeSettingsLayout
@@ -67,7 +63,7 @@ class SteeringLayout(Widget):
       max_value=255,
       value_change_step=5,
       description="",
-      label_callback=lambda speed: f'{speed} {"km/h" if ui_state_sp.is_metric else "mph"}'
+      label_callback=lambda speed: f'{speed} {"km/h" if ui_state.is_metric else "mph"}'
     )
     self._torque_control_toggle = toggle_item_sp(
       param="EnforceTorqueControl",
@@ -106,8 +102,8 @@ class SteeringLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
-    self._mads_toggle.action_item.set_enabled(ui_state_sp.is_offroad())
-    self._mads_settings_button.action_item.set_enabled(ui_state_sp.is_offroad())
+    self._mads_toggle.action_item.set_enabled(ui_state.is_offroad())
+    self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad())
     self._mads_settings_button.set_visible(self._mads_toggle.action_item.get_state())
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
     self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())

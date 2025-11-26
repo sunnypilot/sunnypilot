@@ -1,15 +1,14 @@
 from collections.abc import Callable
-from enum import Enum
 
 import pyray as rl
 
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr, tr_noop
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
-from system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
 
 MADS_STEERING_MODE_OPTIONS = [
   (tr("Remain Active"), tr_noop("Remain Active: ALC will remain active when the brake pedal is pressed.")),
@@ -67,14 +66,14 @@ class MadsSettingsLayout(Widget):
     self._scroller.show_event()
 
   def _mads_limited_settings(self) -> bool:
-    if ui_state_sp.CP and ui_state_sp.CP.brand == "Rivian":
+    if ui_state.CP and ui_state.CP.brand == "Rivian":
       return True
-    elif ui_state_sp.CP and ui_state_sp.CP.brand == "Tesla":
-      return not ui_state_sp.CP_SP.flags() & 1  # 1 == TeslaFlagsSP.HAS_VEHICLE_BUS
+    elif ui_state.CP and ui_state.CP.brand == "Tesla":
+      return not ui_state.CP_SP.flags() & 1  # 1 == TeslaFlagsSP.HAS_VEHICLE_BUS
     return False
 
   def _update_toggles(self):
     if self._mads_limited_settings():
-      ui_state_sp.params.remove("MadsMainCruiseAllowed")
-      ui_state_sp.params.put_bool("MadsUnifiedEngagementMode", True)
-      ui_state_sp.params.put("MadsSteeringMode", "Disengage")
+      ui_state.params.remove("MadsMainCruiseAllowed")
+      ui_state.params.put_bool("MadsUnifiedEngagementMode", True)
+      ui_state.params.put("MadsSteeringMode", "Disengage")
