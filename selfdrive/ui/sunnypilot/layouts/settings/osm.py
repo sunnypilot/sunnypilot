@@ -6,25 +6,26 @@ See the LICENSE.md file in the root directory for more details.
 """
 import datetime
 import platform
-import threading
-import shutil
 import requests
+import shutil
+import threading
 from pathlib import Path
 from time import monotonic
 
 from openpilot.common.params import Params
-from openpilot.system.hardware import HARDWARE
+from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.system.hardware.hw import Paths
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets.list_view import ButtonAction, ListItem, text_item
-from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeFolder, TreeNode, TreeOptionDialog
-from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
+from openpilot.system.ui.widgets.list_view import ButtonAction, ListItem, text_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.selfdrive.ui.ui_state import ui_state
 
-MAP_PATH = Path.home() / ".comma/media/0/osm/offline" if HARDWARE.get_device_type() == "pc" else Path("/data/media/0/osm/offline")
+from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeFolder, TreeNode, TreeOptionDialog
+from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
+
+MAP_PATH = Path(Paths.mapd_root()) / "offline"
 
 
 class NoElide(ButtonAction):
