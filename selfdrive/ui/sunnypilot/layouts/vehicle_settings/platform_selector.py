@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import json
+import os
 import pyray as rl
 from collections.abc import Callable
 from functools import partial
@@ -16,12 +17,13 @@ from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
-from opendbc.sunnypilot.car.platform_list import CAR_LIST_JSON_OUT
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
 from openpilot.selfdrive.ui.ui_state import ui_state
 
+base_path = 'opendbc_repo/opendbc'
+CAR_LIST_JSON_OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), f'../../../../../../{base_path}/sunnypilot/car/car_list.json'))
 
 class LegendWidget(Widget):
   def __init__(self, platform_selector):
