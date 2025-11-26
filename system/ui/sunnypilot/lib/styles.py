@@ -26,8 +26,7 @@ class Base:
 
   # Button Control
   BUTTON_WIDTH = 250
-  BUTTON_HEIGHT = 100
-
+  BUTTON_HEIGHT = 115
 
 @dataclass
 class DefaultStyleSP(Base):

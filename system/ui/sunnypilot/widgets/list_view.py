@@ -5,10 +5,10 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from collections.abc import Callable
-from openpilot.common.params import Params
-from openpilot.system.ui.lib.application import MousePos
 
 import pyray as rl
+from openpilot.common.params import Params
+from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
@@ -21,6 +21,7 @@ class ToggleActionSP(ToggleAction):
     ToggleAction.__init__(self, initial_state, width, enabled, callback)
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
+
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, param: str | None, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
@@ -28,43 +29,40 @@ class MultipleButtonActionSP(MultipleButtonAction):
     self.params = Params()
     if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default=True))
+    self._anim_x: float | None = None
 
   def _render(self, rect: rl.Rectangle):
-    spacing = style.ITEM_PADDING
+
     button_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
 
+    total_width = len(self.buttons) * self.button_width
+    track_rect = rl.Rectangle(rect.x, button_y, total_width, style.BUTTON_HEIGHT)
+
+    bg_color = style.BASE_BG_COLOR if self.enabled else style.DISABLED_OFF_BG_COLOR
+    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
+    highlight_color = style.ON_BG_COLOR if self.enabled else style.DISABLED_ON_BG_COLOR
+
+    # background
+    rl.draw_rectangle_rounded(track_rect, 0.2, 20, bg_color)
+
+    # highlight with animation
+    target_x = rect.x + self.selected_button * self.button_width
+    if not self._anim_x:
+      self._anim_x = target_x
+    self._anim_x += (target_x - self._anim_x) * 0.2
+
+    highlight_rect = rl.Rectangle(self._anim_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+    rl.draw_rectangle_rounded(highlight_rect, 0.2, 20, highlight_color)
+
+    # text
     for i, _text in enumerate(self.buttons):
-      button_x = rect.x + i * (self.button_width + spacing)
-      button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+      button_x = rect.x + i * self.button_width
 
-      # Check button state
-      mouse_pos = rl.get_mouse_position()
-      is_hovered = rl.check_collision_point_rec(mouse_pos, button_rect)
-      is_pressed = is_hovered and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and self.is_pressed
-      is_selected = i == self.selected_button
-
-      # Button colors
-      if is_selected:
-        bg_color = style.ON_BG_COLOR
-        if is_pressed:
-          bg_color = style.ON_HOVER_BG_COLOR
-      elif is_pressed:
-        bg_color = style.OFF_HOVER_BG_COLOR
-      else:
-        bg_color = style.OFF_BG_COLOR
-
-      if not self.enabled:
-        bg_color = style.DISABLED_OFF_BG_COLOR
-
-      # Draw button
-      rl.draw_rectangle_rounded(button_rect, 1.0, 20, bg_color)
-
-      # Draw text
       text = _resolve_value(_text, "")
       text_size = measure_text_cached(self._font, text, 40)
       text_x = button_x + (self.button_width - text_size.x) / 2
       text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
-      text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
+
       rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, text_color)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
@@ -76,7 +74,7 @@ class MultipleButtonActionSP(MultipleButtonAction):
 class ListItemSP(ListItem):
   def __init__(self, title: str | Callable[[], str] = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
                description_visible: bool = False, callback: Callable | None = None,
-               action_item: ItemAction | None = None, title_color: rl.Color = style.ITEM_TEXT_COLOR, inline: bool = True):
+               action_item: ItemAction | None = None, inline: bool = True, title_color: rl.Color = style.ITEM_TEXT_COLOR):
     ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
     self.title_color = title_color
     self.inline = inline
@@ -178,7 +176,8 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
-def multiple_button_item_sp(title: str | Callable[[], str], description: str| Callable[[], str], buttons: list[str | Callable[[], str]],
+
+def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
   action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
