@@ -47,11 +47,11 @@ class OSMLayout(Widget):
 
   def _initialize_items(self):
     self._mapd_version = text_item(tr("Mapd Version"), lambda: ui_state.params.get("MapdVersion") or "Loading...")
-    self._delete_maps_btn = ListItem(tr("Downloaded Maps"), action_item=NoElide(tr("DELETE"), enabled=True), callback=self._delete_maps)
+    self._delete_maps_btn = ListItem(tr("Downloaded Maps"), action_item=NoElide(tr("Delete"), enabled=True), callback=self._delete_maps)
     self._progress = progress_item(tr("Downloading Map"))
-    self._update_btn = ListItem(tr("Database Update"), action_item=NoElide(tr("CHECK"), enabled=True), callback=self._update_db)
-    self._country_btn = ListItem(tr("Country"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("Country"))
-    self._state_btn = ListItem(tr("State"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("State"))
+    self._update_btn = ListItem(tr("Database Update"), action_item=NoElide(tr("Check"), enabled=True), callback=self._update_db)
+    self._country_btn = ListItem(tr("Country"), action_item=NoElide(tr("Select"), enabled=True), callback=lambda: self._select_region("Country"))
+    self._state_btn = ListItem(tr("State"), action_item=NoElide(tr("Select"), enabled=True), callback=lambda: self._select_region("State"))
 
     self.items = [self._mapd_version, self._delete_maps_btn, self._progress, self._update_btn, self._country_btn, self._state_btn]
 
@@ -62,9 +62,9 @@ class OSMLayout(Widget):
     def _do_delete():
       if MAP_PATH.exists():
         shutil.rmtree(MAP_PATH)
-      self._last_map_size_update = 0  # Force update after delete
+      self._last_map_size_update = 0
       self._delete_maps_btn.set_enabled(True)
-      self._delete_maps_btn.action_item.set_text(tr("DELETE"))
+      self._delete_maps_btn.action_item.set_text(tr("Delete"))
       self._update_map_size()
 
     self._show_confirm(tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"),
@@ -97,7 +97,7 @@ class OSMLayout(Widget):
       locations.insert(0, TreeNode(ref="All", data={'display_name': tr("All states (~5.2 GB)")}))
 
     btn.set_enabled(True)
-    btn.action_item.set_text(tr("SELECT"))
+    btn.action_item.set_text(tr("Select"))
 
     key = "OsmLocation" if region_type == "Country" else "OsmState"
     current = ui_state.params.get(f"{key}Name") or ""
@@ -173,11 +173,11 @@ class OSMLayout(Widget):
         btn_text = tr("Download starting...") if pending else tr("Download complete!")
 
       self._progress.action_item.update(self._current_percent, text, show_progress=total > 0 and downloading and not failed)
-      self._update_btn.action_item.set_text(tr("REFRESH") if downloading else tr("CHECK"))
+      self._update_btn.action_item.set_text(tr("Refresh") if downloading else tr("Check"))
       self._update_btn.action_item.set_value(btn_text)
     else:
       self._progress.set_visible(False)
-      self._update_btn.action_item.set_text(tr("CHECK"))
+      self._update_btn.action_item.set_text(tr("Check"))
       ts = ui_state.params.get("OsmDownloadedDate")
       try:
         dt = datetime.datetime.fromtimestamp(float(ts))
