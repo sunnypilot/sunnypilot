@@ -17,7 +17,7 @@ from openpilot.selfdrive.ui.lib.api_helpers import get_token
 
 TITLE = tr_noop("Firehose Mode")
 DESCRIPTION = tr_noop(
-  "openpilot learns to drive by watching humans, like you, drive.\n\n"
+  "sunnypilot learns to drive by watching humans, like you, drive.\n\n"
   + "Firehose Mode allows you to maximize your training data uploads to improve "
   + "openpilot's driving models. More data means bigger models, which means better Experimental Mode."
 )
