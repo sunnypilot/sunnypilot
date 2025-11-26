@@ -21,7 +21,7 @@ from openpilot.common.realtime import Ratekeeper
 
 from openpilot.system.ui.sunnypilot.lib.application import GuiApplicationExt
 
-_DEFAULT_FPS = int(os.getenv("FPS", 53)) #THISS BETTER WORK
+_DEFAULT_FPS = int(os.getenv("FPS", 59)) #THISS BETTER WORK
 FPS_LOG_INTERVAL = 5  # Seconds between logging FPS drops
 FPS_DROP_THRESHOLD = 0.9  # FPS drop threshold for triggering a warning
 FPS_CRITICAL_THRESHOLD = 0.5  # Critical threshold for triggering strict actions
