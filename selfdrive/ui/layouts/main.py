@@ -69,30 +69,36 @@ class MainLayout(Widget):
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
 
   def _close_settings_requested(self):
-    """Start slide-down animation to close settings instead of switching immediately."""
-    # If an entry animation is in progress, reverse it
+    """Close settings: instantly in onroad, animated offroad."""
+    if ui_state.started:
+      # Onroad: close instantly, restore sidebar if needed
+      if self._sidebar_prev_visible:
+        self._sidebar.set_visible(self._sidebar_prev_visible)
+      self._layouts[MainState.SETTINGS].hide_event()
+      if self._settings_prev_layout is not None:
+        self._current_mode = self._settings_prev_layout
+      self._settings_anim_active = False
+      self._settings_anim_direction = None
+      self._settings_prev_layout = None
+      self._sidebar_prev_visible = None
+      return
+
+    # Offroad: keep animation
     now = rl.get_time()
     if self._settings_anim_active and self._settings_anim_direction == 'in':
-      # compute current progress
       elapsed = now - self._settings_anim_start
       prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # start exit such that visual position remains continuous
       self._settings_anim_direction = 'out'
-      # set start so that eased progress for 'out' begins at current eased position
-      # approximate by setting start so elapsed produces same prog when reversed
       self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
-      # If sidebar was hidden when settings opened, restore it now so it appears under the closing animation
       if self._sidebar_prev_visible:
         self._sidebar.set_visible(self._sidebar_prev_visible)
       return
 
-    # If not animating, start an exit animation from fully visible settings
     if not self._settings_anim_active and self._current_mode == MainState.SETTINGS:
       self._settings_prev_layout = MainState.HOME if MainState.HOME in self._layouts else None
       self._settings_anim_active = True
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now
-      # restore sidebar immediately so it appears underneath the closing settings
       if self._sidebar_prev_visible:
         self._sidebar.set_visible(self._sidebar_prev_visible)
     device.add_interactive_timeout_callback(self._set_mode_for_state)
@@ -128,21 +134,25 @@ class MainLayout(Widget):
       self._layouts[self._current_mode].show_event()
 
   def open_settings(self, panel_type: PanelType):
-    # Prepare settings layout and start slide-up animation from bottom
-    self._layouts[MainState.SETTINGS].set_current_panel(panel_type)
-    # Record previous layout to render underneath during animation
-    self._settings_prev_layout = self._current_mode
-    # Start entering animation
-    self._settings_anim_active = True
-    self._settings_anim_direction = 'in'
-    now = rl.get_time()
-    self._settings_anim_start = now
-    # ensure settings layout can initialize
-    self._layouts[MainState.SETTINGS].show_event()
-    # Record and hide sidebar so settings is always fullscreen (offroad and onroad)
+    # Always hide sidebar when opening settings, regardless of spammed toggles
     self._sidebar_prev_visible = self._sidebar.is_visible
-    if self._sidebar_prev_visible:
-      self._sidebar.set_visible(False)
+    self._sidebar.set_visible(False)
+    self._layouts[MainState.SETTINGS].set_current_panel(panel_type)
+    self._settings_prev_layout = self._current_mode
+    # If onroad, open settings instantly (no animation)
+    if ui_state.started:
+      self._settings_anim_active = False
+      self._settings_anim_direction = None
+      self._settings_anim_start = 0.0
+      self._layouts[MainState.SETTINGS].show_event()
+      self._current_mode = MainState.SETTINGS
+    else:
+      # Offroad: use animation
+      self._settings_anim_active = True
+      self._settings_anim_direction = 'in'
+      now = rl.get_time()
+      self._settings_anim_start = now
+      self._layouts[MainState.SETTINGS].show_event()
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
