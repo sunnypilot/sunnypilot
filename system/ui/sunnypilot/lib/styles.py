@@ -60,4 +60,9 @@ class DefaultStyleSP(Base):
   OPTIONCONTROL_TEXT_PRESSED = rl.WHITE
   OPTIONCONTROL_TEXT_DISABLED = ITEM_DISABLED_TEXT_COLOR
 
+  # Tree Button Colors
+  BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
+  BUTTON_DISABLED_BG_COLOR = rl.Color(20, 20, 20, 255)  # Very Dark Grey
+
+
 style = DefaultStyleSP
