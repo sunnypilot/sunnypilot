@@ -24,6 +24,9 @@ class Base:
   TOGGLE_WIDTH = int(TOGGLE_HEIGHT * 1.75)
   TOGGLE_BG_HEIGHT = TOGGLE_HEIGHT - 20
 
+  # Button Control
+  BUTTON_WIDTH = 250
+  BUTTON_HEIGHT = 115
 
 @dataclass
 class DefaultStyleSP(Base):
@@ -50,6 +53,16 @@ class DefaultStyleSP(Base):
   # Button Control
   BUTTON_WIDTH = 250
   BUTTON_HEIGHT = 100
+
+  # Vehicle Description Colors
+  GREEN = rl.Color(0, 241, 0, 255)
+  BLUE = rl.Color(0, 134, 233, 255)
+  YELLOW = rl.Color(255, 213, 0, 255)
+
+  # Tree Button Colors
+  BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
+  BUTTON_NEUTRAL_GRAY = rl.Color(51, 51, 51, 255)
+  BUTTON_DISABLED_BG_COLOR = rl.Color(30, 30, 30, 255) # Very Dark Grey
 
   # Option Control
   OPTIONCONTROL_CONTAINER_BG = OFF_BG_COLOR
