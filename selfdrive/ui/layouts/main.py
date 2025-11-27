@@ -36,6 +36,8 @@ class MainLayout(Widget):
     self._settings_anim_duration = 0.32
     self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
+    # Remember previous sidebar visibility when opening settings
+    self._sidebar_prev_visible: bool | None = None
     # (No sidebar animation: sidebar is shown/hidden instantly)
 
     # Initialize layouts
@@ -79,6 +81,9 @@ class MainLayout(Widget):
       # set start so that eased progress for 'out' begins at current eased position
       # approximate by setting start so elapsed produces same prog when reversed
       self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
+      # If sidebar was hidden when settings opened, restore it now so it appears under the closing animation
+      if self._sidebar_prev_visible:
+        self._sidebar.set_visible(self._sidebar_prev_visible)
       return
 
     # If not animating, start an exit animation from fully visible settings
@@ -87,6 +92,9 @@ class MainLayout(Widget):
       self._settings_anim_active = True
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now
+      # restore sidebar immediately so it appears underneath the closing settings
+      if self._sidebar_prev_visible:
+        self._sidebar.set_visible(self._sidebar_prev_visible)
     device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _update_layout_rects(self):
@@ -131,8 +139,10 @@ class MainLayout(Widget):
     self._settings_anim_start = now
     # ensure settings layout can initialize
     self._layouts[MainState.SETTINGS].show_event()
-    # Keep the sidebar visible underneath the settings overlay so it appears immediately when settings close
-    # (do not hide or animate the sidebar here)
+    # Record and hide sidebar so settings is always fullscreen (offroad and onroad)
+    self._sidebar_prev_visible = self._sidebar.is_visible
+    if self._sidebar_prev_visible:
+      self._sidebar.set_visible(False)
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
@@ -169,7 +179,7 @@ class MainLayout(Widget):
     if self._sidebar.is_visible:
       self._sidebar.render(self._sidebar_rect)
 
-    content_rect = self._content_rect if (self._sidebar.is_visible or self._sidebar_anim_active) else self._rect
+    content_rect = self._content_rect if self._sidebar.is_visible else self._rect
     # If a settings animation is active, render previous layout underneath and animate settings sliding
     if self._settings_anim_active and self._settings_anim_direction is not None:
       now = rl.get_time()
@@ -227,9 +237,14 @@ class MainLayout(Widget):
           # Restore previous layout
           if self._settings_prev_layout is not None:
             self._current_mode = self._settings_prev_layout
-          # Restore sidebar visibility when returning to a non-onroad layout
-          if self._settings_prev_layout != MainState.ONROAD:
-            self._sidebar.set_visible(True)
+            # Restore sidebar visibility when returning to a non-onroad layout
+            if self._settings_prev_layout != MainState.ONROAD:
+              if self._sidebar_prev_visible is not None:
+                self._sidebar.set_visible(self._sidebar_prev_visible)
+              else:
+                self._sidebar.set_visible(True)
+            # clear stored previous sidebar state
+            self._sidebar_prev_visible = None
         self._settings_anim_active = False
         self._settings_anim_direction = None
         self._settings_prev_layout = None
