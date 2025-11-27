@@ -36,15 +36,7 @@ class MainLayout(Widget):
     self._settings_anim_duration = 0.32
     self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
-    # Sidebar transition animation state
-    self._sidebar_anim_active = False
-    self._sidebar_anim_start = 0.0
-    self._sidebar_anim_duration = 0.25
-    self._sidebar_anim_direction: str | None = None  # 'in' or 'out'
-    self._sidebar_target_visible: bool | None = None
-
-    # Suppress sidebar toggle while settings animation is running
-    self._suppress_sidebar_toggle = False
+    # (No sidebar animation: sidebar is shown/hidden instantly)
 
     # Initialize layouts
     self._layouts = {MainState.HOME: HomeLayout(), MainState.SETTINGS: SettingsLayout(), MainState.ONROAD: AugmentedRoadView()}
@@ -100,20 +92,7 @@ class MainLayout(Widget):
   def _update_layout_rects(self):
     self._sidebar_rect = rl.Rectangle(self._rect.x, self._rect.y, SIDEBAR_WIDTH, self._rect.height)
 
-    # Compute x offset for content based on sidebar visibility or animation
-    x_offset = 0
-    if self._sidebar_anim_active and self._sidebar_anim_direction is not None:
-      now = rl.get_time()
-      elapsed = now - self._sidebar_anim_start
-      t = max(0.0, min(1.0, elapsed / self._sidebar_anim_duration))
-      # easeOutCubic for a smooth slide
-      eased = 1 - (1 - t) ** 3
-      if self._sidebar_anim_direction == 'in':
-        x_offset = int(SIDEBAR_WIDTH * eased)
-      else:
-        x_offset = int(SIDEBAR_WIDTH * (1 - eased))
-    else:
-      x_offset = SIDEBAR_WIDTH if self._sidebar.is_visible else 0
+    x_offset = SIDEBAR_WIDTH if self._sidebar.is_visible else 0
 
     # Content rect should start after sidebar x offset
     self._content_rect = rl.Rectangle(self._rect.x + x_offset, self._rect.y, self._rect.width - x_offset, self._rect.height)
@@ -152,17 +131,8 @@ class MainLayout(Widget):
     self._settings_anim_start = now
     # ensure settings layout can initialize
     self._layouts[MainState.SETTINGS].show_event()
-    # Hide sidebar visually — but suppress toggles while animating to avoid races
-    self._suppress_sidebar_toggle = True
-    # start sidebar hide animation if visible
-    if self._sidebar.is_visible:
-      self._sidebar_anim_active = True
-      self._sidebar_anim_direction = 'out'
-      self._sidebar_anim_start = rl.get_time()
-      self._sidebar_target_visible = False
-    else:
-      # nothing to animate, but keep suppressed until settings finished
-      self._sidebar_target_visible = False
+    # Keep the sidebar visible underneath the settings overlay so it appears immediately when settings close
+    # (do not hide or animate the sidebar here)
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
@@ -190,45 +160,13 @@ class MainLayout(Widget):
     self._pm.send('bookmarkButton', user_bookmark)
 
   def _on_onroad_clicked(self):
-    # Ignore toggles while settings animation is in progress or suppressed
-    if self._suppress_sidebar_toggle or self._settings_anim_active:
-      return
-
-    # Start animated sidebar toggle
-    now = rl.get_time()
-    target = not self._sidebar.is_visible
-    if self._sidebar_anim_active:
-      # reverse animation
-      if self._sidebar_anim_direction == 'in':
-        self._sidebar_anim_direction = 'out'
-      else:
-        self._sidebar_anim_direction = 'in'
-      # adjust start so progress reverses smoothly
-      elapsed = now - self._sidebar_anim_start
-      prog = max(0.0, min(1.0, elapsed / self._sidebar_anim_duration))
-      self._sidebar_anim_start = now - (self._sidebar_anim_duration * (1 - prog))
-      self._sidebar_target_visible = target
-    else:
-      self._sidebar_anim_active = True
-      self._sidebar_anim_direction = 'in' if target else 'out'
-      self._sidebar_anim_start = now
-      self._sidebar_target_visible = target
+    # Simple immediate toggle of sidebar visibility
+    self._sidebar.set_visible(not self._sidebar.is_visible)
 
   def _render_main_content(self):
     # Render sidebar
-    # If sidebar animation active, render sidebar according to animation (so it appears to slide)
-    if self._sidebar_anim_active and self._sidebar_anim_direction is not None:
-      now = rl.get_time()
-      elapsed = now - self._sidebar_anim_start
-      t = max(0.0, min(1.0, elapsed / self._sidebar_anim_duration))
-      eased = 1 - (1 - t) ** 3
-      if self._sidebar_anim_direction == 'in':
-        sidebar_x = int(self._rect.x - SIDEBAR_WIDTH * (1 - eased))
-      else:
-        sidebar_x = int(self._rect.x - SIDEBAR_WIDTH * eased)
-      anim_sidebar_rect = rl.Rectangle(sidebar_x, self._sidebar_rect.y, SIDEBAR_WIDTH, self._sidebar_rect.height)
-      self._sidebar.render(anim_sidebar_rect)
-    elif self._sidebar.is_visible:
+    # Render sidebar immediately if visible (no animation)
+    if self._sidebar.is_visible:
       self._sidebar.render(self._sidebar_rect)
 
     content_rect = self._content_rect if (self._sidebar.is_visible or self._sidebar_anim_active) else self._rect
@@ -291,37 +229,11 @@ class MainLayout(Widget):
             self._current_mode = self._settings_prev_layout
           # Restore sidebar visibility when returning to a non-onroad layout
           if self._settings_prev_layout != MainState.ONROAD:
-            # If sidebar was animated away when opening settings, ensure final visible state matches target
-            if self._sidebar_target_visible is not None:
-              self._sidebar.set_visible(self._sidebar_target_visible)
-            else:
-              self._sidebar.set_visible(True)
-          # Clear suppression now that settings finished
-          self._suppress_sidebar_toggle = False
-        # Finish sidebar animation if one was running
-        if self._sidebar_anim_active:
-          # finalize target visibility
-          if self._sidebar_target_visible is not None:
-            self._sidebar.set_visible(self._sidebar_target_visible)
-          self._sidebar_anim_active = False
-          self._sidebar_anim_direction = None
-          self._sidebar_target_visible = None
+            self._sidebar.set_visible(True)
         self._settings_anim_active = False
         self._settings_anim_direction = None
         self._settings_prev_layout = None
       return
 
     # No active animation: render the current layout normally
-    # If sidebar animation is active but no settings animation, finalize it if complete
-    if self._sidebar_anim_active and self._sidebar_anim_direction is not None:
-      now = rl.get_time()
-      elapsed = now - self._sidebar_anim_start
-      t = max(0.0, min(1.0, elapsed / self._sidebar_anim_duration))
-      if t >= 1.0:
-        if self._sidebar_target_visible is not None:
-          self._sidebar.set_visible(self._sidebar_target_visible)
-        self._sidebar_anim_active = False
-        self._sidebar_anim_direction = None
-        self._sidebar_target_visible = None
-
     self._layouts[self._current_mode].render(content_rect)
