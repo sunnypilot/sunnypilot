@@ -37,17 +37,25 @@ class TreeItemWidget(Button):
     self.is_folder = is_folder
     self.indent_level = indent_level
     self.is_favorite = is_favorite
+    self.selected = False
     self._favorite_callback = favorite_callback
 
   def _render(self, rect):
-    if self.ref == "search_bar" or self.is_folder or (not self.is_folder and self.indent_level == 0):
+    is_non_indented = self.ref == "search_bar" or self.is_folder or (not self.is_folder and self.indent_level == 0)
+    if is_non_indented:
       self._rect = rl.Rectangle(rect.x + 10, rect.y + (rect.height - 115) / 2, rect.width - 20, 115)
-      rl.draw_rectangle_rounded_lines(self._rect, 1.0, 20, rl.GRAY)
-      rl.draw_rectangle_rounded(self._rect, 1.0, 20, rl.BLACK)
-      rl.draw_text_ex(gui_app.font(FontWeight.NORMAL), self.text, rl.Vector2(self._rect.x + 50, self._rect.y + (self._rect.height - 60) / 2), 60, 0, rl.WHITE)
+      text_x = self._rect.x + 50
+      has_border = True
     else:
       self._rect = rl.Rectangle(rect.x + 60 * self.indent_level, rect.y, rect.width - 60 * self.indent_level, rect.height)
-      super()._render(self._rect)
+      text_x = self._rect.x + self.text_padding
+      has_border = False
+
+    color = style.BUTTON_PRIMARY_COLOR if self.selected and not (self.ref == "search_bar" or self.is_folder) else rl.BLACK
+    if has_border:
+      rl.draw_rectangle_rounded_lines(self._rect, 1.0, 20, rl.GRAY)
+    rl.draw_rectangle_rounded(self._rect, 1.0, 20, color)
+    rl.draw_text_ex(gui_app.font(FontWeight.NORMAL), self.text, rl.Vector2(text_x, self._rect.y + (self._rect.height - 60) / 2), 60, 0, rl.WHITE)
 
     if not self.is_folder and self._favorite_callback:
       draw_star(self._rect.x + self._rect.width - 90, self._rect.y + (self._rect.height - 40) / 2, 35, self.is_favorite,
@@ -161,6 +169,7 @@ class TreeOptionDialog(MultiOptionDialog):
 
     options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 170, dialog_content_rect.width - 100, dialog_content_rect.height - 330)
     for index, option_text in enumerate(self.options):
+      self.option_buttons[index].selected = (option_text == self.selection)
       self.option_buttons[index].set_button_style(ButtonStyle.PRIMARY if option_text == self.selection else ButtonStyle.NORMAL)
       self.option_buttons[index].set_rect(rl.Rectangle(0, 0, options_area_rect.width, 135))
     self.scroller.render(options_area_rect)
