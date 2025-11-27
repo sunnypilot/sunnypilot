@@ -1,6 +1,5 @@
 import pyray as rl
 from dataclasses import dataclass
-from typing import Optional
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
@@ -237,7 +236,6 @@ class DeveloperUiRenderer(Widget):
 
     UI_BORDER_SIZE = 20
     container_width = 184
-    container_height = 170
     x = int(rect.x + rect.width - container_width - UI_BORDER_SIZE * 2)
     y = int(rect.y + UI_BORDER_SIZE * 1.5)
 
