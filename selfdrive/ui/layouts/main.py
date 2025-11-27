@@ -29,6 +29,12 @@ class MainLayout(Widget):
     self._sidebar = Sidebar()
     self._current_mode = MainState.HOME
     self._prev_onroad = False
+    # Settings transition animation state
+    self._settings_anim_active = False
+    self._settings_anim_start = 0.0
+    self._settings_anim_duration = 0.28
+    self._settings_anim_direction: str | None = None  # 'in' or 'out'
+    self._settings_prev_layout: MainState | None = None
 
     # Initialize layouts
     self._layouts = {MainState.HOME: HomeLayout(), MainState.SETTINGS: SettingsLayout(), MainState.ONROAD: AugmentedRoadView()}
@@ -54,8 +60,31 @@ class MainLayout(Widget):
                                 open_settings=lambda: self.open_settings(PanelType.TOGGLES))
     self._layouts[MainState.HOME]._setup_widget.set_open_settings_callback(lambda: self.open_settings(PanelType.FIREHOSE))
     self._layouts[MainState.HOME].set_settings_callback(lambda: self.open_settings(PanelType.TOGGLES))
-    self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._set_mode_for_state)
+    # Intercept settings close to run slide-down animation
+    self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._close_settings_requested)
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
+
+  def _close_settings_requested(self):
+    """Start slide-down animation to close settings instead of switching immediately."""
+    # If an entry animation is in progress, reverse it
+    now = rl.get_time()
+    if self._settings_anim_active and self._settings_anim_direction == 'in':
+      # compute current progress
+      elapsed = now - self._settings_anim_start
+      prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
+      # start exit such that visual position remains continuous
+      self._settings_anim_direction = 'out'
+      # set start so that eased progress for 'out' begins at current eased position
+      # approximate by setting start so elapsed produces same prog when reversed
+      self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
+      return
+
+    # If not animating, start an exit animation from fully visible settings
+    if not self._settings_anim_active and self._current_mode == MainState.SETTINGS:
+      self._settings_prev_layout = MainState.HOME if MainState.HOME in self._layouts else None
+      self._settings_anim_active = True
+      self._settings_anim_direction = 'out'
+      self._settings_anim_start = now
     device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _update_layout_rects(self):
@@ -87,9 +116,18 @@ class MainLayout(Widget):
       self._layouts[self._current_mode].show_event()
 
   def open_settings(self, panel_type: PanelType):
+    # Prepare settings layout and start slide-up animation from bottom
     self._layouts[MainState.SETTINGS].set_current_panel(panel_type)
-    self._set_current_layout(MainState.SETTINGS)
-    self._sidebar.set_visible(False)
+    # Record previous layout to render underneath during animation
+    self._settings_prev_layout = self._current_mode
+    # Start entering animation
+    self._settings_anim_active = True
+    self._settings_anim_direction = 'in'
+    now = rl.get_time()
+    self._settings_anim_start = now
+    # ensure settings layout can initialize
+    self._layouts[MainState.SETTINGS].show_event()
+    # keep sidebar visible during animation (mimic mici behavior)
 
   def _on_settings_clicked(self):
     self.open_settings(PanelType.DEVICE)
@@ -108,4 +146,54 @@ class MainLayout(Widget):
       self._sidebar.render(self._sidebar_rect)
 
     content_rect = self._content_rect if self._sidebar.is_visible else self._rect
+    # If a settings animation is active, render previous layout underneath and animate settings sliding
+    if self._settings_anim_active and self._settings_anim_direction is not None:
+      now = rl.get_time()
+      elapsed = now - self._settings_anim_start
+      t = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
+      # ease cubic out
+      eased = 1 - (1 - t) ** 3
+
+      # Determine base (under) layout
+      base_layout = self._layouts[self._settings_prev_layout] if self._settings_prev_layout is not None else self._layouts[self._current_mode]
+      base_layout.render(content_rect)
+
+      # Compute animated Y for settings panel
+      if self._settings_anim_direction == 'in':
+        start_y = content_rect.y + content_rect.height
+        end_y = content_rect.y
+        cur_y = start_y + (end_y - start_y) * eased
+      else:
+        # out animation: move down
+        start_y = content_rect.y
+        end_y = content_rect.y + content_rect.height
+        cur_y = start_y + (end_y - start_y) * eased
+
+      animated_rect = rl.Rectangle(content_rect.x, cur_y, content_rect.width, content_rect.height)
+      # Render settings layout into animated rect
+      self._layouts[MainState.SETTINGS].render(animated_rect)
+
+      # Finish animation
+      if t >= 1.0:
+        if self._settings_anim_direction == 'in':
+          # Entered settings fully
+          self._current_mode = MainState.SETTINGS
+          # hide the previous layout now that settings is fully visible
+          if self._settings_prev_layout is not None:
+            try:
+              self._layouts[self._settings_prev_layout].hide_event()
+            except Exception:
+              pass
+        else:
+          # Exited settings, ensure hide_event called
+          self._layouts[MainState.SETTINGS].hide_event()
+          # Restore previous layout
+          if self._settings_prev_layout is not None:
+            self._current_mode = self._settings_prev_layout
+        self._settings_anim_active = False
+        self._settings_anim_direction = None
+        self._settings_prev_layout = None
+      return
+
+    # No active animation: render the current layout normally
     self._layouts[self._current_mode].render(content_rect)
