@@ -4,923 +4,989 @@
     "description": ""
   },
   "AdbEnabled": {
-    "title": "AdbEnabled",
+    "title": "Enable ADB",
     "description": ""
   },
   "AlphaLongitudinalEnabled": {
-    "title": "AlphaLongitudinalEnabled",
+    "title": "Alpha Longitudinal",
     "description": ""
   },
   "AlwaysOnDM": {
-    "title": "AlwaysOnDM",
+    "title": "Always-on Driver Monitor",
     "description": ""
   },
   "ApiCache_Device": {
-    "title": "ApiCache_Device",
+    "title": "Api Cache  Device",
     "description": ""
   },
   "ApiCache_DriveStats": {
-    "title": "ApiCache_DriveStats",
+    "title": "Api Cache  Drive Stats",
     "description": ""
   },
   "ApiCache_FirehoseStats": {
-    "title": "ApiCache_FirehoseStats",
+    "title": "Firehose Mode Stats",
     "description": ""
   },
   "AssistNowToken": {
-    "title": "AssistNowToken",
+    "title": "Assist Now Token",
     "description": ""
   },
   "AthenadPid": {
-    "title": "AthenadPid",
+    "title": "Athenad Pid",
     "description": ""
   },
   "AthenadRecentlyViewedRoutes": {
-    "title": "AthenadRecentlyViewedRoutes",
+    "title": "Athenad Recently Viewed Routes",
     "description": ""
   },
   "AthenadUploadQueue": {
-    "title": "AthenadUploadQueue",
+    "title": "Athenad Upload Queue",
     "description": ""
   },
   "AutoLaneChangeBsmDelay": {
-    "title": "AutoLaneChangeBsmDelay",
+    "title": "Auto Lane Change BSM Delay",
     "description": ""
   },
   "AutoLaneChangeTimer": {
-    "title": "AutoLaneChangeTimer",
+    "title": "Auto Lane Change Timer",
     "description": ""
   },
   "BackupManager_CreateBackup": {
-    "title": "BackupManager_CreateBackup",
+    "title": "Create Backup",
     "description": ""
   },
   "BackupManager_RestoreVersion": {
-    "title": "BackupManager_RestoreVersion",
+    "title": "Restore Version",
     "description": ""
   },
   "BlindSpot": {
-    "title": "BlindSpot",
+    "title": "Blind Spot Detection",
     "description": ""
   },
   "BlinkerMinLateralControlSpeed": {
-    "title": "BlinkerMinLateralControlSpeed",
+    "title": "Blinker Min Lateral Control Speed",
     "description": ""
   },
   "BlinkerPauseLateralControl": {
-    "title": "BlinkerPauseLateralControl",
+    "title": "Blinker Pause Lateral Control",
     "description": ""
   },
   "BootCount": {
-    "title": "BootCount",
+    "title": "Boot Count",
     "description": ""
   },
   "Brightness": {
-    "title": "Brightness",
+    "title": "Screen Brightness",
     "description": ""
   },
   "CalibrationParams": {
-    "title": "CalibrationParams",
+    "title": "Calibration Params",
     "description": ""
   },
   "CameraDebugExpGain": {
-    "title": "CameraDebugExpGain",
+    "title": "Camera Debug Exp Gain",
     "description": ""
   },
   "CameraDebugExpTime": {
-    "title": "CameraDebugExpTime",
+    "title": "Camera Debug Exp Time",
     "description": ""
   },
   "CarBatteryCapacity": {
-    "title": "CarBatteryCapacity",
+    "title": "Car Battery Capacity",
     "description": ""
   },
   "CarParams": {
-    "title": "CarParams",
+    "title": "Car Params",
     "description": ""
   },
   "CarParamsCache": {
-    "title": "CarParamsCache",
+    "title": "Car Params Cache",
     "description": ""
   },
   "CarParamsPersistent": {
-    "title": "CarParamsPersistent",
+    "title": "Car Params Persistent",
     "description": ""
   },
   "CarParamsPrevRoute": {
-    "title": "CarParamsPrevRoute",
+    "title": "Car Params Prev Route",
     "description": ""
   },
   "CarParamsSP": {
-    "title": "CarParamsSP",
+    "title": "Car Params Sp",
     "description": ""
   },
   "CarParamsSPCache": {
-    "title": "CarParamsSPCache",
+    "title": "Car Params Sp Cache",
     "description": ""
   },
   "CarParamsSPPersistent": {
-    "title": "CarParamsSPPersistent",
+    "title": "Car Params Sp Persistent",
     "description": ""
   },
   "CarPlatformBundle": {
-    "title": "CarPlatformBundle",
+    "title": "Car Platform Bundle",
     "description": ""
   },
   "ChevronInfo": {
-    "title": "ChevronInfo",
+    "title": "Chevron Info",
     "description": ""
   },
   "CompletedTrainingVersion": {
-    "title": "CompletedTrainingVersion",
+    "title": "Completed Training Version",
     "description": ""
   },
   "ControlsReady": {
-    "title": "ControlsReady",
+    "title": "Controls Ready",
     "description": ""
   },
   "CurrentBootlog": {
-    "title": "CurrentBootlog",
+    "title": "Current Bootlog",
     "description": ""
   },
   "CurrentRoute": {
-    "title": "CurrentRoute",
+    "title": "Current Route",
     "description": ""
   },
   "CustomAccIncrementsEnabled": {
-    "title": "CustomAccIncrementsEnabled",
+    "title": "Custom ACC Increments Enabled",
     "description": ""
   },
   "CustomAccLongPressIncrement": {
-    "title": "CustomAccLongPressIncrement",
+    "title": "Custom ACC Long Press Increment",
     "description": ""
   },
   "CustomAccShortPressIncrement": {
-    "title": "CustomAccShortPressIncrement",
+    "title": "Custom ACC Short Press Increment",
     "description": ""
   },
   "CustomTorqueParams": {
-    "title": "CustomTorqueParams",
+    "title": "Custom Torque Params",
     "description": ""
   },
   "DevUIInfo": {
-    "title": "DevUIInfo",
+    "title": "Developer UI Info",
     "description": ""
   },
   "DeviceBootMode": {
-    "title": "DeviceBootMode",
+    "title": "Device Boot Mode",
     "description": ""
   },
   "DisableLogging": {
-    "title": "DisableLogging",
+    "title": "Disable Logging",
     "description": ""
   },
   "DisablePowerDown": {
-    "title": "DisablePowerDown",
+    "title": "Disable Power Down",
     "description": ""
   },
   "DisableUpdates": {
-    "title": "DisableUpdates",
+    "title": "Disable Updates",
     "description": ""
   },
   "DisengageOnAccelerator": {
-    "title": "DisengageOnAccelerator",
+    "title": "Disengage On Accelerator",
     "description": ""
   },
   "DoReboot": {
-    "title": "DoReboot",
+    "title": "Reboot",
     "description": ""
   },
   "DoShutdown": {
-    "title": "DoShutdown",
+    "title": "Power Off",
     "description": ""
   },
   "DoUninstall": {
-    "title": "DoUninstall",
+    "title": "Uninstall Sunnypilot",
     "description": ""
   },
   "DongleId": {
-    "title": "DongleId",
+    "title": "Device ID",
     "description": ""
   },
   "DriverTooDistracted": {
-    "title": "DriverTooDistracted",
+    "title": "Driver Too Distracted",
     "description": ""
   },
   "DynamicExperimentalControl": {
-    "title": "DynamicExperimentalControl",
+    "title": "Dynamic Experimental Control",
     "description": ""
   },
   "EnableCopyparty": {
-    "title": "EnableCopyparty",
+    "title": "Enable Copyparty",
     "description": ""
   },
   "EnableGithubRunner": {
-    "title": "EnableGithubRunner",
+    "title": "Enable GitHub Runner",
     "description": ""
   },
   "EnableSunnylinkUploader": {
-    "title": "EnableSunnylinkUploader",
+    "title": "Enable Sunnylink Uploader",
     "description": ""
   },
   "EnforceTorqueControl": {
-    "title": "EnforceTorqueControl",
+    "title": "Enforce Torque Control",
     "description": ""
   },
   "ExperimentalMode": {
-    "title": "ExperimentalMode",
+    "title": "Experimental Mode",
     "description": ""
   },
   "ExperimentalModeConfirmed": {
-    "title": "ExperimentalModeConfirmed",
+    "title": "Experimental Mode Confirmed",
     "description": ""
   },
   "FirmwareQueryDone": {
-    "title": "FirmwareQueryDone",
+    "title": "Firmware Query Done",
     "description": ""
   },
   "ForcePowerDown": {
-    "title": "ForcePowerDown",
+    "title": "Force Power Down",
     "description": ""
   },
   "GitBranch": {
-    "title": "GitBranch",
+    "title": "Git Branch",
     "description": ""
   },
   "GitCommit": {
-    "title": "GitCommit",
+    "title": "Git Commit",
     "description": ""
   },
   "GitCommitDate": {
-    "title": "GitCommitDate",
+    "title": "Git Commit Date",
     "description": ""
   },
   "GitDiff": {
-    "title": "GitDiff",
+    "title": "Git Diff",
     "description": ""
   },
   "GitRemote": {
-    "title": "GitRemote",
+    "title": "Git Remote",
     "description": ""
   },
   "GithubRunnerSufficientVoltage": {
-    "title": "GithubRunnerSufficientVoltage",
+    "title": "Github Runner Sufficient Voltage",
     "description": ""
   },
   "GithubSshKeys": {
-    "title": "GithubSshKeys",
+    "title": "Github Ssh Keys",
     "description": ""
   },
   "GithubUsername": {
-    "title": "GithubUsername",
+    "title": "GitHub Username",
     "description": ""
   },
   "GreenLightAlert": {
-    "title": "GreenLightAlert",
+    "title": "Green Light Alert",
     "description": ""
   },
   "GsmApn": {
-    "title": "GsmApn",
+    "title": "GSM APN",
     "description": ""
   },
   "GsmMetered": {
-    "title": "GsmMetered",
+    "title": "Gsm Metered",
     "description": ""
   },
   "GsmRoaming": {
-    "title": "GsmRoaming",
+    "title": "GSM Roaming",
     "description": ""
   },
   "HardwareSerial": {
-    "title": "HardwareSerial",
+    "title": "Serial Number",
     "description": ""
   },
   "HasAcceptedTerms": {
-    "title": "HasAcceptedTerms",
+    "title": "Has Accepted Terms",
     "description": ""
   },
   "HideVEgoUI": {
-    "title": "HideVEgoUI",
+    "title": "Hide vEgo UI",
     "description": ""
   },
   "HyundaiLongitudinalTuning": {
-    "title": "HyundaiLongitudinalTuning",
+    "title": "Hyundai Longitudinal Tuning",
     "description": ""
   },
   "InstallDate": {
-    "title": "InstallDate",
+    "title": "Install Date",
     "description": ""
   },
   "IntelligentCruiseButtonManagement": {
-    "title": "IntelligentCruiseButtonManagement",
+    "title": "Intelligent Cruise Button Management",
     "description": ""
   },
   "InteractivityTimeout": {
-    "title": "InteractivityTimeout",
+    "title": "Interactivity Timeout",
     "description": ""
   },
   "IsDevelopmentBranch": {
-    "title": "IsDevelopmentBranch",
+    "title": "Is Development Branch",
     "description": ""
   },
   "IsDriverViewEnabled": {
-    "title": "IsDriverViewEnabled",
+    "title": "Is Driver View Enabled",
     "description": ""
   },
   "IsEngaged": {
-    "title": "IsEngaged",
+    "title": "Is Engaged",
     "description": ""
   },
   "IsLdwEnabled": {
-    "title": "IsLdwEnabled",
+    "title": "Lane Departure Warnings",
     "description": ""
   },
   "IsMetric": {
-    "title": "IsMetric",
+    "title": "Use Metric Units",
     "description": ""
   },
   "IsOffroad": {
-    "title": "IsOffroad",
+    "title": "Is Offroad",
     "description": ""
   },
   "IsOnroad": {
-    "title": "IsOnroad",
+    "title": "Is Onroad",
     "description": ""
   },
   "IsReleaseBranch": {
-    "title": "IsReleaseBranch",
+    "title": "Is Release Branch",
     "description": ""
   },
   "IsReleaseSpBranch": {
-    "title": "IsReleaseSpBranch",
+    "title": "Is Release Sp Branch",
     "description": ""
   },
   "IsRhdDetected": {
-    "title": "IsRhdDetected",
+    "title": "Is Rhd Detected",
     "description": ""
   },
   "IsTakingSnapshot": {
-    "title": "IsTakingSnapshot",
+    "title": "Is Taking Snapshot",
     "description": ""
   },
   "IsTestedBranch": {
-    "title": "IsTestedBranch",
+    "title": "Is Tested Branch",
     "description": ""
   },
   "JoystickDebugMode": {
-    "title": "JoystickDebugMode",
+    "title": "Joystick Debug Mode",
     "description": ""
   },
   "LagdToggle": {
-    "title": "LagdToggle",
+    "title": "LaGD Toggle",
     "description": ""
   },
   "LagdToggleDelay": {
-    "title": "LagdToggleDelay",
+    "title": "LaGD Toggle Delay",
     "description": ""
   },
   "LagdValueCache": {
-    "title": "LagdValueCache",
+    "title": "LaGD Value Cache",
     "description": ""
   },
   "LaneTurnDesire": {
-    "title": "LaneTurnDesire",
+    "title": "Lane Turn Desire",
     "description": ""
   },
   "LaneTurnValue": {
-    "title": "LaneTurnValue",
+    "title": "Lane Turn Value",
     "description": ""
   },
   "LanguageSetting": {
-    "title": "LanguageSetting",
+    "title": "Language",
     "description": ""
   },
   "LastAthenaPingTime": {
-    "title": "LastAthenaPingTime",
+    "title": "Last Athena Ping Time",
     "description": ""
   },
   "LastGPSPosition": {
-    "title": "LastGPSPosition",
+    "title": "Last Gps Position",
     "description": ""
   },
   "LastGPSPositionLLK": {
-    "title": "LastGPSPositionLLK",
+    "title": "Last GPS Position LLK",
     "description": ""
   },
   "LastManagerExitReason": {
-    "title": "LastManagerExitReason",
+    "title": "Last Manager Exit Reason",
     "description": ""
   },
   "LastOffroadStatusPacket": {
-    "title": "LastOffroadStatusPacket",
+    "title": "Last Offroad Status Packet",
     "description": ""
   },
   "LastPowerDropDetected": {
-    "title": "LastPowerDropDetected",
+    "title": "Last Power Drop Detected",
     "description": ""
   },
   "LastSunnylinkPingTime": {
-    "title": "LastSunnylinkPingTime",
+    "title": "Last Sunnylink Ping Time",
     "description": ""
   },
   "LastUpdateException": {
-    "title": "LastUpdateException",
+    "title": "Last Update Exception",
     "description": ""
   },
   "LastUpdateRouteCount": {
-    "title": "LastUpdateRouteCount",
+    "title": "Last Update Route Count",
     "description": ""
   },
   "LastUpdateTime": {
-    "title": "LastUpdateTime",
+    "title": "Last Update Time",
     "description": ""
   },
   "LastUpdateUptimeOnroad": {
-    "title": "LastUpdateUptimeOnroad",
+    "title": "Last Update Uptime Onroad",
     "description": ""
   },
   "LeadDepartAlert": {
-    "title": "LeadDepartAlert",
+    "title": "Lead Depart Alert",
     "description": ""
   },
   "LiveDelay": {
-    "title": "LiveDelay",
+    "title": "Live Delay",
     "description": ""
   },
   "LiveParameters": {
-    "title": "LiveParameters",
+    "title": "Live Parameters",
     "description": ""
   },
   "LiveParametersV2": {
-    "title": "LiveParametersV2",
+    "title": "Live Parameters V2",
     "description": ""
   },
   "LiveTorqueParameters": {
-    "title": "LiveTorqueParameters",
+    "title": "Live Torque Parameters",
     "description": ""
   },
   "LiveTorqueParamsRelaxedToggle": {
-    "title": "LiveTorqueParamsRelaxedToggle",
+    "title": "Live Torque Params Relaxed Toggle",
     "description": ""
   },
   "LiveTorqueParamsToggle": {
-    "title": "LiveTorqueParamsToggle",
+    "title": "Live Torque Params Toggle",
     "description": ""
   },
   "LocationFilterInitialState": {
-    "title": "LocationFilterInitialState",
+    "title": "Location Filter Initial State",
     "description": ""
   },
   "LongitudinalManeuverMode": {
-    "title": "LongitudinalManeuverMode",
+    "title": "Longitudinal Maneuver Mode",
     "description": ""
   },
   "LongitudinalPersonality": {
-    "title": "LongitudinalPersonality",
-    "description": ""
+    "title": "Driving Personality",
+    "description": "",
+    "options": [
+      "Aggressive",
+      "Standard",
+      "Relaxed"
+    ],
+    "enum_map": {
+      "Aggressive": 0,
+      "Standard": 1,
+      "Relaxed": 2
+    }
   },
   "Mads": {
-    "title": "Mads",
+    "title": "MADS Enabled",
     "description": ""
   },
   "MadsMainCruiseAllowed": {
-    "title": "MadsMainCruiseAllowed",
+    "title": "MADS Main Cruise Allowed",
     "description": ""
   },
   "MadsSteeringMode": {
-    "title": "MadsSteeringMode",
-    "description": ""
+    "title": "MADS Steering Mode",
+    "description": "",
+    "options": [
+      "Remain Active",
+      "Pause",
+      "Disengage"
+    ],
+    "enum_map": {
+      "Remain Active": 0,
+      "Pause": 1,
+      "Disengage": 2
+    }
   },
   "MadsUnifiedEngagementMode": {
-    "title": "MadsUnifiedEngagementMode",
+    "title": "MADS Unified Engagement Mode",
     "description": ""
   },
   "MapAdvisorySpeedLimit": {
-    "title": "MapAdvisorySpeedLimit",
+    "title": "Map Advisory Speed Limit",
     "description": ""
   },
   "MapSpeedLimit": {
-    "title": "MapSpeedLimit",
+    "title": "Map Speed Limit",
     "description": ""
   },
   "MapTargetVelocities": {
-    "title": "MapTargetVelocities",
+    "title": "Map Target Velocities",
     "description": ""
   },
   "MapdVersion": {
-    "title": "MapdVersion",
+    "title": "Mapd Version",
     "description": ""
   },
   "MaxTimeOffroad": {
-    "title": "MaxTimeOffroad",
+    "title": "Max Time Offroad",
     "description": ""
   },
   "ModelManager_ActiveBundle": {
-    "title": "ModelManager_ActiveBundle",
+    "title": "Model Manager Active Bundle",
     "description": ""
   },
   "ModelManager_ClearCache": {
-    "title": "ModelManager_ClearCache",
+    "title": "Model Manager Clear Cache",
     "description": ""
   },
   "ModelManager_DownloadIndex": {
-    "title": "ModelManager_DownloadIndex",
+    "title": "Model Manager Download Index",
     "description": ""
   },
   "ModelManager_Favs": {
-    "title": "ModelManager_Favs",
+    "title": "Model Manager Favorites",
     "description": ""
   },
   "ModelManager_LastSyncTime": {
-    "title": "ModelManager_LastSyncTime",
+    "title": "Model Manager Last Sync Time",
     "description": ""
   },
   "ModelManager_ModelsCache": {
-    "title": "ModelManager_ModelsCache",
+    "title": "Model Manager Models Cache",
     "description": ""
   },
   "ModelRunnerTypeCache": {
-    "title": "ModelRunnerTypeCache",
+    "title": "Model Runner Type Cache",
     "description": ""
   },
   "NetworkMetered": {
-    "title": "NetworkMetered",
-    "description": ""
+    "title": "Network Usage",
+    "description": "",
+    "options": [
+      "Default",
+      "Metered",
+      "Unmetered"
+    ],
+    "enum_map": {
+      "Default": 0,
+      "Metered": 1,
+      "Unmetered": 2
+    }
   },
   "NeuralNetworkLateralControl": {
-    "title": "NeuralNetworkLateralControl",
+    "title": "Neural Network Lateral Control",
     "description": ""
   },
   "NextMapSpeedLimit": {
-    "title": "NextMapSpeedLimit",
+    "title": "Next Map Speed Limit",
     "description": ""
   },
   "OSMDownloadBounds": {
-    "title": "OSMDownloadBounds",
+    "title": "OSM Download Bounds",
     "description": ""
   },
   "OSMDownloadLocations": {
-    "title": "OSMDownloadLocations",
+    "title": "OSM Download Locations",
     "description": ""
   },
   "OSMDownloadProgress": {
-    "title": "OSMDownloadProgress",
+    "title": "OSM Download Progress",
     "description": ""
   },
   "ObdMultiplexingChanged": {
-    "title": "ObdMultiplexingChanged",
+    "title": "Obd Multiplexing Changed",
     "description": ""
   },
   "ObdMultiplexingEnabled": {
-    "title": "ObdMultiplexingEnabled",
+    "title": "Obd Multiplexing Enabled",
     "description": ""
   },
   "OffroadMode": {
-    "title": "OffroadMode",
+    "title": "Offroad Mode",
     "description": ""
   },
   "Offroad_CarUnrecognized": {
-    "title": "Offroad_CarUnrecognized",
+    "title": "Offroad  Car Unrecognized",
     "description": ""
   },
   "Offroad_ConnectivityNeeded": {
-    "title": "Offroad_ConnectivityNeeded",
+    "title": "Offroad  Connectivity Needed",
     "description": ""
   },
   "Offroad_ConnectivityNeededPrompt": {
-    "title": "Offroad_ConnectivityNeededPrompt",
+    "title": "Offroad  Connectivity Needed Prompt",
     "description": ""
   },
   "Offroad_DriverMonitoringUncertain": {
-    "title": "Offroad_DriverMonitoringUncertain",
+    "title": "Offroad  Driver Monitoring Uncertain",
     "description": ""
   },
   "Offroad_ExcessiveActuation": {
-    "title": "Offroad_ExcessiveActuation",
+    "title": "Offroad  Excessive Actuation",
     "description": ""
   },
   "Offroad_IsTakingSnapshot": {
-    "title": "Offroad_IsTakingSnapshot",
+    "title": "Offroad  Is Taking Snapshot",
     "description": ""
   },
   "Offroad_NeosUpdate": {
-    "title": "Offroad_NeosUpdate",
+    "title": "Offroad  Neos Update",
     "description": ""
   },
   "Offroad_NoFirmware": {
-    "title": "Offroad_NoFirmware",
+    "title": "Offroad  No Firmware",
     "description": ""
   },
   "Offroad_OSMUpdateRequired": {
-    "title": "Offroad_OSMUpdateRequired",
+    "title": "Offroad OSM Update Required",
     "description": ""
   },
   "Offroad_Recalibration": {
-    "title": "Offroad_Recalibration",
+    "title": "Offroad  Recalibration",
     "description": ""
   },
   "Offroad_TemperatureTooHigh": {
-    "title": "Offroad_TemperatureTooHigh",
+    "title": "Offroad  Temperature Too High",
     "description": ""
   },
   "Offroad_TiciSupport": {
-    "title": "Offroad_TiciSupport",
+    "title": "Offroad  Tici Support",
     "description": ""
   },
   "Offroad_UnregisteredHardware": {
-    "title": "Offroad_UnregisteredHardware",
+    "title": "Offroad  Unregistered Hardware",
     "description": ""
   },
   "Offroad_UpdateFailed": {
-    "title": "Offroad_UpdateFailed",
+    "title": "Offroad  Update Failed",
     "description": ""
   },
   "OnroadCycleRequested": {
-    "title": "OnroadCycleRequested",
+    "title": "Onroad Cycle Requested",
     "description": ""
   },
   "OnroadScreenOffBrightness": {
-    "title": "OnroadScreenOffBrightness",
+    "title": "Onroad Screen Off Brightness",
     "description": ""
   },
   "OnroadScreenOffControl": {
-    "title": "OnroadScreenOffControl",
+    "title": "Onroad Screen Off Control",
     "description": ""
   },
   "OnroadScreenOffTimer": {
-    "title": "OnroadScreenOffTimer",
+    "title": "Onroad Screen Off Timer",
     "description": ""
   },
   "OnroadUploads": {
-    "title": "OnroadUploads",
+    "title": "Onroad Uploads",
     "description": ""
   },
   "OpenpilotEnabledToggle": {
-    "title": "OpenpilotEnabledToggle",
+    "title": "Enable Sunnypilot",
     "description": ""
   },
   "OsmDbUpdatesCheck": {
-    "title": "OsmDbUpdatesCheck",
+    "title": "OSM DB Updates Check",
     "description": ""
   },
   "OsmDownloadedDate": {
-    "title": "OsmDownloadedDate",
+    "title": "OSM Downloaded Date",
     "description": ""
   },
   "OsmLocal": {
-    "title": "OsmLocal",
+    "title": "OSM Local",
     "description": ""
   },
   "OsmLocationName": {
-    "title": "OsmLocationName",
+    "title": "OSM Location Name",
     "description": ""
   },
   "OsmLocationTitle": {
-    "title": "OsmLocationTitle",
+    "title": "OSM Location Title",
     "description": ""
   },
   "OsmLocationUrl": {
-    "title": "OsmLocationUrl",
+    "title": "OSM Location URL",
     "description": ""
   },
   "OsmStateName": {
-    "title": "OsmStateName",
+    "title": "OSM State Name",
     "description": ""
   },
   "OsmStateTitle": {
-    "title": "OsmStateTitle",
+    "title": "OSM State Title",
     "description": ""
   },
   "OsmWayTest": {
-    "title": "OsmWayTest",
+    "title": "OSM Way Test",
     "description": ""
   },
   "PandaHeartbeatLost": {
-    "title": "PandaHeartbeatLost",
+    "title": "Panda Heartbeat Lost",
     "description": ""
   },
   "PandaSignatures": {
-    "title": "PandaSignatures",
+    "title": "Panda Signatures",
     "description": ""
   },
   "PandaSomResetTriggered": {
-    "title": "PandaSomResetTriggered",
+    "title": "Panda Som Reset Triggered",
     "description": ""
   },
   "PrimeType": {
-    "title": "PrimeType",
+    "title": "Prime Type",
     "description": ""
   },
   "QuickBootToggle": {
-    "title": "QuickBootToggle",
+    "title": "Quick Boot",
     "description": ""
   },
   "QuietMode": {
-    "title": "QuietMode",
+    "title": "Quiet Mode",
     "description": ""
   },
   "RainbowMode": {
-    "title": "RainbowMode",
+    "title": "Rainbow Mode",
     "description": ""
   },
   "RecordAudio": {
-    "title": "RecordAudio",
+    "title": "Record & Upload Mic Audio",
     "description": ""
   },
   "RecordAudioFeedback": {
-    "title": "RecordAudioFeedback",
+    "title": "Record Audio Feedback",
     "description": ""
   },
   "RecordFront": {
-    "title": "RecordFront",
+    "title": "Record & Upload Driver Camera",
     "description": ""
   },
   "RecordFrontLock": {
-    "title": "RecordFrontLock",
+    "title": "Record Front Lock",
     "description": ""
   },
   "RoadName": {
-    "title": "RoadName",
+    "title": "Road Name",
     "description": ""
   },
   "RoadNameToggle": {
-    "title": "RoadNameToggle",
+    "title": "Road Name Toggle",
     "description": ""
   },
   "RouteCount": {
-    "title": "RouteCount",
+    "title": "Route Count",
     "description": ""
   },
   "SecOCKey": {
-    "title": "SecOCKey",
+    "title": "Sec Oc Key",
     "description": ""
   },
   "ShowAdvancedControls": {
-    "title": "ShowAdvancedControls",
+    "title": "Show Advanced Controls",
     "description": ""
   },
   "ShowDebugInfo": {
-    "title": "ShowDebugInfo",
+    "title": "UI Debug Mode",
     "description": ""
   },
   "ShowTurnSignals": {
-    "title": "ShowTurnSignals",
+    "title": "Show Turn Signals",
     "description": ""
   },
   "SmartCruiseControlMap": {
-    "title": "SmartCruiseControlMap",
+    "title": "Smart Cruise Control Map",
     "description": ""
   },
   "SmartCruiseControlVision": {
-    "title": "SmartCruiseControlVision",
+    "title": "Smart Cruise Control Vision",
     "description": ""
   },
   "SnoozeUpdate": {
-    "title": "SnoozeUpdate",
+    "title": "Snooze Update",
     "description": ""
   },
   "SpeedLimitMode": {
-    "title": "SpeedLimitMode",
-    "description": ""
+    "title": "Speed Limit Mode",
+    "description": "",
+    "options": [
+      "Off",
+      "Information",
+      "Warning",
+      "Assist"
+    ],
+    "enum_map": {
+      "Off": 0,
+      "Information": 1,
+      "Warning": 2,
+      "Assist": 3
+    }
   },
   "SpeedLimitOffsetType": {
-    "title": "SpeedLimitOffsetType",
-    "description": ""
+    "title": "Speed Limit Offset Type",
+    "description": "",
+    "options": [
+      "Off",
+      "Fixed",
+      "Percentage"
+    ],
+    "enum_map": {
+      "Off": 0,
+      "Fixed": 1,
+      "Percentage": 2
+    }
   },
   "SpeedLimitPolicy": {
-    "title": "SpeedLimitPolicy",
-    "description": ""
+    "title": "Speed Limit Policy",
+    "description": "",
+    "options": [
+      "Car State Only",
+      "Map Data Only",
+      "Car State Priority",
+      "Map Data Priority",
+      "Combined"
+    ],
+    "enum_map": {
+      "Car State Only": 0,
+      "Map Data Only": 1,
+      "Car State Priority": 2,
+      "Map Data Priority": 3,
+      "Combined": 4
+    }
   },
   "SpeedLimitValueOffset": {
-    "title": "SpeedLimitValueOffset",
+    "title": "Speed Limit Value Offset",
     "description": ""
   },
   "SshEnabled": {
-    "title": "SshEnabled",
+    "title": "Enable SSH",
     "description": ""
   },
   "StandstillTimer": {
-    "title": "StandstillTimer",
+    "title": "Standstill Timer",
     "description": ""
   },
   "SubaruStopAndGo": {
-    "title": "SubaruStopAndGo",
+    "title": "Subaru Stop and Go",
     "description": ""
   },
   "SubaruStopAndGoManualParkingBrake": {
-    "title": "SubaruStopAndGoManualParkingBrake",
+    "title": "Subaru Stop and Go Manual Parking Brake",
     "description": ""
   },
   "SunnylinkCache_Roles": {
-    "title": "SunnylinkCache_Roles",
+    "title": "Sunnylink Cache  Roles",
     "description": ""
   },
   "SunnylinkCache_Users": {
-    "title": "SunnylinkCache_Users",
+    "title": "Sunnylink Cache  Users",
     "description": ""
   },
   "SunnylinkDongleId": {
-    "title": "SunnylinkDongleId",
+    "title": "Sunnylink Dongle ID",
     "description": ""
   },
   "SunnylinkEnabled": {
-    "title": "SunnylinkEnabled",
+    "title": "Sunnylink Enabled",
     "description": ""
   },
   "SunnylinkTempFault": {
-    "title": "SunnylinkTempFault",
+    "title": "Sunnylink Temp Fault",
     "description": ""
   },
   "SunnylinkdPid": {
-    "title": "SunnylinkdPid",
+    "title": "Sunnylinkd Pid",
     "description": ""
   },
   "TermsVersion": {
-    "title": "TermsVersion",
+    "title": "Terms Version",
     "description": ""
   },
   "TeslaCoopSteering": {
-    "title": "TeslaCoopSteering",
+    "title": "Tesla Coop Steering",
     "description": ""
   },
   "TorqueParamsOverrideEnabled": {
-    "title": "TorqueParamsOverrideEnabled",
+    "title": "Torque Params Override Enabled",
     "description": ""
   },
   "TorqueParamsOverrideFriction": {
-    "title": "TorqueParamsOverrideFriction",
+    "title": "Torque Params Override Friction",
     "description": ""
   },
   "TorqueParamsOverrideLatAccelFactor": {
-    "title": "TorqueParamsOverrideLatAccelFactor",
+    "title": "Torque Params Override Lat Accel Factor",
     "description": ""
   },
   "TrainingVersion": {
-    "title": "TrainingVersion",
+    "title": "Training Version",
     "description": ""
   },
   "TrueVEgoUI": {
-    "title": "TrueVEgoUI",
+    "title": "True vEgo UI",
     "description": ""
   },
   "UbloxAvailable": {
-    "title": "UbloxAvailable",
+    "title": "Ublox Available",
     "description": ""
   },
   "UpdateAvailable": {
-    "title": "UpdateAvailable",
+    "title": "Update Available",
     "description": ""
   },
   "UpdateFailedCount": {
-    "title": "UpdateFailedCount",
+    "title": "Update Failed Count",
     "description": ""
   },
   "UpdaterAvailableBranches": {
-    "title": "UpdaterAvailableBranches",
+    "title": "Updater Available Branches",
     "description": ""
   },
   "UpdaterCurrentDescription": {
-    "title": "UpdaterCurrentDescription",
+    "title": "Updater Current Description",
     "description": ""
   },
   "UpdaterCurrentReleaseNotes": {
-    "title": "UpdaterCurrentReleaseNotes",
+    "title": "Updater Current Release Notes",
     "description": ""
   },
   "UpdaterFetchAvailable": {
-    "title": "UpdaterFetchAvailable",
+    "title": "Updater Fetch Available",
     "description": ""
   },
   "UpdaterLastFetchTime": {
-    "title": "UpdaterLastFetchTime",
+    "title": "Updater Last Fetch Time",
     "description": ""
   },
   "UpdaterNewDescription": {
-    "title": "UpdaterNewDescription",
+    "title": "Updater New Description",
     "description": ""
   },
   "UpdaterNewReleaseNotes": {
-    "title": "UpdaterNewReleaseNotes",
+    "title": "Updater New Release Notes",
     "description": ""
   },
   "UpdaterState": {
-    "title": "UpdaterState",
+    "title": "Updater State",
     "description": ""
   },
   "UpdaterTargetBranch": {
-    "title": "UpdaterTargetBranch",
+    "title": "Updater Target Branch",
     "description": ""
   },
   "UptimeOffroad": {
-    "title": "UptimeOffroad",
+    "title": "Uptime Offroad",
     "description": ""
   },
   "UptimeOnroad": {
-    "title": "UptimeOnroad",
+    "title": "Uptime Onroad",
     "description": ""
   },
   "Version": {
-    "title": "Version",
+    "title": "Openpilot Version",
     "description": ""
   }
 }
