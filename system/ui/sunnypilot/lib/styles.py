@@ -47,5 +47,9 @@ class DefaultStyleSP(Base):
   TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
   TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255)  # Lighter Grey
 
+  # Tree Button Colors
+  BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
+  BUTTON_DISABLED_BG_COLOR = rl.Color(20, 20, 20, 255)  # Very Dark Grey
+
 
 style = DefaultStyleSP
