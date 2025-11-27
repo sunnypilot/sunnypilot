@@ -1,0 +1,926 @@
+{
+  "AccessToken": {
+    "title": "AccessTokenIsNice",
+    "description": ""
+  },
+  "AdbEnabled": {
+    "title": "AdbEnabled",
+    "description": ""
+  },
+  "AlphaLongitudinalEnabled": {
+    "title": "AlphaLongitudinalEnabled",
+    "description": ""
+  },
+  "AlwaysOnDM": {
+    "title": "AlwaysOnDM",
+    "description": ""
+  },
+  "ApiCache_Device": {
+    "title": "ApiCache_Device",
+    "description": ""
+  },
+  "ApiCache_DriveStats": {
+    "title": "ApiCache_DriveStats",
+    "description": ""
+  },
+  "ApiCache_FirehoseStats": {
+    "title": "ApiCache_FirehoseStats",
+    "description": ""
+  },
+  "AssistNowToken": {
+    "title": "AssistNowToken",
+    "description": ""
+  },
+  "AthenadPid": {
+    "title": "AthenadPid",
+    "description": ""
+  },
+  "AthenadRecentlyViewedRoutes": {
+    "title": "AthenadRecentlyViewedRoutes",
+    "description": ""
+  },
+  "AthenadUploadQueue": {
+    "title": "AthenadUploadQueue",
+    "description": ""
+  },
+  "AutoLaneChangeBsmDelay": {
+    "title": "AutoLaneChangeBsmDelay",
+    "description": ""
+  },
+  "AutoLaneChangeTimer": {
+    "title": "AutoLaneChangeTimer",
+    "description": ""
+  },
+  "BackupManager_CreateBackup": {
+    "title": "BackupManager_CreateBackup",
+    "description": ""
+  },
+  "BackupManager_RestoreVersion": {
+    "title": "BackupManager_RestoreVersion",
+    "description": ""
+  },
+  "BlindSpot": {
+    "title": "BlindSpot",
+    "description": ""
+  },
+  "BlinkerMinLateralControlSpeed": {
+    "title": "BlinkerMinLateralControlSpeed",
+    "description": ""
+  },
+  "BlinkerPauseLateralControl": {
+    "title": "BlinkerPauseLateralControl",
+    "description": ""
+  },
+  "BootCount": {
+    "title": "BootCount",
+    "description": ""
+  },
+  "Brightness": {
+    "title": "Brightness",
+    "description": ""
+  },
+  "CalibrationParams": {
+    "title": "CalibrationParams",
+    "description": ""
+  },
+  "CameraDebugExpGain": {
+    "title": "CameraDebugExpGain",
+    "description": ""
+  },
+  "CameraDebugExpTime": {
+    "title": "CameraDebugExpTime",
+    "description": ""
+  },
+  "CarBatteryCapacity": {
+    "title": "CarBatteryCapacity",
+    "description": ""
+  },
+  "CarParams": {
+    "title": "CarParams",
+    "description": ""
+  },
+  "CarParamsCache": {
+    "title": "CarParamsCache",
+    "description": ""
+  },
+  "CarParamsPersistent": {
+    "title": "CarParamsPersistent",
+    "description": ""
+  },
+  "CarParamsPrevRoute": {
+    "title": "CarParamsPrevRoute",
+    "description": ""
+  },
+  "CarParamsSP": {
+    "title": "CarParamsSP",
+    "description": ""
+  },
+  "CarParamsSPCache": {
+    "title": "CarParamsSPCache",
+    "description": ""
+  },
+  "CarParamsSPPersistent": {
+    "title": "CarParamsSPPersistent",
+    "description": ""
+  },
+  "CarPlatformBundle": {
+    "title": "CarPlatformBundle",
+    "description": ""
+  },
+  "ChevronInfo": {
+    "title": "ChevronInfo",
+    "description": ""
+  },
+  "CompletedTrainingVersion": {
+    "title": "CompletedTrainingVersion",
+    "description": ""
+  },
+  "ControlsReady": {
+    "title": "ControlsReady",
+    "description": ""
+  },
+  "CurrentBootlog": {
+    "title": "CurrentBootlog",
+    "description": ""
+  },
+  "CurrentRoute": {
+    "title": "CurrentRoute",
+    "description": ""
+  },
+  "CustomAccIncrementsEnabled": {
+    "title": "CustomAccIncrementsEnabled",
+    "description": ""
+  },
+  "CustomAccLongPressIncrement": {
+    "title": "CustomAccLongPressIncrement",
+    "description": ""
+  },
+  "CustomAccShortPressIncrement": {
+    "title": "CustomAccShortPressIncrement",
+    "description": ""
+  },
+  "CustomTorqueParams": {
+    "title": "CustomTorqueParams",
+    "description": ""
+  },
+  "DevUIInfo": {
+    "title": "DevUIInfo",
+    "description": ""
+  },
+  "DeviceBootMode": {
+    "title": "DeviceBootMode",
+    "description": ""
+  },
+  "DisableLogging": {
+    "title": "DisableLogging",
+    "description": ""
+  },
+  "DisablePowerDown": {
+    "title": "DisablePowerDown",
+    "description": ""
+  },
+  "DisableUpdates": {
+    "title": "DisableUpdates",
+    "description": ""
+  },
+  "DisengageOnAccelerator": {
+    "title": "DisengageOnAccelerator",
+    "description": ""
+  },
+  "DoReboot": {
+    "title": "DoReboot",
+    "description": ""
+  },
+  "DoShutdown": {
+    "title": "DoShutdown",
+    "description": ""
+  },
+  "DoUninstall": {
+    "title": "DoUninstall",
+    "description": ""
+  },
+  "DongleId": {
+    "title": "DongleId",
+    "description": ""
+  },
+  "DriverTooDistracted": {
+    "title": "DriverTooDistracted",
+    "description": ""
+  },
+  "DynamicExperimentalControl": {
+    "title": "DynamicExperimentalControl",
+    "description": ""
+  },
+  "EnableCopyparty": {
+    "title": "EnableCopyparty",
+    "description": ""
+  },
+  "EnableGithubRunner": {
+    "title": "EnableGithubRunner",
+    "description": ""
+  },
+  "EnableSunnylinkUploader": {
+    "title": "EnableSunnylinkUploader",
+    "description": ""
+  },
+  "EnforceTorqueControl": {
+    "title": "EnforceTorqueControl",
+    "description": ""
+  },
+  "ExperimentalMode": {
+    "title": "ExperimentalMode",
+    "description": ""
+  },
+  "ExperimentalModeConfirmed": {
+    "title": "ExperimentalModeConfirmed",
+    "description": ""
+  },
+  "FirmwareQueryDone": {
+    "title": "FirmwareQueryDone",
+    "description": ""
+  },
+  "ForcePowerDown": {
+    "title": "ForcePowerDown",
+    "description": ""
+  },
+  "GitBranch": {
+    "title": "GitBranch",
+    "description": ""
+  },
+  "GitCommit": {
+    "title": "GitCommit",
+    "description": ""
+  },
+  "GitCommitDate": {
+    "title": "GitCommitDate",
+    "description": ""
+  },
+  "GitDiff": {
+    "title": "GitDiff",
+    "description": ""
+  },
+  "GitRemote": {
+    "title": "GitRemote",
+    "description": ""
+  },
+  "GithubRunnerSufficientVoltage": {
+    "title": "GithubRunnerSufficientVoltage",
+    "description": ""
+  },
+  "GithubSshKeys": {
+    "title": "GithubSshKeys",
+    "description": ""
+  },
+  "GithubUsername": {
+    "title": "GithubUsername",
+    "description": ""
+  },
+  "GreenLightAlert": {
+    "title": "GreenLightAlert",
+    "description": ""
+  },
+  "GsmApn": {
+    "title": "GsmApn",
+    "description": ""
+  },
+  "GsmMetered": {
+    "title": "GsmMetered",
+    "description": ""
+  },
+  "GsmRoaming": {
+    "title": "GsmRoaming",
+    "description": ""
+  },
+  "HardwareSerial": {
+    "title": "HardwareSerial",
+    "description": ""
+  },
+  "HasAcceptedTerms": {
+    "title": "HasAcceptedTerms",
+    "description": ""
+  },
+  "HideVEgoUI": {
+    "title": "HideVEgoUI",
+    "description": ""
+  },
+  "HyundaiLongitudinalTuning": {
+    "title": "HyundaiLongitudinalTuning",
+    "description": ""
+  },
+  "InstallDate": {
+    "title": "InstallDate",
+    "description": ""
+  },
+  "IntelligentCruiseButtonManagement": {
+    "title": "IntelligentCruiseButtonManagement",
+    "description": ""
+  },
+  "InteractivityTimeout": {
+    "title": "InteractivityTimeout",
+    "description": ""
+  },
+  "IsDevelopmentBranch": {
+    "title": "IsDevelopmentBranch",
+    "description": ""
+  },
+  "IsDriverViewEnabled": {
+    "title": "IsDriverViewEnabled",
+    "description": ""
+  },
+  "IsEngaged": {
+    "title": "IsEngaged",
+    "description": ""
+  },
+  "IsLdwEnabled": {
+    "title": "IsLdwEnabled",
+    "description": ""
+  },
+  "IsMetric": {
+    "title": "IsMetric",
+    "description": ""
+  },
+  "IsOffroad": {
+    "title": "IsOffroad",
+    "description": ""
+  },
+  "IsOnroad": {
+    "title": "IsOnroad",
+    "description": ""
+  },
+  "IsReleaseBranch": {
+    "title": "IsReleaseBranch",
+    "description": ""
+  },
+  "IsReleaseSpBranch": {
+    "title": "IsReleaseSpBranch",
+    "description": ""
+  },
+  "IsRhdDetected": {
+    "title": "IsRhdDetected",
+    "description": ""
+  },
+  "IsTakingSnapshot": {
+    "title": "IsTakingSnapshot",
+    "description": ""
+  },
+  "IsTestedBranch": {
+    "title": "IsTestedBranch",
+    "description": ""
+  },
+  "JoystickDebugMode": {
+    "title": "JoystickDebugMode",
+    "description": ""
+  },
+  "LagdToggle": {
+    "title": "LagdToggle",
+    "description": ""
+  },
+  "LagdToggleDelay": {
+    "title": "LagdToggleDelay",
+    "description": ""
+  },
+  "LagdValueCache": {
+    "title": "LagdValueCache",
+    "description": ""
+  },
+  "LaneTurnDesire": {
+    "title": "LaneTurnDesire",
+    "description": ""
+  },
+  "LaneTurnValue": {
+    "title": "LaneTurnValue",
+    "description": ""
+  },
+  "LanguageSetting": {
+    "title": "LanguageSetting",
+    "description": ""
+  },
+  "LastAthenaPingTime": {
+    "title": "LastAthenaPingTime",
+    "description": ""
+  },
+  "LastGPSPosition": {
+    "title": "LastGPSPosition",
+    "description": ""
+  },
+  "LastGPSPositionLLK": {
+    "title": "LastGPSPositionLLK",
+    "description": ""
+  },
+  "LastManagerExitReason": {
+    "title": "LastManagerExitReason",
+    "description": ""
+  },
+  "LastOffroadStatusPacket": {
+    "title": "LastOffroadStatusPacket",
+    "description": ""
+  },
+  "LastPowerDropDetected": {
+    "title": "LastPowerDropDetected",
+    "description": ""
+  },
+  "LastSunnylinkPingTime": {
+    "title": "LastSunnylinkPingTime",
+    "description": ""
+  },
+  "LastUpdateException": {
+    "title": "LastUpdateException",
+    "description": ""
+  },
+  "LastUpdateRouteCount": {
+    "title": "LastUpdateRouteCount",
+    "description": ""
+  },
+  "LastUpdateTime": {
+    "title": "LastUpdateTime",
+    "description": ""
+  },
+  "LastUpdateUptimeOnroad": {
+    "title": "LastUpdateUptimeOnroad",
+    "description": ""
+  },
+  "LeadDepartAlert": {
+    "title": "LeadDepartAlert",
+    "description": ""
+  },
+  "LiveDelay": {
+    "title": "LiveDelay",
+    "description": ""
+  },
+  "LiveParameters": {
+    "title": "LiveParameters",
+    "description": ""
+  },
+  "LiveParametersV2": {
+    "title": "LiveParametersV2",
+    "description": ""
+  },
+  "LiveTorqueParameters": {
+    "title": "LiveTorqueParameters",
+    "description": ""
+  },
+  "LiveTorqueParamsRelaxedToggle": {
+    "title": "LiveTorqueParamsRelaxedToggle",
+    "description": ""
+  },
+  "LiveTorqueParamsToggle": {
+    "title": "LiveTorqueParamsToggle",
+    "description": ""
+  },
+  "LocationFilterInitialState": {
+    "title": "LocationFilterInitialState",
+    "description": ""
+  },
+  "LongitudinalManeuverMode": {
+    "title": "LongitudinalManeuverMode",
+    "description": ""
+  },
+  "LongitudinalPersonality": {
+    "title": "LongitudinalPersonality",
+    "description": ""
+  },
+  "Mads": {
+    "title": "Mads",
+    "description": ""
+  },
+  "MadsMainCruiseAllowed": {
+    "title": "MadsMainCruiseAllowed",
+    "description": ""
+  },
+  "MadsSteeringMode": {
+    "title": "MadsSteeringMode",
+    "description": ""
+  },
+  "MadsUnifiedEngagementMode": {
+    "title": "MadsUnifiedEngagementMode",
+    "description": ""
+  },
+  "MapAdvisorySpeedLimit": {
+    "title": "MapAdvisorySpeedLimit",
+    "description": ""
+  },
+  "MapSpeedLimit": {
+    "title": "MapSpeedLimit",
+    "description": ""
+  },
+  "MapTargetVelocities": {
+    "title": "MapTargetVelocities",
+    "description": ""
+  },
+  "MapdVersion": {
+    "title": "MapdVersion",
+    "description": ""
+  },
+  "MaxTimeOffroad": {
+    "title": "MaxTimeOffroad",
+    "description": ""
+  },
+  "ModelManager_ActiveBundle": {
+    "title": "ModelManager_ActiveBundle",
+    "description": ""
+  },
+  "ModelManager_ClearCache": {
+    "title": "ModelManager_ClearCache",
+    "description": ""
+  },
+  "ModelManager_DownloadIndex": {
+    "title": "ModelManager_DownloadIndex",
+    "description": ""
+  },
+  "ModelManager_Favs": {
+    "title": "ModelManager_Favs",
+    "description": ""
+  },
+  "ModelManager_LastSyncTime": {
+    "title": "ModelManager_LastSyncTime",
+    "description": ""
+  },
+  "ModelManager_ModelsCache": {
+    "title": "ModelManager_ModelsCache",
+    "description": ""
+  },
+  "ModelRunnerTypeCache": {
+    "title": "ModelRunnerTypeCache",
+    "description": ""
+  },
+  "NetworkMetered": {
+    "title": "NetworkMetered",
+    "description": ""
+  },
+  "NeuralNetworkLateralControl": {
+    "title": "NeuralNetworkLateralControl",
+    "description": ""
+  },
+  "NextMapSpeedLimit": {
+    "title": "NextMapSpeedLimit",
+    "description": ""
+  },
+  "OSMDownloadBounds": {
+    "title": "OSMDownloadBounds",
+    "description": ""
+  },
+  "OSMDownloadLocations": {
+    "title": "OSMDownloadLocations",
+    "description": ""
+  },
+  "OSMDownloadProgress": {
+    "title": "OSMDownloadProgress",
+    "description": ""
+  },
+  "ObdMultiplexingChanged": {
+    "title": "ObdMultiplexingChanged",
+    "description": ""
+  },
+  "ObdMultiplexingEnabled": {
+    "title": "ObdMultiplexingEnabled",
+    "description": ""
+  },
+  "OffroadMode": {
+    "title": "OffroadMode",
+    "description": ""
+  },
+  "Offroad_CarUnrecognized": {
+    "title": "Offroad_CarUnrecognized",
+    "description": ""
+  },
+  "Offroad_ConnectivityNeeded": {
+    "title": "Offroad_ConnectivityNeeded",
+    "description": ""
+  },
+  "Offroad_ConnectivityNeededPrompt": {
+    "title": "Offroad_ConnectivityNeededPrompt",
+    "description": ""
+  },
+  "Offroad_DriverMonitoringUncertain": {
+    "title": "Offroad_DriverMonitoringUncertain",
+    "description": ""
+  },
+  "Offroad_ExcessiveActuation": {
+    "title": "Offroad_ExcessiveActuation",
+    "description": ""
+  },
+  "Offroad_IsTakingSnapshot": {
+    "title": "Offroad_IsTakingSnapshot",
+    "description": ""
+  },
+  "Offroad_NeosUpdate": {
+    "title": "Offroad_NeosUpdate",
+    "description": ""
+  },
+  "Offroad_NoFirmware": {
+    "title": "Offroad_NoFirmware",
+    "description": ""
+  },
+  "Offroad_OSMUpdateRequired": {
+    "title": "Offroad_OSMUpdateRequired",
+    "description": ""
+  },
+  "Offroad_Recalibration": {
+    "title": "Offroad_Recalibration",
+    "description": ""
+  },
+  "Offroad_TemperatureTooHigh": {
+    "title": "Offroad_TemperatureTooHigh",
+    "description": ""
+  },
+  "Offroad_TiciSupport": {
+    "title": "Offroad_TiciSupport",
+    "description": ""
+  },
+  "Offroad_UnregisteredHardware": {
+    "title": "Offroad_UnregisteredHardware",
+    "description": ""
+  },
+  "Offroad_UpdateFailed": {
+    "title": "Offroad_UpdateFailed",
+    "description": ""
+  },
+  "OnroadCycleRequested": {
+    "title": "OnroadCycleRequested",
+    "description": ""
+  },
+  "OnroadScreenOffBrightness": {
+    "title": "OnroadScreenOffBrightness",
+    "description": ""
+  },
+  "OnroadScreenOffControl": {
+    "title": "OnroadScreenOffControl",
+    "description": ""
+  },
+  "OnroadScreenOffTimer": {
+    "title": "OnroadScreenOffTimer",
+    "description": ""
+  },
+  "OnroadUploads": {
+    "title": "OnroadUploads",
+    "description": ""
+  },
+  "OpenpilotEnabledToggle": {
+    "title": "OpenpilotEnabledToggle",
+    "description": ""
+  },
+  "OsmDbUpdatesCheck": {
+    "title": "OsmDbUpdatesCheck",
+    "description": ""
+  },
+  "OsmDownloadedDate": {
+    "title": "OsmDownloadedDate",
+    "description": ""
+  },
+  "OsmLocal": {
+    "title": "OsmLocal",
+    "description": ""
+  },
+  "OsmLocationName": {
+    "title": "OsmLocationName",
+    "description": ""
+  },
+  "OsmLocationTitle": {
+    "title": "OsmLocationTitle",
+    "description": ""
+  },
+  "OsmLocationUrl": {
+    "title": "OsmLocationUrl",
+    "description": ""
+  },
+  "OsmStateName": {
+    "title": "OsmStateName",
+    "description": ""
+  },
+  "OsmStateTitle": {
+    "title": "OsmStateTitle",
+    "description": ""
+  },
+  "OsmWayTest": {
+    "title": "OsmWayTest",
+    "description": ""
+  },
+  "PandaHeartbeatLost": {
+    "title": "PandaHeartbeatLost",
+    "description": ""
+  },
+  "PandaSignatures": {
+    "title": "PandaSignatures",
+    "description": ""
+  },
+  "PandaSomResetTriggered": {
+    "title": "PandaSomResetTriggered",
+    "description": ""
+  },
+  "PrimeType": {
+    "title": "PrimeType",
+    "description": ""
+  },
+  "QuickBootToggle": {
+    "title": "QuickBootToggle",
+    "description": ""
+  },
+  "QuietMode": {
+    "title": "QuietMode",
+    "description": ""
+  },
+  "RainbowMode": {
+    "title": "RainbowMode",
+    "description": ""
+  },
+  "RecordAudio": {
+    "title": "RecordAudio",
+    "description": ""
+  },
+  "RecordAudioFeedback": {
+    "title": "RecordAudioFeedback",
+    "description": ""
+  },
+  "RecordFront": {
+    "title": "RecordFront",
+    "description": ""
+  },
+  "RecordFrontLock": {
+    "title": "RecordFrontLock",
+    "description": ""
+  },
+  "RoadName": {
+    "title": "RoadName",
+    "description": ""
+  },
+  "RoadNameToggle": {
+    "title": "RoadNameToggle",
+    "description": ""
+  },
+  "RouteCount": {
+    "title": "RouteCount",
+    "description": ""
+  },
+  "SecOCKey": {
+    "title": "SecOCKey",
+    "description": ""
+  },
+  "ShowAdvancedControls": {
+    "title": "ShowAdvancedControls",
+    "description": ""
+  },
+  "ShowDebugInfo": {
+    "title": "ShowDebugInfo",
+    "description": ""
+  },
+  "ShowTurnSignals": {
+    "title": "ShowTurnSignals",
+    "description": ""
+  },
+  "SmartCruiseControlMap": {
+    "title": "SmartCruiseControlMap",
+    "description": ""
+  },
+  "SmartCruiseControlVision": {
+    "title": "SmartCruiseControlVision",
+    "description": ""
+  },
+  "SnoozeUpdate": {
+    "title": "SnoozeUpdate",
+    "description": ""
+  },
+  "SpeedLimitMode": {
+    "title": "SpeedLimitMode",
+    "description": ""
+  },
+  "SpeedLimitOffsetType": {
+    "title": "SpeedLimitOffsetType",
+    "description": ""
+  },
+  "SpeedLimitPolicy": {
+    "title": "SpeedLimitPolicy",
+    "description": ""
+  },
+  "SpeedLimitValueOffset": {
+    "title": "SpeedLimitValueOffset",
+    "description": ""
+  },
+  "SshEnabled": {
+    "title": "SshEnabled",
+    "description": ""
+  },
+  "StandstillTimer": {
+    "title": "StandstillTimer",
+    "description": ""
+  },
+  "SubaruStopAndGo": {
+    "title": "SubaruStopAndGo",
+    "description": ""
+  },
+  "SubaruStopAndGoManualParkingBrake": {
+    "title": "SubaruStopAndGoManualParkingBrake",
+    "description": ""
+  },
+  "SunnylinkCache_Roles": {
+    "title": "SunnylinkCache_Roles",
+    "description": ""
+  },
+  "SunnylinkCache_Users": {
+    "title": "SunnylinkCache_Users",
+    "description": ""
+  },
+  "SunnylinkDongleId": {
+    "title": "SunnylinkDongleId",
+    "description": ""
+  },
+  "SunnylinkEnabled": {
+    "title": "SunnylinkEnabled",
+    "description": ""
+  },
+  "SunnylinkTempFault": {
+    "title": "SunnylinkTempFault",
+    "description": ""
+  },
+  "SunnylinkdPid": {
+    "title": "SunnylinkdPid",
+    "description": ""
+  },
+  "TermsVersion": {
+    "title": "TermsVersion",
+    "description": ""
+  },
+  "TeslaCoopSteering": {
+    "title": "TeslaCoopSteering",
+    "description": ""
+  },
+  "TorqueParamsOverrideEnabled": {
+    "title": "TorqueParamsOverrideEnabled",
+    "description": ""
+  },
+  "TorqueParamsOverrideFriction": {
+    "title": "TorqueParamsOverrideFriction",
+    "description": ""
+  },
+  "TorqueParamsOverrideLatAccelFactor": {
+    "title": "TorqueParamsOverrideLatAccelFactor",
+    "description": ""
+  },
+  "TrainingVersion": {
+    "title": "TrainingVersion",
+    "description": ""
+  },
+  "TrueVEgoUI": {
+    "title": "TrueVEgoUI",
+    "description": ""
+  },
+  "UbloxAvailable": {
+    "title": "UbloxAvailable",
+    "description": ""
+  },
+  "UpdateAvailable": {
+    "title": "UpdateAvailable",
+    "description": ""
+  },
+  "UpdateFailedCount": {
+    "title": "UpdateFailedCount",
+    "description": ""
+  },
+  "UpdaterAvailableBranches": {
+    "title": "UpdaterAvailableBranches",
+    "description": ""
+  },
+  "UpdaterCurrentDescription": {
+    "title": "UpdaterCurrentDescription",
+    "description": ""
+  },
+  "UpdaterCurrentReleaseNotes": {
+    "title": "UpdaterCurrentReleaseNotes",
+    "description": ""
+  },
+  "UpdaterFetchAvailable": {
+    "title": "UpdaterFetchAvailable",
+    "description": ""
+  },
+  "UpdaterLastFetchTime": {
+    "title": "UpdaterLastFetchTime",
+    "description": ""
+  },
+  "UpdaterNewDescription": {
+    "title": "UpdaterNewDescription",
+    "description": ""
+  },
+  "UpdaterNewReleaseNotes": {
+    "title": "UpdaterNewReleaseNotes",
+    "description": ""
+  },
+  "UpdaterState": {
+    "title": "UpdaterState",
+    "description": ""
+  },
+  "UpdaterTargetBranch": {
+    "title": "UpdaterTargetBranch",
+    "description": ""
+  },
+  "UptimeOffroad": {
+    "title": "UptimeOffroad",
+    "description": ""
+  },
+  "UptimeOnroad": {
+    "title": "UptimeOnroad",
+    "description": ""
+  },
+  "Version": {
+    "title": "Version",
+    "description": ""
+  }
+}
