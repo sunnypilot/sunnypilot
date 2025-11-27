@@ -17,7 +17,7 @@ from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 
-from openpilot.selfdrive.ui.sunnypilot.layouts.settings.external_storage import ExternalStorageControl
+# from openpilot.selfdrive.ui.sunnypilot.layouts.settings.external_storage import ExternalStorageControl
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
 PREBUILT_PATH = os.path.join(Paths.comma_home(), "openpilot", "prebuilt") if PC else "/data/openpilot/prebuilt"
@@ -45,9 +45,10 @@ class DeveloperLayoutSP(DeveloperLayout):
     self.error_log_btn = button_item(tr("Error Log"), tr("View"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
     self.items: list = []
-    if not PC:
-      self.external_storage_control = ExternalStorageControl()
-      self.items.append(self.external_storage_control.item)
+    # Uncomment this out once first adds the support to the external_storage.py
+    # if not PC:
+    #   self.external_storage_control = ExternalStorageControl()
+    #   self.items.append(self.external_storage_control.item)
     self.items.extend([self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,])
 
   def _on_prebuilt_toggled(self, state):
