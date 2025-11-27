@@ -218,6 +218,9 @@ class MainLayout(Widget):
           # Restore previous layout
           if self._settings_prev_layout is not None:
             self._current_mode = self._settings_prev_layout
+            # Restore sidebar visibility when returning to a non-onroad layout
+            if self._settings_prev_layout != MainState.ONROAD:
+              self._sidebar.set_visible(True)
         self._settings_anim_active = False
         self._settings_anim_direction = None
         self._settings_prev_layout = None
