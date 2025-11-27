@@ -42,6 +42,7 @@ cdef extern from "common/params.h":
     bool checkKey(string) nogil
     ParamKeyType getKeyType(string) nogil
     optional[string] getKeyDefaultValue(string) nogil
+    optional[string] getKeyMetadata(string) nogil
     string getParamPath(string) nogil
     void clearAll(ParamKeyFlag)
     vector[string] allKeys(ParamKeyFlag)
@@ -190,6 +191,11 @@ cdef class Params:
     cdef ParamKeyType t = self.p.getKeyType(k)
     cdef optional[string] default = self.p.getKeyDefaultValue(k)
     return self._cpp2python(t, default.value(), None, key) if default.has_value() else None
+
+  def get_key_metadata(self, key):
+    cdef string k = self.check_key(key)
+    cdef optional[string] metadata = self.p.getKeyMetadata(k)
+    return metadata.value().decode("utf-8") if metadata.has_value() else None
 
   def cpp2python(self, key, value):
     cdef string k = self.check_key(key)
