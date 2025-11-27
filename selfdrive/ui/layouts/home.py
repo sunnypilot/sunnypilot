@@ -180,8 +180,9 @@ class HomeLayout(Widget):
     gui_label(version_rect, self._version_text, 48, rl.WHITE, alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT)
 
   def _render_home_content(self):
-    self._render_left_column()
-    self._render_right_column()
+    # Intentionally blank: remove all widgets from the home screen
+    # Keep header (which draws the hoofpilot text on the top-right)
+    return
 
   def _render_update_view(self):
     self.update_alert.render(self.content_rect)
@@ -228,5 +229,4 @@ class HomeLayout(Widget):
 
   def _get_version_text(self) -> str:
     brand = "hoofpilot"
-    description = self.params.get("UpdaterCurrentDescription")
-    return f"{brand} {description}" if description else brand
+    return brand
