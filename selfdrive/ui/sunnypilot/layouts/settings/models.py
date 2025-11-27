@@ -179,7 +179,6 @@ class ModelsLayout(Widget):
 
     active_ref = self.model_manager.activeBundle.ref if self.model_manager.activeBundle else "Default"
     self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, active_ref, "ModelManager_Favs",
-                                          search_prompt=tr("Click here to search for a model"),
                                           get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
     gui_app.set_modal_overlay(self.model_dialog, callback=self._on_model_selected)
 
