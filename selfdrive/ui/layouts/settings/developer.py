@@ -23,10 +23,11 @@ DESCRIPTIONS = {
     "other than your own. A comma employee will NEVER ask you to add their GitHub username."
   ),
   'alpha_longitudinal': tr_noop(
-    "<b>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</b><br><br>" +
-    "On this car, openpilot defaults to the car's built-in ACC instead of openpilot's longitudinal control. " +
-    "Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha. " +
-    "Changing this setting will restart openpilot if the car is powered on."
+    "<b>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</b><br><br>" +
+    "On this car, sunnypilot defaults to the car's built-in ACC instead of sunnypilot's longitudinal control. " +
+    "Enable this to switch to sunnypilot longitudinal control. " +
+    "Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha. " +
+    "Changing this setting will restart sunnypilot if the car is powered on."
   ),
 }
 
@@ -71,7 +72,7 @@ class DeveloperLayout(Widget):
     )
 
     self._alpha_long_toggle = toggle_item(
-      lambda: tr("openpilot Longitudinal Control (Alpha)"),
+      lambda: tr("sunnypilot Longitudinal Control (Alpha)"),
       description=lambda: tr(DESCRIPTIONS["alpha_longitudinal"]),
       initial_state=self._params.get_bool("AlphaLongitudinalEnabled"),
       callback=self._on_alpha_long_enabled,
@@ -148,6 +149,7 @@ class DeveloperLayout(Widget):
     self._params.put_bool("ShowDebugInfo", state)
     gui_app.set_show_touches(state)
     gui_app.set_show_fps(state)
+    gui_app.set_show_mouse_coords(state)
 
   def _on_enable_adb(self, state: bool):
     self._params.put_bool("AdbEnabled", state)
