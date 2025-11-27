@@ -22,7 +22,6 @@ class ProgressBarAction(ItemAction):
   def _render(self, rect: rl.Rectangle):
     font_size = 40
     text_size = measure_text_cached(self._font, self.text, font_size)
-
     padding = 30
     bar_width = text_size.x + 2 * padding
     text_x = (bar_width - text_size.x) / 2
