@@ -10,7 +10,6 @@ from openpilot.selfdrive.ui.mici.layouts.settings.toggles import TogglesLayoutMi
 from openpilot.selfdrive.ui.mici.layouts.settings.network import NetworkLayoutMici
 from openpilot.selfdrive.ui.mici.layouts.settings.device import DeviceLayoutMici, PairBigButton
 from openpilot.selfdrive.ui.mici.layouts.settings.developer import DeveloperLayoutMici
-from openpilot.selfdrive.ui.mici.layouts.settings.firehose import FirehoseLayoutMici
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.widgets import Widget, NavWidget
 
@@ -45,8 +44,6 @@ class SettingsLayout(NavWidget):
     developer_btn = BigButton("developer", "", "icons_mici/settings/developer_icon.png")
     developer_btn.set_click_callback(lambda: self._set_current_panel(PanelType.DEVELOPER))
 
-    firehose_btn = BigButton("firehose", "", "icons_mici/settings/comma_icon.png")
-    firehose_btn.set_click_callback(lambda: self._set_current_panel(PanelType.FIREHOSE))
 
     self._scroller = Scroller([
       toggles_btn,
@@ -54,7 +51,6 @@ class SettingsLayout(NavWidget):
       device_btn,
       PairBigButton(),
       #BigDialogButton("manual", "", "icons_mici/settings/manual_icon.png", "Check out the mici user\nmanual at comma.ai/setup"),
-      firehose_btn,
       developer_btn,
     ], snap_items=False)
 
@@ -67,7 +63,6 @@ class SettingsLayout(NavWidget):
       PanelType.NETWORK: PanelInfo("Network", NetworkLayoutMici(back_callback=lambda: self._set_current_panel(None))),
       PanelType.DEVICE: PanelInfo("Device", DeviceLayoutMici(back_callback=lambda: self._set_current_panel(None))),
       PanelType.DEVELOPER: PanelInfo("Developer", DeveloperLayoutMici(back_callback=lambda: self._set_current_panel(None))),
-      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayoutMici(back_callback=lambda: self._set_current_panel(None))),
     }
 
     self._font_medium = gui_app.font(FontWeight.MEDIUM)
