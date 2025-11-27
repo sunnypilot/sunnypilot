@@ -413,6 +413,8 @@ class GuiApplication(GuiApplicationExt):
 
   def render(self):
     try:
+      # Ensure target fps follows current onroad/offroad state at start
+      self._update_target_fps_from_params()
       if self._profile_render_frames > 0:
         import cProfile
         self._render_profiler = cProfile.Profile()
@@ -420,6 +422,8 @@ class GuiApplication(GuiApplicationExt):
         self._render_profiler.enable()
 
       while not (self._window_close_requested or rl.window_should_close()):
+        # Dynamically update target FPS based on onroad/offroad state
+        self._update_target_fps_from_params()
         if PC:
           # Thread is not used on PC, need to manually add mouse events
           self._mouse._handle_mouse_event()
@@ -601,6 +605,33 @@ class GuiApplication(GuiApplicationExt):
     if STRICT_MODE and fps < self._target_fps * FPS_CRITICAL_THRESHOLD:
       cloudlog.error(f"FPS dropped critically below {fps}. Shutting down UI.")
       os._exit(1)
+
+  def _desired_fps_based_on_params(self) -> int:
+    """Return the desired FPS based on the current Params().get('IsOnroad').
+
+    This mirrors the logic used at import time so environment/device overrides are respected.
+    """
+    try:
+      is_onroad = Params().get("IsOnroad")
+    except Exception:
+      is_onroad = False
+
+    if is_onroad:
+      return int(os.getenv("FPS", {"tizi": 20}.get(HARDWARE.get_device_type(), 60)))
+    else:
+      return int(os.getenv("FPS", {"tizi": 59}.get(HARDWARE.get_device_type(), 60)))
+
+  def _update_target_fps_from_params(self):
+    """Update `self._target_fps` and raylib's target FPS if Params state changed."""
+    desired = self._desired_fps_based_on_params()
+    if desired != getattr(self, "_target_fps", None):
+      try:
+        self._target_fps = desired
+        rl.set_target_fps(desired)
+        cloudlog.info(f"Target FPS updated to {desired} due to IsOnroad={Params().get('IsOnroad')}")
+      except Exception:
+        # If rl isn't initialized yet or set_target_fps fails, ignore silently
+        pass
 
   def _draw_touch_points(self):
     current_time = time.monotonic()
