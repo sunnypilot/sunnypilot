@@ -129,10 +129,6 @@ std::optional<std::string> Params::getKeyDefaultValue(const std::string &key) {
   return keys[key].default_value;
 }
 
-std::optional<std::string> Params::getKeyMetadata(const std::string &key) {
-  return keys[key].metadata;
-}
-
 int Params::put(const char* key, const char* value, size_t value_size) {
   // Information about safely and atomically writing a file: https://lwn.net/Articles/457667/
   // 1) Create temp file

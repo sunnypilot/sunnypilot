@@ -13,7 +13,6 @@ import time
 
 from jsonrpc import dispatcher
 from functools import partial
-from cereal import log
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
@@ -181,39 +180,16 @@ def getParamsAllKeys() -> list[str]:
 
 @dispatcher.add_method
 def getParamsAllKeysV1() -> dict[str, str]:
-  params = Params()
-  available_keys: list[str] = [k.decode('utf-8') for k in params.all_keys()]
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
   params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
   for key in available_keys:
     value = get_param_as_byte(key, get_default=True)
-
-    metadata = None
-    metadata_json = params.get_key_metadata(key)
-    if metadata_json:
-      try:
-        metadata = json.loads(metadata_json)
-        if "enum" in metadata and log is not None:
-          enum_name = metadata["enum"]
-          if hasattr(log, enum_name):
-            enum_cls = getattr(log, enum_name)
-            if hasattr(enum_cls, "schema") and hasattr(enum_cls.schema, "enumerants"):
-              options = []
-              for name, val in enum_cls.schema.enumerants.items():
-                options.append({"value": val, "label": name})
-              # Sort by value
-              options.sort(key=lambda x: x["value"])
-              metadata["options"] = options
-      except json.JSONDecodeError:
-        pass
-
-    param_data = {
+    params_dict["params"].append({
       "key": key,
       "type": int(params.get_type(key).value),
       "default_value": base64.b64encode(value).decode('utf-8') if value else None,
-      "_extra": metadata,
-    }
-    params_dict["params"].append(param_data)
+    })
 
   return {"keys": json.dumps(params_dict.get("params", []))}
 
@@ -262,7 +238,10 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
 
   cloudlog.debug("athena.startLocalProxy.starting")
   ws = create_connection(
-    remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True, sslopt={"cert_reqs": ssl.CERT_NONE}
+    remote_ws_uri,
+    header={"Authorization": f"Bearer {sunnylink_api.get_token()}"},
+    enable_multithread=True,
+    sslopt={"cert_reqs": ssl.CERT_NONE}
   )
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
@@ -298,7 +277,8 @@ def main(exit_event: threading.Event = None):
         sslopt={"cert_reqs": ssl.CERT_NONE if "localhost" in ws_uri else ssl.CERT_REQUIRED},
         timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
       )
-      cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries, duration=time.monotonic() - conn_start)
+      cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
+                     duration=time.monotonic() - conn_start)
       conn_start = None
 
       conn_retries = 0
