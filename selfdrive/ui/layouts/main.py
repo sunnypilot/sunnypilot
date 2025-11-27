@@ -130,22 +130,7 @@ class MainLayout(Widget):
     # keep sidebar visible during animation (mimic mici behavior)
 
   def _on_settings_clicked(self):
-    # Toggle settings: open if not open, close if already open (or reverse animation)
-    if self._settings_anim_active:
-      # if animating, reverse direction
-      if self._settings_anim_direction == 'in':
-        self._settings_anim_direction = 'out'
-        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))))
-      elif self._settings_anim_direction == 'out':
-        self._settings_anim_direction = 'in'
-        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))))
-      return
-
-    if self._current_mode == MainState.SETTINGS:
-      # start closing animation
-      self._close_settings_requested()
-    else:
-      self.open_settings(PanelType.DEVICE)
+    self.open_settings(PanelType.DEVICE)
 
   def _on_bookmark_clicked(self):
     user_bookmark = messaging.new_message('bookmarkButton')
