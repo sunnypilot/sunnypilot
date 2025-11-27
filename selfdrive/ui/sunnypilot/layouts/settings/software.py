@@ -49,8 +49,8 @@ class SoftwareLayoutSP(SoftwareLayout):
 
     folders = [
       TreeFolder("", top_level_nodes),
-      TreeFolder("prebuilt", prebuilt_nodes),
-      TreeFolder("non prebuilt branches", non_prebuilt_nodes),
+      TreeFolder("Prebuilt branches", prebuilt_nodes),
+      TreeFolder("Non-prebuilt branches", non_prebuilt_nodes),
     ]
 
     self._branch_dialog = TreeOptionDialog(tr("Select a branch"), folders, current_target, "",
