@@ -183,11 +183,17 @@
   },
   "CustomAccLongPressIncrement": {
     "title": "Custom ACC Long Press Increment",
-    "description": ""
+    "description": "",
+    "min": 1,
+    "max": 10,
+    "step": 1
   },
   "CustomAccShortPressIncrement": {
     "title": "Custom ACC Short Press Increment",
-    "description": ""
+    "description": "",
+    "min": 1,
+    "max": 10,
+    "step": 1
   },
   "CustomTorqueParams": {
     "title": "Custom Torque Params",
@@ -443,7 +449,10 @@
   },
   "LaneTurnValue": {
     "title": "Lane Turn Value",
-    "description": ""
+    "description": "",
+    "min": 0,
+    "max": 20,
+    "step": 1
   },
   "LanguageSetting": {
     "title": "Language",
@@ -737,7 +746,10 @@
   },
   "OnroadScreenOffBrightness": {
     "title": "Onroad Screen Off Brightness",
-    "description": ""
+    "description": "",
+    "min": 0,
+    "max": 100,
+    "step": 5
   },
   "OnroadScreenOffControl": {
     "title": "Onroad Screen Off Control",
@@ -745,7 +757,10 @@
   },
   "OnroadScreenOffTimer": {
     "title": "Onroad Screen Off Timer",
-    "description": ""
+    "description": "",
+    "min": 0,
+    "max": 60,
+    "step": 1
   },
   "OnroadUploads": {
     "title": "Onroad Uploads",
@@ -943,7 +958,10 @@
   },
   "SpeedLimitValueOffset": {
     "title": "Speed Limit Value Offset",
-    "description": ""
+    "description": "",
+    "min": -30,
+    "max": 30,
+    "step": 1
   },
   "SshEnabled": {
     "title": "Enable SSH",
@@ -999,11 +1017,17 @@
   },
   "TorqueParamsOverrideFriction": {
     "title": "Torque Params Override Friction",
-    "description": ""
+    "description": "",
+    "min": 0.0,
+    "max": 1.0,
+    "step": 0.01
   },
   "TorqueParamsOverrideLatAccelFactor": {
     "title": "Torque Params Override Lat Accel Factor",
-    "description": ""
+    "description": "",
+    "min": 0.1,
+    "max": 5.0,
+    "step": 0.1
   },
   "TrainingVersion": {
     "title": "Training Version",
