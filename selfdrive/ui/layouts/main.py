@@ -180,7 +180,9 @@ class MainLayout(Widget):
     self._pm.send('bookmarkButton', user_bookmark)
 
   def _on_onroad_clicked(self):
-    # Simple immediate toggle of sidebar visibility
+    # Disable sidebar toggle while settings is open or animating
+    if self._settings_anim_active or self._current_mode == MainState.SETTINGS:
+      return
     self._sidebar.set_visible(not self._sidebar.is_visible)
 
   def _render_main_content(self):
