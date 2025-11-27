@@ -15,7 +15,7 @@ from openpilot.system.ui.widgets.list_view import button_item
 
 class ExternalStorageControl:
   def __init__(self):
-    self.item = button_item(tr("External Storage"), "", tr(tr("Extend your comma device's storage by inserting a USB drive into the aux port.")),
+    self.item = button_item(tr("External Storage"), "", tr("Extend your comma device's storage by inserting a USB drive into the aux port."),
                             #callback=primary_callback_function_goes_here()
     )
   """Add the external storage stuff here in this file! The imports are included based on what I saw in the cpp implementation. they may or

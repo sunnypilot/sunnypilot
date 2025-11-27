@@ -82,7 +82,7 @@ class DeveloperLayoutSP(DeveloperLayout):
   def _update_toggles(self):
     super()._update_toggles()
     disable_updates = ui_state.params.get_bool("DisableUpdates")
-    is_release = self._is_release  or ui_state.params.get_bool("IsReleaseSpBranch")
+    is_release = self._is_release or ui_state.params.get_bool("IsReleaseSpBranch")
 
     self.prebuilt_toggle.set_visible(not (is_release or ui_state.params.get_bool("IsTestedBranch") or ui_state.params.get_bool("IsDevelopmentBranch")))
     self.prebuilt_toggle.action_item.set_enabled(disable_updates)
