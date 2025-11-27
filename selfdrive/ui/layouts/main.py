@@ -32,7 +32,8 @@ class MainLayout(Widget):
     # Settings transition animation state
     self._settings_anim_active = False
     self._settings_anim_start = 0.0
-    self._settings_anim_duration = 0.28
+    # Use easing/duration similar to mici (slightly bouncy)
+    self._settings_anim_duration = 0.32
     self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
 
@@ -127,7 +128,8 @@ class MainLayout(Widget):
     self._settings_anim_start = now
     # ensure settings layout can initialize
     self._layouts[MainState.SETTINGS].show_event()
-    # keep sidebar visible during animation (mimic mici behavior)
+    # Hide sidebar so settings becomes full page
+    self._sidebar.set_visible(False)
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
@@ -135,10 +137,12 @@ class MainLayout(Widget):
       # if animating, reverse direction
       if self._settings_anim_direction == 'in':
         self._settings_anim_direction = 'out'
-        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))))
+        prog = max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))
+        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - prog))
       elif self._settings_anim_direction == 'out':
         self._settings_anim_direction = 'in'
-        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))))
+        prog = max(0.0, min(1.0, (rl.get_time() - self._settings_anim_start) / self._settings_anim_duration))
+        self._settings_anim_start = rl.get_time() - (self._settings_anim_duration * (1 - prog))
       return
 
     if self._current_mode == MainState.SETTINGS:
@@ -166,25 +170,29 @@ class MainLayout(Widget):
       now = rl.get_time()
       elapsed = now - self._settings_anim_start
       t = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # ease cubic out
-      eased = 1 - (1 - t) ** 3
+      # easeOutBack (tiny overshoot / bounce) to match mici feel
+      # https://easings.net/#easeOutBack
+      c1 = 1.70158
+      c3 = c1 + 1
+      eased = 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
 
       # Determine base (under) layout
       base_layout = self._layouts[self._settings_prev_layout] if self._settings_prev_layout is not None else self._layouts[self._current_mode]
       base_layout.render(content_rect)
 
-      # Compute animated Y for settings panel
+      # Compute animated Y for settings panel (full page)
+      full_rect = self._rect
       if self._settings_anim_direction == 'in':
-        start_y = content_rect.y + content_rect.height
-        end_y = content_rect.y
+        start_y = full_rect.y + full_rect.height
+        end_y = full_rect.y
         cur_y = start_y + (end_y - start_y) * eased
       else:
         # out animation: move down
-        start_y = content_rect.y
-        end_y = content_rect.y + content_rect.height
+        start_y = full_rect.y
+        end_y = full_rect.y + full_rect.height
         cur_y = start_y + (end_y - start_y) * eased
 
-      animated_rect = rl.Rectangle(content_rect.x, cur_y, content_rect.width, content_rect.height)
+      animated_rect = rl.Rectangle(full_rect.x, cur_y, full_rect.width, full_rect.height)
       # Render settings layout into animated rect
       self._layouts[MainState.SETTINGS].render(animated_rect)
 
@@ -192,13 +200,18 @@ class MainLayout(Widget):
       if t >= 1.0:
         if self._settings_anim_direction == 'in':
           # Entered settings fully
-          self._current_mode = MainState.SETTINGS
-          # hide the previous layout now that settings is fully visible
-          if self._settings_prev_layout is not None:
-            try:
-              self._layouts[self._settings_prev_layout].hide_event()
-            except Exception:
-              pass
+          # Only switch the current mode when not overlaying onroad (to avoid disrupting driving state)
+          if self._settings_prev_layout != MainState.ONROAD:
+            self._current_mode = MainState.SETTINGS
+            # hide the previous layout now that settings is fully visible
+            if self._settings_prev_layout is not None:
+              try:
+                self._layouts[self._settings_prev_layout].hide_event()
+              except Exception:
+                pass
+          else:
+            # Keep onroad as the active layout under the overlay
+            self._current_mode = MainState.ONROAD
         else:
           # Exited settings, ensure hide_event called
           self._layouts[MainState.SETTINGS].hide_event()

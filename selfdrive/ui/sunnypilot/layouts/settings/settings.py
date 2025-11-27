@@ -130,9 +130,34 @@ class SettingsLayoutSP(OP.SettingsLayout):
   def _draw_sidebar(self, rect: rl.Rectangle):
     rl.draw_rectangle_rec(rect, OP.SIDEBAR_COLOR)
 
-    # NOTE: close button removed — settings toggled via the sidebar settings button.
-    # Adjust top padding so nav items sit higher now that the close button is gone.
-    self._close_btn_rect = rl.Rectangle(rect.x, rect.y, 0, 0)
+    # Close button
+    close_btn_rect = rl.Rectangle(
+      rect.x + style.ITEM_PADDING * 3, rect.y + style.ITEM_PADDING * 2, style.CLOSE_BTN_SIZE, style.CLOSE_BTN_SIZE
+    )
+
+    pressed = (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and
+               rl.check_collision_point_rec(rl.get_mouse_position(), close_btn_rect))
+    close_color = OP.CLOSE_BTN_PRESSED if pressed else OP.CLOSE_BTN_COLOR
+    rl.draw_rectangle_rounded(close_btn_rect, 1.0, 20, close_color)
+
+    icon_color = rl.Color(255, 255, 255, 255) if not pressed else rl.Color(220, 220, 220, 255)
+    icon_dest = rl.Rectangle(
+      close_btn_rect.x + (close_btn_rect.width - self._close_icon.width) / 2,
+      close_btn_rect.y + (close_btn_rect.height - self._close_icon.height) / 2,
+      self._close_icon.width,
+      self._close_icon.height,
+    )
+    rl.draw_texture_pro(
+      self._close_icon,
+      rl.Rectangle(0, 0, self._close_icon.width, self._close_icon.height),
+      icon_dest,
+      rl.Vector2(0, 0),
+      0,
+      icon_color,
+    )
+
+    # Store close button rect for click detection
+    self._close_btn_rect = close_btn_rect
 
     # Navigation buttons with scroller
     if not self._nav_items:
@@ -146,9 +171,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Draw navigation section with scroller
     nav_rect = rl.Rectangle(
       rect.x,
-      rect.y + style.ITEM_PADDING * 2,  # Start higher since no close button
+      self._close_btn_rect.y + self._close_btn_rect.height + style.ITEM_PADDING * 2,
       rect.width,
-      rect.height - style.ITEM_PADDING * 4
+      rect.height - (self._close_btn_rect.height + style.ITEM_PADDING * 4)
     )
 
     if self._nav_items:
@@ -156,7 +181,11 @@ class SettingsLayoutSP(OP.SettingsLayout):
       return
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
-    # Close button removed: settings closed via sidebar settings toggle
+    # Check close button
+    if hasattr(self, "_close_btn_rect") and rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
+      if self._close_callback:
+        self._close_callback()
+      return True
 
     # Check navigation buttons
     for panel_type, panel_info in self._panels.items():
