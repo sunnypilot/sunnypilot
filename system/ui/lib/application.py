@@ -338,6 +338,26 @@ class GuiApplication(GuiApplicationExt):
     """Load and resize an image, storing it for later automatic unloading."""
     image = rl.load_image(image_path)
 
+    # Some image loaders (or unsupported formats) can return images with zero dimensions.
+    # Protect against division by zero below by substituting a 1x1 placeholder image.
+    if getattr(image, "width", 0) == 0 or getattr(image, "height", 0) == 0:
+      try:
+        cloudlog.warning(f"Loaded image {image_path} has zero dimensions ({getattr(image, 'width', 0)}x{getattr(image, 'height', 0)}); using placeholder")
+      except Exception:
+        pass
+      # create a tiny placeholder image (black) so texture creation won't fail
+      try:
+        temp_image = rl.gen_image_color(1, 1, rl.BLACK)
+        # unload the possibly-broken image if api exposes unload
+        try:
+          rl.unload_image(image)
+        except Exception:
+          pass
+        image = temp_image
+      except Exception:
+        # If gen_image_color isn't available or fails, just return original image to avoid crashing here
+        return image
+
     if alpha_premultiply:
       rl.image_alpha_premultiply(image)
 
