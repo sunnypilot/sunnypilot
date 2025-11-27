@@ -49,7 +49,37 @@
   },
   "AutoLaneChangeTimer": {
     "title": "Auto Lane Change Timer",
-    "description": ""
+    "description": "",
+    "options": [
+      {
+        "value": -1,
+        "label": "Off"
+      },
+      {
+        "value": 0,
+        "label": "Nudge"
+      },
+      {
+        "value": 1,
+        "label": "Nudgeless"
+      },
+      {
+        "value": 2,
+        "label": "0.5s"
+      },
+      {
+        "value": 3,
+        "label": "1s"
+      },
+      {
+        "value": 4,
+        "label": "2s"
+      },
+      {
+        "value": 5,
+        "label": "3s"
+      }
+    ]
   },
   "BackupManager_CreateBackup": {
     "title": "Create Backup",
@@ -169,7 +199,17 @@
   },
   "DeviceBootMode": {
     "title": "Device Boot Mode",
-    "description": ""
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Standard"
+      },
+      {
+        "value": 1,
+        "label": "Always Offroad"
+      }
+    ]
   },
   "DisableLogging": {
     "title": "Disable Logging",
@@ -305,7 +345,21 @@
   },
   "HyundaiLongitudinalTuning": {
     "title": "Hyundai Longitudinal Tuning",
-    "description": ""
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Dynamic"
+      },
+      {
+        "value": 2,
+        "label": "Predictive"
+      }
+    ]
   },
   "InstallDate": {
     "title": "Install Date",
@@ -479,15 +533,19 @@
     "title": "Driving Personality",
     "description": "",
     "options": [
-      "Aggressive",
-      "Standard",
-      "Relaxed"
-    ],
-    "enum_map": {
-      "Aggressive": 0,
-      "Standard": 1,
-      "Relaxed": 2
-    }
+      {
+        "value": 0,
+        "label": "Aggressive"
+      },
+      {
+        "value": 1,
+        "label": "Standard"
+      },
+      {
+        "value": 2,
+        "label": "Relaxed"
+      }
+    ]
   },
   "Mads": {
     "title": "MADS Enabled",
@@ -501,15 +559,19 @@
     "title": "MADS Steering Mode",
     "description": "",
     "options": [
-      "Remain Active",
-      "Pause",
-      "Disengage"
-    ],
-    "enum_map": {
-      "Remain Active": 0,
-      "Pause": 1,
-      "Disengage": 2
-    }
+      {
+        "value": 0,
+        "label": "Remain Active"
+      },
+      {
+        "value": 1,
+        "label": "Pause"
+      },
+      {
+        "value": 2,
+        "label": "Disengage"
+      }
+    ]
   },
   "MadsUnifiedEngagementMode": {
     "title": "MADS Unified Engagement Mode",
@@ -567,15 +629,19 @@
     "title": "Network Usage",
     "description": "",
     "options": [
-      "Default",
-      "Metered",
-      "Unmetered"
-    ],
-    "enum_map": {
-      "Default": 0,
-      "Metered": 1,
-      "Unmetered": 2
-    }
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 1,
+        "label": "Metered"
+      },
+      {
+        "value": 2,
+        "label": "Unmetered"
+      }
+    ]
   },
   "NeuralNetworkLateralControl": {
     "title": "Neural Network Lateral Control",
@@ -813,49 +879,67 @@
     "title": "Speed Limit Mode",
     "description": "",
     "options": [
-      "Off",
-      "Information",
-      "Warning",
-      "Assist"
-    ],
-    "enum_map": {
-      "Off": 0,
-      "Information": 1,
-      "Warning": 2,
-      "Assist": 3
-    }
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Information"
+      },
+      {
+        "value": 2,
+        "label": "Warning"
+      },
+      {
+        "value": 3,
+        "label": "Assist"
+      }
+    ]
   },
   "SpeedLimitOffsetType": {
     "title": "Speed Limit Offset Type",
     "description": "",
     "options": [
-      "Off",
-      "Fixed",
-      "Percentage"
-    ],
-    "enum_map": {
-      "Off": 0,
-      "Fixed": 1,
-      "Percentage": 2
-    }
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Fixed"
+      },
+      {
+        "value": 2,
+        "label": "Percentage"
+      }
+    ]
   },
   "SpeedLimitPolicy": {
     "title": "Speed Limit Policy",
     "description": "",
     "options": [
-      "Car State Only",
-      "Map Data Only",
-      "Car State Priority",
-      "Map Data Priority",
-      "Combined"
-    ],
-    "enum_map": {
-      "Car State Only": 0,
-      "Map Data Only": 1,
-      "Car State Priority": 2,
-      "Map Data Priority": 3,
-      "Combined": 4
-    }
+      {
+        "value": 0,
+        "label": "Car State Only"
+      },
+      {
+        "value": 1,
+        "label": "Map Data Only"
+      },
+      {
+        "value": 2,
+        "label": "Car State Priority"
+      },
+      {
+        "value": 3,
+        "label": "Map Data Priority"
+      },
+      {
+        "value": 4,
+        "label": "Combined"
+      }
+    ]
   },
   "SpeedLimitValueOffset": {
     "title": "Speed Limit Value Offset",
