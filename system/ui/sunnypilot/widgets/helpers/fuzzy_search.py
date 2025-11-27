@@ -16,7 +16,6 @@ def search_from_list(query: str, items: list[str]) -> list[str]:
   results = []
   for item in items:
     normalized_item = normalize(item)
-
     item_with_spaces = re.sub(r'[^a-z0-9\s]', ' ', normalized_item)
     item_stripped = re.sub(r'[^a-z0-9]', '', normalized_item)
 
