@@ -228,5 +228,4 @@ class HomeLayout(Widget):
 
   def _get_version_text(self) -> str:
     brand = "hoofpilot"
-    description = self.params.get("UpdaterCurrentDescription")
-    return f"{brand} {description}" if description else brand
+    return brand
