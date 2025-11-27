@@ -14,12 +14,9 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
-from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
-from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
 from openpilot.system.ui.sunnypilot.lib.styles import style
-from openpilot.system.ui.sunnypilot.widgets.helpers.fuzzy_search import search_from_list
-from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP
+from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 base_path = 'opendbc_repo/opendbc'
@@ -81,7 +78,7 @@ class PlatformSelector(Button):
       if self._on_platform_change:
         self._on_platform_change()
     else:
-      InputDialogSP(tr("Please type in your vehicle's name"), callback=self._on_search_input).show()
+      self._show_platform_dialog()
 
   def _set_platform(self, platform_name):
     if data := self._platforms.get(platform_name):
@@ -91,23 +88,18 @@ class PlatformSelector(Button):
         self._on_platform_change()
 
   def _on_platform_selected(self, dialog, res):
-    if res == DialogResult.CONFIRM and dialog.selection:
-      self._set_platform(dialog.selection)
+    if res == DialogResult.CONFIRM and dialog.selection_ref:
+      self._set_platform(dialog.selection_ref)
 
-  def _search_platforms(self, query):
-    results = search_from_list(query, sorted(self._platforms.keys()))
-    if not results:
-      gui_app.set_modal_overlay(ConfirmDialog(tr(f"No vehicles found for query: {query}"), tr("OK"), cancel_text=""))
-      return
-
-    dialog = MultiOptionDialog(tr("Select a vehicle"), results)
-    gui_app.set_modal_overlay(dialog, partial(self._on_platform_selected, dialog))
-
-
-  def _on_search_input(self, res, text):
-    if res == DialogResult.CONFIRM and text:
-      self._search_platforms(text)
-      self.refresh(self._offroad)
+  def _show_platform_dialog(self):
+    platforms = sorted(self._platforms.keys())
+    brands = sorted({self._platforms[p].get('brand') for p in platforms})
+    folders = [TreeFolder(brand.capitalize(), [TreeNode(p, {'display_name': p}) for p in platforms
+                                               if self._platforms[p].get('brand') == brand]) for brand in brands]
+    dialog = TreeOptionDialog(tr("Select a vehicle"), folders)
+    callback = partial(self._on_platform_selected, dialog)
+    dialog.on_exit = callback
+    gui_app.set_modal_overlay(dialog, callback=callback)
 
   def refresh(self, offroad):
     self._offroad = offroad
