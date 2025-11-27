@@ -63,7 +63,7 @@ class DefaultStyleSP(Base):
   # Tree Button Colors
   BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
   BUTTON_NEUTRAL_GRAY = rl.Color(51, 51, 51, 255)
-  BUTTON_DISABLED_BG_COLOR = rl.Color(20, 20, 20, 255)  # Very Dark Grey
+  BUTTON_DISABLED_BG_COLOR = rl.Color(30, 30, 30, 255) # Very Dark Grey
 
 
 style = DefaultStyleSP
