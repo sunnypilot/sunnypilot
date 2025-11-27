@@ -4,10 +4,9 @@ from dataclasses import dataclass, field
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
-from openpilot.system.ui.widgets.label import gui_label
+from openpilot.system.ui.widgets.label import gui_label, Label
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
 from openpilot.system.ui.sunnypilot.lib.styles import style
@@ -39,23 +38,17 @@ class TreeItemWidget(Button):
     self.is_favorite = is_favorite
     self.selected = False
     self._favorite_callback = favorite_callback
+    self.text_padding = 20 + indent_level * 30
+    self.border_radius = 10
 
   def _render(self, rect):
-    is_non_indented = self.ref == "search_bar" or self.is_folder or (not self.is_folder and self.indent_level == 0)
-    if is_non_indented:
-      self._rect = rl.Rectangle(rect.x + 10, rect.y + (rect.height - 115) / 2, rect.width - 20, 115)
-      text_x = self._rect.x + 50
-      has_border = True
-    else:
-      self._rect = rl.Rectangle(rect.x + 60 * self.indent_level, rect.y, rect.width - 60 * self.indent_level, rect.height)
-      text_x = self._rect.x + self.text_padding
-      has_border = False
-
-    color = style.BUTTON_PRIMARY_COLOR if self.selected and not (self.ref == "search_bar" or self.is_folder) else rl.BLACK
-    if has_border:
-      rl.draw_rectangle_rounded_lines(self._rect, 1.0, 20, rl.GRAY)
-    rl.draw_rectangle_rounded(self._rect, 1.0, 20, color)
-    rl.draw_text_ex(gui_app.font(FontWeight.NORMAL), self.text, rl.Vector2(text_x, self._rect.y + (self._rect.height - 60) / 2), 60, 0, rl.WHITE)
+    indent = 60 * self.indent_level if self.indent_level > 0 else 10
+    self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
+    color = style.BUTTON_PRIMARY_COLOR if self.selected and not (self.ref == "search_bar" or self.is_folder) else style.BUTTON_DISABLED_BG_COLOR
+    roundness = self.border_radius / (min(self._rect.width, self._rect.height) / 2)
+    rl.draw_rectangle_rounded(self._rect, roundness, 10, color)
+    text_rect = rl.Rectangle(self._rect.x + self.text_padding + 20, self._rect.y, self._rect.width - self.text_padding - 20 - 90, self._rect.height)
+    self._label.render(text_rect)
 
     if not self.is_folder and self._favorite_callback:
       draw_star(self._rect.x + self._rect.width - 90, self._rect.y + (self._rect.height - 40) / 2, 35, self.is_favorite,
@@ -86,18 +79,22 @@ class TreeOptionDialog(MultiOptionDialog):
     self.on_exit = on_exit
     self.display_func = display_func or (lambda node: node.data.get('display_name', node.ref))
     self.search_funcs = search_funcs or [lambda node: node.data.get('display_name', ''), lambda node: node.data.get('short_name', '')]
+    self._build_visible_items()
     self.cancel_rect = None
     self.select_rect = None
-    self._build_visible_items()
 
-  def _handle_mouse_release(self, mouse_pos):
-    if self.cancel_rect and rl.check_collision_point_rec(mouse_pos, self.cancel_rect):
-      self._set_result(DialogResult.CANCEL)
-      return True
-    if self.select_rect and rl.check_collision_point_rec(mouse_pos, self.select_rect) and self.selection != self.current:
-      self._set_result(DialogResult.CONFIRM)
-      return True
-    return super()._handle_mouse_release(mouse_pos)
+  def _draw_button(self, button_rect, button_text, is_primary=False, is_enabled=True):
+    if is_primary and is_enabled:
+      button_color = style.BUTTON_PRIMARY_COLOR
+    elif not is_enabled:
+      button_color = style.BUTTON_NEUTRAL_GRAY
+    else:
+      button_color = style.BUTTON_DISABLED_BG_COLOR
+    roundness = 10 / (min(button_rect.width, button_rect.height) / 2)
+    rl.draw_rectangle_rounded(button_rect, roundness, 10, button_color)
+    label = Label(button_text, 60, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+                  text_color=rl.WHITE if is_enabled else rl.GRAY)
+    label.render(button_rect)
 
   def _on_search_confirm(self, result, text):
     if result == DialogResult.CONFIRM:
@@ -151,16 +148,6 @@ class TreeOptionDialog(MultiOptionDialog):
       self.folders = self.get_folders_fn(self.favorites)
     self._build_visible_items(reset_scroll=False)
 
-  def _draw_button(self, button_rect, button_text, is_primary=False, is_enabled=True):
-    button_color = style.BUTTON_PRIMARY_COLOR if is_primary and is_enabled else (style.BUTTON_DISABLED_BG_COLOR if not is_enabled else rl.BLACK)
-    rl.draw_rectangle_rounded_lines(button_rect, 1.0, 20, rl.GRAY if is_enabled else rl.DARKGRAY)
-    rl.draw_rectangle_rounded(button_rect, 1.0, 20, button_color)
-    text_width = measure_text_cached(gui_app.font(FontWeight.NORMAL), button_text, 60, 0).x
-    rl.draw_text_ex(gui_app.font(FontWeight.NORMAL), button_text,
-                    rl.Vector2(button_rect.x + (button_rect.width - text_width) / 2,
-                               button_rect.y + (button_rect.height - 60) / 2),
-                    60, 0, rl.WHITE if is_enabled else rl.GRAY)
-
   def _render(self, rect):
     dialog_content_rect = rl.Rectangle(rect.x + 50, rect.y + 50, rect.width - 100, rect.height - 100)
     rl.draw_rectangle_rounded(dialog_content_rect, 0.02, 20, rl.BLACK)
@@ -182,3 +169,12 @@ class TreeOptionDialog(MultiOptionDialog):
     self._draw_button(self.cancel_rect, tr("Cancel"))
     self._draw_button(self.select_rect, tr("Select"), True, self.selection != self.current)
     return self._result
+
+  def _handle_mouse_release(self, mouse_pos):
+    if self.cancel_rect and rl.check_collision_point_rec(mouse_pos, self.cancel_rect):
+      self._set_result(DialogResult.CANCEL)
+      return True
+    if self.select_rect and rl.check_collision_point_rec(mouse_pos, self.select_rect) and self.selection != self.current:
+      self._set_result(DialogResult.CONFIRM)
+      return True
+    return super()._handle_mouse_release(mouse_pos)
