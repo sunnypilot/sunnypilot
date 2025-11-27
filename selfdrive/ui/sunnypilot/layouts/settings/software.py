@@ -54,7 +54,6 @@ class SoftwareLayoutSP(SoftwareLayout):
     ]
 
     self._branch_dialog = TreeOptionDialog(tr("Select a branch"), folders, current_target, "",
-                                           search_prompt=tr("Search for a branch"),
                                            on_exit=self._on_branch_selected)
 
     gui_app.set_modal_overlay(self._branch_dialog, callback=self._on_branch_selected)
