@@ -275,9 +275,12 @@ class AugmentedRoadView(CameraView):
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
 
-    # Determine whether to show driver monitoring (match Mici logic)
-    should_draw_dmoji = (not self._hud_renderer.drawing_top_icons() and ui_state.is_onroad() and
-                         (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm))
+    # Determine whether to show driver monitoring (match Mici logic).
+    # HudRenderer no longer exposes `drawing_top_icons()` in the Tizi HUD,
+    # so omit that check here to avoid crashes. If top icons need to suppress
+    # the dmoji in future, reintroduce a HUD API and gate this accordingly.
+    should_draw_dmoji = (ui_state.is_onroad() and
+               (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm))
     try:
       self.driver_state_renderer.set_should_draw(should_draw_dmoji)
       # Position and render driver monitoring using its own internal size
