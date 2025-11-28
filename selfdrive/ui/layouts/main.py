@@ -66,26 +66,47 @@ class MainLayout(Widget):
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
 
   def _close_settings_requested(self):
-    """Start slide-down animation to close settings instead of switching immediately."""
-    # If an entry animation is in progress, reverse it
-    now = rl.get_time()
-    if self._settings_anim_active and self._settings_anim_direction == 'in':
-      # compute current progress
-      elapsed = now - self._settings_anim_start
-      prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # start exit such that visual position remains continuous
-      self._settings_anim_direction = 'out'
-      # set start so that eased progress for 'out' begins at current eased position
-      # approximate by setting start so elapsed produces same prog when reversed
-      self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
+    """Close settings: instantly in onroad (clear modal), animated offroad."""
+    # If we're onroad and settings was shown as a modal overlay, close instantly
+    if ui_state.started:
+      try:
+        self._layouts[MainState.SETTINGS].hide_event()
+      except Exception:
+        pass
+      # Clear the modal overlay so input returns to onroad
+      gui_app.set_modal_overlay(None)
+      # Restore active layout to ONROAD (or previous layout if recorded)
+      if self._settings_prev_layout is not None:
+        self._current_mode = self._settings_prev_layout
+      else:
+        self._current_mode = MainState.ONROAD
+      # Ensure settings state cleared
+      self._settings_anim_active = False
+      self._settings_anim_direction = None
+      self._settings_prev_layout = None
+      # Restore sidebar visibility (show by default when leaving settings)
+      try:
+        self._sidebar.set_visible(True)
+      except Exception:
+        pass
       return
 
-    # If not animating, start an exit animation from fully visible settings
+    # Offroad: existing behavior (reverse entry animation or start exit animation)
+    now = rl.get_time()
+    if self._settings_anim_active and self._settings_anim_direction == 'in':
+      elapsed = now - self._settings_anim_start
+      prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
+      self._settings_anim_direction = 'out'
+      self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
+      # don't restore sidebar yet; restore only after settings fully closed
+      return
+
     if not self._settings_anim_active and self._current_mode == MainState.SETTINGS:
       self._settings_prev_layout = MainState.HOME if MainState.HOME in self._layouts else None
       self._settings_anim_active = True
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now
+      # sidebar will be restored when the animation fully completes
     device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _update_layout_rects(self):
