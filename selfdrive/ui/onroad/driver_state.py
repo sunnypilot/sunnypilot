@@ -69,8 +69,9 @@ class DriverStateRenderer(Widget):
     self.h_arc_lines = [rl.Vector2(0, 0) for _ in range(ARC_POINT_COUNT)]
     self.v_arc_lines = [rl.Vector2(0, 0) for _ in range(ARC_POINT_COUNT)]
 
-    # Load the driver face icon
-    self.dm_img = gui_app.texture("icons/driver_face.png", IMG_SIZE, IMG_SIZE)
+    # Load the driver face icon — use Mici asset scaled up for Tizi
+    scaled_img_size = int(IMG_SIZE * 1.6)
+    self.dm_img = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_person.png", scaled_img_size, scaled_img_size)
 
     # Colors
     self.white_color = rl.Color(255, 255, 255, 255)

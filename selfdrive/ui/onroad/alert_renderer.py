@@ -119,16 +119,21 @@ class AlertRenderer(Widget):
     if not alert:
       return
 
-    alert_rect = self._get_alert_rect(rect, alert.size)
-    self._draw_background(alert_rect, alert)
+    # Render a single-line, no-background alert at the top-center of the screen.
+    # User requested to keep only the primary line (text1) and remove the opaque box.
+    # Choose font sizes based on alert size.
+    if alert.size == AlertSize.small:
+      font_size = ALERT_FONT_MEDIUM
+    elif alert.size == AlertSize.mid:
+      font_size = ALERT_FONT_BIG
+    else:
+      # full
+      font_size = ALERT_FONT_BIG + 44
 
-    text_rect = rl.Rectangle(
-      alert_rect.x + ALERT_PADDING,
-      alert_rect.y + ALERT_PADDING,
-      alert_rect.width - 2 * ALERT_PADDING,
-      alert_rect.height - 2 * ALERT_PADDING
-    )
-    self._draw_text(text_rect, alert)
+    # Position near the top of the provided rect, centered horizontally
+    text_rect = rl.Rectangle(rect.x, rect.y + 24, rect.width, 200)
+    # Draw only the primary message (text1), no background or second line
+    self._draw_centered(alert.text1, text_rect, self.font_bold, font_size)
 
   def _get_alert_rect(self, rect: rl.Rectangle, size: int) -> rl.Rectangle:
     if size == AlertSize.full:
