@@ -174,16 +174,15 @@ jobs:
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
-      - name: Stop OP to free resources
-        run: |
-          sudo systemctl stop comma
-
       - name: Build Main Project
         run: |
           export PYTHONPATH="$BUILD_DIR"
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
           sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld_v2
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
@@ -245,10 +244,6 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
-
-      - name: Restart op
-        run: |
-          sudo systemctl start comma
   
   
   publish:
