@@ -23,7 +23,7 @@ class UIConfig:
   set_speed_width_metric: int = 200
   set_speed_width_imperial: int = 172
   set_speed_height: int = 204
-  wheel_icon_size: int = 120     # ↓ proportional icon size
+  wheel_icon_size: int = 130     # ↓ proportional icon size
 
 
 @dataclass(frozen=True)
@@ -123,8 +123,8 @@ class HudRenderer(Widget):
     self._turn_signal_controller.render()
 
     # EXP BUTTON → bottom right placement
-    button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
-    button_y = rect.y + rect.height - UI_CONFIG.border_size - UI_CONFIG.button_size
+    button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size + 15
+    button_y = rect.y + rect.height - UI_CONFIG.border_size - UI_CONFIG.button_size + 15
 
     self._exp_button.render(
       rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size)
