@@ -146,12 +146,15 @@ class MainLayout(Widget):
     Returning -1 keeps the overlay active; the settings close path will call
     `gui_app.set_modal_overlay(None)` when it actually needs to dismiss it.
     """
-    # Render settings full-screen
+    # Drive the main layout's settings rendering path so animations and input handling work
     try:
-      self._layouts[MainState.SETTINGS].render(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
+      # Ensure layout rects are up to date and render main content (which includes settings animation)
+      self._update_layout_rects()
+      self._render_main_content()
     except Exception:
       # Swallow render exceptions here to avoid crashing the modal loop
       pass
+    # Return -1 to indicate the modal should remain active until we explicitly clear it
     return -1
 
   def open_settings(self, panel_type: PanelType):
