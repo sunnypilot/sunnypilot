@@ -264,7 +264,7 @@ jobs:
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
       - name: Cleanup (remove swap)
-        if: always() && steps.check-mem.outputs.create_swap == 'true'
+        if: always() && steps.set-env.outputs.create_swap == 'true'
         run: |
           echo "Attempting to remove swap file..."
           sudo swapoff /data/swapfile || true
