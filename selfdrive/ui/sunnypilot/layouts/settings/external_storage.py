@@ -18,7 +18,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
-from openpilot.system.ui.widgets.confirm_dialog import alert_dialog
+from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.list_view import (
   ItemAction,
   ListItem,
@@ -31,9 +31,6 @@ from openpilot.system.ui.widgets.list_view import (
 VALUE_FONT_SIZE = 48
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# STATE MACHINE
-# ──────────────────────────────────────────────────────────────────────────────
 class ExternalStorageState(Enum):
   DISABLED = tr_noop("DISABLED")
   LOADING = tr_noop("LOADING")
@@ -43,9 +40,6 @@ class ExternalStorageState(Enum):
   FORMAT = tr_noop("FORMAT")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# MAIN ACTION ITEM
-# ──────────────────────────────────────────────────────────────────────────────
 class ExternalStorageAction(ItemAction):
   MAX_WIDTH = 500
 
@@ -64,17 +58,14 @@ class ExternalStorageAction(ItemAction):
       font_size=BUTTON_FONT_SIZE,
     )
 
-    self._value_text = ""   # left-side display value
+    self._value_text = ""
     self._formatting = False
     self._refresh_pending = False
 
     self._state = ExternalStorageState.CHECK
     self._refresh_state()
-
-    # run initial refresh
     self.refresh()
 
-  # Propagate touch handling to sub-button
   def set_touch_valid_callback(self, callback):
     def wrapped():
       if self._state == ExternalStorageState.DISABLED:
@@ -82,11 +73,6 @@ class ExternalStorageAction(ItemAction):
       return callback()
     super().set_touch_valid_callback(wrapped)
     self._button.set_touch_valid_callback(wrapped)
-
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # EXEC HELPERS
-  # ────────────────────────────────────────────────────────────────────────────
 
   def _run(self, cmd: str) -> bool:
     return subprocess.call(["sh", "-c", cmd]) == 0
@@ -98,18 +84,12 @@ class ExternalStorageAction(ItemAction):
     except:
       return ""
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # BUTTON RENDER
-  # ────────────────────────────────────────────────────────────────────────────
-
   def _render(self, rect: rl.Rectangle) -> bool:
-    # Show error dialog if needed
     if self._error_message:
       msg = copy.copy(self._error_message)
       gui_app.set_modal_overlay(alert_dialog(msg))
       self._error_message = ""
 
-    # Draw left-side status text (value text)
     if self._value_text:
       text_size = measure_text_cached(self._text_font, self._value_text, VALUE_FONT_SIZE)
       rl.draw_text_ex(
@@ -122,7 +102,6 @@ class ExternalStorageAction(ItemAction):
         rl.Color(170, 170, 170, 255),
       )
 
-    # Draw the action button on the right
     button_rect = rl.Rectangle(
       rect.x + rect.width - BUTTON_WIDTH,
       rect.y + (rect.height - BUTTON_HEIGHT) / 2,
@@ -131,17 +110,10 @@ class ExternalStorageAction(ItemAction):
     )
     self._button.set_rect(button_rect)
     self._button.set_text(tr(self._state.value))
-
-    # Button enabled only when NOT LOADING and NOT DISABLED
     self._button.set_enabled(self._state not in (ExternalStorageState.LOADING,
                                                  ExternalStorageState.DISABLED))
-
     self._button.render(button_rect)
     return False
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # STATE MACHINE REFRESH
-  # ────────────────────────────────────────────────────────────────────────────
 
   def _refresh_state(self):
     if PC:
@@ -201,10 +173,6 @@ class ExternalStorageAction(ItemAction):
 
     threading.Thread(target=_work, daemon=True).start()
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # ACTION HANDLERS
-  # ────────────────────────────────────────────────────────────────────────────
-
   def _handle_button_click(self):
     st = self._state
 
@@ -218,21 +186,16 @@ class ExternalStorageAction(ItemAction):
       self.unmount_storage()
 
     elif st == ExternalStorageState.FORMAT:
-      gui_app.set_modal_overlay(
-        alert_dialog(
+      dialog = ConfirmDialog(
           tr("Are you sure you want to format this drive? This will erase all data."),
           confirm_text=tr("Format"),
-          callback=self._confirm_format,
+          cancel_text=tr("Cancel"),
         )
-      )
+      gui_app.set_modal_overlay(dialog, callback=self._confirm_format)
 
   def _confirm_format(self, result: DialogResult):
     if result == DialogResult.CONFIRM:
       self.format_storage()
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # MOUNT
-  # ────────────────────────────────────────────────────────────────────────────
 
   def mount_storage(self):
     self._value_text = tr("mounting")
@@ -255,10 +218,6 @@ class ExternalStorageAction(ItemAction):
 
     threading.Thread(target=_work, daemon=True).start()
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # UNMOUNT
-  # ────────────────────────────────────────────────────────────────────────────
-
   def unmount_storage(self):
     self._value_text = tr("unmounting")
     self._state = ExternalStorageState.LOADING
@@ -268,10 +227,6 @@ class ExternalStorageAction(ItemAction):
       self.debounced_refresh()
 
     threading.Thread(target=_work, daemon=True).start()
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # FORMAT
-  # ────────────────────────────────────────────────────────────────────────────
 
   def format_storage(self):
     self._formatting = True
@@ -297,11 +252,6 @@ class ExternalStorageAction(ItemAction):
       apply()
 
     threading.Thread(target=_work, daemon=True).start()
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# LIST ITEM HELPER
-# ──────────────────────────────────────────────────────────────────────────────
 
 def external_storage_item(title: str | Callable[[], str], description: str | Callable[[], str]) -> ListItem:
   return ListItem(
