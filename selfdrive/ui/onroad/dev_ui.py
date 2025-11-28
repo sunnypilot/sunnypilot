@@ -269,24 +269,27 @@ class DeveloperUiRenderer(Widget):
   def _draw_right_dev_ui_element(self, x: int, y: int, element: UiElement) -> int:
     x += 0
     y += 230
-
+    container_width = 184
     label_size = 28
-    rl.draw_text_ex(self._font_bold, element.label,
-                    rl.Vector2(x, y), label_size, 0, rl.WHITE)
+    label_width = rl.measure_text_ex(self._font_bold, element.label, label_size, 0).x
+    centered_label_x = x + (container_width - label_width) / 2
+    rl.draw_text_ex(self._font_bold, element.label, rl.Vector2(centered_label_x, y), label_size, 0, rl.WHITE)
 
     y += 65
     value_size = 60
-    rl.draw_text_ex(self._font_bold, element.value,
-                    rl.Vector2(x, y), value_size, 0, element.color)
+    value_width = rl.measure_text_ex(self._font_bold, element.value, value_size, 0).x
+    centered_value_x = x + (container_width - value_width) / 2
+
+    rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
     if element.units:
-      x += 120
-      y -= 25
-      # Note-SP: Raylib doesn't have native text rotation, so we'll draw it horizontally
-      # For true rotation, you'd need to render to a texture first which I do not know
       unit_size = 28
-      rl.draw_text_ex(self._font_bold, element.units,
-                      rl.Vector2(x, y), unit_size, 0, rl.WHITE)
+      units_height = rl.measure_text_ex(self._font_bold, element.units, unit_size, 0).x
+
+      units_x = x + container_width + 10
+      units_y = y + (60 / 2) + (units_height / 2)
+
+      rl.draw_text_pro(self._font_bold, element.units, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
 
     return 130
 
