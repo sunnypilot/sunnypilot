@@ -148,6 +148,16 @@ jobs:
           echo "version=${{ needs.prepare_strategy.outputs.version }}" >> $GITHUB_OUTPUT
           echo "extra_version_identifier=${{ needs.prepare_strategy.outputs.extra_version_identifier }}" >> $GITHUB_OUTPUT
           echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          TOTAL_RAM_MB=$(grep MemTotal /proc/meminfo | awk '{print int($2/1024)}')
+          echo "Total RAM detected: ${TOTAL_RAM_MB} MB"
+          
+          if [ "${TOTAL_RAM_MB}" -lt 8192 ]; then
+            echo "RAM is less than 8GB. Creating swap file."
+            echo "create_swap=true" >> $GITHUB_OUTPUT
+          else
+            echo "RAM is 8GB or more. Skipping swap creation."
+            echo "create_swap=false" >> $GITHUB_OUTPUT
+          fi
           
           # Set up common environment
           source /etc/profile;
@@ -173,6 +183,17 @@ jobs:
             printenv
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: ➕ Create 8GB swap file (Conditional)
+        if: steps.set-env.outputs.create_swap == 'true'
+        run: |
+          echo "Creating swap file..."
+          sudo mkdir -p /data
+          sudo fallocate -l 8G /data/swapfile
+          sudo chmod 600 /data/swapfile
+          sudo mkswap /data/swapfile
+          sudo swapon /data/swapfile
+          sudo swapon --show
 
       - name: Build Main Project
         run: |
@@ -241,6 +262,14 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+
+      - name: Cleanup (remove swap)
+        if: always() && steps.check-mem.outputs.create_swap == 'true'
+        run: |
+          echo "Attempting to remove swap file..."
+          sudo swapoff /data/swapfile || true
+          sudo rm -f /data/swapfile || true
+          echo "Swap cleanup finished."
   
   
   publish:
