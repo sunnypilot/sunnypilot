@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 
@@ -271,23 +272,22 @@ class DeveloperUiRenderer(Widget):
     y += 230
     container_width = 184
     label_size = 28
-    label_width = rl.measure_text_ex(self._font_bold, element.label, label_size, 0).x
+    value_size = 60
+    unit_size = 28
+    label_width = measure_text_cached(self._font_bold, element.label, label_size, 0).x
     centered_label_x = x + (container_width - label_width) / 2
     rl.draw_text_ex(self._font_bold, element.label, rl.Vector2(centered_label_x, y), label_size, 0, rl.WHITE)
 
-    y += 65
-    value_size = 60
-    value_width = rl.measure_text_ex(self._font_bold, element.value, value_size, 0).x
+    y += 45
+    value_width = measure_text_cached(self._font_bold, element.value, value_size, 0).x
     centered_value_x = x + (container_width - value_width) / 2
-
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
     if element.units:
-      unit_size = 28
-      units_height = rl.measure_text_ex(self._font_bold, element.units, unit_size, 0).x
+      units_height = measure_text_cached(self._font_bold, element.units, unit_size, 0).x
 
-      units_x = x + container_width + 10
-      units_y = y + (60 / 2) + (units_height / 2)
+      units_x = x + container_width - 10
+      units_y = y + (value_size / 2) + (units_height / 2)
 
       rl.draw_text_pro(self._font_bold, element.units, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
 
@@ -358,23 +358,13 @@ class DeveloperUiRenderer(Widget):
     font_size = 38
 
     label_text = f"{element.label} "
-    value_text = element.value
-    units_text = element.units
+    label_width = measure_text_cached(self._font_bold, label_text, font_size, 0).x
+    rl.draw_text_ex(self._font_bold, label_text, rl.Vector2(x, y - font_size // 2), font_size, 0, rl.WHITE)
 
-    rl.draw_text_ex(self._font_bold, label_text,
-                    rl.Vector2(x, y - font_size // 2), font_size, 0, rl.WHITE)
+    value_width = measure_text_cached(self._font_bold, element.value, font_size, 0).x
+    rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(x + label_width + 10, y - font_size // 2), font_size, 0, element.color)
 
-    label_width = len(label_text) * font_size * 0.5
-
-    rl.draw_text_ex(self._font_bold, value_text,
-                    rl.Vector2(x + label_width + 10, y - font_size // 2),
-                    font_size, 0, element.color)
-
-    value_width = len(value_text) * font_size * 0.6
-
-    if units_text:
-      rl.draw_text_ex(self._font_bold, units_text,
-                      rl.Vector2(x + label_width + value_width + 20, y - font_size // 2),
-                      font_size, 0, rl.WHITE)
+    if element.units:
+      rl.draw_text_ex(self._font_bold, element.units, rl.Vector2(x + label_width + value_width + 20, y - font_size // 2), font_size, 0, rl.WHITE)
 
     return 400
