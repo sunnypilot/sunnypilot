@@ -13,6 +13,7 @@ from openpilot.selfdrive.ui.onroad.cameraview import CameraView
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCameraConfig, view_frame_from_device_frame
 from openpilot.common.transformations.orientation import rot_from_euler
+from openpilot.selfdrive.ui.layouts.sidebar import SIDEBAR_WIDTH
 
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.LiveCalibrationData.Status.calibrated
@@ -104,6 +105,17 @@ class AugmentedRoadView(CameraView):
     self._pm.send('uiDebug', msg)
 
   def _handle_mouse_press(self, _):
+    # Allow taps on the left edge (sidebar area) to always toggle the sidebar
+    mouse_pos = rl.get_mouse_position()
+    try:
+      if mouse_pos.x <= SIDEBAR_WIDTH:
+        if self._click_callback is not None:
+          self._click_callback()
+        return
+    except Exception:
+      # If anything goes wrong getting mouse_pos, fall back to default behavior
+      pass
+
     if not self._hud_renderer.user_interacting() and self._click_callback is not None:
       self._click_callback()
 
