@@ -22,9 +22,10 @@ def draw_circle_gradient(center_x: float, center_y: float, radius: int,
 
 
 class ConfidenceBall(Widget):
-  def __init__(self, demo: bool = False):
+  def __init__(self, demo: bool = True, scale: float = 1.0):
     super().__init__()
     self._demo = demo
+    self._scale = scale
     self._confidence_filter = FirstOrderFilter(-0.5, 0.5, 1 / gui_app.target_fps)
 
   def update_filter(self, value: float):
@@ -49,7 +50,7 @@ class ConfidenceBall(Widget):
       self.rect.height,
     )
 
-    status_dot_radius = 24
+    status_dot_radius = int(24 * self._scale)
     dot_height = (1 - self._confidence_filter.x) * (content_rect.height - 2 * status_dot_radius) + status_dot_radius
     dot_height = self._rect.y + dot_height
 

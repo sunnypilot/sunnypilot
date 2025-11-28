@@ -9,6 +9,7 @@ from openpilot.selfdrive.ui.onroad.alert_renderer import AlertRenderer
 from openpilot.selfdrive.ui.onroad.driver_state import DriverStateRenderer
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.onroad.model_renderer import ModelRenderer
+from openpilot.selfdrive.ui.mici.onroad.confidence_ball import ConfidenceBall
 from openpilot.selfdrive.ui.onroad.cameraview import CameraView
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCameraConfig, view_frame_from_device_frame
@@ -48,6 +49,7 @@ class AugmentedRoadView(CameraView):
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
     self.driver_state_renderer = DriverStateRenderer()
+    self._confidence_ball = ConfidenceBall(scale = 2.0)
 
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
@@ -94,6 +96,8 @@ class AugmentedRoadView(CameraView):
 
     # End clipping region
     rl.end_scissor_mode()
+
+    self._confidence_ball.render(self._content_rect)
 
     # Draw colored border based on driving state
     self._draw_border(rect)
