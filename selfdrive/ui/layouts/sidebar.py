@@ -15,92 +15,124 @@ METRIC_WIDTH = 240
 METRIC_MARGIN = 30
 FONT_SIZE = 35
 
-SETTINGS_BTN = rl.Rectangle(50, 35, 200, 117)
-HOME_BTN = rl.Rectangle(60, 860, 180, 180)
+MAX_CPU_TEMP = 107
+MAX_GPU_TEMP = 107
 
 ThermalStatus = log.DeviceState.ThermalStatus
 NetworkType = log.DeviceState.NetworkType
+PandaState = log.PandaState
+PandaType = PandaState.PandaType
 
-
-# Color scheme
-class Colors:
-  WHITE = rl.WHITE
-  WHITE_DIM = rl.Color(255, 255, 255, 85)
-  GRAY = rl.Color(84, 84, 84, 255)
-
-  # Status colors
-  GOOD = rl.WHITE
-  WARNING = rl.Color(218, 202, 37, 255)
-  DANGER = rl.Color(201, 34, 49, 255)
-
-  # UI elements
-  METRIC_BORDER = rl.Color(255, 255, 255, 85)
-  BUTTON_NORMAL = rl.WHITE
-  BUTTON_PRESSED = rl.Color(255, 255, 255, 166)
-
-
-NETWORK_TYPES = {
-  NetworkType.none: tr_noop("--"),
-  NetworkType.wifi: tr_noop("Wi-Fi"),
-  NetworkType.ethernet: tr_noop("ETH"),
-  NetworkType.cell2G: tr_noop("2G"),
-  NetworkType.cell3G: tr_noop("3G"),
-  NetworkType.cell4G: tr_noop("LTE"),
-  NetworkType.cell5G: tr_noop("5G"),
+# Thermal colors per severity
+THERMAL_COLORS = {
+  ThermalStatus.green: rl.Color(0xA0, 0xF0, 0xB0, 0xFF),
+  ThermalStatus.yellow: rl.Color(0xF0, 0xE6, 0xA0, 0xFF),
+  ThermalStatus.red: rl.Color(0xF8, 0xB0, 0xB0, 0xFF),
+  ThermalStatus.danger: rl.Color(0xF8, 0xB0, 0xB0, 0xFF),
+  ThermalStatus.offroad: rl.Color(0xCC, 0xCC, 0xCC, 0xFF),
 }
 
+# Minimal-ish network type labels
+NETWORK_TYPES = {
+  NetworkType.none: tr_noop("No Network"),
+  NetworkType.wifi: tr_noop("Wi-Fi"),
+  NetworkType.cell2G: tr_noop("2G"),
+  NetworkType.cell3G: tr_noop("3G"),
+  NetworkType.cell4G: tr_noop("4G"),
+  NetworkType.cell5G: tr_noop("5G"),
+  NetworkType.cellUnknown: tr_noop("Cell"),
+}
 
-@dataclass(slots=True)
-class MetricData:
+# Small helper data structures for card metrics
+@dataclass
+class Metric:
   label: str
   value: str
-  color: rl.Color
+  icon_name: str | None = None
+  color: rl.Color | None = None
 
-  def update(self, label: str, value: str, color: rl.Color):
-    self.label = label
-    self.value = value
-    self.color = color
+
+@dataclass
+class Colors:
+  BG = rl.Color(0x05, 0x0A, 0x0F, 0xFF)  # Deep, subtle navy / charcoal
+  TEXT_PRIMARY = rl.Color(0xF5, 0xF5, 0xF7, 0xFF)  # Off-white
+  TEXT_MUTED = rl.Color(0x90, 0x95, 0x9A, 0xFF)
+  TEXT_ACCENT = rl.Color(0xA0, 0xF0, 0xB0, 0xFF)   # Mint accent
+  DIVIDER = rl.Color(0x22, 0x25, 0x2A, 0xFF)
+
+  STATUS_CARD_BG = rl.Color(0x11, 0x16, 0x1C, 0xEE)
+  STATUS_CARD_BORDER = rl.Color(0x2A, 0x30, 0x3A, 0xFF)
+
+  METRIC_BG = rl.Color(0x0D, 0x13, 0x1A, 0xEE)
+  METRIC_BORDER = rl.Color(0x1F, 0x26, 0x30, 0xFF)
+
+  BADGE_BG = rl.Color(0x18, 0x21, 0x2A, 0xFF)
+  BADGE_GREEN = rl.Color(0x9B, 0xE7, 0xB0, 0xFF)
+  BADGE_YELLOW = rl.Color(0xF5, 0xE0, 0xA0, 0xFF)
+  BADGE_RED = rl.Color(0xF7, 0xB0, 0xB8, 0xFF)
+
+  WIFI_GOOD = rl.Color(0x9B, 0xE7, 0xB0, 0xFF)
+  WIFI_OK = rl.Color(0xF5, 0xE0, 0xA0, 0xFF)
+  WIFI_BAD = rl.Color(0xF7, 0xB0, 0xB8, 0xFF)
+
+  TEMP_COOL = rl.Color(0x9B, 0xE7, 0xB0, 0xFF)
+  TEMP_WARM = rl.Color(0xF5, 0xE0, 0xA0, 0xFF)
+  TEMP_HOT = rl.Color(0xF7, 0xB0, 0xB8, 0xFF)
+
+  PANDA_CONNECTED = rl.Color(0x9B, 0xE7, 0xB0, 0xFF)
+  PANDA_DISCONNECTED = rl.Color(0xF7, 0xB0, 0xB8, 0xFF)
 
 
 class Sidebar(Widget):
   def __init__(self):
     super().__init__()
-    self._net_type = NETWORK_TYPES.get(NetworkType.none)
-    self._net_strength = 0
+    self._rect = rl.Rectangle(0, 0, SIDEBAR_WIDTH, 0)
 
-    self._temp_status = MetricData(tr_noop("TEMP"), tr_noop("GOOD"), Colors.GOOD)
-    self._panda_status = MetricData(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
-    self._connect_status = MetricData(tr_noop("STABLE"), tr_noop("OFFLINE"), Colors.WARNING)
+    self._font_regular: rl.Font = gui_app.font(FontWeight.NORMAL)
+    self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
+    self._font_semibold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
+    self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
+
+    # Textures
+    self._logo = gui_app.texture("icons/sidebar/konik_logo.png", 96, 96)
+    self._settings_icon = gui_app.texture("icons/sidebar/settings.png", 44, 44)
+    self._wifi_icon = gui_app.texture("icons/sidebar/wifi.png", 28, 28)
+    self._wifi_off_icon = gui_app.texture("icons/sidebar/wifi_off.png", 28, 28)
+    self._temp_icon = gui_app.texture("icons/sidebar/temp.png", 32, 32)
+    self._car_icon = gui_app.texture("icons/sidebar/car.png", 32, 32)
+    self._panda_icon = gui_app.texture("icons/sidebar/panda.png", 32, 32)
+    self._record_icon = gui_app.texture("icons/sidebar/mic.png", 26, 26)
+
+    # State
     self._recording_audio = False
+    self._net_type: str = tr("No Network")
+    self._net_strength: int = 0  # 0-5
+    self._thermal_status: ThermalStatus = ThermalStatus.offroad
+    self._cpu_temp: float = 0.0
+    self._gpu_temp: float = 0.0
+    self._panda_type: PandaType | None = None
+    self._panda_state: PandaState | None = None
+    self._panda_present: bool = False
+    self._vehicle_info_line: str = tr("No Vehicle")
 
-    self._home_img = gui_app.texture("images/button_home.png", HOME_BTN.width, HOME_BTN.height)
-    self._flag_img = gui_app.texture("images/button_flag.png", HOME_BTN.width, HOME_BTN.height)
-    self._settings_img = gui_app.texture("images/button_settings.png", SETTINGS_BTN.width, SETTINGS_BTN.height)
-    self._mic_img = gui_app.texture("icons/microphone.png", 30, 30)
-    self._mic_indicator_rect = rl.Rectangle(0, 0, 0, 0)
-    self._font_regular = gui_app.font(FontWeight.NORMAL)
-    self._font_bold = gui_app.font(FontWeight.SEMI_BOLD)
+    self._settings_button_action: Callable[[], None] | None = None
 
-    # Callbacks
-    self._on_settings_click: Callable | None = None
-    self._on_flag_click: Callable | None = None
-    self._open_settings_callback: Callable | None = None
+    # Smooth hover feedback for settings
+    self._settings_hover_t = 0.0
 
-  def set_callbacks(self, on_settings: Callable | None = None, on_flag: Callable | None = None,
-                    open_settings: Callable | None = None):
-    self._on_settings_click = on_settings
-    self._on_flag_click = on_flag
-    self._open_settings_callback = open_settings
+    self.set_visible(lambda: True)
 
-  def _render(self, rect: rl.Rectangle):
-    # Background
-    rl.draw_rectangle_rec(rect, rl.BLACK)
+  def set_rect(self, rect: rl.Rectangle) -> None:
+    self._rect = rl.Rectangle(rect.x, rect.y, SIDEBAR_WIDTH, rect.height)
 
-    self._draw_buttons(rect)
-    self._draw_network_indicator(rect)
-    self._draw_metrics(rect)
+  def set_settings_action(self, cb: Callable[[], None]):
+    self._settings_button_action = cb
 
-  def _update_state(self):
+  # Public API: if the onroad layout wants vehicle status text
+  def update_vehicle_info(self, text: str):
+    self._vehicle_info_line = text
+
+  def _update_state(self) -> None:
     sm = ui_state.sm
     if not sm.updated['deviceState']:
       return
@@ -119,111 +151,365 @@ class Sidebar(Widget):
     self._net_strength = max(0, min(5, strength.raw + 1)) if strength.raw > 0 else 0
 
   def _update_temperature_status(self, device_state):
-    thermal_status = device_state.thermalStatus
-
-    if thermal_status == ThermalStatus.green:
-      self._temp_status.update(tr_noop("TEMP"), tr_noop("GOOD"), Colors.GOOD)
-    elif thermal_status == ThermalStatus.yellow:
-      self._temp_status.update(tr_noop("TEMP"), tr_noop("OK"), Colors.WARNING)
-    else:
-      self._temp_status.update(tr_noop("TEMP"), tr_noop("HIGH"), Colors.DANGER)
+    self._thermal_status = device_state.thermalStatus
+    self._cpu_temp = max(0.0, float(device_state.cpuTempC[0] if device_state.cpuTempC else 0.0))
+    self._gpu_temp = max(0.0, float(device_state.gpuTempC[0] if device_state.gpuTempC else 0.0))
 
   def _update_connection_status(self, device_state):
-    last_ping = device_state.lastAthenaPingTime
-    if last_ping == 0:
-      self._connect_status.update(tr_noop("STABLE"), tr_noop("OFFLINE"), Colors.WARNING)
-    elif time.monotonic_ns() - last_ping < 80_000_000_000:  # 80 seconds in nanoseconds
-      self._connect_status.update(tr_noop("STABLE"), tr_noop("ONLINE"), Colors.GOOD)
-    else:
-      self._connect_status.update(tr_noop("STABLE"), tr_noop("ERROR"), Colors.DANGER)
+    # Nothing super detailed for now; we just rely on network type & strength
+    pass
 
   def _update_panda_status(self):
-    if ui_state.panda_type == log.PandaState.PandaType.unknown:
-      self._panda_status.update(tr_noop("NO"), tr_noop("PANDA"), Colors.DANGER)
+    sm = ui_state.sm
+    self._panda_present = sm.valid['pandaStates'] and len(sm['pandaStates']) > 0
+    if self._panda_present:
+      panda = sm['pandaStates'][0]
+      self._panda_state = panda
+      self._panda_type = panda.pandaType
     else:
-      self._panda_status.update(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
+      self._panda_state = None
+      self._panda_type = None
 
-  def _handle_mouse_release(self, mouse_pos: MousePos):
-    if rl.check_collision_point_rec(mouse_pos, SETTINGS_BTN):
-      if self._on_settings_click:
-        self._on_settings_click()
-    elif rl.check_collision_point_rec(mouse_pos, HOME_BTN) and ui_state.started:
-      if self._on_flag_click:
-        self._on_flag_click()
-    elif self._recording_audio and rl.check_collision_point_rec(mouse_pos, self._mic_indicator_rect):
-      if self._open_settings_callback:
-        self._open_settings_callback()
+  # Input handling: click on settings button
+  def _handle_mouse_release(self, mouse: MousePos) -> None:
+    if self._settings_button_action is None:
+      return
 
-  def _draw_buttons(self, rect: rl.Rectangle):
-    mouse_pos = rl.get_mouse_position()
-    mouse_down = self.is_pressed and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT)
+    _, settings_rect = self._layout_header(self._rect)
+    if self._point_in_rect(mouse.x, mouse.y, settings_rect):
+      self._settings_button_action()
 
-    # Settings button
-    settings_down = mouse_down and rl.check_collision_point_rec(mouse_pos, SETTINGS_BTN)
-    tint = Colors.BUTTON_PRESSED if settings_down else Colors.BUTTON_NORMAL
-    rl.draw_texture(self._settings_img, int(SETTINGS_BTN.x), int(SETTINGS_BTN.y), tint)
+  @staticmethod
+  def _point_in_rect(x: float, y: float, rect: rl.Rectangle) -> bool:
+    return rect.x <= x <= rect.x + rect.width and rect.y <= y <= rect.y + rect.height
 
-    # Home/Flag button
-    flag_pressed = mouse_down and rl.check_collision_point_rec(mouse_pos, HOME_BTN)
-    button_img = self._flag_img if ui_state.started else self._home_img
+  # Layout helpers
+  def _layout_header(self, rect: rl.Rectangle):
+    padding = 22
+    content_width = rect.width - padding * 2
 
-    tint = Colors.BUTTON_PRESSED if (ui_state.started and flag_pressed) else Colors.BUTTON_NORMAL
-    rl.draw_texture(button_img, int(HOME_BTN.x), int(HOME_BTN.y), tint)
+    logo_size = 72
+    y = rect.y + 26
 
-    # Microphone button
-    if self._recording_audio:
-      self._mic_indicator_rect = rl.Rectangle(rect.x + rect.width - 130, rect.y + 245, 75, 40)
+    logo_rect = rl.Rectangle(
+      rect.x + padding,
+      y,
+      logo_size,
+      logo_size,
+    )
 
-      mic_pressed = mouse_down and rl.check_collision_point_rec(mouse_pos, self._mic_indicator_rect)
-      bg_color = rl.Color(Colors.DANGER.r, Colors.DANGER.g, Colors.DANGER.b, int(255 * 0.65)) if mic_pressed else Colors.DANGER
+    # Right side: Konik + state + settings icon
+    settings_size = 42
+    settings_rect = rl.Rectangle(
+      rect.x + rect.width - padding - settings_size,
+      y + (logo_size - settings_size) / 2,
+      settings_size,
+      settings_size,
+    )
 
-      rl.draw_rectangle_rounded(self._mic_indicator_rect, 1, 10, bg_color)
-      rl.draw_texture(self._mic_img, int(self._mic_indicator_rect.x + (self._mic_indicator_rect.width - self._mic_img.width) / 2),
-                      int(self._mic_indicator_rect.y + (self._mic_indicator_rect.height - self._mic_img.height) / 2), Colors.WHITE)
+    return (logo_rect, settings_rect)
 
-  def _draw_network_indicator(self, rect: rl.Rectangle):
-    # Signal strength dots
-    x_start = rect.x + 58
-    y_pos = rect.y + 196
-    dot_size = 27
-    dot_spacing = 37
+  def _render(self, rect: rl.Rectangle) -> None:
+    r = self._rect
 
-    for i in range(5):
-      color = Colors.WHITE if i < self._net_strength else Colors.GRAY
-      x = int(x_start + i * dot_spacing + dot_size // 2)
-      y = int(y_pos + dot_size // 2)
-      rl.draw_circle(x, y, dot_size // 2, color)
+    # Sidebar background
+    rl.draw_rectangle_rec(r, Colors.BG)
 
-    # Network type text
-    text_y = rect.y + 247
-    text_pos = rl.Vector2(rect.x + 58, text_y)
-    rl.draw_text_ex(self._font_regular, tr(self._net_type), text_pos, FONT_SIZE, 0, Colors.WHITE)
+    # Header
+    logo_rect, settings_rect = self._layout_header(r)
+    self._draw_header(r, logo_rect, settings_rect)
 
-  def _draw_metrics(self, rect: rl.Rectangle):
-    metrics = [(self._temp_status, 338), (self._panda_status, 496), (self._connect_status, 654)]
+    # Cards region
+    card_top = logo_rect.y + logo_rect.height + 30
+    card_left = r.x + 16
+    card_right = r.x + r.width - 16
+    card_width = card_right - card_left
 
-    for metric, y_offset in metrics:
-      self._draw_metric(rect, metric, rect.y + y_offset)
+    # Status card (Konik / vehicle / recording)
+    status_card_rect = rl.Rectangle(card_left, card_top, card_width, 112)
+    self._draw_status_card(status_card_rect)
 
-  def _draw_metric(self, rect: rl.Rectangle, metric: MetricData, y: float):
-    metric_rect = rl.Rectangle(rect.x + METRIC_MARGIN, y, METRIC_WIDTH, METRIC_HEIGHT)
-    # Draw colored left edge (clipped rounded rectangle)
-    edge_rect = rl.Rectangle(metric_rect.x + 4, metric_rect.y + 4, 100, 118)
-    rl.begin_scissor_mode(int(metric_rect.x + 4), int(metric_rect.y), 18, int(metric_rect.height))
-    rl.draw_rectangle_rounded(edge_rect, 0.3, 10, metric.color)
-    rl.end_scissor_mode()
+    # Metric cards grid
+    metrics_top = status_card_rect.y + status_card_rect.height + 20
+    self._draw_metric_cards_grid(card_left, metrics_top, card_width)
 
-    # Draw border
-    rl.draw_rectangle_rounded_lines_ex(metric_rect, 0.3, 10, 2, Colors.METRIC_BORDER)
+  def _draw_header(self, rect: rl.Rectangle, logo_rect: rl.Rectangle, settings_rect: rl.Rectangle):
+    # Logo
+    rl.draw_texture_pro(
+      self._logo,
+      rl.Rectangle(0, 0, self._logo.width, self._logo.height),
+      logo_rect,
+      rl.Vector2(0, 0),
+      0.0,
+      rl.WHITE,
+    )
 
-    # Draw label and value
-    labels = [tr(metric.label), tr(metric.value)]
-    text_y = metric_rect.y + (metric_rect.height / 2 - len(labels) * FONT_SIZE * FONT_SCALE)
-    for text in labels:
-      text_size = measure_text_cached(self._font_bold, text, FONT_SIZE)
-      text_y += text_size.y
-      text_pos = rl.Vector2(
-        metric_rect.x + 22 + (metric_rect.width - 22 - text_size.x) / 2,
-        text_y
+    # Konik Stable text + mini status below
+    text_x = logo_rect.x + logo_rect.width + 14
+    text_y = logo_rect.y + 8
+
+    title = "Konik Stable"
+    title_size = measure_text_cached(self._font_semibold, title, 26)
+    rl.draw_text_ex(
+      self._font_semibold,
+      title,
+      rl.Vector2(text_x, text_y),
+      26,
+      0,
+      Colors.TEXT_PRIMARY,
+    )
+
+    # Subtle "UI" or mode description
+    mode_text = tr("Onroad UI")
+    mode_size = measure_text_cached(self._font_regular, mode_text, 20)
+    rl.draw_text_ex(
+      self._font_regular,
+      mode_text,
+      rl.Vector2(text_x, text_y + title_size.y + 4),
+      20,
+      0,
+      Colors.TEXT_MUTED,
+    )
+
+    # Settings icon hover state
+    mx, my = rl.get_mouse_position()
+    hovering = self._point_in_rect(mx, my, settings_rect)
+    target = 1.0 if hovering else 0.0
+    self._settings_hover_t += (target - self._settings_hover_t) * 0.15
+
+    # Draw settings button with hover halo
+    if self._settings_hover_t > 0.01:
+      halo_radius = settings_rect.width / 2 + 10 * self._settings_hover_t
+      rl.draw_circle(
+        int(settings_rect.x + settings_rect.width / 2),
+        int(settings_rect.y + settings_rect.height / 2),
+        halo_radius,
+        rl.Color(255, 255, 255, int(20 * self._settings_hover_t)),
       )
-      rl.draw_text_ex(self._font_bold, text, text_pos, FONT_SIZE, 0, Colors.WHITE)
+
+    rl.draw_texture_pro(
+      self._settings_icon,
+      rl.Rectangle(0, 0, self._settings_icon.width, self._settings_icon.height),
+      settings_rect,
+      rl.Vector2(0, 0),
+      0.0,
+      rl.Color(255, 255, 255, 230),
+    )
+
+  def _draw_status_card(self, rect: rl.Rectangle):
+    # Background card with border
+    card_roundness = 0.4
+    rl.draw_rectangle_rounded(rect, card_roundness, 8, Colors.STATUS_CARD_BG)
+    rl.draw_rectangle_rounded_lines_ex(rect, card_roundness, 8, 2, Colors.STATUS_CARD_BORDER)
+
+    padding = 16
+    inner_x = rect.x + padding
+    inner_y = rect.y + padding
+    inner_w = rect.width - padding * 2
+
+    # Left: small dot + "System" label and state
+    # Right: audio recording + short timestamp maybe
+
+    # System state
+    system_label = tr("System")
+    system_state = tr("Ready") if ui_state.started else tr("Idle")
+
+    # Dot to indicate overall health: based on thermal + panda
+    ok = (self._thermal_status in (ThermalStatus.green, ThermalStatus.offroad)) and self._panda_present
+    warn = (self._thermal_status == ThermalStatus.yellow) or not self._panda_present
+    dot_color = Colors.BADGE_GREEN if ok else Colors.BADGE_YELLOW if warn else Colors.BADGE_RED
+
+    # Dot
+    dot_radius = 6
+    rl.draw_circle(int(inner_x + dot_radius), int(inner_y + dot_radius + 2), dot_radius, dot_color)
+
+    # Label & state
+    label_x = inner_x + dot_radius * 2 + 8
+    rl.draw_text_ex(
+      self._font_medium,
+      system_label,
+      rl.Vector2(label_x, inner_y),
+      22,
+      0,
+      Colors.TEXT_MUTED,
+    )
+
+    rl.draw_text_ex(
+      self._font_semibold,
+      system_state,
+      rl.Vector2(label_x, inner_y + 24),
+      24,
+      0,
+      Colors.TEXT_PRIMARY,
+    )
+
+    # Vehicle line below
+    vehicle_label = self._vehicle_info_line
+    vehicle_y = inner_y + 24 + 26 + 6
+    vehicle_color = Colors.TEXT_MUTED
+    rl.draw_text_ex(
+      self._font_regular,
+      vehicle_label,
+      rl.Vector2(inner_x, vehicle_y),
+      20,
+      0,
+      vehicle_color,
+    )
+
+    # Right side: recording badge if active
+    if self._recording_audio:
+      badge_text = tr("Recording")
+      badge_padding_x = 10
+      badge_padding_y = 6
+      text_size = measure_text_cached(self._font_medium, badge_text, 18)
+      badge_w = text_size.x + self._record_icon.width + badge_padding_x * 3
+      badge_h = text_size.y + badge_padding_y * 2
+
+      badge_rect = rl.Rectangle(
+        rect.x + rect.width - badge_w - 16,
+        rect.y + rect.height - badge_h - 12,
+        badge_w,
+        badge_h,
+      )
+
+      rl.draw_rectangle_rounded(badge_rect, 0.6, 8, Colors.BADGE_BG)
+      rl.draw_rectangle_rounded_lines_ex(badge_rect, 0.6, 8, 1.5, Colors.BADGE_RED)
+
+      icon_x = badge_rect.x + badge_padding_x
+      icon_y = badge_rect.y + (badge_rect.height - self._record_icon.height) / 2
+      rl.draw_texture(
+        self._record_icon,
+        int(icon_x),
+        int(icon_y),
+        Colors.BADGE_RED,
+      )
+
+      text_x = icon_x + self._record_icon.width + badge_padding_x
+      text_y = badge_rect.y + (badge_rect.height - text_size.y) / 2
+      rl.draw_text_ex(
+        self._font_medium,
+        badge_text,
+        rl.Vector2(text_x, text_y),
+        18,
+        0,
+        Colors.TEXT_PRIMARY,
+      )
+
+  def _draw_metric_cards_grid(self, left: float, top: float, width: float):
+    # We'll do a simple vertical stack of compact cards for:
+    # 1. Connectivity (Wi-Fi / network)
+    # 2. Thermal (CPU/GPU temp)
+    # 3. Panda / peripherals
+    card_height = 74
+    gap = 14
+
+    # Connectivity card
+    conn_rect = rl.Rectangle(left, top, width, card_height)
+    self._draw_connectivity_card(conn_rect)
+
+    # Thermal card
+    therm_rect = rl.Rectangle(left, conn_rect.y + card_height + gap, width, card_height)
+    self._draw_thermal_card(therm_rect)
+
+    # Panda / car interface card
+    panda_rect = rl.Rectangle(left, therm_rect.y + card_height + gap, width, card_height)
+    self._draw_panda_card(panda_rect)
+
+  def _draw_metric_card(self, rect: rl.Rectangle, title: str, subtitle: str, icon: rl.Texture, color: rl.Color):
+    # Generic medium-round card
+    roundness = 0.4
+    rl.draw_rectangle_rounded(rect, roundness, 8, Colors.METRIC_BG)
+    rl.draw_rectangle_rounded_lines_ex(rect, roundness, 8, 2, Colors.METRIC_BORDER)
+
+    padding = 14
+    inner_x = rect.x + padding
+    inner_y = rect.y + padding
+
+    # Icon area
+    icon_box = rl.Rectangle(
+      inner_x,
+      inner_y,
+      32,
+      32,
+    )
+
+    rl.draw_texture_pro(
+      icon,
+      rl.Rectangle(0, 0, icon.width, icon.height),
+      icon_box,
+      rl.Vector2(0, 0),
+      0.0,
+      color,
+    )
+
+    # Text content
+    text_x = icon_box.x + icon_box.width + 10
+    title_size = measure_text_cached(self._font_medium, title, 20)
+    rl.draw_text_ex(
+      self._font_medium,
+      title,
+      rl.Vector2(text_x, inner_y + 1),
+      20,
+      0,
+      Colors.TEXT_PRIMARY,
+    )
+
+    rl.draw_text_ex(
+      self._font_regular,
+      subtitle,
+      rl.Vector2(text_x, inner_y + title_size.y + 4),
+      18,
+      0,
+      Colors.TEXT_MUTED,
+    )
+
+  def _draw_connectivity_card(self, rect: rl.Rectangle):
+    # Determine Wi-Fi or "No Network"
+    net_type_text = tr(self._net_type)
+    if self._net_strength <= 0 or net_type_text == tr("No Network"):
+      icon = self._wifi_off_icon
+      bars_color = Colors.WIFI_BAD
+      subtitle = tr("Offline")
+    else:
+      icon = self._wifi_icon
+      if self._net_strength >= 4:
+        bars_color = Colors.WIFI_GOOD
+      elif self._net_strength >= 2:
+        bars_color = Colors.WIFI_OK
+      else:
+        bars_color = Colors.WIFI_BAD
+
+      subtitle = f"{net_type_text} · {self._net_strength}/5"
+
+    self._draw_metric_card(rect, tr("Connectivity"), subtitle, icon, bars_color)
+
+  def _draw_thermal_card(self, rect: rl.Rectangle):
+    # Decide color / status
+    t = max(self._cpu_temp, self._gpu_temp)
+    if t <= 65:
+      color = Colors.TEMP_COOL
+      status = tr("Cool")
+    elif t <= 80:
+      color = Colors.TEMP_WARM
+      status = tr("Warm")
+    else:
+      color = Colors.TEMP_HOT
+      status = tr("Hot")
+
+    subtitle = f"{int(self._cpu_temp)}° / {int(self._gpu_temp)}°  ·  {status}"
+    self._draw_metric_card(rect, tr("Thermals"), subtitle, self._temp_icon, color)
+
+  def _draw_panda_card(self, rect: rl.Rectangle):
+    if not self._panda_present:
+      color = Colors.PANDA_DISCONNECTED
+      subtitle = tr("No Panda Detected")
+    else:
+      color = Colors.PANDA_CONNECTED
+      if self._panda_type is not None:
+        type_name = PandaType.toString(self._panda_type)
+      else:
+        type_name = "Unknown"
+
+      subtitle = tr(f"{type_name} Connected")
+
+    self._draw_metric_card(rect, tr("Vehicle Interface"), subtitle, self._panda_icon, color)
