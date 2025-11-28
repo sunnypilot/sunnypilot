@@ -37,12 +37,12 @@ class FontSizes:
 @dataclass(frozen=True)
 class Colors:
   white: rl.Color = rl.WHITE
-  disengaged: rl.Color = rl.Color(145, 155, 149, 255)
-  override: rl.Color = rl.Color(145, 155, 149, 255)
-  engaged: rl.Color = rl.Color(128, 216, 166, 255)
-  disengaged_bg: rl.Color = rl.Color(0, 0, 0, 153)
-  override_bg: rl.Color = rl.Color(145, 155, 149, 204)
-  engaged_bg: rl.Color = rl.Color(128, 216, 166, 204)
+  disengaged: rl.Color = rl.Color(125, 134, 130, 255)
+  override: rl.Color = rl.Color(210, 121, 76, 255)
+  engaged: rl.Color = rl.Color(41, 134, 93, 255)
+  disengaged_bg: rl.Color = rl.Color(125, 134, 120, 153)
+  override_bg: rl.Color = rl.Color(210, 121, 76, 204)
+  engaged_bg: rl.Color = rl.Color(41, 134, 93, 204)
   grey: rl.Color = rl.Color(166, 166, 166, 255)
   dark_grey: rl.Color = rl.Color(114, 114, 114, 255)
   black_translucent: rl.Color = rl.Color(0, 0, 0, 166)
