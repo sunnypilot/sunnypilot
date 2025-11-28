@@ -176,7 +176,7 @@ jobs:
 
       - name: Stop OP to free resources
         run: |
-          op stop
+          /data/openpilot/tools/op.sh stop
 
       - name: Build Main Project
         run: |
@@ -248,7 +248,7 @@ jobs:
 
       - name: Restart op
         run: |
-          op start
+          /data/openpilot/tools/op.sh start
   
   
   publish:
