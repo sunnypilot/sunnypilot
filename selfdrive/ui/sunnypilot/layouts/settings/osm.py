@@ -13,7 +13,7 @@ from pathlib import Path
 from time import monotonic
 
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
@@ -154,6 +154,7 @@ class OSMLayout(Widget):
     pending = ui_state.params.get_bool("OsmDbUpdatesCheck")
     if downloading or pending:
       if downloading:
+        device.reset_interactive_timeout()
         self._update_map_size()
       self._progress.set_visible(True)
       progress = ui_state.params.get("OSMDownloadProgress")
