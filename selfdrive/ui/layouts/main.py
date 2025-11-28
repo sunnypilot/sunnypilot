@@ -72,14 +72,15 @@ class MainLayout(Widget):
     """Close settings: instantly in onroad, animated offroad."""
     if ui_state.started:
       # Onroad: close instantly, restore sidebar if needed
-      if self._sidebar_prev_visible:
-        self._sidebar.set_visible(self._sidebar_prev_visible)
       self._layouts[MainState.SETTINGS].hide_event()
+      gui_app.set_modal_overlay(None)
       if self._settings_prev_layout is not None:
         self._current_mode = self._settings_prev_layout
       self._settings_anim_active = False
       self._settings_anim_direction = None
       self._settings_prev_layout = None
+      if self._sidebar_prev_visible:
+        self._set_sidebar_visible(self._sidebar_prev_visible, force=True)
       self._sidebar_prev_visible = None
       return
 
@@ -90,8 +91,7 @@ class MainLayout(Widget):
       prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
-      if self._sidebar_prev_visible:
-        self._sidebar.set_visible(self._sidebar_prev_visible)
+      # don't restore sidebar yet; restore only after settings fully closed
       return
 
     if not self._settings_anim_active and self._current_mode == MainState.SETTINGS:
@@ -99,8 +99,7 @@ class MainLayout(Widget):
       self._settings_anim_active = True
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now
-      if self._sidebar_prev_visible:
-        self._sidebar.set_visible(self._sidebar_prev_visible)
+      # sidebar will be restored when the animation fully completes
     device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _update_layout_rects(self):
@@ -121,11 +120,11 @@ class MainLayout(Widget):
     if ui_state.started:
       # Don't hide sidebar from interactive timeout
       if self._current_mode != MainState.ONROAD:
-        self._sidebar.set_visible(False)
+        self._set_sidebar_visible(False)
       self._set_current_layout(MainState.ONROAD)
     else:
       self._set_current_layout(MainState.HOME)
-      self._sidebar.set_visible(True)
+      self._set_sidebar_visible(True)
 
   def _set_current_layout(self, layout: MainState):
     if layout != self._current_mode:
@@ -133,10 +132,17 @@ class MainLayout(Widget):
       self._current_mode = layout
       self._layouts[self._current_mode].show_event()
 
+  def _set_sidebar_visible(self, visible: bool, force: bool = False):
+    """Centralize sidebar visibility changes so we can prevent changes while settings is open."""
+    if (self._settings_anim_active or self._current_mode == MainState.SETTINGS) and not force:
+      # ignore attempts to change sidebar while settings overlay is active
+      return
+    self._sidebar.set_visible(visible)
+
   def open_settings(self, panel_type: PanelType):
     # Always hide sidebar when opening settings, regardless of spammed toggles
     self._sidebar_prev_visible = self._sidebar.is_visible
-    self._sidebar.set_visible(False)
+    self._set_sidebar_visible(False, force=True)
     self._layouts[MainState.SETTINGS].set_current_panel(panel_type)
     self._settings_prev_layout = self._current_mode
     # If onroad, open settings instantly (no animation)
@@ -145,6 +151,8 @@ class MainLayout(Widget):
       self._settings_anim_direction = None
       self._settings_anim_start = 0.0
       self._layouts[MainState.SETTINGS].show_event()
+      # Make settings modal so underlying clicks don't reach onroad camera
+      gui_app.set_modal_overlay(self._layouts[MainState.SETTINGS])
       self._current_mode = MainState.SETTINGS
     else:
       # Offroad: use animation
@@ -153,6 +161,8 @@ class MainLayout(Widget):
       now = rl.get_time()
       self._settings_anim_start = now
       self._layouts[MainState.SETTINGS].show_event()
+      # Modal overlay during animated settings so clicks don't reach underlying layout
+      gui_app.set_modal_overlay(self._layouts[MainState.SETTINGS])
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
@@ -183,7 +193,7 @@ class MainLayout(Widget):
     # Disable sidebar toggle while settings is open or animating
     if self._settings_anim_active or self._current_mode == MainState.SETTINGS:
       return
-    self._sidebar.set_visible(not self._sidebar.is_visible)
+    self._set_sidebar_visible(not self._sidebar.is_visible)
 
   def _render_main_content(self):
     # Render sidebar
@@ -252,11 +262,13 @@ class MainLayout(Widget):
             # Restore sidebar visibility when returning to a non-onroad layout
             if self._settings_prev_layout != MainState.ONROAD:
               if self._sidebar_prev_visible is not None:
-                self._sidebar.set_visible(self._sidebar_prev_visible)
+                self._set_sidebar_visible(self._sidebar_prev_visible, force=True)
               else:
-                self._sidebar.set_visible(True)
-            # clear stored previous sidebar state
-            self._sidebar_prev_visible = None
+                self._set_sidebar_visible(True, force=True)
+              # clear stored previous sidebar state
+              self._sidebar_prev_visible = None
+          # Clear modal overlay when settings fully closed
+          gui_app.set_modal_overlay(None)
         self._settings_anim_active = False
         self._settings_anim_direction = None
         self._settings_prev_layout = None
