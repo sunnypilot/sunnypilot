@@ -176,7 +176,7 @@ jobs:
 
       - name: Stop OP to free resources
         run: |
-          /data/openpilot/tools/op.sh stop
+          sudo systemctl stop comma
 
       - name: Build Main Project
         run: |
@@ -248,7 +248,7 @@ jobs:
 
       - name: Restart op
         run: |
-          /data/openpilot/tools/op.sh start
+          sudo systemctl start comma
   
   
   publish:
