@@ -49,7 +49,7 @@ class AugmentedRoadView(CameraView):
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
     self.driver_state_renderer = DriverStateRenderer()
-    self._confidence_ball = ConfidenceBall(scale = 2.0)
+    self._confidence_ball = ConfidenceBall(scale = 1.0, bar = True)
 
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
