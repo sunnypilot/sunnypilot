@@ -139,6 +139,21 @@ class MainLayout(Widget):
       return
     self._sidebar.set_visible(visible)
 
+  def _render_settings_modal(self):
+    """Callable wrapper used as a modal overlay to render the settings widget.
+
+    The modal system expects the overlay to return an int (>=0) to signal closing.
+    Returning -1 keeps the overlay active; the settings close path will call
+    `gui_app.set_modal_overlay(None)` when it actually needs to dismiss it.
+    """
+    # Render settings full-screen
+    try:
+      self._layouts[MainState.SETTINGS].render(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
+    except Exception:
+      # Swallow render exceptions here to avoid crashing the modal loop
+      pass
+    return -1
+
   def open_settings(self, panel_type: PanelType):
     # Always hide sidebar when opening settings, regardless of spammed toggles
     self._sidebar_prev_visible = self._sidebar.is_visible
@@ -152,7 +167,7 @@ class MainLayout(Widget):
       self._settings_anim_start = 0.0
       self._layouts[MainState.SETTINGS].show_event()
       # Make settings modal so underlying clicks don't reach onroad camera
-      gui_app.set_modal_overlay(self._layouts[MainState.SETTINGS])
+      gui_app.set_modal_overlay(self._render_settings_modal)
       self._current_mode = MainState.SETTINGS
     else:
       # Offroad: use animation
@@ -162,7 +177,7 @@ class MainLayout(Widget):
       self._settings_anim_start = now
       self._layouts[MainState.SETTINGS].show_event()
       # Modal overlay during animated settings so clicks don't reach underlying layout
-      gui_app.set_modal_overlay(self._layouts[MainState.SETTINGS])
+      gui_app.set_modal_overlay(self._render_settings_modal)
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
