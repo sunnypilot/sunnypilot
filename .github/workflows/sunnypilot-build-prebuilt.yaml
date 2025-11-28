@@ -184,7 +184,7 @@ jobs:
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
-      - name: ➕ Create 8GB swap file (Conditional)
+      - name: Create 8GB swap file (Conditional)
         if: steps.set-env.outputs.create_swap == 'true'
         run: |
           echo "Creating swap file..."
