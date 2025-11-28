@@ -24,7 +24,7 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
-from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.ui_state import device, ui_state
 
 
 class NoElide(ButtonAction):
@@ -121,6 +121,9 @@ class ModelsLayout(Widget):
     status_changed = self.prev_download_status != self.download_status
     self.prev_download_status = self.download_status
     self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and bool(ui_state.params.get("ModelManager_DownloadIndex")))
+
+    if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
+      device.reset_interactive_timeout()
 
     for model in bundle.models:
       if label := labels.get(getattr(model.type, 'raw', model.type)):
