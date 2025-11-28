@@ -19,11 +19,11 @@ CRUISE_DISABLED_CHAR = '–'
 class UIConfig:
   header_height: int = 300
   border_size: int = 30
-  button_size: int = 192
+  button_size: int = 144         # ↓ Scaled down to match DM renderer
   set_speed_width_metric: int = 200
   set_speed_width_imperial: int = 172
   set_speed_height: int = 204
-  wheel_icon_size: int = 144
+  wheel_icon_size: int = 108     # ↓ proportional icon size
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,7 @@ class FontSizes:
 class Colors:
   white: rl.Color = rl.WHITE
   disengaged: rl.Color = rl.Color(145, 155, 149, 255)
-  override: rl.Color = rl.Color(145, 155, 149, 255)  # Added
+  override: rl.Color = rl.Color(145, 155, 149, 255)
   engaged: rl.Color = rl.Color(128, 216, 166, 255)
   disengaged_bg: rl.Color = rl.Color(0, 0, 0, 153)
   override_bg: rl.Color = rl.Color(145, 155, 149, 204)
@@ -71,7 +71,10 @@ class HudRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
 
+    # EXP button (steering wheel)
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
+
+    # Turn signals
     self._turn_signal_controller = TurnSignalController()
 
   def _update_state(self) -> None:
@@ -116,72 +119,16 @@ class HudRenderer(Widget):
       COLORS.header_gradient_end,
     )
 
-    # NOTE: removed drawing of top-left speed limit / set-speed box and
-    # the central current speed display for the Tizi onroad layout.
-    # These elements were previously drawn by `_draw_set_speed` and
-    # `_draw_current_speed`, but are intentionally omitted now.
-
+    # Turn signals
     self._turn_signal_controller.render()
 
-    # Place ExpButton (steering wheel) at bottom-left
-    button_x = rect.x + UI_CONFIG.border_size
+    # EXP BUTTON → bottom right placement
+    button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
     button_y = rect.y + rect.height - UI_CONFIG.border_size - UI_CONFIG.button_size
-    self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
+
+    self._exp_button.render(
+      rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size)
+    )
 
   def user_interacting(self) -> bool:
     return self._exp_button.is_pressed
-
-  def _draw_set_speed(self, rect: rl.Rectangle) -> None:
-    """Draw the MAX speed indicator box."""
-    set_speed_width = UI_CONFIG.set_speed_width_metric if ui_state.is_metric else UI_CONFIG.set_speed_width_imperial
-    x = rect.x + 60 + (UI_CONFIG.set_speed_width_imperial - set_speed_width) // 2
-    y = rect.y + 45
-
-    set_speed_rect = rl.Rectangle(x, y, set_speed_width, UI_CONFIG.set_speed_height)
-    rl.draw_rectangle_rounded(set_speed_rect, 0.35, 10, COLORS.black_translucent)
-    rl.draw_rectangle_rounded_lines_ex(set_speed_rect, 0.35, 10, 6, COLORS.border_translucent)
-
-    max_color = COLORS.grey
-    set_speed_color = COLORS.dark_grey
-    if self.is_cruise_set:
-      set_speed_color = COLORS.white
-      if ui_state.status == UIStatus.ENGAGED:
-        max_color = COLORS.engaged
-      elif ui_state.status == UIStatus.DISENGAGED:
-        max_color = COLORS.disengaged
-      elif ui_state.status == UIStatus.OVERRIDE:
-        max_color = COLORS.override
-
-    max_text = tr("MAX")
-    max_text_width = measure_text_cached(self._font_semi_bold, max_text, FONT_SIZES.max_speed).x
-    rl.draw_text_ex(
-      self._font_semi_bold,
-      max_text,
-      rl.Vector2(x + (set_speed_width - max_text_width) / 2, y + 27),
-      FONT_SIZES.max_speed,
-      0,
-      max_color,
-    )
-
-    set_speed_text = CRUISE_DISABLED_CHAR if not self.is_cruise_set else str(round(self.set_speed))
-    speed_text_width = measure_text_cached(self._font_bold, set_speed_text, FONT_SIZES.set_speed).x
-    rl.draw_text_ex(
-      self._font_bold,
-      set_speed_text,
-      rl.Vector2(x + (set_speed_width - speed_text_width) / 2, y + 77),
-      FONT_SIZES.set_speed,
-      0,
-      set_speed_color,
-    )
-
-  def _draw_current_speed(self, rect: rl.Rectangle) -> None:
-    """Draw the current vehicle speed and unit."""
-    speed_text = str(round(self.speed))
-    speed_text_size = measure_text_cached(self._font_bold, speed_text, FONT_SIZES.current_speed)
-    speed_pos = rl.Vector2(rect.x + rect.width / 2 - speed_text_size.x / 2, 180 - speed_text_size.y / 2)
-    rl.draw_text_ex(self._font_bold, speed_text, speed_pos, FONT_SIZES.current_speed, 0, COLORS.white)
-
-    unit_text = tr("km/h") if ui_state.is_metric else tr("mph")
-    unit_text_size = measure_text_cached(self._font_medium, unit_text, FONT_SIZES.speed_unit)
-    unit_pos = rl.Vector2(rect.x + rect.width / 2 - unit_text_size.x / 2, 290 - unit_text_size.y / 2)
-    rl.draw_text_ex(self._font_medium, unit_text, unit_pos, FONT_SIZES.speed_unit, 0, COLORS.white_translucent)
