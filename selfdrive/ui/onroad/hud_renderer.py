@@ -124,7 +124,8 @@ class HudRenderer(Widget):
     self._turn_signal_controller.render()
 
     button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
-    button_y = rect.y + UI_CONFIG.border_size
+    # Move steering wheel (ExpButton) to bottom-right
+    button_y = rect.y + rect.height - UI_CONFIG.border_size - UI_CONFIG.button_size
     self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
 
   def user_interacting(self) -> bool:
