@@ -27,14 +27,13 @@ ALERT_HEIGHTS = {
   AlertSize.mid: 420,
 }
 
-SELFDRIVE_STATE_TIMEOUT = 5  # Seconds
-SELFDRIVE_UNRESPONSIVE_TIMEOUT = 10  # Seconds
+SELFDRIVE_STATE_TIMEOUT = 5
+SELFDRIVE_UNRESPONSIVE_TIMEOUT = 10
 
-# Constants
 ALERT_COLORS = {
-  AlertStatus.normal: rl.Color(0x15, 0x15, 0x15, 0xF1),      # #151515 with alpha 0xF1
-  AlertStatus.userPrompt: rl.Color(0xDA, 0x6F, 0x25, 0xF1),  # #DA6F25 with alpha 0xF1
-  AlertStatus.critical: rl.Color(0xC9, 0x22, 0x31, 0xF1),    # #C92231 with alpha 0xF1
+  AlertStatus.normal: rl.Color(0x15, 0x15, 0x15, 0xF1),
+  AlertStatus.userPrompt: rl.Color(0xDA, 0x6F, 0x25, 0xF1),
+  AlertStatus.critical: rl.Color(0xC9, 0x22, 0x31, 0xF1),
 }
 
 
@@ -46,7 +45,6 @@ class Alert:
   status: int = 0
 
 
-# Pre-defined alert instances
 ALERT_STARTUP_PENDING = Alert(
   text1=tr("hoofpilot Unavailable"),
   text2=tr("Waiting to start"),
@@ -75,27 +73,49 @@ class AlertRenderer(Widget):
     self.font_regular: rl.Font = gui_app.font(FontWeight.NORMAL)
     self.font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
 
-    # font size is set dynamically
-    self._full_text1_label = Label("", font_size=0, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+    self._full_text1_label = Label("", font_size=0, font_weight=FontWeight.BOLD,
+                                   text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                    text_alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP)
-    self._full_text2_label = Label("", font_size=ALERT_FONT_BIG, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+
+    self._full_text2_label = Label("", font_size=ALERT_FONT_BIG,
+                                   text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                    text_alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP)
+
+    # Animation state
+    self._anim_alert_id = None
+    self._anim_start = 0.0
+    self._anim_duration = 0.30  # smooth cubic ease-out
+
+  def _anim_values(self, alert_id: str):
+    """
+    Computes eased slide + fade for normal alerts.
+    Slide from -80px downward to final position.
+    """
+    now = rl.get_time()
+
+    if self._anim_alert_id != alert_id:
+      self._anim_alert_id = alert_id
+      self._anim_start = now
+
+    t = max(0.0, min(1.0, (now - self._anim_start) / self._anim_duration))
+    eased = 1 - (1 - t) ** 3  # cubic ease-out
+
+    fade = eased
+    y_offset = (1 - eased) * -70  # slide from -80 → 0
+
+    return fade, y_offset
 
   def get_alert(self, sm: messaging.SubMaster) -> Alert | None:
-    """Generate the current alert based on selfdrive state."""
     ss = sm['selfdriveState']
-
-    # Check if selfdriveState messages have stopped arriving
     recv_frame = sm.recv_frame['selfdriveState']
+
     if not sm.updated['selfdriveState']:
       time_since_onroad = time.monotonic() - ui_state.started_time
-
-      # 1. Never received selfdriveState since going onroad
       waiting_for_startup = recv_frame < ui_state.started_frame
+
       if waiting_for_startup and time_since_onroad > 5:
         return ALERT_STARTUP_PENDING
 
-      # 2. Lost communication with selfdriveState after receiving it
       if TICI and not waiting_for_startup:
         ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
         if ss_missing > SELFDRIVE_STATE_TIMEOUT:
@@ -103,42 +123,53 @@ class AlertRenderer(Widget):
             return ALERT_CRITICAL_TIMEOUT
           return ALERT_CRITICAL_REBOOT
 
-    # No alert if size is none
     if ss.alertSize == 0:
       return None
 
-    # Don't get old alert
     if recv_frame < ui_state.started_frame:
       return None
 
-    # Return current alert
-    return Alert(text1=ss.alertText1, text2=ss.alertText2, size=ss.alertSize.raw, status=ss.alertStatus.raw)
+    return Alert(text1=ss.alertText1, text2=ss.alertText2,
+                 size=ss.alertSize.raw, status=ss.alertStatus.raw)
 
   def _render(self, rect: rl.Rectangle):
     alert = self.get_alert(ui_state.sm)
     if not alert:
+      self._anim_alert_id = None
       return
 
-    # Render a single-line, no-background alert at the top-center of the screen.
-    # User requested to keep only the primary line (text1) and remove the opaque box.
-    # Choose font sizes based on alert size.
     if alert.size == AlertSize.small:
       font_size = ALERT_FONT_MEDIUM
     elif alert.size == AlertSize.mid:
       font_size = ALERT_FONT_BIG
     else:
-      # full
       font_size = ALERT_FONT_BIG + 44
 
-    # Position near the top of the provided rect, centered horizontally
-    text_rect = rl.Rectangle(rect.x, rect.y + 24, rect.width, 200)
-    # Draw only the primary message (text1), no background or second line
-    self._draw_centered(alert.text1, text_rect, self.font_bold, font_size)
+    base_rect = rl.Rectangle(rect.x, rect.y + 24, rect.width, 200)
+
+    # Animate ONLY normal alerts
+    if alert.status == AlertStatus.normal:
+      alert_id = f"{alert.text1}-{alert.size}"
+      fade, y_offset = self._anim_values(alert_id)
+
+      animated_rect = rl.Rectangle(
+        base_rect.x,
+        base_rect.y + y_offset,
+        base_rect.width,
+        base_rect.height
+      )
+
+      color = rl.Color(255, 255, 255, int(255 * fade))
+
+    else:
+      animated_rect = base_rect
+      color = rl.WHITE
+
+    self._draw_centered(alert.text1, animated_rect, self.font_bold, font_size, color=color)
 
   def _get_alert_rect(self, rect: rl.Rectangle, size: int) -> rl.Rectangle:
     if size == AlertSize.full:
       return rect
-
     h = ALERT_HEIGHTS.get(size, rect.height)
     return rl.Rectangle(rect.x + ALERT_MARGIN, rect.y + rect.height - h + ALERT_MARGIN,
                         rect.width - ALERT_MARGIN * 2, h - ALERT_MARGIN * 2)
@@ -155,12 +186,10 @@ class AlertRenderer(Widget):
   def _draw_text(self, rect: rl.Rectangle, alert: Alert) -> None:
     if alert.size == AlertSize.small:
       self._draw_centered(alert.text1, rect, self.font_bold, ALERT_FONT_MEDIUM)
-
     elif alert.size == AlertSize.mid:
       self._draw_centered(alert.text1, rect, self.font_bold, ALERT_FONT_BIG, center_y=False)
       rect.y += ALERT_FONT_BIG + ALERT_LINE_SPACING
       self._draw_centered(alert.text2, rect, self.font_regular, ALERT_FONT_SMALL, center_y=False)
-
     else:
       is_long = len(alert.text1) > 15
       font_size1 = 132 if is_long else 177
