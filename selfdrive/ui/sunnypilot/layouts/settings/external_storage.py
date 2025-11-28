@@ -109,7 +109,7 @@ class ExternalStorageAction(ItemAction):
       gui_app.set_modal_overlay(alert_dialog(msg))
       self._error_message = ""
 
-    # Draw left-side status text
+    # Draw left-side status text (value text)
     if self._value_text:
       text_size = measure_text_cached(self._text_font, self._value_text, VALUE_FONT_SIZE)
       rl.draw_text_ex(
@@ -131,9 +131,12 @@ class ExternalStorageAction(ItemAction):
     )
     self._button.set_rect(button_rect)
     self._button.set_text(tr(self._state.value))
-    self._button.set_enabled(self._state != ExternalStorageState.LOADING)
-    self._button.render(button_rect)
 
+    # Button enabled only when NOT LOADING and NOT DISABLED
+    self._button.set_enabled(self._state not in (ExternalStorageState.LOADING,
+                                                 ExternalStorageState.DISABLED))
+
+    self._button.render(button_rect)
     return False
 
   # ────────────────────────────────────────────────────────────────────────────
@@ -141,12 +144,10 @@ class ExternalStorageAction(ItemAction):
   # ────────────────────────────────────────────────────────────────────────────
 
   def _refresh_state(self):
-    # PC builds cannot mount/format external drives.
     if PC:
       self._state = ExternalStorageState.DISABLED
       self._button.set_enabled(False)
-      self._value_text = tr("")
-    # non-PC state logic is handled in refresh()
+      self._value_text = ""
 
   def debounced_refresh(self):
     if self._refresh_pending:
@@ -196,7 +197,7 @@ class ExternalStorageAction(ItemAction):
           self._value_text = tr("drive detected")
           self._state = ExternalStorageState.MOUNT
 
-      gui_app.invoke_on_main(apply)
+      apply()
 
     threading.Thread(target=_work, daemon=True).start()
 
@@ -206,6 +207,9 @@ class ExternalStorageAction(ItemAction):
 
   def _handle_button_click(self):
     st = self._state
+
+    if st == ExternalStorageState.DISABLED:
+      return
 
     if st in (ExternalStorageState.CHECK, ExternalStorageState.MOUNT):
       self.mount_storage()
@@ -236,18 +240,18 @@ class ExternalStorageAction(ItemAction):
 
     def _work():
       cmd = """
-        mount -o remount,rw / &&
-        mkdir -p /mnt/external_realdata &&
+        sudo mount -o remount,rw / &&
+        sudo mkdir -p /mnt/external_realdata &&
         (grep -q '/dev/sdg1 /mnt/external_realdata' /etc/fstab ||
          echo '/dev/sdg1 /mnt/external_realdata ext4 defaults,nofail 0 2' >> /etc/fstab) &&
-        systemctl daemon-reexec &&
-        mount /mnt/external_realdata &&
-        chown -R comma:comma /mnt/external_realdata &&
-        chmod -R 775 /mnt/external_realdata &&
-        mount -o remount,ro /
+        sudo systemctl daemon-reexec &&
+        sudo mount /mnt/external_realdata &&
+        sudo chown -R comma:comma /mnt/external_realdata &&
+        sudo chmod -R 775 /mnt/external_realdata &&
+        sudo mount -o remount,ro /
       """
       subprocess.call(["sh", "-c", cmd])
-      gui_app.invoke_on_main(self.debounced_refresh)
+      self.debounced_refresh()
 
     threading.Thread(target=_work, daemon=True).start()
 
@@ -260,8 +264,8 @@ class ExternalStorageAction(ItemAction):
     self._state = ExternalStorageState.LOADING
 
     def _work():
-      subprocess.call(["sh", "-c", "umount /mnt/external_realdata"])
-      gui_app.invoke_on_main(self.debounced_refresh)
+      subprocess.call(["sh", "-c", "sudo umount /mnt/external_realdata"])
+      self.debounced_refresh()
 
     threading.Thread(target=_work, daemon=True).start()
 
@@ -276,9 +280,9 @@ class ExternalStorageAction(ItemAction):
 
     def _work():
       cmd = """
-        wipefs -a /dev/sdg &&
-        parted -s /dev/sdg mklabel gpt mkpart primary ext4 0% 100% &&
-        mkfs.ext4 -F -L openpilot /dev/sdg1
+        sudo wipefs -a /dev/sdg &&
+        sudo parted -s /dev/sdg mklabel gpt mkpart primary ext4 0% 100% &&
+        sudo mkfs.ext4 -F -L openpilot /dev/sdg1
       """
       exitcode = subprocess.call(["sh", "-c", cmd])
 
@@ -290,7 +294,7 @@ class ExternalStorageAction(ItemAction):
           self._value_text = tr("needs format")
           self._state = ExternalStorageState.FORMAT
 
-      gui_app.invoke_on_main(apply)
+      apply()
 
     threading.Thread(target=_work, daemon=True).start()
 
