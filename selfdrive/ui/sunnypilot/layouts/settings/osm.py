@@ -38,7 +38,6 @@ class OSMLayout(Widget):
     super().__init__()
     self._current_percent = 0
     self._last_map_size_update = 0
-    self._cached_map_size = 0
     self._mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else ui_state.params
     self._initialize_items()
     self._update_map_size()
@@ -61,23 +60,18 @@ class OSMLayout(Widget):
     gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
 
   def _update_map_size(self):
-    now = monotonic()
-    if now - self._last_map_size_update >= 0.5:
-      size = 0
-      if MAP_PATH.exists():
-        try:
-          size = sum(file.stat().st_size for file in MAP_PATH.rglob('*') if file.is_file())
-        except OSError:
-          pass
-      self._cached_map_size = size
-      self._last_map_size_update = now
-    value = f"{self._cached_map_size / 1024**2:.2f} MB" if self._cached_map_size < 1024**3 else f"{self._cached_map_size / 1024**3:.2f} GB"
+    size = 0
+    if MAP_PATH.exists():
+      try:
+        size = sum(file.stat().st_size for file in MAP_PATH.rglob('*') if file.is_file())
+      except OSError:
+        pass
+    value = f"{size / 1024**2:.2f} MB" if size < 1024**3 else f"{size / 1024**3:.2f} GB"
     self._delete_maps_btn.action_item.set_value(value)
 
   def _do_delete_maps(self):
     if MAP_PATH.exists():
       shutil.rmtree(MAP_PATH)
-    self._last_map_size_update = 0
     self._delete_maps_btn.set_enabled(True)
     self._delete_maps_btn.action_item.set_text(tr("Delete"))
     self._update_map_size()
@@ -192,7 +186,10 @@ class OSMLayout(Widget):
     self._scroller.show_event()
 
   def _update_state(self):
-    self._update_labels()
+    now = monotonic()
+    if now - self._last_map_size_update >= 1.0:
+      self._last_map_size_update = now
+      self._update_labels()
 
   def _render(self, rect):
     self._scroller.render(rect)
