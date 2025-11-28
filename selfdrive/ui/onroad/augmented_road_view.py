@@ -6,7 +6,7 @@ from msgq.visionipc import VisionStreamType
 from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.onroad.alert_renderer import AlertRenderer
-from openpilot.selfdrive.ui.onroad.driver_state import DriverStateRenderer
+from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer as MiciDriverStateRenderer
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.onroad.model_renderer import ModelRenderer
 from openpilot.selfdrive.ui.onroad.cameraview import CameraView
@@ -48,7 +48,20 @@ class AugmentedRoadView(CameraView):
     self.model_renderer = ModelRenderer()
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
-    self.driver_state_renderer = DriverStateRenderer()
+
+    # Use the exact Mici DriverStateRenderer but scaled up for Tizi
+    class TiziDriverStateRenderer(MiciDriverStateRenderer):
+      BASE_SIZE = int(MiciDriverStateRenderer.BASE_SIZE * 2.5)
+
+      def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # reload icons at the new base size
+        try:
+          self.load_icons()
+        except Exception:
+          pass
+
+    self.driver_state_renderer = TiziDriverStateRenderer()
 
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
