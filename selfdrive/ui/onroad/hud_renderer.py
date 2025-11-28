@@ -116,10 +116,10 @@ class HudRenderer(Widget):
       COLORS.header_gradient_end,
     )
 
-    if self.is_cruise_available:
-      self._draw_set_speed(rect)
-
-    self._draw_current_speed(rect)
+    # NOTE: removed drawing of top-left speed limit / set-speed box and
+    # the central current speed display for the Tizi onroad layout.
+    # These elements were previously drawn by `_draw_set_speed` and
+    # `_draw_current_speed`, but are intentionally omitted now.
 
     self._turn_signal_controller.render()
 
