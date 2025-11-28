@@ -185,7 +185,7 @@ jobs:
           echo "Building sunnypilot's modeld_v2..."
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld_v2
           echo "Building sunnypilot's locationd..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
+          scons -j$2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
           echo "Building rest of openpilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
