@@ -81,7 +81,7 @@ class ExternalStorageAction(ItemAction):
     try:
       out = subprocess.check_output(["sh", "-c", cmd], universal_newlines=True)
       return out.strip()
-    except:
+    except Exception:
       return ""
 
   def _render(self, rect: rl.Rectangle) -> bool:

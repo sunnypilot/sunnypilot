@@ -44,7 +44,8 @@ class DeveloperLayoutSP(DeveloperLayout):
 
     self.error_log_btn = button_item(tr("Error Log"), tr("View"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
-    self.external_storage = external_storage_item(tr("External Storage"), description=tr("Extend your comma device's storage by inserting a USB drive into the aux port."))
+    self.external_storage = external_storage_item(tr("External Storage"), description=tr("Extend your comma device's storage by inserting a USB drive " +
+                                                                                         "into the aux port."))
 
     self.items: list = [self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.external_storage, self.error_log_btn,]
 
