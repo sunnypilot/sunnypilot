@@ -24,6 +24,10 @@ class Base:
   TOGGLE_WIDTH = int(TOGGLE_HEIGHT * 1.75)
   TOGGLE_BG_HEIGHT = TOGGLE_HEIGHT - 20
 
+  # Button Control
+  BUTTON_WIDTH = 300
+  BUTTON_HEIGHT = 120
+
 
 @dataclass
 class DefaultStyleSP(Base):
@@ -46,6 +50,11 @@ class DefaultStyleSP(Base):
   TOGGLE_DISABLED_ON_COLOR = DISABLED_ON_BG_COLOR
   TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
   TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255)  # Lighter Grey
+
+  # Multi Button Control
+  MBC_TRANSPARENT = rl.Color(255, 255, 255, 0)
+  MBC_BG_CHECKED_ENABLED = rl.Color(0x69, 0x68, 0x68, 0xFF)
+  MBC_DISABLED = rl.Color(0xFF, 0xFF, 0xFF, 0x33)
 
 
 style = DefaultStyleSP
