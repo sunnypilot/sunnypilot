@@ -61,7 +61,7 @@ class AugmentedRoadView(CameraView):
       LINES_ANGLE_INCREMENT = 5
       LINES_STALE_ANGLES = 3.0  # seconds
 
-      def __init__(self, lines: bool = False, confirm_mode: bool = False, confirm_callback = None):
+      def __init__(self, lines: bool = False, confirm_mode: bool = False, confirm_callback=None):
         super().__init__()
         self.set_rect(rl.Rectangle(0, 0, self.BASE_SIZE, self.BASE_SIZE))
         self._lines = lines or confirm_mode
@@ -71,7 +71,10 @@ class AugmentedRoadView(CameraView):
         self._confirm_angles = {}
 
         assert 360 % self.LINES_ANGLE_INCREMENT == 0
-        self._head_angles = {i * self.LINES_ANGLE_INCREMENT: FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps) for i in range(360 // self.LINES_ANGLE_INCREMENT)}
+        self._head_angles = {
+          i * self.LINES_ANGLE_INCREMENT: FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+          for i in range(360 // self.LINES_ANGLE_INCREMENT)
+        }
 
         self._is_active = False
         self._is_rhd = False
@@ -90,20 +93,31 @@ class AugmentedRoadView(CameraView):
         self.load_icons()
 
       def load_icons(self):
-        self._dm_person = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_person.png", self._rect.width, self._rect.height)
-        self._dm_cone = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_cone.png", self._rect.width, self._rect.height)
+        self._dm_person = gui_app.texture(
+          "icons_mici/onroad/driver_monitoring/dm_person.png", self._rect.width, self._rect.height
+        )
+        self._dm_cone = gui_app.texture(
+          "icons_mici/onroad/driver_monitoring/dm_cone.png", self._rect.width, self._rect.height
+        )
         center_size = round(36 / self.BASE_SIZE * self._rect.width)
-        self._dm_center = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_center.png", center_size, center_size)
+        self._dm_center = gui_app.texture(
+          "icons_mici/onroad/driver_monitoring/dm_center.png", center_size, center_size
+        )
         background_size = round(52 / self.BASE_SIZE * self._rect.width)
-        self._dm_background = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_background.png", background_size, background_size)
+        self._dm_background = gui_app.texture(
+          "icons_mici/onroad/driver_monitoring/dm_background.png", background_size, background_size
+        )
 
       def set_should_draw(self, should_draw: bool):
         self._should_draw = should_draw
 
       @property
       def should_draw(self):
-        return (self._should_draw and ui_state.sm["selfdriveState"].alertSize == AlertSize.none and
-                ui_state.sm.recv_frame["driverStateV2"] > ui_state.started_frame)
+        return (
+          self._should_draw
+          and ui_state.sm["selfdriveState"].alertSize == AlertSize.none
+          and ui_state.sm.recv_frame["driverStateV2"] > ui_state.started_frame
+        )
 
       def set_force_active(self, force_active: bool):
         self._force_active = force_active
@@ -113,13 +127,19 @@ class AugmentedRoadView(CameraView):
         return bool(self._force_active or self._is_active)
 
       def _render(self, _):
-        rl.draw_texture(self._dm_background,
-                        int(self._rect.x + (self._rect.width - self._dm_background.width) / 2),
-                        int(self._rect.y + (self._rect.height - self._dm_background.height) / 2),
-                        rl.Color(255, 255, 255, int(255 * self._fade_filter.x)))
+        rl.draw_texture(
+          self._dm_background,
+          int(self._rect.x + (self._rect.width - self._dm_background.width) / 2),
+          int(self._rect.y + (self._rect.height - self._dm_background.height) / 2),
+          rl.Color(255, 255, 255, int(255 * self._fade_filter.x)),
+        )
 
-        rl.draw_texture(self._dm_person, int(self._rect.x), int(self._rect.y),
-                        rl.Color(255, 255, 255, int(255 * 0.9 * self._fade_filter.x)))
+        rl.draw_texture(
+          self._dm_person,
+          int(self._rect.x),
+          int(self._rect.y),
+          rl.Color(255, 255, 255, int(255 * 0.9 * self._fade_filter.x)),
+        )
 
         if self.effective_active:
           source_rect = rl.Rectangle(0, 0, self._dm_cone.width, self._dm_cone.height)
@@ -137,21 +157,35 @@ class AugmentedRoadView(CameraView):
               dest_rect,
               rl.Vector2(dest_rect.width / 2, dest_rect.height / 2),
               self._rotation_filter.x - 90,
-              rl.Color(255, 255, 255, int(255 * self._fade_filter.x * (1 - self._looking_center_filter.x))),
+              rl.Color(
+                255,
+                255,
+                255,
+                int(255 * self._fade_filter.x * (1 - self._looking_center_filter.x)),
+              ),
             )
 
             rl.draw_texture_ex(
               self._dm_center,
-              (int(self._rect.x + (self._rect.width - self._dm_center.width) / 2),
-               int(self._rect.y + (self._rect.height - self._dm_center.height) / 2)),
+              (
+                int(self._rect.x + (self._rect.width - self._dm_center.width) / 2),
+                int(self._rect.y + (self._rect.height - self._dm_center.height) / 2),
+              ),
               0,
               1.0,
-              rl.Color(255, 255, 255, int(255 * self._fade_filter.x * self._looking_center_filter.x)),
+              rl.Color(
+                255,
+                255,
+                255,
+                int(255 * self._fade_filter.x * self._looking_center_filter.x),
+              ),
             )
 
           else:
             now = rl.get_time()
-            self._confirm_angles = {angle: t for angle, t in self._confirm_angles.items() if now - t < self.LINES_STALE_ANGLES}
+            self._confirm_angles = {
+              angle: t for angle, t in self._confirm_angles.items() if now - t < self.LINES_STALE_ANGLES
+            }
 
             looking_center = self._looking_center_filter.x > 0.2
             for angle, f in self._head_angles.items():
@@ -264,7 +298,7 @@ class AugmentedRoadView(CameraView):
       int(self._content_rect.x),
       int(self._content_rect.y),
       int(self._content_rect.width),
-      int(self._content_rect.height)
+      int(self._content_rect.height),
     )
 
     # Render the base camera view
@@ -279,15 +313,23 @@ class AugmentedRoadView(CameraView):
     # HudRenderer no longer exposes `drawing_top_icons()` in the Tizi HUD,
     # so omit that check here to avoid crashes. If top icons need to suppress
     # the dmoji in future, reintroduce a HUD API and gate this accordingly.
-    should_draw_dmoji = (ui_state.is_onroad() and
-               (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm))
+    should_draw_dmoji = (
+      ui_state.is_onroad()
+      and (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm)
+    )
     try:
       self.driver_state_renderer.set_should_draw(should_draw_dmoji)
-      # Position and render driver monitoring using its own internal size
-      # so it doesn't get stretched to the full camera content rect.
-      self.driver_state_renderer.set_position(self._content_rect.x + 16, self._content_rect.y + 16)
+
+      # Position DM in the BOTTOM-LEFT of the content rect.
+      # Use the widget's own height so it sits just above the bottom border.
+      dm_rect = self.driver_state_renderer._rect
+      self.driver_state_renderer.set_position(
+        self._content_rect.x + 16,
+        self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
+      )
     except Exception:
       pass
+
     # Render without passing `self._content_rect` to preserve the widget's own rect/size
     self.driver_state_renderer.render()
 
@@ -328,9 +370,15 @@ class AugmentedRoadView(CameraView):
     rl.draw_rectangle_lines_ex(rect, UI_BORDER_SIZE, rl.BLACK)
     border_roundness = 0.12
     border_color = BORDER_COLORS.get(ui_state.status, BORDER_COLORS[UIStatus.DISENGAGED])
-    border_rect = rl.Rectangle(rect.x + UI_BORDER_SIZE, rect.y + UI_BORDER_SIZE,
-                               rect.width - 2 * UI_BORDER_SIZE, rect.height - 2 * UI_BORDER_SIZE)
-    rl.draw_rectangle_rounded_lines_ex(border_rect, border_roundness, 10, UI_BORDER_SIZE, border_color)
+    border_rect = rl.Rectangle(
+      rect.x + UI_BORDER_SIZE,
+      rect.y + UI_BORDER_SIZE,
+      rect.width - 2 * UI_BORDER_SIZE,
+      rect.height - 2 * UI_BORDER_SIZE,
+    )
+    rl.draw_rectangle_rounded_lines_ex(
+      border_rect, border_roundness, 10, UI_BORDER_SIZE, border_color
+    )
 
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:
@@ -352,7 +400,9 @@ class AugmentedRoadView(CameraView):
     # Update device camera if not already set
     sm = ui_state.sm
     if not self.device_camera and sm.seen['roadCameraState'] and sm.seen['deviceState']:
-      self.device_camera = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
+      self.device_camera = DEVICE_CAMERAS[
+        (str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))
+      ]
 
     # Check if live calibration data is available and valid
     if not (sm.updated["liveCalibration"] and sm.valid['liveCalibration']):
@@ -369,7 +419,9 @@ class AugmentedRoadView(CameraView):
     # Update wide calibration if available
     if hasattr(calib, 'wideFromDeviceEuler') and len(calib.wideFromDeviceEuler) == 3:
       wide_from_device = rot_from_euler(calib.wideFromDeviceEuler)
-      self.view_from_wide_calib = view_frame_from_device_frame @ wide_from_device @ device_from_calib
+      self.view_from_wide_calib = (
+        view_frame_from_device_frame @ wide_from_device @ device_from_calib
+      )
 
   def _calc_frame_matrix(self, rect: rl.Rectangle) -> np.ndarray:
     # Check if we can use cached matrix
@@ -377,7 +429,7 @@ class AugmentedRoadView(CameraView):
       ui_state.sm.recv_frame['liveCalibration'],
       self._content_rect.width,
       self._content_rect.height,
-      self.stream_type
+      self.stream_type,
     )
     if cache_key == self._matrix_cache_key and self._cached_matrix is not None:
       return self._cached_matrix
@@ -415,17 +467,21 @@ class AugmentedRoadView(CameraView):
 
     # Cache the computed transformation matrix to avoid recalculations
     self._matrix_cache_key = cache_key
-    self._cached_matrix = np.array([
-      [zoom * 2 * cx / w, 0, -x_offset / w * 2],
-      [0, zoom * 2 * cy / h, -y_offset / h * 2],
-      [0, 0, 1.0]
-    ])
+    self._cached_matrix = np.array(
+      [
+        [zoom * 2 * cx / w, 0, -x_offset / w * 2],
+        [0, zoom * 2 * cy / h, -y_offset / h * 2],
+        [0, 0, 1.0],
+      ]
+    )
 
-    video_transform = np.array([
-      [zoom, 0.0, (w / 2 + x - x_offset) - (cx * zoom)],
-      [0.0, zoom, (h / 2 + y - y_offset) - (cy * zoom)],
-      [0.0, 0.0, 1.0]
-    ])
+    video_transform = np.array(
+      [
+        [zoom, 0.0, (w / 2 + x - x_offset) - (cx * zoom)],
+        [0.0, zoom, (h / 2 + y - y_offset) - (cy * zoom)],
+        [0.0, 0.0, 1.0],
+      ]
+    )
     self.model_renderer.set_transform(video_transform @ calib_transform)
 
     return self._cached_matrix
