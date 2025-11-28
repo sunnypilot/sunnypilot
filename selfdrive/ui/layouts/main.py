@@ -79,7 +79,8 @@ class MainLayout(Widget):
       self._settings_anim_active = False
       self._settings_anim_direction = None
       self._settings_prev_layout = None
-      if self._sidebar_prev_visible:
+      # Restore previous sidebar visibility if we have a recorded state (allow False)
+      if self._sidebar_prev_visible is not None:
         self._set_sidebar_visible(self._sidebar_prev_visible, force=True)
       self._sidebar_prev_visible = None
       return
@@ -211,7 +212,8 @@ class MainLayout(Widget):
     # Disable sidebar toggle while settings is open or animating
     if self._settings_anim_active or self._current_mode == MainState.SETTINGS:
       return
-    self._set_sidebar_visible(not self._sidebar.is_visible)
+    # Toggle directly to ensure taps always work on onroad (bypass any lingering guard)
+    self._sidebar.set_visible(not self._sidebar.is_visible)
 
   def _render_main_content(self):
     # Render sidebar
