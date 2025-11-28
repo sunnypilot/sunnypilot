@@ -38,12 +38,16 @@ class MultipleButtonActionSP(MultipleButtonAction):
     total_width = len(self.buttons) * self.button_width
     track_rect = rl.Rectangle(rect.x, button_y, total_width, style.BUTTON_HEIGHT)
 
-    bg_color = style.BASE_BG_COLOR if self.enabled else style.DISABLED_OFF_BG_COLOR
-    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
-    highlight_color = style.ON_BG_COLOR if self.enabled else style.DISABLED_ON_BG_COLOR
+    bg_color = style.MBC_TRANSPARENT
+    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.MBC_DISABLED
+    highlight_color = style.MBC_BG_CHECKED_ENABLED if self.enabled else style.MBC_DISABLED
 
     # background
     rl.draw_rectangle_rounded(track_rect, 0.2, 20, bg_color)
+
+    # border
+    border_color = style.MBC_BG_CHECKED_ENABLED if self.enabled else style.MBC_DISABLED
+    rl.draw_rectangle_rounded_lines_ex(track_rect, 0.2, 20, 2, border_color)
 
     # highlight with animation
     target_x = rect.x + self.selected_button * self.button_width
