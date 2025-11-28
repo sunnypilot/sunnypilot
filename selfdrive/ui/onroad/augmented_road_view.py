@@ -101,7 +101,15 @@ class AugmentedRoadView(CameraView):
     self.model_renderer.render(self._content_rect)
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
-    self.driver_state_renderer.render(self._content_rect)
+
+    # Position and render driver monitoring using its own internal size
+    # so it doesn't get stretched to the full camera content rect.
+    try:
+      self.driver_state_renderer.set_position(self._content_rect.x + 16, self._content_rect.y + 16)
+    except Exception:
+      pass
+    # Render without passing `self._content_rect` to preserve the widget's own rect/size
+    self.driver_state_renderer.render()
 
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
