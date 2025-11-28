@@ -12,8 +12,8 @@ from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
-from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 from openpilot.system.ui.sunnypilot.lib.styles import style
+from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
 
 class ToggleActionSP(ToggleAction):
