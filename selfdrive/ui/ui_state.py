@@ -34,6 +34,8 @@ class UIState:
     self.params = Params()
     self.sm = messaging.SubMaster(
       [
+        "modelManagerSP",
+        "liveDelay",
         "modelV2",
         "controlsState",
         "onroadEvents",
