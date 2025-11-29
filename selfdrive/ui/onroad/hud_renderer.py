@@ -24,8 +24,8 @@ class UIConfig:
   set_speed_width_imperial: int = 172
   set_speed_height: int = 204
   wheel_icon_size: int = 144
-  blind_spot_margin_x: int = 80
-  blind_spot_y_offset: int = 620
+  blind_spot_margin_x: int = 60
+  blind_spot_y_offset: int = 440
 
 
 @dataclass(frozen=True)
