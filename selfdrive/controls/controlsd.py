@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import math
-import threading
-import time
 from numbers import Number
 
 from cereal import car, log
@@ -22,8 +20,6 @@ from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
-from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
@@ -33,7 +29,7 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls(ControlsExt, ModelStateBase):
+class Controls(ControlsExt):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
@@ -42,7 +38,6 @@ class Controls(ControlsExt, ModelStateBase):
 
     # Initialize sunnypilot controlsd extension and base model state
     ControlsExt.__init__(self, self.CP, self.params)
-    ModelStateBase.__init__(self)
 
     self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
@@ -231,30 +226,15 @@ class Controls(ControlsExt, ModelStateBase):
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
-  def params_thread(self, evt):
-    while not evt.is_set():
-      self.get_params_sp()
-
-      if self.CP.lateralTuning.which() == 'torque':
-        self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
-
-      time.sleep(0.1)
-
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    e = threading.Event()
-    t = threading.Thread(target=self.params_thread, args=(e,))
-    try:
-      t.start()
-      while True:
-        self.update()
-        CC, lac_log = self.state_control()
-        self.publish(CC, lac_log)
-        self.run_ext(self.sm, self.pm)
-        rk.monitor_time()
-    finally:
-      e.set()
-      t.join()
+    while True:
+      self.update()
+      CC, lac_log = self.state_control()
+      self.publish(CC, lac_log)
+      self.get_params_sp(self.sm)
+      self.run_ext(self.sm, self.pm)
+      rk.monitor_time()
 
 
 def main():
