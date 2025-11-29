@@ -55,6 +55,7 @@ class UIState:
         "carControl",
         "liveParameters",
         "rawAudioData",
+        "liveTorqueParameters",
       ]
     )
 
