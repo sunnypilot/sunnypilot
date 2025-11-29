@@ -23,6 +23,7 @@ SWIPE_EDGE = 80
 WIFI_Y_OFFSET = -15
 MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
+ALERT_ANIM_DURATION = 0.25
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -48,6 +49,9 @@ class HomeLayout(Widget):
     self._scale = 1.0
     self._swipe_start: MousePos | None = None
     self._swipe_active = False
+    self._alerts_anim_active = False
+    self._alerts_anim_direction: str | None = None  # 'in' or 'out'
+    self._alerts_anim_start = 0.0
 
     self._net_type = NetworkType.none
     self._net_strength = 0
@@ -109,9 +113,9 @@ class HomeLayout(Widget):
     self._render_cluster()
 
     if self.current_state == HomeLayoutState.ALERTS:
-      panel_rect = self._content_panel_rect()
-      rl.draw_rectangle_rec(panel_rect, rl.Color(0, 0, 0, 200))
-      self._alerts_layout.render(panel_rect)
+      self._render_alert_overlay()
+    elif self._alerts_anim_active:
+      self._render_alert_overlay()
 
   def _update_state(self):
     if ui_state.sm.updated['deviceState']:
@@ -123,16 +127,17 @@ class HomeLayout(Widget):
   def _handle_mouse_event(self, mouse_event: MouseEvent):
     super()._handle_mouse_event(mouse_event)
 
-    if mouse_event.left_pressed and mouse_event.pos.x <= SWIPE_EDGE:
+    if mouse_event.left_pressed and (mouse_event.pos.x <= SWIPE_EDGE or mouse_event.pos.y <= SWIPE_EDGE):
       self._swipe_start = mouse_event.pos
       self._swipe_active = True
 
     if self._swipe_active and mouse_event.left_released and self._swipe_start is not None:
       dx = mouse_event.pos.x - self._swipe_start.x
-      if dx > SWIPE_THRESHOLD:
-        self._set_state(HomeLayoutState.ALERTS)
-      elif dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALERTS:
-        self._set_state(HomeLayoutState.HOME)
+      dy = mouse_event.pos.y - self._swipe_start.y
+      if (dx > SWIPE_THRESHOLD or dy > SWIPE_THRESHOLD) and self.current_state != HomeLayoutState.ALERTS:
+        self._start_alert_anim('in')
+      elif (dx < -SWIPE_THRESHOLD or dy < -SWIPE_THRESHOLD) and self.current_state == HomeLayoutState.ALERTS:
+        self._start_alert_anim('out')
       self._swipe_active = False
       self._swipe_start = None
 
@@ -141,14 +146,7 @@ class HomeLayout(Widget):
       self._swipe_start = None
 
   def _content_panel_rect(self) -> rl.Rectangle:
-    margin = 80 * self._scale
-    top_offset = 260 * self._scale
-    return rl.Rectangle(
-      self._rect.x + margin,
-      self._rect.y + top_offset,
-      self._rect.width - margin * 2,
-      self._rect.height - top_offset - margin,
-    )
+    return rl.Rectangle(self._rect.x, self._rect.y, self._rect.width, self._rect.height)
 
   def _render_cluster(self):
     self._scale = min(self._rect.width / BASE_WIDTH, self._rect.height / BASE_HEIGHT)
@@ -278,3 +276,41 @@ class HomeLayout(Widget):
       return parsed.strftime("%b %d")
     except Exception:
       return raw_date
+
+  # Alerts overlay rendering/animation
+  def _start_alert_anim(self, direction: str):
+    self._alerts_anim_active = True
+    self._alerts_anim_direction = direction
+    self._alerts_anim_start = rl.get_time()
+    if direction == 'in':
+      self._alerts_layout.show_event()
+    else:
+      self._alerts_layout.hide_event()
+
+  def _render_alert_overlay(self):
+    full_rect = self._content_panel_rect()
+    now = rl.get_time()
+    t = 1.0
+    if self._alerts_anim_active and self._alerts_anim_direction:
+      elapsed = now - self._alerts_anim_start
+      t = max(0.0, min(1.0, elapsed / ALERT_ANIM_DURATION))
+      t = 1 - pow(1 - t, 3)  # easeOutCubic
+    # Slide from top
+    if self._alerts_anim_direction == 'in':
+      y = full_rect.y - full_rect.height * (1 - t)
+    elif self._alerts_anim_direction == 'out':
+      y = full_rect.y + full_rect.height * t
+    else:
+      y = full_rect.y if self.current_state == HomeLayoutState.ALERTS else full_rect.y + full_rect.height
+
+    overlay_rect = rl.Rectangle(full_rect.x, y, full_rect.width, full_rect.height)
+    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 220))
+    self._alerts_layout.render(overlay_rect)
+
+    if self._alerts_anim_active and t >= 1.0:
+      if self._alerts_anim_direction == 'in':
+        self._set_state(HomeLayoutState.ALERTS)
+      else:
+        self._set_state(HomeLayoutState.HOME)
+      self._alerts_anim_active = False
+      self._alerts_anim_direction = None

@@ -191,6 +191,15 @@ class OffroadAlertsLayout(Widget):
     self.sorted_alerts = []
     self.alert_items = []
 
+    # Clear scroller before rebuilding
+    if hasattr(self._scroller, "clear_widgets"):
+      try:
+        self._scroller.clear_widgets()
+      except Exception:
+        self._scroller._widgets = []
+    else:
+      self._scroller._widgets = []
+
     update_alert_data = AlertData(key="UpdateAvailable", text="", severity=-1)
     self.sorted_alerts.append(update_alert_data)
     update_alert_item = AlertItem(update_alert_data)
