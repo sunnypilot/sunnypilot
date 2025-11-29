@@ -20,7 +20,7 @@ class RainbowPath:
     self.saturation = saturation if saturation is not None else self.DEFAULT_SATURATION
     self.lightness = lightness if lightness is not None else self.DEFAULT_LIGHTNESS
 
-    self._enabled = Params().get_bool("RainbowMode")
+    self._enabled = bool(Params().get_bool("RainbowMode"))
 
   def set_enabled(self, enabled: bool):
     self._enabled = enabled
