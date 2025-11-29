@@ -53,7 +53,7 @@ class MainLayout(Widget):
     self._render_main_content()
 
   def _setup_callbacks(self):
-    self._layouts[MainState.HOME]._setup_widget.set_open_settings_callback(lambda: self.open_settings(PanelType.FIREHOSE))
+    # Home layout settings tap opens toggles by default
     self._layouts[MainState.HOME].set_settings_callback(lambda: self.open_settings(PanelType.TOGGLES))
     # Intercept settings close to run slide-down animation
     self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._close_settings_requested)
