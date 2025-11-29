@@ -57,6 +57,7 @@ class AugmentedRoadView(CameraView):
     self._settings_icon = gui_app.texture("icons_mici/settings.png", 110, 110)
     self._settings_rect = rl.Rectangle()
     self.driver_state_renderer = None
+    self._pm = None
 
     # Inline Tizi DriverStateRenderer (ported from Mici) scaled up for Tizi
     # This avoids relying on the external mici module so we consume fewer Copilot requests.
@@ -354,7 +355,7 @@ class AugmentedRoadView(CameraView):
     # Draw colored border based on driving state
     self._draw_border(rect)
 
-    if self._pm is not None:
+    if hasattr(self, "_pm") and self._pm is not None:
       try:
         msg = messaging.new_message('uiDebug')
         msg.uiDebug.drawTimeMillis = (time.monotonic() - start_draw) * 1000
