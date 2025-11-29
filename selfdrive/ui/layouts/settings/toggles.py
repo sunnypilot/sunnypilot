@@ -11,6 +11,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 
 if gui_app.sunnypilot_ui():
   from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp as toggle_item
+  from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp as multiple_button_item
 
 PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
 
@@ -99,7 +100,7 @@ class TogglesLayout(Widget):
       lambda: tr("Driving Personality"),
       lambda: tr(DESCRIPTIONS["LongitudinalPersonality"]),
       buttons=[lambda: tr("Aggressive"), lambda: tr("Standard"), lambda: tr("Relaxed")],
-      button_width=255,
+      button_width=300,
       callback=self._set_longitudinal_personality,
       selected_index=self._params.get("LongitudinalPersonality", return_default=True),
       icon="speed_limit.png"
