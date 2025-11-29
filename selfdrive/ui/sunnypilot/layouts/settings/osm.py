@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import datetime
+import os
 import platform
 import requests
 import shutil
@@ -59,15 +60,22 @@ class OSMLayout(Widget):
   def _show_confirm(self, msg, confirm_text, func):
     gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
 
+  def calculate_size(self):
+      total_size = 0
+      directories_to_scan = [MAP_PATH] if MAP_PATH.exists() else []
+      while directories_to_scan:
+        try:
+          for entry in os.scandir(directories_to_scan.pop()):
+            if entry.is_file():
+              total_size += entry.stat().st_size
+            elif entry.is_dir():
+              directories_to_scan.append(entry.path)
+        except OSError:
+          pass
+      self._delete_maps_btn.action_item.set_value(f"{total_size / 1024**2:.2f} MB" if total_size < 1024**3 else f"{total_size / 1024**3:.2f} GB")
+
   def _update_map_size(self):
-    size = 0
-    if MAP_PATH.exists():
-      try:
-        size = sum(file.stat().st_size for file in MAP_PATH.rglob('*') if file.is_file())
-      except OSError:
-        pass
-    value = f"{size / 1024**2:.2f} MB" if size < 1024**3 else f"{size / 1024**3:.2f} GB"
-    self._delete_maps_btn.action_item.set_value(value)
+    threading.Thread(target=self.calculate_size, daemon=True).start()
 
   def _do_delete_maps(self):
     if MAP_PATH.exists():
