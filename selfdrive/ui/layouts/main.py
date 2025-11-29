@@ -199,18 +199,8 @@ class MainLayout(Widget):
       # easeOutQuad to reduce bounce
       eased = 1 - (1 - t) * (1 - t)
 
-      # Determine base (under) layout. Avoid drawing underlying icons during opening.
-      base_layout = None
-      if self._settings_anim_direction == 'out' and self._settings_prev_layout is not None:
-        base_layout = self._layouts[self._settings_prev_layout]
-      elif self._settings_anim_direction == 'out' and self._settings_prev_layout is None:
-        base_layout = self._layouts[self._current_mode]
-
-      if base_layout is not None:
-        base_layout.render(content_rect)
-      else:
-        # simple backdrop to avoid flicker
-        rl.draw_rectangle_rec(content_rect, rl.Color(0, 0, 0, 255))
+      # During animation, draw a solid backdrop to prevent underlying icons peeking
+      rl.draw_rectangle_rec(content_rect, rl.Color(0, 0, 0, 255))
 
       # Compute animated Y for settings panel (full page)
       full_rect = self._rect

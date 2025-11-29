@@ -8,6 +8,7 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.offroad_alerts import UpdateAlert, OffroadAlert
 from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
 
@@ -21,6 +22,9 @@ PADDING = 48
 ICON_MARGIN = 60
 SWIPE_THRESHOLD = 120
 SWIPE_EDGE = 80
+WIFI_Y_OFFSET = -15  # pixels up
+MODE_Y_OFFSET = 10   # pixels down
+MODE_SCALE_FACTOR = 0.9
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -44,7 +48,7 @@ class HomeLayout(Widget):
     self.current_state = HomeLayoutState.HOME
     self.last_refresh = 0
     self.settings_callback: callable | None = None
-    self.open_panel_callback: Callable[[int], None] | None = None
+    self.open_panel_callback: Callable[[PanelType], None] | None = None
 
     self.update_available = False
     self.alert_count = 0
@@ -149,6 +153,8 @@ class HomeLayout(Widget):
       if dx > SWIPE_THRESHOLD:
         # Show both updates and alerts together
         self._set_state(HomeLayoutState.ALL)
+      elif dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALL:
+        self._set_state(HomeLayoutState.HOME)
       self._swipe_active = False
       self._swipe_start = None
 
@@ -166,21 +172,30 @@ class HomeLayout(Widget):
 
   def _render_all_view(self):
     panel_rect = self._content_panel_rect()
+    rl.draw_rectangle_rec(panel_rect, rl.Color(0, 0, 0, 200))
+
+    if not self.update_available and self.alert_count == 0:
+      msg = tr("No alerts")
+      font = gui_app.font(FontWeight.MEDIUM)
+      size = rl.measure_text_ex(font, msg, 64 * self._scale, 0)
+      pos = rl.Vector2(
+        panel_rect.x + (panel_rect.width - size.x) / 2,
+        panel_rect.y + (panel_rect.height - size.y) / 2,
+      )
+      rl.draw_text_ex(font, msg, pos, 64 * self._scale, 0, rl.Color(220, 220, 220, 255))
+      return
+
     spacing = 40 * self._scale
-    height_each = (panel_rect.height - spacing) / 2
+    y_cursor = panel_rect.y
 
-    # Upper: updates (if available)
     if self.update_available:
-      update_rect = rl.Rectangle(panel_rect.x, panel_rect.y, panel_rect.width, height_each)
+      update_rect = rl.Rectangle(panel_rect.x, y_cursor, panel_rect.width, panel_rect.height / 2 - spacing / 2)
       self.update_alert.render(update_rect)
-      start_y = panel_rect.y + height_each + spacing
-    else:
-      start_y = panel_rect.y
+      y_cursor += update_rect.height + spacing
 
-    # Lower: alerts (always render if present)
-    alert_height = panel_rect.height - (start_y - panel_rect.y)
-    alert_rect = rl.Rectangle(panel_rect.x, start_y, panel_rect.width, alert_height)
-    self.offroad_alert.render(alert_rect)
+    if self.alert_count > 0:
+      alert_rect = rl.Rectangle(panel_rect.x, y_cursor, panel_rect.width, panel_rect.height - (y_cursor - panel_rect.y))
+      self.offroad_alert.render(alert_rect)
 
   def _content_panel_rect(self) -> rl.Rectangle:
     margin = 80 * self._scale
@@ -248,7 +263,7 @@ class HomeLayout(Widget):
     if conn_texture:
       conn_w = conn_texture.width * icon_scale
       conn_h = conn_texture.height * icon_scale
-      conn_y = self._rect.y + self._rect.height - conn_h - ICON_MARGIN * self._scale + (gear_h - conn_h) / 2
+      conn_y = self._rect.y + self._rect.height - conn_h - ICON_MARGIN * self._scale + (gear_h - conn_h) / 2 + WIFI_Y_OFFSET * self._scale
       rl.draw_texture_ex(conn_texture, (int(conn_x), int(conn_y)), 0, icon_scale, rl.WHITE)
 
       if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
@@ -259,11 +274,12 @@ class HomeLayout(Widget):
 
     # Mode icon (experimental vs wheel)
     mode_icon = self._mode_icons["exp"] if self._experimental_mode else self._mode_icons["wheel"]
-    mode_w = mode_icon.width * icon_scale
-    mode_h = mode_icon.height * icon_scale
+    mode_scale = icon_scale * MODE_SCALE_FACTOR
+    mode_w = mode_icon.width * mode_scale
+    mode_h = mode_icon.height * mode_scale
     mode_x = conn_x + (conn_w if conn_texture else 0) + 50 * self._scale
-    mode_y = self._rect.y + self._rect.height - mode_h - ICON_MARGIN * self._scale + (gear_h - mode_h) / 2
-    rl.draw_texture_ex(mode_icon, (int(mode_x), int(mode_y)), 0, icon_scale, rl.WHITE)
+    mode_y = self._rect.y + self._rect.height - mode_h - ICON_MARGIN * self._scale + (gear_h - mode_h) / 2 + MODE_Y_OFFSET * self._scale
+    rl.draw_texture_ex(mode_icon, (int(mode_x), int(mode_y)), 0, mode_scale, rl.WHITE)
 
     if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
