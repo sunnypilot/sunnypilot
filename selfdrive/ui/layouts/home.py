@@ -155,6 +155,11 @@ class HomeLayout(Widget):
       self._swipe_active = False
       self._swipe_start = None
       self._swipe_side = None
+      return
+
+    # Block clicks to underlying UI while alerts overlay is showing/animating
+    if self.current_state == HomeLayoutState.ALERTS or self._alerts_anim_active:
+      return
 
   def _content_panel_rect(self) -> rl.Rectangle:
     return rl.Rectangle(self._rect.x, self._rect.y, self._rect.width, self._rect.height)
@@ -315,7 +320,7 @@ class HomeLayout(Widget):
       x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
 
     overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
-    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 235))
+    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 255))
     self._alerts_layout.render(overlay_rect)
 
     if self._alerts_anim_active and t >= 1.0:

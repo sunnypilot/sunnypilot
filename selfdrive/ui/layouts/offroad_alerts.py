@@ -29,13 +29,13 @@ class AlertData:
 
 
 class AlertItem(Widget):
-  ALERT_WIDTH = 520
-  ALERT_HEIGHT_SMALL = 212
-  ALERT_HEIGHT_MED = 240
-  ALERT_HEIGHT_BIG = 324
-  ALERT_PADDING = 28
-  ICON_SIZE = 64
-  ICON_MARGIN = 12
+  ALERT_WIDTH = 760
+  ALERT_HEIGHT_SMALL = 300
+  ALERT_HEIGHT_MED = 340
+  ALERT_HEIGHT_BIG = 420
+  ALERT_PADDING = 36
+  ICON_SIZE = 90
+  ICON_MARGIN = 18
   TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
   TITLE_BODY_SPACING = 24
 
@@ -55,13 +55,13 @@ class AlertItem(Widget):
     self._icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
 
     self._title_label = UnifiedLabel(
-      text="", font_size=32, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
+      text="", font_size=40, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=0.95,
     )
 
     self._body_label = UnifiedLabel(
-      text="", font_size=28, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
+      text="", font_size=34, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, line_height=0.95,
     )
@@ -275,7 +275,10 @@ class OffroadAlertsLayout(Widget):
         item.set_rect(rl.Rectangle(item.rect.x, item.rect.y, target_width, item.rect.height))
 
     if self.active_alerts() == 0:
-      self._empty_label.render(rect)
+      # Bigger empty state
+      empty_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height)
+      self._empty_label.set_font_size(80)
+      self._empty_label.render(empty_rect)
     else:
       # Center scroller content
       scroller_rect = rl.Rectangle(
@@ -284,4 +287,7 @@ class OffroadAlertsLayout(Widget):
         target_width,
         rect.height,
       )
+      # Clip to full rect
+      rl.begin_scissor_mode(int(rect.x), int(rect.y), int(rect.width), int(rect.height))
       self._scroller.render(scroller_rect)
+      rl.end_scissor_mode()
