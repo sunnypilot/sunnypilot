@@ -180,6 +180,15 @@ jobs:
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
           sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
+          echo "Building sunnypilot's modeld..."
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld
+          echo "Building sunnypilot's modeld_v2..."
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld_v2
+          echo "Building sunnypilot's locationd..."
+          scons -j4 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
+          echo "Building openpilot's locationd..."
+          scons -j4 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
+          echo "Building rest of sunnypilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then

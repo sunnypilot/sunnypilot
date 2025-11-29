@@ -24,7 +24,8 @@ class ToggleActionSP(ToggleAction):
 
 
 class MultipleButtonActionSP(MultipleButtonAction):
-  def __init__(self, param: str | None, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None):
+  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None,
+               param: str | None = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param_key = param
     self.params = Params()
@@ -39,12 +40,16 @@ class MultipleButtonActionSP(MultipleButtonAction):
     total_width = len(self.buttons) * self.button_width
     track_rect = rl.Rectangle(rect.x, button_y, total_width, style.BUTTON_HEIGHT)
 
-    bg_color = style.BASE_BG_COLOR if self.enabled else style.DISABLED_OFF_BG_COLOR
-    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.ITEM_DISABLED_TEXT_COLOR
-    highlight_color = style.ON_BG_COLOR if self.enabled else style.DISABLED_ON_BG_COLOR
+    bg_color = style.MBC_TRANSPARENT
+    text_color = style.ITEM_TEXT_COLOR if self.enabled else style.MBC_DISABLED
+    highlight_color = style.MBC_BG_CHECKED_ENABLED if self.enabled else style.MBC_DISABLED
 
     # background
     rl.draw_rectangle_rounded(track_rect, 0.2, 20, bg_color)
+
+    # border
+    border_color = style.MBC_BG_CHECKED_ENABLED if self.enabled else style.MBC_DISABLED
+    rl.draw_rectangle_rounded_lines_ex(track_rect, 0.2, 20, 2, border_color)
 
     # highlight with animation
     target_x = rect.x + self.selected_button * self.button_width
@@ -116,7 +121,7 @@ class ListItemSP(ListItem):
     if not self.is_visible:
       return
 
-      # Don't draw items that are not in parent's viewport
+    # Don't draw items that are not in parent's viewport
     if (self._rect.y + self.rect.height) <= self._parent_rect.y or self._rect.y >= (self._parent_rect.y + self._parent_rect.height):
       return
 
@@ -180,9 +185,10 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
-                            icon: str = "", param: str | None = None, inline: bool = True) -> ListItemSP:
-  action = MultipleButtonActionSP(param, buttons, button_width, selected_index, callback=callback)
+                            icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
+  action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
+
 
 def option_item_sp(title: str | Callable[[], str], param: str,
                    min_value: int, max_value: int, description: str | Callable[[], str] | None = None,
