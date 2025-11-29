@@ -50,6 +50,7 @@ class HomeLayout(Widget):
     self._scale = 1.0
     self._swipe_start: MousePos | None = None
     self._swipe_active = False
+    self._swipe_side: str | None = None  # 'left' or 'right'
     self._alerts_anim_active = False
     self._alerts_anim_direction: str | None = None  # 'in' or 'out'
     self._alerts_anim_start = 0.0
@@ -128,27 +129,32 @@ class HomeLayout(Widget):
   def _handle_mouse_event(self, mouse_event: MouseEvent):
     super()._handle_mouse_event(mouse_event)
 
-    if mouse_event.left_pressed and (mouse_event.pos.x <= SWIPE_EDGE or mouse_event.pos.y <= SWIPE_EDGE):
+    # Open: swipe starting from left edge
+    if mouse_event.left_pressed and mouse_event.pos.x <= SWIPE_EDGE:
       self._swipe_start = mouse_event.pos
       self._swipe_active = True
+      self._swipe_side = 'left'
     # when alerts are open, allow close swipe starting near right edge
     if self.current_state == HomeLayoutState.ALERTS and mouse_event.left_pressed and mouse_event.pos.x >= self._rect.x + self._rect.width - SWIPE_RIGHT_EDGE:
       self._swipe_start = mouse_event.pos
       self._swipe_active = True
+      self._swipe_side = 'right'
 
     if self._swipe_active and mouse_event.left_released and self._swipe_start is not None:
       dx = mouse_event.pos.x - self._swipe_start.x
       dy = mouse_event.pos.y - self._swipe_start.y
-      if (dx > SWIPE_THRESHOLD or dy > SWIPE_THRESHOLD) and self.current_state != HomeLayoutState.ALERTS:
+      if self._swipe_side == 'left' and dx > SWIPE_THRESHOLD and self.current_state != HomeLayoutState.ALERTS:
         self._start_alert_anim('in')
-      elif (dx < -SWIPE_THRESHOLD or dy < -SWIPE_THRESHOLD) and self.current_state == HomeLayoutState.ALERTS:
+      elif self._swipe_side == 'right' and dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALERTS:
         self._start_alert_anim('out')
       self._swipe_active = False
       self._swipe_start = None
+      self._swipe_side = None
 
     if mouse_event.left_released and self._swipe_start:
       self._swipe_active = False
       self._swipe_start = None
+      self._swipe_side = None
 
   def _content_panel_rect(self) -> rl.Rectangle:
     return rl.Rectangle(self._rect.x, self._rect.y, self._rect.width, self._rect.height)
@@ -300,15 +306,15 @@ class HomeLayout(Widget):
       elapsed = now - self._alerts_anim_start
       t = max(0.0, min(1.0, elapsed / ALERT_ANIM_DURATION))
       t = 1 - pow(1 - t, 3)  # easeOutCubic
-    # Slide from top
+    # Slide from left
     if self._alerts_anim_direction == 'in':
-      y = full_rect.y - full_rect.height * (1 - t)
+      x = full_rect.x - full_rect.width * (1 - t)
     elif self._alerts_anim_direction == 'out':
-      y = full_rect.y + full_rect.height * t
+      x = full_rect.x - full_rect.width * t
     else:
-      y = full_rect.y if self.current_state == HomeLayoutState.ALERTS else full_rect.y + full_rect.height
+      x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
 
-    overlay_rect = rl.Rectangle(full_rect.x, y, full_rect.width, full_rect.height)
+    overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
     rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 235))
     self._alerts_layout.render(overlay_rect)
 
