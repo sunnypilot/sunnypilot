@@ -6,6 +6,7 @@ from enum import IntEnum
 from cereal import log
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.offroad_alerts import UpdateAlert, OffroadAlert
+from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
@@ -27,6 +28,7 @@ class HomeLayoutState(IntEnum):
   HOME = 0
   UPDATE = 1
   ALERTS = 2
+  ALL = 3
 
 
 class HomeLayout(Widget):
@@ -42,12 +44,14 @@ class HomeLayout(Widget):
     self.current_state = HomeLayoutState.HOME
     self.last_refresh = 0
     self.settings_callback: callable | None = None
+    self.open_panel_callback: Callable[[int], None] | None = None
 
     self.update_available = False
     self.alert_count = 0
     self._version_text: tuple[str, str, str, str, str] | None = None
     self._prev_update_available = False
     self._prev_alerts_present = False
+    self._experimental_mode = False
 
     # Layout helpers
     self._scale = 1.0
@@ -74,6 +78,10 @@ class HomeLayout(Widget):
       "high": gui_app.texture("icons_mici/settings/network/cell_strength_high.png", 200, 160),
       "full": gui_app.texture("icons_mici/settings/network/cell_strength_full.png", 200, 160),
     }
+    self._mode_icons = {
+      "exp": gui_app.texture("icons_mici/experimental_mode.png", 200, 200),
+      "wheel": gui_app.texture("icons_mici/wheel.png", 200, 200),
+    }
 
     self._font_brand = gui_app.font(FontWeight.SEMI_BOLD)
     self._font_version = gui_app.font(FontWeight.MEDIUM)
@@ -91,6 +99,8 @@ class HomeLayout(Widget):
 
   def set_settings_callback(self, callback: Callable):
     self.settings_callback = callback
+  def set_panel_callback(self, callback: Callable[[PanelType], None]):
+    self.open_panel_callback = callback
 
   def _set_state(self, state: HomeLayoutState):
     # propagate show/hide events
@@ -115,6 +125,8 @@ class HomeLayout(Widget):
       self._render_update_view()
     elif self.current_state == HomeLayoutState.ALERTS:
       self._render_alerts_view()
+    elif self.current_state == HomeLayoutState.ALL:
+      self._render_all_view()
 
   def _update_state(self):
     # Refresh connectivity each frame
@@ -135,11 +147,8 @@ class HomeLayout(Widget):
     if self._swipe_active and mouse_event.left_released and self._swipe_start is not None:
       dx = mouse_event.pos.x - self._swipe_start.x
       if dx > SWIPE_THRESHOLD:
-        # Prefer alerts if present, otherwise updates if available
-        if self.alert_count > 0:
-          self._set_state(HomeLayoutState.ALERTS)
-        elif self.update_available:
-          self._set_state(HomeLayoutState.UPDATE)
+        # Show both updates and alerts together
+        self._set_state(HomeLayoutState.ALL)
       self._swipe_active = False
       self._swipe_start = None
 
@@ -154,6 +163,24 @@ class HomeLayout(Widget):
   def _render_alerts_view(self):
     panel_rect = self._content_panel_rect()
     self.offroad_alert.render(panel_rect)
+
+  def _render_all_view(self):
+    panel_rect = self._content_panel_rect()
+    spacing = 40 * self._scale
+    height_each = (panel_rect.height - spacing) / 2
+
+    # Upper: updates (if available)
+    if self.update_available:
+      update_rect = rl.Rectangle(panel_rect.x, panel_rect.y, panel_rect.width, height_each)
+      self.update_alert.render(update_rect)
+      start_y = panel_rect.y + height_each + spacing
+    else:
+      start_y = panel_rect.y
+
+    # Lower: alerts (always render if present)
+    alert_height = panel_rect.height - (start_y - panel_rect.y)
+    alert_rect = rl.Rectangle(panel_rect.x, start_y, panel_rect.width, alert_height)
+    self.offroad_alert.render(alert_rect)
 
   def _content_panel_rect(self) -> rl.Rectangle:
     margin = 80 * self._scale
@@ -204,21 +231,45 @@ class HomeLayout(Widget):
 
     rl.draw_texture_ex(self._settings_icon, (int(base_x), int(base_y)), 0, icon_scale, rl.WHITE)
 
-    # Handle settings click
+    # Handle settings click (Device panel)
     if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
       rect = rl.Rectangle(base_x, base_y, gear_w, gear_h)
-      if rl.check_collision_point_rec(mouse_pos, rect) and self.settings_callback:
-        self.settings_callback()
+      if rl.check_collision_point_rec(mouse_pos, rect):
+        if self.open_panel_callback:
+          self.open_panel_callback(PanelType.DEVICE)
+        elif self.settings_callback:
+          self.settings_callback()
 
     # Connectivity icon
+    conn_x = base_x + gear_w + 50 * self._scale
+    conn_w = 0
     conn_texture = self._select_connectivity_icon()
     if conn_texture:
       conn_w = conn_texture.width * icon_scale
       conn_h = conn_texture.height * icon_scale
-      conn_x = base_x + gear_w + 50 * self._scale
       conn_y = self._rect.y + self._rect.height - conn_h - ICON_MARGIN * self._scale + (gear_h - conn_h) / 2
       rl.draw_texture_ex(conn_texture, (int(conn_x), int(conn_y)), 0, icon_scale, rl.WHITE)
+
+      if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+        mouse_pos = rl.get_mouse_position()
+        rect = rl.Rectangle(conn_x, conn_y, conn_w, conn_h)
+        if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
+          self.open_panel_callback(PanelType.NETWORK)
+
+    # Mode icon (experimental vs wheel)
+    mode_icon = self._mode_icons["exp"] if self._experimental_mode else self._mode_icons["wheel"]
+    mode_w = mode_icon.width * icon_scale
+    mode_h = mode_icon.height * icon_scale
+    mode_x = conn_x + (conn_w if conn_texture else 0) + 50 * self._scale
+    mode_y = self._rect.y + self._rect.height - mode_h - ICON_MARGIN * self._scale + (gear_h - mode_h) / 2
+    rl.draw_texture_ex(mode_icon, (int(mode_x), int(mode_y)), 0, icon_scale, rl.WHITE)
+
+    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      mouse_pos = rl.get_mouse_position()
+      rect = rl.Rectangle(mode_x, mode_y, mode_w, mode_h)
+      if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
+        self.open_panel_callback(PanelType.TOGGLES)
 
   def _select_connectivity_icon(self):
     # Wi-Fi takes priority when connected; otherwise fall back to cell icons; if nothing, show slash.
@@ -251,6 +302,7 @@ class HomeLayout(Widget):
     update_available = self.update_alert.refresh()
     alert_count = self.offroad_alert.refresh()
     alerts_present = alert_count > 0
+    self._experimental_mode = ui_state.params.get_bool("ExperimentalMode")
 
     # Show panels on transition from no alert/update to any alerts/update
     if not update_available and not alerts_present:

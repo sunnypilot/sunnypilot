@@ -53,6 +53,9 @@ class AugmentedRoadView(CameraView):
     self.model_renderer = ModelRenderer()
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
+    self._settings_cb = None
+    self._settings_icon = gui_app.texture("icons_mici/settings.png", 110, 110)
+    self._settings_rect = rl.Rectangle()
 
     # Inline Tizi DriverStateRenderer (ported from Mici) scaled up for Tizi
     # This avoids relying on the external mici module so we consume fewer Copilot requests.
@@ -213,8 +216,8 @@ class AugmentedRoadView(CameraView):
                 if self._confirm_callback is not None:
                   self._confirm_callback()
 
-      def _draw_line(self, angle: int, f: FirstOrderFilter, grey: bool):
-        line_length = self._rect.width / 6
+  def _draw_line(self, angle: int, f: FirstOrderFilter, grey: bool):
+    line_length = self._rect.width / 6
         line_length = round(np.interp(f.x, [0.0, 1.0], [0, line_length]))
         line_offset = self._rect.width / 2 - line_length * 2
         center_x = self._rect.x + self._rect.width / 2
@@ -308,6 +311,7 @@ class AugmentedRoadView(CameraView):
     self.model_renderer.render(self._content_rect)
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
+    self._render_settings_icon()
 
     # Determine whether to show driver monitoring (match Mici logic).
     # HudRenderer no longer exposes `drawing_top_icons()` in the Tizi HUD,
@@ -348,19 +352,42 @@ class AugmentedRoadView(CameraView):
     self._pm.send('uiDebug', msg)
 
   def _handle_mouse_press(self, _):
-    # Allow taps on the left edge (sidebar area) to always toggle the sidebar
+    # Swallow clicks reserved for top-left settings icon
     mouse_pos = rl.get_mouse_position()
-    try:
-      if mouse_pos.x <= SIDEBAR_WIDTH:
-        if self._click_callback is not None:
-          self._click_callback()
+    if self._settings_icon is not None:
+      margin = 18
+      rect = rl.Rectangle(
+        self._content_rect.x + margin,
+        self._content_rect.y + margin,
+        self._settings_icon.width,
+        self._settings_icon.height,
+      )
+      if rl.check_collision_point_rec(mouse_pos, rect):
         return
-    except Exception:
-      # If anything goes wrong getting mouse_pos, fall back to default behavior
-      pass
 
     if not self._hud_renderer.user_interacting() and self._click_callback is not None:
       self._click_callback()
+
+  def set_settings_callback(self, cb):
+    self._settings_cb = cb
+
+  def _render_settings_icon(self):
+    if self._settings_icon is None:
+      return
+    margin = 18
+    scale = 1.15
+    w = self._settings_icon.width * scale
+    h = self._settings_icon.height * scale
+    x = self._content_rect.x + margin
+    y = self._content_rect.y + margin
+    self._settings_rect = rl.Rectangle(x, y, w, h)
+
+    rl.draw_texture_ex(self._settings_icon, (int(x), int(y)), 0, scale, rl.Color(255, 255, 255, 235))
+
+    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      mp = rl.get_mouse_position()
+      if rl.check_collision_point_rec(mp, self._settings_rect) and self._settings_cb:
+        self._settings_cb()
 
   def _handle_mouse_release(self, _):
     # We only call click callback on press if not interacting with HUD

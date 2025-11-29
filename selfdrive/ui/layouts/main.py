@@ -55,9 +55,14 @@ class MainLayout(Widget):
   def _setup_callbacks(self):
     # Home layout settings tap opens toggles by default
     self._layouts[MainState.HOME].set_settings_callback(lambda: self.open_settings(PanelType.TOGGLES))
+    self._layouts[MainState.HOME].set_panel_callback(lambda panel: self.open_settings(panel))
     # Intercept settings close to run slide-down animation
     self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._close_settings_requested)
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
+    try:
+      self._layouts[MainState.ONROAD].set_settings_callback(lambda: self.open_settings(PanelType.DEVICE))
+    except Exception:
+      pass
 
   def _close_settings_requested(self):
     """Close settings: instantly in onroad (clear modal), animated offroad."""
@@ -191,15 +196,21 @@ class MainLayout(Widget):
       now = rl.get_time()
       elapsed = now - self._settings_anim_start
       t = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # easeOutBack (tiny overshoot / bounce) to match mici feel
-      # https://easings.net/#easeOutBack
-      c1 = 1.70158
-      c3 = c1 + 1
-      eased = 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+      # easeOutQuad to reduce bounce
+      eased = 1 - (1 - t) * (1 - t)
 
-      # Determine base (under) layout
-      base_layout = self._layouts[self._settings_prev_layout] if self._settings_prev_layout is not None else self._layouts[self._current_mode]
-      base_layout.render(content_rect)
+      # Determine base (under) layout. Avoid drawing underlying icons during opening.
+      base_layout = None
+      if self._settings_anim_direction == 'out' and self._settings_prev_layout is not None:
+        base_layout = self._layouts[self._settings_prev_layout]
+      elif self._settings_anim_direction == 'out' and self._settings_prev_layout is None:
+        base_layout = self._layouts[self._current_mode]
+
+      if base_layout is not None:
+        base_layout.render(content_rect)
+      else:
+        # simple backdrop to avoid flicker
+        rl.draw_rectangle_rec(content_rect, rl.Color(0, 0, 0, 255))
 
       # Compute animated Y for settings panel (full page)
       full_rect = self._rect
