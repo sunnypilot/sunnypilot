@@ -9,14 +9,18 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import ButtonAction
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
+from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.brands.factory import BrandSettingsFactory
 from openpilot.selfdrive.ui.sunnypilot.layouts.vehicle_settings.platform_selector import PlatformSelector, LegendWidget
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 
 
 class VehicleLayout(Widget):
   def __init__(self):
     super().__init__()
+    self._brand_settings = None
+    self._brand_items = []
+    self._current_brand = None
     self._platform_selector = PlatformSelector(self._update_brand_settings)
 
     self._vehicle_item = ListItemSP(title=self._platform_selector.text, action_item=ButtonAction(text=tr("Select")),
@@ -33,7 +37,18 @@ class VehicleLayout(Widget):
     vehicle_text = tr("Remove") if ui_state.params.get("CarPlatformBundle") else tr("Select")
     self._vehicle_item.action_item.set_text(vehicle_text)
 
+    brand = self._platform_selector.brand
+    if brand != self._current_brand:
+      self._current_brand = brand
+      self._brand_settings = BrandSettingsFactory.create_brand_settings(brand)
+      self._brand_items = self._brand_settings.items if self._brand_settings else []
+
+      self.items = [self._vehicle_item, self._legend_widget] + self._brand_items
+      self._scroller = Scroller(self.items, line_separator=True, spacing=0)
+
   def _update_state(self):
+    if self._brand_settings:
+      self._brand_settings.update_state(ui_state)
     self._update_brand_settings()
 
   def _render(self, rect):
