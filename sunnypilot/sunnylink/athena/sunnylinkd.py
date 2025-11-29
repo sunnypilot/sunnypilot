@@ -190,7 +190,7 @@ def getParamsAllKeysV1() -> dict[str, str]:
 
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
-  params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
+  params_dict: dict[str, list[dict[str, str | bool | int | dict | None]]] = {"params": []}
   for key in available_keys:
     value = get_param_as_byte(key, get_default=True)
 
