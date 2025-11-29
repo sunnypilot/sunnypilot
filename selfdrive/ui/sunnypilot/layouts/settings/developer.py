@@ -17,7 +17,6 @@ from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 
-# from openpilot.selfdrive.ui.sunnypilot.layouts.settings.external_storage import ExternalStorageControl
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
 PREBUILT_PATH = os.path.join(Paths.comma_home(), "openpilot", "prebuilt") if PC else "/data/openpilot/prebuilt"
@@ -27,11 +26,18 @@ class DeveloperLayoutSP(DeveloperLayout):
   def __init__(self):
     super().__init__()
     self.error_log_path = os.path.join(Paths.crash_log_root(), "error.log")
+    self._is_release_branch: bool = self._is_release or ui_state.params.get_bool("IsReleaseSpBranch")
+    self._is_development_branch: bool = ui_state.params.get_bool("IsTestedBranch") or ui_state.params.get_bool("IsDevelopmentBranch")
     self._initialize_items()
+
     for item in self.items:
       self._scroller.add_widget(item)
 
   def _initialize_items(self):
+    self.show_advanced_controls = toggle_item_sp(tr("Show Advanced Controls"),
+                                                 tr("Toggle visibility of advanced sunnypilot controls.<br>This only changes the visibility of the toggles; " +
+                                                    "it does not change the actual enabled/disabled state."), param="ShowAdvancedControls")
+
     self.enable_github_runner_toggle = toggle_item_sp(tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."),
                                                       param="EnableGithubRunner")
 
@@ -44,18 +50,14 @@ class DeveloperLayoutSP(DeveloperLayout):
 
     self.error_log_btn = button_item(tr("Error Log"), tr("View"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
-    self.items: list = []
-    # Uncomment this out once first adds the support to the external_storage.py
-    # if not PC:
-    #   self.external_storage_control = ExternalStorageControl()
-    #   self.items.append(self.external_storage_control.item)
-    self.items.extend([self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,])
+    self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,]
 
   def _on_prebuilt_toggled(self, state):
     if state:
       open(PREBUILT_PATH, 'w').close()
     elif os.path.exists(PREBUILT_PATH):
       os.remove(PREBUILT_PATH)
+    ui_state.params.put_bool("QuickBootToggle", state)
 
   def _on_delete_confirm(self, result):
     if result == DialogResult.CONFIRM:
@@ -79,14 +81,16 @@ class DeveloperLayoutSP(DeveloperLayout):
     dialog = ConfirmDialog(text, tr("OK"), cancel_text="", rich=True)
     gui_app.set_modal_overlay(dialog, callback=lambda result: self._on_error_log_closed(result, os.path.exists(self.error_log_path)))
 
-  def _update_toggles(self):
-    super()._update_toggles()
+  def _update_state(self):
     disable_updates = ui_state.params.get_bool("DisableUpdates")
-    is_release = self._is_release or ui_state.params.get_bool("IsReleaseSpBranch")
+    show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
 
-    self.prebuilt_toggle.set_visible(not (is_release or ui_state.params.get_bool("IsTestedBranch") or ui_state.params.get_bool("IsDevelopmentBranch")))
+    if (prebuilt_file:= os.path.exists(PREBUILT_PATH)) != ui_state.params.get_bool("QuickBootToggle"):
+      ui_state.params.put_bool("QuickBootToggle", prebuilt_file)
+      self.prebuilt_toggle.action_item.set_state(prebuilt_file)
+
+    self.prebuilt_toggle.set_visible(show_advanced and (not (self._is_release_branch or self._is_development_branch)))
     self.prebuilt_toggle.action_item.set_enabled(disable_updates)
-    ui_state.params.put_bool("QuickBootToggle", os.path.exists(PREBUILT_PATH))
 
     if disable_updates:
       self.prebuilt_toggle.set_description(tr("When toggled on, this creates a prebuilt file to allow accelerated boot times. When toggled off, it " +
@@ -94,5 +98,6 @@ class DeveloperLayoutSP(DeveloperLayout):
     else:
       self.prebuilt_toggle.set_description(tr("Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' in the Software panel first."))
 
-    self.enable_github_runner_toggle.set_visible(not is_release)
-    self.error_log_btn.set_visible(not is_release)
+    self.enable_copyparty_toggle.set_visible(show_advanced)
+    self.enable_github_runner_toggle.set_visible(show_advanced and not self._is_release_branch)
+    self.error_log_btn.set_visible(not self._is_release_branch)
