@@ -1,8 +1,8 @@
 import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
+from openpilot.selfdrive.ui.sunnypilot.onroad.blind_spot_ui import BlindSpotRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -74,12 +74,7 @@ class HudRenderer(Widget):
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
 
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
-
-    self._txt_blind_spot_left: rl.Texture = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 162, 192)
-    self._txt_blind_spot_right: rl.Texture = gui_app.texture('icons_mici/onroad/blind_spot_right.png', 162, 192)
-
-    self._blind_spot_left_alpha_filter = FirstOrderFilter(0, 0.15, 1 / gui_app.target_fps)
-    self._blind_spot_right_alpha_filter = FirstOrderFilter(0, 0.15, 1 / gui_app.target_fps)
+    self._blind_spot_renderer: BlindSpotRenderer = BlindSpotRenderer(UI_CONFIG.blind_spot_margin_x, UI_CONFIG.blind_spot_y_offset)
 
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
@@ -130,42 +125,10 @@ class HudRenderer(Widget):
     button_y = rect.y + UI_CONFIG.border_size
     self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
 
-    self._draw_blind_spot_indicators(rect)
+    self._blind_spot_renderer.render(rect)
 
   def user_interacting(self) -> bool:
     return self._exp_button.is_pressed
-
-  def _draw_blind_spot_indicators(self, rect: rl.Rectangle) -> None:
-    """Draw blind spot monitoring indicators from c4 on left and right edges."""
-    sm = ui_state.sm
-    car_state = sm['carState']
-
-    try:
-      left_detected = car_state.leftBlindspot
-    except AttributeError:
-      left_detected = False
-
-    try:
-      right_detected = car_state.rightBlindspot
-    except AttributeError:
-      right_detected = False
-
-    self._blind_spot_left_alpha_filter.update(1.0 if left_detected else 0.0)
-    self._blind_spot_right_alpha_filter.update(1.0 if right_detected else 0.0)
-
-    if self._blind_spot_left_alpha_filter.x > 0.01:
-      pos_x = int(rect.x + UI_CONFIG.blind_spot_margin_x)
-      pos_y = int(rect.y + UI_CONFIG.blind_spot_y_offset)
-      alpha = int(255 * self._blind_spot_left_alpha_filter.x)
-      color = rl.Color(255, 255, 255, alpha)
-      rl.draw_texture(self._txt_blind_spot_left, pos_x, pos_y, color)
-
-    if self._blind_spot_right_alpha_filter.x > 0.01:
-      pos_x = int(rect.x + rect.width - UI_CONFIG.blind_spot_margin_x - self._txt_blind_spot_right.width)
-      pos_y = int(rect.y + UI_CONFIG.blind_spot_y_offset)
-      alpha = int(255 * self._blind_spot_right_alpha_filter.x)
-      color = rl.Color(255, 255, 255, alpha)
-      rl.draw_texture(self._txt_blind_spot_right, pos_x, pos_y, color)
 
   def _draw_set_speed(self, rect: rl.Rectangle) -> None:
     """Draw the MAX speed indicator box."""
