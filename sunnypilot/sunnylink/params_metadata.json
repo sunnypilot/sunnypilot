@@ -242,7 +242,7 @@
     "description": ""
   },
   "DoUninstall": {
-    "title": "Uninstall Sunnypilot",
+    "title": "Uninstall sunnypilot",
     "description": ""
   },
   "DongleId": {
@@ -266,7 +266,7 @@
     "description": ""
   },
   "EnableSunnylinkUploader": {
-    "title": "Enable Sunnylink Uploader",
+    "title": "Enable sunnylink Uploader",
     "description": ""
   },
   "EnforceTorqueControl": {
@@ -483,7 +483,7 @@
     "description": ""
   },
   "LastSunnylinkPingTime": {
-    "title": "Last Sunnylink Ping Time",
+    "title": "Last sunnylink Ping Time",
     "description": ""
   },
   "LastUpdateException": {
@@ -685,35 +685,35 @@
     "description": ""
   },
   "Offroad_CarUnrecognized": {
-    "title": "Offroad  Car Unrecognized",
+    "title": "Offroad Car Unrecognized",
     "description": ""
   },
   "Offroad_ConnectivityNeeded": {
-    "title": "Offroad  Connectivity Needed",
+    "title": "Offroad Connectivity Needed",
     "description": ""
   },
   "Offroad_ConnectivityNeededPrompt": {
-    "title": "Offroad  Connectivity Needed Prompt",
+    "title": "Offroad Connectivity Needed Prompt",
     "description": ""
   },
   "Offroad_DriverMonitoringUncertain": {
-    "title": "Offroad  Driver Monitoring Uncertain",
+    "title": "Offroad Driver Monitoring Uncertain",
     "description": ""
   },
   "Offroad_ExcessiveActuation": {
-    "title": "Offroad  Excessive Actuation",
+    "title": "Offroad Excessive Actuation",
     "description": ""
   },
   "Offroad_IsTakingSnapshot": {
-    "title": "Offroad  Is Taking Snapshot",
+    "title": "Offroad Is Taking Snapshot",
     "description": ""
   },
   "Offroad_NeosUpdate": {
-    "title": "Offroad  Neos Update",
+    "title": "Offroad Neos Update",
     "description": ""
   },
   "Offroad_NoFirmware": {
-    "title": "Offroad  No Firmware",
+    "title": "Offroad No Firmware",
     "description": ""
   },
   "Offroad_OSMUpdateRequired": {
@@ -721,23 +721,23 @@
     "description": ""
   },
   "Offroad_Recalibration": {
-    "title": "Offroad  Recalibration",
+    "title": "Offroad Recalibration",
     "description": ""
   },
   "Offroad_TemperatureTooHigh": {
-    "title": "Offroad  Temperature Too High",
+    "title": "Offroad Temperature Too High",
     "description": ""
   },
   "Offroad_TiciSupport": {
-    "title": "Offroad  Tici Support",
+    "title": "Offroad Tici Support",
     "description": ""
   },
   "Offroad_UnregisteredHardware": {
-    "title": "Offroad  Unregistered Hardware",
+    "title": "Offroad Unregistered Hardware",
     "description": ""
   },
   "Offroad_UpdateFailed": {
-    "title": "Offroad  Update Failed",
+    "title": "Offroad Update Failed",
     "description": ""
   },
   "OnroadCycleRequested": {
@@ -767,7 +767,7 @@
     "description": ""
   },
   "OpenpilotEnabledToggle": {
-    "title": "Enable Sunnypilot",
+    "title": "Enable sunnypilot",
     "description": ""
   },
   "OsmDbUpdatesCheck": {
@@ -980,23 +980,23 @@
     "description": ""
   },
   "SunnylinkCache_Roles": {
-    "title": "Sunnylink Cache  Roles",
+    "title": "sunnylink Cache  Roles",
     "description": ""
   },
   "SunnylinkCache_Users": {
-    "title": "Sunnylink Cache  Users",
+    "title": "sunnylink Cache  Users",
     "description": ""
   },
   "SunnylinkDongleId": {
-    "title": "Sunnylink Dongle ID",
+    "title": "sunnylink Dongle ID",
     "description": ""
   },
   "SunnylinkEnabled": {
-    "title": "Sunnylink Enabled",
+    "title": "sunnylink Enabled",
     "description": ""
   },
   "SunnylinkTempFault": {
-    "title": "Sunnylink Temp Fault",
+    "title": "sunnylink Temp Fault",
     "description": ""
   },
   "SunnylinkdPid": {
@@ -1094,7 +1094,7 @@
     "description": ""
   },
   "Version": {
-    "title": "Openpilot Version",
+    "title": "openpilot Version",
     "description": ""
   }
 }
