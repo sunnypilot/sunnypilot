@@ -188,7 +188,7 @@ jobs:
           scons -j4 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
           echo "Building openpilot's locationd..."
           scons -j4 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
-          echo "Building rest of openpilot"
+          echo "Building rest of sunnypilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
