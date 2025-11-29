@@ -13,28 +13,29 @@ from openpilot.system.ui.widgets.label import Label
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 
-ALERT_MARGIN = 40
-ALERT_PADDING = 60
-ALERT_LINE_SPACING = 45
-ALERT_BORDER_RADIUS = 30
+# Soft, modern iOS-style metrics
+PADDING_X = 60
+PADDING_Y = 48
+SPACING = 32
+MIN_WIDTH = 600
+MAX_WIDTH = 1400
+TOP_MARGIN = 36
+RADIUS = 50
 
-ALERT_FONT_SMALL = 66
-ALERT_FONT_MEDIUM = 74
-ALERT_FONT_BIG = 88
+FONT_BIG = 88
+FONT_MED = 72
+FONT_SMALL = 60
 
-ALERT_HEIGHTS = {
-  AlertSize.small: 271,
-  AlertSize.mid: 420,
-}
+BLUR_ALPHA = 155   # Light blur/translucent effect (Option A)
 
-SELFDRIVE_STATE_TIMEOUT = 5  # Seconds
-SELFDRIVE_UNRESPONSIVE_TIMEOUT = 10  # Seconds
+SELFDRIVE_STATE_TIMEOUT = 5
+SELFDRIVE_UNRESPONSIVE_TIMEOUT = 10
 
-# Constants
+# Alert colors — kept soft & flat for minimal design
 ALERT_COLORS = {
-  AlertStatus.normal: rl.Color(0x15, 0x15, 0x15, 0xF1),      # #151515 with alpha 0xF1
-  AlertStatus.userPrompt: rl.Color(0xDA, 0x6F, 0x25, 0xF1),  # #DA6F25 with alpha 0xF1
-  AlertStatus.critical: rl.Color(0xC9, 0x22, 0x31, 0xF1),    # #C92231 with alpha 0xF1
+  AlertStatus.normal: rl.Color(30, 30, 30, 220),
+  AlertStatus.userPrompt: rl.Color(218, 111, 37, 230),
+  AlertStatus.critical: rl.Color(201, 34, 49, 230),
 }
 
 
@@ -46,7 +47,6 @@ class Alert:
   status: int = 0
 
 
-# Pre-defined alert instances
 ALERT_STARTUP_PENDING = Alert(
   text1=tr("hoofpilot Unavailable"),
   text2=tr("Waiting to start"),
@@ -72,107 +72,189 @@ ALERT_CRITICAL_REBOOT = Alert(
 class AlertRenderer(Widget):
   def __init__(self):
     super().__init__()
-    self.font_regular: rl.Font = gui_app.font(FontWeight.NORMAL)
-    self.font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
+    self.font_regular = gui_app.font(FontWeight.NORMAL)
+    self.font_bold = gui_app.font(FontWeight.BOLD)
 
-    # font size is set dynamically
-    self._full_text1_label = Label("", font_size=0, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                                   text_alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP)
-    self._full_text2_label = Label("", font_size=ALERT_FONT_BIG, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                                   text_alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP)
+    self._full_text1 = Label(
+      "", font_size=0, font_weight=FontWeight.BOLD,
+      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER
+    )
+    self._full_text2 = Label(
+      "", font_size=FONT_BIG,
+      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER
+    )
 
-  def get_alert(self, sm: messaging.SubMaster) -> Alert | None:
-    """Generate the current alert based on selfdrive state."""
-    ss = sm['selfdriveState']
+    # Animation
+    self._anim_active = False
+    self._anim_start = 0.0
+    self._anim_duration = 0.28
+    self._last_alert = None
 
-    # Check if selfdriveState messages have stopped arriving
-    recv_frame = sm.recv_frame['selfdriveState']
-    if not sm.updated['selfdriveState']:
-      time_since_onroad = time.monotonic() - ui_state.started_time
 
-      # 1. Never received selfdriveState since going onroad
-      waiting_for_startup = recv_frame < ui_state.started_frame
-      if waiting_for_startup and time_since_onroad > 5:
+  # ---------------------
+  # Dynamic alert fetching
+  # ---------------------
+
+  def get_alert(self, sm: messaging.SubMaster):
+    ss = sm["selfdriveState"]
+    recv_frame = sm.recv_frame["selfdriveState"]
+
+    if not sm.updated["selfdriveState"]:
+      elapsed = time.monotonic() - ui_state.started_time
+      waiting = recv_frame < ui_state.started_frame
+
+      if waiting and elapsed > 5:
         return ALERT_STARTUP_PENDING
 
-      # 2. Lost communication with selfdriveState after receiving it
-      if TICI and not waiting_for_startup:
-        ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
-        if ss_missing > SELFDRIVE_STATE_TIMEOUT:
-          if ss.enabled and (ss_missing - SELFDRIVE_STATE_TIMEOUT) < SELFDRIVE_UNRESPONSIVE_TIMEOUT:
+      if TICI and not waiting:
+        missing = time.monotonic() - sm.recv_time["selfdriveState"]
+        if missing > SELFDRIVE_STATE_TIMEOUT:
+          if ss.enabled and (missing - SELFDRIVE_STATE_TIMEOUT) < SELFDRIVE_UNRESPONSIVE_TIMEOUT:
             return ALERT_CRITICAL_TIMEOUT
           return ALERT_CRITICAL_REBOOT
 
-    # No alert if size is none
     if ss.alertSize == 0:
       return None
 
-    # Don't get old alert
     if recv_frame < ui_state.started_frame:
       return None
 
-    # Return current alert
-    return Alert(text1=ss.alertText1, text2=ss.alertText2, size=ss.alertSize.raw, status=ss.alertStatus.raw)
+    return Alert(
+      text1=ss.alertText1,
+      text2=ss.alertText2,
+      size=ss.alertSize.raw,
+      status=ss.alertStatus.raw,
+    )
+
+
+  # ---------------------
+  # Animation manager
+  # ---------------------
+
+  def _maybe_start_animation(self, alert):
+    if alert is None:
+      self._last_alert = None
+      self._anim_active = False
+      return
+
+    if alert.status != AlertStatus.normal:
+      self._last_alert = alert
+      self._anim_active = False
+      return
+
+    if (
+      self._last_alert is None or
+      self._last_alert.text1 != alert.text1 or
+      self._last_alert.text2 != alert.text2 or
+      self._last_alert.size != alert.size or
+      self._last_alert.status != alert.status
+    ):
+      self._anim_active = True
+      self._anim_start = rl.get_time()
+
+    self._last_alert = alert
+
+
+  def _anim_progress(self):
+    if not self._anim_active:
+      return 1.0
+
+    elapsed = rl.get_time() - self._anim_start
+    if elapsed >= self._anim_duration:
+      self._anim_active = False
+      return 1.0
+
+    t = elapsed / self._anim_duration
+    return 1 - (1 - t) ** 3   # cubic-out easing
+
+
+  # -------------------------
+  # Dynamic layout calculation
+  # -------------------------
+
+  def _compute_size(self, alert):
+    # Measure width from both lines
+    w1 = measure_text_cached(self.font_bold, alert.text1, FONT_BIG).x
+    w2 = measure_text_cached(self.font_regular, alert.text2, FONT_MED).x
+
+    text_width = max(w1, w2)
+    total_width = text_width + PADDING_X * 2
+
+    # Clamp to nice range
+    total_width = max(MIN_WIDTH, min(total_width, MAX_WIDTH))
+
+    # Height depends on text
+    height = PADDING_Y * 2 + FONT_BIG
+    if alert.text2:
+      height += SPACING + FONT_MED
+
+    return total_width, height
+
+
+  # ---------------------
+  # Rendering
+  # ---------------------
 
   def _render(self, rect: rl.Rectangle):
     alert = self.get_alert(ui_state.sm)
+    self._maybe_start_animation(alert)
+
     if not alert:
       return
 
-    alert_rect = self._get_alert_rect(rect, alert.size)
-    self._draw_background(alert_rect, alert)
+    # Calculate dynamic width/height
+    box_width, box_height = self._compute_size(alert)
 
-    text_rect = rl.Rectangle(
-      alert_rect.x + ALERT_PADDING,
-      alert_rect.y + ALERT_PADDING,
-      alert_rect.width - 2 * ALERT_PADDING,
-      alert_rect.height - 2 * ALERT_PADDING
+    # Centered top position
+    x = rect.x + (rect.width - box_width) / 2
+    y = rect.y + TOP_MARGIN
+
+    # Apply slide-in animation
+    if alert.status == AlertStatus.normal:
+      p = self._anim_progress()
+      y -= (1 - p) * 60   # slide from above
+
+    alert_rect = rl.Rectangle(x, y, box_width, box_height)
+
+    self._draw_blur_background(alert_rect, alert)
+    self._draw_text(alert_rect, alert)
+
+
+  # ---------------------
+  # Blur background
+  # ---------------------
+
+  def _draw_blur_background(self, rect, alert):
+    # Light translucency
+    base = ALERT_COLORS.get(alert.status, ALERT_COLORS[AlertStatus.normal])
+
+    # iOS light blur style glass
+    blur_color = rl.Color(base.r, base.g, base.b, BLUR_ALPHA)
+
+    # Rounded background
+    rl.draw_rectangle_rounded(rect, 0.18, 16, blur_color)
+
+
+  # ---------------------
+  # Text rendering
+  # ---------------------
+
+  def _draw_text(self, rect, alert):
+    # Title centered
+    title_size = measure_text_cached(self.font_bold, alert.text1, FONT_BIG)
+    title_x = rect.x + (rect.width - title_size.x) / 2
+    title_y = rect.y + PADDING_Y
+    rl.draw_text_ex(
+      self.font_bold, alert.text1,
+      rl.Vector2(title_x, title_y), FONT_BIG, 0, rl.WHITE
     )
-    self._draw_text(text_rect, alert)
 
-  def _get_alert_rect(self, rect: rl.Rectangle, size: int) -> rl.Rectangle:
-    if size == AlertSize.full:
-      return rect
-
-    h = ALERT_HEIGHTS.get(size, rect.height)
-    return rl.Rectangle(rect.x + ALERT_MARGIN, rect.y + rect.height - h + ALERT_MARGIN,
-                        rect.width - ALERT_MARGIN * 2, h - ALERT_MARGIN * 2)
-
-  def _draw_background(self, rect: rl.Rectangle, alert: Alert) -> None:
-    color = ALERT_COLORS.get(alert.status, ALERT_COLORS[AlertStatus.normal])
-
-    if alert.size != AlertSize.full:
-      roundness = ALERT_BORDER_RADIUS / (min(rect.width, rect.height) / 2)
-      rl.draw_rectangle_rounded(rect, roundness, 10, color)
-    else:
-      rl.draw_rectangle_rec(rect, color)
-
-  def _draw_text(self, rect: rl.Rectangle, alert: Alert) -> None:
-    if alert.size == AlertSize.small:
-      self._draw_centered(alert.text1, rect, self.font_bold, ALERT_FONT_MEDIUM)
-
-    elif alert.size == AlertSize.mid:
-      self._draw_centered(alert.text1, rect, self.font_bold, ALERT_FONT_BIG, center_y=False)
-      rect.y += ALERT_FONT_BIG + ALERT_LINE_SPACING
-      self._draw_centered(alert.text2, rect, self.font_regular, ALERT_FONT_SMALL, center_y=False)
-
-    else:
-      is_long = len(alert.text1) > 15
-      font_size1 = 132 if is_long else 177
-
-      top_offset = 200 if is_long or '\n' in alert.text1 else 270
-      title_rect = rl.Rectangle(rect.x, rect.y + top_offset, rect.width, 600)
-      self._full_text1_label.set_font_size(font_size1)
-      self._full_text1_label.set_text(alert.text1)
-      self._full_text1_label.render(title_rect)
-
-      bottom_offset = 361 if is_long else 420
-      subtitle_rect = rl.Rectangle(rect.x, rect.y + rect.height - bottom_offset, rect.width, 300)
-      self._full_text2_label.set_text(alert.text2)
-      self._full_text2_label.render(subtitle_rect)
-
-  def _draw_centered(self, text, rect, font, font_size, center_y=True, color=rl.WHITE) -> None:
-    text_size = measure_text_cached(font, text, font_size)
-    x = rect.x + (rect.width - text_size.x) / 2
-    y = rect.y + ((rect.height - text_size.y) / 2 if center_y else 0)
-    rl.draw_text_ex(font, text, rl.Vector2(x, y), font_size, 0, color)
+    # Secondary line
+    if alert.text2:
+      subtitle_size = measure_text_cached(self.font_regular, alert.text2, FONT_MED)
+      subtitle_x = rect.x + (rect.width - subtitle_size.x) / 2
+      subtitle_y = title_y + FONT_BIG + SPACING
+      rl.draw_text_ex(
+        self.font_regular, alert.text2,
+        rl.Vector2(subtitle_x, subtitle_y), FONT_MED, 0, rl.WHITE
+      )

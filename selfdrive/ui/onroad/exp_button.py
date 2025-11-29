@@ -20,11 +20,16 @@ class ExpButton(Widget):
 
     self._white_color: rl.Color = rl.Color(255, 255, 255, 255)
     self._black_bg: rl.Color = rl.Color(0, 0, 0, 166)
+
+    # Wheel / EXP icons sized by icon_size
     self._txt_wheel: rl.Texture = gui_app.texture('icons/chffr_wheel.png', icon_size, icon_size)
     self._txt_exp: rl.Texture = gui_app.texture('icons/experimental.png', icon_size, icon_size)
+
+    # Circle size driven by button_size; width/height stay constant even when rect is moved
     self._rect = rl.Rectangle(0, 0, button_size, button_size)
 
   def set_rect(self, rect: rl.Rectangle) -> None:
+    # Only move; do not resize so visual size is controlled solely by ctor button_size
     self._rect.x, self._rect.y = rect.x, rect.y
 
   def _update_state(self) -> None:
@@ -50,7 +55,12 @@ class ExpButton(Widget):
 
     texture = self._txt_exp if self._held_or_actual_mode() else self._txt_wheel
     rl.draw_circle(center_x, center_y, self._rect.width / 2, self._black_bg)
-    rl.draw_texture(texture, center_x - texture.width // 2, center_y - texture.height // 2, self._white_color)
+    rl.draw_texture(
+      texture,
+      center_x - texture.width // 2,
+      center_y - texture.height // 2,
+      self._white_color,
+    )
 
   def _held_or_actual_mode(self):
     now = time.monotonic()

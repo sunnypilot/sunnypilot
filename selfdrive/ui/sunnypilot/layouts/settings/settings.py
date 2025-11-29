@@ -171,9 +171,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # Draw navigation section with scroller
     nav_rect = rl.Rectangle(
       rect.x,
-      self._close_btn_rect.height + style.ITEM_PADDING * 4,  # Starting Y position for nav items
+      self._close_btn_rect.y + self._close_btn_rect.height + style.ITEM_PADDING * 2,
       rect.width,
-      rect.height - 300  # Remaining height after close button
+      rect.height - (self._close_btn_rect.height + style.ITEM_PADDING * 4)
     )
 
     if self._nav_items:
@@ -182,7 +182,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
     # Check close button
-    if rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
+    if hasattr(self, "_close_btn_rect") and rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
       if self._close_callback:
         self._close_callback()
       return True
