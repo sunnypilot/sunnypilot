@@ -278,7 +278,10 @@ class AugmentedRoadView(CameraView):
       self.driver_state_renderer = None
 
     # debug
-    self._pm = messaging.PubMaster(['uiDebug'])
+    try:
+      self._pm = messaging.PubMaster(['uiDebug'])
+    except Exception:
+      self._pm = None
 
   def _render(self, rect):
     # Only render when system is started to avoid invalid data access
@@ -351,10 +354,13 @@ class AugmentedRoadView(CameraView):
     # Draw colored border based on driving state
     self._draw_border(rect)
 
-    # publish uiDebug
-    msg = messaging.new_message('uiDebug')
-    msg.uiDebug.drawTimeMillis = (time.monotonic() - start_draw) * 1000
-    self._pm.send('uiDebug', msg)
+    if self._pm is not None:
+      try:
+        msg = messaging.new_message('uiDebug')
+        msg.uiDebug.drawTimeMillis = (time.monotonic() - start_draw) * 1000
+        self._pm.send('uiDebug', msg)
+      except Exception:
+        pass
 
   def _handle_mouse_press(self, _):
     # Swallow clicks reserved for top-left settings icon
