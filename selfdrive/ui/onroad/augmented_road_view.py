@@ -53,11 +53,6 @@ class AugmentedRoadView(CameraView):
     self.model_renderer = ModelRenderer()
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
-    self._settings_cb = None
-    self._settings_icon = gui_app.texture("icons_mici/settings.png", 110, 110)
-    self._settings_rect = rl.Rectangle()
-    self.driver_state_renderer = None
-    self._pm = None
 
     # Inline Tizi DriverStateRenderer (ported from Mici) scaled up for Tizi
     # This avoids relying on the external mici module so we consume fewer Copilot requests.
@@ -218,23 +213,23 @@ class AugmentedRoadView(CameraView):
                 if self._confirm_callback is not None:
                   self._confirm_callback()
 
-  def _draw_line(self, angle: int, f: FirstOrderFilter, grey: bool):
-    line_length = self._rect.width / 6
-    line_length = round(np.interp(f.x, [0.0, 1.0], [0, line_length]))
-    line_offset = self._rect.width / 2 - line_length * 2
-    center_x = self._rect.x + self._rect.width / 2
-    center_y = self._rect.y + self._rect.height / 2
-    start_x = center_x + (line_offset + line_length) * math.cos(math.radians(angle))
-    start_y = center_y + (line_offset + line_length) * math.sin(math.radians(angle))
-    end_x = start_x + line_length * math.cos(math.radians(angle))
-    end_y = start_y + line_length * math.sin(math.radians(angle))
-    color = rl.Color(0, 255, 64, 255)
+      def _draw_line(self, angle: int, f: FirstOrderFilter, grey: bool):
+        line_length = self._rect.width / 6
+        line_length = round(np.interp(f.x, [0.0, 1.0], [0, line_length]))
+        line_offset = self._rect.width / 2 - line_length * 2
+        center_x = self._rect.x + self._rect.width / 2
+        center_y = self._rect.y + self._rect.height / 2
+        start_x = center_x + (line_offset + line_length) * math.cos(math.radians(angle))
+        start_y = center_y + (line_offset + line_length) * math.sin(math.radians(angle))
+        end_x = start_x + line_length * math.cos(math.radians(angle))
+        end_y = start_y + line_length * math.sin(math.radians(angle))
+        color = rl.Color(0, 255, 64, 255)
 
-    if grey:
-      color = rl.Color(166, 166, 166, 255)
+        if grey:
+          color = rl.Color(166, 166, 166, 255)
 
-    if f.x > 0.01:
-      rl.draw_line_ex((start_x, start_y), (end_x, end_y), 12, color)
+        if f.x > 0.01:
+          rl.draw_line_ex((start_x, start_y), (end_x, end_y), 12, color)
 
       def _update_state(self):
         sm = ui_state.sm
@@ -273,16 +268,10 @@ class AugmentedRoadView(CameraView):
         else:
           self._fade_filter.update(1.0)
 
-    try:
-      self.driver_state_renderer = TiziDriverStateRenderer()
-    except Exception:
-      self.driver_state_renderer = None
+    self.driver_state_renderer = TiziDriverStateRenderer()
 
     # debug
-    try:
-      self._pm = messaging.PubMaster(['uiDebug'])
-    except Exception:
-      self._pm = None
+    self._pm = messaging.PubMaster(['uiDebug'])
 
   def _render(self, rect):
     # Only render when system is started to avoid invalid data access
@@ -319,7 +308,6 @@ class AugmentedRoadView(CameraView):
     self.model_renderer.render(self._content_rect)
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
-    self._render_settings_icon()
 
     # Determine whether to show driver monitoring (match Mici logic).
     # HudRenderer no longer exposes `drawing_top_icons()` in the Tizi HUD,
@@ -329,25 +317,21 @@ class AugmentedRoadView(CameraView):
       ui_state.is_onroad()
       and (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm)
     )
-    if self.driver_state_renderer is None:
-      # Attempt to (re)create if it failed previously
-      try:
-        self.driver_state_renderer = TiziDriverStateRenderer()
-      except Exception:
-        self.driver_state_renderer = None
+    try:
+      self.driver_state_renderer.set_should_draw(should_draw_dmoji)
 
-    if self.driver_state_renderer is not None:
-      try:
-        self.driver_state_renderer.set_should_draw(should_draw_dmoji)
+      # Position DM in the BOTTOM-LEFT of the content rect.
+      # Use the widget's own height so it sits just above the bottom border.
+      dm_rect = self.driver_state_renderer._rect
+      self.driver_state_renderer.set_position(
+        self._content_rect.x + 16,
+        self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
+      )
+    except Exception:
+      pass
 
-        dm_rect = self.driver_state_renderer._rect
-        self.driver_state_renderer.set_position(
-          self._content_rect.x + 16,
-          self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
-        )
-        self.driver_state_renderer.render()
-      except Exception:
-        pass
+    # Render without passing `self._content_rect` to preserve the widget's own rect/size
+    self.driver_state_renderer.render()
 
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
@@ -358,51 +342,25 @@ class AugmentedRoadView(CameraView):
     # Draw colored border based on driving state
     self._draw_border(rect)
 
-    if hasattr(self, "_pm") and self._pm is not None:
-      try:
-        msg = messaging.new_message('uiDebug')
-        msg.uiDebug.drawTimeMillis = (time.monotonic() - start_draw) * 1000
-        self._pm.send('uiDebug', msg)
-      except Exception:
-        pass
+    # publish uiDebug
+    msg = messaging.new_message('uiDebug')
+    msg.uiDebug.drawTimeMillis = (time.monotonic() - start_draw) * 1000
+    self._pm.send('uiDebug', msg)
 
   def _handle_mouse_press(self, _):
-    # Swallow clicks reserved for top-left settings icon
+    # Allow taps on the left edge (sidebar area) to always toggle the sidebar
     mouse_pos = rl.get_mouse_position()
-    if self._settings_icon is not None:
-      margin = 18
-      rect = rl.Rectangle(
-        self._content_rect.x + margin,
-        self._content_rect.y + margin,
-        self._settings_icon.width,
-        self._settings_icon.height,
-      )
-      if rl.check_collision_point_rec(mouse_pos, rect):
+    try:
+      if mouse_pos.x <= SIDEBAR_WIDTH:
+        if self._click_callback is not None:
+          self._click_callback()
         return
+    except Exception:
+      # If anything goes wrong getting mouse_pos, fall back to default behavior
+      pass
 
     if not self._hud_renderer.user_interacting() and self._click_callback is not None:
       self._click_callback()
-
-  def set_settings_callback(self, cb):
-    self._settings_cb = cb
-
-  def _render_settings_icon(self):
-    if self._settings_icon is None:
-      return
-    margin = 18
-    scale = 1.15
-    w = self._settings_icon.width * scale
-    h = self._settings_icon.height * scale
-    x = self._content_rect.x + margin
-    y = self._content_rect.y + margin
-    self._settings_rect = rl.Rectangle(x, y, w, h)
-
-    rl.draw_texture_ex(self._settings_icon, (int(x), int(y)), 0, scale, rl.Color(255, 255, 255, 235))
-
-    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
-      mp = rl.get_mouse_position()
-      if rl.check_collision_point_rec(mp, self._settings_rect) and self._settings_cb:
-        self._settings_cb()
 
   def _handle_mouse_release(self, _):
     # We only call click callback on press if not interacting with HUD
