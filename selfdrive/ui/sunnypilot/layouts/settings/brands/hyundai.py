@@ -34,7 +34,7 @@ class HyundaiSettings:
       self.alpha_long_available = self.ui_state.CP.alphaLongitudinalAvailable
 
     tuning_param = int(self.ui_state.params.get("HyundaiLongitudinalTuning") or "0")
-    oplong_enabled = self.ui_state.params.get_bool("AlphaLongitudinalEnabled")
+    oplong_enabled = self.ui_state.has_longitudinal_control
 
     descriptions = [
       tr("Your vehicle will use the default longitudinal tuning."),
