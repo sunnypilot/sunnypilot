@@ -24,6 +24,7 @@ WIFI_Y_OFFSET = -15
 MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
+SWIPE_RIGHT_EDGE = 80
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -128,6 +129,10 @@ class HomeLayout(Widget):
     super()._handle_mouse_event(mouse_event)
 
     if mouse_event.left_pressed and (mouse_event.pos.x <= SWIPE_EDGE or mouse_event.pos.y <= SWIPE_EDGE):
+      self._swipe_start = mouse_event.pos
+      self._swipe_active = True
+    # when alerts are open, allow close swipe starting near right edge
+    if self.current_state == HomeLayoutState.ALERTS and mouse_event.left_pressed and mouse_event.pos.x >= self._rect.x + self._rect.width - SWIPE_RIGHT_EDGE:
       self._swipe_start = mouse_event.pos
       self._swipe_active = True
 
@@ -304,7 +309,7 @@ class HomeLayout(Widget):
       y = full_rect.y if self.current_state == HomeLayoutState.ALERTS else full_rect.y + full_rect.height
 
     overlay_rect = rl.Rectangle(full_rect.x, y, full_rect.width, full_rect.height)
-    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 220))
+    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 235))
     self._alerts_layout.render(overlay_rect)
 
     if self._alerts_anim_active and t >= 1.0:

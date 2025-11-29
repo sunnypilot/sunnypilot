@@ -268,7 +268,20 @@ class OffroadAlertsLayout(Widget):
       self._last_refresh = current_time
 
   def _render(self, rect: rl.Rectangle):
+    # Stretch item width to 80% of available rect, clamp to a max for readability
+    target_width = min(rect.width * 0.8, 900)
+    for item in self.alert_items:
+      if isinstance(item, AlertItem):
+        item.set_rect(rl.Rectangle(item.rect.x, item.rect.y, target_width, item.rect.height))
+
     if self.active_alerts() == 0:
       self._empty_label.render(rect)
     else:
-      self._scroller.render(rect)
+      # Center scroller content
+      scroller_rect = rl.Rectangle(
+        rect.x + (rect.width - target_width) / 2,
+        rect.y,
+        target_width,
+        rect.height,
+      )
+      self._scroller.render(scroller_rect)
