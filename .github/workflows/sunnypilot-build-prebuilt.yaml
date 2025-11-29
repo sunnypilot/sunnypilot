@@ -6,10 +6,10 @@ env:
   CI_DIR: ${{ github.workspace }}/release/ci
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
-  
+
   # Branch configurations
   STAGING_SOURCE_BRANCH: 'master'
-  
+
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
 
@@ -75,7 +75,7 @@ jobs:
             cancel="$(echo "$CONFIG" | jq -r '.cancel_publish_in_progress')";
             echo "cancel_publish_in_progress=$( [ "$cancel" = "null" ] && echo "true" || echo $cancel)" >> $GITHUB_OUTPUT
             echo "publish_concurrency_group=publish-${BRANCH}$( [ "$cancel" = "null" ] || [ "$cancel" = "true" ] || echo "${{ github.sha }}" )" >> $GITHUB_OUTPUT
-          
+
             is_stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
             echo "is_stable_branch=$is_stable_branch" >> $GITHUB_OUTPUT
 
@@ -85,7 +85,7 @@ jobs:
           fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-  
+
   validate_tests:
     runs-on: ubuntu-24.04
     needs: [ prepare_strategy ]
@@ -119,7 +119,7 @@ jobs:
       needs.prepare_strategy.result == 'success' &&
       (needs.validate_tests.result == 'success' || needs.validate_tests.result == 'skipped') &&
       (!contains(github.event_name, 'pull_request') ||
-      (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) 
+      (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
       }}
     steps:
       - uses: actions/checkout@v4
@@ -134,7 +134,7 @@ jobs:
         with:
           path: ${{env.SCONS_CACHE_DIR}}
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.) 
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
@@ -148,7 +148,7 @@ jobs:
           echo "version=${{ needs.prepare_strategy.outputs.version }}" >> $GITHUB_OUTPUT
           echo "extra_version_identifier=${{ needs.prepare_strategy.outputs.extra_version_identifier }}" >> $GITHUB_OUTPUT
           echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-          
+
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
@@ -180,6 +180,15 @@ jobs:
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
           sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
+          echo "Building sunnypilot's modeld..."
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld
+          echo "Building sunnypilot's modeld_v2..."
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld_v2
+          echo "Building sunnypilot's locationd..."
+          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
+          echo "Building openpilot's locationd..."
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
+          echo "Building rest of sunnypilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
@@ -241,8 +250,8 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
-  
-  
+
+
   publish:
     concurrency:
       # We do a bit of a hack here to avoid canceling the publishing job if a new commit comes in while we're publishing by adding the sha to the group name.
@@ -293,7 +302,7 @@ jobs:
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
           echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
-      
+
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
         run: |
@@ -302,7 +311,7 @@ jobs:
             git push -f origin ${TAG}
 
   notify:
-    needs: 
+    needs:
     - prepare_strategy
     - build
     - publish
@@ -331,7 +340,7 @@ jobs:
           ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
           EOF
           )
-          
+
           {
             echo 'content<<EOFMARKER'
             echo "$MESSAGE"
