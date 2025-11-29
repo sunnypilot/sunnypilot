@@ -11,7 +11,7 @@ def test_metadata_json_exists():
 
 
 def test_metadata_json_valid():
-  with open(METADATA_PATH, "r") as f:
+  with open(METADATA_PATH) as f:
     try:
       data = json.load(f)
     except json.JSONDecodeError:
@@ -24,7 +24,7 @@ def test_all_params_have_metadata():
   params = Params()
   all_keys = [k.decode('utf-8') for k in params.all_keys()]
 
-  with open(METADATA_PATH, "r") as f:
+  with open(METADATA_PATH) as f:
     metadata = json.load(f)
 
   missing_keys = [key for key in all_keys if key not in metadata]
@@ -40,7 +40,7 @@ def test_metadata_keys_exist_in_params():
   params = Params()
   all_keys = set([k.decode('utf-8') for k in params.all_keys()])
 
-  with open(METADATA_PATH, "r") as f:
+  with open(METADATA_PATH) as f:
     metadata = json.load(f)
 
   extra_keys = [key for key in metadata.keys() if key not in all_keys]
@@ -50,7 +50,7 @@ def test_metadata_keys_exist_in_params():
 
 
 def test_no_default_titles():
-  with open(METADATA_PATH, "r") as f:
+  with open(METADATA_PATH) as f:
     metadata = json.load(f)
 
   default_title_keys = [key for key, meta in metadata.items() if meta.get("title") == key]

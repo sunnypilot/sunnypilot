@@ -182,7 +182,7 @@ def getParamsAllKeys() -> list[str]:
 @dispatcher.add_method
 def getParamsAllKeysV1() -> dict[str, str]:
   try:
-    with open(METADATA_PATH, "r") as f:
+    with open(METADATA_PATH) as f:
       metadata = json.load(f)
   except Exception:
     cloudlog.exception("sunnylinkd.getParamsAllKeysV1.exception")

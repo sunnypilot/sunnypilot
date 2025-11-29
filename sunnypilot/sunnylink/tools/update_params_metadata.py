@@ -11,7 +11,7 @@ def main():
   all_keys = params.all_keys()
 
   if os.path.exists(METADATA_PATH):
-    with open(METADATA_PATH, "r") as f:
+    with open(METADATA_PATH) as f:
       try:
         data = json.load(f)
       except json.JSONDecodeError:
