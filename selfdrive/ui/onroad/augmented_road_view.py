@@ -329,6 +329,13 @@ class AugmentedRoadView(CameraView):
       ui_state.is_onroad()
       and (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm)
     )
+    if self.driver_state_renderer is None:
+      # Attempt to (re)create if it failed previously
+      try:
+        self.driver_state_renderer = TiziDriverStateRenderer()
+      except Exception:
+        self.driver_state_renderer = None
+
     if self.driver_state_renderer is not None:
       try:
         self.driver_state_renderer.set_should_draw(should_draw_dmoji)
@@ -338,10 +345,6 @@ class AugmentedRoadView(CameraView):
           self._content_rect.x + 16,
           self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
         )
-      except Exception:
-        pass
-
-      try:
         self.driver_state_renderer.render()
       except Exception:
         pass
