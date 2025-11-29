@@ -218,21 +218,21 @@ class AugmentedRoadView(CameraView):
 
   def _draw_line(self, angle: int, f: FirstOrderFilter, grey: bool):
     line_length = self._rect.width / 6
-        line_length = round(np.interp(f.x, [0.0, 1.0], [0, line_length]))
-        line_offset = self._rect.width / 2 - line_length * 2
-        center_x = self._rect.x + self._rect.width / 2
-        center_y = self._rect.y + self._rect.height / 2
-        start_x = center_x + (line_offset + line_length) * math.cos(math.radians(angle))
-        start_y = center_y + (line_offset + line_length) * math.sin(math.radians(angle))
-        end_x = start_x + line_length * math.cos(math.radians(angle))
-        end_y = start_y + line_length * math.sin(math.radians(angle))
-        color = rl.Color(0, 255, 64, 255)
+    line_length = round(np.interp(f.x, [0.0, 1.0], [0, line_length]))
+    line_offset = self._rect.width / 2 - line_length * 2
+    center_x = self._rect.x + self._rect.width / 2
+    center_y = self._rect.y + self._rect.height / 2
+    start_x = center_x + (line_offset + line_length) * math.cos(math.radians(angle))
+    start_y = center_y + (line_offset + line_length) * math.sin(math.radians(angle))
+    end_x = start_x + line_length * math.cos(math.radians(angle))
+    end_y = start_y + line_length * math.sin(math.radians(angle))
+    color = rl.Color(0, 255, 64, 255)
 
-        if grey:
-          color = rl.Color(166, 166, 166, 255)
+    if grey:
+      color = rl.Color(166, 166, 166, 255)
 
-        if f.x > 0.01:
-          rl.draw_line_ex((start_x, start_y), (end_x, end_y), 12, color)
+    if f.x > 0.01:
+      rl.draw_line_ex((start_x, start_y), (end_x, end_y), 12, color)
 
       def _update_state(self):
         sm = ui_state.sm
