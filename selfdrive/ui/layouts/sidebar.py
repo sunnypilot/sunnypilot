@@ -1,126 +1,96 @@
-import math
 import pyray as rl
 from dataclasses import dataclass
-
-from cereal import log
-from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.lib.text_measure import measure_text_cached
-from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import Widget
 
-ThermalStatus = log.DeviceState.ThermalStatus
+SIDEBAR_WIDTH = 360
+CARD_RADIUS = 0.18
+CARD_PADDING = 24
+CARD_SPACING = 24
 
-SIDEBAR_WIDTH = 300
-CARD_RADIUS = 22
-CARD_PADDING = 28
-CARD_SPACING = 26
-TEXT_SIZE_TITLE = 38
-TEXT_SIZE_VALUE = 52
-
-
-# ----------------------------
-#  Color Palettes (Minimal)
-# ----------------------------
-
-COLOR_GREY_BG = rl.Color(30, 30, 30, 200)
-COLOR_CARD_BG = rl.Color(255, 255, 255, 28)
-COLOR_WHITE = rl.Color(255, 255, 255, 255)
-
-THERMAL_COLORS = {
-  ThermalStatus.green: rl.Color(120, 200, 150, 255),
-  ThermalStatus.yellow: rl.Color(230, 210, 140, 255),
-  ThermalStatus.red: rl.Color(250, 140, 140, 255),
-  ThermalStatus.danger: rl.Color(255, 90, 90, 255),
-}
-
-ENGAGED_BORDER = rl.Color(110, 200, 140, 255)
-DISENGAGED_BORDER = rl.Color(110, 110, 110, 255)
-OVERRIDE_BORDER = rl.Color(240, 190, 90, 255)
+COLOR_BG = rl.Color(15, 15, 18, 255)
+COLOR_CARD_BG = rl.Color(28, 28, 32, 200)
+COLOR_WHITE = rl.WHITE
+COLOR_GREY = rl.Color(180, 180, 180, 255)
+COLOR_ACCENT = rl.Color(120, 180, 255, 255)
 
 
-@dataclass
-class Card:
-  title: str
-  value: str
-  color: rl.Color
-
-
-class Sidebar(Widget):
+class Sidebar:
   def __init__(self):
-    super().__init__()
-    self._font_bold = gui_app.font(FontWeight.BOLD)
-    self._font_regular = gui_app.font(FontWeight.MEDIUM)
+    self._on_settings = None
+    self._on_reboot = None
+    self._on_shutdown = None
 
-  # -------------------------------
-  # Layout Rendering
-  # -------------------------------
+  # --------------------------------------------------------
+  # CALLBACK API (required by MainLayout)
+  # --------------------------------------------------------
+  def set_callbacks(self, on_settings=None, on_reboot=None, on_shutdown=None):
+    self._on_settings = on_settings
+    self._on_reboot = on_reboot
+    self._on_shutdown = on_shutdown
 
-  def _render(self, rect: rl.Rectangle):
-    rl.draw_rectangle_rec(
-      rl.Rectangle(rect.x, rect.y, SIDEBAR_WIDTH, rect.height),
-      COLOR_GREY_BG,
-    )
+  # --------------------------------------------------------
+  # MAIN RENDER
+  # --------------------------------------------------------
+  def render(self, rect: rl.Rectangle):
+    # Sidebar background
+    rl.draw_rectangle(int(rect.x), int(rect.y), SIDEBAR_WIDTH, int(rect.height), COLOR_BG)
 
-    cards = self._generate_cards()
-    offset_y = rect.y + 40
+    y = rect.y + CARD_PADDING
 
-    # Draw each card
-    for card in cards:
-      card_rect = rl.Rectangle(
-        rect.x + CARD_PADDING,
-        offset_y,
-        SIDEBAR_WIDTH - CARD_PADDING * 2,
-        180,
-      )
+    # Konik Stable Card
+    y = self._draw_card(rect, y, "Konik Stable", self._get_konik_status())
 
-      self._draw_card(card_rect, card)
-      offset_y += 180 + CARD_SPACING
+    # Vehicle State Card
+    y = self._draw_card(rect, y, "Vehicle State", self._get_vehicle_status())
 
+    # Temperature Card
+    y = self._draw_card(rect, y, "Temperature", self._get_temp_status())
+
+    # WiFi Card
+    y = self._draw_card(rect, y, "WiFi", self._get_wifi_status())
+
+    # Settings button (footer)
     self._draw_footer(rect)
 
-  # -------------------------------
-  # Card Rendering
-  # -------------------------------
+  # --------------------------------------------------------
+  # CARD COMPONENT
+  # --------------------------------------------------------
+  def _draw_card(self, rect: rl.Rectangle, y: int, title: str, value: str) -> int:
+    card_rect = rl.Rectangle(
+      rect.x + CARD_PADDING,
+      y,
+      SIDEBAR_WIDTH - CARD_PADDING * 2,
+      130
+    )
 
-  def _draw_card(self, rect: rl.Rectangle, card: Card):
     # Card background
-    rl.draw_rectangle_rounded(rect, 0.18, 12, COLOR_CARD_BG)
+    rl.draw_rectangle_rounded(card_rect, CARD_RADIUS, 12, COLOR_CARD_BG)
 
-    # Colored top accent bar
-    rl.draw_rectangle_rounded_lines_ex(
-      rect,
-      0.18,
-      12,
-      4,
-      card.color,
+    # Card text
+    gui_label(
+      rl.Rectangle(card_rect.x + 24, card_rect.y + 18, card_rect.width, 40),
+      title,
+      font_weight=FontWeight.BOLD,
+      font_size=42,
+      color=COLOR_WHITE,
     )
 
-    # Title
-    title_size = measure_text_cached(self._font_regular, card.title, TEXT_SIZE_TITLE)
-    rl.draw_text_ex(
-      self._font_regular,
-      card.title,
-      rl.Vector2(rect.x + 22, rect.y + 24),
-      TEXT_SIZE_TITLE,
-      0,
-      COLOR_WHITE,
+    gui_label(
+      rl.Rectangle(card_rect.x + 24, card_rect.y + 70, card_rect.width, 40),
+      value,
+      font_weight=FontWeight.NORMAL,
+      font_size=36,
+      color=COLOR_GREY,
     )
 
-    # Value
-    rl.draw_text_ex(
-      self._font_bold,
-      card.value,
-      rl.Vector2(rect.x + 22, rect.y + 90),
-      TEXT_SIZE_VALUE,
-      0,
-      COLOR_WHITE,
-    )
+    return y + 130 + CARD_SPACING
 
-  # -------------------------------
-  # Footer (settings icon)
-  # -------------------------------
-
+  # --------------------------------------------------------
+  # SETTINGS FOOTER (CLICKABLE)
+  # --------------------------------------------------------
   def _draw_footer(self, rect: rl.Rectangle):
     footer_rect = rl.Rectangle(
       rect.x + CARD_PADDING,
@@ -129,55 +99,51 @@ class Sidebar(Widget):
       120,
     )
 
-    rl.draw_rectangle_rounded(footer_rect, 0.18, 12, COLOR_CARD_BG)
+    rl.draw_rectangle_rounded(footer_rect, CARD_RADIUS, 12, COLOR_CARD_BG)
 
-    # Settings gear icon
-    rl.draw_circle_lines(
-      int(footer_rect.x + footer_rect.width / 2),
-      int(footer_rect.y + footer_rect.height / 2),
-      36,
-      COLOR_WHITE,
-    )
-    # Could add a gear texture later
+    # Handle Click
+    if rl.is_mouse_button_released(rl.MOUSE_LEFT_BUTTON):
+      mx, my = rl.get_mouse_position()
+      if rl.check_collision_point_rec(rl.Vector2(mx, my), footer_rect):
+        if self._on_settings:
+          self._on_settings()
 
-  # -------------------------------
-  # Card Data
-  # -------------------------------
+    # Settings Icon (Clean minimal circle)
+    cx = int(footer_rect.x + footer_rect.width / 2)
+    cy = int(footer_rect.y + footer_rect.height / 2)
 
-  def _generate_cards(self):
-    dev_state = ui_state.sm["deviceState"]
-    engage_state = ui_state.status
+    rl.draw_circle_lines(cx, cy, 38, COLOR_WHITE)
+    rl.draw_circle(cx, cy, 6, COLOR_WHITE)
 
-    # Engagement color logic
-    if engage_state == UIStatus.ENGAGED:
-      eng_color = ENGAGED_BORDER
-    elif engage_state == UIStatus.OVERRIDE:
-      eng_color = OVERRIDE_BORDER
-    else:
-      eng_color = DISENGAGED_BORDER
+  # --------------------------------------------------------
+  # STATUS HELPERS
+  # --------------------------------------------------------
 
-    thermal_color = THERMAL_COLORS.get(
-      dev_state.thermalStatus,
-      THERMAL_COLORS[ThermalStatus.green],
-    )
+  def _get_konik_status(self):
+    ss = ui_state.sm["controlsState"]
+    return "Running" if ss.enabled else "Idle"
 
-    # Cards
-    cards = [
-      Card("System", tr("Hoofpilot Stable"), eng_color),
-      Card("Vehicle", tr("Connected") if ui_state.sm.all_readers_updated(["carState"]) else tr("No CAN"), eng_color),
-      Card("Thermals", f"{round(dev_state.cpuTempC[0])}°C", thermal_color),
-      Card("Network", self._wifi_text(), eng_color),
-    ]
-    return cards
+  def _get_vehicle_status(self):
+    cs = ui_state.sm["carState"]
+    if cs.brakePressed:
+      return "Brake Pressed"
+    elif cs.gasPressed:
+      return "Accelerating"
+    return "Cruising"
 
-  def _wifi_text(self):
-    wifi = ui_state.sm["wifiNetworkInfo"]
+  def _get_temp_status(self):
+    thermo = ui_state.sm["deviceState"]
+    temp = thermo.cpuTempC
+    return f"{temp:.0f}°C"
 
-    if wifi.connected:
-      return f"{wifi.ssid} · {wifi.strength}dBm"
+  def _get_wifi_status(self):
+    dev = ui_state.sm["deviceState"]
+    rssi = dev.wifiRSSI
 
-    return tr("Not Connected")
-
-
-# Sidebar width for importers
-__all__ = ["Sidebar", "SIDEBAR_WIDTH"]
+    if rssi > -55:
+      return "Excellent"
+    elif rssi > -65:
+      return "Good"
+    elif rssi > -75:
+      return "Weak"
+    return "Very Weak"
