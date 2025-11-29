@@ -10,18 +10,11 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.sunnypilot.onroad.dev_ui import DevUI, LeadVehicle
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
 MAX_DRAW_DISTANCE = 100.0
-
-CHEVRON_DISTANCE = 1
-CHEVRON_SPEED = 2
-CHEVRON_TTC = 3
-CHEVRON_ALL = 4
-
-MS_TO_KPH = 3.6
-MS_TO_MPH = 2.23694
 
 THROTTLE_COLORS = [
   rl.Color(13, 248, 122, 102),   # HSLF(148/360, 0.94, 0.51, 0.4)
@@ -42,27 +35,20 @@ class ModelPoints:
   projected_points: np.ndarray = field(default_factory=lambda: np.empty((0, 2), dtype=np.float32))
 
 
-@dataclass
-class LeadVehicle:
-  glow: list[float] = field(default_factory=list)
-  chevron: list[float] = field(default_factory=list)
-  fill_alpha: int = 0
-
-
 class ModelRenderer(Widget):
   def __init__(self):
     super().__init__()
     self._longitudinal_control = False
     self._experimental_mode = False
-    self._chevron_info = 0
-    self._is_metric = True
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
     self._prev_allow_throttle = True
     self._lane_line_probs = np.zeros(4, dtype=np.float32)
     self._road_edge_stds = np.zeros(2, dtype=np.float32)
-    self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
+    self._lead_vehicles = [LeadVehicle(glow=[], chevron=[], fill_alpha=0),
+                          LeadVehicle(glow=[], chevron=[], fill_alpha=0)]
     self._path_offset_z = HEIGHT_INIT[0]
-    self._lead_status_alpha = 0.0
+
+    self._dev_ui = DevUI()
 
     # Initialize ModelPoints objects
     self._path = ModelPoints()
@@ -82,20 +68,10 @@ class ModelRenderer(Widget):
       stops=[],
     )
 
-    self._font = gui_app.font(FontWeight.SEMI_BOLD)
-
     # Get longitudinal control setting from car parameters
     if car_params := Params().get("CarParams"):
       cp = messaging.log_from_bytes(car_params, car.CarParams)
       self._longitudinal_control = cp.openpilotLongitudinalControl
-
-    try:
-      chevron_val = Params().get("ChevronInfo")
-      self._chevron_info = int(chevron_val) if chevron_val else 4 #0
-    except (ValueError, TypeError):
-      self._chevron_info = 1
-
-    self._is_metric = Params().get_bool("IsMetric")
 
   def set_transform(self, transform: np.ndarray):
     self._car_space_transform = transform.astype(np.float32)
@@ -167,7 +143,8 @@ class ModelRenderer(Widget):
 
   def _update_leads(self, radar_state, path_x_array):
     """Update positions of lead vehicles"""
-    self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
+    self._lead_vehicles = [LeadVehicle(glow=[], chevron=[], fill_alpha=0),
+                          LeadVehicle(glow=[], chevron=[], fill_alpha=0)]
     leads = [radar_state.leadOne, radar_state.leadTwo]
 
     for i, lead_data in enumerate(leads):
@@ -331,95 +308,26 @@ class ModelRenderer(Widget):
       rl.draw_triangle_fan(lead.chevron, len(lead.chevron), rl.Color(201, 34, 49, lead.fill_alpha))
 
   def _draw_lead_status(self, sm, radar_state):
-    if self._chevron_info == 0:
-      self._lead_status_alpha = max(0.0, self._lead_status_alpha - 0.05)
-      return
-
     lead_one = radar_state.leadOne
     lead_two = radar_state.leadTwo
 
     has_lead_one = lead_one.status if lead_one else False
     has_lead_two = lead_two.status if lead_two else False
 
-    if not has_lead_one and not has_lead_two:
-      self._lead_status_alpha = max(0.0, self._lead_status_alpha - 0.05)
-      if self._lead_status_alpha <= 0.0:
-        return
-    else:
-      self._lead_status_alpha = min(1.0, self._lead_status_alpha + 0.1)
+    self._dev_ui.update_alpha(has_lead_one or has_lead_two)
+
+    if not self._dev_ui.should_render():
+      return
 
     v_ego = sm['carState'].vEgo
 
     if has_lead_one and self._lead_vehicles[0].chevron:
-      self._draw_lead_status_text(lead_one, self._lead_vehicles[0], v_ego)
+      self._dev_ui.draw_lead_status(lead_one, self._lead_vehicles[0], v_ego, self._rect)
 
     if has_lead_two and self._lead_vehicles[1].chevron:
       d_rel_diff = abs(lead_one.dRel - lead_two.dRel) if has_lead_one else float('inf')
       if d_rel_diff > 3.0:
-        self._draw_lead_status_text(lead_two, self._lead_vehicles[1], v_ego)
-
-  def _draw_lead_status_text(self, lead_data, lead_vehicle, v_ego):
-    d_rel = lead_data.dRel
-    v_rel = lead_data.vRel
-
-    if not lead_vehicle.chevron or len(lead_vehicle.chevron) < 2:
-      return
-    chevron_x = lead_vehicle.chevron[1][0]
-    chevron_y = lead_vehicle.chevron[1][1]
-    sz = np.clip((25 * 30) / (d_rel / 3 + 30), 15.0, 30.0) * 2.35
-    text_lines = []
-
-    # distance
-    if self._chevron_info == CHEVRON_DISTANCE or self._chevron_info == CHEVRON_ALL:
-      val = max(0.0, d_rel)
-      unit = "m" if self._is_metric else "ft"
-      if not self._is_metric:
-        val *= 3.28084
-      text_lines.append(f"{val:.0f} {unit}")
-
-    # speed
-    if self._chevron_info == CHEVRON_SPEED or self._chevron_info == CHEVRON_ALL:
-      multiplier = MS_TO_KPH if self._is_metric else MS_TO_MPH
-      val = max(0.0, (v_rel + v_ego) * multiplier)
-      unit = "km/h" if self._is_metric else "mph"
-      text_lines.append(f"{val:.0f} {unit}")
-
-    # ttc
-    if self._chevron_info == CHEVRON_TTC or self._chevron_info == CHEVRON_ALL:
-      val = (d_rel / v_ego) if (d_rel > 0 and v_ego > 0) else 0.0
-      ttc_text = f"{val:.1f}s" if (0 < val < 200) else "---"
-      text_lines.append(ttc_text)
-
-    if not text_lines:
-      return
-
-    font_size = 40
-    line_height = 50
-    margin = 20
-
-    text_y = chevron_y + sz + 15
-    total_height = len(text_lines) * line_height
-
-    if text_y + total_height > self._rect.height - margin:
-      y_max = min(chevron_y, self._rect.height - margin)
-      text_y = y_max - 15 - total_height
-      text_y = max(margin, text_y)
-
-    alpha = int(255 * self._lead_status_alpha)
-    text_color = rl.Color(255, 255, 255, alpha)
-    shadow_color = rl.Color(0, 0, 0, int(200 * self._lead_status_alpha))
-
-    for i, line in enumerate(text_lines):
-      y = int(text_y + (i * line_height))
-      if y + line_height > self._rect.height - margin:
-        break
-
-      text_width = len(line) * font_size * 0.6
-      x = int(chevron_x - text_width / 2)
-      x = int(np.clip(x, margin, self._rect.width - text_width - margin))
-
-      rl.draw_text_ex(self._font, line, rl.Vector2(x + 2, y + 2), font_size, 0, shadow_color)
-      rl.draw_text_ex(self._font, line, rl.Vector2(x, y), font_size, 0, text_color)
+        self._dev_ui.draw_lead_status(lead_two, self._lead_vehicles[1], v_ego, self._rect)
 
   @staticmethod
   def _get_path_length_idx(pos_x_array: np.ndarray, path_distance: float) -> int:
