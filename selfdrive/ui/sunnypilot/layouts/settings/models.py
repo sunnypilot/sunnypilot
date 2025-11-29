@@ -69,8 +69,8 @@ class ModelsLayout(Widget):
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
                                                 tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
                                                 int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
-                                                lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.params.get_bool('IsMetric') else 1)))}" +
-                                                          f" {'km/h' if ui_state.params.get_bool('IsMetric') else 'mph'}")
+                                                lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.is_metric else 1)))}" +
+                                                          f" {'km/h' if ui_state.is_metric else 'mph'}")
 
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
                                                 tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on," +
@@ -209,7 +209,7 @@ class ModelsLayout(Widget):
     return self.cached_size
 
   def _update_state(self):
-    new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.params.get_bool("IsMetric") else 100
+    new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item.value_change_step != new_step:
       self.lane_turn_value_control.action_item.value_change_step = new_step
 
