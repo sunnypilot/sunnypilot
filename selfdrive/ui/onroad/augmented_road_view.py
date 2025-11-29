@@ -56,6 +56,7 @@ class AugmentedRoadView(CameraView):
     self._settings_cb = None
     self._settings_icon = gui_app.texture("icons_mici/settings.png", 110, 110)
     self._settings_rect = rl.Rectangle()
+    self.driver_state_renderer = None
 
     # Inline Tizi DriverStateRenderer (ported from Mici) scaled up for Tizi
     # This avoids relying on the external mici module so we consume fewer Copilot requests.
@@ -271,7 +272,10 @@ class AugmentedRoadView(CameraView):
         else:
           self._fade_filter.update(1.0)
 
-    self.driver_state_renderer = TiziDriverStateRenderer()
+    try:
+      self.driver_state_renderer = TiziDriverStateRenderer()
+    except Exception:
+      self.driver_state_renderer = None
 
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
@@ -321,21 +325,22 @@ class AugmentedRoadView(CameraView):
       ui_state.is_onroad()
       and (ui_state.status != UIStatus.DISENGAGED or ui_state.always_on_dm)
     )
-    try:
-      self.driver_state_renderer.set_should_draw(should_draw_dmoji)
+    if self.driver_state_renderer is not None:
+      try:
+        self.driver_state_renderer.set_should_draw(should_draw_dmoji)
 
-      # Position DM in the BOTTOM-LEFT of the content rect.
-      # Use the widget's own height so it sits just above the bottom border.
-      dm_rect = self.driver_state_renderer._rect
-      self.driver_state_renderer.set_position(
-        self._content_rect.x + 16,
-        self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
-      )
-    except Exception:
-      pass
+        dm_rect = self.driver_state_renderer._rect
+        self.driver_state_renderer.set_position(
+          self._content_rect.x + 16,
+          self._content_rect.y + self._content_rect.height - dm_rect.height - 16,
+        )
+      except Exception:
+        pass
 
-    # Render without passing `self._content_rect` to preserve the widget's own rect/size
-    self.driver_state_renderer.render()
+      try:
+        self.driver_state_renderer.render()
+      except Exception:
+        pass
 
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
