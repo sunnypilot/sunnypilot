@@ -7,7 +7,8 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.widgets.list_view import ItemAction
 
 # Dimensions and styling constants
-BUTTON_WIDTH = 100
+BUTTON_WIDTH = 150
+BUTTON_HEIGHT = 150
 LABEL_WIDTH = 350
 BUTTON_SPACING = 25
 VALUE_FONT_SIZE = 50
@@ -100,24 +101,23 @@ class OptionControlSP(ItemAction):
     self._rect.width = total_width
 
     start_x = self._rect.x + self._rect.width - control_width - (CONTAINER_PADDING * 2)
-    component_y = rect.y + (rect.height - style.BUTTON_HEIGHT) / 2
-    self.container_rect = rl.Rectangle(start_x, component_y, total_width, style.BUTTON_HEIGHT)
+    component_y = rect.y + (rect.height - BUTTON_HEIGHT) / 2
+    self.container_rect = rl.Rectangle(start_x, component_y, total_width, BUTTON_HEIGHT)
 
     # background
-    bg_color = rl.color_from_normalized((0.2, 0.2, 0.2, 1.0))  # Dark Grey
-    rl.draw_rectangle_rounded(self.container_rect, 0.2, 20, bg_color)
+    rl.draw_rectangle_rounded(self.container_rect, 0.2, 20, style.OPTION_CONTROL_CONTAINER_BG)
 
     # minus button
     self.minus_btn_rect = rl.Rectangle(self.container_rect.x, component_y, BUTTON_WIDTH + CONTAINER_PADDING,
-                                       style.BUTTON_HEIGHT)
+                                       BUTTON_HEIGHT)
 
     # label
     label_x = self.container_rect.x + CONTAINER_PADDING + BUTTON_WIDTH + BUTTON_SPACING
-    self.label_rect = rl.Rectangle(label_x, component_y, self.label_width, style.BUTTON_HEIGHT)
+    self.label_rect = rl.Rectangle(label_x, component_y, self.label_width, BUTTON_HEIGHT)
 
     # plus button
     plus_x = label_x + self.label_width + BUTTON_SPACING
-    self.plus_btn_rect = rl.Rectangle(plus_x, component_y, BUTTON_WIDTH + CONTAINER_PADDING, style.BUTTON_HEIGHT)
+    self.plus_btn_rect = rl.Rectangle(plus_x, component_y, BUTTON_WIDTH + CONTAINER_PADDING, BUTTON_HEIGHT)
 
     self._minus_enabled = self.enabled and self.current_value > self.min_value
     self._plus_enabled = self.enabled and self.current_value < self.max_value
@@ -135,7 +135,7 @@ class OptionControlSP(ItemAction):
 
     # highlight
     if enabled and is_pressed:
-      rl.draw_rectangle_rounded(rect, 0.2, 20, style.ON_BG_COLOR)
+      rl.draw_rectangle_rounded(rect, 0.2, 20, style.OPTION_CONTROL_BTN_PRESSED)
 
     # button text
     text_size = measure_text_cached(self._font, text, BUTTON_FONT_SIZE)
