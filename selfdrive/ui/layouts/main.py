@@ -30,8 +30,8 @@ class MainLayout(Widget):
     # Settings transition animation state
     self._settings_anim_active = False
     self._settings_anim_start = 0.0
-    # Use easing/duration similar to mici (slightly bouncy)
-    self._settings_anim_duration = 0.32
+    # Faster easing for responsiveness
+    self._settings_anim_duration = 0.24
     self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
 
@@ -196,8 +196,8 @@ class MainLayout(Widget):
       now = rl.get_time()
       elapsed = now - self._settings_anim_start
       t = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # easeOutQuad to reduce bounce
-      eased = 1 - (1 - t) * (1 - t)
+      # easeOutCubic for snappier close/open
+      eased = 1 - pow(1 - t, 3)
 
       # During animation, draw a solid backdrop to prevent underlying icons peeking
       rl.draw_rectangle_rec(content_rect, rl.Color(0, 0, 0, 255))

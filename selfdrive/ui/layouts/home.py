@@ -1,14 +1,12 @@
 import time
 import datetime
 import pyray as rl
-from collections.abc import Callable
 from enum import IntEnum
 from cereal import log
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.widgets.offroad_alerts import UpdateAlert, OffroadAlert
 from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
+from openpilot.selfdrive.ui.layouts.offroad_alerts import OffroadAlertsLayout
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
-from openpilot.system.ui.lib.multilang import tr
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
 
@@ -22,17 +20,15 @@ PADDING = 48
 ICON_MARGIN = 60
 SWIPE_THRESHOLD = 120
 SWIPE_EDGE = 80
-WIFI_Y_OFFSET = -15  # pixels up
-MODE_Y_OFFSET = 10   # pixels down
+WIFI_Y_OFFSET = -15
+MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 NetworkType = log.DeviceState.NetworkType
 
 
 class HomeLayoutState(IntEnum):
   HOME = 0
-  UPDATE = 1
-  ALERTS = 2
-  ALL = 3
+  ALERTS = 1
 
 
 class HomeLayout(Widget):
@@ -40,33 +36,22 @@ class HomeLayout(Widget):
     super().__init__()
     self.params = Params()
 
-    self.update_alert = UpdateAlert()
-    self.offroad_alert = OffroadAlert()
-
-    self._layout_widgets = {HomeLayoutState.UPDATE: self.update_alert, HomeLayoutState.ALERTS: self.offroad_alert}
-
     self.current_state = HomeLayoutState.HOME
-    self.last_refresh = 0
-    self.settings_callback: callable | None = None
-    self.open_panel_callback: Callable[[PanelType], None] | None = None
+    self.last_refresh = 0.0
 
-    self.update_available = False
-    self.alert_count = 0
+    self.settings_callback = None
+    self.open_panel_callback = None
+
     self._version_text: tuple[str, str, str, str, str] | None = None
-    self._prev_update_available = False
-    self._prev_alerts_present = False
     self._experimental_mode = False
 
-    # Layout helpers
     self._scale = 1.0
     self._swipe_start: MousePos | None = None
     self._swipe_active = False
 
-    # Connectivity
     self._net_type = NetworkType.none
     self._net_strength = 0
 
-    # Assets
     self._settings_icon = gui_app.texture("icons_mici/settings.png", 180, 180)
     self._wifi_icons = {
       "slash": gui_app.texture("icons_mici/settings/network/wifi_strength_slash.png", 210, 180),
@@ -91,30 +76,29 @@ class HomeLayout(Widget):
     self._font_version = gui_app.font(FontWeight.MEDIUM)
     self._font_meta = gui_app.font(FontWeight.MEDIUM)
 
-    self._setup_callbacks()
+    self._alerts_layout = OffroadAlertsLayout()
 
   def show_event(self):
     self.last_refresh = time.monotonic()
+    self._alerts_layout.show_event()
     self._refresh()
 
-  def _setup_callbacks(self):
-    self.update_alert.set_dismiss_callback(lambda: self._set_state(HomeLayoutState.HOME))
-    self.offroad_alert.set_dismiss_callback(lambda: self._set_state(HomeLayoutState.HOME))
+  def hide_event(self):
+    self._alerts_layout.hide_event()
 
-  def set_settings_callback(self, callback: Callable):
+  def set_settings_callback(self, callback):
     self.settings_callback = callback
-  def set_panel_callback(self, callback: Callable[[PanelType], None]):
+
+  def set_panel_callback(self, callback):
     self.open_panel_callback = callback
 
   def _set_state(self, state: HomeLayoutState):
-    # propagate show/hide events
     if state != self.current_state:
-      if state in self._layout_widgets:
-        self._layout_widgets[state].show_event()
-      if self.current_state in self._layout_widgets:
-        self._layout_widgets[self.current_state].hide_event()
-
-    self.current_state = state
+      if state == HomeLayoutState.ALERTS:
+        self._alerts_layout.show_event()
+      else:
+        self._alerts_layout.hide_event()
+      self.current_state = state
 
   def _render(self, rect: rl.Rectangle):
     current_time = time.monotonic()
@@ -124,16 +108,12 @@ class HomeLayout(Widget):
 
     self._render_cluster()
 
-    # Render content based on current state
-    if self.current_state == HomeLayoutState.UPDATE:
-      self._render_update_view()
-    elif self.current_state == HomeLayoutState.ALERTS:
-      self._render_alerts_view()
-    elif self.current_state == HomeLayoutState.ALL:
-      self._render_all_view()
+    if self.current_state == HomeLayoutState.ALERTS:
+      panel_rect = self._content_panel_rect()
+      rl.draw_rectangle_rec(panel_rect, rl.Color(0, 0, 0, 200))
+      self._alerts_layout.render(panel_rect)
 
   def _update_state(self):
-    # Refresh connectivity each frame
     if ui_state.sm.updated['deviceState']:
       device_state = ui_state.sm['deviceState']
       self._net_type = device_state.networkType
@@ -143,7 +123,6 @@ class HomeLayout(Widget):
   def _handle_mouse_event(self, mouse_event: MouseEvent):
     super()._handle_mouse_event(mouse_event)
 
-    # Track a left-edge swipe to reveal alerts/updates
     if mouse_event.left_pressed and mouse_event.pos.x <= SWIPE_EDGE:
       self._swipe_start = mouse_event.pos
       self._swipe_active = True
@@ -151,9 +130,8 @@ class HomeLayout(Widget):
     if self._swipe_active and mouse_event.left_released and self._swipe_start is not None:
       dx = mouse_event.pos.x - self._swipe_start.x
       if dx > SWIPE_THRESHOLD:
-        # Show both updates and alerts together
-        self._set_state(HomeLayoutState.ALL)
-      elif dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALL:
+        self._set_state(HomeLayoutState.ALERTS)
+      elif dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALERTS:
         self._set_state(HomeLayoutState.HOME)
       self._swipe_active = False
       self._swipe_start = None
@@ -161,41 +139,6 @@ class HomeLayout(Widget):
     if mouse_event.left_released and self._swipe_start:
       self._swipe_active = False
       self._swipe_start = None
-
-  def _render_update_view(self):
-    panel_rect = self._content_panel_rect()
-    self.update_alert.render(panel_rect)
-
-  def _render_alerts_view(self):
-    panel_rect = self._content_panel_rect()
-    self.offroad_alert.render(panel_rect)
-
-  def _render_all_view(self):
-    panel_rect = self._content_panel_rect()
-    rl.draw_rectangle_rec(panel_rect, rl.Color(0, 0, 0, 200))
-
-    if not self.update_available and self.alert_count == 0:
-      msg = tr("No alerts")
-      font = gui_app.font(FontWeight.MEDIUM)
-      size = rl.measure_text_ex(font, msg, 64 * self._scale, 0)
-      pos = rl.Vector2(
-        panel_rect.x + (panel_rect.width - size.x) / 2,
-        panel_rect.y + (panel_rect.height - size.y) / 2,
-      )
-      rl.draw_text_ex(font, msg, pos, 64 * self._scale, 0, rl.Color(220, 220, 220, 255))
-      return
-
-    spacing = 40 * self._scale
-    y_cursor = panel_rect.y
-
-    if self.update_available:
-      update_rect = rl.Rectangle(panel_rect.x, y_cursor, panel_rect.width, panel_rect.height / 2 - spacing / 2)
-      self.update_alert.render(update_rect)
-      y_cursor += update_rect.height + spacing
-
-    if self.alert_count > 0:
-      alert_rect = rl.Rectangle(panel_rect.x, y_cursor, panel_rect.width, panel_rect.height - (y_cursor - panel_rect.y))
-      self.offroad_alert.render(alert_rect)
 
   def _content_panel_rect(self) -> rl.Rectangle:
     margin = 80 * self._scale
@@ -208,7 +151,6 @@ class HomeLayout(Widget):
     )
 
   def _render_cluster(self):
-    # Scale everything relative to a 2560x1080 baseline
     self._scale = min(self._rect.width / BASE_WIDTH, self._rect.height / BASE_HEIGHT)
 
     brand_pos = rl.Vector2(self._rect.x + PADDING * self._scale, self._rect.y + PADDING * self._scale)
@@ -246,7 +188,6 @@ class HomeLayout(Widget):
 
     rl.draw_texture_ex(self._settings_icon, (int(base_x), int(base_y)), 0, icon_scale, rl.WHITE)
 
-    # Handle settings click (Device panel)
     if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
       rect = rl.Rectangle(base_x, base_y, gear_w, gear_h)
@@ -256,7 +197,6 @@ class HomeLayout(Widget):
         elif self.settings_callback:
           self.settings_callback()
 
-    # Connectivity icon
     conn_x = base_x + gear_w + 50 * self._scale
     conn_w = 0
     conn_texture = self._select_connectivity_icon()
@@ -272,7 +212,6 @@ class HomeLayout(Widget):
         if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
           self.open_panel_callback(PanelType.NETWORK)
 
-    # Mode icon (experimental vs wheel)
     mode_icon = self._mode_icons["exp"] if self._experimental_mode else self._mode_icons["wheel"]
     mode_scale = icon_scale * MODE_SCALE_FACTOR
     mode_w = mode_icon.width * mode_scale
@@ -288,14 +227,13 @@ class HomeLayout(Widget):
         self.open_panel_callback(PanelType.TOGGLES)
 
   def _select_connectivity_icon(self):
-    # Wi-Fi takes priority when connected; otherwise fall back to cell icons; if nothing, show slash.
     if self._net_type == NetworkType.wifi:
       level = min(max(self._net_strength, 0), 5)
       if level <= 1:
         return self._wifi_icons["none"]
       if level == 2:
         return self._wifi_icons["low"]
-      if level == 3 or level == 4:
+      if level in (3, 4):
         return self._wifi_icons["medium"]
       return self._wifi_icons["full"]
 
@@ -315,23 +253,8 @@ class HomeLayout(Widget):
 
   def _refresh(self):
     self._version_text = self._get_version_text()
-    update_available = self.update_alert.refresh()
-    alert_count = self.offroad_alert.refresh()
-    alerts_present = alert_count > 0
     self._experimental_mode = ui_state.params.get_bool("ExperimentalMode")
-
-    # Show panels on transition from no alert/update to any alerts/update
-    if not update_available and not alerts_present:
-      self._set_state(HomeLayoutState.HOME)
-    elif update_available and ((not self._prev_update_available) or (not alerts_present and self.current_state == HomeLayoutState.ALERTS)):
-      self._set_state(HomeLayoutState.UPDATE)
-    elif alerts_present and ((not self._prev_alerts_present) or (not update_available and self.current_state == HomeLayoutState.UPDATE)):
-      self._set_state(HomeLayoutState.ALERTS)
-
-    self.update_available = update_available
-    self.alert_count = alert_count
-    self._prev_update_available = update_available
-    self._prev_alerts_present = alerts_present
+    self._alerts_layout.refresh()
 
   def _get_version_text(self) -> tuple[str, str, str, str, str] | None:
     description = self.params.get("UpdaterCurrentDescription") or ""
