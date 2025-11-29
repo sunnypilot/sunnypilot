@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import json
 from openpilot.sunnypilot.sunnylink.athena.sunnylinkd import getParamsAllKeysV1
 
