@@ -30,15 +30,15 @@ class AlertData:
 
 
 class AlertItem(Widget):
-  ALERT_WIDTH = 1400
-  ALERT_HEIGHT_SMALL = 520
-  ALERT_HEIGHT_MED = 580
-  ALERT_HEIGHT_BIG = 660
-  ALERT_PADDING = 64
-  ICON_SIZE = 140
-  ICON_MARGIN = 30
+  ALERT_WIDTH = 1600
+  ALERT_HEIGHT_SMALL = 360
+  ALERT_HEIGHT_MED = 420
+  ALERT_HEIGHT_BIG = 480
+  ALERT_PADDING = 54
+  ICON_SIZE = 120
+  ICON_MARGIN = 28
   TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
-  TITLE_BODY_SPACING = 30
+  TITLE_BODY_SPACING = 26
 
   def __init__(self, alert_data: AlertData):
     super().__init__()
@@ -56,13 +56,13 @@ class AlertItem(Widget):
     self._icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
 
     self._title_label = UnifiedLabel(
-      text="", font_size=56, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
+      text="", font_size=60, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=0.95,
     )
 
     self._body_label = UnifiedLabel(
-      text="", font_size=46, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
+      text="", font_size=50, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, line_height=0.95,
     )
@@ -242,14 +242,12 @@ class OffroadAlertsLayout(Widget):
         release_notes = self.params.get("UpdaterNewReleaseNotes") or b""
         if isinstance(release_notes, bytes):
           release_notes = release_notes.decode("utf-8", "replace")
-        release_summary = release_notes.strip().splitlines()[0] if release_notes else ""
 
         header = "update available"
         line1 = f"hoofpilot {version}" if version else ""
         line2_parts = [p for p in [branch, commit, date] if p]
         line2 = " / ".join(line2_parts)
-        line3 = release_summary
-        update_alert_data.text = "\n".join([s for s in [header, line1, line2, line3] if s])
+        update_alert_data.text = "\n".join([s for s in [header, line1, line2] if s])
         update_alert_data.visible = True
         active_count += 1
       else:
