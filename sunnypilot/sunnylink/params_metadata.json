@@ -1029,7 +1029,23 @@
     "max": 5.0,
     "step": 0.1
   },
-  "TrainingVersion": {
+    "ToyotaAutoHold": {
+    "title": "Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS",
+    "description": ""
+  },
+    "ToyotaEnhancedBsm": {
+    "title": "Toyota: Prius TSS2 BSM and some tssp",
+    "description": ""
+  },
+    "ToyotaTSS2Long": {
+    "title": "Toyota: Stock Toyota Longitudinal",
+    "description": ""
+  },
+    "ToyotaDriveMode": {
+    "title": "Enable drive mode btn link",
+    "description": ""
+  },
+  "ToyotaStockLongitudinal": {
     "title": "Training Version",
     "description": ""
   },
