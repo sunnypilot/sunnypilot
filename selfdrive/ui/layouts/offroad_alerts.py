@@ -14,7 +14,7 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 
-REFRESH_INTERVAL = 5.0
+REFRESH_INTERVAL = 5.0  # seconds
 
 
 class AlertSeverity(IntEnum):
@@ -31,9 +31,6 @@ class AlertEntry:
   visible: bool = False
 
 
-# -------------------------------
-# Glass Card Component
-# -------------------------------
 class GlassAlertCard(Widget):
   CARD_WIDTH = 1480
   MIN_HEIGHT = 180
@@ -41,36 +38,53 @@ class GlassAlertCard(Widget):
   ICON_SIZE = 78
   ICON_MARGIN = 28
 
-  # subtle gradient glass tint
   GLASS_TINT_TOP = rl.Color(255, 255, 255, 36)
   GLASS_TINT_BOTTOM = rl.Color(255, 255, 255, 16)
-
   TEXT_COLOR = rl.Color(255, 255, 255, 230)
 
   def __init__(self, entry: AlertEntry):
     super().__init__()
     self.entry = entry
 
-    # severity glow effects
+    # glow colors
     self._glow_green = rl.Color(100, 255, 180, 255)
     self._glow_orange = rl.Color(255, 200, 80, 255)
     self._glow_red = rl.Color(255, 90, 90, 255)
 
-    # icons
-    self.icon_green = gui_app.texture("icons_mici/offroad_alerts/icon_green.png", self.ICON_SIZE, self.ICON_SIZE)
-    self.icon_orange = gui_app.texture("icons_mici/offroad_alerts/icon_orange.png", self.ICON_SIZE, self.ICON_SIZE)
-    self.icon_red = gui_app.texture("icons_mici/offroad_alerts/icon_red.png", self.ICON_SIZE, self.ICON_SIZE)
+    # use existing Mici icons that are already in the tree
+    self.icon_green = gui_app.texture(
+      "icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE
+    )
+    self.icon_orange = gui_app.texture(
+      "icons_mici/offroad_alerts/orange_warning.png", self.ICON_SIZE, self.ICON_SIZE
+    )
+    self.icon_red = gui_app.texture(
+      "icons_mici/offroad_alerts/red_warning.png", self.ICON_SIZE, self.ICON_SIZE
+    )
 
-    # typography
-    self.title_label = UnifiedLabel("", 52, FontWeight.BOLD, self.TEXT_COLOR,
-                                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
-    self.body_label = UnifiedLabel("", 40, FontWeight.ROMAN, self.TEXT_COLOR,
-                                   alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, line_height=1.06)
+    self.title_label = UnifiedLabel(
+      "",
+      52,
+      FontWeight.BOLD,
+      self.TEXT_COLOR,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      line_height=1.0,
+    )
 
-    # update content & sizing
+    self.body_label = UnifiedLabel(
+      "",
+      40,
+      FontWeight.ROMAN,
+      self.TEXT_COLOR,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      line_height=1.06,
+    )
+
     self._update_content()
 
-  def _split_text(self, text: str):
+  def _split_text(self, text: str) -> tuple[str, str]:
     match = re.search(r'[.!?](?:\s+|$)', text)
     if match:
       return text[:match.start()].strip(), text[match.end():].strip()
@@ -88,28 +102,27 @@ class GlassAlertCard(Widget):
     self.body_label.set_text(body)
 
     text_width = self.CARD_WIDTH - (self.PADDING * 2) - self.ICON_SIZE - self.ICON_MARGIN
-    title_height = self.title_label.get_content_height(text_width)
-    body_height = self.body_label.get_content_height(text_width)
+    title_h = self.title_label.get_content_height(text_width) if title else 0
+    body_h = self.body_label.get_content_height(text_width) if body else 0
 
-    total_height = max(self.MIN_HEIGHT, title_height + body_height + self.PADDING * 2 + 20)
-
-    self.set_rect(rl.Rectangle(0, 0, self.CARD_WIDTH, total_height))
+    total_h = max(self.MIN_HEIGHT, title_h + body_h + self.PADDING * 2 + 20)
+    self.set_rect(rl.Rectangle(0, 0, self.CARD_WIDTH, total_h))
 
   def update_entry(self, entry: AlertEntry):
     self.entry = entry
     self._update_content()
 
-  def _pick_glow(self):
-    if self.entry.severity == -1:
+  def _pick_glow(self) -> rl.Color:
+    if self.entry.severity == AlertSeverity.UPDATE:
       return self._glow_green
-    if self.entry.severity == 1:
+    if self.entry.severity == AlertSeverity.CRITICAL:
       return self._glow_red
     return self._glow_orange
 
   def _pick_icon(self):
-    if self.entry.severity == -1:
+    if self.entry.severity == AlertSeverity.UPDATE:
       return self.icon_green
-    if self.entry.severity == 1:
+    if self.entry.severity == AlertSeverity.CRITICAL:
       return self.icon_red
     return self.icon_orange
 
@@ -117,47 +130,55 @@ class GlassAlertCard(Widget):
     if not self.entry.visible:
       return
 
-    # --- draw glow ---
     glow_color = self._pick_glow()
-    glow_rect = rl.Rectangle(self._rect.x - 6, self._rect.y - 6,
-                             self._rect.width + 12, self._rect.height + 12)
-    rl.draw_rectangle_rounded(glow_rect, 0.12, 16, rl.Color(glow_color.r, glow_color.g, glow_color.b, 90))
+    glow_rect = rl.Rectangle(
+      self._rect.x - 6,
+      self._rect.y - 6,
+      self._rect.width + 12,
+      self._rect.height + 12,
+    )
+    rl.draw_rectangle_rounded(
+      glow_rect,
+      0.12,
+      16,
+      rl.Color(glow_color.r, glow_color.g, glow_color.b, 90),
+    )
 
-    # --- draw glass card ---
-    rl.draw_rectangle_rounded(self._rect, 0.12, 16, rl.Color(255,255,255,25))
+    rl.draw_rectangle_rounded(self._rect, 0.12, 16, rl.Color(255, 255, 255, 25))
     rl.draw_rectangle_gradient_v(
-      int(self._rect.x), int(self._rect.y),
-      int(self._rect.width), int(self._rect.height),
+      int(self._rect.x),
+      int(self._rect.y),
+      int(self._rect.width),
+      int(self._rect.height),
       self.GLASS_TINT_TOP,
-      self.GLASS_TINT_BOTTOM
+      self.GLASS_TINT_BOTTOM,
     )
 
     text_x = self._rect.x + self.PADDING
     text_y = self._rect.y + self.PADDING
     text_w = self._rect.width - (self.PADDING * 2) - self.ICON_SIZE - self.ICON_MARGIN
 
-    # title
     if self.title_label.text:
-      h = self.title_label.get_content_height(text_w)
-      self.title_label.render(rl.Rectangle(text_x, text_y, text_w, h))
-      text_y += h + 16
+      title_h = self.title_label.get_content_height(text_w)
+      self.title_label.render(rl.Rectangle(text_x, text_y, text_w, title_h))
+      text_y += title_h + 16
 
-    # body
     if self.body_label.text:
-      self.body_label.render(rl.Rectangle(text_x, text_y, text_w, self._rect.height - text_y))
+      self.body_label.render(
+        rl.Rectangle(
+          text_x,
+          text_y,
+          text_w,
+          self._rect.height - text_y + self._rect.y - self.PADDING,
+        )
+      )
 
-    # severity icon top-right
     icon = self._pick_icon()
-    rl.draw_texture(icon,
-      int(self._rect.x + self._rect.width - self.PADDING - self.ICON_SIZE),
-      int(self._rect.y + self.PADDING),
-      rl.WHITE
-    )
+    icon_x = self._rect.x + self._rect.width - self.PADDING - self.ICON_SIZE
+    icon_y = self._rect.y + self.PADDING
+    rl.draw_texture(icon, int(icon_x), int(icon_y), rl.WHITE)
 
 
-# -------------------------------------------------------
-# Main Offroad Alerts Layout (Tizi Glass Version)
-# -------------------------------------------------------
 class OffroadAlertsLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -166,78 +187,92 @@ class OffroadAlertsLayout(Widget):
     self.entries: list[AlertEntry] = []
     self.cards: list[GlassAlertCard] = []
 
-    self.scroller = Scroller([], horizontal=False, spacing=32, pad_start=16, pad_end=16)
-    self.last_refresh = 0
+    self.scroller = Scroller([], horizontal=False, spacing=32, pad_start=16, pad_end=16, snap_items=False)
+    self.last_refresh = 0.0
 
-    self.empty_label = UnifiedLabel(tr("no alerts"), 72, FontWeight.DISPLAY, rl.WHITE,
-                                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                                    alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+    self.empty_label = UnifiedLabel(
+      tr("no alerts"),
+      72,
+      FontWeight.DISPLAY,
+      rl.WHITE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+    )
 
     self._build_structure()
 
   def _build_structure(self):
-    # Update alert (special entry)
-    upd = AlertEntry("UpdateAvailable", "", -1, False)
-    self.entries.append(upd)
-    card = GlassAlertCard(upd)
-    self.cards.append(card)
-    self.scroller.add_widget(card)
+    # special update alert
+    update_entry = AlertEntry("UpdateAvailable", "", int(AlertSeverity.UPDATE), False)
+    self.entries.append(update_entry)
+    update_card = GlassAlertCard(update_entry)
+    self.cards.append(update_card)
+    self.scroller.add_widget(update_card)
 
-    # normal alerts
-    for key, cfg in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1]["severity"], reverse=True):
+    # normal alerts, sorted by severity
+    for key, cfg in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
       if key == "UpdateAvailable":
         continue
-      entry = AlertEntry(key, "", cfg.get("severity", 0), False)
+      sev = int(cfg.get("severity", 0))
+      entry = AlertEntry(key, "", sev, False)
       self.entries.append(entry)
       card = GlassAlertCard(entry)
       self.cards.append(card)
       self.scroller.add_widget(card)
 
+  def active_alerts(self) -> int:
+    return sum(1 for e in self.entries if e.visible)
+
   def refresh(self) -> int:
     active = 0
 
-    # update alert
-    upd = next(e for e in self.entries if e.key == "UpdateAvailable")
-    if self.params.get_bool("UpdateAvailable"):
-      desc = self.params.get("UpdaterNewDescription") or ""
-      if desc:
-        parts = desc.split(" / ")
-        if len(parts) >= 4:
-          version, date = parts[0], parts[3]
-          upd.text = f"Update available! Hoofpilot {version} — {date}."
+    # handle UpdateAvailable specially
+    upd = next((e for e in self.entries if e.key == "UpdateAvailable"), None)
+    if upd is not None:
+      if self.params.get_bool("UpdateAvailable"):
+        desc = self.params.get("UpdaterNewDescription") or ""
+        if isinstance(desc, bytes):
+          desc = desc.decode("utf-8", "replace")
+        if desc:
+          parts = [p.strip() for p in desc.split(" / ")]
+          if len(parts) >= 4:
+            version, date = parts[0], parts[3]
+            upd.text = f"Update available! Hoofpilot {version} — {date}."
+          else:
+            upd.text = "Update available."
         else:
           upd.text = "Update available."
+        upd.visible = True
+        active += 1
       else:
-        upd.text = "Update available."
-      upd.visible = True
-      active += 1
-    else:
-      upd.visible = False
-      upd.text = ""
+        upd.visible = False
+        upd.text = ""
 
-    # normal alerts
+    # regular alerts
     for entry in self.entries:
       if entry.key == "UpdateAvailable":
         continue
 
-      value = self.params.get(entry.key)
-      if not value:
+      raw = self.params.get(entry.key)
+      if not raw:
         entry.visible = False
         entry.text = ""
         continue
 
       try:
-        if isinstance(value, bytes):
-          value = value.decode("utf-8", "replace")
-        alert_json = json.loads(value)
-        entry.text = (alert_json.get("text", "") or "").replace("%1", alert_json.get("extra", ""))
-      except:
-        entry.text = ""
+        if isinstance(raw, bytes):
+          raw = raw.decode("utf-8", "replace")
+        data = json.loads(raw)
+        text = (data.get("text", "") or "").replace("%1", data.get("extra", ""))
+      except Exception:
+        text = ""
 
-      entry.visible = bool(entry.text)
+      entry.text = text
+      entry.visible = bool(text)
       if entry.visible:
         active += 1
 
+    # sync cards
     for card in self.cards:
       card.update_entry(card.entry)
 
@@ -249,25 +284,23 @@ class OffroadAlertsLayout(Widget):
     self.refresh()
 
   def _update_state(self):
-    if time.monotonic() - self.last_refresh >= REFRESH_INTERVAL:
+    now = time.monotonic()
+    if now - self.last_refresh >= REFRESH_INTERVAL:
       self.refresh()
-      self.last_refresh = time.monotonic()
+      self.last_refresh = now
 
   def _render(self, rect: rl.Rectangle):
-    visible_count = sum(e.visible for e in self.entries)
-
-    if visible_count == 0:
+    if self.active_alerts() == 0:
       self.empty_label.render(rect)
       return
 
-    # center cards
     x = rect.x + (rect.width - GlassAlertCard.CARD_WIDTH) / 2
-
     y = rect.y + 48
+
+    # position only visible cards
     for card in self.cards:
       if not card.entry.visible:
         continue
-
       card.set_position(x, y)
       y += card.rect.height + 32
 

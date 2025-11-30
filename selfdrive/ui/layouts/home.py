@@ -196,6 +196,7 @@ class HomeLayout(Widget):
     icon_scale = max(0.9, min(1.4, self._scale * 1.05))
     gear_w = self._settings_icon.width * icon_scale
     gear_h = self._settings_icon.height * icon_scale
+    hit_pad = 24 * self._scale  # enlarge tap area
 
     base_x = self._rect.x + ICON_MARGIN * self._scale
     base_y = self._rect.y + self._rect.height - gear_h - ICON_MARGIN * self._scale
@@ -204,7 +205,7 @@ class HomeLayout(Widget):
 
     if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
-      rect = rl.Rectangle(base_x, base_y, gear_w, gear_h)
+      rect = rl.Rectangle(base_x - hit_pad, base_y - hit_pad, gear_w + hit_pad * 2, gear_h + hit_pad * 2)
       if rl.check_collision_point_rec(mouse_pos, rect):
         if self.open_panel_callback:
           self.open_panel_callback(PanelType.DEVICE)
@@ -222,7 +223,7 @@ class HomeLayout(Widget):
 
       if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
         mouse_pos = rl.get_mouse_position()
-        rect = rl.Rectangle(conn_x, conn_y, conn_w, conn_h)
+        rect = rl.Rectangle(conn_x - hit_pad, conn_y - hit_pad, conn_w + hit_pad * 2, conn_h + hit_pad * 2)
         if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
           self.open_panel_callback(PanelType.NETWORK)
 
@@ -236,7 +237,7 @@ class HomeLayout(Widget):
 
     if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
-      rect = rl.Rectangle(mode_x, mode_y, mode_w, mode_h)
+      rect = rl.Rectangle(mode_x - hit_pad, mode_y - hit_pad, mode_w + hit_pad * 2, mode_h + hit_pad * 2)
       if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
         self.open_panel_callback(PanelType.TOGGLES)
 
