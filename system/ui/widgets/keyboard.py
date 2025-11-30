@@ -25,11 +25,12 @@ INPUTBOX_FONT_SIZE = 72
 BACKSPACE_HOLD_DELAY = 0.45
 BACKSPACE_HOLD_INTERVAL = 0.07
 
-# scaling
-PILL_SCALE_X = 4.0
-PILL_SCALE_Y = 5.0
-KB_GLOBAL_SCALE = 1.35     # scales entire mici keyboard visually
-
+# ----- scaling tuned for Tizi resolution (2160x1080) -----
+PILL_SCALE_X = 1.82     # was 4.0
+PILL_SCALE_Y = 1.88     # was 5.0
+KB_GLOBAL_SCALE = 1.00  # was 1.35
+KEY_FONT_SIZE_OVERRIDE = 66
+INPUTBOX_FONT_SIZE = 56
 
 class Keyboard(Widget):
   def __init__(self, max_text_size: int = 255, min_text_size: int = 0,
