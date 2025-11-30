@@ -16,21 +16,19 @@ from openpilot.system.ui.widgets.mici_keyboard import MiciKeyboard
 
 
 # ========= TIZI SCALING CONSTANTS (2160×1080) =========
-PILL_W = 2000     # was 1500
+PILL_W = 1750     # was 1500
 PILL_H = 500      # was 375
 KEY_FONT_SIZE = 78     # final key letter size
 ROW_SPACING = 1
 KEY_SPACING = 1
 
 KB_SCALE = 1.2       # global keyboard scale (keep 1.00)
-CONTENT_MARGIN = 50
+CONTENT_MARGIN = 100
 INPUT_TOP_MARGIN = 160
 KEYBOARD_BOTTOM_MARGIN = 40
 
 BACKSPACE_HOLD_DELAY = 0.45
 BACKSPACE_HOLD_INTERVAL = 0.07
-
-
 
 class Keyboard(Widget):
   """
