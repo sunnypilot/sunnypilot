@@ -14,6 +14,7 @@ class RoleType(IntEnum):
   SPONSOR = 1
   ADMIN = 2
 
+
 class SponsorTier(IntEnum):
   FREE = 0
   NOVICE = 1
@@ -21,6 +22,7 @@ class SponsorTier(IntEnum):
   CONTRIBUTOR = 3
   BENEFACTOR = 4
   GUARDIAN = 5
+
 
 class User:
   device_id: str
@@ -36,6 +38,7 @@ class User:
     self.updated_at = json_data.get("updated_at")
     self.token_hash = json_data.get("token_hash")
 
+
 class Role:
   role_type: str
   role_tier: str
@@ -43,6 +46,7 @@ class Role:
   def __init__(self, json_data):
     self.role_type = json_data.get("role_type")
     self.role_tier = json_data.get("role_tier")
+
 
 def _parse_roles(roles: str) -> list[Role]:
   lst_roles = []
@@ -102,7 +106,7 @@ class SunnylinkState:
     users_cache = self._params.get("SunnylinkCache_Users")
     if roles_cache is not None:
       self._roles = _parse_roles(roles_cache)
-      self.sponsor_tier =  self._get_highest_tier()
+      self.sponsor_tier = self._get_highest_tier()
     if users_cache is not None:
       self._users = _parse_users(users_cache)
 
@@ -178,8 +182,8 @@ class SunnylinkState:
 
   def is_sponsor(self) -> bool:
     with self._lock:
-      is_sponsor =  any(role.role_type.upper() == RoleType.SPONSOR.name and role.role_tier.upper() != SponsorTier.FREE.name
-                        for role in self._roles)
+      is_sponsor = any(role.role_type.upper() == RoleType.SPONSOR.name and role.role_tier.upper() != SponsorTier.FREE.name
+                       for role in self._roles)
       return is_sponsor
 
   def is_paired(self) -> bool:
