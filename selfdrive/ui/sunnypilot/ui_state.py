@@ -11,7 +11,7 @@ from openpilot.common.params import Params
 class UIStateSP:
   def __init__(self):
     self.params = Params()
-    self.sp_services = [
+    self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP"
     ]

@@ -58,7 +58,7 @@ class UIState(UIStateSP):
         "carControl",
         "liveParameters",
         "rawAudioData",
-      ] + self.sp_services
+      ] + self.sm_services_ext
     )
 
     self.prime_state = PrimeState()
