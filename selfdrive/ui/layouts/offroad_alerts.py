@@ -81,7 +81,7 @@ class OffroadAlertsLayout(Widget):
 
   def _build_entries(self):
     entries: List[EntryData] = []
-    seen: set[tuple[int, str, str, str]] = set()
+    entry_by_key: dict[str, EntryData] = {}
 
     # Update card
     if self.params.get_bool("UpdateAvailable"):
@@ -104,10 +104,7 @@ class OffroadAlertsLayout(Widget):
       line3_parts = [p for p in [branch, commit, date] if p]
       line3 = " / ".join(line3_parts)
       entry = EntryData(EntryKind.UPDATE, title, line2, line3, -1)
-      key = (entry.kind, entry.title, entry.line2, entry.line3)
-      if key not in seen:
-        seen.add(key)
-        entries.append(entry)
+      entry_by_key["__update__"] = entry
 
     # Regular alerts
     for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
@@ -129,11 +126,9 @@ class OffroadAlertsLayout(Widget):
 
       title, body = self._split_text(text)
       sev = config.get("severity", 0)
-      entry = EntryData(EntryKind.ALERT, title or "Alert", body, "", sev)
-      key = (entry.kind, entry.title, entry.line2, entry.line3)
-      if key not in seen:
-        seen.add(key)
-        entries.append(entry)
+      entry_by_key[key] = EntryData(EntryKind.ALERT, title or "Alert", body, "", sev)
+
+    entries = list(entry_by_key.values())
 
     # Build cards
     # Clear state before repopulating
