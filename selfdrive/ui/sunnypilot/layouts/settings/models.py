@@ -40,10 +40,10 @@ class ModelsLayout(Widget):
     self.prev_download_status = None
     self.model_dialog = None
     self.last_cache_calc_time = 0
-    self.cached_size = 0.0
 
     self._initialize_items()
 
+    self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
     self.lane_turn_value_control.set_visible(ui_state.params.get_bool("LaneTurnDesire"))
     self.delay_control.set_visible(not ui_state.params.get_bool("LagdToggle"))
     for ctrl, key, default in [(self.lane_turn_value_control, "LaneTurnValue", "19.0"), (self.delay_control, "LagdToggleDelay", "0.2")]:
@@ -100,6 +100,24 @@ class ModelsLayout(Widget):
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"
     self.lagd_toggle.set_description(desc)
 
+  def _is_downloading(self):
+    return (self.model_manager and self.model_manager.selectedBundle and
+            self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
+
+  def _calculate_cache_size(self):
+    cache_size = 0.0
+    if os.path.exists(CUSTOM_MODEL_PATH):
+      cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
+    return cache_size
+
+  def _clear_cache(self):
+    def _callback(response):
+      if response == DialogResult.CONFIRM:
+        ui_state.params.put_bool("ModelManager_ClearCache", True)
+        self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+    gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
+                                            tr("Clear Cache"), tr("Cancel")), callback=_callback)
+
   def _handle_bundle_download_progress(self):
     labels = {custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
               custom.ModelManagerSP.Model.Type.vision: self.vision_label,
@@ -120,7 +138,12 @@ class ModelsLayout(Widget):
     self.download_status = bundle.status
     status_changed = self.prev_download_status != self.download_status
     self.prev_download_status = self.download_status
+
     self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and bool(ui_state.params.get("ModelManager_DownloadIndex")))
+
+    if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
+      self.last_cache_calc_time = current_time
+      self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
       device.reset_interactive_timeout()
@@ -133,15 +156,32 @@ class ModelsLayout(Widget):
         if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
           text, show = f"{int(p.progress)}% - {bundle.displayName}", True
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded, custom.ModelManagerSP.DownloadStatus.cached):
-          status_text = tr('from cache' if p.status == custom.ModelManagerSP.DownloadStatus.cached else 'downloaded')
-          text, color = f"{bundle.displayName} - {status_text if status_changed else tr('ready')}", ON_COLOR
+          status_text = tr("from cache" if p.status == custom.ModelManagerSP.DownloadStatus.cached else "downloaded")
+          text, color = f"{bundle.displayName} - {status_text if status_changed else tr("ready")}", ON_COLOR
         elif p.status == custom.ModelManagerSP.DownloadStatus.failed:
           text, color = f"download failed - {bundle.displayName}", rl.RED
         label.action_item.update(p.progress, text, show, color)
 
-  def _is_downloading(self):
-    return (self.model_manager and self.model_manager.selectedBundle and
-            self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
+  def _show_reset_params_dialog(self):
+    def _callback(response):
+      if response == DialogResult.CONFIRM:
+        ui_state.params.remove("CalibrationParams")
+        ui_state.params.remove("LiveTorqueParameters")
+    msg = tr("Model download has started in the background. We suggest resetting calibration. Would you like to do that now?")
+    gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration"), tr("Cancel")), callback=_callback)
+
+  def _on_model_selected(self, result):
+    if result != DialogResult.CONFIRM:
+      return
+    selected_ref = self.model_dialog.selection_ref
+    if selected_ref == "Default":
+      ui_state.params.remove("ModelManager_ActiveBundle")
+      self._show_reset_params_dialog()
+    elif (selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None)):
+      ui_state.params.put("ModelManager_DownloadIndex", selected_bundle.index)
+      if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
+        self._show_reset_params_dialog()
+    self.model_dialog = None
 
   def _bundle_to_node(self, bundle):
     return TreeNode(bundle.ref, {'display_name': bundle.displayName, 'short_name': bundle.internalName})
@@ -162,19 +202,6 @@ class ModelsLayout(Widget):
       folders_list.insert(1, TreeFolder("Favorites", [self._bundle_to_node(bundle) for bundle in fav_bundles]))
     return folders_list
 
-  def _on_model_selected(self, result):
-    if result != DialogResult.CONFIRM:
-      return
-    selected_ref = self.model_dialog.selection_ref
-    if selected_ref == "Default":
-      ui_state.params.remove("ModelManager_ActiveBundle")
-      self._show_reset_params_dialog()
-    elif (selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None)):
-      ui_state.params.put("ModelManager_DownloadIndex", selected_bundle.index)
-      if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
-        self._show_reset_params_dialog()
-    self.model_dialog = None
-
   def _handle_current_model_clicked(self):
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
@@ -184,29 +211,6 @@ class ModelsLayout(Widget):
     self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, active_ref, "ModelManager_Favs",
                                           get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
     gui_app.set_modal_overlay(self.model_dialog, callback=self._on_model_selected)
-
-  def _clear_cache(self):
-    def _callback(response):
-      if response == DialogResult.CONFIRM:
-        ui_state.params.put_bool("ModelManager_ClearCache", True)
-    gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
-                                            tr("Clear Cache"), tr("Cancel")), callback=_callback)
-
-  def _show_reset_params_dialog(self):
-    def _callback(response):
-      if response == DialogResult.CONFIRM:
-        ui_state.params.remove("CalibrationParams")
-        ui_state.params.remove("LiveTorqueParameters")
-    msg = tr("Model download has started in the background. We suggest resetting calibration. Would you like to do that now?")
-    gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration"), tr("Cancel")), callback=_callback)
-
-  def _calculate_cache_size(self):
-    if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
-      self.last_cache_calc_time = current_time
-      self.cached_size = 0
-      if os.path.exists(CUSTOM_MODEL_PATH):
-        self.cached_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
-    return self.cached_size
 
   def _update_state(self):
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
@@ -218,7 +222,6 @@ class ModelsLayout(Widget):
     self._handle_bundle_download_progress()
     active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default Model"
     self.current_model_item.action_item.set_value(active_name)
-    self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
     if not ui_state.is_offroad():
       self.current_model_item.action_item.set_enabled(False)
