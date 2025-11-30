@@ -7,7 +7,6 @@ from collections.abc import Callable
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.time_helpers import system_time_valid
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
@@ -16,10 +15,9 @@ from openpilot.selfdrive.ui.mici.widgets.dialog import BigMultiOptionDialog, Big
 from openpilot.selfdrive.ui.mici.widgets.pairing_dialog import PairingDialog
 from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import DriverCameraDialog
 from openpilot.selfdrive.ui.mici.layouts.onboarding import TrainingGuide
-from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
+from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget, NavWidget
-from openpilot.system.ui.widgets.slider import SmallSlider
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets.label import MiciLabel
 from openpilot.system.ui.widgets.html_render import HtmlModal, HtmlRenderer
@@ -81,100 +79,6 @@ def _engaged_confirmation_callback(callback: Callable, action_text: str):
   else:
     dlg = BigDialog(f"Disengage to {action_text}", "")
     gui_app.set_modal_overlay(dlg)
-
-
-class RebootSlider(SmallSlider):
-  HORIZONTAL_PADDING = 12
-
-  def __init__(self, confirm_callback: Callable | None = None):
-    self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 140, 140)
-    super().__init__("slide to\nreboot", confirm_callback=confirm_callback)
-    self._label.font_size = 64
-    self._label.line_height = 0.9
-
-  def _load_assets(self):
-    self.set_rect(rl.Rectangle(0, 0, 760 + self.HORIZONTAL_PADDING * 2, 230))
-
-    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 760, 230, keep_aspect_ratio=False)
-    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle.png", 240, 240, keep_aspect_ratio=False)
-    self._circle_arrow_txt = self._icon
-
-
-class RebootConfirmScreen(NavWidget):
-  EXIT_THRESHOLD = 0.02
-
-  def __init__(self, confirm_callback: Callable | None = None, dismiss_callback: Callable | None = None):
-    super().__init__()
-    self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
-
-    self._confirm_callback = confirm_callback
-    self._dismiss_callback = dismiss_callback
-
-    self._back_texture = gui_app.texture("icons_mici/setup/back_new.png", 96, 96)
-    self._back_rect = rl.Rectangle(0, 0, 0, 0)
-    self._slider = RebootSlider(confirm_callback=self._on_confirm)
-
-    self._anim = FirstOrderFilter(0.0, 0.16, 1 / gui_app.target_fps)
-    self._anim_target = 1.0
-    self._anim_value = 0.0
-    self._closing = False
-
-    self.set_back_callback(self._on_back)
-
-  def _on_confirm(self):
-    if self._confirm_callback:
-      self._confirm_callback()
-    self._start_close()
-
-  def _on_back(self):
-    self._start_close()
-
-  def _start_close(self):
-    self._anim_target = 0.0
-    self._closing = True
-    self._slider.reset()
-
-  def _handle_mouse_event(self, mouse_event: MouseEvent) -> None:
-    super()._handle_mouse_event(mouse_event)
-    if self._closing:
-      return
-
-    if mouse_event.left_released and rl.check_collision_point_rec(mouse_event.pos, self._back_rect):
-      self._on_back()
-      return
-
-    self._slider.handle_mouse_event(mouse_event)
-
-  def _update_state(self):
-    super()._update_state()
-    self._anim_value = self._anim.update(self._anim_target)
-    self._slider.set_opacity(self._anim_value)
-
-    if self._closing and self._anim_value <= self.EXIT_THRESHOLD:
-      if self._dismiss_callback:
-        self._dismiss_callback()
-      gui_app.set_modal_overlay(None)
-
-  def _render(self, rect: rl.Rectangle):
-    ease = self._anim_value * self._anim_value * (3 - 2 * self._anim_value)
-    slide_offset = (1.0 - ease) * rect.width * 0.18
-
-    # back button
-    back_pos = rl.Vector2(rect.x + 30 + slide_offset, rect.y + 30)
-    back_color = rl.Color(255, 255, 255, int(255 * ease))
-    rl.draw_texture_ex(self._back_texture, back_pos, 0.0, 1.0, back_color)
-    self._back_rect = rl.Rectangle(back_pos.x, back_pos.y, self._back_texture.width, self._back_texture.height)
-
-    # slider
-    slider_rect = rl.Rectangle(
-      rect.x + slide_offset + (rect.width - self._slider._rect.width) / 2,
-      rect.y + rect.height * 0.52 - self._slider._rect.height / 2,
-      self._slider._rect.width,
-      self._slider._rect.height,
-    )
-    self._slider.set_rect(slider_rect)
-    self._slider.render(slider_rect)
-    return -1
 
 
 class DeviceInfoLayoutMici(Widget):
@@ -364,7 +268,12 @@ class DeviceLayoutMici(NavWidget):
     self._fcc_dialog: HtmlModal | None = None
     self._driver_camera: DriverCameraDialog | None = None
     self._training_guide: TrainingGuide | None = None
-    self._reboot_overlay: RebootConfirmScreen | None = None
+
+    def power_off_callback():
+      ui_state.params.put_bool("DoShutdown", True)
+
+    def reboot_callback():
+      ui_state.params.put_bool("DoReboot", True)
 
     def reset_calibration_callback():
       params = ui_state.params
@@ -385,7 +294,10 @@ class DeviceLayoutMici(NavWidget):
     uninstall_openpilot_btn.set_click_callback(lambda: _engaged_confirmation_callback(uninstall_openpilot_callback, "uninstall"))
 
     reboot_btn = BigCircleButton("icons_mici/settings/device/reboot.png", red=False)
-    reboot_btn.set_click_callback(self._show_reboot_slider)
+    reboot_btn.set_click_callback(lambda: _engaged_confirmation_callback(reboot_callback, "reboot"))
+
+    self._power_off_btn = BigCircleButton("icons_mici/settings/device/power.png", red=True)
+    self._power_off_btn.set_click_callback(lambda: _engaged_confirmation_callback(power_off_callback, "power off"))
 
     self._load_languages()
 
@@ -425,32 +337,22 @@ class DeviceLayoutMici(NavWidget):
       uninstall_openpilot_btn,
       regulatory_btn,
       reboot_btn,
+      self._power_off_btn,
     ], snap_items=False)
 
     # Set up back navigation
     self.set_back_callback(back_callback)
 
-  def _show_reboot_slider(self):
-    if ui_state.engaged:
-      dlg = BigDialog(tr("Disengage to reboot"), "")
-      gui_app.set_modal_overlay(dlg)
-      return
-
-    def on_confirm():
-      ui_state.params.put_bool("DoReboot", True)
-
-    def on_dismiss():
-      self._reboot_overlay = None
-
-    if self._reboot_overlay is None:
-      self._reboot_overlay = RebootConfirmScreen(confirm_callback=on_confirm, dismiss_callback=on_dismiss)
-
-    gui_app.set_modal_overlay(self._reboot_overlay, callback=lambda result: on_dismiss())
+    # Hide power off button when onroad
+    ui_state.add_offroad_transition_callback(self._offroad_transition)
 
   def _on_regulatory(self):
     if not self._fcc_dialog:
       self._fcc_dialog = MiciFccModal(os.path.join(BASEDIR, "selfdrive/assets/offroad/mici_fcc.html"))
     gui_app.set_modal_overlay(self._fcc_dialog, callback=setattr(self, '_fcc_dialog', None))
+
+  def _offroad_transition(self):
+    self._power_off_btn.set_visible(ui_state.is_offroad())
 
   def _show_driver_camera(self):
     if not self._driver_camera:
