@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-pkill -f system/updated/updated.py
-
-#Get rid of any stubborn updated locks
-rm -f /tmp/updated.lock
 export API_HOST=https://api.konik.ai/
 export ATHENA_HOST=wss://athena.konik.ai
 set -euo pipefail
