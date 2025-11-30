@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+ps | grep updated
+pkill -f system/updated/updated.py
 export API_HOST=https://api.konik.ai/
 export ATHENA_HOST=wss://athena.konik.ai
 set -euo pipefail
