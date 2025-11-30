@@ -70,7 +70,9 @@ class SoftwareLayoutSP(SoftwareLayout):
   def _update_state(self):
     super()._update_state()
     offroad = ui_state.is_offroad()
+    show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
     self.disable_updates_toggle.action_item.set_enabled(offroad)
+    self.disable_updates_toggle.set_visible(show_advanced)
 
     if offroad:
       self.disable_updates_toggle.set_description(tr("When enabled, automatic software updates will be off.<br><b>This requires a reboot to take effect.</b>"))
