@@ -1,6 +1,12 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from dataclasses import dataclass, field
 
+import pyray as rl
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
@@ -51,11 +57,11 @@ class TreeItemWidget(Button):
     self._label.render(text_rect)
 
     if not self.is_folder and self._favorite_callback:
-      draw_star(self._rect.x + self._rect.width - 90, self._rect.y + (self._rect.height - 40) / 2, 35, self.is_favorite,
+      draw_star(self._rect.x + self._rect.width - 90, self._rect.y + self._rect.height / 2, 40, self.is_favorite,
                 style.ON_BG_COLOR if self.is_favorite else rl.GRAY)
 
   def _handle_mouse_release(self, mouse_pos):
-    star_rect = rl.Rectangle(self._rect.x + self._rect.width - 90, self._rect.y + (self._rect.height - 40) / 2, 40, 40)
+    star_rect = rl.Rectangle(self._rect.x + self._rect.width - 90 - 40, self._rect.y + self._rect.height / 2 - 40, 80, 80)
     if not self.is_folder and self._favorite_callback and rl.check_collision_point_rec(mouse_pos, star_rect):
       self._favorite_callback()
       return True
@@ -83,19 +89,6 @@ class TreeOptionDialog(MultiOptionDialog):
     self.cancel_rect = None
     self.select_rect = None
 
-  def _draw_button(self, button_rect, button_text, is_primary=False, is_enabled=True):
-    if is_primary and is_enabled:
-      button_color = style.BUTTON_PRIMARY_COLOR
-    elif not is_enabled:
-      button_color = style.BUTTON_NEUTRAL_GRAY
-    else:
-      button_color = style.BUTTON_DISABLED_BG_COLOR
-    roundness = 10 / (min(button_rect.width, button_rect.height) / 2)
-    rl.draw_rectangle_rounded(button_rect, roundness, 10, button_color)
-    label = Label(button_text, 60, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                  text_color=rl.WHITE if is_enabled else rl.GRAY)
-    label.render(button_rect)
-
   def _on_search_confirm(self, result, text):
     if result == DialogResult.CONFIRM:
       self.query = text
@@ -104,27 +97,6 @@ class TreeOptionDialog(MultiOptionDialog):
 
   def _on_search_clicked(self):
     InputDialogSP(tr("Enter search query"), current_text=self.query, callback=self._on_search_confirm).show()
-
-  def _build_visible_items(self, reset_scroll=True):
-    self.visible_items = [TreeItemWidget(self.query or self.search_prompt, "search_bar", False, 0, self._on_search_clicked)]
-    for folder in self.folders:
-      nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [search_func(node) for search_func in self.search_funcs])]
-      if not nodes and self.query:
-        continue
-      expanded = folder.folder in self.expanded or not folder.folder or bool(self.query)
-      if folder.folder:
-        self.visible_items.append(TreeItemWidget(f"{'-' if expanded else '+'} {folder.folder}", "", True, 0,
-                                                 lambda folder_ref=folder: self._toggle_folder(folder_ref)))
-      if expanded:
-        for node in nodes:
-          favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
-          self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
-                                                   lambda node_ref=node: self._select_node(node_ref), favorite_cb, node.ref in self.favorites))
-    self.option_buttons = self.visible_items
-    self.options = [item.text for item in self.visible_items]
-    self.scroller._items = self.visible_items
-    if reset_scroll:
-      self.scroller.scroll_panel.set_offset(0)
 
   def _toggle_folder(self, folder):
     if folder.folder:
@@ -147,6 +119,40 @@ class TreeOptionDialog(MultiOptionDialog):
     if self.get_folders_fn:
       self.folders = self.get_folders_fn(self.favorites)
     self._build_visible_items(reset_scroll=False)
+
+  def _build_visible_items(self, reset_scroll=True):
+    self.visible_items = [TreeItemWidget(self.query or self.search_prompt, "search_bar", False, 0, self._on_search_clicked)]
+    for folder in self.folders:
+      nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [search_func(node) for search_func in self.search_funcs])]
+      if not nodes and self.query:
+        continue
+      expanded = folder.folder in self.expanded or not folder.folder or bool(self.query)
+      if folder.folder:
+        self.visible_items.append(TreeItemWidget(f"{'-' if expanded else '+'} {folder.folder}", "", True, 0,
+                                                 lambda folder_ref=folder: self._toggle_folder(folder_ref)))
+      if expanded:
+        for node in nodes:
+          favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
+          self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
+                                                   lambda node_ref=node: self._select_node(node_ref), favorite_cb, node.ref in self.favorites))
+    self.option_buttons = self.visible_items
+    self.options = [item.text for item in self.visible_items]
+    self.scroller._items = self.visible_items
+    if reset_scroll:
+      self.scroller.scroll_panel.set_offset(0)
+
+  def _draw_button(self, button_rect, button_text, is_primary=False, is_enabled=True):
+    if is_primary and is_enabled:
+      button_color = style.BUTTON_PRIMARY_COLOR
+    elif not is_enabled:
+      button_color = style.BUTTON_NEUTRAL_GRAY
+    else:
+      button_color = style.BUTTON_DISABLED_BG_COLOR
+    roundness = 10 / (min(button_rect.width, button_rect.height) / 2)
+    rl.draw_rectangle_rounded(button_rect, roundness, 10, button_color)
+    label = Label(button_text, 60, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+                  text_color=rl.WHITE if is_enabled else rl.GRAY)
+    label.render(button_rect)
 
   def _render(self, rect):
     dialog_content_rect = rl.Rectangle(rect.x + 50, rect.y + 50, rect.width - 100, rect.height - 100)
