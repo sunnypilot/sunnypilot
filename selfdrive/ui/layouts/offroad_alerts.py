@@ -171,10 +171,11 @@ class OffroadAlertsLayout(Widget):
     width = min(rect.width * 0.92, 1800)
     x = rect.x + (rect.width - width) / 2
     y = rect.y
+    spacing = getattr(self._scroller, "_spacing", 24)
     for card in self._cards:
       height = card._title_label.get_content_height(width - 128) + card._line_label.get_content_height(width - 128) + 160
       card.set_rect(rl.Rectangle(x, y, width, max(260, height)))
-      y += card.rect.height + self._scroller.spacing
+      y += card.rect.height + spacing
 
     # Render scroller
     self._scroller.render(rl.Rectangle(rect.x, rect.y, rect.width, rect.height))
