@@ -254,7 +254,7 @@ class MiciOffroadAlerts(Widget):
           parts = new_desc.split(" / ")
           if len(parts) > 3:
             version, date = parts[0], parts[3]
-            update_alert_data.text = f"update available\n openpilot {version}, {date}. go to comma.ai/blog to read the release notes."
+            update_alert_data.text = f"update available\n sunnypilot {version}, {date}. go to comma.ai/blog to read the release notes."
 
         update_alert_data.visible = True
         active_count += 1

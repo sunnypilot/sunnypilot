@@ -227,6 +227,8 @@ class GuiApplication(GuiApplicationExt):
     self._render_profiler = None
     self._render_profile_start_time = None
 
+    GuiApplicationExt.__init__(self)
+
   @property
   def frame(self):
     return self._frame
@@ -466,6 +468,9 @@ class GuiApplication(GuiApplicationExt):
 
         if self._show_touches:
           self._draw_touch_points()
+
+        if self._show_mouse_coords:
+          self._draw_mouse_coordinates(gui_app.font(FontWeight.SEMI_BOLD))
 
         if self._grid_size > 0:
           self._draw_grid()
