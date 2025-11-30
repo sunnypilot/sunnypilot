@@ -57,7 +57,7 @@ def setup_settings(click, pm: PubMaster, scroll=None):
 
 
 def close_settings(click, pm: PubMaster, scroll=None):
-  click(240, 216)
+  click(140, 120)
 
 
 def setup_settings_network(click, pm: PubMaster, scroll=None):
@@ -72,13 +72,13 @@ def setup_settings_network_advanced(click, pm: PubMaster, scroll=None):
 
 def setup_settings_toggles(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 720)
+  click(278, 620)
 
 
 def setup_settings_software(click, pm: PubMaster, scroll=None):
   put_update_params(Params())
   setup_settings(click, pm)
-  click(278, 845)
+  click(278, 730)
 
 
 def setup_settings_software_download(click, pm: PubMaster, scroll=None):
@@ -106,7 +106,7 @@ def setup_settings_software_branch_switcher(click, pm: PubMaster, scroll=None):
 def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 950)
+  click(278, 850)
 
 
 def setup_settings_developer(click, pm: PubMaster, scroll=None):
@@ -116,7 +116,7 @@ def setup_settings_developer(click, pm: PubMaster, scroll=None):
 
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 1040)
+  click(278, 950)
 
 
 def setup_keyboard(click, pm: PubMaster, scroll=None):
@@ -151,49 +151,59 @@ def setup_experimental_mode_description(click, pm: PubMaster, scroll=None):
 
 def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster, scroll=None):
   setup_settings_developer(click, pm, scroll=scroll)
-  click(650, 960)  # toggle openpilot longitudinal control
+  click(650, 960)  # toggle sunnypilot longitudinal control
+
 
 def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 600)
+  click(278, 510)
+
 
 def setup_settings_models(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 950)
+  click(278, 840)
+
 
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 1040)
+  click(278, 950)
+
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-40, 278, 950)
-  click(278, 1040)
+  click(278, 1017)
+  scroll(-140, 278, 950)
+
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
   click(278, 330)
 
+
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 450)
+  click(278, 420)
+
 
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 600)
+  click(278, 520)
+
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 720)
+  click(278, 630)
+
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   scroll(-1000, 278, 950)
-  click(278, 845)
+  click(278, 750)
+
 
 def setup_onroad(click, pm: PubMaster, scroll=None):
   ds = messaging.new_message('deviceState')

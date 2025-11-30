@@ -15,6 +15,11 @@ from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.list_view import ButtonAction, ListItem, MultipleButtonAction, ToggleAction, button_item, text_item
 
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP as ListItem
+  from openpilot.system.ui.sunnypilot.widgets.list_view import ToggleActionSP as ToggleAction
+  from openpilot.system.ui.sunnypilot.widgets.list_view import MultipleButtonActionSP as MultipleButtonAction
+
 # These are only used for AdvancedNetworkSettings, standalone apps just need WifiManagerUI
 try:
   from openpilot.common.params import Params

@@ -182,7 +182,7 @@ class TrainingGuideAttentionNotice(SetupTermsPage):
   def __init__(self, continue_callback):
     super().__init__(continue_callback, continue_text="continue")
     self._title_header = TermsHeader("driver assistance", gui_app.texture("icons_mici/setup/warning.png", 60, 60))
-    self._warning_label = UnifiedLabel("1. openpilot is a driver assistance system.\n\n" +
+    self._warning_label = UnifiedLabel("1. sunnypilot is a driver assistance system.\n\n" +
                                        "2. You must pay attention at all times.\n\n" +
                                        "3. You must be ready to take over at any time.\n\n" +
                                        "4. You are fully responsible for driving the car.", 42,
@@ -239,12 +239,12 @@ class TrainingGuide(Widget):
 class DeclinePage(Widget):
   def __init__(self, back_callback=None):
     super().__init__()
-    self._uninstall_slider = SmallSlider("uninstall openpilot", self._on_uninstall)
+    self._uninstall_slider = SmallSlider("uninstall sunnypilot", self._on_uninstall)
 
     self._back_button = SmallButton("back")
     self._back_button.set_click_callback(back_callback)
 
-    self._warning_header = TermsHeader("you must accept the\nterms to use openpilot",
+    self._warning_header = TermsHeader("you must accept the\nterms to use sunnypilot",
                                        gui_app.texture("icons_mici/setup/red_warning.png", 66, 60))
 
   def _on_uninstall(self):
@@ -282,7 +282,7 @@ class TermsPage(SetupTermsPage):
     info_txt = gui_app.texture("icons_mici/setup/green_info.png", 60, 60)
     self._title_header = TermsHeader("terms & conditions", info_txt)
 
-    self._terms_label = UnifiedLabel("You must accept the Terms and Conditions to use openpilot. " +
+    self._terms_label = UnifiedLabel("You must accept the Terms and Conditions to use sunnypilot. " +
                                      "Read the latest terms at https://comma.ai/terms before continuing.", 36,
                                      FontWeight.ROMAN)
 
