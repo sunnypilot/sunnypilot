@@ -30,6 +30,8 @@ PILL_H = 500      # was 375
 KEY_FONT_SIZE = 78     # final key letter size
 ROW_SPACING = 1
 KEY_SPACING = 1
+KEYBOARD_INNER_PADDING_X = 60  # extra space inside pill before keys start
+KEYBOARD_INNER_PADDING_Y = 45
 
 KB_SCALE = 1.2       # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
@@ -58,7 +60,12 @@ class ScaledMiciKeyboard(MiciKeyboard):
     self._selected_font_size = SELECTED_CHAR_FONT_SIZE * font_scale
 
   def _lay_out_keys(self, bg_x, bg_y, keys: list[list["Key"]]):
-    key_rect = rl.Rectangle(bg_x, bg_y, self._txt_bg.width, self._txt_bg.height)
+    key_rect = rl.Rectangle(
+      bg_x + KEYBOARD_INNER_PADDING_X,
+      bg_y + KEYBOARD_INNER_PADDING_Y,
+      max(self._txt_bg.width - 2 * KEYBOARD_INNER_PADDING_X, 1),
+      max(self._txt_bg.height - 2 * KEYBOARD_INNER_PADDING_Y, 1),
+    )
     row_count = max(len(keys) - 1, 1)
     available_height = (key_rect.height - 2 * KEYBOARD_COLUMN_PADDING) - self._row_spacing * row_count
     step_y = max(available_height, 1) / row_count
