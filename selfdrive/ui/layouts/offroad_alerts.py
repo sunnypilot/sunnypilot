@@ -30,15 +30,15 @@ class AlertData:
 
 
 class AlertItem(Widget):
-  ALERT_WIDTH = 760
-  ALERT_HEIGHT_SMALL = 300
-  ALERT_HEIGHT_MED = 340
-  ALERT_HEIGHT_BIG = 420
-  ALERT_PADDING = 36
-  ICON_SIZE = 90
-  ICON_MARGIN = 18
+  ALERT_WIDTH = 1400
+  ALERT_HEIGHT_SMALL = 520
+  ALERT_HEIGHT_MED = 580
+  ALERT_HEIGHT_BIG = 660
+  ALERT_PADDING = 64
+  ICON_SIZE = 140
+  ICON_MARGIN = 30
   TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
-  TITLE_BODY_SPACING = 24
+  TITLE_BODY_SPACING = 30
 
   def __init__(self, alert_data: AlertData):
     super().__init__()
@@ -56,13 +56,13 @@ class AlertItem(Widget):
     self._icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
 
     self._title_label = UnifiedLabel(
-      text="", font_size=40, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
+      text="", font_size=56, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=0.95,
     )
 
     self._body_label = UnifiedLabel(
-      text="", font_size=34, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
+      text="", font_size=46, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, line_height=0.95,
     )
@@ -299,11 +299,12 @@ class OffroadAlertsLayout(Widget):
       self._last_refresh = current_time
 
   def _render(self, rect: rl.Rectangle):
-    # Stretch item width to 80% of available rect, clamp to a max for readability
-    target_width = min(rect.width * 0.8, 900)
+    # Stretch item width to 95% of available rect, clamp to a larger max
+    target_width = min(rect.width * 0.95, 1600)
+    scroller_x = rect.x + (rect.width - target_width) / 2
     for item in self.alert_items:
       if isinstance(item, AlertItem):
-        item.set_rect(rl.Rectangle(item.rect.x, item.rect.y, target_width, item.rect.height))
+        item.set_rect(rl.Rectangle(scroller_x, item.rect.y, target_width, item.rect.height))
 
     if self.active_alerts() == 0:
       # Bigger empty state
@@ -313,7 +314,7 @@ class OffroadAlertsLayout(Widget):
     else:
       # Center scroller content
       scroller_rect = rl.Rectangle(
-        rect.x + (rect.width - target_width) / 2,
+        scroller_x,
         rect.y,
         target_width,
         rect.height,
