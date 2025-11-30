@@ -25,7 +25,7 @@ from openpilot.system.ui.widgets.mici_keyboard import (
 
 
 # ========= TIZI SCALING CONSTANTS (2160×1080) =========
-PILL_W = 1750     # was 1500
+PILL_W = 1680     # shortened overall keyboard width by ~70px
 PILL_H = 500      # was 375
 KEY_FONT_SIZE = 88     # final key letter size (larger keys)
 ROW_SPACING = 1
