@@ -35,11 +35,22 @@ class EntryCard(Widget):
   def __init__(self, entry: Entry):
     super().__init__()
     self.entry = entry
-    self._title_label = UnifiedLabel("", 60, FontWeight.SEMI_BOLD, rl.WHITE,
-                                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
-    self._line_label = UnifiedLabel("", 48, FontWeight.ROMAN, rl.Color(230, 230, 230, 255),
-                                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-                                    alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=1.0)
+    self._title_label = UnifiedLabel(
+      "",
+      60,
+      FontWeight.SEMI_BOLD,
+      rl.WHITE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+    )
+    self._line_label = UnifiedLabel(
+      "",
+      48,
+      FontWeight.ROMAN,
+      rl.Color(230, 230, 230, 255),
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      line_height=1.0,
+    )
     self._update_state()
 
   def set_entry(self, entry: Entry):
@@ -53,7 +64,13 @@ class EntryCard(Widget):
 
   def _render(self, rect: rl.Rectangle):
     pad = 40
-    accent = rl.Color(120, 200, 120, 255) if self.entry.severity <= -1 else rl.Color(255, 180, 64, 255) if self.entry.severity == 0 else rl.Color(230, 80, 80, 255)
+    accent = (
+      rl.Color(120, 200, 120, 255)
+      if self.entry.severity <= -1
+      else rl.Color(255, 180, 64, 255)
+      if self.entry.severity == 0
+      else rl.Color(230, 80, 80, 255)
+    )
     bg = rl.Color(20, 20, 20, 245)
     rl.draw_rectangle_rounded(rect, 0.22, 12, bg)
     rl.draw_rectangle_rounded_lines_ex(rect, 0.22, 12, 4, accent)
@@ -63,7 +80,14 @@ class EntryCard(Widget):
     text_y = rect.y + pad
     self._title_label.render(rl.Rectangle(text_x, text_y, text_w, 200))
     text_y += self._title_label.get_content_height(text_w) + 12
-    self._line_label.render(rl.Rectangle(text_x, text_y, text_w, rect.height - (text_y - rect.y) - pad))
+    self._line_label.render(
+      rl.Rectangle(
+        text_x,
+        text_y,
+        text_w,
+        rect.height - (text_y - rect.y) - pad,
+      )
+    )
 
 
 class OffroadAlertsLayout(Widget):
@@ -71,11 +95,18 @@ class OffroadAlertsLayout(Widget):
     super().__init__()
     self.params = Params()
     self._cards: List[EntryCard] = []
-    self._scroller = Scroller([], horizontal=False, spacing=28, pad_start=32, pad_end=32, snap_items=False)
+    self._scroller = Scroller(
+      [], horizontal=False, spacing=28, pad_start=32, pad_end=32, snap_items=False
+    )
     self._last_refresh = 0.0
-    self._empty_label = UnifiedLabel(tr("no alerts"), 96, FontWeight.DISPLAY, rl.WHITE,
-                                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                                     alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+    self._empty_label = UnifiedLabel(
+      tr("no alerts"),
+      96,
+      FontWeight.DISPLAY,
+      rl.WHITE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+    )
 
   def active_entries(self) -> int:
     return len(self._cards)
@@ -116,7 +147,9 @@ class OffroadAlertsLayout(Widget):
       if isinstance(alert_json, str):
         alert_json = json.loads(alert_json)
       if isinstance(alert_json, dict):
-        text = (alert_json.get("text", "") or "").replace("%1", alert_json.get("extra", ""))
+        text = (alert_json.get("text", "") or "").replace(
+          "%1", alert_json.get("extra", "")
+        )
       else:
         text = str(alert_json)
     except Exception:
@@ -132,15 +165,18 @@ class OffroadAlertsLayout(Widget):
   def _split_text(text: str) -> tuple[str, str]:
     # Split on first sentence end
     import re
-    match = re.search(r'[.!?](?:\s+|$)', text)
+
+    match = re.search(r"[.!?](?:\s+|$)", text)
     if match:
-      return text[:match.start()].strip(), text[match.end():].strip()
+      return text[: match.start()].strip(), text[match.end() :].strip()
     return text, ""
 
   def _rebuild(self):
-    # Clear instead of replacing scroller object — avoids duplicates
-    self._scroller.clear_widgets()
-    self._cards.clear()
+    # Recreate scroller fresh (original behavior), but dedupe entries by key
+    self._scroller = Scroller(
+      [], horizontal=False, spacing=28, pad_start=32, pad_end=32, snap_items=False
+    )
+    self._cards = []
 
     entries: List[Entry] = []
 
@@ -149,15 +185,23 @@ class OffroadAlertsLayout(Widget):
     if upd:
       entries.append(upd)
 
-    # Unique alerts
-    for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
+    # Unique alerts keyed by alert key, sorted by severity (critical first)
+    for key, config in sorted(
+      OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True
+    ):
       if key == "UpdateAvailable":
         continue
       e = self._parse_alert_entry(key, config)
       if e is not None:
         entries.append(e)
 
-    # Add cards
+    # Deduplicate by key to avoid repeated "update available" or duplicate alerts
+    by_key: dict[str, Entry] = {}
+    for e in entries:
+      by_key[e.key] = e
+    entries = list(by_key.values())
+
+    # Build cards
     for e in entries:
       card = EntryCard(e)
       self._cards.append(card)
@@ -190,7 +234,11 @@ class OffroadAlertsLayout(Widget):
 
     for card in self._cards:
       body_w = width - 80
-      height = card._title_label.get_content_height(body_w) + card._line_label.get_content_height(body_w) + 200
+      height = (
+        card._title_label.get_content_height(body_w)
+        + card._line_label.get_content_height(body_w)
+        + 200
+      )
       card.set_rect(rl.Rectangle(x, y, width, max(300, height)))
       y += card.rect.height + spacing
 
