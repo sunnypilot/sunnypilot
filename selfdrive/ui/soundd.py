@@ -4,7 +4,7 @@ import time
 import wave
 
 
-from cereal import car, messaging, custom
+from cereal import car, messaging
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import Ratekeeper
@@ -12,36 +12,23 @@ from openpilot.common.utils import retry
 from openpilot.common.swaglog import cloudlog
 
 from openpilot.system import micd
-from openpilot.system.hardware import HARDWARE
-
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
 
-SAMPLE_RATE = 48000
+SAMPLE_RATE = 44100
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
-MIN_VOLUME = 0.1
+MIN_VOLUME = 0.3
 SELFDRIVE_STATE_TIMEOUT = 5 # 5 seconds
 FILTER_DT = 1. / (micd.SAMPLE_RATE / micd.FFT_SAMPLES)
 
 AMBIENT_DB = 30 # DB where MIN_VOLUME is applied
 DB_SCALE = 30 # AMBIENT_DB + DB_SCALE is where MAX_VOLUME is applied
 
-VOLUME_BASE = 20
-if HARDWARE.get_device_type() == "tizi":
-  VOLUME_BASE = 10
+VOLUME_BASE = 25
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
-AudibleAlertSP = custom.SelfdriveStateSP.AudibleAlert
-
-
-sound_list_sp: dict[int, tuple[str, int | None, float]] = {
-  # AudibleAlertSP, file name, play count (none for infinite)
-  AudibleAlertSP.promptSingleLow: ("prompt_single_low.wav", 1, MAX_VOLUME),
-  AudibleAlertSP.promptSingleHigh: ("prompt_single_high.wav", 1, MAX_VOLUME),
-}
-
 sound_list: dict[int, tuple[str, int | None, float]] = {
-  # AudibleAlert, file name, play count (none for infinite)
+  # AudibleAlert, file name, play count (None = loop)
   AudibleAlert.engage: ("engage.wav", 1, MAX_VOLUME),
   AudibleAlert.disengage: ("disengage.wav", 1, MAX_VOLUME),
   AudibleAlert.refuse: ("refuse.wav", 1, MAX_VOLUME),
@@ -52,14 +39,7 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
 
   AudibleAlert.warningSoft: ("warning_soft.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("warning_immediate.wav", None, MAX_VOLUME),
-
-  **sound_list_sp,
 }
-if HARDWARE.get_device_type() == "tizi":
-  sound_list.update({
-    AudibleAlert.engage: ("engage_tizi.wav", 1, MAX_VOLUME),
-    AudibleAlert.disengage: ("disengage_tizi.wav", 1, MAX_VOLUME),
-  })
 
 def check_selfdrive_timeout_alert(sm):
   ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
