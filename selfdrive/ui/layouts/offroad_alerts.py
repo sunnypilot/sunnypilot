@@ -1,289 +1,148 @@
 import json
 import pyray as rl
-import re
 import time
 from dataclasses import dataclass
 from enum import IntEnum
+from typing import List
+
 from openpilot.common.params import Params
 from openpilot.selfdrive.selfdrived.alertmanager import OFFROAD_ALERTS
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 REFRESH_INTERVAL = 5.0
 
 
-class AlertSize(IntEnum):
-  SMALL = 0
-  MEDIUM = 1
-  BIG = 2
+class EntryKind(IntEnum):
+  UPDATE = 0
+  ALERT = 1
 
 
 @dataclass
-class AlertData:
-  key: str
-  text: str
-  severity: int
-  visible: bool = False
+class EntryData:
+  kind: EntryKind
+  title: str
+  line2: str
+  line3: str
+  severity: int  # -1 update/ok, 0 warn, 1 critical
 
 
-class AlertItem(Widget):
-  ALERT_WIDTH = 1600
-  ALERT_HEIGHT_SMALL = 360
-  ALERT_HEIGHT_MED = 420
-  ALERT_HEIGHT_BIG = 480
-  ALERT_PADDING = 54
-  ICON_SIZE = 120
-  ICON_MARGIN = 28
-  TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
-  TITLE_BODY_SPACING = 26
-
-  def __init__(self, alert_data: AlertData):
+class EntryCard(Widget):
+  def __init__(self, data: EntryData):
     super().__init__()
-    self.alert_data = alert_data
+    self.data = data
+    self._title_label = UnifiedLabel("", 64, FontWeight.SEMI_BOLD, rl.WHITE,
+                                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
+    self._line_label = UnifiedLabel("", 48, FontWeight.ROMAN, rl.Color(230, 230, 230, 255),
+                                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+                                    alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=1.0)
+    self._update_state()
 
-    self._bg_small = gui_app.texture("icons_mici/offroad_alerts/small_alert.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_SMALL)
-    self._bg_small_pressed = gui_app.texture("icons_mici/offroad_alerts/small_alert_pressed.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_SMALL)
-    self._bg_medium = gui_app.texture("icons_mici/offroad_alerts/medium_alert.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_MED)
-    self._bg_medium_pressed = gui_app.texture("icons_mici/offroad_alerts/medium_alert_pressed.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_MED)
-    self._bg_big = gui_app.texture("icons_mici/offroad_alerts/big_alert.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_BIG)
-    self._bg_big_pressed = gui_app.texture("icons_mici/offroad_alerts/big_alert_pressed.png", self.ALERT_WIDTH, self.ALERT_HEIGHT_BIG)
+  def set_entry(self, data: EntryData):
+    self.data = data
+    self._update_state()
 
-    self._icon_orange = gui_app.texture("icons_mici/offroad_alerts/orange_warning.png", self.ICON_SIZE, self.ICON_SIZE)
-    self._icon_red = gui_app.texture("icons_mici/offroad_alerts/red_warning.png", self.ICON_SIZE, self.ICON_SIZE)
-    self._icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
+  def _update_state(self):
+    self._title_label.set_text(self.data.title)
+    combined = "\n".join([s for s in [self.data.line2, self.data.line3] if s])
+    self._line_label.set_text(combined)
 
-    self._title_label = UnifiedLabel(
-      text="", font_size=60, font_weight=FontWeight.SEMI_BOLD, text_color=self.TEXT_COLOR,
-      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP, line_height=0.95,
-    )
+  def _render(self, rect: rl.Rectangle):
+    pad = 32
+    corner = 18
+    bg = rl.Color(28, 28, 28, 245)
+    accent = rl.Color(120, 200, 120, 255) if self.data.severity <= -1 else rl.Color(255, 180, 64, 255) if self.data.severity == 0 else rl.Color(230, 80, 80, 255)
+    rl.draw_rectangle_rounded(rect, 0.2, 12, bg)
+    rl.draw_rectangle_rounded_lines_ex(rect, 0.2, 12, 4, accent)
 
-    self._body_label = UnifiedLabel(
-      text="", font_size=50, font_weight=FontWeight.ROMAN, text_color=self.TEXT_COLOR,
-      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, line_height=0.95,
-    )
-
-    self._title_text = ""
-    self._body_text = ""
-    self._alert_size = AlertSize.SMALL
-
-    self._update_content()
-
-  def _split_text(self, text: str) -> tuple[str, str]:
-    match = re.search(r'[.!?](?:\s+|$)', text)
-    if match:
-      title = text[:match.start()].strip()
-      body = text[match.end():].strip()
-      return title, body
-    return "", text
-
-  def _update_content(self):
-    if not self.alert_data.visible or not self.alert_data.text:
-      self.set_visible(False)
-      return
-
-    self.set_visible(True)
-    self._title_text, self._body_text = self._split_text(self.alert_data.text)
-
-    title_width = self.ALERT_WIDTH - (self.ALERT_PADDING * 2) - self.ICON_SIZE - self.ICON_MARGIN
-    body_width = self.ALERT_WIDTH - (self.ALERT_PADDING * 2)
-
-    self._title_label.set_text(self._title_text)
-    self._body_label.set_text(self._body_text)
-
-    title_height = self._title_label.get_content_height(title_width) if self._title_text else 0
-    body_height = self._body_label.get_content_height(body_width) if self._body_text else 0
-    spacing = self.TITLE_BODY_SPACING if (self._title_text and self._body_text) else 0
-    total_text_height = title_height + spacing + body_height
-
-    min_height_with_padding = total_text_height + (self.ALERT_PADDING * 2)
-    if min_height_with_padding > self.ALERT_HEIGHT_MED:
-      self._alert_size = AlertSize.BIG
-      height = self.ALERT_HEIGHT_BIG
-    elif min_height_with_padding > self.ALERT_HEIGHT_SMALL:
-      self._alert_size = AlertSize.MEDIUM
-      height = self.ALERT_HEIGHT_MED
-    else:
-      self._alert_size = AlertSize.SMALL
-      height = self.ALERT_HEIGHT_SMALL
-
-    self.set_rect(rl.Rectangle(0, 0, self.ALERT_WIDTH, height))
-
-  def update_alert_data(self, alert_data: AlertData):
-    self.alert_data = alert_data
-    self._update_content()
-
-  def _render(self, _):
-    if not self.alert_data.visible or not self.alert_data.text:
-      return
-
-    if self._alert_size == AlertSize.BIG:
-      bg_texture = self._bg_big_pressed if self.is_pressed else self._bg_big
-    elif self._alert_size == AlertSize.MEDIUM:
-      bg_texture = self._bg_medium_pressed if self.is_pressed else self._bg_medium
-    else:
-      bg_texture = self._bg_small_pressed if self.is_pressed else self._bg_small
-
-    rl.draw_texture(bg_texture, int(self._rect.x), int(self._rect.y), rl.WHITE)
-
-    title_width = self.ALERT_WIDTH - (self.ALERT_PADDING * 2) - self.ICON_SIZE - self.ICON_MARGIN
-    body_width = self.ALERT_WIDTH - (self.ALERT_PADDING * 2)
-    text_x = self._rect.x + self.ALERT_PADDING
-    text_y = self._rect.y + self.ALERT_PADDING
-
-    if self._title_text:
-      title_rect = rl.Rectangle(
-        text_x,
-        text_y,
-        title_width,
-        self._title_label.get_content_height(title_width),
-      )
-      self._title_label.render(title_rect)
-      text_y += title_rect.height + self.TITLE_BODY_SPACING
-
-    if self._body_text:
-      body_rect = rl.Rectangle(
-        text_x,
-        text_y,
-        body_width,
-        self._rect.height - text_y + self._rect.y - self.ALERT_PADDING,
-      )
-      self._body_label.render(body_rect)
-
-    if self.alert_data.severity == -1:
-      icon_texture = self._icon_green
-    elif self.alert_data.severity > 0:
-      icon_texture = self._icon_red
-    else:
-      icon_texture = self._icon_orange
-    icon_x = self._rect.x + self.ALERT_WIDTH - self.ALERT_PADDING - self.ICON_SIZE
-    icon_y = self._rect.y + self.ALERT_PADDING
-    rl.draw_texture(icon_texture, int(icon_x), int(icon_y), rl.WHITE)
+    text_x = rect.x + pad
+    text_y = rect.y + pad
+    self._title_label.render(rl.Rectangle(text_x, text_y, rect.width - pad * 2, 200))
+    text_y += self._title_label.get_content_height(rect.width - pad * 2) + 12
+    self._line_label.render(rl.Rectangle(text_x, text_y, rect.width - pad * 2, rect.height - text_y + rect.y - pad))
 
 
 class OffroadAlertsLayout(Widget):
   def __init__(self):
     super().__init__()
     self.params = Params()
-    self.sorted_alerts: list[AlertData] = []
-    self.alert_items: list[AlertItem] = []
+    self._cards: List[EntryCard] = []
+    self._scroller = Scroller([], horizontal=False, spacing=24, pad_start=32, pad_end=32, snap_items=False)
     self._last_refresh = 0.0
+    self._empty_label = UnifiedLabel(tr("no alerts"), 96, FontWeight.DISPLAY, rl.WHITE,
+                                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+                                     alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
-    self._scroller = Scroller([], horizontal=False, spacing=12, pad_start=0, pad_end=0, snap_items=False)
-    self._empty_label = UnifiedLabel(
-      tr("no alerts"), 65, FontWeight.DISPLAY, rl.WHITE,
-      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
-    )
+  def active_entries(self) -> int:
+    return len(self._cards)
 
-    self._build_alerts()
+  def _build_entries(self):
+    entries: List[EntryData] = []
 
-  def active_alerts(self) -> int:
-    return sum(alert.visible for alert in self.sorted_alerts)
+    # Update card
+    if self.params.get_bool("UpdateAvailable"):
+      desc = self.params.get("UpdaterNewDescription") or ""
+      if isinstance(desc, bytes):
+        desc = desc.decode("utf-8", "replace")
+      version = branch = commit = date = ""
+      if desc:
+        parts = [p.strip() for p in desc.split(" / ")]
+        if len(parts) > 0:
+          version = parts[0]
+        if len(parts) > 1:
+          branch = parts[1]
+        if len(parts) > 2:
+          commit = parts[2]
+        if len(parts) > 3:
+          date = parts[3]
+      title = "update available"
+      line2 = f"hoofpilot {version}".strip()
+      line3_parts = [p for p in [branch, commit, date] if p]
+      line3 = " / ".join(line3_parts)
+      entries.append(EntryData(EntryKind.UPDATE, title, line2, line3, -1))
 
-  def scrolling(self):
-    return self._scroller.scroll_panel.is_touch_valid()
-
-  def _build_alerts(self):
-    self.sorted_alerts = []
-    self.alert_items = []
-
-    # Clear scroller before rebuilding
-    if hasattr(self._scroller, "clear_widgets"):
-      try:
-        self._scroller.clear_widgets()
-      except Exception:
-        self._scroller._widgets = []
-    else:
-      self._scroller._widgets = []
-
-    update_alert_data = AlertData(key="UpdateAvailable", text="", severity=-1)
-    self.sorted_alerts.append(update_alert_data)
-    update_alert_item = AlertItem(update_alert_data)
-    self.alert_items.append(update_alert_item)
-    self._scroller.add_widget(update_alert_item)
-
+    # Regular alerts
     for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
-      severity = config.get("severity", 0)
-      alert_data = AlertData(key=key, text="", severity=severity)
-      self.sorted_alerts.append(alert_data)
-
-      alert_item = AlertItem(alert_data)
-      self.alert_items.append(alert_item)
-      self._scroller.add_widget(alert_item)
-
-  def refresh(self) -> int:
-    active_count = 0
-    update_available = self.params.get_bool("UpdateAvailable")
-    update_alert_data = next((a for a in self.sorted_alerts if a.key == "UpdateAvailable"), None)
-
-    if update_alert_data:
-      if update_available:
-        # Build a richer update message so it sizes correctly
-        new_desc = self.params.get("UpdaterNewDescription") or ""
-        if isinstance(new_desc, bytes):
-          new_desc = new_desc.decode("utf-8", "replace")
-        version = branch = commit = date = ""
-        if new_desc:
-          parts = [p.strip() for p in new_desc.split(" / ")]
-          if len(parts) > 0:
-            version = parts[0]
-          if len(parts) > 1:
-            branch = parts[1]
-          if len(parts) > 2:
-            commit = parts[2]
-          if len(parts) > 3:
-            date = parts[3]
-
-        release_notes = self.params.get("UpdaterNewReleaseNotes") or b""
-        if isinstance(release_notes, bytes):
-          release_notes = release_notes.decode("utf-8", "replace")
-
-        header = "update available"
-        line1 = f"hoofpilot {version}" if version else ""
-        line2_parts = [p for p in [branch, commit, date] if p]
-        line2 = " / ".join(line2_parts)
-        update_alert_data.text = "\n".join([s for s in [header, line1, line2] if s])
-        update_alert_data.visible = True
-        active_count += 1
-      else:
-        update_alert_data.text = ""
-        update_alert_data.visible = False
-
-    for alert_data in self.sorted_alerts:
-      if alert_data.key == "UpdateAvailable":
+      alert_json = self.params.get(key)
+      if not alert_json:
+        continue
+      try:
+        if isinstance(alert_json, bytes):
+          alert_json = alert_json.decode("utf-8", "replace")
+        if isinstance(alert_json, str):
+          alert_json = json.loads(alert_json)
+        text = (alert_json.get("text", "") or "").replace("%1", alert_json.get("extra", ""))
+      except Exception:
+        text = ""
+      if not text:
         continue
 
-      text = ""
-      alert_json = self.params.get(alert_data.key)
+      title, body = self._split_text(text)
+      sev = config.get("severity", 0)
+      entries.append(EntryData(EntryKind.ALERT, title or "Alert", body, "", sev))
 
-      if alert_json:
-        try:
-          if isinstance(alert_json, bytes):
-            alert_json = alert_json.decode("utf-8", "replace")
-          if isinstance(alert_json, str):
-            alert_json = json.loads(alert_json)
-          if isinstance(alert_json, dict):
-            text = (alert_json.get("text", "") or "").replace("%1", alert_json.get("extra", ""))
-          else:
-            text = str(alert_json)
-        except Exception:
-          text = ""
+    # Build cards
+    self._cards = []
+    widgets = []
+    for e in entries:
+      card = EntryCard(e)
+      self._cards.append(card)
+      widgets.append(card)
+    self._scroller.set_widgets(widgets)
 
-      alert_data.text = text
-      alert_data.visible = bool(text)
+  @staticmethod
+  def _split_text(text: str) -> tuple[str, str]:
+    match = re.search(r'[.!?](?:\s+|$)', text)
+    if match:
+      return text[:match.start()].strip(), text[match.end():].strip()
+    return "", text
 
-      if alert_data.visible:
-        active_count += 1
-
-    for alert_item in self.alert_items:
-      alert_item.update_alert_data(alert_item.alert_data)
-
-    return active_count
+  def refresh(self) -> int:
+    self._build_entries()
+    return len(self._cards)
 
   def show_event(self):
     self._scroller.show_event()
@@ -297,27 +156,18 @@ class OffroadAlertsLayout(Widget):
       self._last_refresh = current_time
 
   def _render(self, rect: rl.Rectangle):
-    # Stretch item width to 95% of available rect, clamp to a larger max
-    target_width = min(rect.width * 0.95, 1600)
-    scroller_x = rect.x + (rect.width - target_width) / 2
-    for item in self.alert_items:
-      if isinstance(item, AlertItem):
-        item.set_rect(rl.Rectangle(scroller_x, item.rect.y, target_width, item.rect.height))
+    if self.active_entries() == 0:
+      self._empty_label.render(rect)
+      return
 
-    if self.active_alerts() == 0:
-      # Bigger empty state
-      empty_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height)
-      self._empty_label.set_font_size(80)
-      self._empty_label.render(empty_rect)
-    else:
-      # Center scroller content
-      scroller_rect = rl.Rectangle(
-        scroller_x,
-        rect.y,
-        target_width,
-        rect.height,
-      )
-      # Clip to full rect
-      rl.begin_scissor_mode(int(rect.x), int(rect.y), int(rect.width), int(rect.height))
-      self._scroller.render(scroller_rect)
-      rl.end_scissor_mode()
+    # Set card sizes based on viewport
+    width = min(rect.width * 0.92, 1800)
+    x = rect.x + (rect.width - width) / 2
+    y = rect.y
+    for card in self._cards:
+      height = card._title_label.get_content_height(width - 128) + card._line_label.get_content_height(width - 128) + 160
+      card.set_rect(rl.Rectangle(x, y, width, max(260, height)))
+      y += card.rect.height + self._scroller.spacing
+
+    # Render scroller
+    self._scroller.render(rl.Rectangle(rect.x, rect.y, rect.width, rect.height))
