@@ -81,6 +81,7 @@ class OffroadAlertsLayout(Widget):
 
   def _build_entries(self):
     entries: List[EntryData] = []
+    seen: set[tuple[int, str, str, str]] = set()
 
     # Update card
     if self.params.get_bool("UpdateAvailable"):
@@ -102,7 +103,11 @@ class OffroadAlertsLayout(Widget):
       line2 = f"hoofpilot {version}".strip()
       line3_parts = [p for p in [branch, commit, date] if p]
       line3 = " / ".join(line3_parts)
-      entries.append(EntryData(EntryKind.UPDATE, title, line2, line3, -1))
+      entry = EntryData(EntryKind.UPDATE, title, line2, line3, -1)
+      key = (entry.kind, entry.title, entry.line2, entry.line3)
+      if key not in seen:
+        seen.add(key)
+        entries.append(entry)
 
     # Regular alerts
     for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
@@ -122,7 +127,11 @@ class OffroadAlertsLayout(Widget):
 
       title, body = self._split_text(text)
       sev = config.get("severity", 0)
-      entries.append(EntryData(EntryKind.ALERT, title or "Alert", body, "", sev))
+      entry = EntryData(EntryKind.ALERT, title or "Alert", body, "", sev)
+      key = (entry.kind, entry.title, entry.line2, entry.line3)
+      if key not in seen:
+        seen.add(key)
+        entries.append(entry)
 
     # Build cards
     self._cards = []
