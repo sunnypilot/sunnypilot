@@ -22,7 +22,7 @@ KEY_FONT_SIZE = 78     # final key letter size
 ROW_SPACING = 20
 KEY_SPACING = 54
 
-KB_SCALE = 1.00        # global keyboard scale (keep 1.00)
+KB_SCALE = 1.38       # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
 INPUT_TOP_MARGIN = 160
 KEYBOARD_BOTTOM_MARGIN = 40
@@ -181,8 +181,11 @@ class Keyboard(Widget):
     self._update_backspace_repeat()
 
     # keyboard
+    # ====== KEYBOARD RENDER (with Tizi scaling) ======
+
     kb_height = self._mici_keyboard.get_keyboard_height()
 
+    # unscaled keyboard rectangle
     kb_rect = rl.Rectangle(
       rect.x,
       rect.y + rect.height - kb_height - KEYBOARD_BOTTOM_MARGIN,
@@ -190,8 +193,24 @@ class Keyboard(Widget):
       kb_height,
     )
 
-    self._mici_keyboard.set_rect(kb_rect)
-    self._mici_keyboard.render(kb_rect)
+    # --- apply global scale KB_SCALE around keyboard origin ---
+    rl.rl_push_matrix()
+    rl.rl_translatef(kb_rect.x, kb_rect.y, 0)
+    rl.rl_scalef(KB_SCALE, KB_SCALE, 1)
+    rl.rl_translatef(-kb_rect.x, -kb_rect.y, 0)
+
+    # scaled rect passed to MICI keyboard
+    scaled_rect = rl.Rectangle(
+      kb_rect.x,
+      kb_rect.y,
+      kb_rect.width / KB_SCALE,
+      kb_rect.height / KB_SCALE,
+    )
+
+    self._mici_keyboard.set_rect(scaled_rect)
+    self._mici_keyboard.render(scaled_rect)
+
+    rl.rl_pop_matrix()
 
     # sync text
     new_text = self._mici_keyboard.text()
