@@ -1,3 +1,4 @@
+import math
 import pyray as rl
 import re
 import time
@@ -50,7 +51,6 @@ class GlassAlertCard(Widget):
     self.icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
     self.icon_orange = gui_app.texture("icons_mici/offroad_alerts/orange_warning.png", self.ICON_SIZE, self.ICON_SIZE)
     self.icon_red = gui_app.texture("icons_mici/offroad_alerts/red_warning.png", self.ICON_SIZE, self.ICON_SIZE)
-
 
     self.title_label = UnifiedLabel(
       "",
@@ -105,19 +105,20 @@ class GlassAlertCard(Widget):
     if not self.alert_data.visible:
       return
 
-    # squish animation
+    # squish animation (no vertical “drop” – anchored to top edge)
     target_scale = self.PRESS_SCALE if self.is_pressed else 1.0
     self.scale_anim += (target_scale - self.scale_anim) * rl.get_frame_time() * self.PRESS_SPEED
 
-    cx = self._rect.x + self._rect.width / 2
-    cy = self._rect.y + self._rect.height / 2
+    rect = self._rect
+
+    # anchor scaling at top-center so the top edge stays fixed
+    cx = rect.x + rect.width / 2
+    anchor_y = rect.y
 
     rl.rl_push_matrix()
-    rl.rl_translatef(cx, cy, 0)
+    rl.rl_translatef(cx, anchor_y, 0)
     rl.rl_scalef(self.scale_anim, self.scale_anim, 1)
-    rl.rl_translatef(-cx, -cy, 0)
-
-    rect = self._rect
+    rl.rl_translatef(-cx, -anchor_y, 0)
 
     # glass + glow
     if self.alert_data.severity == -1:
@@ -170,11 +171,11 @@ class OffroadAlertsLayout(Widget):
     self.scrollbar_alpha = 0.0
     self.last_scroll_time = 0.0
 
-    # IMPORTANT: gui_app.texture already prefixes "assets/",
-    # so this path must NOT include "assets/".
+    # gui_app.texture already prefixes "assets/"
+    # scale to about 80 px wide for Tizi aesthetic
     self.scrollbar_img = gui_app.texture(
       "icons_mici/settings/vertical_scroll_indicator.png",
-      36, 220,
+      80, 260,
     )
 
     self.scroller = Scroller([], horizontal=False, spacing=32,
@@ -260,6 +261,7 @@ class OffroadAlertsLayout(Widget):
 
   # -------- state updates (scrollbar fade) --------
   def _update_state(self):
+    # fade in while actively scrolling; fade out after a delay
     if self.scroller.scroll_panel.is_touch_valid():
       self.last_scroll_time = time.monotonic()
       self.scrollbar_alpha += (1.0 - self.scrollbar_alpha) * rl.get_frame_time() * FADE_SPEED
@@ -275,30 +277,58 @@ class OffroadAlertsLayout(Widget):
     self.title_label.render(title_rect)
 
     if self._active_count() == 0:
-      # optional: you can render "no alerts" label here if you want
+      # optional: render "no alerts" here if desired
       return
 
-    # layout cards vertically
+    # layout cards vertically and remember the first visible card's x
     y = rect.y + 160
     center_x = rect.x + rect.width / 2
+    first_card_x = None
+
     for card in self.cards:
       if not card.alert_data.visible:
         continue
+      card_x = center_x - card.WIDTH / 2
       card.set_rect(rl.Rectangle(
-        center_x - card.WIDTH / 2,
+        card_x,
         y,
         card.WIDTH,
         card.rect.height,
       ))
+      if first_card_x is None:
+        first_card_x = card_x
       y += card.rect.height + 24
 
     # scroller
     self.scroller.render(rect)
 
-    # scrollbar (fade in/out)
+    # scrollbar (left side, flush with cards, fade + glow pulse)
     if self.scrollbar_alpha > 0.01 and self.scrollbar_img.width > 0:
-      alpha = int(255 * self.scrollbar_alpha)
-      sb_x = rect.x + rect.width - 64 - self.scrollbar_img.width
-      sb_y = rect.y + 160
+      base_alpha = self.scrollbar_alpha
+
+      # glow pulse based on time
+      t = rl.get_time()
+      pulse = 0.75 + 0.25 * (0.5 * (1.0 + math.sin(t * 2.4)))
+      alpha = int(255 * base_alpha * pulse)
+
+      # x aligned flush with left edge of cards (fallback to screen edge)
+      if first_card_x is not None:
+        sb_x = first_card_x - self.scrollbar_img.width - 24
+      else:
+        sb_x = rect.x + 64
+
+      # vertically centered in the alerts area
+      sb_y = rect.y + (rect.height - self.scrollbar_img.height) / 2
+
+      # soft glow behind the indicator
+      glow_color = rl.Color(255, 255, 255, int(alpha * 0.35))
+      glow_rect = rl.Rectangle(
+        sb_x - 8,
+        sb_y - 12,
+        self.scrollbar_img.width + 16,
+        self.scrollbar_img.height + 24,
+      )
+      rl.draw_rectangle_rounded(glow_rect, 0.45, 8, glow_color)
+
       rl.draw_texture(self.scrollbar_img, int(sb_x), int(sb_y),
                       rl.Color(255, 255, 255, alpha))
