@@ -33,7 +33,7 @@ KEY_SPACING = 1
 KEYBOARD_INNER_PADDING_X = 80  # extra space inside pill before keys start
 KEYBOARD_INNER_PADDING_Y = 60
 
-KB_SCALE = 2.0      # global keyboard scale (keep 1.00)
+KB_SCALE = 1.45      # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
 INPUT_TOP_MARGIN = 160
 KEYBOARD_BOTTOM_MARGIN = 40
