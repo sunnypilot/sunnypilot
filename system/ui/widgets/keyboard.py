@@ -25,15 +25,15 @@ from openpilot.system.ui.widgets.mici_keyboard import (
 
 
 # ========= TIZI SCALING CONSTANTS (2160×1080) =========
-PILL_W = 1690     # shortened overall keyboard width by ~60px
-PILL_H = 500      # was 375
+PILL_W = 1800     # shortened overall keyboard width by ~60px
+PILL_H = 600      # was 375
 KEY_FONT_SIZE = 88     # final key letter size (larger keys)
 ROW_SPACING = 1
 KEY_SPACING = 1
 KEYBOARD_INNER_PADDING_X = 80  # extra space inside pill before keys start
 KEYBOARD_INNER_PADDING_Y = 60
 
-KB_SCALE = 1.45      # global keyboard scale (keep 1.00)
+KB_SCALE = 1.00      # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
 INPUT_TOP_MARGIN = 160
 KEYBOARD_BOTTOM_MARGIN = 40
