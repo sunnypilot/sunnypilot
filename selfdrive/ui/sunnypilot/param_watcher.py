@@ -29,5 +29,4 @@ class ParamWatcher:
       return val
 
   def get_bool(self, key):
-    value = self.get(key)
-    return value is not None and value
+    return self.get(key)
