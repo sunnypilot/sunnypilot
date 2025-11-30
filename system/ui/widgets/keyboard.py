@@ -2,6 +2,7 @@ from functools import partial
 import time
 from typing import Literal
 
+import numpy as np
 import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight
@@ -12,7 +13,15 @@ from openpilot.system.ui.widgets.inputbox import InputBox
 from openpilot.system.ui.widgets.label import Label
 
 # MICI keyboard (unmodified)
-from openpilot.system.ui.widgets.mici_keyboard import MiciKeyboard
+from openpilot.system.ui.widgets.mici_keyboard import (
+  CHAR_FONT_SIZE,
+  CHAR_NEAR_FONT_SIZE,
+  KEYBOARD_COLUMN_PADDING,
+  KEYBOARD_ROW_PADDING,
+  MiciKeyboard,
+  SELECTED_CHAR_FONT_SIZE,
+  fast_euclidean_distance,
+)
 
 
 # ========= TIZI SCALING CONSTANTS (2160×1080) =========
@@ -29,6 +38,74 @@ KEYBOARD_BOTTOM_MARGIN = 40
 
 BACKSPACE_HOLD_DELAY = 0.45
 BACKSPACE_HOLD_INTERVAL = 0.07
+
+
+class ScaledMiciKeyboard(MiciKeyboard):
+  """
+  Wrapper around MiciKeyboard that keeps the original visuals intact while allowing
+  font size and row/key spacing to be adjusted from keyboard.py.
+  """
+
+  def __init__(self, *, key_font_size: float, row_spacing: float, key_spacing: float):
+    super().__init__()
+    self._row_spacing = row_spacing
+    self._key_spacing = key_spacing
+
+    # scale the various font sizes proportionally to the base key font size
+    font_scale = key_font_size / CHAR_FONT_SIZE
+    self._base_font_size = key_font_size
+    self._near_font_size = CHAR_NEAR_FONT_SIZE * font_scale
+    self._selected_font_size = SELECTED_CHAR_FONT_SIZE * font_scale
+
+  def _lay_out_keys(self, bg_x, bg_y, keys: list[list["Key"]]):
+    key_rect = rl.Rectangle(bg_x, bg_y, self._txt_bg.width, self._txt_bg.height)
+    row_count = max(len(keys) - 1, 1)
+    available_height = (key_rect.height - 2 * KEYBOARD_COLUMN_PADDING) - self._row_spacing * row_count
+    step_y = max(available_height, 1) / row_count
+
+    for row_idx, row in enumerate(keys):
+      padding = KEYBOARD_ROW_PADDING.get(row_idx, 0)
+      col_count = max(len(row) - 1, 1)
+      available_width = (key_rect.width - 2 * padding) - self._key_spacing * col_count
+      step_x = max(available_width, 1) / col_count
+
+      for key_idx, key in enumerate(row):
+        key_x = key_rect.x + padding + key_idx * (step_x + self._key_spacing)
+        key_y = key_rect.y + KEYBOARD_COLUMN_PADDING + row_idx * (step_y + self._row_spacing)
+
+        if self._closest_key[0] is None:
+          key.set_alpha(1.0)
+          key.set_font_size(self._base_font_size)
+        elif key == self._closest_key[0]:
+          # push key up with a max and inward so user can see key easier
+          key_y = max(key_y - 120, 40)
+          key_x += np.interp(key_x, [self._rect.x, self._rect.x + self._rect.width], [100, -100])
+          key.set_alpha(1.0)
+          key.set_font_size(self._selected_font_size)
+
+          # draw black circle behind selected key
+          rl.draw_circle_gradient(int(key_x + key.rect.width / 2), int(key_y + key.rect.height / 2),
+                                  self._selected_font_size, rl.Color(0, 0, 0, 225), rl.BLANK)
+        else:
+          dx = key.original_position.x - self._closest_key[0].original_position.x
+          dy = key.original_position.y - self._closest_key[0].original_position.y
+          distance_from_selected_key = fast_euclidean_distance(dx, dy)
+
+          inv = 1 / (distance_from_selected_key or 1.0)
+          ux = dx * inv
+          uy = dy * inv
+
+          push_pixels = np.interp(distance_from_selected_key, [0, 250], [20, 0])
+          key_x += ux * push_pixels
+          key_y += uy * push_pixels
+
+          font_size = np.interp(distance_from_selected_key, [0, 150], [self._near_font_size, self._base_font_size])
+          key_alpha = np.interp(distance_from_selected_key, [0, 100], [1.0, 0.35])
+          key.set_alpha(key_alpha)
+          key.set_font_size(font_size)
+
+        key.set_position(key_x, key_y)
+
 
 class Keyboard(Widget):
   """
@@ -73,7 +150,11 @@ class Keyboard(Widget):
     self._backspace_last_repeat = 0.0
 
     # ========== MICI Keyboard (Tuned) ==========
-    self._mici_keyboard = MiciKeyboard()
+    self._mici_keyboard = ScaledMiciKeyboard(
+      key_font_size=KEY_FONT_SIZE,
+      row_spacing=ROW_SPACING,
+      key_spacing=KEY_SPACING,
+    )
 
     # override pill background EXACTLY
     try:
@@ -89,9 +170,6 @@ class Keyboard(Widget):
     # override MICI internal layout values
     self._mici_keyboard._pill_w = PILL_W
     self._mici_keyboard._pill_h = PILL_H
-    self._mici_keyboard._key_font_size = KEY_FONT_SIZE
-    self._mici_keyboard._row_spacing = ROW_SPACING
-    self._mici_keyboard._key_spacing = KEY_SPACING
 
 
 
