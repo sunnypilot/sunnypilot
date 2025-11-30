@@ -36,7 +36,6 @@ class UIState(UIStateSP):
     self.params = Params()
     UIStateSP.__init__(self)
     self.sm = messaging.SubMaster(
-      list(set(
       [
         "modelV2",
         "controlsState",
@@ -59,7 +58,7 @@ class UIState(UIStateSP):
         "carControl",
         "liveParameters",
         "rawAudioData",
-      ] + self.sp_services))
+      ] + self.sp_services
     )
 
     self.prime_state = PrimeState()
