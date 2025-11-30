@@ -2,7 +2,6 @@ import pyray as rl
 from enum import IntEnum
 import cereal.messaging as messaging
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.selfdrive.ui.layouts.sidebar import Sidebar, SIDEBAR_WIDTH
 from openpilot.selfdrive.ui.layouts.home import HomeLayout
 from openpilot.selfdrive.ui.layouts.settings.settings import SettingsLayout, PanelType
 from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
@@ -26,21 +25,19 @@ class MainLayout(Widget):
 
     self._pm = messaging.PubMaster(['bookmarkButton'])
 
-    self._sidebar = Sidebar()
     self._current_mode = MainState.HOME
     self._prev_onroad = False
     # Settings transition animation state
     self._settings_anim_active = False
     self._settings_anim_start = 0.0
-    # Use easing/duration similar to mici (slightly bouncy)
-    self._settings_anim_duration = 0.32
+    # Faster easing for responsiveness
+    self._settings_anim_duration = 0.24
     self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
 
     # Initialize layouts
     self._layouts = {MainState.HOME: HomeLayout(), MainState.SETTINGS: SettingsLayout(), MainState.ONROAD: AugmentedRoadView()}
 
-    self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)
     self._content_rect = rl.Rectangle(0, 0, 0, 0)
 
     # Set callbacks
@@ -56,14 +53,16 @@ class MainLayout(Widget):
     self._render_main_content()
 
   def _setup_callbacks(self):
-    self._sidebar.set_callbacks(on_settings=self._on_settings_clicked,
-                                on_flag=self._on_bookmark_clicked,
-                                open_settings=lambda: self.open_settings(PanelType.TOGGLES))
-    self._layouts[MainState.HOME]._setup_widget.set_open_settings_callback(lambda: self.open_settings(PanelType.FIREHOSE))
+    # Home layout settings tap opens toggles by default
     self._layouts[MainState.HOME].set_settings_callback(lambda: self.open_settings(PanelType.TOGGLES))
+    self._layouts[MainState.HOME].set_panel_callback(lambda panel: self.open_settings(panel))
     # Intercept settings close to run slide-down animation
     self._layouts[MainState.SETTINGS].set_callbacks(on_close=self._close_settings_requested)
     self._layouts[MainState.ONROAD].set_click_callback(self._on_onroad_clicked)
+    try:
+      self._layouts[MainState.ONROAD].set_settings_callback(lambda: self.open_settings(PanelType.DEVICE))
+    except Exception:
+      pass
 
   def _close_settings_requested(self):
     """Close settings: instantly in onroad (clear modal), animated offroad."""
@@ -84,11 +83,6 @@ class MainLayout(Widget):
       self._settings_anim_active = False
       self._settings_anim_direction = None
       self._settings_prev_layout = None
-      # Restore sidebar visibility (show by default when leaving settings)
-      try:
-        self._sidebar.set_visible(True)
-      except Exception:
-        pass
       return
 
     # Offroad: existing behavior (reverse entry animation or start exit animation)
@@ -98,7 +92,6 @@ class MainLayout(Widget):
       prog = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now - (1.0 - prog) * self._settings_anim_duration
-      # don't restore sidebar yet; restore only after settings fully closed
       return
 
     if not self._settings_anim_active and self._current_mode == MainState.SETTINGS:
@@ -106,14 +99,10 @@ class MainLayout(Widget):
       self._settings_anim_active = True
       self._settings_anim_direction = 'out'
       self._settings_anim_start = now
-      # sidebar will be restored when the animation fully completes
     device.add_interactive_timeout_callback(self._set_mode_for_state)
 
   def _update_layout_rects(self):
-    self._sidebar_rect = rl.Rectangle(self._rect.x, self._rect.y, SIDEBAR_WIDTH, self._rect.height)
-
-    x_offset = SIDEBAR_WIDTH if self._sidebar.is_visible else 0
-    self._content_rect = rl.Rectangle(self._rect.y + x_offset, self._rect.y, self._rect.width - x_offset, self._rect.height)
+    self._content_rect = rl.Rectangle(self._rect.x, self._rect.y, self._rect.width, self._rect.height)
 
   def _handle_onroad_transition(self):
     if ui_state.started != self._prev_onroad:
@@ -123,13 +112,9 @@ class MainLayout(Widget):
 
   def _set_mode_for_state(self):
     if ui_state.started:
-      # Don't hide sidebar from interactive timeout
-      if self._current_mode != MainState.ONROAD:
-        self._sidebar.set_visible(False)
       self._set_current_layout(MainState.ONROAD)
     else:
       self._set_current_layout(MainState.HOME)
-      self._sidebar.set_visible(True)
 
   def _set_current_layout(self, layout: MainState):
     if layout != self._current_mode:
@@ -161,8 +146,6 @@ class MainLayout(Widget):
       self._settings_anim_direction = None
       # ensure settings layout can initialize
       self._layouts[MainState.SETTINGS].show_event()
-      # Hide sidebar visually (but keep onroad active underneath)
-      self._sidebar.set_visible(False)
       # Render settings as a modal so it's drawn while onroad stays active
       gui_app.set_modal_overlay(self._render_settings_modal)
       return
@@ -176,8 +159,6 @@ class MainLayout(Widget):
     self._settings_anim_start = now
     # ensure settings layout can initialize
     self._layouts[MainState.SETTINGS].show_event()
-    # Hide sidebar so settings becomes full page
-    self._sidebar.set_visible(False)
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
@@ -205,28 +186,21 @@ class MainLayout(Widget):
     self._pm.send('bookmarkButton', user_bookmark)
 
   def _on_onroad_clicked(self):
-    self._sidebar.set_visible(not self._sidebar.is_visible)
+    # Sidebar removed; no-op toggle to avoid unexpected view switches
+    return
 
   def _render_main_content(self):
-    # Render sidebar
-    if self._sidebar.is_visible:
-      self._sidebar.render(self._sidebar_rect)
-
-    content_rect = self._content_rect if self._sidebar.is_visible else self._rect
+    content_rect = self._rect
     # If a settings animation is active, render previous layout underneath and animate settings sliding
     if self._settings_anim_active and self._settings_anim_direction is not None:
       now = rl.get_time()
       elapsed = now - self._settings_anim_start
       t = max(0.0, min(1.0, elapsed / self._settings_anim_duration))
-      # easeOutBack (tiny overshoot / bounce) to match mici feel
-      # https://easings.net/#easeOutBack
-      c1 = 1.70158
-      c3 = c1 + 1
-      eased = 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+      # easeOutCubic for snappier close/open
+      eased = 1 - pow(1 - t, 3)
 
-      # Determine base (under) layout
-      base_layout = self._layouts[self._settings_prev_layout] if self._settings_prev_layout is not None else self._layouts[self._current_mode]
-      base_layout.render(content_rect)
+      # During animation, draw a solid backdrop to prevent underlying icons peeking
+      rl.draw_rectangle_rec(content_rect, rl.Color(0, 0, 0, 255))
 
       # Compute animated Y for settings panel (full page)
       full_rect = self._rect
@@ -266,9 +240,6 @@ class MainLayout(Widget):
           # Restore previous layout
           if self._settings_prev_layout is not None:
             self._current_mode = self._settings_prev_layout
-            # Restore sidebar visibility when returning to a non-onroad layout
-            if self._settings_prev_layout != MainState.ONROAD:
-              self._sidebar.set_visible(True)
         self._settings_anim_active = False
         self._settings_anim_direction = None
         self._settings_prev_layout = None

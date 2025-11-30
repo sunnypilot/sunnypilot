@@ -1,30 +1,36 @@
 import time
+import datetime
 import pyray as rl
-from collections.abc import Callable
 from enum import IntEnum
+from cereal import log
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.widgets.offroad_alerts import UpdateAlert, OffroadAlert
-from openpilot.selfdrive.ui.widgets.exp_mode_button import ExperimentalModeButton
-from openpilot.selfdrive.ui.widgets.prime import PrimeWidget
-from openpilot.selfdrive.ui.widgets.setup import SetupWidget
-from openpilot.system.ui.lib.text_measure import measure_text_cached
-from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
-from openpilot.system.ui.lib.multilang import tr, trn
-from openpilot.system.ui.widgets.label import gui_label
+from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
+from openpilot.selfdrive.ui.layouts.offroad_alerts import OffroadAlertsLayout
+from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
 
-HEADER_HEIGHT = 80
-HEAD_BUTTON_FONT_SIZE = 40
-CONTENT_MARGIN = 40
-SPACING = 25
-RIGHT_COLUMN_WIDTH = 750
 REFRESH_INTERVAL = 10.0
+BASE_WIDTH = 2560
+BASE_HEIGHT = 1080
+BRAND_FONT = 200
+VERSION_FONT = 72
+META_FONT = 56
+PADDING = 48
+ICON_MARGIN = 60
+SWIPE_THRESHOLD = 120
+SWIPE_EDGE = 80
+WIFI_Y_OFFSET = -15
+MODE_Y_OFFSET = 10
+MODE_SCALE_FACTOR = 0.9
+ALERT_ANIM_DURATION = 0.25
+SWIPE_RIGHT_EDGE = 80
+NetworkType = log.DeviceState.NetworkType
 
 
 class HomeLayoutState(IntEnum):
   HOME = 0
-  UPDATE = 1
-  ALERTS = 2
+  ALERTS = 1
 
 
 class HomeLayout(Widget):
@@ -32,60 +38,73 @@ class HomeLayout(Widget):
     super().__init__()
     self.params = Params()
 
-    self.update_alert = UpdateAlert()
-    self.offroad_alert = OffroadAlert()
-
-    self._layout_widgets = {HomeLayoutState.UPDATE: self.update_alert, HomeLayoutState.ALERTS: self.offroad_alert}
-
     self.current_state = HomeLayoutState.HOME
-    self.last_refresh = 0
-    self.settings_callback: callable | None = None
+    self.last_refresh = 0.0
 
-    self.update_available = False
-    self.alert_count = 0
-    self._version_text = ""
-    self._prev_update_available = False
-    self._prev_alerts_present = False
+    self.settings_callback = None
+    self.open_panel_callback = None
 
-    self.header_rect = rl.Rectangle(0, 0, 0, 0)
-    self.content_rect = rl.Rectangle(0, 0, 0, 0)
-    self.left_column_rect = rl.Rectangle(0, 0, 0, 0)
-    self.right_column_rect = rl.Rectangle(0, 0, 0, 0)
+    self._version_text: tuple[str, str, str, str, str] | None = None
+    self._experimental_mode = False
 
-    self.update_notif_rect = rl.Rectangle(0, 0, 200, HEADER_HEIGHT - 10)
-    self.alert_notif_rect = rl.Rectangle(0, 0, 220, HEADER_HEIGHT - 10)
+    self._scale = 1.0
+    self._swipe_start: MousePos | None = None
+    self._swipe_active = False
+    self._swipe_side: str | None = None  # 'left' or 'right'
+    self._alerts_anim_active = False
+    self._alerts_anim_direction: str | None = None  # 'in' or 'out'
+    self._alerts_anim_start = 0.0
 
-    self._prime_widget = PrimeWidget()
-    self._setup_widget = SetupWidget()
+    self._net_type = NetworkType.none
+    self._net_strength = 0
 
-    self._exp_mode_button = ExperimentalModeButton()
-    self._setup_callbacks()
+    self._settings_icon = gui_app.texture("icons_mici/settings.png", 180, 180)
+    self._wifi_icons = {
+      "slash": gui_app.texture("icons_mici/settings/network/wifi_strength_slash.png", 210, 180),
+      "none": gui_app.texture("icons_mici/settings/network/wifi_strength_none.png", 210, 180),
+      "low": gui_app.texture("icons_mici/settings/network/wifi_strength_low.png", 210, 180),
+      "medium": gui_app.texture("icons_mici/settings/network/wifi_strength_medium.png", 210, 180),
+      "full": gui_app.texture("icons_mici/settings/network/wifi_strength_full.png", 210, 180),
+    }
+    self._cell_icons = {
+      "none": gui_app.texture("icons_mici/settings/network/cell_strength_none.png", 200, 160),
+      "low": gui_app.texture("icons_mici/settings/network/cell_strength_low.png", 200, 160),
+      "medium": gui_app.texture("icons_mici/settings/network/cell_strength_medium.png", 200, 160),
+      "high": gui_app.texture("icons_mici/settings/network/cell_strength_high.png", 200, 160),
+      "full": gui_app.texture("icons_mici/settings/network/cell_strength_full.png", 200, 160),
+    }
+    self._mode_icons = {
+      "exp": gui_app.texture("icons_mici/experimental_mode.png", 200, 200),
+      "wheel": gui_app.texture("icons_mici/wheel.png", 200, 200),
+    }
+
+    self._font_brand = gui_app.font(FontWeight.SEMI_BOLD)
+    self._font_version = gui_app.font(FontWeight.MEDIUM)
+    self._font_meta = gui_app.font(FontWeight.MEDIUM)
+
+    self._alerts_layout = OffroadAlertsLayout()
 
   def show_event(self):
-    self._exp_mode_button.show_event()
     self.last_refresh = time.monotonic()
+    self._alerts_layout.show_event()
     self._refresh()
 
-  def _setup_callbacks(self):
-    self.update_alert.set_dismiss_callback(lambda: self._set_state(HomeLayoutState.HOME))
-    self.offroad_alert.set_dismiss_callback(lambda: self._set_state(HomeLayoutState.HOME))
-    self._exp_mode_button.set_click_callback(lambda: self.settings_callback() if self.settings_callback else None)
+  def hide_event(self):
+    self._alerts_layout.hide_event()
 
-  def set_settings_callback(self, callback: Callable):
+  def set_settings_callback(self, callback):
     self.settings_callback = callback
 
+  def set_panel_callback(self, callback):
+    self.open_panel_callback = callback
+
   def _set_state(self, state: HomeLayoutState):
-    # propagate show/hide events
     if state != self.current_state:
-      if state == HomeLayoutState.HOME:
-        self._exp_mode_button.show_event()
-
-      if state in self._layout_widgets:
-        self._layout_widgets[state].show_event()
-      if self.current_state in self._layout_widgets:
-        self._layout_widgets[self.current_state].hide_event()
-
-    self.current_state = state
+      if state == HomeLayoutState.ALERTS:
+        self._alerts_layout.show_event()
+      else:
+        self._alerts_layout.hide_event()
+      self.current_state = state
 
   def _render(self, rect: rl.Rectangle):
     current_time = time.monotonic()
@@ -93,140 +112,222 @@ class HomeLayout(Widget):
       self._refresh()
       self.last_refresh = current_time
 
-    self._render_header()
+    self._render_cluster()
 
-    # Render content based on current state
-    if self.current_state == HomeLayoutState.HOME:
-      self._render_home_content()
-    elif self.current_state == HomeLayoutState.UPDATE:
-      self._render_update_view()
-    elif self.current_state == HomeLayoutState.ALERTS:
-      self._render_alerts_view()
+    if self.current_state == HomeLayoutState.ALERTS:
+      self._render_alert_overlay()
+    elif self._alerts_anim_active:
+      self._render_alert_overlay()
 
   def _update_state(self):
-    self.header_rect = rl.Rectangle(
-      self._rect.x + CONTENT_MARGIN, self._rect.y + CONTENT_MARGIN, self._rect.width - 2 * CONTENT_MARGIN, HEADER_HEIGHT
-    )
+    if ui_state.sm.updated['deviceState']:
+      device_state = ui_state.sm['deviceState']
+      self._net_type = device_state.networkType
+      strength = device_state.networkStrength
+      self._net_strength = max(0, min(5, strength.raw + 1)) if strength.raw > 0 else 0
 
-    content_y = self._rect.y + CONTENT_MARGIN + HEADER_HEIGHT + SPACING
-    content_height = self._rect.height - CONTENT_MARGIN - HEADER_HEIGHT - SPACING - CONTENT_MARGIN
+  def _handle_mouse_event(self, mouse_event: MouseEvent):
+    super()._handle_mouse_event(mouse_event)
 
-    self.content_rect = rl.Rectangle(
-      self._rect.x + CONTENT_MARGIN, content_y, self._rect.width - 2 * CONTENT_MARGIN, content_height
-    )
+    # Open: swipe starting from left edge
+    if mouse_event.left_pressed and mouse_event.pos.x <= SWIPE_EDGE:
+      self._swipe_start = mouse_event.pos
+      self._swipe_active = True
+      self._swipe_side = 'left'
+    # when alerts are open, allow close swipe starting near right edge
+    if self.current_state == HomeLayoutState.ALERTS and mouse_event.left_pressed and mouse_event.pos.x >= self._rect.x + self._rect.width - SWIPE_RIGHT_EDGE:
+      self._swipe_start = mouse_event.pos
+      self._swipe_active = True
+      self._swipe_side = 'right'
 
-    left_width = self.content_rect.width - RIGHT_COLUMN_WIDTH - SPACING
+    if self._swipe_active and mouse_event.left_released and self._swipe_start is not None:
+      dx = mouse_event.pos.x - self._swipe_start.x
+      dy = mouse_event.pos.y - self._swipe_start.y
+      if self._swipe_side == 'left' and dx > SWIPE_THRESHOLD and self.current_state != HomeLayoutState.ALERTS:
+        self._start_alert_anim('in')
+      elif self._swipe_side == 'right' and dx < -SWIPE_THRESHOLD and self.current_state == HomeLayoutState.ALERTS:
+        self._start_alert_anim('out')
+      self._swipe_active = False
+      self._swipe_start = None
+      self._swipe_side = None
 
-    self.left_column_rect = rl.Rectangle(self.content_rect.x, self.content_rect.y, left_width, self.content_rect.height)
+    if mouse_event.left_released and self._swipe_start:
+      self._swipe_active = False
+      self._swipe_start = None
+      self._swipe_side = None
+      return
 
-    self.right_column_rect = rl.Rectangle(
-      self.content_rect.x + left_width + SPACING, self.content_rect.y, RIGHT_COLUMN_WIDTH, self.content_rect.height
-    )
+    # Block clicks to underlying UI while alerts overlay is showing/animating
+    if self.current_state == HomeLayoutState.ALERTS or self._alerts_anim_active:
+      return
 
-    self.update_notif_rect.x = self.header_rect.x
-    self.update_notif_rect.y = self.header_rect.y + (self.header_rect.height - 60) // 2
+  def _content_panel_rect(self) -> rl.Rectangle:
+    return rl.Rectangle(self._rect.x, self._rect.y, self._rect.width, self._rect.height)
 
-    notif_x = self.header_rect.x + (220 if self.update_available else 0)
-    self.alert_notif_rect.x = notif_x
-    self.alert_notif_rect.y = self.header_rect.y + (self.header_rect.height - 60) // 2
+  def _render_cluster(self):
+    self._scale = min(self._rect.width / BASE_WIDTH, self._rect.height / BASE_HEIGHT)
 
-  def _handle_mouse_release(self, mouse_pos: MousePos):
-    super()._handle_mouse_release(mouse_pos)
+    brand_pos = rl.Vector2(self._rect.x + PADDING * self._scale, self._rect.y + PADDING * self._scale)
+    brand_size = BRAND_FONT * self._scale
+    rl.draw_text_ex(self._font_brand, "hoofpilot", brand_pos, brand_size, 0, rl.WHITE)
 
-    if self.update_available and rl.check_collision_point_rec(mouse_pos, self.update_notif_rect):
-      self._set_state(HomeLayoutState.UPDATE)
-    elif self.alert_count > 0 and rl.check_collision_point_rec(mouse_pos, self.alert_notif_rect):
-      self._set_state(HomeLayoutState.ALERTS)
+    if self._version_text is None:
+      version_line = ""
+      meta_line = ""
+    else:
+      _, version, branch, commit, date_display = self._version_text
+      version_line = version
+      meta_parts = [p for p in [branch, commit, date_display] if p]
+      meta_line = " / ".join(meta_parts)
 
-  def _render_header(self):
-    font = gui_app.font(FontWeight.MEDIUM)
+    version_y = brand_pos.y + brand_size + 24 * self._scale
+    version_pos = rl.Vector2(brand_pos.x, version_y)
+    if version_line:
+      rl.draw_text_ex(self._font_version, version_line, version_pos, VERSION_FONT * self._scale, 0, rl.Color(255, 255, 255, 230))
 
-    version_text_width = self.header_rect.width
+    meta_y = version_y + VERSION_FONT * self._scale + 8 * self._scale
+    if meta_line:
+      meta_pos = rl.Vector2(brand_pos.x, meta_y)
+      rl.draw_text_ex(self._font_meta, meta_line, meta_pos, META_FONT * self._scale, 0, rl.Color(200, 200, 200, 220))
 
-    # Update notification button
-    if self.update_available:
-      version_text_width -= self.update_notif_rect.width
+    self._render_icons()
 
-      # Highlight if currently viewing updates
-      highlight_color = rl.Color(75, 95, 255, 255) if self.current_state == HomeLayoutState.UPDATE else rl.Color(54, 77, 239, 255)
-      rl.draw_rectangle_rounded(self.update_notif_rect, 0.3, 10, highlight_color)
+  def _render_icons(self):
+    icon_scale = max(0.9, min(1.4, self._scale * 1.05))
+    gear_w = self._settings_icon.width * icon_scale
+    gear_h = self._settings_icon.height * icon_scale
+    hit_pad = 24 * self._scale  # enlarge tap area
 
-      text = tr("UPDATE")
-      text_size = measure_text_cached(font, text, HEAD_BUTTON_FONT_SIZE)
-      text_x = self.update_notif_rect.x + (self.update_notif_rect.width - text_size.x) // 2
-      text_y = self.update_notif_rect.y + (self.update_notif_rect.height - text_size.y) // 2
-      rl.draw_text_ex(font, text, rl.Vector2(int(text_x), int(text_y)), HEAD_BUTTON_FONT_SIZE, 0, rl.WHITE)
+    base_x = self._rect.x + ICON_MARGIN * self._scale
+    base_y = self._rect.y + self._rect.height - gear_h - ICON_MARGIN * self._scale
 
-    # Alert notification button
-    if self.alert_count > 0:
-      version_text_width -= self.alert_notif_rect.width
+    rl.draw_texture_ex(self._settings_icon, (int(base_x), int(base_y)), 0, icon_scale, rl.WHITE)
 
-      # Highlight if currently viewing alerts
-      highlight_color = rl.Color(255, 70, 70, 255) if self.current_state == HomeLayoutState.ALERTS else rl.Color(226, 44, 44, 255)
-      rl.draw_rectangle_rounded(self.alert_notif_rect, 0.3, 10, highlight_color)
+    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      mouse_pos = rl.get_mouse_position()
+      rect = rl.Rectangle(base_x - hit_pad, base_y - hit_pad, gear_w + hit_pad * 2, gear_h + hit_pad * 2)
+      if rl.check_collision_point_rec(mouse_pos, rect):
+        if self.open_panel_callback:
+          self.open_panel_callback(PanelType.DEVICE)
+        elif self.settings_callback:
+          self.settings_callback()
 
-      alert_text = trn("{} ALERT", "{} ALERTS", self.alert_count).format(self.alert_count)
-      text_size = measure_text_cached(font, alert_text, HEAD_BUTTON_FONT_SIZE)
-      text_x = self.alert_notif_rect.x + (self.alert_notif_rect.width - text_size.x) // 2
-      text_y = self.alert_notif_rect.y + (self.alert_notif_rect.height - text_size.y) // 2
-      rl.draw_text_ex(font, alert_text, rl.Vector2(int(text_x), int(text_y)), HEAD_BUTTON_FONT_SIZE, 0, rl.WHITE)
+    conn_x = base_x + gear_w + 50 * self._scale
+    conn_w = 0
+    conn_texture = self._select_connectivity_icon()
+    if conn_texture:
+      conn_w = conn_texture.width * icon_scale
+      conn_h = conn_texture.height * icon_scale
+      conn_y = self._rect.y + self._rect.height - conn_h - ICON_MARGIN * self._scale + (gear_h - conn_h) / 2 + WIFI_Y_OFFSET * self._scale
+      rl.draw_texture_ex(conn_texture, (int(conn_x), int(conn_y)), 0, icon_scale, rl.WHITE)
 
-    # Version text (right aligned)
-    if self.update_available or self.alert_count > 0:
-      version_text_width -= SPACING * 1.5
+      if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+        mouse_pos = rl.get_mouse_position()
+        rect = rl.Rectangle(conn_x - hit_pad, conn_y - hit_pad, conn_w + hit_pad * 2, conn_h + hit_pad * 2)
+        if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
+          self.open_panel_callback(PanelType.NETWORK)
 
-    version_rect = rl.Rectangle(self.header_rect.x + self.header_rect.width - version_text_width, self.header_rect.y,
-                                version_text_width, self.header_rect.height)
-    gui_label(version_rect, self._version_text, 48, rl.WHITE, alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT)
+    mode_icon = self._mode_icons["exp"] if self._experimental_mode else self._mode_icons["wheel"]
+    mode_scale = icon_scale * MODE_SCALE_FACTOR
+    mode_w = mode_icon.width * mode_scale
+    mode_h = mode_icon.height * mode_scale
+    mode_x = conn_x + (conn_w if conn_texture else 0) + 50 * self._scale
+    mode_y = self._rect.y + self._rect.height - mode_h - ICON_MARGIN * self._scale + (gear_h - mode_h) / 2 + MODE_Y_OFFSET * self._scale
+    rl.draw_texture_ex(mode_icon, (int(mode_x), int(mode_y)), 0, mode_scale, rl.WHITE)
 
-  def _render_home_content(self):
-    # Intentionally blank: remove all widgets from the home screen
-    # Keep header (which draws the hoofpilot text on the top-right)
-    return
+    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      mouse_pos = rl.get_mouse_position()
+      rect = rl.Rectangle(mode_x - hit_pad, mode_y - hit_pad, mode_w + hit_pad * 2, mode_h + hit_pad * 2)
+      if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
+        self.open_panel_callback(PanelType.TOGGLES)
 
-  def _render_update_view(self):
-    self.update_alert.render(self.content_rect)
+  def _select_connectivity_icon(self):
+    if self._net_type == NetworkType.wifi:
+      level = min(max(self._net_strength, 0), 5)
+      if level <= 1:
+        return self._wifi_icons["none"]
+      if level == 2:
+        return self._wifi_icons["low"]
+      if level in (3, 4):
+        return self._wifi_icons["medium"]
+      return self._wifi_icons["full"]
 
-  def _render_alerts_view(self):
-    self.offroad_alert.render(self.content_rect)
+    if self._net_type in (NetworkType.cell2G, NetworkType.cell3G, NetworkType.cell4G, NetworkType.cell5G):
+      level = min(max(self._net_strength, 0), 5)
+      if level <= 1:
+        return self._cell_icons["none"]
+      if level == 2:
+        return self._cell_icons["low"]
+      if level == 3:
+        return self._cell_icons["medium"]
+      if level == 4:
+        return self._cell_icons["high"]
+      return self._cell_icons["full"]
 
-  def _render_left_column(self):
-    self._prime_widget.render(self.left_column_rect)
-
-  def _render_right_column(self):
-    exp_height = 125
-    exp_rect = rl.Rectangle(
-      self.right_column_rect.x, self.right_column_rect.y, self.right_column_rect.width, exp_height
-    )
-    self._exp_mode_button.render(exp_rect)
-
-    setup_rect = rl.Rectangle(
-      self.right_column_rect.x,
-      self.right_column_rect.y + exp_height + SPACING,
-      self.right_column_rect.width,
-      self.right_column_rect.height - exp_height - SPACING,
-    )
-    self._setup_widget.render(setup_rect)
+    return self._wifi_icons["slash"]
 
   def _refresh(self):
     self._version_text = self._get_version_text()
-    update_available = self.update_alert.refresh()
-    alert_count = self.offroad_alert.refresh()
-    alerts_present = alert_count > 0
+    self._experimental_mode = ui_state.params.get_bool("ExperimentalMode")
+    self._alerts_layout.refresh()
 
-    # Show panels on transition from no alert/update to any alerts/update
-    if not update_available and not alerts_present:
-      self._set_state(HomeLayoutState.HOME)
-    elif update_available and ((not self._prev_update_available) or (not alerts_present and self.current_state == HomeLayoutState.ALERTS)):
-      self._set_state(HomeLayoutState.UPDATE)
-    elif alerts_present and ((not self._prev_alerts_present) or (not update_available and self.current_state == HomeLayoutState.UPDATE)):
-      self._set_state(HomeLayoutState.ALERTS)
+  def _get_version_text(self) -> tuple[str, str, str, str, str] | None:
+    description = self.params.get("UpdaterCurrentDescription") or ""
+    if isinstance(description, bytes):
+      description = description.decode("utf-8", "replace")
 
-    self.update_available = update_available
-    self.alert_count = alert_count
-    self._prev_update_available = update_available
-    self._prev_alerts_present = alerts_present
+    if description:
+      parts = [p.strip() for p in description.split(" / ")]
+      version = parts[0] if len(parts) > 0 else ""
+      branch = parts[1] if len(parts) > 1 else ""
+      commit = parts[2] if len(parts) > 2 else ""
+      raw_date = parts[3] if len(parts) > 3 else ""
+      date_display = self._format_date(raw_date)
+      return "hoofpilot", version, branch, commit, date_display
 
-  def _get_version_text(self) -> str:
-    brand = "hoofpilot"
-    return brand
+    return None
+
+  def _format_date(self, raw_date: str) -> str:
+    try:
+      parsed = datetime.date.fromisoformat(raw_date.split(" ")[0])
+      return parsed.strftime("%b %d")
+    except Exception:
+      return raw_date
+
+  # Alerts overlay rendering/animation
+  def _start_alert_anim(self, direction: str):
+    self._alerts_anim_active = True
+    self._alerts_anim_direction = direction
+    self._alerts_anim_start = rl.get_time()
+    if direction == 'in':
+      self._alerts_layout.show_event()
+    else:
+      self._alerts_layout.hide_event()
+
+  def _render_alert_overlay(self):
+    full_rect = self._content_panel_rect()
+    now = rl.get_time()
+    t = 1.0
+    if self._alerts_anim_active and self._alerts_anim_direction:
+      elapsed = now - self._alerts_anim_start
+      t = max(0.0, min(1.0, elapsed / ALERT_ANIM_DURATION))
+      t = 1 - pow(1 - t, 3)  # easeOutCubic
+    # Slide from left
+    if self._alerts_anim_direction == 'in':
+      x = full_rect.x - full_rect.width * (1 - t)
+    elif self._alerts_anim_direction == 'out':
+      x = full_rect.x - full_rect.width * t
+    else:
+      x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
+
+    overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
+    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 255))
+    self._alerts_layout.render(overlay_rect)
+
+    if self._alerts_anim_active and t >= 1.0:
+      if self._alerts_anim_direction == 'in':
+        self._set_state(HomeLayoutState.ALERTS)
+      else:
+        self._set_state(HomeLayoutState.HOME)
+      self._alerts_anim_active = False
+      self._alerts_anim_direction = None

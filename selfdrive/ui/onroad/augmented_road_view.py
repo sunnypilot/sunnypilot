@@ -53,6 +53,9 @@ class AugmentedRoadView(CameraView):
     self.model_renderer = ModelRenderer()
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
+    self._settings_cb = None
+    self._settings_icon = gui_app.texture("icons_mici/settings.png", 110, 110)
+    self._settings_rect = rl.Rectangle()
 
     # Inline Tizi DriverStateRenderer (ported from Mici) scaled up for Tizi
     # This avoids relying on the external mici module so we consume fewer Copilot requests.
@@ -273,6 +276,9 @@ class AugmentedRoadView(CameraView):
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
 
+  def set_settings_callback(self, cb):
+    self._settings_cb = cb
+
   def _render(self, rect):
     # Only render when system is started to avoid invalid data access
     start_draw = time.monotonic()
@@ -308,6 +314,7 @@ class AugmentedRoadView(CameraView):
     self.model_renderer.render(self._content_rect)
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
+    self._render_settings_icon()
 
     # Determine whether to show driver monitoring (match Mici logic).
     # HudRenderer no longer exposes `drawing_top_icons()` in the Tizi HUD,
@@ -348,23 +355,20 @@ class AugmentedRoadView(CameraView):
     self._pm.send('uiDebug', msg)
 
   def _handle_mouse_press(self, _):
-    # Allow taps on the left edge (sidebar area) to always toggle the sidebar
+    # Swallow clicks on settings icon
     mouse_pos = rl.get_mouse_position()
-    try:
-      if mouse_pos.x <= SIDEBAR_WIDTH:
-        if self._click_callback is not None:
-          self._click_callback()
-        return
-    except Exception:
-      # If anything goes wrong getting mouse_pos, fall back to default behavior
-      pass
+    if rl.check_collision_point_rec(mouse_pos, self._settings_rect):
+      return
 
     if not self._hud_renderer.user_interacting() and self._click_callback is not None:
       self._click_callback()
 
   def _handle_mouse_release(self, _):
-    # We only call click callback on press if not interacting with HUD
-    pass
+    mouse_pos = rl.get_mouse_position()
+    if rl.check_collision_point_rec(mouse_pos, self._settings_rect):
+      if self._settings_cb is not None:
+        self._settings_cb()
+      return
 
   def _draw_border(self, rect: rl.Rectangle):
     rl.draw_rectangle_lines_ex(rect, UI_BORDER_SIZE, rl.BLACK)
@@ -379,6 +383,18 @@ class AugmentedRoadView(CameraView):
     rl.draw_rectangle_rounded_lines_ex(
       border_rect, border_roundness, 10, UI_BORDER_SIZE, border_color
     )
+
+  def _render_settings_icon(self):
+    if self._settings_icon is None:
+      return
+    margin = 18
+    scale = 1.15
+    w = self._settings_icon.width * scale
+    h = self._settings_icon.height * scale
+    x = self._content_rect.x + margin
+    y = self._content_rect.y + margin
+    self._settings_rect = rl.Rectangle(x, y, w, h)
+    rl.draw_texture_ex(self._settings_icon, (int(x), int(y)), 0, scale, rl.Color(255, 255, 255, 235))
 
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:

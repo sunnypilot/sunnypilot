@@ -245,7 +245,7 @@ class MiciOffroadAlerts(Widget):
     if update_alert_data:
       if update_available:
         # Default text
-        update_alert_data.text = "update available. go to comma.ai/blog to read the release notes."
+        update_alert_data.text = "update available."
 
         # Get new version description and parse version and date
         new_desc = self.params.get("UpdaterNewDescription") or ""
