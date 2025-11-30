@@ -126,12 +126,19 @@ class OffroadAlertsLayout(Widget):
 
     # Build cards
     self._cards = []
-    widgets = []
+    # Clear scroller widgets
+    if hasattr(self._scroller, "clear_widgets"):
+      try:
+        self._scroller.clear_widgets()
+      except Exception:
+        self._scroller._widgets = []
+    else:
+      self._scroller._widgets = []
+
     for e in entries:
       card = EntryCard(e)
       self._cards.append(card)
-      widgets.append(card)
-    self._scroller.set_widgets(widgets)
+      self._scroller.add_widget(card)
 
   @staticmethod
   def _split_text(text: str) -> tuple[str, str]:
