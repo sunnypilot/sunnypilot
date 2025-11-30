@@ -47,12 +47,10 @@ class GlassAlertCard(Widget):
     self.alert_data = alert_data
 
     # severity icons (relative to selfdrive/assets/)
-    self.icon_green = gui_app.texture("icons_mici/offroad_alerts/icon_green.png",
-                                      self.ICON_SIZE, self.ICON_SIZE)
-    self.icon_orange = gui_app.texture("icons_mici/offroad_alerts/icon_orange.png",
-                                       self.ICON_SIZE, self.ICON_SIZE)
-    self.icon_red = gui_app.texture("icons_mici/offroad_alerts/icon_red.png",
-                                    self.ICON_SIZE, self.ICON_SIZE)
+    self.icon_green = gui_app.texture("icons_mici/offroad_alerts/green_wheel.png", self.ICON_SIZE, self.ICON_SIZE)
+    self.icon_orange = gui_app.texture("icons_mici/offroad_alerts/orange_warning.png", self.ICON_SIZE, self.ICON_SIZE)
+    self.icon_red = gui_app.texture("icons_mici/offroad_alerts/red_warning.png", self.ICON_SIZE, self.ICON_SIZE)
+
 
     self.title_label = UnifiedLabel(
       "",
