@@ -1,3 +1,4 @@
+import json
 import pyray as rl
 import re
 import time
@@ -222,13 +223,33 @@ class OffroadAlertsLayout(Widget):
 
     if update_alert_data:
       if update_available:
-        update_alert_data.text = "update available. go to comma.ai/blog to read the release notes."
+        # Build a richer update message so it sizes correctly
         new_desc = self.params.get("UpdaterNewDescription") or ""
+        if isinstance(new_desc, bytes):
+          new_desc = new_desc.decode("utf-8", "replace")
+        version = branch = commit = date = ""
         if new_desc:
-          parts = new_desc.split(" / ")
+          parts = [p.strip() for p in new_desc.split(" / ")]
+          if len(parts) > 0:
+            version = parts[0]
+          if len(parts) > 1:
+            branch = parts[1]
+          if len(parts) > 2:
+            commit = parts[2]
           if len(parts) > 3:
-            version, date = parts[0], parts[3]
-            update_alert_data.text = f"update available\n hoofpilot {version}, {date}."
+            date = parts[3]
+
+        release_notes = self.params.get("UpdaterNewReleaseNotes") or b""
+        if isinstance(release_notes, bytes):
+          release_notes = release_notes.decode("utf-8", "replace")
+        release_summary = release_notes.strip().splitlines()[0] if release_notes else ""
+
+        header = "update available"
+        line1 = f"hoofpilot {version}" if version else ""
+        line2_parts = [p for p in [branch, commit, date] if p]
+        line2 = " / ".join(line2_parts)
+        line3 = release_summary
+        update_alert_data.text = "\n".join([s for s in [header, line1, line2, line3] if s])
         update_alert_data.visible = True
         active_count += 1
       else:
@@ -243,7 +264,17 @@ class OffroadAlertsLayout(Widget):
       alert_json = self.params.get(alert_data.key)
 
       if alert_json:
-        text = alert_json.get("text", "").replace("%1", alert_json.get("extra", ""))
+        try:
+          if isinstance(alert_json, bytes):
+            alert_json = alert_json.decode("utf-8", "replace")
+          if isinstance(alert_json, str):
+            alert_json = json.loads(alert_json)
+          if isinstance(alert_json, dict):
+            text = (alert_json.get("text", "") or "").replace("%1", alert_json.get("extra", ""))
+          else:
+            text = str(alert_json)
+        except Exception:
+          text = ""
 
       alert_data.text = text
       alert_data.visible = bool(text)
