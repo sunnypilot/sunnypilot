@@ -17,12 +17,12 @@ from openpilot.system.ui.widgets.mici_keyboard import MiciKeyboard
 
 # ========= TIZI SCALING CONSTANTS (2160×1080) =========
 PILL_W = 1500     # was 1500
-PILL_H = 375      # was 375
+PILL_H = 400      # was 375
 KEY_FONT_SIZE = 78     # final key letter size
 ROW_SPACING = 1
 KEY_SPACING = 1
 
-KB_SCALE = 1.38       # global keyboard scale (keep 1.00)
+KB_SCALE = 1.2       # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
 INPUT_TOP_MARGIN = 160
 KEYBOARD_BOTTOM_MARGIN = 40
