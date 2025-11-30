@@ -13,7 +13,7 @@ from openpilot.system.ui.widgets.label import Label
 
 # --- MICI keyboard imports ---
 # Adjust this import if your mici_keyboard.py lives somewhere else.
-from openpilot.selfdrive.ui.layouts.mici_keyboard import MiciKeyboard  # :contentReference[oaicite:0]{index=0}
+from openpilot.system.ui.widgets.mici_keyboard import MiciKeyboard  # :contentReference[oaicite:0]{index=0}
 
 KEY_FONT_SIZE = 96
 DOUBLE_CLICK_THRESHOLD = 0.5  # seconds
