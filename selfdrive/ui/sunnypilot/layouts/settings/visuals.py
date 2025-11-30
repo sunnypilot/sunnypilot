@@ -122,21 +122,6 @@ class VisualsLayout(Widget):
       self._chevron_info.action_item.set_enabled(False)
       ui_state.params.put("ChevronInfo", 0)
 
-    self.hide_for_now()
-
-  def hide_for_now(self):
-    self._blind_spot_toggle.set_visible(False)
-    self._rainbow_toggle.set_visible(False)
-    self._standstill_timer_toggle.set_visible(False)
-    self._roadname_toggle.set_visible(False)
-    self._green_light_toggle.set_visible(False)
-    self._lead_depart_toggle.set_visible(False)
-    self._true_vego_ui_toggle.set_visible(False)
-    self._hide_vego_ui_toggle.set_visible(False)
-    self._turn_signals_toggle.set_visible(False)
-    self._chevron_info.set_visible(False)
-    self._dev_ui_info.set_visible(False)
-
   def _render(self, rect):
     self._scroller.render(rect)
 
