@@ -1,4 +1,3 @@
-import math
 import pyray as rl
 import re
 import time
@@ -9,13 +8,10 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.selfdrived.alertmanager import OFFROAD_ALERTS
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
-from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 REFRESH_INTERVAL = 5.0
-FADEOUT_DELAY = 1.0
-FADE_SPEED = 4.0  # controls scrollbar fade timing
 
 
 class AlertSize(IntEnum):
@@ -105,7 +101,7 @@ class GlassAlertCard(Widget):
     if not self.alert_data.visible:
       return
 
-    # squish animation (no vertical “drop” – anchored to top edge)
+    # squish animation, anchored to TOP so it doesn’t move down when pressed
     target_scale = self.PRESS_SCALE if self.is_pressed else 1.0
     self.scale_anim += (target_scale - self.scale_anim) * rl.get_frame_time() * self.PRESS_SPEED
 
@@ -167,19 +163,7 @@ class OffroadAlertsLayout(Widget):
     self.params = Params()
     self.alert_data_list: list[AlertData] = []
     self.cards: list[GlassAlertCard] = []
-
-    self.scrollbar_alpha = 0.0
-    self.last_scroll_time = 0.0
-
-    # gui_app.texture already prefixes "assets/"
-    # scale to about 80 px wide for Tizi aesthetic
-    self.scrollbar_img = gui_app.texture(
-      "icons_mici/settings/vertical_scroll_indicator.png",
-      80, 260,
-    )
-
-    self.scroller = Scroller([], horizontal=False, spacing=32,
-                             pad_start=48, pad_end=48, snap_items=False)
+    self._last_refresh = 0.0
 
     self.title_label = UnifiedLabel(
       tr("Alerts"),
@@ -199,7 +183,6 @@ class OffroadAlertsLayout(Widget):
     self.alert_data_list.append(upd)
     upd_card = GlassAlertCard(upd)
     self.cards.append(upd_card)
-    self.scroller.add_widget(upd_card)
 
     # other alerts sorted by severity
     for key, cfg in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
@@ -208,7 +191,6 @@ class OffroadAlertsLayout(Widget):
       self.alert_data_list.append(data)
       card = GlassAlertCard(data)
       self.cards.append(card)
-      self.scroller.add_widget(card)
 
   def _active_count(self) -> int:
     return sum(1 for a in self.alert_data_list if a.visible)
@@ -256,19 +238,15 @@ class OffroadAlertsLayout(Widget):
     return active
 
   def show_event(self):
-    self.scroller.show_event()
     self.refresh()
+    self._last_refresh = time.monotonic()
 
-  # -------- state updates (scrollbar fade) --------
+  # -------- state updates (periodic refresh only) --------
   def _update_state(self):
-    # fade in while actively scrolling; fade out after a delay
-    if self.scroller.scroll_panel.is_touch_valid():
-      self.last_scroll_time = time.monotonic()
-      self.scrollbar_alpha += (1.0 - self.scrollbar_alpha) * rl.get_frame_time() * FADE_SPEED
-    else:
-      dt = time.monotonic() - self.last_scroll_time
-      if dt > FADEOUT_DELAY:
-        self.scrollbar_alpha += (0.0 - self.scrollbar_alpha) * rl.get_frame_time() * FADE_SPEED
+    now = time.monotonic()
+    if now - self._last_refresh >= REFRESH_INTERVAL:
+      self.refresh()
+      self._last_refresh = now
 
   # -------- rendering --------
   def _render(self, rect: rl.Rectangle):
@@ -277,17 +255,17 @@ class OffroadAlertsLayout(Widget):
     self.title_label.render(title_rect)
 
     if self._active_count() == 0:
-      # optional: render "no alerts" here if desired
+      # optional: render "no alerts" label here if you want
       return
 
-    # layout cards vertically and remember the first visible card's x
+    # layout cards vertically and render them directly (no scroller, no movement on tap)
     y = rect.y + 160
     center_x = rect.x + rect.width / 2
-    first_card_x = None
 
     for card in self.cards:
       if not card.alert_data.visible:
         continue
+
       card_x = center_x - card.WIDTH / 2
       card.set_rect(rl.Rectangle(
         card_x,
@@ -295,40 +273,5 @@ class OffroadAlertsLayout(Widget):
         card.WIDTH,
         card.rect.height,
       ))
-      if first_card_x is None:
-        first_card_x = card_x
+      card.render(card.rect)
       y += card.rect.height + 24
-
-    # scroller
-    self.scroller.render(rect)
-
-    # scrollbar (left side, flush with cards, fade + glow pulse)
-    if self.scrollbar_alpha > 0.01 and self.scrollbar_img.width > 0:
-      base_alpha = self.scrollbar_alpha
-
-      # glow pulse based on time
-      t = rl.get_time()
-      pulse = 0.75 + 0.25 * (0.5 * (1.0 + math.sin(t * 2.4)))
-      alpha = int(255 * base_alpha * pulse)
-
-      # x aligned flush with left edge of cards (fallback to screen edge)
-      if first_card_x is not None:
-        sb_x = first_card_x - self.scrollbar_img.width - 24
-      else:
-        sb_x = rect.x + 64
-
-      # vertically centered in the alerts area
-      sb_y = rect.y + (rect.height - self.scrollbar_img.height) / 2
-
-      # soft glow behind the indicator
-      glow_color = rl.Color(255, 255, 255, int(alpha * 0.35))
-      glow_rect = rl.Rectangle(
-        sb_x - 8,
-        sb_y - 12,
-        self.scrollbar_img.width + 16,
-        self.scrollbar_img.height + 24,
-      )
-      rl.draw_rectangle_rounded(glow_rect, 0.45, 8, glow_color)
-
-      rl.draw_texture(self.scrollbar_img, int(sb_x), int(sb_y),
-                      rl.Color(255, 255, 255, alpha))
