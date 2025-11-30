@@ -111,6 +111,8 @@ class OffroadAlertsLayout(Widget):
 
     # Regular alerts
     for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
+      if key == "UpdateAvailable":
+        continue  # handled by the dedicated update card above
       alert_json = self.params.get(key)
       if not alert_json:
         continue
