@@ -1,4 +1,11 @@
-from openpilot.selfdrive.ui.sunnypilot.ui_state import ui_state_sp
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+from openpilot.common.params import Params
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, multiple_button_item_sp
 from openpilot.system.ui.widgets.scroller_tici import Scroller
@@ -11,11 +18,11 @@ CHEVRON_INFO_DESCRIPTION = {
 }
 
 
-
 class VisualsLayout(Widget):
   def __init__(self):
     super().__init__()
 
+    self._params = Params()
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
@@ -107,13 +114,13 @@ class VisualsLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
-    if ui_state_sp.has_longitudinal_control:
+    if ui_state.has_longitudinal_control:
       self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["enabled"]))
       self._chevron_info.action_item.set_enabled(True)
     else:
       self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["disabled"]))
       self._chevron_info.action_item.set_enabled(False)
-      ui_state_sp.params.put("ChevronInfo", 0)
+      ui_state.params.put("ChevronInfo", 0)
 
     self.hide_for_now()
 
@@ -135,4 +142,4 @@ class VisualsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
-    self._chevron_info.show_description(not ui_state_sp.has_longitudinal_control)
+    self._chevron_info.show_description(not ui_state.has_longitudinal_control)
