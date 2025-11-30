@@ -1254,13 +1254,25 @@
     "step": 0.1,
     "unit": "m/s²"
   },
+    "ToyotaAutoHold": {
+    "title": "Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS",
+    "description": ""
+  },
+    "ToyotaEnhancedBsm": {
+    "title": "Toyota: Prius TSS2 BSM and some tssp",
+    "description": ""
+  },
+    "ToyotaTSS2Long": {
+    "title": "Toyota: custom longitudinal for TSS2",
+    "description": ""
+  },
+    "ToyotaDriveMode": {
+    "title": "Enable drive mode btn link",
+    "description": ""
+  },
   "ToyotaEnforceStockLongitudinal": {
     "title": "Toyota: Enforce Factory Longitudinal Control",
     "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used."
-  },
-  "TrainingVersion": {
-    "title": "Training Version",
-    "description": ""
   },
   "TrueVEgoUI": {
     "title": "True vEgo UI",
