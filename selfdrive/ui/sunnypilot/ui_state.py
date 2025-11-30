@@ -1,10 +1,15 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
-from cereal import messaging, custom
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+import cereal.messaging as messaging
+from cereal import custom
 from openpilot.common.params import Params
 
 
 class UIStateSP:
-
   def __init__(self):
     self.params = Params()
     self.sp_services = [
