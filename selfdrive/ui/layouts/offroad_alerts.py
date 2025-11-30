@@ -138,12 +138,9 @@ class OffroadAlertsLayout(Widget):
     return text, ""
 
   def _rebuild(self):
-    # Clear cards and scroller
+    # Clear instead of replacing scroller object — avoids duplicates
+    self._scroller.clear_widgets()
     self._cards.clear()
-    try:
-      self._scroller.clear_widgets()
-    except Exception:
-      self._scroller._widgets = []
 
     entries: List[Entry] = []
 
@@ -152,7 +149,7 @@ class OffroadAlertsLayout(Widget):
     if upd:
       entries.append(upd)
 
-    # Unique alerts keyed by alert key
+    # Unique alerts
     for key, config in sorted(OFFROAD_ALERTS.items(), key=lambda x: x[1].get("severity", 0), reverse=True):
       if key == "UpdateAvailable":
         continue
@@ -160,7 +157,7 @@ class OffroadAlertsLayout(Widget):
       if e is not None:
         entries.append(e)
 
-    # Build cards
+    # Add cards
     for e in entries:
       card = EntryCard(e)
       self._cards.append(card)
