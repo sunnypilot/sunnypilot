@@ -44,8 +44,6 @@ class ModelsLayout(Widget):
     self._initialize_items()
 
     self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
-    self.lane_turn_value_control.set_visible(ui_state.params.get_bool("LaneTurnDesire"))
-    self.delay_control.set_visible(not ui_state.params.get_bool("LagdToggle"))
     for ctrl, key, default in [(self.lane_turn_value_control, "LaneTurnValue", "19.0"), (self.delay_control, "LagdToggleDelay", "0.2")]:
       ctrl.action_item.set_value(int(float(ui_state.params.get(key, default)) * 100))
 
@@ -76,23 +74,22 @@ class ModelsLayout(Widget):
                                                 tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on," +
                                                    " the car will plan a turn in that direction at the nearest drivable path. " +
                                                    "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
-                                                callback=lambda s: self.lane_turn_value_control.set_visible(s), param="LaneTurnDesire")
+                                                param="LaneTurnDesire")
 
     self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
                                         tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
                                         1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v/100:.2f}s")
 
-    self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "",
-                                      callback=lambda s: (self.delay_control.set_visible(not s), self._update_lagd_description()), param="LagdToggle")
+    self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.items = [self.current_model_item, self.cancel_download_item, self.supercombo_label, self.vision_label,
                   self.policy_label, self.refresh_item, self.clear_cache_item, self.lane_turn_desire_toggle,
                   self.lane_turn_value_control, self.lagd_toggle, self.delay_control]
 
-  def _update_lagd_description(self):
+  def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
               "Keeping this on provides the stock openpilot experience.")
-    if ui_state.params.get_bool("LagdToggle"):
+    if lagd_toggle:
       desc += f"<br>{tr('Live Steer Delay:')} {ui_state.sm['liveDelay'].lateralDelay:.3f} s"
     elif ui_state.CP:
       sw = float(ui_state.params.get("LagdToggleDelay", "0.2"))
@@ -213,11 +210,19 @@ class ModelsLayout(Widget):
     gui_app.set_modal_overlay(self.model_dialog, callback=self._on_model_selected)
 
   def _update_state(self):
+    advanced_controls: bool = ui_state.params.get_bool("ShowAdvancedControls")
+    turn_desire: bool = ui_state.params.get_bool("LaneTurnDesire")
+    live_delay: bool = ui_state.params.get_bool("LagdToggle")
+
+    self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
+    self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
+    self.lagd_toggle.action_item.set_state(live_delay)
+    self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item.value_change_step != new_step:
       self.lane_turn_value_control.action_item.value_change_step = new_step
 
-    self._update_lagd_description()
+    self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
     active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default Model"
