@@ -134,14 +134,11 @@ class OffroadAlertsLayout(Widget):
         entries.append(entry)
 
     # Build cards
+    # Clear state before repopulating
     self._cards = []
-    # Clear scroller widgets
-    if hasattr(self._scroller, "clear_widgets"):
-      try:
-        self._scroller.clear_widgets()
-      except Exception:
-        self._scroller._widgets = []
-    else:
+    try:
+      self._scroller.clear_widgets()
+    except Exception:
       self._scroller._widgets = []
 
     for e in entries:
