@@ -260,7 +260,7 @@ class OffroadAlertsLayout(Widget):
 
   # -------- state updates (scrollbar fade) --------
   def _update_state(self):
-    if self.scroller.scrolling():
+    if self.scroller.scroll_panel.is_touch_valid():
       self.last_scroll_time = time.monotonic()
       self.scrollbar_alpha += (1.0 - self.scrollbar_alpha) * rl.get_frame_time() * FADE_SPEED
     else:
