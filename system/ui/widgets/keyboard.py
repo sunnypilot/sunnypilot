@@ -276,24 +276,9 @@ class Keyboard(Widget):
       kb_height,
     )
 
-    # --- apply global scale KB_SCALE around keyboard origin ---
-    rl.rl_push_matrix()
-    rl.rl_translatef(kb_rect.x, kb_rect.y, 0)
-    rl.rl_scalef(KB_SCALE, KB_SCALE, 1)
-    rl.rl_translatef(-kb_rect.x, -kb_rect.y, 0)
-
-    # scaled rect passed to MICI keyboard
-    scaled_rect = rl.Rectangle(
-      kb_rect.x,
-      kb_rect.y,
-      kb_rect.width / KB_SCALE,
-      kb_rect.height / KB_SCALE,
-    )
-
-    self._mici_keyboard.set_rect(scaled_rect)
-    self._mici_keyboard.render(scaled_rect)
-
-    rl.rl_pop_matrix()
+    # pass the real rect through so mouse hit testing matches what is drawn
+    self._mici_keyboard.set_rect(kb_rect)
+    self._mici_keyboard.render(kb_rect)
 
     # sync text
     new_text = self._mici_keyboard.text()
