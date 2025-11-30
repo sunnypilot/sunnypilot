@@ -33,8 +33,8 @@ class UIState(UIStateSP):
     return cls._instance
 
   def _initialize(self):
-    self.params = Params()
     UIStateSP.__init__(self)
+    self.params = Params()
     self.sm = messaging.SubMaster(
       [
         "modelV2",
