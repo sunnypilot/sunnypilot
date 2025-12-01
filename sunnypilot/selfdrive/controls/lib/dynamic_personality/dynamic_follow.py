@@ -21,8 +21,8 @@ FOLLOW_PROFILES = {
 
 FOLLOW_BREAKPOINTS =          [0.,   3.,   4,   11,   25.,  36]
 
-SMOOTHING_BASE = 0.70  # Base smoothing factor (higher = smoother)
-SMOOTHING_RANGE = 0.25  # Additional smoothing at high speeds
+SMOOTHING_BASE = 0.80  # Base smoothing factor (higher = smoother)
+SMOOTHING_RANGE = 0.20  # Additional smoothing at high speeds
 SMOOTHING_SPEED_THRESHOLD = 36.0  # m/s (~80 mph) for max smoothing
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
