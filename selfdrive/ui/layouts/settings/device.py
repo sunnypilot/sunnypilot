@@ -1,8 +1,10 @@
 import os
 import math
+import pyray as rl
 
 from cereal import messaging, log
 from openpilot.common.basedir import BASEDIR
+from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.onroad.driver_camera_dialog import DriverCameraDialog
@@ -18,6 +20,7 @@ from openpilot.system.ui.widgets.html_render import HtmlModal
 from openpilot.system.ui.widgets.list_view import text_item, button_item, dual_button_item
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 from openpilot.system.ui.widgets.scroller_tici import Scroller
+from openpilot.system.ui.widgets.slider import SmallSlider
 
 # Description constants
 DESCRIPTIONS = {
@@ -26,6 +29,89 @@ DESCRIPTIONS = {
   'reset_calibration': tr_noop("hoofpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."),
   'review_guide': tr_noop("Review the rules, features, and limitations of hoofpilot"),
 }
+
+
+class RebootSlider(SmallSlider):
+  HORIZONTAL_PADDING = 12
+
+  def __init__(self, confirm_callback=None):
+    self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 300, 300)
+    super().__init__(tr(" "), confirm_callback=confirm_callback)
+    self._label.font_size = 400
+    self._label.line_height = 0.9
+
+  def _load_assets(self):
+    self.set_rect(rl.Rectangle(0, 0, 1800 + self.HORIZONTAL_PADDING * 2, 650))
+    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1800, 650, keep_aspect_ratio=False)
+    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle_red.png", 700, 700, keep_aspect_ratio=False)
+    self._circle_arrow_txt = self._icon
+
+
+class RebootOverlay(Widget):
+  EXIT_THRESHOLD = 0.02
+
+  def __init__(self, confirm_callback=None, dismiss_callback=None):
+    super().__init__()
+    self._confirm_callback = confirm_callback
+    self._dismiss_callback = dismiss_callback
+
+    self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
+
+    self._back_tex = gui_app.texture("icons_mici/setup/back_new.png", 96, 96)
+    self._back_rect = rl.Rectangle(0, 0, 0, 0)
+    self._slider = RebootSlider(confirm_callback=self._on_confirm)
+
+    self._anim = FirstOrderFilter(0.0, 0.16, 1 / gui_app.target_fps)
+    self._anim_target = 1.0
+    self._anim_value = 0.0
+    self._closing = False
+
+  def _on_confirm(self):
+    if self._confirm_callback:
+      self._confirm_callback()
+    self._start_close()
+
+  def _start_close(self):
+    self._anim_target = 0.0
+    self._closing = True
+    self._slider.reset()
+
+  def _handle_mouse_event(self, mouse_event):
+    if self._closing:
+      return
+    if mouse_event.left_released and rl.check_collision_point_rec(mouse_event.pos, self._back_rect):
+      self._start_close()
+      return
+    self._slider._handle_mouse_event(mouse_event)
+
+  def _update_state(self):
+    super()._update_state()
+    self._anim_value = self._anim.update(self._anim_target)
+    self._slider.set_opacity(self._anim_value)
+
+    if self._closing and self._anim_value <= self.EXIT_THRESHOLD:
+      if self._dismiss_callback:
+        self._dismiss_callback()
+      gui_app.set_modal_overlay(None)
+
+  def _render(self, rect):
+    ease = self._anim_value * self._anim_value * (3 - 2 * self._anim_value)
+    slide_offset = (1.0 - ease) * rect.width * 0.18
+
+    back_pos = rl.Vector2(rect.x + 30 + slide_offset, rect.y + 30)
+    back_color = rl.Color(255, 255, 255, int(255 * ease))
+    rl.draw_texture_ex(self._back_tex, back_pos, 0.0, 1.0, back_color)
+    self._back_rect = rl.Rectangle(back_pos.x, back_pos.y, self._back_tex.width, self._back_tex.height)
+
+    slider_rect = rl.Rectangle(
+      rect.x + slide_offset + (rect.width - self._slider._rect.width) / 2,
+      rect.y + rect.height * 0.5 - self._slider._rect.height / 2,
+      self._slider._rect.width,
+      self._slider._rect.height,
+    )
+    self._slider.set_rect(slider_rect)
+    self._slider.render(slider_rect)
+    return -1
 
 
 class DeviceLayout(Widget):
@@ -38,11 +124,10 @@ class DeviceLayout(Widget):
     self._pair_device_dialog: PairingDialog | None = None
     self._fcc_dialog: HtmlModal | None = None
     self._training_guide: TrainingGuide | None = None
+    self._reboot_overlay: RebootOverlay | None = None
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=True, spacing=0)
-
-    ui_state.add_offroad_transition_callback(self._offroad_transition)
 
   def _initialize_items(self):
     self._pair_device_btn = button_item(lambda: tr("Pair Device"), lambda: tr("PAIR"), lambda: tr(DESCRIPTIONS['pair_device']), callback=self._pair_device)
@@ -52,8 +137,9 @@ class DeviceLayout(Widget):
                                         callback=self._reset_calibration_prompt)
     self._reset_calib_btn.set_description_opened_callback(self._update_calib_description)
 
-    self._power_off_btn = dual_button_item(lambda: tr("Reboot"), lambda: tr("Power Off"),
-                                           left_callback=self._reboot_prompt, right_callback=self._power_off_prompt)
+    self._reboot_btn = dual_button_item(lambda: "", lambda: tr("Reboot"), right_callback=self._reboot_prompt)
+    # hide left button to make one long red pill
+    self._reboot_btn.action_item.left_button.set_visible(False)
 
     items = [
       text_item(lambda: tr("Dongle ID"), self._params.get("DongleId") or (lambda: tr("N/A"))),
@@ -66,13 +152,10 @@ class DeviceLayout(Widget):
                   self._on_review_training_guide, enabled=ui_state.is_offroad),
       regulatory_btn := button_item(lambda: tr("Regulatory"), lambda: tr("VIEW"), callback=self._on_regulatory, enabled=ui_state.is_offroad),
       button_item(lambda: tr("Change Language"), lambda: tr("CHANGE"), callback=self._show_language_dialog),
-      self._power_off_btn,
+      self._reboot_btn,
     ]
     regulatory_btn.set_visible(TICI)
     return items
-
-  def _offroad_transition(self):
-    self._power_off_btn.action_item.right_button.set_visible(ui_state.is_offroad())
 
   def show_event(self):
     self._scroller.show_event()
@@ -171,25 +254,18 @@ class DeviceLayout(Widget):
     if ui_state.engaged:
       gui_app.set_modal_overlay(alert_dialog(tr("Disengage to Reboot")))
       return
+    self._show_reboot_slider()
 
-    dialog = ConfirmDialog(tr("Are you sure you want to reboot?"), tr("Reboot"))
-    gui_app.set_modal_overlay(dialog, callback=self._perform_reboot)
+  def _show_reboot_slider(self):
+    if self._reboot_overlay is None:
+      def on_confirm():
+        self._params.put_bool_nonblocking("DoReboot", True)
 
-  def _perform_reboot(self, result: int):
-    if not ui_state.engaged and result == DialogResult.CONFIRM:
-      self._params.put_bool_nonblocking("DoReboot", True)
+      def on_dismiss():
+        self._reboot_overlay = None
 
-  def _power_off_prompt(self):
-    if ui_state.engaged:
-      gui_app.set_modal_overlay(alert_dialog(tr("Disengage to Power Off")))
-      return
-
-    dialog = ConfirmDialog(tr("Are you sure you want to power off?"), tr("Power Off"))
-    gui_app.set_modal_overlay(dialog, callback=self._perform_power_off)
-
-  def _perform_power_off(self, result: int):
-    if not ui_state.engaged and result == DialogResult.CONFIRM:
-      self._params.put_bool_nonblocking("DoShutdown", True)
+      self._reboot_overlay = RebootOverlay(confirm_callback=on_confirm, dismiss_callback=on_dismiss)
+    gui_app.set_modal_overlay(self._reboot_overlay, callback=lambda result: setattr(self, '_reboot_overlay', None))
 
   def _pair_device(self):
     if not self._pair_device_dialog:
