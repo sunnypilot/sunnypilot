@@ -17,7 +17,7 @@ from openpilot.system.ui.lib.multilang import multilang, tr, tr_noop
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog, alert_dialog
 from openpilot.system.ui.widgets.html_render import HtmlModal
-from openpilot.system.ui.widgets.list_view import text_item, button_item
+from openpilot.system.ui.widgets.list_view import text_item, button_item, dual_button_item
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.slider import SmallSlider
@@ -37,13 +37,13 @@ class RebootSlider(SmallSlider):
   def __init__(self, confirm_callback=None):
     self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 140, 140)
     super().__init__(tr("slide to\nreboot"), confirm_callback=confirm_callback)
-    self._label.font_size = 64
+    self._label.font_size = 76
     self._label.line_height = 0.9
 
   def _load_assets(self):
-    self.set_rect(rl.Rectangle(0, 0, 760 + self.HORIZONTAL_PADDING * 2, 230))
-    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 760, 230, keep_aspect_ratio=False)
-    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle.png", 240, 240, keep_aspect_ratio=False)
+    self.set_rect(rl.Rectangle(0, 0, 1100 + self.HORIZONTAL_PADDING * 2, 320))
+    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1100, 280, keep_aspect_ratio=False)
+    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle_red.png", 320, 320, keep_aspect_ratio=False)
     self._circle_arrow_txt = self._icon
 
 
@@ -137,8 +137,9 @@ class DeviceLayout(Widget):
                                         callback=self._reset_calibration_prompt)
     self._reset_calib_btn.set_description_opened_callback(self._update_calib_description)
 
-    self._reboot_btn = button_item(lambda: tr("Reboot"), lambda: tr("REBOOT"), lambda: tr("Restart your device."),
-                                   callback=self._reboot_prompt)
+    self._reboot_btn = dual_button_item(lambda: "", lambda: tr("Reboot"), right_callback=self._reboot_prompt)
+    # hide left button to make one long red pill
+    self._reboot_btn.action_item.left_button.set_visible(False)
 
     items = [
       text_item(lambda: tr("Dongle ID"), self._params.get("DongleId") or (lambda: tr("N/A"))),
