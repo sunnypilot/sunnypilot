@@ -94,9 +94,9 @@ class PlatformSelector(Button):
 
   def _show_platform_dialog(self):
     platforms = sorted(self._platforms.keys())
-    brands = sorted({self._platforms[p].get('brand') for p in platforms})
-    folders = [TreeFolder(brand.capitalize(), [TreeNode(p, {'display_name': p}) for p in platforms
-                                               if self._platforms[p].get('brand') == brand]) for brand in brands]
+    makes = sorted({self._platforms[p].get('make') for p in platforms})
+    folders = [TreeFolder(make, [TreeNode(p, {'display_name': p}) for p in platforms
+                                 if self._platforms[p].get('make') == make]) for make in makes]
     dialog = TreeOptionDialog(tr("Select a vehicle"), folders)
     callback = partial(self._on_platform_selected, dialog)
     dialog.on_exit = callback
