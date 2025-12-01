@@ -32,7 +32,6 @@ class VehicleLayout(Widget):
     self._vehicle_item.title_color = self._platform_selector.color
     vehicle_text = tr("Remove") if ui_state.params.get("CarPlatformBundle") else tr("Select")
     self._vehicle_item.action_item.set_text(vehicle_text)
-    self._vehicle_item.action_item.set_enabled(ui_state.is_offroad())
 
   def _update_state(self):
     self._update_brand_settings()
