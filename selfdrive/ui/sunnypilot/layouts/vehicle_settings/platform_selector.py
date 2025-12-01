@@ -10,6 +10,7 @@ import pyray as rl
 from collections.abc import Callable
 from functools import partial
 
+from openpilot.common.basedir import BASEDIR
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -19,8 +20,8 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 from openpilot.selfdrive.ui.ui_state import ui_state
 
-base_path = 'opendbc_repo/opendbc'
-CAR_LIST_JSON_OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), f'../../../../../../{base_path}/sunnypilot/car/car_list.json'))
+CAR_LIST_JSON_OUT = os.path.join(BASEDIR, "sunnypilot", "selfdrive", "car", "car_list.json")
+
 
 class LegendWidget(Widget):
   def __init__(self, platform_selector):
@@ -93,9 +94,9 @@ class PlatformSelector(Button):
 
   def _show_platform_dialog(self):
     platforms = sorted(self._platforms.keys())
-    brands = sorted({self._platforms[p].get('brand') for p in platforms})
-    folders = [TreeFolder(brand.capitalize(), [TreeNode(p, {'display_name': p}) for p in platforms
-                                               if self._platforms[p].get('brand') == brand]) for brand in brands]
+    makes = sorted({self._platforms[p].get('make') for p in platforms})
+    folders = [TreeFolder(make, [TreeNode(p, {'display_name': p}) for p in platforms
+                                 if self._platforms[p].get('make') == make]) for make in makes]
     dialog = TreeOptionDialog(tr("Select a vehicle"), folders)
     callback = partial(self._on_platform_selected, dialog)
     dialog.on_exit = callback
