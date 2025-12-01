@@ -82,7 +82,7 @@ class RebootOverlay(Widget):
     if mouse_event.left_released and rl.check_collision_point_rec(mouse_event.pos, self._back_rect):
       self._start_close()
       return
-    self._slider.handle_mouse_event(mouse_event)
+    self._slider._handle_mouse_event(mouse_event)
 
   def _update_state(self):
     super()._update_state()
