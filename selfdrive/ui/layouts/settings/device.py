@@ -36,10 +36,13 @@ class RebootSlider(SmallSlider):
 
   def __init__(self, confirm_callback=None):
     self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 300, 300)
+    super().__init__(tr(""), confirm_callback=confirm_callback)
+    self._label.font_size = 76
+    self._label.line_height = 0.9
 
   def _load_assets(self):
-    self.set_rect(rl.Rectangle(0, 0, 1800 + self.HORIZONTAL_PADDING * 2, 650))
-    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1800, 650, keep_aspect_ratio=False)
+    self.set_rect(rl.Rectangle(0, 0, 1800 + self.HORIZONTAL_PADDING * 2, 700))
+    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1800, 700, keep_aspect_ratio=False)
     self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle_red.png", 700, 700, keep_aspect_ratio=False)
     self._circle_arrow_txt = self._icon
 
