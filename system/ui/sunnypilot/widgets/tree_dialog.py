@@ -51,9 +51,9 @@ class TreeItemWidget(Button):
   def _render(self, rect):
     indent = 60 * self.indent_level
     self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
-    if self.is_pressed and not self.is_folder:
-      color = BUTTON_PRESSED_BACKGROUND_COLORS[ButtonStyle.NORMAL]
-    elif self.selected and not (self.ref == "search_bar" or self.is_folder):
+    if self.is_pressed:
+      color = BUTTON_PRESSED_BACKGROUND_COLORS[self._button_style]
+    elif self.selected and self.ref != "search_bar":
       color = style.BUTTON_PRIMARY_COLOR
     else:
       color = style.BUTTON_DISABLED_BG_COLOR
