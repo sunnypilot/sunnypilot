@@ -11,7 +11,7 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
-from openpilot.system.ui.widgets.button import Button, ButtonStyle
+from openpilot.system.ui.widgets.button import Button, ButtonStyle, BUTTON_PRESSED_BACKGROUND_COLORS
 from openpilot.system.ui.widgets.label import gui_label, Label
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 
@@ -34,7 +34,7 @@ class TreeFolder:
 
 
 class TreeItemWidget(Button):
-  def __init__(self, text, ref, is_folder=False, indent_level=0, click_callback=None, favorite_callback=None, is_favorite=False):
+  def __init__(self, text, ref, is_folder=False, indent_level=0, click_callback=None, favorite_callback=None, is_favorite=False, is_expanded=False):
     super().__init__(text, click_callback, button_style=ButtonStyle.NORMAL, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
                      text_padding=20 + indent_level * 30, elide_right=True)
     self.text = text
@@ -46,14 +46,21 @@ class TreeItemWidget(Button):
     self._favorite_callback = favorite_callback
     self.text_padding = 20 + indent_level * 30
     self.border_radius = 10
+    self.is_expanded = is_expanded
 
   def _render(self, rect):
     indent = 60 * self.indent_level if self.indent_level > 0 else 10
     self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
-    color = style.BUTTON_PRIMARY_COLOR if self.selected and not (self.ref == "search_bar" or self.is_folder) else style.BUTTON_DISABLED_BG_COLOR
+    if self.is_pressed and not self.is_folder:
+      color = BUTTON_PRESSED_BACKGROUND_COLORS[ButtonStyle.NORMAL]
+    elif self.selected and not (self.ref == "search_bar" or self.is_folder):
+      color = style.BUTTON_PRIMARY_COLOR
+    else:
+      color = style.BUTTON_DISABLED_BG_COLOR
     roundness = self.border_radius / (min(self._rect.width, self._rect.height) / 2)
     rl.draw_rectangle_rounded(self._rect, roundness, 10, color)
-    text_rect = rl.Rectangle(self._rect.x + self.text_padding + 20, self._rect.y, self._rect.width - self.text_padding - 20 - 90, self._rect.height)
+    text_offset = self.text_padding + 20 - 15 if self.is_expanded and not self.is_folder and self.indent_level > 0 else self.text_padding + 20
+    text_rect = rl.Rectangle(self._rect.x + text_offset, self._rect.y, self._rect.width - self.text_padding - 20 - 90, self._rect.height)
     self._label.render(text_rect)
 
     if not self.is_folder and self._favorite_callback:
@@ -134,7 +141,8 @@ class TreeOptionDialog(MultiOptionDialog):
         for node in nodes:
           favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
           self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
-                                                   lambda node_ref=node: self._select_node(node_ref), favorite_cb, node.ref in self.favorites))
+                                                   lambda node_ref=node: self._select_node(node_ref),
+                                                   favorite_cb, node.ref in self.favorites, is_expanded=expanded))
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
     self.scroller._items = self.visible_items
