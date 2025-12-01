@@ -35,9 +35,9 @@ class RebootSlider(SmallSlider):
   HORIZONTAL_PADDING = 12
 
   def __init__(self, confirm_callback=None):
-    self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 140, 140)
-    super().__init__(tr("slide to\nreboot"), confirm_callback=confirm_callback)
-    self._label.font_size = 400
+    self._icon = gui_app.texture("icons_mici/settings/device/reboot.png", 300, 300)
+    super().__init__(tr("slide to reboot"), confirm_callback=confirm_callback)
+    self._label.font_size = 600
     self._label.line_height = 0.9
 
   def _load_assets(self):
