@@ -22,19 +22,19 @@ MAX_ACCEL_BREAKPOINTS =      [0.,  4.,   6.,   9.,   16.,  25., 30., 55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.46, -0.46, -0.46, -1.20],
-  AccelPersonality.normal: [-0.50, -0.50, -0.50, -1.30],
-  AccelPersonality.sport:  [-0.54, -0.54, -0.54, -1.40],
+  AccelPersonality.eco:    [-0.40, -0.40, -0.42, -1.20],
+  AccelPersonality.normal: [-0.44, -0.44, -0.46, -1.30],
+  AccelPersonality.sport:  [-0.48, -0.48, -0.50, -1.40],
 }
 MIN_ACCEL_BREAKPOINTS =    [0.,    5.,    14.,   25.] 
 
 
-DECEL_SMOOTH_ALPHA = 0.03  # Very aggressive smoothing for decel (lower = smoother)
+DECEL_SMOOTH_ALPHA = 0.015  # Very aggressive smoothing for decel (lower = smoother)
 ACCEL_SMOOTH_ALPHA = 0.50  # Less aggressive for accel (higher = more responsive)
 
 # Asymmetric rate limiting
-MAX_DECEL_INCREASE_RATE = 0.1  # When braking harder (m/s² per second)
-MAX_DECEL_DECREASE_RATE = 0.30  # When releasing brake (m/s² per second)
+MAX_DECEL_INCREASE_RATE = 0.05  # When braking harder (m/s² per second)
+MAX_DECEL_DECREASE_RATE = 0.35  # When releasing brake (m/s² per second)
 
 
 
