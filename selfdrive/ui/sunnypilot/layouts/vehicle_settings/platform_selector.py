@@ -109,7 +109,12 @@ class PlatformSelector(Button):
     makes = sorted({self._platforms[p].get('make') for p in platforms})
     folders = [TreeFolder(make, [TreeNode(p, {'display_name': p}) for p in platforms
                                  if self._platforms[p].get('make') == make]) for make in makes]
-    dialog = TreeOptionDialog(tr("Select a vehicle"), folders)
+    dialog = TreeOptionDialog(
+      tr("Select a vehicle"),
+      folders,
+      search_title=tr("Search your vehicle"),
+      search_subtitle=tr("Enter model year (e.g., 2021) and model (Toyota Corolla):"),
+    )
     callback = partial(self._on_platform_selected, dialog)
     dialog.on_exit = callback
     gui_app.set_modal_overlay(dialog, callback=callback)
