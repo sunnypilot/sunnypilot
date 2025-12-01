@@ -108,6 +108,8 @@ class Parser:
       plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
       self.parse_mdn('plan', outs, in_N=plan_in_N, out_N=plan_out_N,
                      out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
+      if 'planplus' in outs:
+        self.parse_mdn('planplus', outs, in_N=plan_in_N, out_N=plan_out_N, out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
 
   def split_outputs(self, outs: dict[str, np.ndarray]) -> None:
     if 'desired_curvature' in outs:
