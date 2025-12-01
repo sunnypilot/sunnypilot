@@ -77,7 +77,7 @@ class TreeItemWidget(Button):
 
 class TreeOptionDialog(MultiOptionDialog):
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
-               get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None):
+               get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None, search_title=None, search_subtitle=None):
     super().__init__(title, [], "", option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
@@ -92,6 +92,17 @@ class TreeOptionDialog(MultiOptionDialog):
     self.on_exit = on_exit
     self.display_func = display_func or (lambda node: node.data.get('display_name', node.ref))
     self.search_funcs = search_funcs or [lambda node: node.data.get('display_name', ''), lambda node: node.data.get('short_name', '')]
+
+    # Default title & overridable subtitle for InputDialogSP
+    self.search_title = search_title or tr("Enter search query")
+    self.search_subtitle = search_subtitle
+    self.search_dialog = InputDialogSP(
+      self.search_title,
+      self.search_subtitle,
+      current_text=self.query,
+      callback=self._on_search_confirm,
+    )
+
     self._build_visible_items()
 
   def _on_search_confirm(self, result, text):
@@ -101,7 +112,7 @@ class TreeOptionDialog(MultiOptionDialog):
     gui_app.set_modal_overlay(self, callback=self.on_exit)
 
   def _on_search_clicked(self):
-    InputDialogSP(tr("Enter search query"), current_text=self.query, callback=self._on_search_confirm).show()
+    self.search_dialog.show()
 
   def _toggle_folder(self, folder):
     if folder.folder:
