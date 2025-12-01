@@ -41,9 +41,9 @@ class RebootSlider(SmallSlider):
     self._label.line_height = 0.9
 
   def _load_assets(self):
-    self.set_rect(rl.Rectangle(0, 0, 1100 + self.HORIZONTAL_PADDING * 2, 320))
-    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1100, 280, keep_aspect_ratio=False)
-    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle_red.png", 320, 320, keep_aspect_ratio=False)
+    self.set_rect(rl.Rectangle(0, 0, 1800 + self.HORIZONTAL_PADDING * 2, 900))
+    self._bg_txt = gui_app.texture("icons_mici/buttons/slider_bg.png", 1800, 900, keep_aspect_ratio=False)
+    self._circle_bg_txt = gui_app.texture("icons_mici/buttons/button_circle_red.png", 700, 700, keep_aspect_ratio=False)
     self._circle_arrow_txt = self._icon
 
 
