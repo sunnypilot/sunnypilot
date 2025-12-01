@@ -49,7 +49,7 @@ class TreeItemWidget(Button):
     self.is_expanded = is_expanded
 
   def _render(self, rect):
-    indent = 60 * self.indent_level if self.indent_level > 0 else 10
+    indent = 60 * self.indent_level
     self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
     if self.is_pressed and not self.is_folder:
       color = BUTTON_PRESSED_BACKGROUND_COLORS[ButtonStyle.NORMAL]
