@@ -8,7 +8,6 @@ from collections.abc import Callable
 
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.keyboard import Keyboard
 
