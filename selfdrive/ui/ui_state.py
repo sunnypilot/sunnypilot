@@ -9,9 +9,10 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
-from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.hardware import HARDWARE, PC
+
+from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 
 BACKLIGHT_OFFROAD = 65 if HARDWARE.get_device_type() == "mici" else 50
 
@@ -32,10 +33,9 @@ class UIState(UIStateSP):
     return cls._instance
 
   def _initialize(self):
-    self.params = Params()
     UIStateSP.__init__(self)
+    self.params = Params()
     self.sm = messaging.SubMaster(
-      list(set(
       [
         "modelV2",
         "controlsState",
@@ -58,7 +58,7 @@ class UIState(UIStateSP):
         "carControl",
         "liveParameters",
         "rawAudioData",
-      ] + self.sp_services))
+      ] + self.sm_services_ext
     )
 
     self.prime_state = PrimeState()
@@ -184,8 +184,8 @@ class UIState(UIStateSP):
         self.has_longitudinal_control = self.params.get_bool("AlphaLongitudinalEnabled")
       else:
         self.has_longitudinal_control = self.CP.openpilotLongitudinalControl
-    self._param_update_time = time.monotonic()
     UIStateSP.update_params(self)
+    self._param_update_time = time.monotonic()
 
 
 class Device:
