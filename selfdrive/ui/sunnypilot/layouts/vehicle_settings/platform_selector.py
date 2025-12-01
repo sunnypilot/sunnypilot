@@ -15,6 +15,7 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
+from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
@@ -34,6 +35,8 @@ class LegendWidget(Widget):
   def _render(self, rect):
     x = rect.x + 20
     y = rect.y + 20
+    rl.draw_text_ex(self._font, tr("Select vehicle to force fingerprint manually."), rl.Vector2(x, y), 40, 0, style.ITEM_DESC_TEXT_COLOR)
+    y += 80
     rl.draw_text_ex(self._font, tr("Colors represent vehicle fingerprint status:"), rl.Vector2(x, y), 40, 0, style.ITEM_DESC_TEXT_COLOR)
     y += 80
 
@@ -90,7 +93,17 @@ class PlatformSelector(Button):
 
   def _on_platform_selected(self, dialog, res):
     if res == DialogResult.CONFIRM and dialog.selection_ref:
-      self._set_platform(dialog.selection_ref)
+      offroad_msg = tr("This setting will take effect immediately.") if self._offroad else \
+                    tr("This setting will take effect once the device enters offroad state.")
+
+      confirm_dialog = ConfirmDialog(offroad_msg, tr("Confirm"))
+
+      callback = partial(self._confirm_platform, dialog.selection_ref)
+      gui_app.set_modal_overlay(confirm_dialog, callback=callback)
+
+  def _confirm_platform(self, platform_name, res):
+    if res == DialogResult.CONFIRM:
+      self._set_platform(platform_name)
 
   def _show_platform_dialog(self):
     platforms = sorted(self._platforms.keys())
