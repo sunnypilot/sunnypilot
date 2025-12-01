@@ -93,8 +93,6 @@ class TreeOptionDialog(MultiOptionDialog):
     self.display_func = display_func or (lambda node: node.data.get('display_name', node.ref))
     self.search_funcs = search_funcs or [lambda node: node.data.get('display_name', ''), lambda node: node.data.get('short_name', '')]
     self._build_visible_items()
-    self.cancel_rect = None
-    self.select_rect = None
 
   def _on_search_confirm(self, result, text):
     if result == DialogResult.CONFIRM:
@@ -149,19 +147,6 @@ class TreeOptionDialog(MultiOptionDialog):
     if reset_scroll:
       self.scroller.scroll_panel.set_offset(0)
 
-  def _draw_button(self, button_rect, button_text, is_primary=False, is_enabled=True):
-    if is_primary and is_enabled:
-      button_color = style.BUTTON_PRIMARY_COLOR
-    elif not is_enabled:
-      button_color = style.BUTTON_NEUTRAL_GRAY
-    else:
-      button_color = style.BUTTON_DISABLED_BG_COLOR
-    roundness = 10 / (min(button_rect.width, button_rect.height) / 2)
-    rl.draw_rectangle_rounded(button_rect, roundness, 10, button_color)
-    label = Label(button_text, 60, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                  text_color=rl.WHITE if is_enabled else rl.GRAY)
-    label.render(button_rect)
-
   def _render(self, rect):
     dialog_content_rect = rl.Rectangle(rect.x + 50, rect.y + 50, rect.width - 100, rect.height - 100)
     rl.draw_rectangle_rounded(dialog_content_rect, 0.02, 20, rl.BLACK)
@@ -177,18 +162,12 @@ class TreeOptionDialog(MultiOptionDialog):
 
     button_width = (dialog_content_rect.width - 150) / 2
     button_y_position = dialog_content_rect.y + dialog_content_rect.height - 160
-    self.cancel_rect = rl.Rectangle(dialog_content_rect.x + 50, button_y_position, button_width, 160)
-    self.select_rect = rl.Rectangle(dialog_content_rect.x + 100 + button_width, button_y_position, button_width, 160)
 
-    self._draw_button(self.cancel_rect, tr("Cancel"))
-    self._draw_button(self.select_rect, tr("Select"), True, self.selection != self.current)
+    cancel_rect = rl.Rectangle(dialog_content_rect.x + 50, button_y_position, button_width, 160)
+    self.cancel_button.render(cancel_rect)
+
+    select_rect = rl.Rectangle(dialog_content_rect.x + 100 + button_width, button_y_position, button_width, 160)
+    self.select_button.set_enabled(self.selection != self.current)
+    self.select_button.render(select_rect)
+
     return self._result
-
-  def _handle_mouse_release(self, mouse_pos):
-    if self.cancel_rect and rl.check_collision_point_rec(mouse_pos, self.cancel_rect):
-      self._set_result(DialogResult.CANCEL)
-      return True
-    if self.select_rect and rl.check_collision_point_rec(mouse_pos, self.select_rect) and self.selection != self.current:
-      self._set_result(DialogResult.CONFIRM)
-      return True
-    return super()._handle_mouse_release(mouse_pos)
