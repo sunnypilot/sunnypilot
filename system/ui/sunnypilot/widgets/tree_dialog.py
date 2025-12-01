@@ -160,7 +160,7 @@ class TreeOptionDialog(MultiOptionDialog):
     gui_label(rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 50, dialog_content_rect.width - 100, 70),
               self.title, 70, font_weight=FontWeight.BOLD)
 
-    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 170, dialog_content_rect.width - 100, dialog_content_rect.height - 330)
+    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 170, dialog_content_rect.width - 100, dialog_content_rect.height - 380)
     for index, option_text in enumerate(self.options):
       self.option_buttons[index].selected = (option_text == self.selection)
       self.option_buttons[index].set_button_style(ButtonStyle.PRIMARY if option_text == self.selection else ButtonStyle.NORMAL)
