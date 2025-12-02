@@ -41,6 +41,16 @@ KEYBOARD_BOTTOM_MARGIN = 40
 BACKSPACE_HOLD_DELAY = 0.45
 BACKSPACE_HOLD_INTERVAL = 0.07
 
+TOP_BAR_HEIGHT = 150
+TOP_BAR_PADDING_X = 60
+TOP_BAR_RADIUS = 0.18
+TOP_BAR_BUTTON_WIDTH = 280
+TOP_BAR_BUTTON_HEIGHT = 112
+TOP_BAR_BUTTON_GAP = 24
+TOP_BAR_SPACING = 45
+TOP_BAR_BG = rl.Color(12, 12, 12, 235)
+TOP_BAR_BORDER = rl.Color(255, 255, 255, 32)
+
 
 class ScaledMiciKeyboard(MiciKeyboard):
   """
@@ -239,14 +249,22 @@ class Keyboard(Widget):
       rect.height - 2 * CONTENT_MARGIN,
     )
 
-    # titles
-    self._title.render(rl.Rectangle(rect.x, rect.y, rect.width, 95))
-    self._sub_title.render(rl.Rectangle(rect.x, rect.y + 95, rect.width, 60))
+    # top bar container (Mici-style, scaled for Tizi)
+    top_bar_rect = rl.Rectangle(rect.x, rect.y, rect.width, TOP_BAR_HEIGHT)
+    rl.draw_rectangle_rounded(top_bar_rect, TOP_BAR_RADIUS, 12, TOP_BAR_BG)
+    rl.draw_rectangle_rounded_lines_ex(top_bar_rect, TOP_BAR_RADIUS, 12, 4, TOP_BAR_BORDER)
 
-    # buttons
-    buttons_width = 360
-    cancel_rect = rl.Rectangle(rect.x + rect.width - buttons_width * 2, rect.y, buttons_width, 125)
-    done_rect = rl.Rectangle(rect.x + rect.width - buttons_width, rect.y, buttons_width, 125)
+    text_width = max(rect.width - 2 * TOP_BAR_PADDING_X - (TOP_BAR_BUTTON_WIDTH * 2 + TOP_BAR_BUTTON_GAP), 0)
+    title_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, top_bar_rect.y + 12, text_width, 78)
+    subtitle_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, top_bar_rect.y + 78, text_width, 52)
+    self._title.render(title_rect)
+    self._sub_title.render(subtitle_rect)
+
+    button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
+    done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH,
+                             button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
+    cancel_rect = rl.Rectangle(done_rect.x - TOP_BAR_BUTTON_WIDTH - TOP_BAR_BUTTON_GAP,
+                               button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
 
     self._cancel_button.render(cancel_rect)
     self._done_button.set_enabled(len(self.text) >= self._min_text_size)
@@ -255,7 +273,7 @@ class Keyboard(Widget):
     # input
     input_rect = rl.Rectangle(
       rect.x + 25,
-      rect.y + INPUT_TOP_MARGIN,
+      top_bar_rect.y + TOP_BAR_HEIGHT + TOP_BAR_SPACING,
       rect.width - 50,
       105,
     )
