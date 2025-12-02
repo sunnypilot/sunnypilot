@@ -98,12 +98,7 @@ class TreeOptionDialog(MultiOptionDialog):
     # Default title & overridable subtitle for InputDialogSP
     self.search_title = search_title or tr("Enter search query")
     self.search_subtitle = search_subtitle
-    self.search_dialog = InputDialogSP(
-      self.search_title,
-      self.search_subtitle,
-      current_text=self.query,
-      callback=self._on_search_confirm,
-    )
+    self.search_dialog = None
 
     self._build_visible_items()
 
@@ -114,6 +109,12 @@ class TreeOptionDialog(MultiOptionDialog):
     gui_app.set_modal_overlay(self, callback=self.on_exit)
 
   def _on_search_clicked(self):
+    self.search_dialog = InputDialogSP(
+      self.search_title,
+      self.search_subtitle,
+      current_text=self.query,
+      callback=self._on_search_confirm,
+    )
     self.search_dialog.show()
 
   def _toggle_folder(self, folder):
