@@ -25,7 +25,7 @@ MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
 SWIPE_RIGHT_EDGE = 80
-ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 240)
+ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 220)
 NetworkType = log.DeviceState.NetworkType
 
 
