@@ -321,7 +321,6 @@ class HomeLayout(Widget):
       x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
 
     overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
-    rl.draw_rectangle_rec(overlay_rect, rl.Color(0, 0, 0, 255))
     self._alerts_layout.render(overlay_rect)
 
     if self._alerts_anim_active and t >= 1.0:
