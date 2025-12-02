@@ -1,14 +1,12 @@
 from collections.abc import Callable
-
 import pyray as rl
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr, tr_noop
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp, toggle_item_sp
 
 MADS_STEERING_MODE_OPTIONS = [
   (tr("Remain Active"), tr_noop("Remain Active: ALC will remain active when the brake pedal is pressed.")),
@@ -25,6 +23,7 @@ STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibilit
 DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.")
 DEFAULT_TO_ON = tr("This feature defaults to ON, and does not allow selection due to vehicle limitations.")
 STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to vehicle limitations.")
+
 
 class MadsSettingsLayout(Widget):
   def __init__(self, back_btn_callback: Callable):
