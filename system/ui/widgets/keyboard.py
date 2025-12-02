@@ -10,7 +10,6 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.inputbox import InputBox
-from openpilot.system.ui.widgets.label import Label
 
 # MICI keyboard (unmodified)
 from openpilot.system.ui.widgets.mici_keyboard import (
@@ -147,50 +146,27 @@ class Keyboard(Widget):
     self._show_password_toggle = show_password_toggle
     self._render_return_status = -1
 
-    # Title + subtitle (centered like Mici)
-    self._title = Label(
-      "",
-      90,
-      FontWeight.BOLD,
-      rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
-      text_padding=40,
-      elide_right=True,
-    )
-    self._sub_title = Label(
-      "",
-      55,
-      FontWeight.NORMAL,
-      rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
-      text_padding=40,
-      elide_right=True,
-    )
+    self._title_text = ""
+    self._sub_title_text = ""
 
     # Input box
     self._input_box = InputBox(max_text_size)
     self._input_box._font_size = 56  # tuned for Tizi
 
     # Top buttons + icons
-    self._cancel_icon = gui_app.texture("icons_mici/setup/back_new.png", 72, 54)
-    self._done_icon = gui_app.texture("icons_mici/buttons/button_side_check.png", 72, 72)
     self._cancel_button = Button(
       lambda: tr("Cancel"),
       self._cancel_button_callback,
-      button_style=ButtonStyle.TRANSPARENT_WHITE_BORDER,
-      border_radius=72,
-      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-      text_padding=50,
-      icon=self._cancel_icon,
+      button_style=ButtonStyle.NORMAL,
+      border_radius=54,
+      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
     )
     self._done_button = Button(
       lambda: tr("Done"),
       self._done_button_callback,
       button_style=ButtonStyle.PRIMARY,
-      border_radius=72,
+      border_radius=54,
       text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      text_padding=40,
-      icon=self._done_icon,
     )
 
     # Eye toggle
@@ -252,8 +228,8 @@ class Keyboard(Widget):
     self._backspace_is_down = False
 
   def set_title(self, title: str, sub_title: str = ""):
-    self._title.set_text(title)
-    self._sub_title.set_text(sub_title)
+    self._title_text = title
+    self._sub_title_text = sub_title
 
   def reset(self, min_text_size=None):
     if min_text_size is not None:
@@ -319,17 +295,9 @@ class Keyboard(Widget):
 
     button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
     cancel_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, button_y,
-                               TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
+                   TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
     done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH,
-                             button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
-
-    text_left = cancel_rect.x + TOP_BAR_BUTTON_WIDTH + TOP_BAR_BUTTON_GAP
-    text_right = done_rect.x - TOP_BAR_BUTTON_GAP
-    text_width = max(text_right - text_left, 0)
-    title_rect = rl.Rectangle(text_left, top_bar_rect.y + 14, text_width, 82)
-    subtitle_rect = rl.Rectangle(text_left, top_bar_rect.y + 92, text_width, 56)
-    self._title.render(title_rect)
-    self._sub_title.render(subtitle_rect)
+                 button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
 
     self._cancel_button.set_enabled(not self._dismissing)
     self._cancel_button.render(cancel_rect)
