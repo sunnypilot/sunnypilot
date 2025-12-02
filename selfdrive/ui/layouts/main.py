@@ -3,6 +3,7 @@ import pyray as rl
 from enum import IntEnum
 import cereal.messaging as messaging
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.animation import clamp01, ease_out_cubic
 from openpilot.selfdrive.ui.layouts.home import HomeLayout
 from openpilot.selfdrive.ui.layouts.settings.settings import SettingsLayout, PanelType
 from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
@@ -150,7 +151,7 @@ class MainLayout(Widget):
 
     direction_factor = 1.0 if self._settings_anim_direction == 'in' else -1.0
     delta = direction_factor * (now - self._settings_anim_last_time) / self._settings_anim_duration
-    self._settings_anim_progress = max(0.0, min(1.0, self._settings_anim_progress + delta))
+    self._settings_anim_progress = clamp01(self._settings_anim_progress + delta)
     self._settings_anim_last_time = now
 
     if self._settings_anim_direction == 'in' and self._settings_anim_progress >= 1.0:
@@ -188,11 +189,6 @@ class MainLayout(Widget):
       self._current_mode = MainState.HOME
     self._settings_prev_layout = None
     self._settings_anim_progress = 0.0
-
-  @staticmethod
-  def _ease_out_cubic(t: float) -> float:
-    t = max(0.0, min(1.0, t))
-    return 1 - pow(1 - t, 3)
 
   def open_settings(self, panel_type: PanelType):
     # Prepare settings layout
@@ -255,7 +251,7 @@ class MainLayout(Widget):
         self._layouts[self._current_mode].render(content_rect)
         return
 
-      eased = self._ease_out_cubic(self._settings_anim_progress)
+      eased = ease_out_cubic(self._settings_anim_progress)
       slide_offset = (1.0 - eased) * SETTINGS_ANIMATION_OFFSET
 
       base_layout = self._settings_prev_layout if self._settings_prev_layout is not None else self._current_mode

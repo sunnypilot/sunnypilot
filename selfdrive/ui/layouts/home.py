@@ -6,6 +6,7 @@ from cereal import log
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
 from openpilot.selfdrive.ui.layouts.offroad_alerts import OffroadAlertsLayout
+from openpilot.system.ui.lib.animation import clamp01, ease_out_cubic
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
@@ -321,8 +322,8 @@ class HomeLayout(Widget):
     fade = 1.0 if self.current_state == HomeLayoutState.ALERTS else 0.0
     if self._alerts_anim_active and self._alerts_anim_direction:
       elapsed = now - self._alerts_anim_start
-      t = max(0.0, min(1.0, elapsed / ALERT_ANIM_DURATION))
-      t = 1 - pow(1 - t, 3)  # easeOutCubic
+      t = clamp01(elapsed / ALERT_ANIM_DURATION)
+      t = ease_out_cubic(t)
       if self._alerts_anim_direction == 'in':
         fade = t
       else:
