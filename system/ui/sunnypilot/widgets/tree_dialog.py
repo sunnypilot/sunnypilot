@@ -77,7 +77,7 @@ class TreeItemWidget(Button):
 
 class TreeOptionDialog(MultiOptionDialog):
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
-               get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None):
+               get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None, search_title=None, search_subtitle=None):
     super().__init__(title, [], "", option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
@@ -92,6 +92,14 @@ class TreeOptionDialog(MultiOptionDialog):
     self.on_exit = on_exit
     self.display_func = display_func or (lambda node: node.data.get('display_name', node.ref))
     self.search_funcs = search_funcs or [lambda node: node.data.get('display_name', ''), lambda node: node.data.get('short_name', '')]
+    self._search_rect = None
+    self._search_width = 0.475
+
+    # Default title & overridable subtitle for InputDialogSP
+    self.search_title = search_title or tr("Enter search query")
+    self.search_subtitle = search_subtitle
+    self.search_dialog = None
+
     self._build_visible_items()
 
   def _on_search_confirm(self, result, text):
@@ -101,7 +109,13 @@ class TreeOptionDialog(MultiOptionDialog):
     gui_app.set_modal_overlay(self, callback=self.on_exit)
 
   def _on_search_clicked(self):
-    InputDialogSP(tr("Enter search query"), current_text=self.query, callback=self._on_search_confirm).show()
+    self.search_dialog = InputDialogSP(
+      self.search_title,
+      self.search_subtitle,
+      current_text=self.query,
+      callback=self._on_search_confirm,
+    )
+    self.search_dialog.show()
 
   def _toggle_folder(self, folder):
     if folder.folder:
@@ -126,7 +140,7 @@ class TreeOptionDialog(MultiOptionDialog):
     self._build_visible_items(reset_scroll=False)
 
   def _build_visible_items(self, reset_scroll=True):
-    self.visible_items = [TreeItemWidget(self.query or self.search_prompt, "search_bar", False, 0, self._on_search_clicked)]
+    self.visible_items = []
     for folder in self.folders:
       nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [search_func(node) for search_func in self.search_funcs])]
       if not nodes and self.query:
@@ -150,10 +164,57 @@ class TreeOptionDialog(MultiOptionDialog):
   def _render(self, rect):
     dialog_content_rect = rl.Rectangle(rect.x + 50, rect.y + 50, rect.width - 100, rect.height - 100)
     rl.draw_rectangle_rounded(dialog_content_rect, 0.02, 20, rl.BLACK)
-    gui_label(rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 50, dialog_content_rect.width - 100, 70),
-              self.title, 70, font_weight=FontWeight.BOLD)
 
-    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 170, dialog_content_rect.width - 100, dialog_content_rect.height - 380)
+    # Title on the left
+    title_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 50, dialog_content_rect.width * 0.5, 70)
+    gui_label(title_rect, self.title, 70, font_weight=FontWeight.BOLD)
+
+    # Search bar on the top right
+    search_width = dialog_content_rect.width * self._search_width
+    search_height = 110
+    search_x = dialog_content_rect.x + dialog_content_rect.width - 50 - search_width
+    search_y = dialog_content_rect.y + 40  # align roughly with title
+
+    self._search_rect = rl.Rectangle(search_x, search_y, search_width, search_height)
+
+    # Draw search field
+    inset = 4
+    roundness = 0.3
+    input_rect = rl.Rectangle(self._search_rect.x + inset, self._search_rect.y + inset,
+                              self._search_rect.width - inset * 2, self._search_rect.height - inset * 2)
+
+    # Transparent fill + border
+    rl.draw_rectangle_rounded(input_rect, roundness, 10, rl.Color(0, 0, 0, 0))
+    rl.draw_rectangle_rounded_lines_ex(input_rect, roundness, 10, 3, rl.Color(150, 150, 150, 200))
+
+    # Magnifying glass icon
+    icon_color = rl.Color(180, 180, 180, 240)
+    cx = input_rect.x + 60
+    cy = input_rect.y + input_rect.height / 2 - 5
+    radius = min(input_rect.height * 0.28, 26)
+
+    circle_thickness = 4
+    for i in range(circle_thickness):
+      rl.draw_circle_lines(int(cx), int(cy), radius - i, icon_color)
+
+    handle_thickness = 5
+    inner_x = cx + radius * 0.65
+    inner_y = cy + radius * 0.65
+    outer_x = cx + radius * 1.45
+    outer_y = cy + radius * 1.45
+
+    rl.draw_line_ex(rl.Vector2(inner_x, inner_y), rl.Vector2(outer_x, outer_y), handle_thickness, icon_color)
+
+    # User text (query), placed after the icon if present
+    if self.query:
+      text_start_x = outer_x + 45
+      text_rect = rl.Rectangle(text_start_x, input_rect.y, input_rect.x + input_rect.width - text_start_x - 10, input_rect.height)
+      gui_label(text_rect, self.query, 70, font_weight=FontWeight.MEDIUM)
+
+    options_top = self._search_rect.y + self._search_rect.height + 40
+    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, options_top, dialog_content_rect.width - 100,
+                                     dialog_content_rect.height - (options_top - dialog_content_rect.y) - 210)
+
     for index, option_text in enumerate(self.options):
       self.option_buttons[index].selected = (option_text == self.selection)
       self.option_buttons[index].set_button_style(ButtonStyle.PRIMARY if option_text == self.selection else ButtonStyle.NORMAL)
@@ -171,3 +232,9 @@ class TreeOptionDialog(MultiOptionDialog):
     self.select_button.render(select_rect)
 
     return self._result
+
+  def _handle_mouse_release(self, mouse_pos):
+    if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+      self._on_search_clicked()
+      return True
+    return super()._handle_mouse_release(mouse_pos)
