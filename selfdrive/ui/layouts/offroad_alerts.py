@@ -255,7 +255,7 @@ class OffroadAlertsLayout(Widget):
   def _render(self, rect: rl.Rectangle):
     # translucent + frosted layer lets the home layout remain visible while softening details
     rl.draw_rectangle_rec(rect, ALERTS_OVERLAY_COLOR)
-    rl.draw_rectangle_gradient_v(rect.x, rect.y, rect.width, rect.height,
+    rl.draw_rectangle_gradient_v(int(rect.x), int(rect.y), int(rect.width), int(rect.height),
                    ALERTS_OVERLAY_GLASS_TOP, ALERTS_OVERLAY_GLASS_BOTTOM)
 
     if self._active_count() == 0:
