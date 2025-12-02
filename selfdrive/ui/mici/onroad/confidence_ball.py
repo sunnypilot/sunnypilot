@@ -61,12 +61,10 @@ class ConfidenceBall(Widget):
 
     # confidence zones
     if ui_state.status == UIStatus.LAT_ONLY:
-      top_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
-      bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
 
     elif ui_state.status == UIStatus.LONG_ONLY:
-      top_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
-      bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
 
     elif ui_state.status == UIStatus.ENGAGED or self._demo:
       if self._confidence_filter.x > 0.5:
