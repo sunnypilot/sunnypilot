@@ -70,5 +70,10 @@ class DefaultStyleSP(Base):
   BUTTON_NEUTRAL_GRAY = rl.Color(51, 51, 51, 255)
   BUTTON_DISABLED_BG_COLOR = rl.Color(30, 30, 30, 255)  # Very Dark Grey
 
+  # Vehicle Description Colors
+  GREEN = rl.Color(0, 241, 0, 255)
+  BLUE = rl.Color(0, 134, 233, 255)
+  YELLOW = rl.Color(255, 213, 0, 255)
+
 
 style = DefaultStyleSP
