@@ -36,24 +36,24 @@ class HyundaiSettings(BrandSettings):
       self.alpha_long_available = ui_state.CP.alphaLongitudinalAvailable
 
     tuning_param = int(ui_state.params.get("HyundaiLongitudinalTuning") or "0")
-    oplong_enabled = ui_state.has_longitudinal_control
+    long_enabled = ui_state.has_longitudinal_control
 
-    descriptions = [
-      tr("Your vehicle will use the default longitudinal tuning."),
-      tr("Your vehicle will use the dynamic longitudinal tuning."),
-      tr("Your vehicle will use the predictive longitudinal tuning."),
+    long_tuning_descs = [
+      tr("Your vehicle will use the Default longitudinal tuning."),
+      tr("Your vehicle will use the Dynamic longitudinal tuning."),
+      tr("Your vehicle will use the Predictive longitudinal tuning."),
     ]
-    description = descriptions[tuning_param] if tuning_param < len(descriptions) else descriptions[0]
+    long_tuning_desc = long_tuning_descs[tuning_param] if tuning_param < len(long_tuning_descs) else long_tuning_descs[0]
 
-    longitudinal_tuning_disabled = not ui_state.is_offroad() or not oplong_enabled
+    longitudinal_tuning_disabled = not ui_state.is_offroad() or not long_enabled
     if longitudinal_tuning_disabled:
       if not ui_state.is_offroad():
-        description = tr("This feature is unavailable while the car is onroad.")
-      elif not oplong_enabled:
-        description = tr("This feature is unavailable because openpilot longitudinal control is not enabled.")
+        long_tuning_desc = tr("This feature is unavailable while the car is onroad.")
+      elif not long_enabled:
+        long_tuning_desc = tr("This feature is unavailable because sunnypilot Longitudinal Control (Alpha) is not enabled.")
 
     self.longitudinal_tuning_item.action_item.set_enabled(not longitudinal_tuning_disabled)
-    self.longitudinal_tuning_item.set_description(description)
+    self.longitudinal_tuning_item.set_description(long_tuning_desc)
     self.longitudinal_tuning_item.show_description(True)
     self.longitudinal_tuning_item.action_item.set_selected_button(tuning_param)
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
