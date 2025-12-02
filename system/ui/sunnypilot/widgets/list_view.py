@@ -89,8 +89,13 @@ class ListItemSP(ListItem):
 
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
+
+    if self.description_visible:
+      height += style.ITEM_PADDING * 1.5
+
     if not self.inline:
-      height = height + style.ITEM_BASE_HEIGHT/1.75
+      height += style.ITEM_BASE_HEIGHT / 1.75
+
     return height
 
   def show_description(self, show: bool):
@@ -101,13 +106,18 @@ class ListItemSP(ListItem):
       return rl.Rectangle(0, 0, 0, 0)
 
     if not self.inline:
-      action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
+      has_description = bool(self.description) and self.description_visible
+
+      if has_description:
+        action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
+      else:
+        action_y = item_rect.y + item_rect.height - style.BUTTON_HEIGHT - style.ITEM_PADDING * 1.5
+
       return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
 
     right_width = self.action_item.rect.width
-    if right_width == 0:  # Full width action (like DualButtonAction)
-      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, item_rect.y,
-                          item_rect.width - (style.ITEM_PADDING * 2), style.ITEM_BASE_HEIGHT)
+    if right_width == 0:
+      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, item_rect.y, item_rect.width - (style.ITEM_PADDING * 2), style.ITEM_BASE_HEIGHT)
 
     action_width = self.action_item.rect.width
     if isinstance(self.action_item, ToggleAction):
@@ -171,7 +181,7 @@ class ListItemSP(ListItem):
 
       desc_y = self._rect.y + style.ITEM_DESC_V_OFFSET
       if not self.inline and self.action_item:
-        desc_y = self.action_item.rect.y + style.ITEM_DESC_V_OFFSET - style.ITEM_PADDING * 1.75
+        desc_y = self.action_item.rect.y + style.ITEM_DESC_V_OFFSET - style.ITEM_PADDING * 0.5
 
       description_rect = rl.Rectangle(self._rect.x + style.ITEM_PADDING, desc_y, content_width, description_height)
       self._html_renderer.render(description_rect)
