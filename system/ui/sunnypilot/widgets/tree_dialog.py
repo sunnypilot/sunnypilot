@@ -165,10 +165,7 @@ class TreeOptionDialog(MultiOptionDialog):
     rl.draw_rectangle_rounded(dialog_content_rect, 0.02, 20, rl.BLACK)
 
     # Title on the left
-    title_rect = rl.Rectangle(dialog_content_rect.x + 50,
-                              dialog_content_rect.y + 50,
-                              dialog_content_rect.width * 0.5,
-                              70)
+    title_rect = rl.Rectangle(dialog_content_rect.x + 50, dialog_content_rect.y + 50, dialog_content_rect.width * 0.5, 70)
     gui_label(title_rect, self.title, 70, font_weight=FontWeight.BOLD)
 
     # Search bar on the top right
@@ -182,12 +179,8 @@ class TreeOptionDialog(MultiOptionDialog):
     # Draw search field
     inset = 4
     roundness = 0.3
-    input_rect = rl.Rectangle(
-      self._search_rect.x + inset,
-      self._search_rect.y + inset,
-      self._search_rect.width - inset * 2,
-      self._search_rect.height - inset * 2,
-    )
+    input_rect = rl.Rectangle(self._search_rect.x + inset, self._search_rect.y + inset,
+                              self._search_rect.width - inset * 2, self._search_rect.height - inset * 2)
 
     # Transparent fill + border
     rl.draw_rectangle_rounded(input_rect, roundness, 10, rl.Color(0, 0, 0, 0))
@@ -214,15 +207,11 @@ class TreeOptionDialog(MultiOptionDialog):
     # User text (query), placed after the icon if present
     if self.query:
       text_start_x = outer_x + 45
-      text_rect = rl.Rectangle(text_start_x, input_rect.y,
-                               input_rect.x + input_rect.width - text_start_x - 10,
-                               input_rect.height)
+      text_rect = rl.Rectangle(text_start_x, input_rect.y, input_rect.x + input_rect.width - text_start_x - 10, input_rect.height)
       gui_label(text_rect, self.query, 70, font_weight=FontWeight.MEDIUM)
 
     options_top = self._search_rect.y + self._search_rect.height + 40
-    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50,
-                                     options_top,
-                                     dialog_content_rect.width - 100,
+    options_area_rect = rl.Rectangle(dialog_content_rect.x + 50, options_top, dialog_content_rect.width - 100,
                                      dialog_content_rect.height - (options_top - dialog_content_rect.y) - 210)
 
     for index, option_text in enumerate(self.options):
