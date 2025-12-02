@@ -12,6 +12,7 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 REFRESH_INTERVAL = 5.0
+ALERTS_OVERLAY_COLOR = rl.Color(4, 4, 12, 220)
 
 
 class AlertSize(IntEnum):
@@ -165,13 +166,13 @@ class OffroadAlertsLayout(Widget):
     self.cards: list[GlassAlertCard] = []
     self._last_refresh = 0.0
 
-    self.title_label = UnifiedLabel(
-      tr("Alerts"),
+    self._empty_label = UnifiedLabel(
+      tr("no alerts"),
       86,
       FontWeight.DISPLAY,
       rl.WHITE,
-      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_CENTER,
     )
 
     self._build_initial()
@@ -250,12 +251,11 @@ class OffroadAlertsLayout(Widget):
 
   # -------- rendering --------
   def _render(self, rect: rl.Rectangle):
-    # title
-    title_rect = rl.Rectangle(rect.x + 64, rect.y + 32, rect.width - 128, 120)
-    self.title_label.render(title_rect)
+    # dark translucent backdrop so the home layout shows through without remaining legible
+    rl.draw_rectangle_rec(rect, ALERTS_OVERLAY_COLOR)
 
     if self._active_count() == 0:
-      # optional: render "no alerts" label here if you want
+      self._empty_label.render(rect)
       return
 
     # layout cards vertically and render them directly (no scroller, no movement on tap)
