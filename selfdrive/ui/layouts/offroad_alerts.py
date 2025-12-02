@@ -119,14 +119,14 @@ class GlassAlertCard(Widget):
 
     # glass + glow
     if self.alert_data.severity == -1:
-      glow = rl.Color(100, 255, 150, 80)
+      glow = rl.Color(100, 255, 150, 255)
     elif self.alert_data.severity == 0:
-      glow = rl.Color(255, 190, 90, 80)
+      glow = rl.Color(255, 190, 90, 255)
     else:
-      glow = rl.Color(255, 95, 95, 90)
+      glow = rl.Color(255, 95, 95, 255)
 
-    bg = rl.Color(255, 255, 255, 28)
-    stroke = rl.Color(255, 255, 255, 70)
+    bg = rl.Color(255, 255, 255, 255)
+    stroke = rl.Color(255, 255, 255, 255)
 
     rl.draw_rectangle_rounded(rect, 0.14, 12, glow)
 
