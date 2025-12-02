@@ -5,7 +5,7 @@ import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.lib.animation import smooth_towards, scale_from_center
+from openpilot.system.ui.lib.animation import smooth_towards, scale_from_center, fade_color
 from openpilot.system.ui.widgets.label import Label, UnifiedLabel
 from openpilot.common.filter_simple import FirstOrderFilter
 
@@ -80,6 +80,7 @@ BUTTON_DISABLED_BACKGROUND_COLORS = {
 
 PRESS_TARGET = 0.96
 PRESS_SPEED = 12.0
+PRESS_ALPHA_TARGET = 0.85
 
 
 class Button(Widget):
@@ -108,6 +109,7 @@ class Button(Widget):
     self._click_callback = click_callback
     self._multi_touch = multi_touch
     self._press_scale = 1.0
+    self._press_opacity = 1.0
 
   def set_text(self, text):
     self._label.set_text(text)
@@ -131,15 +133,24 @@ class Button(Widget):
   def _render(self, _):
     target_scale = PRESS_TARGET if self.is_pressed else 1.0
     self._press_scale = smooth_towards(self._press_scale, target_scale, PRESS_SPEED, rl.get_frame_time())
+    target_opacity = PRESS_ALPHA_TARGET if self.is_pressed else 1.0
+    self._press_opacity = smooth_towards(self._press_opacity, target_opacity, PRESS_SPEED, rl.get_frame_time())
 
     def _draw():
+      base_bg = self._background_color
+      bg = fade_color(base_bg, self._press_opacity)
+      base_text = getattr(self._label, "_text_color", BUTTON_TEXT_COLOR[self._button_style])
+      faded_text = fade_color(base_text, self._press_opacity)
+      self._label.set_text_color(faded_text)
+
       roundness = self._border_radius / (min(self._rect.width, self._rect.height) / 2)
       if self._button_style == ButtonStyle.TRANSPARENT_WHITE_BORDER:
         rl.draw_rectangle_rounded(self._rect, roundness, 10, rl.BLACK)
         rl.draw_rectangle_rounded_lines_ex(self._rect, roundness, 10, 2, rl.WHITE)
       else:
-        rl.draw_rectangle_rounded(self._rect, roundness, 10, self._background_color)
+        rl.draw_rectangle_rounded(self._rect, roundness, 10, bg)
       self._label.render(self._rect)
+      self._label.set_text_color(base_text)
 
     scale_from_center(self._rect, self._press_scale, _draw)
 
