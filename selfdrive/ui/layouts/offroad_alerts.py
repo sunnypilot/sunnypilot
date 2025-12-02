@@ -172,7 +172,7 @@ class OffroadAlertsLayout(Widget):
       FontWeight.DISPLAY,
       rl.WHITE,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
     )
 
     self._build_initial()

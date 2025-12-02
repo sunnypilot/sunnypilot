@@ -17,6 +17,7 @@ from openpilot.system.ui.widgets.mici_keyboard import (
   CHAR_NEAR_FONT_SIZE,
   KEYBOARD_COLUMN_PADDING,
   KEYBOARD_ROW_PADDING,
+  KEY_TOUCH_AREA_OFFSET,
   MiciKeyboard,
   SELECTED_CHAR_FONT_SIZE,
   fast_euclidean_distance,
@@ -93,8 +94,14 @@ class ScaledMiciKeyboard(MiciKeyboard):
       step_x = max(available_width, 1) / col_count
 
       for key_idx, key in enumerate(row):
-        key_x = key_rect.x + padding + key_idx * (step_x + self._key_spacing)
-        key_y = key_rect.y + KEYBOARD_COLUMN_PADDING + row_idx * (step_y + self._row_spacing)
+        base_x = key_rect.x + padding + key_idx * (step_x + self._key_spacing)
+        base_y = key_rect.y + KEYBOARD_COLUMN_PADDING + row_idx * (step_y + self._row_spacing)
+
+        # ensure proximity checks stay aligned even as the keyboard slides in/out
+        key.original_position = rl.Vector2(base_x, base_y + KEY_TOUCH_AREA_OFFSET)
+
+        key_x = base_x
+        key_y = base_y
 
         if self._closest_key[0] is None:
           key.set_alpha(1.0)
