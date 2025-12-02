@@ -108,9 +108,9 @@ class PlatformSelector(Button):
     platforms = sorted(self._platforms.keys())
     makes = sorted({self._platforms[p].get('make') for p in platforms})
     folders = [TreeFolder(make, [TreeNode(p, {
-      'display_name': f"{year} {self._platforms[p].get('model', p)}",
-      'search_tags': f"{p} {self._platforms[p].get('make')} {year}"
-    }) for p in platforms if self._platforms[p].get('make') == make for year in self._platforms[p].get('year', [])]) for make in makes]
+      'display_name': p,
+      'search_tags': f"{p} {self._platforms[p].get('make')} {' '.join(map(str, self._platforms[p].get('year', [])))} {self._platforms[p].get('model', p)}"
+    }) for p in platforms if self._platforms[p].get('make') == make]) for make in makes]
     dialog = TreeOptionDialog(
       tr("Select a vehicle"),
       folders,
