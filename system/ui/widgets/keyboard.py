@@ -34,7 +34,7 @@ KEYBOARD_INNER_PADDING_Y = 60
 
 KB_SCALE = 1.00      # global keyboard scale (keep 1.00)
 CONTENT_MARGIN = 50
-INPUT_TOP_MARGIN = 160
+INPUT_TOP_MARGIN = 120
 KEYBOARD_BOTTOM_MARGIN = 40
 
 BACKSPACE_HOLD_DELAY = 0.45
@@ -288,10 +288,8 @@ class Keyboard(Widget):
     slide_offset = (1.0 - eased) * ANIMATION_OFFSET
     rect = rl.Rectangle(rect.x, rect.y + slide_offset, rect.width, rect.height)
 
-    # top bar container (Mici-style, scaled for Tizi)
+    # top button row (no background container)
     top_bar_rect = rl.Rectangle(rect.x, rect.y, rect.width, TOP_BAR_HEIGHT)
-    rl.draw_rectangle_rounded(top_bar_rect, TOP_BAR_RADIUS, 12, _color_with_alpha(TOP_BAR_BG, eased))
-    rl.draw_rectangle_rounded_lines_ex(top_bar_rect, TOP_BAR_RADIUS, 12, 4, _color_with_alpha(TOP_BAR_BORDER, eased))
 
     button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
     cancel_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, button_y,
