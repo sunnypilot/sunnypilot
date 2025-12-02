@@ -26,7 +26,7 @@ MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
 SWIPE_RIGHT_EDGE = 80
-ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 240)
+ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 255)
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -193,6 +193,9 @@ class HomeLayout(Widget):
     self._render_icons()
 
   def _render_icons(self):
+    # Block interaction when alerts overlay is active/animating
+    alerts_blocking = self.current_state == HomeLayoutState.ALERTS or self._alerts_anim.active
+
     icon_scale = max(0.9, min(1.4, self._scale * 1.05))
     gear_w = self._settings_icon.width * icon_scale
     gear_h = self._settings_icon.height * icon_scale
@@ -203,7 +206,7 @@ class HomeLayout(Widget):
 
     rl.draw_texture_ex(self._settings_icon, (int(base_x), int(base_y)), 0, icon_scale, rl.WHITE)
 
-    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+    if not alerts_blocking and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
       rect = rl.Rectangle(base_x - hit_pad, base_y - hit_pad, gear_w + hit_pad * 2, gear_h + hit_pad * 2)
       if rl.check_collision_point_rec(mouse_pos, rect):
@@ -221,7 +224,7 @@ class HomeLayout(Widget):
       conn_y = self._rect.y + self._rect.height - conn_h - ICON_MARGIN * self._scale + (gear_h - conn_h) / 2 + WIFI_Y_OFFSET * self._scale
       rl.draw_texture_ex(conn_texture, (int(conn_x), int(conn_y)), 0, icon_scale, rl.WHITE)
 
-      if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+      if not alerts_blocking and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
         mouse_pos = rl.get_mouse_position()
         rect = rl.Rectangle(conn_x - hit_pad, conn_y - hit_pad, conn_w + hit_pad * 2, conn_h + hit_pad * 2)
         if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:
@@ -235,7 +238,7 @@ class HomeLayout(Widget):
     mode_y = self._rect.y + self._rect.height - mode_h - ICON_MARGIN * self._scale + (gear_h - mode_h) / 2 + MODE_Y_OFFSET * self._scale
     rl.draw_texture_ex(mode_icon, (int(mode_x), int(mode_y)), 0, mode_scale, rl.WHITE)
 
-    if rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
+    if not alerts_blocking and rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
       mouse_pos = rl.get_mouse_position()
       rect = rl.Rectangle(mode_x - hit_pad, mode_y - hit_pad, mode_w + hit_pad * 2, mode_h + hit_pad * 2)
       if rl.check_collision_point_rec(mouse_pos, rect) and self.open_panel_callback:

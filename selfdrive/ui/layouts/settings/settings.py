@@ -156,16 +156,7 @@ class SettingsLayout(Widget):
       rl.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20), 0.04, 30, PANEL_COLOR
     )
 
-    # outgoing panel
-    if self._panel_transition_from is not None and self._panel_anim.active:
-      from_panel = self._panels[self._panel_transition_from].instance
-      offset = (1.0 - progress) * rect.width * 0.08
-      from_rect = rl.Rectangle(rect.x - offset, rect.y, rect.width, rect.height)
-      rl.begin_blend_mode(rl.BlendMode.BLEND_ALPHA)
-      from_panel.render(rl.Rectangle(from_rect.x + PANEL_MARGIN, from_rect.y + 25, from_rect.width - (PANEL_MARGIN * 2), from_rect.height - 50))
-      rl.end_blend_mode()
-
-    # incoming panel
+    # incoming panel only (no outgoing slide)
     offset_in = (1.0 - progress) * rect.width * 0.08
     panel_rect = rl.Rectangle(rect.x + offset_in, rect.y, rect.width, rect.height)
     content_rect = rl.Rectangle(panel_rect.x + PANEL_MARGIN, panel_rect.y + 25, panel_rect.width - (PANEL_MARGIN * 2), panel_rect.height - 50)
