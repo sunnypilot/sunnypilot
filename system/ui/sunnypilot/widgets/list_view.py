@@ -181,7 +181,7 @@ class ListItemSP(ListItem):
 
       desc_y = self._rect.y + style.ITEM_DESC_V_OFFSET
       if not self.inline and self.action_item:
-        desc_y = self.action_item.rect.y + style.ITEM_DESC_V_OFFSET - 10
+        desc_y = self.action_item.rect.y + style.ITEM_DESC_V_OFFSET - style.ITEM_PADDING * 0.5
 
       description_rect = rl.Rectangle(self._rect.x + style.ITEM_PADDING, desc_y, content_width, description_height)
       self._html_renderer.render(description_rect)
