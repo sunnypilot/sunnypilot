@@ -136,6 +136,8 @@ class SettingsLayout(Widget):
       y += NAV_BTN_HEIGHT
 
   def _draw_current_panel(self, rect: rl.Rectangle):
+    # Fill the entire panel area first so no underlying layout peeks through
+    rl.draw_rectangle_rec(rect, PANEL_COLOR)
     rl.draw_rectangle_rounded(
       rl.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20), 0.04, 30, PANEL_COLOR
     )
