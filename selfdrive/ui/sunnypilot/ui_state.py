@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import messaging, custom
 from openpilot.common.params import Params
+from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 
 
 class UIStateSP:
@@ -16,8 +17,10 @@ class UIStateSP:
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP"
     ]
 
+    self.sunnylink_state = SunnylinkState()
+
   def update(self) -> None:
-    pass
+    self.sunnylink_state.start()
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
