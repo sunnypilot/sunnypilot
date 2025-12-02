@@ -71,8 +71,17 @@ def scale_from_center(rect, scale: float, draw_fn):
 
 
 def fade_color(color: rl.Color, alpha: float) -> rl.Color:
-  """Apply multiplier alpha to a color's alpha channel."""
-  return rl.Color(color.r, color.g, color.b, int(color.a * clamp01(alpha)))
+  """Apply multiplier alpha to a color's alpha channel. Accepts rl.Color or (r,g,b[,a]) tuples."""
+  if hasattr(color, "r"):
+    r, g, b, a = color.r, color.g, color.b, color.a
+  else:
+    try:
+      r, g, b = int(color[0]), int(color[1]), int(color[2])
+      a = int(color[3]) if len(color) > 3 else 255
+    except Exception:
+      # fallback to white if unexpected input
+      r, g, b, a = 255, 255, 255, 255
+  return rl.Color(r, g, b, int(a * clamp01(alpha)))
 
 
 class LinearAnimation:
