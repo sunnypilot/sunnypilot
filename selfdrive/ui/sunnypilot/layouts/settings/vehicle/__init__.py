@@ -31,13 +31,21 @@ class VehicleLayout(Widget):
     self.items = [self._vehicle_item, self._legend_widget]
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
+  @staticmethod
+  def get_brand():
+    if bundle := ui_state.params.get("CarPlatformBundle"):
+      return bundle.get("brand", "")
+    elif ui_state.CP and ui_state.CP.carFingerprint != "MOCK":
+      return ui_state.CP.brand
+    return ""
+
   def _update_brand_settings(self):
     self._vehicle_item._title = self._platform_selector.text
     self._vehicle_item.title_color = self._platform_selector.color
     vehicle_text = tr("Remove") if ui_state.params.get("CarPlatformBundle") else tr("Select")
     self._vehicle_item.action_item.set_text(vehicle_text)
 
-    brand = self._platform_selector.brand
+    brand = self.get_brand()
     if brand != self._current_brand:
       self._current_brand = brand
       self._brand_settings = BrandSettingsFactory.create_brand_settings(brand)
