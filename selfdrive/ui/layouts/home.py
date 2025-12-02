@@ -25,9 +25,7 @@ MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
 SWIPE_RIGHT_EDGE = 80
-ALERT_OVERLAY_BASE = rl.Color(8, 10, 14, 235)
-ALERT_OVERLAY_FROST = rl.Color(255, 255, 255, 90)
-ALERT_OVERLAY_GLOW = rl.Color(255, 255, 255, 40)
+ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 240)
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -313,14 +311,8 @@ class HomeLayout(Widget):
       return
 
     base = rl.Color(ALERT_OVERLAY_BASE.r, ALERT_OVERLAY_BASE.g, ALERT_OVERLAY_BASE.b, int(ALERT_OVERLAY_BASE.a * alpha))
-    frost = rl.Color(ALERT_OVERLAY_FROST.r, ALERT_OVERLAY_FROST.g, ALERT_OVERLAY_FROST.b, int(ALERT_OVERLAY_FROST.a * alpha))
-    glow = rl.Color(ALERT_OVERLAY_GLOW.r, ALERT_OVERLAY_GLOW.g, ALERT_OVERLAY_GLOW.b, int(ALERT_OVERLAY_GLOW.a * alpha))
-
-    # darken the home view while keeping it visible underneath
+    # Solid, uniform blackout over the home view (no gradients/lines)
     rl.draw_rectangle_rec(rect, base)
-    # soft frosted layer to mimic blur/glass
-    rl.draw_rectangle_gradient_ex(rect, frost, frost, glow, glow)
-    rl.draw_rectangle_lines_ex(rect, 2.0, rl.Color(glow.r, glow.g, glow.b, min(255, glow.a * 2)))
 
   def _render_alert_overlay(self):
     full_rect = self._content_panel_rect()
