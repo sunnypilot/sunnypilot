@@ -41,15 +41,22 @@ KEYBOARD_BOTTOM_MARGIN = 40
 BACKSPACE_HOLD_DELAY = 0.45
 BACKSPACE_HOLD_INTERVAL = 0.07
 
-TOP_BAR_HEIGHT = 150
+TOP_BAR_HEIGHT = 170
 TOP_BAR_PADDING_X = 60
 TOP_BAR_RADIUS = 0.18
-TOP_BAR_BUTTON_WIDTH = 280
-TOP_BAR_BUTTON_HEIGHT = 112
+TOP_BAR_BUTTON_WIDTH = 300
+TOP_BAR_BUTTON_HEIGHT = 118
 TOP_BAR_BUTTON_GAP = 24
 TOP_BAR_SPACING = 45
 TOP_BAR_BG = rl.Color(12, 12, 12, 235)
 TOP_BAR_BORDER = rl.Color(255, 255, 255, 32)
+ANIMATION_DURATION = 0.25  # seconds
+ANIMATION_OFFSET = 160
+
+
+def _color_with_alpha(color: rl.Color, alpha: float) -> rl.Color:
+  alpha = np.clip(alpha, 0.0, 1.0)
+  return rl.Color(color.r, color.g, color.b, int(color.a * alpha))
 
 
 class ScaledMiciKeyboard(MiciKeyboard):
@@ -140,17 +147,51 @@ class Keyboard(Widget):
     self._show_password_toggle = show_password_toggle
     self._render_return_status = -1
 
-    # Title + subtitle
-    self._title = Label("", 90, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
-    self._sub_title = Label("", 55, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
+    # Title + subtitle (centered like Mici)
+    self._title = Label(
+      "",
+      90,
+      FontWeight.BOLD,
+      rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+      text_padding=40,
+      elide_right=True,
+    )
+    self._sub_title = Label(
+      "",
+      55,
+      FontWeight.NORMAL,
+      rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+      text_padding=40,
+      elide_right=True,
+    )
 
     # Input box
     self._input_box = InputBox(max_text_size)
     self._input_box._font_size = 56  # tuned for Tizi
 
-    # Top buttons
-    self._cancel_button = Button(lambda: tr("Cancel"), self._cancel_button_callback)
-    self._done_button = Button(lambda: tr("Done"), self._done_button_callback, button_style=ButtonStyle.PRIMARY)
+    # Top buttons + icons
+    self._cancel_icon = gui_app.texture("icons_mici/setup/back_new.png", 72, 54)
+    self._done_icon = gui_app.texture("icons_mici/buttons/button_side_check.png", 72, 72)
+    self._cancel_button = Button(
+      lambda: tr("Cancel"),
+      self._cancel_button_callback,
+      button_style=ButtonStyle.TRANSPARENT_WHITE_BORDER,
+      border_radius=72,
+      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      text_padding=50,
+      icon=self._cancel_icon,
+    )
+    self._done_button = Button(
+      lambda: tr("Done"),
+      self._done_button_callback,
+      button_style=ButtonStyle.PRIMARY,
+      border_radius=72,
+      text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      text_padding=40,
+      icon=self._done_icon,
+    )
 
     # Eye toggle
     self._eye_button = Button("", self._eye_button_callback, button_style=ButtonStyle.TRANSPARENT)
@@ -165,6 +206,10 @@ class Keyboard(Widget):
     self._backspace_is_down = False
     self._backspace_down_time = 0.0
     self._backspace_last_repeat = 0.0
+    self._anim_progress = 0.0
+    self._dismissing = False
+    self._pending_return_status: int | None = None
+    self._last_anim_time: float | None = None
 
     # ========== MICI Keyboard (Tuned) ==========
     self._mici_keyboard = ScaledMiciKeyboard(
@@ -216,6 +261,10 @@ class Keyboard(Widget):
     self._render_return_status = -1
     self._backspace_is_down = False
     self.clear()
+    self._anim_progress = 0.0
+    self._dismissing = False
+    self._pending_return_status = None
+    self._last_anim_time = None
 
 
   # ===== Button Callbacks =====
@@ -224,11 +273,11 @@ class Keyboard(Widget):
 
   def _cancel_button_callback(self):
     self.clear()
-    self._render_return_status = 0
+    self._start_dismiss(0)
 
   def _done_button_callback(self):
     if len(self.text) >= self._min_text_size:
-      self._render_return_status = 1
+      self._start_dismiss(1)
 
   def _backspace_button_callback(self):
     self._mici_keyboard.backspace()
@@ -237,10 +286,20 @@ class Keyboard(Widget):
     self._backspace_down_time = time.monotonic()
     self._backspace_last_repeat = self._backspace_down_time
 
+  def _start_dismiss(self, status: int):
+    if self._pending_return_status == status and self._dismissing:
+      return
+    self._pending_return_status = status
+    self._dismissing = True
+
 
 
   # ===== Render =====
   def _render(self, rect: rl.Rectangle):
+    self._update_animation()
+    if self._render_return_status != -1:
+      return self._render_return_status
+
     # outer margin
     rect = rl.Rectangle(
       rect.x + CONTENT_MARGIN,
@@ -249,25 +308,32 @@ class Keyboard(Widget):
       rect.height - 2 * CONTENT_MARGIN,
     )
 
+    eased = self._ease_out_cubic(self._anim_progress)
+    slide_offset = (1.0 - eased) * ANIMATION_OFFSET
+    rect = rl.Rectangle(rect.x, rect.y + slide_offset, rect.width, rect.height)
+
     # top bar container (Mici-style, scaled for Tizi)
     top_bar_rect = rl.Rectangle(rect.x, rect.y, rect.width, TOP_BAR_HEIGHT)
-    rl.draw_rectangle_rounded(top_bar_rect, TOP_BAR_RADIUS, 12, TOP_BAR_BG)
-    rl.draw_rectangle_rounded_lines_ex(top_bar_rect, TOP_BAR_RADIUS, 12, 4, TOP_BAR_BORDER)
+    rl.draw_rectangle_rounded(top_bar_rect, TOP_BAR_RADIUS, 12, _color_with_alpha(TOP_BAR_BG, eased))
+    rl.draw_rectangle_rounded_lines_ex(top_bar_rect, TOP_BAR_RADIUS, 12, 4, _color_with_alpha(TOP_BAR_BORDER, eased))
 
-    text_width = max(rect.width - 2 * TOP_BAR_PADDING_X - (TOP_BAR_BUTTON_WIDTH * 2 + TOP_BAR_BUTTON_GAP), 0)
-    title_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, top_bar_rect.y + 12, text_width, 78)
-    subtitle_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, top_bar_rect.y + 78, text_width, 52)
+    button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
+    cancel_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, button_y,
+                               TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
+    done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH,
+                             button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
+
+    text_left = cancel_rect.x + TOP_BAR_BUTTON_WIDTH + TOP_BAR_BUTTON_GAP
+    text_right = done_rect.x - TOP_BAR_BUTTON_GAP
+    text_width = max(text_right - text_left, 0)
+    title_rect = rl.Rectangle(text_left, top_bar_rect.y + 14, text_width, 82)
+    subtitle_rect = rl.Rectangle(text_left, top_bar_rect.y + 92, text_width, 56)
     self._title.render(title_rect)
     self._sub_title.render(subtitle_rect)
 
-    button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
-    done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH,
-                             button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
-    cancel_rect = rl.Rectangle(done_rect.x - TOP_BAR_BUTTON_WIDTH - TOP_BAR_BUTTON_GAP,
-                               button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
-
+    self._cancel_button.set_enabled(not self._dismissing)
     self._cancel_button.render(cancel_rect)
-    self._done_button.set_enabled(len(self.text) >= self._min_text_size)
+    self._done_button.set_enabled((not self._dismissing) and len(self.text) >= self._min_text_size)
     self._done_button.render(done_rect)
 
     # input
@@ -277,7 +343,7 @@ class Keyboard(Widget):
       rect.width - 50,
       105,
     )
-    self._render_input_area(input_rect)
+    self._render_input_area(input_rect, eased)
 
     self._update_backspace_repeat()
 
@@ -311,7 +377,7 @@ class Keyboard(Widget):
 
 
   # ===== Input Field =====
-  def _render_input_area(self, input_rect: rl.Rectangle):
+  def _render_input_area(self, input_rect: rl.Rectangle, eased: float):
     extra_w = 110
     if self._show_password_toggle:
       extra_w += 100
@@ -355,7 +421,7 @@ class Keyboard(Widget):
       rl.Vector2(input_rect.x, underline_y),
       rl.Vector2(input_rect.x + input_rect.width, underline_y),
       3.0,
-      rl.Color(189, 189, 189, 255),
+      _color_with_alpha(rl.Color(189, 189, 189, 255), eased),
     )
 
 
@@ -373,3 +439,22 @@ class Keyboard(Widget):
       self._mici_keyboard.backspace()
       self._input_box.text = self._mici_keyboard.text()
       self._backspace_last_repeat = now
+
+  def _update_animation(self):
+    now = time.monotonic()
+    if self._last_anim_time is None:
+      self._last_anim_time = now
+      return
+
+    direction = -1.0 if self._dismissing else 1.0
+    delta = direction * (now - self._last_anim_time) / ANIMATION_DURATION
+    self._anim_progress = float(np.clip(self._anim_progress + delta, 0.0, 1.0))
+    self._last_anim_time = now
+
+    if self._dismissing and self._anim_progress <= 0.0 and self._pending_return_status is not None:
+      self._render_return_status = self._pending_return_status
+
+  @staticmethod
+  def _ease_out_cubic(t: float) -> float:
+    t = np.clip(t, 0.0, 1.0)
+    return 1 - pow(1 - t, 3)
