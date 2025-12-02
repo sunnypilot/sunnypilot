@@ -63,9 +63,8 @@ class PlatformSelector(Button):
     with open(CAR_LIST_JSON_OUT) as car_list_json:
       self._platforms = json.load(car_list_json)
 
-    self._offroad = False
     self._on_platform_change = on_platform_change
-    self.refresh(False)
+    self.refresh()
 
   @property
   def text(self):
@@ -78,7 +77,7 @@ class PlatformSelector(Button):
   def _on_clicked(self):
     if ui_state.params.get("CarPlatformBundle"):
       ui_state.params.remove("CarPlatformBundle")
-      self.refresh(self._offroad)
+      self.refresh()
       if self._on_platform_change:
         self._on_platform_change()
     else:
@@ -87,13 +86,13 @@ class PlatformSelector(Button):
   def _set_platform(self, platform_name):
     if data := self._platforms.get(platform_name):
       ui_state.params.put("CarPlatformBundle", {**data, "name": platform_name})
-      self.refresh(self._offroad)
+      self.refresh()
       if self._on_platform_change:
         self._on_platform_change()
 
   def _on_platform_selected(self, dialog, res):
     if res == DialogResult.CONFIRM and dialog.selection_ref:
-      offroad_msg = tr("This setting will take effect immediately.") if self._offroad else \
+      offroad_msg = tr("This setting will take effect immediately.") if ui_state.is_offroad else \
                     tr("This setting will take effect once the device enters offroad state.")
 
       confirm_dialog = ConfirmDialog(offroad_msg, tr("Confirm"))
@@ -108,15 +107,22 @@ class PlatformSelector(Button):
   def _show_platform_dialog(self):
     platforms = sorted(self._platforms.keys())
     makes = sorted({self._platforms[p].get('make') for p in platforms})
-    folders = [TreeFolder(make, [TreeNode(p, {'display_name': p}) for p in platforms
-                                 if self._platforms[p].get('make') == make]) for make in makes]
-    dialog = TreeOptionDialog(tr("Select a vehicle"), folders)
+    folders = [TreeFolder(make, [TreeNode(p, {
+      'display_name': p,
+      'search_tags': f"{p} {self._platforms[p].get('make')} {' '.join(map(str, self._platforms[p].get('year', [])))} {self._platforms[p].get('model', p)}"
+    }) for p in platforms if self._platforms[p].get('make') == make]) for make in makes]
+    dialog = TreeOptionDialog(
+      tr("Select a vehicle"),
+      folders,
+      search_title=tr("Search your vehicle"),
+      search_subtitle=tr("Enter model year (e.g., 2021) and model (Toyota Corolla):"),
+      search_funcs=[lambda node: node.data.get('display_name', ''), lambda node: node.data.get('search_tags', '')]
+    )
     callback = partial(self._on_platform_selected, dialog)
     dialog.on_exit = callback
     gui_app.set_modal_overlay(dialog, callback=callback)
 
-  def refresh(self, offroad):
-    self._offroad = offroad
+  def refresh(self):
     self.brand = ""
     self.color = style.YELLOW
     self._platform = tr("Unrecognized Vehicle")
