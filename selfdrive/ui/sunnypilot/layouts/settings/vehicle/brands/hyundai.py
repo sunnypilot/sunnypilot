@@ -12,7 +12,6 @@ from opendbc.car.hyundai.values import CAR, CANFD_UNSUPPORTED_LONGITUDINAL_CAR, 
 
 class HyundaiSettings:
   def __init__(self):
-    self.offroad = False
     self.alpha_long_available = False
 
     tuning_texts = [tr("Off"), tr("Dynamic"), tr("Predictive")]
@@ -43,9 +42,9 @@ class HyundaiSettings:
     ]
     description = descriptions[tuning_param] if tuning_param < len(descriptions) else descriptions[0]
 
-    longitudinal_tuning_disabled = not self.offroad or not oplong_enabled
+    longitudinal_tuning_disabled = not ui_state.is_offroad() or not oplong_enabled
     if longitudinal_tuning_disabled:
-      if not self.offroad:
+      if not ui_state.is_offroad():
         description = tr("This feature is unavailable while the car is onroad.")
       elif not oplong_enabled:
         description = tr("This feature is unavailable because openpilot longitudinal control is not enabled.")
@@ -57,5 +56,4 @@ class HyundaiSettings:
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
 
   def update_state(self):
-    self.offroad = ui_state.is_offroad()
     self.update_settings()

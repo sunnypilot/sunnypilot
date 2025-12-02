@@ -12,7 +12,6 @@ from opendbc.car.subaru.values import CAR, SubaruFlags
 
 class SubaruSettings:
   def __init__(self):
-    self.offroad = False
     self.is_subaru = False
     self.has_stop_and_go = False
 
@@ -29,7 +28,7 @@ class SubaruSettings:
   def stop_and_go_disabled_msg(self):
     if self.is_subaru and not self.has_stop_and_go:
       return tr("This feature is currently not available on this platform.")
-    elif not self.offroad:
+    elif not ui_state.is_offroad():
       return tr("Enable Always Offroad in Device panel, or turn vehicle off to toggle.")
     return ""
 
@@ -55,9 +54,8 @@ class SubaruSettings:
     ]
 
     for toggle, desc in zip([self.stop_and_go_toggle, self.stop_and_go_manual_parking_brake_toggle], descriptions, strict=True):
-      toggle.action_item.set_enabled(self.has_stop_and_go and self.offroad)
+      toggle.action_item.set_enabled(self.has_stop_and_go and ui_state.is_offroad())
       toggle.set_description(f"<b>{disabled_msg}</b><br><br>{desc}" if disabled_msg else desc)
 
   def update_state(self):
-    self.offroad = ui_state.is_offroad()
     self.update_settings()

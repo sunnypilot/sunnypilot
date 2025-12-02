@@ -15,7 +15,6 @@ KM_TO_MILE = 0.621371
 
 class TeslaSettings:
   def __init__(self):
-    self.offroad = False
     self.coop_steering_toggle = toggle_item_sp(tr("Cooperative Steering (Beta)"), "", param="TeslaCoopSteering")
     self.items = [self.coop_steering_toggle]
 
@@ -35,8 +34,7 @@ class TeslaSettings:
     )
 
     self.coop_steering_toggle.set_description(description)
-    self.coop_steering_toggle.action_item.set_enabled(self.offroad)
+    self.coop_steering_toggle.action_item.set_enabled(ui_state.is_offroad())
 
   def update_state(self):
-    self.offroad = ui_state.is_offroad()
     self.update_settings()
