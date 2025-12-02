@@ -25,6 +25,9 @@ MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
 SWIPE_RIGHT_EDGE = 80
+ALERT_OVERLAY_BASE = rl.Color(10, 12, 16, 210)
+ALERT_OVERLAY_FROST = rl.Color(255, 255, 255, 24)
+ALERT_OVERLAY_GLOW = rl.Color(255, 255, 255, 12)
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -304,14 +307,34 @@ class HomeLayout(Widget):
     else:
       self._alerts_layout.hide_event()
 
+  def _draw_alerts_backdrop(self, rect: rl.Rectangle, alpha: float):
+    alpha = max(0.0, min(1.0, alpha))
+    if alpha <= 0.0:
+      return
+
+    base = rl.Color(ALERT_OVERLAY_BASE.r, ALERT_OVERLAY_BASE.g, ALERT_OVERLAY_BASE.b, int(ALERT_OVERLAY_BASE.a * alpha))
+    frost = rl.Color(ALERT_OVERLAY_FROST.r, ALERT_OVERLAY_FROST.g, ALERT_OVERLAY_FROST.b, int(ALERT_OVERLAY_FROST.a * alpha))
+    glow = rl.Color(ALERT_OVERLAY_GLOW.r, ALERT_OVERLAY_GLOW.g, ALERT_OVERLAY_GLOW.b, int(ALERT_OVERLAY_GLOW.a * alpha))
+
+    # darken the home view while keeping it visible underneath
+    rl.draw_rectangle_rec(rect, base)
+    # soft frosted layer to mimic blur/glass
+    rl.draw_rectangle_gradient_ex(rect, frost, frost, glow, glow)
+    rl.draw_rectangle_lines_ex(rect, 2.0, rl.Color(glow.r, glow.g, glow.b, min(255, glow.a * 2)))
+
   def _render_alert_overlay(self):
     full_rect = self._content_panel_rect()
     now = rl.get_time()
     t = 1.0
+    fade = 1.0 if self.current_state == HomeLayoutState.ALERTS else 0.0
     if self._alerts_anim_active and self._alerts_anim_direction:
       elapsed = now - self._alerts_anim_start
       t = max(0.0, min(1.0, elapsed / ALERT_ANIM_DURATION))
       t = 1 - pow(1 - t, 3)  # easeOutCubic
+      if self._alerts_anim_direction == 'in':
+        fade = t
+      else:
+        fade = 1.0 - t
     # Slide from left
     if self._alerts_anim_direction == 'in':
       x = full_rect.x - full_rect.width * (1 - t)
@@ -321,6 +344,7 @@ class HomeLayout(Widget):
       x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
 
     overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
+    self._draw_alerts_backdrop(overlay_rect, fade)
     self._alerts_layout.render(overlay_rect)
 
     if self._alerts_anim_active and t >= 1.0:
