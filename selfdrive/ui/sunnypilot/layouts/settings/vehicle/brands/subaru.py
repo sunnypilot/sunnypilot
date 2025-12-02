@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 from opendbc.car.subaru.values import CAR, SubaruFlags
@@ -11,7 +12,6 @@ from opendbc.car.subaru.values import CAR, SubaruFlags
 
 class SubaruSettings:
   def __init__(self):
-    self.ui_state = None
     self.offroad = False
     self.is_subaru = False
     self.has_stop_and_go = False
@@ -31,20 +31,21 @@ class SubaruSettings:
       return tr("This feature is currently not available on this platform.")
     elif not self.offroad:
       return tr("Enable Always Offroad in Device panel, or turn vehicle off to toggle.")
+    return ""
 
   def update_settings(self):
     self.is_subaru = False
     self.has_stop_and_go = False
 
-    bundle = self.ui_state.params.get("CarPlatformBundle")
+    bundle = ui_state.params.get("CarPlatformBundle")
     if bundle:
       platform = bundle.get("platform")
       config = CAR[platform].config
       self.is_subaru = True
       self.has_stop_and_go = not (config.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
-    elif self.ui_state.CP:
+    elif ui_state.CP:
       self.is_subaru = True
-      self.has_stop_and_go = not (self.ui_state.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
+      self.has_stop_and_go = not (ui_state.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
 
     disabled_msg = self.stop_and_go_disabled_msg()
     descriptions = [
@@ -57,7 +58,6 @@ class SubaruSettings:
       toggle.action_item.set_enabled(self.has_stop_and_go and self.offroad)
       toggle.set_description(f"<b>{disabled_msg}</b><br><br>{desc}" if disabled_msg else desc)
 
-  def update_state(self, ui_state):
-    self.ui_state = ui_state
+  def update_state(self):
     self.offroad = ui_state.is_offroad()
     self.update_settings()

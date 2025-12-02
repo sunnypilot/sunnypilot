@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
 from opendbc.car.hyundai.values import CAR, CANFD_UNSUPPORTED_LONGITUDINAL_CAR, UNSUPPORTED_LONGITUDINAL_CAR
@@ -11,7 +12,6 @@ from opendbc.car.hyundai.values import CAR, CANFD_UNSUPPORTED_LONGITUDINAL_CAR, 
 
 class HyundaiSettings:
   def __init__(self):
-    self.ui_state = None
     self.offroad = False
     self.alpha_long_available = False
 
@@ -22,19 +22,19 @@ class HyundaiSettings:
     self.items = [self.longitudinal_tuning_item]
 
   def _on_tuning_selected(self, index):
-    self.ui_state.params.put("HyundaiLongitudinalTuning", index)
+    ui_state.params.put("HyundaiLongitudinalTuning", index)
 
   def update_settings(self):
     self.alpha_long_available = False
-    bundle = self.ui_state.params.get("CarPlatformBundle")
+    bundle = ui_state.params.get("CarPlatformBundle")
     if bundle:
       platform = bundle.get("platform")
       self.alpha_long_available = CAR[platform] not in (UNSUPPORTED_LONGITUDINAL_CAR | CANFD_UNSUPPORTED_LONGITUDINAL_CAR)
-    elif self.ui_state.CP:
-      self.alpha_long_available = self.ui_state.CP.alphaLongitudinalAvailable
+    elif ui_state.CP:
+      self.alpha_long_available = ui_state.CP.alphaLongitudinalAvailable
 
-    tuning_param = int(self.ui_state.params.get("HyundaiLongitudinalTuning") or "0")
-    oplong_enabled = self.ui_state.has_longitudinal_control
+    tuning_param = int(ui_state.params.get("HyundaiLongitudinalTuning") or "0")
+    oplong_enabled = ui_state.has_longitudinal_control
 
     descriptions = [
       tr("Your vehicle will use the default longitudinal tuning."),
@@ -56,7 +56,6 @@ class HyundaiSettings:
     self.longitudinal_tuning_item.action_item.set_selected_button(tuning_param)
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
 
-  def update_state(self, ui_state):
-    self.ui_state = ui_state
+  def update_state(self):
     self.offroad = ui_state.is_offroad()
     self.update_settings()
