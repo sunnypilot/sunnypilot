@@ -12,10 +12,10 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle.brands.tesla imp
 class BrandSettingsFactory:
   @staticmethod
   def create_brand_settings(brand):
-    if brand in "hyundai":
+    if brand == "hyundai":
       return HyundaiSettings()
-    elif brand in "subaru":
+    elif brand == "subaru":
       return SubaruSettings()
-    elif brand in "tesla":
+    elif brand == "tesla":
       return TeslaSettings()
     return None
