@@ -15,10 +15,11 @@ MADS_STEERING_MODE_OPTIONS = [
 ]
 
 MADS_MAIN_CRUISE_BASE_DESC = tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.")
-engage = tr("Engage lateral and longitudinal control with cruise control engagement.")
-note = tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.")
-MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = f"{engage}<br><h4>{note}</h4>"
+MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = "{engage}<br><h4>{note}</h4>".format(engage =
+  tr("Engage lateral and longitudinal control with cruise control engagement."), note =
+  tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."))
 
+STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibility.")
 DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.")
 DEFAULT_TO_ON = tr("This feature defaults to ON, and does not allow selection due to vehicle limitations.")
 STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to vehicle limitations.")
@@ -29,8 +30,8 @@ class MadsSettingsLayout(Widget):
     super().__init__()
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(back_btn_callback)
-    items = self._initialize_items()
-    self._scroller = Scroller(items, line_separator=True, spacing=0)
+    self._initialize_items()
+    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
     self._main_cruise_toggle = toggle_item_sp(
@@ -53,12 +54,11 @@ class MadsSettingsLayout(Widget):
       callback=self._update_steering_mode_description
     )
 
-    items = [
+    self.items = [
       self._main_cruise_toggle,
       self._unified_engagement_toggle,
       self._steering_mode,
     ]
-    return items
 
   def _update_state(self):
     super()._update_state()
@@ -76,11 +76,13 @@ class MadsSettingsLayout(Widget):
     self._scroller.show_event()
 
   def _mads_limited_settings(self) -> bool:
-    brand = ui_state.CP.brand if ui_state.CP else None
-    if not brand:
+    brand = ""
+    if ui_state.is_offroad():
       bundle = ui_state.params.get("CarPlatformBundle")
       if bundle:
         brand = bundle.get("brand", "")
+    if not brand:
+      brand = ui_state.CP.brand if ui_state.CP else ""
 
     if brand == "rivian":
       return True
@@ -88,43 +90,39 @@ class MadsSettingsLayout(Widget):
       return not (ui_state.CP_SP and ui_state.CP_SP.flags & 1)  # 1 == TeslaFlagsSP.HAS_VEHICLE_BUS
     return False
 
-  def _get_steering_mode_description(self, button_index: int):
+  def _update_steering_mode_description(self, button_index: int):
     base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.")
     result = base_desc + "<br><br>"
     for opt in MADS_STEERING_MODE_OPTIONS:
       desc = "<b>" + opt[1] + "</b>" if button_index == MADS_STEERING_MODE_OPTIONS.index(opt) else opt[1]
       result += desc + "<br>"
-    return result
+    self._steering_mode.set_description(result)
 
-  def _update_steering_mode_description(self, button_index: int):
-    self._steering_mode.set_description(self._get_steering_mode_description(button_index))
-
-  def _mads_description_builder(self, custom_desc: str, base_desc: str) -> str:
-    return f"<b>{custom_desc}</b><br><br>{base_desc}"
-
-  def _set_toggle_state(self, toggle, enabled: bool, desc: str, show_desc: bool = False):
-    toggle.action_item.set_enabled = enabled
-    toggle.set_description(desc)
-    if show_desc:
-      toggle.show_description(True)
 
   def _update_toggles(self):
-    offroad = ui_state.is_offroad()
-    steering_mode = int(ui_state.params.get("MadsSteeringMode") or 0)
-
+    self._update_steering_mode_description(self._steering_mode.action_item.get_selected_button())
     if self._mads_limited_settings():
       ui_state.params.remove("MadsMainCruiseAllowed")
       ui_state.params.put_bool("MadsUnifiedEngagementMode", True)
-      ui_state.params.put("MadsSteeringMode", "2")
-      steering_mode = 2
-      if hasattr(self._steering_mode.action_item, 'selected_button'):
-        self._steering_mode.action_item.selected_button = steering_mode
+      ui_state.params.put("MadsSteeringMode", 2)
 
-      self._set_toggle_state(self._main_cruise_toggle, False, self._mads_description_builder(DEFAULT_TO_OFF, MADS_MAIN_CRUISE_BASE_DESC), True)
-      self._set_toggle_state(self._unified_engagement_toggle, False, self._mads_description_builder(DEFAULT_TO_ON, MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC), True)
-      self._set_toggle_state(self._steering_mode, False, self._mads_description_builder(STATUS_DISENGAGE_ONLY, self._get_steering_mode_description(steering_mode)), True)
+      self._main_cruise_toggle.action_item.set_enabled(False)
+      self._main_cruise_toggle.action_item.set_state(False)
+      self._main_cruise_toggle.set_description("<b>" + DEFAULT_TO_OFF + "</b><br>" + MADS_MAIN_CRUISE_BASE_DESC)
 
+      self._unified_engagement_toggle.action_item.set_enabled(False)
+      self._unified_engagement_toggle.action_item.set_state(True)
+      self._unified_engagement_toggle.set_description("<b>" + DEFAULT_TO_ON + "</b><br>" + MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
+
+      self._steering_mode.action_item.set_enabled(False)
+      self._steering_mode.set_description(STATUS_DISENGAGE_ONLY)
+      self._steering_mode.action_item.set_selected_button(2)
     else:
-      self._set_toggle_state(self._main_cruise_toggle, offroad, MADS_MAIN_CRUISE_BASE_DESC)
-      self._set_toggle_state(self._unified_engagement_toggle, offroad, MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
-      self._set_toggle_state(self._steering_mode, offroad, self._get_steering_mode_description(steering_mode), True)
+      self._main_cruise_toggle.action_item.set_enabled(True)
+      self._main_cruise_toggle.set_description("")
+
+      self._unified_engagement_toggle.action_item.set_enabled(True)
+      self._unified_engagement_toggle.set_description("")
+
+      self._steering_mode.action_item.set_enabled(True)
+

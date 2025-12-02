@@ -15,6 +15,7 @@ class UIStateSP:
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP"
     ]
+    self.CP_SP = None
 
   def update(self) -> None:
     pass

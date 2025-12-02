@@ -107,6 +107,7 @@ class SteeringLayout(Widget):
     self._mads_settings_button.set_visible(self._mads_toggle.action_item.get_state())
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
     self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())
+    self._mads_settings_layout._update_state()
 
 
   def _render(self, rect):
