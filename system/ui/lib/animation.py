@@ -40,6 +40,16 @@ def advance_progress(progress: float, last_time: float | None, duration: float, 
   return clamp01(progress + delta), now
 
 
+def smooth_towards(current: float, target: float, speed: float, dt: float) -> float:
+  """
+  Smoothly approach `target` from `current` using a simple exponential decay.
+  `speed` is a multiplier controlling how quickly it converges; `dt` is delta time in seconds.
+  """
+  if dt <= 0 or speed <= 0:
+    return target if dt > 0 else current
+  return current + (target - current) * clamp01(speed * dt)
+
+
 class LinearAnimation:
   """
   Small helper to manage simple linear progress animations.
