@@ -14,7 +14,6 @@ from opendbc.car.subaru.values import CAR, SubaruFlags
 class SubaruSettings(BrandSettings):
   def __init__(self):
     super().__init__()
-    self.is_subaru = False
     self.has_stop_and_go = False
 
     self.stop_and_go_toggle = toggle_item_sp(tr("Stop and Go (Beta)"), "", param="SubaruStopAndGo", callback=self._on_toggle_changed)
@@ -28,24 +27,21 @@ class SubaruSettings(BrandSettings):
     self.update_settings()
 
   def stop_and_go_disabled_msg(self):
-    if self.is_subaru and not self.has_stop_and_go:
+    if not self.has_stop_and_go:
       return tr("This feature is currently not available on this platform.")
     elif not ui_state.is_offroad():
       return tr("Enable Always Offroad in Device panel, or turn vehicle off to toggle.")
     return ""
 
   def update_settings(self):
-    self.is_subaru = False
     self.has_stop_and_go = False
 
     bundle = ui_state.params.get("CarPlatformBundle")
     if bundle:
       platform = bundle.get("platform")
       config = CAR[platform].config
-      self.is_subaru = True
       self.has_stop_and_go = not (config.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
     elif ui_state.CP:
-      self.is_subaru = True
       self.has_stop_and_go = not (ui_state.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
 
     disabled_msg = self.stop_and_go_disabled_msg()
