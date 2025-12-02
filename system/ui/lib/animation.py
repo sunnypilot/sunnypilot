@@ -1,4 +1,5 @@
 import time
+import pyray as rl
 
 
 def clamp01(value: float) -> float:
@@ -48,6 +49,25 @@ def smooth_towards(current: float, target: float, speed: float, dt: float) -> fl
   if dt <= 0 or speed <= 0:
     return target if dt > 0 else current
   return current + (target - current) * clamp01(speed * dt)
+
+
+def scale_from_center(rect, scale: float, draw_fn):
+  """
+  Utility to temporarily scale rendering around the center of `rect`.
+  `draw_fn` will be called while the transform is active.
+  """
+  if scale == 1.0:
+    draw_fn()
+    return
+
+  cx = rect.x + rect.width / 2
+  cy = rect.y + rect.height / 2
+  rl.rl_push_matrix()
+  rl.rl_translatef(cx, cy, 0)
+  rl.rl_scalef(scale, scale, 1)
+  rl.rl_translatef(-cx, -cy, 0)
+  draw_fn()
+  rl.rl_pop_matrix()
 
 
 class LinearAnimation:

@@ -5,6 +5,7 @@ import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.lib.animation import smooth_towards, scale_from_center
 from openpilot.system.ui.widgets.label import Label, UnifiedLabel
 from openpilot.common.filter_simple import FirstOrderFilter
 
@@ -77,6 +78,9 @@ BUTTON_DISABLED_BACKGROUND_COLORS = {
   ButtonStyle.TRANSPARENT_WHITE_TEXT: rl.BLANK,
 }
 
+PRESS_TARGET = 0.96
+PRESS_SPEED = 12.0
+
 
 class Button(Widget):
   def __init__(self,
@@ -103,6 +107,7 @@ class Button(Widget):
 
     self._click_callback = click_callback
     self._multi_touch = multi_touch
+    self._press_scale = 1.0
 
   def set_text(self, text):
     self._label.set_text(text)
@@ -124,13 +129,19 @@ class Button(Widget):
       self._label.set_text_color(BUTTON_DISABLED_TEXT_COLORS.get(self._button_style, rl.Color(228, 228, 228, 51)))
 
   def _render(self, _):
-    roundness = self._border_radius / (min(self._rect.width, self._rect.height) / 2)
-    if self._button_style == ButtonStyle.TRANSPARENT_WHITE_BORDER:
-      rl.draw_rectangle_rounded(self._rect, roundness, 10, rl.BLACK)
-      rl.draw_rectangle_rounded_lines_ex(self._rect, roundness, 10, 2, rl.WHITE)
-    else:
-      rl.draw_rectangle_rounded(self._rect, roundness, 10, self._background_color)
-    self._label.render(self._rect)
+    target_scale = PRESS_TARGET if self.is_pressed else 1.0
+    self._press_scale = smooth_towards(self._press_scale, target_scale, PRESS_SPEED, rl.get_frame_time())
+
+    def _draw():
+      roundness = self._border_radius / (min(self._rect.width, self._rect.height) / 2)
+      if self._button_style == ButtonStyle.TRANSPARENT_WHITE_BORDER:
+        rl.draw_rectangle_rounded(self._rect, roundness, 10, rl.BLACK)
+        rl.draw_rectangle_rounded_lines_ex(self._rect, roundness, 10, 2, rl.WHITE)
+      else:
+        rl.draw_rectangle_rounded(self._rect, roundness, 10, self._background_color)
+      self._label.render(self._rect)
+
+    scale_from_center(self._rect, self._press_scale, _draw)
 
 
 class ButtonRadio(Button):

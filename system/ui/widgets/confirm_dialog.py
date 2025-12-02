@@ -1,5 +1,6 @@
 import pyray as rl
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.animation import ease_out_cubic, LinearAnimation, scale_from_center
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
@@ -29,6 +30,8 @@ class ConfirmDialog(Widget):
     self._dialog_result = DialogResult.NO_ACTION
     self._cancel_text = cancel_text
     self._scroller = Scroller([self._html_renderer], line_separator=False, spacing=0)
+    self._anim = LinearAnimation(0.18)
+    self._anim.start('in')
 
   def set_text(self, text):
     if not self._rich:
@@ -46,6 +49,8 @@ class ConfirmDialog(Widget):
     self._dialog_result = DialogResult.CONFIRM
 
   def _render(self, rect: rl.Rectangle):
+    progress = ease_out_cubic(self._anim.step())
+
     dialog_x = OUTER_MARGIN if not self._rich else RICH_OUTER_MARGIN
     dialog_y = OUTER_MARGIN if not self._rich else RICH_OUTER_MARGIN
     dialog_width = gui_app.width - 2 * dialog_x
@@ -60,30 +65,33 @@ class ConfirmDialog(Widget):
     cancel_button = rl.Rectangle(cancel_button_x, button_y, button_width, BUTTON_HEIGHT)
     confirm_button = rl.Rectangle(confirm_button_x, button_y, button_width, BUTTON_HEIGHT)
 
-    rl.draw_rectangle_rec(dialog_rect, BACKGROUND_COLOR)
+    def _draw_dialog():
+      rl.draw_rectangle_rec(dialog_rect, BACKGROUND_COLOR)
 
-    text_rect = rl.Rectangle(dialog_rect.x + MARGIN, dialog_rect.y + TEXT_PADDING,
-                             dialog_rect.width - 2 * MARGIN, dialog_rect.height - BUTTON_HEIGHT - MARGIN - TEXT_PADDING * 2)
-    if not self._rich:
-      self._label.render(text_rect)
-    else:
-      html_rect = rl.Rectangle(text_rect.x, text_rect.y, text_rect.width,
-                               self._html_renderer.get_total_height(int(text_rect.width)))
-      self._html_renderer.set_rect(html_rect)
-      self._scroller.render(text_rect)
+      text_rect = rl.Rectangle(dialog_rect.x + MARGIN, dialog_rect.y + TEXT_PADDING,
+                               dialog_rect.width - 2 * MARGIN, dialog_rect.height - BUTTON_HEIGHT - MARGIN - TEXT_PADDING * 2)
+      if not self._rich:
+        self._label.render(text_rect)
+      else:
+        html_rect = rl.Rectangle(text_rect.x, text_rect.y, text_rect.width,
+                                 self._html_renderer.get_total_height(int(text_rect.width)))
+        self._html_renderer.set_rect(html_rect)
+        self._scroller.render(text_rect)
 
-    if rl.is_key_pressed(rl.KeyboardKey.KEY_ENTER):
-      self._dialog_result = DialogResult.CONFIRM
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_ESCAPE):
-      self._dialog_result = DialogResult.CANCEL
+      if rl.is_key_pressed(rl.KeyboardKey.KEY_ENTER):
+        self._dialog_result = DialogResult.CONFIRM
+      elif rl.is_key_pressed(rl.KeyboardKey.KEY_ESCAPE):
+        self._dialog_result = DialogResult.CANCEL
 
-    if self._cancel_text:
-      self._confirm_button.render(confirm_button)
-      self._cancel_button.render(cancel_button)
-    else:
-      full_button_width = dialog_rect.width - 2 * MARGIN
-      full_confirm_button = rl.Rectangle(dialog_rect.x + MARGIN, button_y, full_button_width, BUTTON_HEIGHT)
-      self._confirm_button.render(full_confirm_button)
+      if self._cancel_text:
+        self._confirm_button.render(confirm_button)
+        self._cancel_button.render(cancel_button)
+      else:
+        full_button_width = dialog_rect.width - 2 * MARGIN
+        full_confirm_button = rl.Rectangle(dialog_rect.x + MARGIN, button_y, full_button_width, BUTTON_HEIGHT)
+        self._confirm_button.render(full_confirm_button)
+
+    scale_from_center(dialog_rect, 0.94 + 0.06 * progress, _draw_dialog)
 
     return self._dialog_result
 
