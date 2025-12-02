@@ -4,14 +4,16 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle.brands.base import BrandSettings
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
 from opendbc.car.hyundai.values import CAR, CANFD_UNSUPPORTED_LONGITUDINAL_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 
 
-class HyundaiSettings:
+class HyundaiSettings(BrandSettings):
   def __init__(self):
+    super().__init__()
     self.alpha_long_available = False
 
     tuning_texts = [tr("Off"), tr("Dynamic"), tr("Predictive")]
@@ -20,7 +22,8 @@ class HyundaiSettings:
                                                             param="HyundaiLongitudinalTuning", inline=False)
     self.items = [self.longitudinal_tuning_item]
 
-  def _on_tuning_selected(self, index):
+  @staticmethod
+  def _on_tuning_selected(index):
     ui_state.params.put("HyundaiLongitudinalTuning", index)
 
   def update_settings(self):
@@ -54,6 +57,3 @@ class HyundaiSettings:
     self.longitudinal_tuning_item.show_description(True)
     self.longitudinal_tuning_item.action_item.set_selected_button(tuning_param)
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
-
-  def update_state(self):
-    self.update_settings()

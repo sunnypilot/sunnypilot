@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle.brands.base import BrandSettings
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
@@ -13,8 +14,9 @@ OEM_STEERING_MIN_KMH = 48
 KM_TO_MILE = 0.621371
 
 
-class TeslaSettings:
+class TeslaSettings(BrandSettings):
   def __init__(self):
+    super().__init__()
     self.coop_steering_toggle = toggle_item_sp(tr("Cooperative Steering (Beta)"), "", param="TeslaCoopSteering")
     self.items = [self.coop_steering_toggle]
 
@@ -35,6 +37,3 @@ class TeslaSettings:
 
     self.coop_steering_toggle.set_description(description)
     self.coop_steering_toggle.action_item.set_enabled(ui_state.is_offroad())
-
-  def update_state(self):
-    self.update_settings()
