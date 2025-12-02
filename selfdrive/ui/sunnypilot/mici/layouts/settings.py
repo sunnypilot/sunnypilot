@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 from enum import IntEnum
 
-import pyray as rl
 from openpilot.selfdrive.ui.mici.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
