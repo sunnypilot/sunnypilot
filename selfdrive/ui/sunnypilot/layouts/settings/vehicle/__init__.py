@@ -47,9 +47,10 @@ class VehicleLayout(Widget):
       self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _update_state(self):
+    self._platform_selector.refresh()
+    self._update_brand_settings()
     if self._brand_settings:
       self._brand_settings.update_settings()
-    self._update_brand_settings()
 
   def _render(self, rect):
     self._scroller.render(rect)
