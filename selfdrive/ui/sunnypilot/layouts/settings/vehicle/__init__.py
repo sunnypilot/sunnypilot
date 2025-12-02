@@ -35,6 +35,7 @@ class VehicleLayout(Widget):
 
   def _update_state(self):
     self._update_brand_settings()
+    self._platform_selector.refresh()
 
   def _render(self, rect):
     self._scroller.render(rect)
