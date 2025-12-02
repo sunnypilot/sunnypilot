@@ -3,7 +3,7 @@ import pyray as rl
 from enum import IntEnum
 import cereal.messaging as messaging
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.system.ui.lib.animation import clamp01, ease_out_cubic
+from openpilot.system.ui.lib.animation import ease_out_cubic, LinearAnimation
 from openpilot.selfdrive.ui.layouts.home import HomeLayout
 from openpilot.selfdrive.ui.layouts.settings.settings import SettingsLayout, PanelType
 from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
@@ -32,12 +32,9 @@ class MainLayout(Widget):
     self._current_mode = MainState.HOME
     self._prev_onroad = False
     # Settings transition animation state (matches keyboard animation behavior)
-    self._settings_anim_active = False
     self._settings_anim_duration = 0.25
-    self._settings_anim_direction: str | None = None  # 'in' or 'out'
     self._settings_prev_layout: MainState | None = None
-    self._settings_anim_progress = 0.0
-    self._settings_anim_last_time: float | None = None
+    self._settings_anim = LinearAnimation(self._settings_anim_duration)
 
     # Initialize layouts
     self._layouts = {MainState.HOME: HomeLayout(), MainState.SETTINGS: SettingsLayout(), MainState.ONROAD: AugmentedRoadView()}
@@ -84,16 +81,14 @@ class MainLayout(Widget):
       else:
         self._current_mode = MainState.ONROAD
       # Ensure settings state cleared
-      self._settings_anim_active = False
-      self._settings_anim_direction = None
+      self._settings_anim.active = False
       self._settings_prev_layout = None
       return
 
     # Offroad: mirror keyboard animation behavior
-    if self._settings_anim_active:
-      if self._settings_anim_direction == 'in':
-        self._settings_anim_direction = 'out'
-        self._settings_anim_last_time = None
+    if self._settings_anim.active:
+      if self._settings_anim.direction > 0:
+        self._settings_anim.start('out')
       return
 
     if self._current_mode == MainState.SETTINGS:
@@ -135,34 +130,21 @@ class MainLayout(Widget):
     return -1
 
   def _start_settings_animation(self, direction: str):
-    self._settings_anim_active = True
-    self._settings_anim_direction = direction
-    self._settings_anim_last_time = None
-    self._settings_anim_progress = 0.0 if direction == 'in' else 1.0
+    self._settings_anim.start(direction)
 
   def _update_settings_animation(self):
-    if not self._settings_anim_active or self._settings_anim_direction is None:
+    if not self._settings_anim.active:
       return
 
-    now = time.monotonic()
-    if self._settings_anim_last_time is None:
-      self._settings_anim_last_time = now
-      return
+    self._settings_anim.step()
 
-    direction_factor = 1.0 if self._settings_anim_direction == 'in' else -1.0
-    delta = direction_factor * (now - self._settings_anim_last_time) / self._settings_anim_duration
-    self._settings_anim_progress = clamp01(self._settings_anim_progress + delta)
-    self._settings_anim_last_time = now
-
-    if self._settings_anim_direction == 'in' and self._settings_anim_progress >= 1.0:
-      self._finish_settings_animation_in()
-    elif self._settings_anim_direction == 'out' and self._settings_anim_progress <= 0.0:
-      self._finish_settings_animation_out()
+    if not self._settings_anim.active:
+      if self._settings_anim.direction > 0:
+        self._finish_settings_animation_in()
+      else:
+        self._finish_settings_animation_out()
 
   def _finish_settings_animation_in(self):
-    self._settings_anim_active = False
-    self._settings_anim_direction = None
-    self._settings_anim_last_time = None
     if self._settings_prev_layout not in (None, MainState.ONROAD):
       try:
         self._layouts[self._settings_prev_layout].hide_event()
@@ -173,12 +155,8 @@ class MainLayout(Widget):
     else:
       self._current_mode = MainState.ONROAD
     self._settings_prev_layout = None
-    self._settings_anim_progress = 1.0
 
   def _finish_settings_animation_out(self):
-    self._settings_anim_active = False
-    self._settings_anim_direction = None
-    self._settings_anim_last_time = None
     try:
       self._layouts[MainState.SETTINGS].hide_event()
     except Exception:
@@ -188,7 +166,6 @@ class MainLayout(Widget):
     else:
       self._current_mode = MainState.HOME
     self._settings_prev_layout = None
-    self._settings_anim_progress = 0.0
 
   def open_settings(self, panel_type: PanelType):
     # Prepare settings layout
@@ -198,8 +175,7 @@ class MainLayout(Widget):
     if ui_state.started:
       # Keep ONROAD active underneath the settings overlay
       self._settings_prev_layout = MainState.ONROAD
-      self._settings_anim_active = False
-      self._settings_anim_direction = None
+      self._settings_anim.active = False
       # ensure settings layout can initialize
       self._layouts[MainState.SETTINGS].show_event()
       # Render settings as a modal so it's drawn while onroad stays active
@@ -207,9 +183,8 @@ class MainLayout(Widget):
       return
 
     # Offroad: start slide animation (or reverse if exiting)
-    if self._settings_anim_active and self._settings_anim_direction == 'out':
-      self._settings_anim_direction = 'in'
-      self._settings_anim_last_time = None
+    if self._settings_anim.active and self._settings_anim.direction < 0:
+      self._settings_anim.start('in')
       return
 
     self._settings_prev_layout = self._current_mode
@@ -218,13 +193,12 @@ class MainLayout(Widget):
 
   def _on_settings_clicked(self):
     # Toggle settings: open if not open, close if already open (or reverse animation)
-    if self._settings_anim_active:
-      if self._settings_anim_direction == 'in':
-        self._settings_anim_direction = 'out'
+    if self._settings_anim.active:
+      if self._settings_anim.direction > 0:
+        self._settings_anim.start('out')
       else:
         self._settings_prev_layout = self._current_mode
-        self._settings_anim_direction = 'in'
-      self._settings_anim_last_time = None
+        self._settings_anim.start('in')
       return
 
     if self._current_mode == MainState.SETTINGS:
@@ -245,13 +219,13 @@ class MainLayout(Widget):
   def _render_main_content(self):
     content_rect = self._rect
     # If a settings animation is active, render previous layout underneath and animate settings sliding
-    if self._settings_anim_active and self._settings_anim_direction is not None:
+    if self._settings_anim.active:
       self._update_settings_animation()
-      if not self._settings_anim_active:
+      if not self._settings_anim.active:
         self._layouts[self._current_mode].render(content_rect)
         return
 
-      eased = ease_out_cubic(self._settings_anim_progress)
+      eased = ease_out_cubic(self._settings_anim.progress)
       slide_offset = (1.0 - eased) * SETTINGS_ANIMATION_OFFSET
 
       base_layout = self._settings_prev_layout if self._settings_prev_layout is not None else self._current_mode

@@ -38,3 +38,36 @@ def advance_progress(progress: float, last_time: float | None, duration: float, 
 
   delta = direction * (now - last_time) / duration
   return clamp01(progress + delta), now
+
+
+class LinearAnimation:
+  """
+  Small helper to manage simple linear progress animations.
+  Call start('in'|'out') to begin, then step() each frame to advance.
+  """
+  def __init__(self, duration: float, initial_progress: float = 0.0):
+    self.duration = duration
+    self.progress = clamp01(initial_progress)
+    self.last_time: float | None = None
+    self.direction = 1.0
+    self.active = False
+
+  def start(self, direction: str):
+    self.direction = 1.0 if direction == 'in' else -1.0
+    self.active = True
+    self.last_time = None
+    self.progress = 0.0 if self.direction > 0 else 1.0
+
+  def step(self, now: float | None = None) -> float:
+    """Advance animation; returns current progress."""
+    if not self.active:
+      return self.progress
+
+    self.progress, self.last_time = advance_progress(self.progress, self.last_time, self.duration, self.direction, now)
+
+    if (self.direction > 0 and self.progress >= 1.0) or (self.direction < 0 and self.progress <= 0.0):
+      self.active = False
+    return self.progress
+
+  def direction_str(self) -> str:
+    return 'in' if self.direction > 0 else 'out'

@@ -6,7 +6,7 @@ from cereal import log
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.layouts.settings.settings import PanelType
 from openpilot.selfdrive.ui.layouts.offroad_alerts import OffroadAlertsLayout
-from openpilot.system.ui.lib.animation import clamp01, ease_out_cubic
+from openpilot.system.ui.lib.animation import ease_out_cubic, LinearAnimation
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
@@ -26,7 +26,7 @@ MODE_Y_OFFSET = 10
 MODE_SCALE_FACTOR = 0.9
 ALERT_ANIM_DURATION = 0.25
 SWIPE_RIGHT_EDGE = 80
-ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 220)
+ALERT_OVERLAY_BASE = rl.Color(0, 0, 0, 240)
 NetworkType = log.DeviceState.NetworkType
 
 
@@ -53,9 +53,7 @@ class HomeLayout(Widget):
     self._swipe_start: MousePos | None = None
     self._swipe_active = False
     self._swipe_side: str | None = None  # 'left' or 'right'
-    self._alerts_anim_active = False
-    self._alerts_anim_direction: str | None = None  # 'in' or 'out'
-    self._alerts_anim_start = 0.0
+    self._alerts_anim = LinearAnimation(ALERT_ANIM_DURATION)
 
     self._net_type = NetworkType.none
     self._net_strength = 0
@@ -118,7 +116,7 @@ class HomeLayout(Widget):
 
     if self.current_state == HomeLayoutState.ALERTS:
       self._render_alert_overlay()
-    elif self._alerts_anim_active:
+    elif self._alerts_anim.active:
       self._render_alert_overlay()
 
   def _update_state(self):
@@ -160,7 +158,7 @@ class HomeLayout(Widget):
       return
 
     # Block clicks to underlying UI while alerts overlay is showing/animating
-    if self.current_state == HomeLayoutState.ALERTS or self._alerts_anim_active:
+    if self.current_state == HomeLayoutState.ALERTS or self._alerts_anim.active:
       return
 
   def _content_panel_rect(self) -> rl.Rectangle:
@@ -298,9 +296,7 @@ class HomeLayout(Widget):
 
   # Alerts overlay rendering/animation
   def _start_alert_anim(self, direction: str):
-    self._alerts_anim_active = True
-    self._alerts_anim_direction = direction
-    self._alerts_anim_start = rl.get_time()
+    self._alerts_anim.start(direction)
     if direction == 'in':
       self._alerts_layout.show_event()
     else:
@@ -317,33 +313,23 @@ class HomeLayout(Widget):
 
   def _render_alert_overlay(self):
     full_rect = self._content_panel_rect()
-    now = rl.get_time()
-    t = 1.0
-    fade = 1.0 if self.current_state == HomeLayoutState.ALERTS else 0.0
-    if self._alerts_anim_active and self._alerts_anim_direction:
-      elapsed = now - self._alerts_anim_start
-      t = clamp01(elapsed / ALERT_ANIM_DURATION)
-      t = ease_out_cubic(t)
-      if self._alerts_anim_direction == 'in':
-        fade = t
-      else:
-        fade = 1.0 - t
-    # Slide from left
-    if self._alerts_anim_direction == 'in':
-      x = full_rect.x - full_rect.width * (1 - t)
-    elif self._alerts_anim_direction == 'out':
-      x = full_rect.x - full_rect.width * t
-    else:
-      x = full_rect.x if self.current_state == HomeLayoutState.ALERTS else full_rect.x - full_rect.width
+    progress = 1.0 if self.current_state == HomeLayoutState.ALERTS else 0.0
+    direction = 1.0 if self.current_state == HomeLayoutState.ALERTS else -1.0
+
+    if self._alerts_anim.active:
+      progress = self._alerts_anim.step()
+      direction = self._alerts_anim.direction
+
+    eased = ease_out_cubic(progress)
+    fade = eased
+    x = full_rect.x - full_rect.width * (1 - eased)
 
     overlay_rect = rl.Rectangle(x, full_rect.y, full_rect.width, full_rect.height)
     self._draw_alerts_backdrop(overlay_rect, fade)
     self._alerts_layout.render(overlay_rect)
 
-    if self._alerts_anim_active and t >= 1.0:
-      if self._alerts_anim_direction == 'in':
+    if not self._alerts_anim.active:
+      if direction > 0 and progress >= 1.0:
         self._set_state(HomeLayoutState.ALERTS)
-      else:
+      elif direction < 0 and progress <= 0.0:
         self._set_state(HomeLayoutState.HOME)
-      self._alerts_anim_active = False
-      self._alerts_anim_direction = None

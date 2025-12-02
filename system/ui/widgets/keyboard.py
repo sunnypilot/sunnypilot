@@ -6,7 +6,7 @@ import numpy as np
 import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib.animation import clamp01, ease_out_cubic
+from openpilot.system.ui.lib.animation import ease_out_cubic, LinearAnimation
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
@@ -190,10 +190,10 @@ class Keyboard(Widget):
     self._backspace_is_down = False
     self._backspace_down_time = 0.0
     self._backspace_last_repeat = 0.0
-    self._anim_progress = 0.0
+    self._anim = LinearAnimation(ANIMATION_DURATION, initial_progress=0.0)
+    self._anim.start('in')
     self._dismissing = False
     self._pending_return_status: int | None = None
-    self._last_anim_time: float | None = None
 
     # ========== MICI Keyboard (Tuned) ==========
     self._mici_keyboard = ScaledMiciKeyboard(
@@ -245,10 +245,9 @@ class Keyboard(Widget):
     self._render_return_status = -1
     self._backspace_is_down = False
     self.clear()
-    self._anim_progress = 0.0
+    self._anim.start('in')
     self._dismissing = False
     self._pending_return_status = None
-    self._last_anim_time = None
 
 
   # ===== Button Callbacks =====
@@ -275,6 +274,7 @@ class Keyboard(Widget):
       return
     self._pending_return_status = status
     self._dismissing = True
+    self._anim.start('out')
 
 
 
@@ -292,7 +292,7 @@ class Keyboard(Widget):
       rect.height - 2 * CONTENT_MARGIN,
     )
 
-    eased = ease_out_cubic(self._anim_progress)
+    eased = ease_out_cubic(self._anim.progress)
     slide_offset = (1.0 - eased) * ANIMATION_OFFSET
     rect = rl.Rectangle(rect.x, rect.y + slide_offset, rect.width, rect.height)
 
@@ -415,15 +415,7 @@ class Keyboard(Widget):
       self._backspace_last_repeat = now
 
   def _update_animation(self):
-    now = time.monotonic()
-    if self._last_anim_time is None:
-      self._last_anim_time = now
-      return
+    self._anim.step()
 
-    direction = -1.0 if self._dismissing else 1.0
-    delta = direction * (now - self._last_anim_time) / ANIMATION_DURATION
-    self._anim_progress = clamp01(self._anim_progress + delta)
-    self._last_anim_time = now
-
-    if self._dismissing and self._anim_progress <= 0.0 and self._pending_return_status is not None:
+    if self._dismissing and not self._anim.active and self._pending_return_status is not None:
       self._render_return_status = self._pending_return_status
