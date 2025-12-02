@@ -165,13 +165,13 @@ class OffroadAlertsLayout(Widget):
     self.cards: list[GlassAlertCard] = []
     self._last_refresh = 0.0
 
-    self._empty_label = UnifiedLabel(
-      tr("no alerts"),
+    self.title_label = UnifiedLabel(
+      tr("Alerts"),
       86,
       FontWeight.DISPLAY,
       rl.WHITE,
-      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
     )
 
     self._build_initial()
@@ -250,8 +250,12 @@ class OffroadAlertsLayout(Widget):
 
   # -------- rendering --------
   def _render(self, rect: rl.Rectangle):
+    # title
+    title_rect = rl.Rectangle(rect.x + 64, rect.y + 32, rect.width - 128, 120)
+    self.title_label.render(title_rect)
+
     if self._active_count() == 0:
-      self._empty_label.render(rect)
+      # optional: render "no alerts" label here if you want
       return
 
     # layout cards vertically and render them directly (no scroller, no movement on tap)
