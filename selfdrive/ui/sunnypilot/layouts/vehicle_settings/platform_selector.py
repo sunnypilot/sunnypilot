@@ -107,13 +107,16 @@ class PlatformSelector(Button):
   def _show_platform_dialog(self):
     platforms = sorted(self._platforms.keys())
     makes = sorted({self._platforms[p].get('make') for p in platforms})
-    folders = [TreeFolder(make, [TreeNode(p, {'display_name': p}) for p in platforms
-                                 if self._platforms[p].get('make') == make]) for make in makes]
+    folders = [TreeFolder(make, [TreeNode(p, {
+      'display_name': f"{year} {self._platforms[p].get('model', p)}",
+      'search_tags': f"{p} {self._platforms[p].get('make')} {year}"
+    }) for p in platforms if self._platforms[p].get('make') == make for year in self._platforms[p].get('year', [])]) for make in makes]
     dialog = TreeOptionDialog(
       tr("Select a vehicle"),
       folders,
       search_title=tr("Search your vehicle"),
       search_subtitle=tr("Enter model year (e.g., 2021) and model (Toyota Corolla):"),
+      search_funcs=[lambda node: node.data.get('display_name', ''), lambda node: node.data.get('search_tags', '')]
     )
     callback = partial(self._on_platform_selected, dialog)
     dialog.on_exit = callback
