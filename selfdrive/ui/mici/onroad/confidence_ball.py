@@ -60,13 +60,7 @@ class ConfidenceBall(Widget):
     dot_height = self._rect.y + dot_height
 
     # confidence zones
-    if ui_state.status == UIStatus.LAT_ONLY:
-      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
-
-    elif ui_state.status == UIStatus.LONG_ONLY:
-      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
-
-    elif ui_state.status == UIStatus.ENGAGED or self._demo:
+    if ui_state.status == UIStatus.ENGAGED or self._demo:
       if self._confidence_filter.x > 0.5:
         top_dot_color = rl.Color(0, 255, 204, 255)
         bottom_dot_color = rl.Color(0, 255, 38, 255)
@@ -76,6 +70,12 @@ class ConfidenceBall(Widget):
       else:
         top_dot_color = rl.Color(255, 0, 21, 255)
         bottom_dot_color = rl.Color(255, 0, 89, 255)
+
+    elif ui_state.status == UIStatus.LAT_ONLY:
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
+
+    elif ui_state.status == UIStatus.LONG_ONLY:
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
 
     elif ui_state.status == UIStatus.OVERRIDE:
       top_dot_color = rl.Color(255, 255, 255, 255)
