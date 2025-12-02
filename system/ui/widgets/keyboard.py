@@ -48,7 +48,7 @@ TOP_BAR_RADIUS = 0.18
 TOP_BAR_BUTTON_WIDTH = 300
 TOP_BAR_BUTTON_HEIGHT = 118
 TOP_BAR_BUTTON_GAP = 24
-TOP_BAR_SPACING = 45
+TOP_BAR_SPACING = 36
 TOP_BAR_BG = rl.Color(12, 12, 12, 235)
 TOP_BAR_BORDER = rl.Color(255, 255, 255, 32)
 ANIMATION_DURATION = 0.25  # seconds
@@ -299,10 +299,10 @@ class Keyboard(Widget):
     # top button row (no background container)
     top_bar_rect = rl.Rectangle(rect.x, rect.y, rect.width, TOP_BAR_HEIGHT)
 
-    button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2
-    cancel_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X, button_y,
+    button_y = top_bar_rect.y + (TOP_BAR_HEIGHT - TOP_BAR_BUTTON_HEIGHT) / 2 - 6
+    cancel_rect = rl.Rectangle(top_bar_rect.x + TOP_BAR_PADDING_X - 12, button_y,
                    TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
-    done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH,
+    done_rect = rl.Rectangle(top_bar_rect.x + top_bar_rect.width - TOP_BAR_PADDING_X - TOP_BAR_BUTTON_WIDTH + 12,
                  button_y, TOP_BAR_BUTTON_WIDTH, TOP_BAR_BUTTON_HEIGHT)
 
     self._cancel_button.set_enabled(not self._dismissing)
@@ -313,7 +313,7 @@ class Keyboard(Widget):
     # input
     input_rect = rl.Rectangle(
       rect.x + 25,
-      top_bar_rect.y + TOP_BAR_HEIGHT + TOP_BAR_SPACING,
+      top_bar_rect.y + TOP_BAR_HEIGHT + TOP_BAR_SPACING - 8,
       rect.width - 50,
       105,
     )
