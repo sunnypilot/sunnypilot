@@ -11,7 +11,6 @@ from openpilot.selfdrive.ui.mici.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
 
-OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
 OP.PanelType = IntEnum(  # type: ignore

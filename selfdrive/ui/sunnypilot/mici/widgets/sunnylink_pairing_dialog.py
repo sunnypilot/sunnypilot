@@ -38,8 +38,6 @@ class SunnylinkPairingDialog(PairingDialog):
 
   def _update_state(self):
     NavWidget._update_state(self)
-    if self._sponsor_pairing and ui_state.sunnylink_state.is_paired():
-      self._playing_dismiss_animation = True
 
 if __name__ == "__main__":
   gui_app.init_window("pairing device")

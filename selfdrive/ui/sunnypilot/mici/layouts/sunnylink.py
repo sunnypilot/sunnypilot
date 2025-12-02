@@ -1,17 +1,15 @@
 import pyray as rl
 from collections.abc import Callable
-from cereal import log, custom
-from openpilot.common.params_pyx import Params
+from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.multilang import tr
 
 from openpilot.system.ui.widgets.scroller import Scroller
-from openpilot.selfdrive.ui.mici.widgets.button import BigParamControl, BigButton, BigToggle
+from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.widgets import NavWidget
-from openpilot.selfdrive.ui.layouts.settings.common import restart_needed_callback
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 
@@ -45,7 +43,7 @@ class SunnylinkLayoutMici(NavWidget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.sunnylink_enabled
-    self._sunnylink_toggle.set_text("disable sunnylink" if self._sunnylink_enabled else "enable sunnylink")
+    self._sunnylink_toggle.set_text("enable sunnylink")
     self._sunnylink_pair_button.set_visible(self._sunnylink_enabled)
     self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
     self._backup_btn.set_visible(self._sunnylink_enabled)
@@ -62,7 +60,6 @@ class SunnylinkLayoutMici(NavWidget):
 
     if ui_state.sunnylink_state.is_paired():
       self._sunnylink_pair_button.set_text("paired")
-      self._sunnylink_pair_button.set_enabled(False)
     else:
       self._sunnylink_pair_button.set_text("pair")
 
@@ -161,9 +158,9 @@ class SunnylinkPairBigButton(BigButton):
     dlg: BigDialog | SunnylinkPairingDialog | None = None
     if UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
       dlg = BigDialog(tr("sunnylink Dongle ID not found. Please reboot & try again."), "")
-    elif self.sponsor_pairing and not ui_state.sunnylink_state.is_sponsor():
+    elif self.sponsor_pairing:
       dlg = SunnylinkPairingDialog(sponsor_pairing=True)
-    elif not self.sponsor_pairing and not ui_state.sunnylink_state.is_paired():
+    elif not self.sponsor_pairing:
       dlg = SunnylinkPairingDialog(sponsor_pairing=False)
     if dlg:
       gui_app.set_modal_overlay(dlg)
