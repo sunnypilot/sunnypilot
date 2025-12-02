@@ -12,7 +12,8 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 REFRESH_INTERVAL = 5.0
-ALERTS_OVERLAY_COLOR = rl.Color(4, 4, 12, 220)
+ALERTS_OVERLAY_COLOR = rl.Color(4, 6, 18, 165)
+ALERTS_OVERLAY_GLASS = rl.Color(255, 255, 255, 32)
 
 
 class AlertSize(IntEnum):
@@ -251,8 +252,9 @@ class OffroadAlertsLayout(Widget):
 
   # -------- rendering --------
   def _render(self, rect: rl.Rectangle):
-    # dark translucent backdrop so the home layout shows through without remaining legible
+    # translucent + frosted layer lets the home layout remain visible while softening details
     rl.draw_rectangle_rec(rect, ALERTS_OVERLAY_COLOR)
+    rl.draw_rectangle_rec(rect, ALERTS_OVERLAY_GLASS)
 
     if self._active_count() == 0:
       self._empty_label.render(rect)
