@@ -124,7 +124,7 @@ class ListItemSP(ListItem):
                           item_rect.width - (style.ITEM_PADDING * 2), style.ITEM_BASE_HEIGHT)
 
     action_width = self.action_item.rect.width
-    if isinstance(self.action_item, ToggleAction):
+    if (isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)):
       action_x = item_rect.x
     else:
       action_x = item_rect.x + item_rect.width - action_width
@@ -141,13 +141,13 @@ class ListItemSP(ListItem):
 
     content_x = self._rect.x + style.ITEM_PADDING
     text_x = content_x
-    left_action_item = isinstance(self.action_item, ToggleAction)
+    left_action_item = (isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP))
 
     if left_action_item:
       left_rect = rl.Rectangle(
         content_x,
         self._rect.y + (style.ITEM_BASE_HEIGHT - style.TOGGLE_HEIGHT) // 2,
-        style.TOGGLE_WIDTH,
+        self.action_item.rect.width,
         style.TOGGLE_HEIGHT
       )
       text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
@@ -189,6 +189,12 @@ class ListItemSP(ListItem):
 
       description_rect = rl.Rectangle(self._rect.x + style.ITEM_PADDING, desc_y, content_width, description_height)
       self._html_renderer.render(description_rect)
+
+
+def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
+                          enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH) -> ListItemSP:
+  action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
+  return ListItemSP(title="", callback=callback, description="", action_item=action)
 
 
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
