@@ -3,6 +3,7 @@ import pyray as rl
 from collections.abc import Callable
 from abc import ABC
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
+from openpilot.system.ui.lib.animation import smooth_towards, scale_from_center, LinearAnimation, ease_out_cubic
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
@@ -284,6 +285,9 @@ class ListItem(Widget):
 
     self.set_rect(rl.Rectangle(0, 0, ITEM_BASE_WIDTH, ITEM_BASE_HEIGHT))
     self._font = gui_app.font(FontWeight.NORMAL)
+    self._press_scale = 1.0
+    self._fade_anim = LinearAnimation(0.2)
+    self._fade_anim.start('in')
 
     self._html_renderer = HtmlRenderer(text="", text_size={ElementType.P: ITEM_DESC_FONT_SIZE},
                                        text_color=ITEM_DESC_TEXT_COLOR)
@@ -294,6 +298,7 @@ class ListItem(Widget):
 
   def show_event(self):
     self._set_description_visible(False)
+    self._fade_anim.start('in')
 
   def set_description_opened_callback(self, callback: Callable) -> None:
     self.description_opened_callback = callback
@@ -347,41 +352,51 @@ class ListItem(Widget):
       self._rect.y >= (self._parent_rect.y + self._parent_rect.height)):
       return
 
-    content_x = self._rect.x + ITEM_PADDING
-    text_x = content_x
+    target_scale = 0.97 if self.is_pressed else 1.0
+    self._press_scale = smooth_towards(self._press_scale, target_scale, 12.0, rl.get_frame_time())
+    fade = ease_out_cubic(self._fade_anim.step())
 
-    # Only draw title and icon for items that have them
-    if self.title:
-      # Draw icon if present
-      if self.icon:
-        rl.draw_texture(self._icon_texture, int(content_x), int(self._rect.y + (ITEM_BASE_HEIGHT - self._icon_texture.height) // 2), rl.WHITE)
-        text_x += ICON_SIZE + ITEM_PADDING
+    def _draw():
+      content_x = self._rect.x + ITEM_PADDING
+      text_x = content_x
 
-      # Draw main text
-      text_size = measure_text_cached(self._font, self.title, ITEM_TEXT_FONT_SIZE)
-      item_y = self._rect.y + (ITEM_BASE_HEIGHT - text_size.y) // 2
-      rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), ITEM_TEXT_FONT_SIZE, 0, ITEM_TEXT_COLOR)
+      # Only draw title and icon for items that have them
+      if self.title:
+        # Draw icon if present
+        if self.icon:
+          rl.draw_texture(self._icon_texture, int(content_x), int(self._rect.y + (ITEM_BASE_HEIGHT - self._icon_texture.height) // 2), rl.WHITE)
+          text_x += ICON_SIZE + ITEM_PADDING
 
-    # Draw description if visible
-    if self.description_visible:
-      content_width = int(self._rect.width - ITEM_PADDING * 2)
-      description_height = self._html_renderer.get_total_height(content_width)
-      description_rect = rl.Rectangle(
-        self._rect.x + ITEM_PADDING,
-        self._rect.y + ITEM_DESC_V_OFFSET,
-        content_width,
-        description_height
-      )
-      self._html_renderer.render(description_rect)
+        # Draw main text
+        text_size = measure_text_cached(self._font, self.title, ITEM_TEXT_FONT_SIZE)
+        item_y = self._rect.y + (ITEM_BASE_HEIGHT - text_size.y) // 2
+        rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), ITEM_TEXT_FONT_SIZE, 0, ITEM_TEXT_COLOR)
 
-    # Draw right item if present
-    if self.action_item:
-      right_rect = self.get_right_item_rect(self._rect)
-      right_rect.y = self._rect.y
-      if self.action_item.render(right_rect) and self.action_item.enabled:
-        # Right item was clicked/activated
-        if self.callback:
-          self.callback()
+      # Draw description if visible
+      if self.description_visible:
+        content_width = int(self._rect.width - ITEM_PADDING * 2)
+        description_height = self._html_renderer.get_total_height(content_width)
+        description_rect = rl.Rectangle(
+          self._rect.x + ITEM_PADDING,
+          self._rect.y + ITEM_DESC_V_OFFSET,
+          content_width,
+          description_height
+        )
+        self._html_renderer.render(description_rect)
+
+      # Draw right item if present
+      if self.action_item:
+        right_rect = self.get_right_item_rect(self._rect)
+        right_rect.y = self._rect.y
+        if self.action_item.render(right_rect) and self.action_item.enabled:
+          # Right item was clicked/activated
+          if self.callback:
+            self.callback()
+
+      if fade < 1.0:
+        rl.draw_rectangle_rec(self._rect, rl.Color(0, 0, 0, int(255 * (1.0 - fade))))
+
+    scale_from_center(self._rect, self._press_scale, _draw)
 
   def set_icon(self, icon: str | None):
     self.icon = icon

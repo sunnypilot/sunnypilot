@@ -70,6 +70,11 @@ def scale_from_center(rect, scale: float, draw_fn):
   rl.rl_pop_matrix()
 
 
+def fade_color(color: rl.Color, alpha: float) -> rl.Color:
+  """Apply multiplier alpha to a color's alpha channel."""
+  return rl.Color(color.r, color.g, color.b, int(color.a * clamp01(alpha)))
+
+
 class LinearAnimation:
   """
   Small helper to manage simple linear progress animations.

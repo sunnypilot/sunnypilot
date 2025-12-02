@@ -8,6 +8,7 @@ from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
+from openpilot.system.ui.lib.animation import ease_out_cubic, LinearAnimation, scale_from_center, fade_color
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wifi_manager import WifiManager
@@ -50,6 +51,9 @@ class SettingsLayout(Widget):
   def __init__(self):
     super().__init__()
     self._current_panel = PanelType.DEVICE
+    self._panel_anim = LinearAnimation(0.22)
+    self._panel_anim.start('in')
+    self._panel_transition_from: PanelType | None = None
 
     # Panel configuration
     wifi_manager = WifiManager()
@@ -114,14 +118,24 @@ class SettingsLayout(Widget):
     # Store close button rect for click detection
     self._close_btn_rect = close_btn_rect
 
-    # Navigation buttons
+    # Navigation buttons (scale on press)
     y = rect.y + 300
     for panel_type, panel_info in self._panels.items():
       button_rect = rl.Rectangle(rect.x + 50, y, rect.width - 150, NAV_BTN_HEIGHT)
+      panel_info.button_rect = button_rect
 
       # Button styling
       is_selected = panel_type == self._current_panel
       text_color = TEXT_SELECTED if is_selected else TEXT_NORMAL
+      bg_color = rl.Color(55, 55, 55, 255) if is_selected else rl.Color(32, 32, 32, 255)
+      if rl.check_collision_point_rec(rl.get_mouse_position(), button_rect) and rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT):
+        bg_color = fade_color(bg_color, 0.9)
+        scale = 0.96
+      else:
+        scale = 1.0
+
+      scale_from_center(button_rect, scale, lambda: rl.draw_rectangle_rounded(button_rect, 0.35, 16, bg_color))
+
       # Draw button text (right-aligned)
       panel_name = tr(panel_info.name)
       text_size = measure_text_cached(self._font_medium, panel_name, 65)
@@ -130,22 +144,41 @@ class SettingsLayout(Widget):
       )
       rl.draw_text_ex(self._font_medium, panel_name, text_pos, 65, 0, text_color)
 
-      # Store button rect for click detection
-      panel_info.button_rect = button_rect
-
       y += NAV_BTN_HEIGHT
 
   def _draw_current_panel(self, rect: rl.Rectangle):
-    # Fill the entire panel area first so no underlying layout peeks through
+    progress = ease_out_cubic(self._panel_anim.step())
+    active_panel = self._panels[self._current_panel].instance
+
+    # base fill
     rl.draw_rectangle_rec(rect, PANEL_COLOR)
     rl.draw_rectangle_rounded(
       rl.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20), 0.04, 30, PANEL_COLOR
     )
-    content_rect = rl.Rectangle(rect.x + PANEL_MARGIN, rect.y + 25, rect.width - (PANEL_MARGIN * 2), rect.height - 50)
-    # rl.draw_rectangle_rounded(content_rect, 0.03, 30, PANEL_COLOR)
-    panel = self._panels[self._current_panel]
-    if panel.instance:
-      panel.instance.render(content_rect)
+
+    # outgoing panel
+    if self._panel_transition_from is not None and self._panel_anim.active:
+      from_panel = self._panels[self._panel_transition_from].instance
+      offset = (1.0 - progress) * rect.width * 0.08
+      from_rect = rl.Rectangle(rect.x - offset, rect.y, rect.width, rect.height)
+      rl.begin_blend_mode(rl.BlendMode.BLEND_ALPHA)
+      from_panel.render(rl.Rectangle(from_rect.x + PANEL_MARGIN, from_rect.y + 25, from_rect.width - (PANEL_MARGIN * 2), from_rect.height - 50))
+      rl.end_blend_mode()
+
+    # incoming panel
+    offset_in = (1.0 - progress) * rect.width * 0.08
+    panel_rect = rl.Rectangle(rect.x + offset_in, rect.y, rect.width, rect.height)
+    content_rect = rl.Rectangle(panel_rect.x + PANEL_MARGIN, panel_rect.y + 25, panel_rect.width - (PANEL_MARGIN * 2), panel_rect.height - 50)
+    rl.begin_blend_mode(rl.BlendMode.BLEND_ALPHA)
+    active_panel.render(content_rect)
+    rl.end_blend_mode()
+
+    if not self._panel_anim.active and self._panel_transition_from is not None:
+      try:
+        self._panels[self._panel_transition_from].instance.hide_event()
+      except Exception:
+        pass
+      self._panel_transition_from = None
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
     # Check close button
@@ -164,8 +197,9 @@ class SettingsLayout(Widget):
 
   def set_current_panel(self, panel_type: PanelType):
     if panel_type != self._current_panel:
-      self._panels[self._current_panel].instance.hide_event()
+      self._panel_transition_from = self._current_panel
       self._current_panel = panel_type
+      self._panel_anim.start('in')
       self._panels[self._current_panel].instance.show_event()
 
   def show_event(self):
