@@ -188,7 +188,7 @@ class TorqueBar(Widget):
 
     torque_line_bg_alpha = np.interp(abs(self._torque_filter.x), [0.5, 1.0], [0.25, 0.5])
     torque_line_bg_color = rl.Color(255, 255, 255, int(255 * torque_line_bg_alpha * self._torque_line_alpha_filter.x))
-    if ui_state.status != UIStatus.ENGAGED and not self._demo:
+    if ui_state.status not in (UIStatus.ENGAGED, UIStatus.LAT_ONLY) and not self._demo:
       torque_line_bg_color = rl.Color(255, 255, 255, int(255 * 0.15 * self._torque_line_alpha_filter.x))
 
     # draw curved line polygon torque bar
@@ -231,7 +231,7 @@ class TorqueBar(Widget):
       max(0, abs(self._torque_filter.x) - 0.75) * 4,
     )
 
-    if ui_state.status != UIStatus.ENGAGED and not self._demo:
+    if ui_state.status not in (UIStatus.ENGAGED, UIStatus.LAT_ONLY) and not self._demo:
       start_color = end_color = rl.Color(255, 255, 255, int(255 * 0.35 * self._torque_line_alpha_filter.x))
 
     gradient = Gradient(
