@@ -22,11 +22,11 @@ MAX_ACCEL_BREAKPOINTS = [0., 4., 6., 9., 16., 25., 30., 55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.04, -0.07, -0.14, -0.18, -0.22, -1.20],
-  AccelPersonality.normal: [-0.05, -0.08, -0.16, -0.20, -0.22, -1.20],
-  AccelPersonality.sport:  [-0.06, -0.10, -0.18, -0.22, -0.24, -1.20],
+  AccelPersonality.eco:    [-0.04, -0.06, -0.10, -0.16, -0.20, -1.20],
+  AccelPersonality.normal: [-0.05, -0.07, -0.12, -0.18, -0.22, -1.20],
+  AccelPersonality.sport:  [-0.06, -0.09, -0.14, -0.20, -0.24, -1.20],
 }
-MIN_ACCEL_BREAKPOINTS = [0., 4., 6., 8., 12., 25.]
+MIN_ACCEL_BREAKPOINTS = [0., 3., 5., 8., 12., 25.]
 
 DECEL_SMOOTH_ALPHA = 0.03  # Very aggressive smoothing for decel (lower = smoother)
 ACCEL_SMOOTH_ALPHA = 0.20  # Less aggressive for accel (higher = more responsive)
@@ -35,6 +35,8 @@ ACCEL_SMOOTH_ALPHA = 0.20  # Less aggressive for accel (higher = more responsive
 MAX_DECEL_INCREASE_RATE = 0.04  # When braking harder (m/s² per second)
 MAX_DECEL_DECREASE_RATE = 0.20  # When releasing brake (m/s² per second)
 
+# bypass smoothing below this value
+EMERGENCY_DECEL_THRESHOLD = -1.0  # m/s²
 
 
 class AccelPersonalityController:
@@ -98,6 +100,12 @@ class AccelPersonalityController:
       self.first_run = False
       return float(target_min_accel), float(target_max_accel)
 
+    # SAFETY: Bypass all smoothing for emergency braking
+    if target_min_accel < EMERGENCY_DECEL_THRESHOLD:
+      self.last_min_accel = target_min_accel
+      self.last_max_accel = target_max_accel
+      return float(target_min_accel), float(target_max_accel)
+
     # exponential smoothing to max accel
     self.last_max_accel = (ACCEL_SMOOTH_ALPHA * target_max_accel + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel)
 
@@ -146,3 +154,4 @@ class AccelPersonalityController:
   def update(self):
     self.frame += 1
     self._update_from_params()
+
