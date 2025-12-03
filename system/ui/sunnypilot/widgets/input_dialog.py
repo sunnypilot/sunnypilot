@@ -8,7 +8,6 @@ from collections.abc import Callable
 
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.keyboard import Keyboard
 
@@ -27,14 +26,16 @@ class InputDialogSP:
 
   def show(self):
     self.keyboard.reset(min_text_size=self.keyboard._min_text_size)
-    self.keyboard.set_title(tr(self.title), *(tr(self.sub_title),) if self.sub_title else ())
+    if self.sub_title:
+      self.keyboard.set_title(self.title, self.sub_title)
+    else:
+      self.keyboard.set_title(self.title)
     self.keyboard.set_text(self.current_text)
 
     def internal_callback(result: DialogResult):
       text = self.keyboard.text if result == DialogResult.CONFIRM else ""
-      if result == DialogResult.CONFIRM:
-        if self.param:
-          self._params.put(self.param, text)
+      if result == DialogResult.CONFIRM and self.param:
+        self._params.put(self.param, text)
       if self.callback:
         self.callback(result, text)
 
