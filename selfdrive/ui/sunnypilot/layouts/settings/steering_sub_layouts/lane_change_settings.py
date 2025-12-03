@@ -13,8 +13,8 @@ class LaneChangeSettingsLayout(Widget):
     super().__init__()
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(back_btn_callback)
-    items = self._initialize_items()
-    self._scroller = Scroller(items, line_separator=True, spacing=0)
+    self._initialize_items()
+    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
     self._lane_change_timer = option_item_sp(
@@ -42,11 +42,10 @@ class LaneChangeSettingsLayout(Widget):
                              "(BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
     )
 
-    items = [
+    self.items = [
       self._lane_change_timer,
       self._bsm_delay,
     ]
-    return items
 
   def _update_state(self):
     super()._update_state()
@@ -62,11 +61,12 @@ class LaneChangeSettingsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
-    ui_state.update_params()
-    self._update_toggles()
 
   def _update_toggles(self):
+    self._lane_change_timer.action_item.current_value = int(ui_state.params.get("AutoLaneChangeTimer", return_default=True))
+    self._bsm_delay.action_item.set_state(ui_state.params.get_bool("AutoLaneChangeBsmDelay"))
+
     enable_bsm = ui_state.CP and ui_state.CP.enableBsm
     if not enable_bsm:
         ui_state.params.remove("AutoLaneChangeBsmDelay")
-    self._bsm_delay.set_visible(enable_bsm and int(ui_state.params.get("AutoLaneChangeTimer")) > 0)
+    self._bsm_delay.set_visible(enable_bsm and int(ui_state.params.get("AutoLaneChangeTimer", return_default=True)) > 0)
