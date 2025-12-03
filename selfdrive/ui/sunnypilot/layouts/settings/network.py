@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import threading
+import time
 import pyray as rl
 
 from openpilot.system.ui.lib.multilang import tr
@@ -25,7 +27,10 @@ class NetworkUISP(NetworkUI):
     self._scanning = True
     self.scan_button.set_text(tr("Scanning..."))
     self.scan_button.set_enabled(False)
+
+    threading.Thread(target=self._wifi_manager._update_networks, daemon=True).start()
     self._wifi_manager._request_scan()
+    self._wifi_manager._last_network_update = time.monotonic()
 
   def _on_networks_updated(self, networks):
     if self._scanning:
