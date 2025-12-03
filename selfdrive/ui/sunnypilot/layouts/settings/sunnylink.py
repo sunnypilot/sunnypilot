@@ -8,15 +8,94 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import custom
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
+from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+import pyray as rl
+
+class SunnylinkHeader(Widget):
+  def __init__(self):
+    super().__init__()
+
+    self._title = UnifiedLabel(
+      text="🚀 sunnylink 🚀",
+      font_size=90,
+      font_weight=FontWeight.MEDIUM,
+      text_color=rl.WHITE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      wrap_text=False,
+      elide=False
+    )
+
+    self._description = UnifiedLabel(
+      text=tr("For secure backup, restore, and remote configuration"),
+      font_size=40,
+      font_weight=FontWeight.LIGHT,
+      text_color=rl.Color(0, 255, 0, 255),  # Green
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      wrap_text=True,
+      elide=False
+    )
+
+    self._sponsor_msg = UnifiedLabel(
+      text=tr("Sponsorship isn't required for basic backup/restore") + "\n" +
+           tr("Click the sponsor button for more details"),
+      font_size=35,
+      font_weight=FontWeight.LIGHT,
+      text_color=rl.Color(255, 165, 0, 255),  # Orange
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      wrap_text=True,
+      elide=False
+    )
+
+    self._padding = 20
+    self._spacing = 10
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+
+    content_width = int(parent_rect.width - (self._padding * 2))
+
+    title_height = self._title.get_content_height(content_width)
+    desc_height = self._description.get_content_height(content_width)
+    sponsor_height = self._sponsor_msg.get_content_height(content_width)
+
+    total_height = (self._padding + title_height + self._spacing +
+                   desc_height + self._spacing + sponsor_height + self._padding)
+
+    self._rect.width = parent_rect.width
+    self._rect.height = total_height
+
+  def _render(self, rect: rl.Rectangle):
+    content_width = rect.width - (self._padding * 2)
+    current_y = rect.y + self._padding
+
+    # Render title
+    title_height = self._title.get_content_height(int(content_width))
+    title_rect = rl.Rectangle(rect.x + self._padding, current_y, content_width, title_height)
+    self._title.render(title_rect)
+    current_y += title_height + self._spacing
+
+    # Render description
+    desc_height = self._description.get_content_height(int(content_width))
+    desc_rect = rl.Rectangle(rect.x + self._padding, current_y, content_width, desc_height)
+    self._description.render(desc_rect)
+    current_y += desc_height + self._spacing
+
+    # Render sponsor message
+    sponsor_height = self._sponsor_msg.get_content_height(int(content_width))
+    sponsor_rect = rl.Rectangle(rect.x + self._padding, current_y, content_width, sponsor_height)
+    self._sponsor_msg.render(sponsor_rect)
 
 
 class SunnylinkLayout(Widget):
@@ -72,6 +151,7 @@ class SunnylinkLayout(Widget):
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
 
     items = [
+      SunnylinkHeader(),
       self._sunnylink_toggle,
       self._sponsor_btn,
       self._pair_btn,
