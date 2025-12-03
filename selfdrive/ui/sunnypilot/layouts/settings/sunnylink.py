@@ -10,12 +10,13 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.label import UnifiedLabel
+from openpilot.system.ui.widgets.label import UnifiedLabel, gui_label
 from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
-from openpilot.system.ui.widgets.scroller_tici import Scroller
+from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 import pyray as rl
@@ -98,6 +99,41 @@ class SunnylinkHeader(Widget):
     self._sponsor_msg.render(sponsor_rect)
 
 
+class SunnylinkDescriptionItem(Widget):
+  def __init__(self):
+    super().__init__()
+    self._description = UnifiedLabel(
+      text="",
+      font_size=40,
+      font_weight=FontWeight.LIGHT,
+      text_color=rl.WHITE,
+      alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+      alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+      wrap_text=True,
+      elide=False,
+    )
+    self._padding = 20
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    desc_height = self._description.get_content_height(int(parent_rect.width)) + self._padding * 2
+
+    self._rect.width = parent_rect.width
+    self._rect.height = desc_height
+
+  def set_text(self, text: str):
+    self._description.set_text(text)
+
+  def set_color(self, color: rl.Color):
+    self._description.set_text_color(color)
+
+  def _render(self, rect: rl.Rectangle):
+    content_width = rect.width - (self._padding * 2)
+
+    desc_height = self._description.get_content_height(int(content_width))
+    desc_rect = rl.Rectangle(rect.x + self._padding, rect.y, content_width, desc_height)
+    self._description.render(desc_rect)
+
 class SunnylinkLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -108,7 +144,7 @@ class SunnylinkLayout(Widget):
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
 
     items = self._initialize_items()
-    self._scroller = Scroller(items, line_separator=True, spacing=0)
+    self._scroller = Scroller(items, line_separator=False, spacing=0)
 
   def _initialize_items(self):
     self._sunnylink_toggle = toggle_item_sp(
@@ -118,6 +154,10 @@ class SunnylinkLayout(Widget):
       param="SunnylinkEnabled",
       callback=self._sunnylink_toggle_callback
     )
+
+    self._sunnylink_description = SunnylinkDescriptionItem()
+    self._sunnylink_description.set_visible(False)
+
     self._sponsor_btn = button_item(
       title=tr("Sponsor Status"),
       button_text=tr("SPONSOR"),
@@ -152,10 +192,16 @@ class SunnylinkLayout(Widget):
 
     items = [
       SunnylinkHeader(),
+      LineSeparator(),
       self._sunnylink_toggle,
+      self._sunnylink_description,
+      LineSeparator(),
       self._sponsor_btn,
+      LineSeparator(),
       self._pair_btn,
+      LineSeparator(),
       self._sunnylink_uploader_toggle,
+      LineSeparator(),
       self._sunnylink_backup_restore_buttons
     ]
     return items
@@ -243,12 +289,23 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_text(tr("Restore Settings"))
 
   def _sunnylink_toggle_callback(self, state: bool):
-    ui_state.params.put_bool("SunnylinkEnabled", state)
-    ui_state.update_params()
+    if state:
+      description = tr(
+        "Welcome back!! We're excited to see you've enabled sunnylink again!")
+      color = rl.Color(0, 255, 0, 255)  # Green
+    else:
+      description = ("😢 " + tr("Not going to lie, it's sad to see you disabled sunnylink") +
+                     tr(", but we'll be here when you're ready to come back."))
+      color = rl.Color(255, 165, 0, 255)  # Orange
+    self._sunnylink_description.set_text(description)
+    self._sunnylink_description.set_color(color)
+    self._sunnylink_description.set_visible(True)
+    self._sunnylink_toggle.show_description(False)
+
 
   def _update_state(self):
     super()._update_state()
-    self._sunnylink_enabled = ui_state.sunnylink_enabled
+    self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
@@ -268,4 +325,4 @@ class SunnylinkLayout(Widget):
   def show_event(self):
     super().show_event()
     self._scroller.show_event()
-    ui_state.update_params()
+    self._sunnylink_description.set_visible(False)
