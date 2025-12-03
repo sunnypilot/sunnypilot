@@ -99,6 +99,7 @@ class TreeOptionDialog(MultiOptionDialog):
     self.search_title = search_title or tr("Enter search query")
     self.search_subtitle = search_subtitle
     self.search_dialog = None
+    self._search_pressed = False
 
     self._build_visible_items()
 
@@ -183,9 +184,10 @@ class TreeOptionDialog(MultiOptionDialog):
     input_rect = rl.Rectangle(self._search_rect.x + inset, self._search_rect.y + inset,
                               self._search_rect.width - inset * 2, self._search_rect.height - inset * 2)
 
-    # Transparent fill + border
-    rl.draw_rectangle_rounded(input_rect, roundness, 10, rl.Color(0, 0, 0, 0))
-    rl.draw_rectangle_rounded_lines_ex(input_rect, roundness, 10, 3, rl.Color(150, 150, 150, 200))
+    # Transparent fill (unpressed), white fill (pressed), border
+    fill_color = style.TREE_DIALOG_SEARCH_BUTTON_PRESSED if self._search_pressed else style.TREE_DIALOG_TRANSPARENT
+    rl.draw_rectangle_rounded(input_rect, roundness, 10, fill_color)
+    rl.draw_rectangle_rounded_lines_ex(input_rect, roundness, 10, 3, style.TREE_DIALOG_SEARCH_BUTTON_BORDER)
 
     # Magnifying glass icon
     icon_color = rl.Color(180, 180, 180, 240)
@@ -233,8 +235,21 @@ class TreeOptionDialog(MultiOptionDialog):
 
     return self._result
 
-  def _handle_mouse_release(self, mouse_pos):
+  def _handle_mouse_press(self, mouse_pos):
     if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+      self._search_pressed = True
+      return True
+    return super()._handle_mouse_press(mouse_pos)
+
+  def _handle_mouse_release(self, mouse_pos):
+    clicked_search = False
+    if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+      clicked_search = self._search_pressed
+
+    self._search_pressed = False
+
+    if clicked_search:
       self._on_search_clicked()
       return True
+
     return super()._handle_mouse_release(mouse_pos)
