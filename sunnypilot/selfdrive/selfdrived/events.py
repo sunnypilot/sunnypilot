@@ -164,7 +164,11 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventNameSP.experimentalModeSwitched: {
-    ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
+    ET.WARNING: NormalPermanentAlert("Experimental Mode", duration=1.5)
+  },
+
+  EventNameSP.chillModeSwitched: {
+    ET.WARNING: NormalPermanentAlert("Chill Mode", duration=1.5)
   },
 
   EventNameSP.wrongCarModeAlertOnly: {
