@@ -10,11 +10,10 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.label import UnifiedLabel, gui_label
+from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget, DialogResult
