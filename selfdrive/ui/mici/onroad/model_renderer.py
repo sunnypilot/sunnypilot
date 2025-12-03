@@ -32,6 +32,7 @@ LANE_LINE_COLORS = {
   UIStatus.DISENGAGED: rl.Color(200, 200, 200, 255),
   UIStatus.OVERRIDE: rl.Color(255, 255, 255, 255),
   UIStatus.ENGAGED: rl.Color(0, 255, 64, 255),
+  UIStatus.LAT_ONLY: rl.Color(0, 255, 64, 255),
 }
 
 
@@ -299,7 +300,7 @@ class ModelRenderer(Widget):
     else:
       color = rl.Color(255, 255, 255, int(alpha * 255))
 
-    if ui_state.status == UIStatus.DISENGAGED:
+    if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LONG_ONLY):
       color = rl.Color(0, 0, 0, int(alpha * 255))
 
     return color
