@@ -69,6 +69,9 @@ class DefaultStyleSP(Base):
   BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
   BUTTON_NEUTRAL_GRAY = rl.Color(51, 51, 51, 255)
   BUTTON_DISABLED_BG_COLOR = rl.Color(30, 30, 30, 255)  # Very Dark Grey
+  TREE_DIALOG_TRANSPARENT = rl.Color(0, 0, 0, 0)
+  TREE_DIALOG_SEARCH_BUTTON_PRESSED = rl.Color(0x69, 0x68, 0x68, 0xFF)
+  TREE_DIALOG_SEARCH_BUTTON_BORDER = rl.Color(150, 150, 150, 200)
 
   # Vehicle Description Colors
   GREEN = rl.Color(0, 241, 0, 255)
