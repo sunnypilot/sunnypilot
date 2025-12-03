@@ -65,20 +65,20 @@ class ModelsLayout(Widget):
     self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
-                                                tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
-                                                int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
-                                                lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.is_metric else 1)))}" +
-                                                          f" {'km/h' if ui_state.is_metric else 'mph'}")
+                                                  tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
+                                                  int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
+                                                  lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.is_metric else 1)))}" +
+                                                            f" {'km/h' if ui_state.is_metric else 'mph'}")
 
     self.lane_turn_desire_toggle = toggle_item_sp(tr("Use Lane Turn Desires"),
-                                                tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on," +
-                                                   " the car will plan a turn in that direction at the nearest drivable path. " +
-                                                   "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
-                                                param="LaneTurnDesire")
+                                                  tr("If you're driving at 20 mph (32 km/h) or below and have your blinker on," +
+                                                     " the car will plan a turn in that direction at the nearest drivable path. " +
+                                                     "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
+                                                  param="LaneTurnDesire")
 
     self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
                                         tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
-                                        1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v/100:.2f}s")
+                                        1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v / 100:.2f}s")
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
@@ -112,6 +112,7 @@ class ModelsLayout(Widget):
       if response == DialogResult.CONFIRM:
         ui_state.params.put_bool("ModelManager_ClearCache", True)
         self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+
     gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
                                             tr("Clear Cache"), tr("Cancel")), callback=_callback)
 
@@ -174,13 +175,14 @@ class ModelsLayout(Widget):
     if selected_ref == "Default":
       ui_state.params.remove("ModelManager_ActiveBundle")
       self._show_reset_params_dialog()
-    elif (selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None)):
+    elif selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None):
       ui_state.params.put("ModelManager_DownloadIndex", selected_bundle.index)
       if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
         self._show_reset_params_dialog()
     self.model_dialog = None
 
-  def _bundle_to_node(self, bundle):
+  @staticmethod
+  def _bundle_to_node(bundle):
     return TreeNode(bundle.ref, {'display_name': bundle.displayName, 'short_name': bundle.internalName})
 
   def _get_folders(self, favorites):
@@ -206,7 +208,7 @@ class ModelsLayout(Widget):
 
     active_ref = self.model_manager.activeBundle.ref if self.model_manager.activeBundle else "Default"
     self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, active_ref, "ModelManager_Favs",
-                                          get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
+                                         get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
     gui_app.set_modal_overlay(self.model_dialog, callback=self._on_model_selected)
 
   def _update_state(self):
