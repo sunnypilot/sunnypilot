@@ -16,6 +16,7 @@ AUTO_SCROLL_TC = 0.18
 BOUNCE_RETURN_RATE = 10.0
 REJECT_DECELERATION_FACTOR = 3
 MAX_SPEED = 10000.0  # px/s
+MOUSE_WHEEL_SCROLL_SPEED = 5
 
 DEBUG = os.getenv("DEBUG_SCROLL", "0") == "1"
 
@@ -58,7 +59,7 @@ class GuiScrollPanel2:
       self._handle_mouse_event(mouse_event, bounds, bounds_size, content_size)
       self._previous_mouse_event = mouse_event
 
-    self._update_state(bounds_size, content_size)
+    self._update_state(bounds, bounds_size, content_size)
 
     if DEBUG:
       print('Velocity:', self._velocity)
@@ -67,8 +68,17 @@ class GuiScrollPanel2:
       print()
     return self.get_offset()
 
-  def _update_state(self, bounds_size: float, content_size: float) -> None:
+  def _update_state(self, bounds: rl.Rectangle, bounds_size: float, content_size: float) -> None:
     """Runs per render frame, independent of mouse events. Updates auto-scrolling state and velocity."""
+    mouse_wheel = rl.get_mouse_wheel_move()
+    if mouse_wheel != 0:
+      mouse_pos = rl.get_mouse_position()
+      if rl.check_collision_point_rec(mouse_pos, bounds):
+        scroll_delta = mouse_wheel * MOUSE_WHEEL_SCROLL_SPEED
+        current_offset = self._offset.x if self._horizontal else self._offset.y
+        self.set_offset(current_offset + scroll_delta)
+        self._velocity = 0.0
+
     if self._state == ScrollState.AUTO_SCROLL:
       # simple exponential return if out of bounds
       out_of_bounds = self.get_offset() > 0 or self.get_offset() < (bounds_size - content_size)
