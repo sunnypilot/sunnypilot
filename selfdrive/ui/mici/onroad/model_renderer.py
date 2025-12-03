@@ -332,7 +332,7 @@ class ModelRenderer(Widget):
 
     if self._experimental_mode:
       # Draw with acceleration coloring
-      if ui_state.status == UIStatus.DISENGAGED:
+      if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LAT_ONLY):
         draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
       elif len(self._exp_gradient.colors) > 1:
         draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
@@ -349,7 +349,7 @@ class ModelRenderer(Widget):
         stops=[0.0, 0.5, 1.0],
       )
 
-      if ui_state.status == UIStatus.DISENGAGED:
+      if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LAT_ONLY):
         draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
       else:
         draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
