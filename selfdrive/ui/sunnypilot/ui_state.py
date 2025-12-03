@@ -18,7 +18,6 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
-    self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
 
   def update(self) -> None:
     self.sunnylink_state.start()
