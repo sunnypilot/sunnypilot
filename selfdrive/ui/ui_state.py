@@ -277,7 +277,7 @@ class Device:
         HARDWARE.set_display_power(on)
         gui_app.set_should_render(on)
 
-      screensaver_enabled = True #ui_state.params.get_bool("ScreenSaverEnabled")
+      screensaver_enabled = ui_state.params.get_bool("ScreenSaverEnabled")
       if gui_app.sunnypilot_ui() and not on and screensaver_enabled:
         gui_app.set_modal_overlay(ScreenSaverSP(dismiss_callback=lambda: set_display_power()))
       else:

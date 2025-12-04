@@ -10,12 +10,11 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
-SCREENSAVER_TIMEOUT = Params().get("ScreenSaverTimeout") or 5
-
 class ScreenSaverSP(Widget):
   def __init__(self, dismiss_callback: Callable):
     super().__init__()
     self.dismiss_callback = dismiss_callback
+    self.screensaver_timeout = Params().get("ScreenSaverTimeout")
 
     self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
     self._is_mici = HARDWARE.get_device_type() == 'mici' or (HARDWARE.get_device_type() == "pc" and os.getenv("BIG") != "1")
@@ -43,7 +42,7 @@ class ScreenSaverSP(Widget):
   def _update_state(self):
     super()._update_state()
 
-    if time.monotonic() - self._start_time > SCREENSAVER_TIMEOUT:
+    if time.monotonic() - self._start_time > self.screensaver_timeout:
       self._dismiss = True
 
     dt = rl.get_frame_time()
