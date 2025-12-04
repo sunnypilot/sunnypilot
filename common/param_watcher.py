@@ -46,13 +46,13 @@ class ParamWatcher(Params):
       cloudlog.warning(f"ParamWatcher: Added watcher {callback}")  # remove me after testing
 
   def _trigger_callbacks(self, path, mask):
-    is_final_write = mask & 0x00000008
+    is_final_write = mask & (0x00000008 | 0x00000080)  # IN_CLOSE_WRITE or IN_MOVED_TO
     if platform.system() != "Linux" or is_final_write:
       now = time.monotonic()
-      cloudlog.warning(f"Param raw: {path}")
+      cloudlog.warning(f"Param raw: {path}, mask: {mask}")
       with self._lock:
         if now - self._last_trigger.get(path, 0) < 0.02:
-          cloudlog.warning(f"Param debounced: {path}")  # remove me after testing
+          cloudlog.warning(f"Param debounced: {path}")
           return
         self._last_trigger[path] = now
         self._cache.pop(path, None)
