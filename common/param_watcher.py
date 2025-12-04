@@ -46,23 +46,25 @@ class ParamWatcher(Params):
       cloudlog.warning(f"ParamWatcher: Added watcher {callback}")  # remove me after testing
 
   def _trigger_callbacks(self, path, mask):
-    now = time.monotonic()
-    cloudlog.warning(f"Param raw: {path}")
-    with self._lock:
-      if now - self._last_trigger.get(path, 0) < 0.02:
-        cloudlog.warning(f"Param debounced: {path}")  # remove me after testing
+    is_final_write = mask & 0x00000008
+    if platform.system() != "Linux" or is_final_write:
+      now = time.monotonic()
+      cloudlog.warning(f"Param raw: {path}")
+      with self._lock:
+        if now - self._last_trigger.get(path, 0) < 0.02:
+          cloudlog.warning(f"Param debounced: {path}")  # remove me after testing
+          return
+        self._last_trigger[path] = now
+        self._cache.pop(path, None)
+
+      if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
         return
-      self._last_trigger[path] = now
-      self._cache.pop(path, None)
 
-    if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
-      return
-
-    for callback in self._callbacks:
-      try:
-        callback(path, mask)
-      except Exception:
-        cloudlog.exception("Param watcher callback failed")
+      for callback in self._callbacks:
+        try:
+          callback(path, mask)
+        except Exception:
+          cloudlog.exception("Param watcher callback failed")
 
   def _get_cached(self, key, getter, sig):
     k = str(key)
@@ -75,10 +77,16 @@ class ParamWatcher(Params):
     return val
 
   def get(self, key, block=False, return_default=False):
-    return super().get(key, block, return_default)
+    if block:
+      return super().get(key, block, return_default)
+    fetcher = super().get
+    return self._get_cached(key, lambda: fetcher(key, block, return_default), (block, return_default))
 
   def get_bool(self, key, block=False):
-    return super().get_bool(key, block)
+    if block:
+      return super().get_bool(key, block)
+    fetcher = super().get_bool
+    return self._get_cached(key, lambda: fetcher(key, block), ("bool", block))
 
   def _run_watcher(self):
     system = platform.system()
