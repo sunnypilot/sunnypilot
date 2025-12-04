@@ -11,6 +11,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.hardware import HARDWARE, PC
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 
@@ -265,14 +266,17 @@ class Device:
         callback()
     self._prev_timed_out = interaction_timeout
 
-    self._set_awake(ui_state.ignition or not interaction_timeout or PC)
+    self._set_awake(ui_state.ignition or not interaction_timeout)
 
   def _set_awake(self, on: bool):
     if on != self._awake:
       self._awake = on
-      cloudlog.debug(f"setting display power {int(on)}")
-      HARDWARE.set_display_power(on)
-      gui_app.set_should_render(on)
+      if gui_app.sunnypilot_ui() and not on:
+        gui_app.set_modal_overlay(ScreenSaverSP())
+      else:
+        cloudlog.debug(f"setting display power {int(on)}")
+        HARDWARE.set_display_power(on)
+        gui_app.set_should_render(on)
 
 
 # Global instance
