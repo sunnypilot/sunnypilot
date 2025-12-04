@@ -29,12 +29,7 @@ class UIStateSP:
 
   def on_param_change(self, param_name, mask):
     cloudlog.warning(f"Param changed: {param_name}")  # remove me after testing
-    self.update_toggles(param_name)
-    if self.active_layout:
-      for method in ['update_settings', '_update_state']:
-        if function := getattr(self.active_layout, method, None):
-          function()
-          break
+    self.changed_params.add(param_name)
 
   def update_toggles(self, param_name) -> None:
     for item in getattr(self.active_layout, 'items', []):
@@ -55,6 +50,18 @@ class UIStateSP:
 
   def update(self) -> None:
     self.sunnylink_state.start()
+
+    changed_params_copy = self.changed_params.copy()
+    for param_name in changed_params_copy:
+      self.update_toggles(param_name)
+
+    if self.active_layout and changed_params_copy:
+      for method in ['update_settings', '_update_state']:
+        if function := getattr(self.active_layout, method, None):
+          function()
+          break
+
+    self.changed_params.clear()
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
