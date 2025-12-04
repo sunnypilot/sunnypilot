@@ -316,6 +316,7 @@ class SunnylinkLayout(Widget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
+    self._sunnylink_toggle.set_right_value(tr("Device ID") + ": " + self._get_sunnylink_dongle_id())
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
@@ -323,6 +324,7 @@ class SunnylinkLayout(Widget):
 
     sponsor_btn_text = tr("THANKS ♥") if ui_state.sunnylink_state.is_sponsor() else tr("SPONSOR")
     self._sponsor_btn.action_item.set_text(sponsor_btn_text)
+    self._sponsor_btn.action_item.set_value(ui_state.sunnylink_state.get_sponsor_tier() or tr("Not Sponsor"))
     self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_sponsor())
 
     pair_btn_text = tr("Paired") if ui_state.sunnylink_state.is_paired() else tr("Not Paired")
