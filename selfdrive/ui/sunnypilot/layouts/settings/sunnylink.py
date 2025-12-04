@@ -245,7 +245,11 @@ class SunnylinkLayout(Widget):
     restore_progress = sunnylink_backup_manager.restoreProgress
 
     if self._backup_in_progress:
+      self._restore_btn.set_enabled(False)
+      self._backup_btn.set_enabled(False)
+
       if backup_status == custom.BackupManagerSP.Status.inProgress:
+        self._backup_in_progress = True
         text = tr(f"Backing up {backup_progress}%")
         self._backup_btn.set_text(text)
 
@@ -254,15 +258,19 @@ class SunnylinkLayout(Widget):
         self._backup_btn.set_enabled(not ui_state.is_onroad())
         self._backup_btn.set_text(tr("Backup Failed"))
 
-      elif backup_status == custom.BackupManagerSP.Status.completed:
+      elif (backup_status == custom.BackupManagerSP.Status.completed or
+            (backup_status == custom.BackupManagerSP.Status.idle and backup_progress == 100.0)):
         self._backup_in_progress = False
         dialog = alert_dialog(tr("Settings backup completed."))
         gui_app.set_modal_overlay(dialog)
         self._backup_btn.set_enabled(not ui_state.is_onroad())
 
     elif self._restore_in_progress:
+      self._restore_btn.set_enabled(False)
+      self._backup_btn.set_enabled(False)
+
       if restore_status == custom.BackupManagerSP.Status.inProgress:
-        self._restore_btn.set_enabled(False)
+        self._restore_in_progress = True
         text = tr(f"Restoring {restore_progress}%")
         self._restore_btn.set_text(text)
 
@@ -273,12 +281,11 @@ class SunnylinkLayout(Widget):
         dialog = alert_dialog(tr("Unable to restore the settings, try again later."))
         gui_app.set_modal_overlay(dialog)
 
-      elif restore_status == custom.BackupManagerSP.Status.completed:
+      elif (restore_status == custom.BackupManagerSP.Status.completed or
+            (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
         dialog = alert_dialog(tr("Settings restored. Confirm to restart the interface."))
-        gui_app.set_modal_overlay(dialog, callback=lambda: {
-          gui_app.request_close()
-        })
+        gui_app.set_modal_overlay(dialog, callback=lambda: gui_app.request_close())
 
     else:
       can_enable =  self._sunnylink_enabled and not ui_state.is_onroad()
