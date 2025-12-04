@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
 from cereal import custom
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
@@ -19,6 +18,7 @@ from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 import pyray as rl
+
 
 class SunnylinkHeader(Widget):
   def __init__(self):
@@ -71,7 +71,7 @@ class SunnylinkHeader(Widget):
     sponsor_height = self._sponsor_msg.get_content_height(content_width)
 
     total_height = (self._padding + title_height + self._spacing +
-                   desc_height + self._spacing + sponsor_height + self._padding)
+                    desc_height + self._spacing + sponsor_height + self._padding)
 
     self._rect.width = parent_rect.width
     self._rect.height = total_height
@@ -133,6 +133,7 @@ class SunnylinkDescriptionItem(Widget):
     desc_rect = rl.Rectangle(rect.x + self._padding, rect.y, content_width, desc_height)
     self._description.render(desc_rect)
 
+
 class SunnylinkLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -184,7 +185,7 @@ class SunnylinkLayout(Widget):
       left_callback=self._handle_backup_btn,
       right_callback=self._handle_restore_btn
     )
-    self._backup_btn: Button = self._sunnylink_backup_restore_buttons.action_item.left_button # store for easy individual access
+    self._backup_btn: Button = self._sunnylink_backup_restore_buttons.action_item.left_button  # store for easy individual access
     self._restore_btn: Button = self._sunnylink_backup_restore_buttons.action_item.right_button
     self._backup_btn.set_button_style(ButtonStyle.NORMAL)
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
@@ -288,7 +289,7 @@ class SunnylinkLayout(Widget):
         gui_app.set_modal_overlay(dialog, callback=lambda: gui_app.request_close())
 
     else:
-      can_enable =  self._sunnylink_enabled and not ui_state.is_onroad()
+      can_enable = self._sunnylink_enabled and not ui_state.is_onroad()
       self._backup_btn.set_enabled(can_enable)
       self._backup_btn.set_text(tr("Backup Settings"))
       self._restore_btn.set_enabled(can_enable)
@@ -307,7 +308,6 @@ class SunnylinkLayout(Widget):
     self._sunnylink_description.set_color(color)
     self._sunnylink_description.set_visible(True)
     self._sunnylink_toggle.show_description(False)
-
 
   def _update_state(self):
     super()._update_state()

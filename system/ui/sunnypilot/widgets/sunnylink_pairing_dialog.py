@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import base64
 
 import pyray as rl
@@ -117,6 +123,7 @@ class SunnylinkPairingDialog(PairingDialog):
       # Text
       rl.draw_text_ex(font, "\n".join(wrapped), rl.Vector2(text_x, y), 47, 0.0, rl.BLACK)
       y += text_height + 50
+
 
 if __name__ == "__main__":
   gui_app.init_window("pairing device")
