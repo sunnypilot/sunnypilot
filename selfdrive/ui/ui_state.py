@@ -271,12 +271,17 @@ class Device:
   def _set_awake(self, on: bool):
     if on != self._awake:
       self._awake = on
-      if gui_app.sunnypilot_ui() and not on:
-        gui_app.set_modal_overlay(ScreenSaverSP())
-      else:
+
+      def set_display_power():
         cloudlog.debug(f"setting display power {int(on)}")
         HARDWARE.set_display_power(on)
         gui_app.set_should_render(on)
+
+      screensaver_enabled = True #ui_state.params.get_bool("ScreenSaverEnabled")
+      if gui_app.sunnypilot_ui() and not on and screensaver_enabled:
+        gui_app.set_modal_overlay(ScreenSaverSP(dismiss_callback=lambda: set_display_power()))
+      else:
+        set_display_power()
 
 
 # Global instance
