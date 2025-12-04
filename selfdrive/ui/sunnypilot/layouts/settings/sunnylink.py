@@ -19,6 +19,9 @@ from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 import pyray as rl
 
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
+
 
 class SunnylinkHeader(Widget):
   def __init__(self):
