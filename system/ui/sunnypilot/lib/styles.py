@@ -20,6 +20,8 @@ class Base:
   ITEM_TEXT_VALUE_COLOR = rl.Color(170, 170, 170, 255)
   CLOSE_BTN_SIZE = 160
 
+  TEXT_PADDING = 20
+
   # Toggle Control
   TOGGLE_HEIGHT = 120
   TOGGLE_WIDTH = int(TOGGLE_HEIGHT * 1.75)
