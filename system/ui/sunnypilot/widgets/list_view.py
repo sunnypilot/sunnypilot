@@ -8,9 +8,10 @@ from collections.abc import Callable
 
 import pyray as rl
 from openpilot.common.params import Params
-from openpilot.system.ui.lib.application import MousePos
+from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
@@ -86,6 +87,17 @@ class ListItemSP(ListItem):
     self.inline = inline
     if not self.inline:
       self._rect.height += style.ITEM_BASE_HEIGHT/1.75
+    self._right_value_source: str | Callable[[], str] | None = None
+    self._right_value_font = gui_app.font(FontWeight.NORMAL)
+
+  def set_right_value(self, value: str | Callable[[], str]):
+    self._right_value_source = value
+
+  @property
+  def right_value(self) -> str:
+    if self._right_value_source is None:
+      return ""
+    return str(_resolve_value(self._right_value_source, ""))
 
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
@@ -153,6 +165,19 @@ class ListItemSP(ListItem):
         self._text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
         item_y = self._rect.y + (style.ITEM_BASE_HEIGHT - self._text_size.y) // 2
         rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, self.title_color)
+
+      value_text = self.right_value
+      if value_text:
+        # area from after the title to the right edge of the row
+        value_rect = rl.Rectangle(
+          text_x,  # start at the beginning of the text area
+          self._rect.y,
+          self._rect.width - (text_x - self._rect.x) - style.ITEM_PADDING,
+          style.ITEM_BASE_HEIGHT,
+        )
+        if value_rect.width > 0:
+          gui_label(value_rect, value_text, font_size=style.ITEM_TEXT_FONT_SIZE, color=style.ITEM_TEXT_VALUE_COLOR, font_weight=FontWeight.NORMAL,
+                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
       # Render toggle and handle callback
       if self.action_item.render(left_rect) and self.action_item.enabled:
