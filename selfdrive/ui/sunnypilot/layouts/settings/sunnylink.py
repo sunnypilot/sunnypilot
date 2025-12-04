@@ -27,7 +27,7 @@ class SunnylinkHeader(Widget):
     self._title = UnifiedLabel(
       text="🚀 sunnylink 🚀",
       font_size=90,
-      font_weight=FontWeight.MEDIUM,
+      font_weight=FontWeight.AUDIOWIDE,
       text_color=rl.WHITE,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
