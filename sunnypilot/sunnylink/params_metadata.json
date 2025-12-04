@@ -862,6 +862,14 @@
     "title": "Route Count",
     "description": ""
   },
+  "ScreenSaverEnabled": {
+    "title": "ScreenSaverEnabled",
+    "description": ""
+  },
+  "ScreenSaverTimeout": {
+    "title": "ScreenSaverTimeout",
+    "description": ""
+  },
   "SecOCKey": {
     "title": "Sec Oc Key",
     "description": ""
