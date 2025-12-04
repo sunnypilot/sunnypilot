@@ -75,16 +75,10 @@ class ParamWatcher(Params):
     return val
 
   def get(self, key, block=False, return_default=False):
-    if block:
-      return super().get(key, block, return_default)
-    fetcher = super().get
-    return self._get_cached(key, lambda: fetcher(key, block, return_default), (block, return_default))
+    return super().get(key, block, return_default)
 
   def get_bool(self, key, block=False):
-    if block:
-      return super().get_bool(key, block)
-    fetcher = super().get_bool
-    return self._get_cached(key, lambda: fetcher(key, block), ("bool", block))
+    return super().get_bool(key, block)
 
   def _run_watcher(self):
     system = platform.system()
