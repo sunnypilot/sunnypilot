@@ -70,8 +70,10 @@ class ParamWatcher(Params):
     k = str(key)
     with self._lock:
       if k in self._cache and sig in self._cache[k]:
+        cloudlog.warning(f"ParamWatcher: Cache hit for {k}")
         return self._cache[k][sig]
     val = getter()
+    cloudlog.warning(f"ParamWatcher: Cache miss for {k}, fetched: {val}")
     with self._lock:
       self._cache.setdefault(k, {})[sig] = val
     return val
