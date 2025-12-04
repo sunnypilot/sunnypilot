@@ -3,7 +3,8 @@ import os
 import pyray as rl
 
 from openpilot.system.hardware import HARDWARE
-from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 
@@ -12,13 +13,18 @@ class ScreenSaverSP(Widget):
     super().__init__()
     self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
     self._is_mici = HARDWARE.get_device_type() == 'mici' or (HARDWARE.get_device_type() == "pc" and os.getenv("BIG") != "1")
-    self.logo_width = self.logo_height = 120 if self._is_mici else 400
+
+    self.text = "sunnypilot"
+    self.font_size = 50 if self._is_mici else 200
+    self.font = gui_app.font(FontWeight.AUDIOWIDE)
+    text_size = measure_text_cached(self.font, self.text, self.font_size, 0)
+    self.logo_width = text_size.x
+    self.logo_height = text_size.y
 
     self.x = 0.0
     self.y = 100.0
     self.vx = 120.0 if self._is_mici else 300.0
     self.vy = 70.0 if self._is_mici else 200.0
-    self._logo = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/sp-logo.png", self.logo_width, self.logo_height)
     self.color = rl.Color(0, 255, 0, 255)
 
     self._dismiss = False
@@ -63,5 +69,5 @@ class ScreenSaverSP(Widget):
 
     self.set_rect(rect)
     rl.clear_background(rl.BLACK)
-    rl.draw_texture_ex(self._logo, rl.Vector2(self.x, self.y), 0.0, 1.0, self.color)
+    rl.draw_text_ex(self.font, self.text, rl.Vector2(int(self.x), int(self.y)), self.font_size, 0, self.color)
     return -1
