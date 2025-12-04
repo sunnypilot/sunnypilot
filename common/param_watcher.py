@@ -35,6 +35,7 @@ class ParamWatcher(Params):
       super().__init__()
       self._cache = {}
       self._last_trigger = {}
+      self._version = {}
       self._lock = threading.Lock()
       self._callbacks = []
       threading.Thread(target=self._run_watcher, daemon=True).start()
@@ -55,7 +56,11 @@ class ParamWatcher(Params):
           cloudlog.warning(f"Param debounced: {path}")
           return
         self._last_trigger[path] = now
+        k = str(path)
+        self._version[k] = self._version.get(k, 0) + 1
+        self._cache.pop(k, None)
         self._cache.pop(path, None)
+        cloudlog.warning(f"ParamWatcher: Invalidated cache for {k}, version={self._version[k]}")
 
       if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
         return
@@ -69,13 +74,17 @@ class ParamWatcher(Params):
   def _get_cached(self, key, getter, sig):
     k = str(key)
     with self._lock:
-      if k in self._cache and sig in self._cache[k]:
-        cloudlog.warning(f"ParamWatcher: Cache hit for {k}")
-        return self._cache[k][sig]
+      bucket = self._cache.get(k)
+      current_version = self._version.get(k, 0)
+      if bucket and sig in bucket:
+        cached_version, cached_val = bucket[sig]
+        if cached_version == current_version:
+          cloudlog.warning(f"ParamWatcher: Cache hit for {k}")
+          return cached_val
     val = getter()
     cloudlog.warning(f"ParamWatcher: Cache miss for {k}, fetched: {val}")
     with self._lock:
-      self._cache.setdefault(k, {})[sig] = val
+      self._cache.setdefault(k, {})[sig] = (self._version.get(k, 0), val)
     return val
 
   def get(self, key, block=False, return_default=False):
