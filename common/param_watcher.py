@@ -49,11 +49,14 @@ class ParamWatcher(Params):
     now = time.monotonic()
     cloudlog.warning(f"Param raw: {path}")
     with self._lock:
-      if now - self._last_trigger.get(path, 0) < 0.1:
+      if now - self._last_trigger.get(path, 0) < 0.02:
         cloudlog.warning(f"Param debounced: {path}")  # remove me after testing
         return
       self._last_trigger[path] = now
       self._cache.pop(path, None)
+
+    if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
+      return
 
     for callback in self._callbacks:
       try:
@@ -105,8 +108,16 @@ class ParamWatcher(Params):
     IN_CLOSE_WRITE = 0x00000008
 
     path = Paths.params_root()
-    fd = os.inotify_init()
-    os.inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
+    if hasattr(os, "inotify_init"):
+      cloudlog.warning("taking the os.inotify path")
+      fd = os.inotify_init()
+      os.inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
+    else:
+      cloudlog.warning("fell back to libc from ctypes")
+      libc = ctypes.CDLL('libc.so.6')
+      fd = libc.inotify_init()
+      libc.inotify_add_watch(fd, path.encode(), IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
+
     poll = select.epoll()
     poll.register(fd, select.EPOLLIN)
 

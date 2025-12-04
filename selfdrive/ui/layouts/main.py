@@ -85,6 +85,7 @@ class MainLayout(Widget):
       self._layouts[self._current_mode].hide_event()
       self._current_mode = layout
       self._layouts[self._current_mode].show_event()
+      ui_state.set_active_layout(self._layouts[self._current_mode])
 
   def open_settings(self, panel_type: PanelType):
     self._layouts[MainState.SETTINGS].set_current_panel(panel_type)
