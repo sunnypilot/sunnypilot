@@ -12,8 +12,7 @@ from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.label import gui_label
-from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value, \
-                                                  ITEM_TEXT_FONT_SIZE, ITEM_TEXT_VALUE_COLOR
+from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -177,7 +176,7 @@ class ListItemSP(ListItem):
           style.ITEM_BASE_HEIGHT,
         )
         if value_rect.width > 0:
-          gui_label(value_rect, value_text, font_size=ITEM_TEXT_FONT_SIZE, color=ITEM_TEXT_VALUE_COLOR, font_weight=FontWeight.NORMAL,
+          gui_label(value_rect, value_text, font_size=style.ITEM_TEXT_FONT_SIZE, color=style.ITEM_TEXT_VALUE_COLOR, font_weight=FontWeight.NORMAL,
                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
       # Render toggle and handle callback
