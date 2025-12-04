@@ -98,7 +98,7 @@ class ListItemSP(ListItem):
   def right_value(self) -> str:
     if self._right_value_source is None:
       return ""
-    return _resolve_value(self._right_value_source, "")
+    return str(_resolve_value(self._right_value_source, ""))
 
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
