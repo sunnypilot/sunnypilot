@@ -863,11 +863,11 @@
     "description": ""
   },
   "ScreenSaverEnabled": {
-    "title": "ScreenSaverEnabled",
+    "title": "Enable Screen Saver",
     "description": ""
   },
   "ScreenSaverTimeout": {
-    "title": "ScreenSaverTimeout",
+    "title": "Screen Saver Timeout",
     "description": ""
   },
   "SecOCKey": {
