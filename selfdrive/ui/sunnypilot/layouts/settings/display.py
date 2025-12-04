@@ -80,12 +80,29 @@ class DisplayLayout(Widget):
       label_callback=lambda value: (tr("Default") if not value or value == 0 else
                                     f"{value} s" if value < 60 else f"{int(value/60)} m")
     )
+    self._screensaver_toggle = toggle_item_sp(
+      param="ScreenSaverEnabled",
+      title=lambda: tr("Enable sunnypilot Screen Saver"),
+      description=lambda: tr("Enable screen saver when the device is offroad & idle. " +
+                             "The screen saver will kick off after the interactivity timeout expires, and will stay on for the duration configured below."),
+    )
+    self._screensaver_timeout = option_item_sp(
+      param="ScreenSaverTimeout",
+      title=lambda: tr("Screen Saver Timeout"),
+      description=lambda: tr("Configure how long the screen saver should stay on after the interactivity timeout expires."),
+      min_value=60,
+      max_value=600,
+      value_change_step=60,
+      label_callback=lambda value: f"{int(value/60)} m"
+    )
     items = [
       self._onroad_brightness_toggle,
       self._onroad_brightness_timer,
       self._onroad_brightness,
       self._global_brightness,
       self._interactivity_timeout,
+      self._screensaver_toggle,
+      self._screensaver_timeout,
     ]
     return items
 
@@ -93,6 +110,7 @@ class DisplayLayout(Widget):
     super()._update_state()
     self._onroad_brightness_timer.set_visible(self._onroad_brightness_toggle.action_item.get_state())
     self._onroad_brightness.set_visible(self._onroad_brightness_toggle.action_item.get_state())
+    self._screensaver_timeout.set_visible(self._screensaver_toggle.action_item.get_state())
 
   def _render(self, rect):
     self._scroller.render(rect)
