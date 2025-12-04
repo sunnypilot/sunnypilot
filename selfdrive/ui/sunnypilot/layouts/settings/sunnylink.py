@@ -206,8 +206,12 @@ class SunnylinkLayout(Widget):
     ]
     return items
 
+  @staticmethod
+  def _get_sunnylink_dongle_id() -> str | None:
+    return ui_state.params.get("SunnylinkDongleId") or (lambda: tr("N/A"))
+
   def _handle_pair_btn(self, sponsor_pairing: bool = False):
-    sunnylink_dongle_id = ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
+    sunnylink_dongle_id = self._get_sunnylink_dongle_id()
     if sunnylink_dongle_id == UNREGISTERED_SUNNYLINK_DONGLE_ID:
       gui_app.set_modal_overlay(alert_dialog(message=tr("sunnylink Dongle ID not found. ") +
                                                      tr("This may be due to weak internet connection or sunnylink registration issue. ") +
