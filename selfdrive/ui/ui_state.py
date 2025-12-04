@@ -266,7 +266,7 @@ class Device:
         callback()
     self._prev_timed_out = interaction_timeout
 
-    self._set_awake(ui_state.ignition or not interaction_timeout)
+    self._set_awake(ui_state.ignition or not interaction_timeout or PC)
 
   def _set_awake(self, on: bool):
     if on != self._awake:
