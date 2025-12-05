@@ -25,6 +25,7 @@ class SunnylinkPairingDialog(PairingDialog):
   def __init__(self, sponsor_pairing: bool = False):
     PairingDialog.__init__(self)
     self._sponsor_pairing = sponsor_pairing
+    self._is_paired_prev = ui_state.sunnylink_state.is_paired()
 
   def _get_pairing_url(self) -> str:
     qr_string = "https://github.com/sponsors/sunnyhaibin"
@@ -42,7 +43,8 @@ class SunnylinkPairingDialog(PairingDialog):
     return qr_string
 
   def _update_state(self):
-    if ui_state.sunnylink_state.is_paired():
+    is_paired = ui_state.sunnylink_state.is_paired()
+    if not self._is_paired_prev and is_paired:
       gui_app.set_modal_overlay(None)
 
   def _render(self, rect: rl.Rectangle) -> int:
