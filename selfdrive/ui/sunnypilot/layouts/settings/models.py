@@ -16,18 +16,20 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.list_view import button_item, ButtonAction, ListItem
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
 
 from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
 from openpilot.system.ui.sunnypilot.lib.styles import style
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import ButtonActionSP, ListItemSP, toggle_item_sp, option_item_sp
 from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
 
-class NoElide(ButtonAction):
+
+class NoElide(ButtonActionSP):
   def get_width_hint(self):
     return super().get_width_hint() + 20
 
@@ -50,7 +52,12 @@ class ModelsLayout(Widget):
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self.current_model_item = ListItem(tr("Current Model"), "", action_item=NoElide(tr("Select"), enabled=True), callback=self._handle_current_model_clicked)
+    self.current_model_item = ListItemSP(
+      title=tr("Current Model"),
+      description="",
+      action_item=NoElide(tr("SELECT")),
+      callback=self._handle_current_model_clicked
+    )
 
     self.supercombo_label = progress_item(tr("Driving Model"))
     self.vision_label = progress_item(tr("Vision Model"))
@@ -60,7 +67,12 @@ class ModelsLayout(Widget):
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
                                              gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))))
 
-    self.clear_cache_item = ListItem(tr("Clear Model Cache"), "", action_item=NoElide(tr("Clear"), enabled=True), callback=self._clear_cache)
+    self.clear_cache_item = ListItemSP(
+      title=tr("Clear Model Cache"),
+      description="",
+      action_item=NoElide(tr("CLEAR")),
+      callback=self._clear_cache
+    )
 
     self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
 
@@ -229,7 +241,7 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else "Default Model"
+    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else tr("Default Model")
     self.current_model_item.action_item.set_value(active_name)
 
     if not ui_state.is_offroad():
