@@ -14,6 +14,20 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 
 
+def sync_layout_params(layout, param_name, params):
+  for item in getattr(layout, 'items', []):
+    if not (action := getattr(item, 'action_item', None)):
+      continue
+
+    if (toggle := getattr(action, 'toggle', None)) and getattr(toggle, 'param_key', None) == param_name:
+      action.set_state(params.get_bool(param_name))
+    elif getattr(action, 'param_key', None) == param_name:
+      value = int(params.get(param_name, return_default=True))
+      for attribute in ['selected_button', 'current_value']:
+        if hasattr(action, attribute):
+          setattr(action, attribute, value)
+
+
 class ParamWatcher(Params):
   def __init__(self):
     super().__init__()
@@ -24,10 +38,8 @@ class ParamWatcher(Params):
     self._callbacks = []
 
   def start(self):
-    if getattr(self, '_thread', None):
-      if self._thread.is_alive():
-        return
-      self._thread = None
+    if getattr(self, '_thread', None) and self._thread.is_alive():
+      return
     self._thread = threading.Thread(target=self._run_watcher, daemon=True)
     self._thread.start()
 
@@ -39,53 +51,35 @@ class ParamWatcher(Params):
       self._callbacks.append(callback)
 
   def _trigger_callbacks(self, path, mask):
-    is_final_write = mask & (0x00000008 | 0x00000080)  # IN_CLOSE_WRITE or IN_MOVED_TO
-    if platform.system() != "Linux" or is_final_write:
-      now = time.monotonic()
+    # IN_CLOSE_WRITE or IN_MOVED_TO
+    if platform.system() == "Linux" and not (mask & (0x00000008 | 0x00000080)):
+      return
 
-      to_refresh = []
-      with self._lock:
-        if now - self._last_trigger.get(path, 0) < 0.02:
-          return
-        self._last_trigger[path] = now
-        k = str(path)
-        self._version[k] = self._version.get(k, 0) + 1
+    with self._lock:
+      if (now := time.monotonic()) - self._last_trigger.get(path, 0) < 0.1:
+        return
+      self._last_trigger[path] = now
+      self._version[path] = self._version.get(path, 0) + 1
+      self._cache.pop(path, None)
 
-        bucket = self._cache.pop(k, None)
-        if bucket:
-          to_refresh.append((k, list(bucket.keys())))
-
-      if to_refresh:
-        for key, sigs in to_refresh:
-          for sig in sigs:
-            try:
-              if sig[0] == "bool":
-                self.get_bool(key, block=sig[1])
-              else:
-                self.get(key, block=sig[0], return_default=sig[1])
-            except Exception:
-              cloudlog.exception(f"ParamWatcher: Failed to regenerate {key} {sig}")
-
-      for callback in self._callbacks:
-        try:
-          callback(path, mask)
-        except Exception:
-          cloudlog.exception("Param watcher callback failed")
+    for callback in self._callbacks:
+      try:
+        callback(path, mask)
+      except Exception:
+        cloudlog.exception("Param watcher callback failed")
 
   def _get_cached(self, key, getter, sig):
     k = str(key)
     with self._lock:
       bucket = self._cache.get(k)
-      current_version = self._version.get(k, 0)
       if bucket and sig in bucket:
-        cached_version, cached_val = bucket[sig]
-        if cached_version == current_version:
-          return cached_val
-    start_version = self._version.get(k, 0)
+        if bucket[sig][0] == self._version.get(k, 0):
+          return bucket[sig][1]
+
+    start_ver = self._version.get(k, 0)
     val = getter()
     with self._lock:
-      current_version = self._version.get(k, 0)
-      if current_version != start_version:
+      if self._version.get(k, 0) != start_ver:
         val = getter()
       self._cache.setdefault(k, {})[sig] = (self._version.get(k, 0), val)
     return val
@@ -124,6 +118,7 @@ class ParamWatcher(Params):
     IN_CLOSE_WRITE = 0x00000008
 
     path = Paths.params_root()
+
     if hasattr(os, "inotify_init"):
       cloudlog.warning("taking the os.inotify path")
       fd = os.inotify_init()
@@ -137,7 +132,6 @@ class ParamWatcher(Params):
     try:
       poll = select.epoll()
       poll.register(fd, select.EPOLLIN)
-
       while True:
         for fileno, _ in poll.poll():
           if fileno == fd:
@@ -145,10 +139,8 @@ class ParamWatcher(Params):
             i = 0
             while i + 16 <= len(buffer):
               _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
-              i += 16
-              name = buffer[i:i+name_len].rstrip(b"\0").decode()
-              i += name_len
-              self._trigger_callbacks(name, mask)
+              self._trigger_callbacks(buffer[i+16:i+16+name_len].rstrip(b"\0").decode(), mask)
+              i += 16 + name_len
     finally:
       if 'poll' in locals():
         poll.unregister(fd)
