@@ -51,7 +51,7 @@ class SunnylinkHeader(Widget):
 
     self._sponsor_msg = UnifiedLabel(
       text=tr("Sponsorship isn't required for basic backup/restore") + "\n" +
-           tr("Click the sponsor button for more details"),
+           tr("Click the Sponsor button for more details"),
       font_size=35,
       font_weight=FontWeight.LIGHT,
       text_color=rl.Color(255, 165, 0, 255),  # Orange
@@ -152,8 +152,7 @@ class SunnylinkLayout(Widget):
   def _initialize_items(self):
     self._sunnylink_toggle = toggle_item_sp(
       title=tr("Enable sunnylink"),
-      description=tr(
-        "This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that."),
+      description=tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that."),
       param="SunnylinkEnabled",
       callback=self._sunnylink_toggle_callback
     )
@@ -177,8 +176,8 @@ class SunnylinkLayout(Widget):
     )
     self._sunnylink_uploader_toggle = toggle_item_sp(
       title=tr("Enable sunnylink uploader (infrastructure test)"),
-      description=tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers.") +
-                  tr(" (Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"),
+      description=tr("Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. ") +
+                  tr("(Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"),
       param="EnableSunnylinkUploader"
     )
     self._sunnylink_backup_restore_buttons = dual_button_item(
@@ -319,7 +318,7 @@ class SunnylinkLayout(Widget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
-    self._sunnylink_toggle.set_right_value(tr("Device ID") + ": " + self._get_sunnylink_dongle_id())
+    self._sunnylink_toggle.set_right_value(tr("Dongle ID") + ": " + self._get_sunnylink_dongle_id())
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)

@@ -92,7 +92,7 @@ class SunnylinkPairingDialog(PairingDialog):
         tr("Scan the QR code to login to your GitHub account"),
         tr("Follow the prompts to complete the pairing process"),
         tr("Re-enter the \"sunnylink\" panel to verify sponsorship status"),
-        tr("If sponsorship status was not updated, please contact a moderator on our forum at https://community.sunnypilot.ai")
+        tr("If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai")
       ]
     else:
       instructions = [
