@@ -15,60 +15,86 @@ from openpilot.system.hardware.hw import Paths
 
 
 class ParamWatcher(Params):
-  _instance = None
-  _instance_lock = threading.Lock()
-
-  def __new__(cls):
-    if cls._instance is None:
-      with cls._instance_lock:
-        if cls._instance is None:
-          cls._instance = super().__new__(cls)
-          cls._instance._initialized = False
-    return cls._instance
-
   def __init__(self):
-    if self._initialized:
-      return
-    with self._instance_lock:
-      if self._initialized:
+    super().__init__()
+    self._cache = {}
+    self._last_trigger = {}
+    self._version = {}
+    self._lock = threading.Lock()
+    self._callbacks = []
+
+  def start(self):
+    if getattr(self, '_thread', None):
+      if self._thread.is_alive():
         return
-      super().__init__()
-      self._cache = {}
-      self._last_trigger = {}
-      self._lock = threading.Lock()
-      self._callbacks = []
-      threading.Thread(target=self._run_watcher, daemon=True).start()
-      self._initialized = True
+      self._thread = None
+    self._thread = threading.Thread(target=self._run_watcher, daemon=True)
+    self._thread.start()
+
+  def is_watching(self):
+    return getattr(self, '_thread', None) and self._thread.is_alive()
 
   def add_watcher(self, callback):
     if callback not in self._callbacks:
       self._callbacks.append(callback)
-      cloudlog.warning(f"ParamWatcher: Added watcher {callback}")  # remove me after testing
 
   def _trigger_callbacks(self, path, mask):
-    now = time.monotonic()
-    cloudlog.warning(f"Param raw: {path}")
-    with self._lock:
-      if now - self._last_trigger.get(path, 0) < 0.1:
-        cloudlog.warning(f"Param debounced: {path}")  # remove me after testing
-        return
-      self._last_trigger[path] = now
-      self._cache.pop(path, None)
+    is_final_write = mask & (0x00000008 | 0x00000080)  # IN_CLOSE_WRITE or IN_MOVED_TO
+    if platform.system() != "Linux" or is_final_write:
+      now = time.monotonic()
 
-    for callback in self._callbacks:
-      try:
-        callback(path, mask)
-      except Exception:
-        cloudlog.exception("Param watcher callback failed")
+      to_refresh = []
+      with self._lock:
+        if now - self._last_trigger.get(path, 0) < 0.02:
+          return
+        self._last_trigger[path] = now
+        k = str(path)
+        self._version[k] = self._version.get(k, 0) + 1
+
+        bucket = self._cache.pop(k, None)
+        if bucket:
+          to_refresh.append((k, list(bucket.keys())))
+
+      # Regenerate cache for previously cached keys
+      if to_refresh:
+        # Small sleep to ensure FS is ready if needed
+        time.sleep(0.01)
+        for key, sigs in to_refresh:
+          for sig in sigs:
+            try:
+              if sig[0] == "bool":
+                self.get_bool(key, block=sig[1])
+              else:
+                self.get(key, block=sig[0], return_default=sig[1])
+            except Exception:
+              cloudlog.exception(f"ParamWatcher: Failed to regenerate {key} {sig}")
+
+      if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
+        return
+
+      for callback in self._callbacks:
+        try:
+          callback(path, mask)
+        except Exception:
+          cloudlog.exception("Param watcher callback failed")
 
   def _get_cached(self, key, getter, sig):
     k = str(key)
     with self._lock:
-      if k in self._cache and sig in self._cache[k]:
-        return self._cache[k][sig]
+      bucket = self._cache.get(k)
+      current_version = self._version.get(k, 0)
+      if bucket and sig in bucket:
+        cached_version, cached_val = bucket[sig]
+        if cached_version == current_version:
+          return cached_val
+    start_version = self._version.get(k, 0)
     val = getter()
     with self._lock:
-      self._cache.setdefault(k, {})[sig] = val
+      current_version = self._version.get(k, 0)
+      if current_version != start_version:
+        # Version changed during fetch, fetch again to get latest
+        val = getter()
+      self._cache.setdefault(k, {})[sig] = (self._version.get(k, 0), val)
     return val
 
   def get(self, key, block=False, return_default=False):
@@ -105,22 +131,36 @@ class ParamWatcher(Params):
     IN_CLOSE_WRITE = 0x00000008
 
     path = Paths.params_root()
-    fd = os.inotify_init()
-    os.inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
-    poll = select.epoll()
-    poll.register(fd, select.EPOLLIN)
+    if hasattr(os, "inotify_init"):
+      cloudlog.warning("taking the os.inotify path")
+      fd = os.inotify_init()
+      os.inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
+    else:
+      cloudlog.warning("fell back to libc from ctypes")
+      libc = ctypes.CDLL('libc.so.6')
+      fd = libc.inotify_init()
+      libc.inotify_add_watch(fd, path.encode(), IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
 
-    while True:
-      for fileno, _ in poll.poll():
-        if fileno == fd:
-          buffer = os.read(fd, 1024)
-          i = 0
-          while i + 16 <= len(buffer):
-            _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
-            i += 16
-            name = buffer[i:i+name_len].rstrip(b"\0").decode()
-            i += name_len
-            self._trigger_callbacks(name, mask)
+    try:
+      poll = select.epoll()
+      poll.register(fd, select.EPOLLIN)
+
+      while True:
+        for fileno, _ in poll.poll():
+          if fileno == fd:
+            buffer = os.read(fd, 1024)
+            i = 0
+            while i + 16 <= len(buffer):
+              _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
+              i += 16
+              name = buffer[i:i+name_len].rstrip(b"\0").decode()
+              i += name_len
+              self._trigger_callbacks(name, mask)
+    finally:
+      if 'poll' in locals():
+        poll.unregister(fd)
+        poll.close()
+      os.close(fd)
 
   def _run_darwin(self):
     # FS documentation: https://developer.apple.com/documentation/coreservices/file_system_events
