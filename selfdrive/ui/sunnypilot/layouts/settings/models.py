@@ -11,6 +11,7 @@ import pyray as rl
 
 from cereal import custom
 from openpilot.common.constants import CV
+from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -24,7 +25,6 @@ from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
-from openpilot.selfdrive.ui.ui_state import device, ui_state
 
 
 class NoElide(ButtonAction):
@@ -101,7 +101,8 @@ class ModelsLayout(Widget):
     return (self.model_manager and self.model_manager.selectedBundle and
             self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
 
-  def _calculate_cache_size(self):
+  @staticmethod
+  def _calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
       cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
@@ -114,7 +115,7 @@ class ModelsLayout(Widget):
         self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
     gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
-                                            tr("Clear Cache"), tr("Cancel")), callback=_callback)
+                                            tr("Clear Cache")), callback=_callback)
 
   def _handle_bundle_download_progress(self):
     labels = {custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
@@ -160,13 +161,14 @@ class ModelsLayout(Widget):
           text, color = f"download failed - {bundle.displayName}", rl.RED
         label.action_item.update(p.progress, text, show, color)
 
-  def _show_reset_params_dialog(self):
+  @staticmethod
+  def _show_reset_params_dialog():
     def _callback(response):
       if response == DialogResult.CONFIRM:
         ui_state.params.remove("CalibrationParams")
         ui_state.params.remove("LiveTorqueParameters")
     msg = tr("Model download has started in the background. We suggest resetting calibration. Would you like to do that now?")
-    gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration"), tr("Cancel")), callback=_callback)
+    gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration")), callback=_callback)
 
   def _on_model_selected(self, result):
     if result != DialogResult.CONFIRM:
