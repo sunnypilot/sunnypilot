@@ -39,12 +39,13 @@ class UIStateSP:
 
     if self.changed_params:
       while self.changed_params:
-        param = self.changed_params.pop()
-        if self.active_layout:
-          sync_layout_params(self.active_layout, param, self.params)
+        self.changed_params.pop()
 
       if self.active_layout:
-        for method in ['update_settings', '_update_state']:
+        sync_layout_params(self.active_layout, None, self.params)
+
+      if self.active_layout:
+        for method in ['update_settings', '_update_state', '_update_toggles']:
           if function := getattr(self.active_layout, method, None):
             function()
             break
