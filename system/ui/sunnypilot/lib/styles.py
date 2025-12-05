@@ -17,7 +17,10 @@ class Base:
   ITEM_TEXT_FONT_SIZE = 50
   ITEM_DESC_FONT_SIZE = 40
   ITEM_DESC_V_OFFSET = 150
+  ITEM_TEXT_VALUE_COLOR = rl.Color(170, 170, 170, 255)
   CLOSE_BTN_SIZE = 160
+
+  TEXT_PADDING = 20
 
   # Toggle Control
   TOGGLE_HEIGHT = 120
@@ -69,6 +72,14 @@ class DefaultStyleSP(Base):
   BUTTON_PRIMARY_COLOR = rl.Color(70, 91, 234, 255)  # Royal Blue
   BUTTON_NEUTRAL_GRAY = rl.Color(51, 51, 51, 255)
   BUTTON_DISABLED_BG_COLOR = rl.Color(30, 30, 30, 255)  # Very Dark Grey
+  TREE_DIALOG_TRANSPARENT = rl.Color(0, 0, 0, 0)
+  TREE_DIALOG_SEARCH_BUTTON_PRESSED = rl.Color(0x69, 0x68, 0x68, 0xFF)
+  TREE_DIALOG_SEARCH_BUTTON_BORDER = rl.Color(150, 150, 150, 200)
+
+  # Vehicle Description Colors
+  GREEN = rl.Color(0, 241, 0, 255)
+  BLUE = rl.Color(0, 134, 233, 255)
+  YELLOW = rl.Color(255, 213, 0, 255)
 
 
 style = DefaultStyleSP
