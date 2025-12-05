@@ -8,11 +8,13 @@ from enum import IntEnum
 import threading
 import time
 import json
+import pyray as rl
 
 from cereal import messaging
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID, SunnylinkApi
+from openpilot.system.ui.sunnypilot.lib.styles import style
 
 
 class RoleType(IntEnum):
@@ -200,6 +202,20 @@ class SunnylinkState:
   def is_connected(self) -> bool:
     network_type = self._sm["deviceState"].networkType
     return bool(network_type != 0)
+
+  def get_sponsor_tier_color(self) -> rl.Color:
+    tier = self.get_sponsor_tier()
+
+    if tier == SponsorTier.GUARDIAN:
+      return rl.Color(255, 215, 0, 255)
+    elif tier == SponsorTier.BENEFACTOR:
+      return rl.Color(60, 179, 113, 255)
+    elif tier == SponsorTier.CONTRIBUTOR:
+      return rl.Color(70, 130, 180, 255)
+    elif tier == SponsorTier.SUPPORTER:
+      return rl.Color(147, 112, 219, 255)
+    else:
+      return style.ITEM_TEXT_VALUE_COLOR
 
   def __del__(self):
     self.stop()
