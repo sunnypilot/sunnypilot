@@ -328,12 +328,11 @@ class SunnylinkLayout(Widget):
     tier_name = ui_state.sunnylink_state.get_sponsor_tier().name.capitalize() or tr("Not Sponsor")
     self._sponsor_btn.action_item.set_text(sponsor_btn_text)
     self._sponsor_btn.action_item.set_value(tier_name, ui_state.sunnylink_state.get_sponsor_tier_color())
-    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_sponsor())
+    self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled)
 
     pair_btn_text = tr("Paired") if ui_state.sunnylink_state.is_paired() else tr("Not Paired")
     self._pair_btn.action_item.set_text(pair_btn_text)
-    self._pair_btn.set_visible(lambda: self._sunnylink_enabled and not ui_state.sunnylink_state.is_paired())
-    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_paired())
+    self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
 
   def _render(self, rect):
     self._scroller.render(rect)
