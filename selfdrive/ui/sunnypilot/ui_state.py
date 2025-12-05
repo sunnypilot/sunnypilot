@@ -16,6 +16,7 @@ class UIStateSP:
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP"
     ]
+    self.CP_SP = None
 
     self.sunnylink_state = SunnylinkState()
 
