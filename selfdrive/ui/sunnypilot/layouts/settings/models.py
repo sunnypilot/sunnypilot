@@ -29,9 +29,9 @@ if gui_app.sunnypilot_ui():
   from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
 
 
-class NoElide(ButtonActionSP):
+class ModelAction(ButtonActionSP):
   def get_width_hint(self):
-    return super().get_width_hint() + 20
+    return super().get_width_hint() + 1
 
 
 class ModelsLayout(Widget):
@@ -55,7 +55,7 @@ class ModelsLayout(Widget):
     self.current_model_item = ListItemSP(
       title=tr("Current Model"),
       description="",
-      action_item=NoElide(tr("SELECT")),
+      action_item=ModelAction(tr("SELECT")),
       callback=self._handle_current_model_clicked
     )
 
@@ -70,7 +70,7 @@ class ModelsLayout(Widget):
     self.clear_cache_item = ListItemSP(
       title=tr("Clear Model Cache"),
       description="",
-      action_item=NoElide(tr("CLEAR")),
+      action_item=ModelAction(tr("CLEAR")),
       callback=self._clear_cache
     )
 
