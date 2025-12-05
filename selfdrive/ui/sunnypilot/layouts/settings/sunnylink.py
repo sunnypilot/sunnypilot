@@ -327,7 +327,7 @@ class SunnylinkLayout(Widget):
 
     sponsor_btn_text = tr("THANKS ♥") if ui_state.sunnylink_state.is_sponsor() else tr("SPONSOR")
     self._sponsor_btn.action_item.set_text(sponsor_btn_text)
-    self._sponsor_btn.action_item.set_value(ui_state.sunnylink_state.get_sponsor_tier() or tr("Not Sponsor"))
+    self._sponsor_btn.action_item.set_value(ui_state.sunnylink_state.get_sponsor_tier().name.capitalize() or tr("Not Sponsor"))
     self._sponsor_btn.action_item.set_enabled(self._sunnylink_enabled and not ui_state.sunnylink_state.is_sponsor())
 
     pair_btn_text = tr("Paired") if ui_state.sunnylink_state.is_paired() else tr("Not Paired")
