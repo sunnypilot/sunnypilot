@@ -5,10 +5,12 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.common.params import Params
+from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, ToggleActionSP
 
 onroad_brightness_timer_values = {
   0: 15,
@@ -91,6 +93,13 @@ class DisplayLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
+
+    for _item in self._scroller._items:
+      if isinstance(_item.action_item, ToggleActionSP) and _item.action_item.toggle.param_key is not None:
+        _item.action_item.set_state(ui_state.params.get_bool(_item.action_item.toggle.param_key))
+      elif isinstance(_item.action_item, OptionControlSP) and _item.action_item.param_key is not None:
+        _item.action_item.set_value(ui_state.params.get(_item.action_item.param_key))
+
     self._onroad_brightness_timer.set_visible(self._onroad_brightness_toggle.action_item.get_state())
     self._onroad_brightness.set_visible(self._onroad_brightness_toggle.action_item.get_state())
 
