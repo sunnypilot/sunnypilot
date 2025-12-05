@@ -63,7 +63,7 @@ class ModelsLayout(Widget):
     self.vision_label = progress_item(tr("Vision Model"))
     self.policy_label = progress_item(tr("Policy Model"))
 
-    self.refresh_item = button_item(tr("Refresh Model List"), tr("Refresh"), "",
+    self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
                                              gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))))
 
