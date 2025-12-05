@@ -21,12 +21,19 @@ from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog,
 class SoftwareLayoutSP(SoftwareLayout):
   def __init__(self):
     super().__init__()
-    self.disable_updates_toggle = toggle_item_sp(tr("Disable Updates"), "", param="DisableUpdates", callback=self._on_disable_updates_toggled)
+    self.disable_updates_toggle = toggle_item_sp(
+      title=tr("Disable Updates"),
+      description="",
+      callback=self._on_disable_updates_toggled,
+      initial_state=ui_state.params.get_bool("DisableUpdates"),)
     self._scroller.add_widget(self.disable_updates_toggle)
 
   def _handle_reboot(self, result):
     if result == DialogResult.CONFIRM:
+      ui_state.params.put_bool("DisableUpdates", self.disable_updates_toggle.action_item.get_state())
       ui_state.params.put_bool("DoReboot", True)
+    else:
+      self.disable_updates_toggle.action_item.set_state(ui_state.params.get_bool("DisableUpdates"))
 
   def _on_disable_updates_toggled(self, enabled):
     dialog = ConfirmDialog(tr("System reboot required for changes to take effect. Reboot now?"), tr("Reboot"))
@@ -70,7 +77,7 @@ class SoftwareLayoutSP(SoftwareLayout):
   def _update_state(self):
     super()._update_state()
     offroad = ui_state.is_offroad()
-    show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
+    show_advanced = True #ui_state.params.get_bool("ShowAdvancedControls")
     self.disable_updates_toggle.action_item.set_enabled(offroad)
     self.disable_updates_toggle.set_visible(show_advanced)
 
