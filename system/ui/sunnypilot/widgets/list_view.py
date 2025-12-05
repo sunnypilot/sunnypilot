@@ -12,7 +12,8 @@ from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.label import gui_label
-from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, _resolve_value
+from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
+                                                  _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -22,6 +23,34 @@ class ToggleActionSP(ToggleAction):
                callback: Callable[[bool], None] | None = None, param: str | None = None):
     ToggleAction.__init__(self, initial_state, width, enabled, callback)
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
+
+
+class ButtonActionSP(ButtonAction):
+  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_WIDTH, enabled: bool | Callable[[], bool] = True):
+    super().__init__(text=text, width=width, enabled=enabled)
+    self._value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
+
+  def set_value(self, value: str | Callable[[], str], color: rl.Color = style.ITEM_TEXT_VALUE_COLOR):
+    self._value_source = value
+    self._value_color = color
+
+  def _render(self, rect: rl.Rectangle) -> bool:
+    """Duplicate of ButtonAction._render, with additional value rendering"""
+    self._button.set_text(self.text)
+    self._button.set_enabled(_resolve_value(self.enabled))
+    button_rect = rl.Rectangle(rect.x + rect.width - BUTTON_WIDTH, rect.y + (rect.height - BUTTON_HEIGHT) / 2, BUTTON_WIDTH, BUTTON_HEIGHT)
+    self._button.render(button_rect)
+
+    value_text = self.value
+    if value_text:
+      value_rect = rl.Rectangle(rect.x, rect.y, rect.width - BUTTON_WIDTH - TEXT_PADDING, rect.height)
+      gui_label(value_rect, value_text, font_size=style.ITEM_TEXT_FONT_SIZE, color=self._value_color,
+                font_weight=FontWeight.NORMAL, alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+                alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+
+    pressed = self._pressed
+    self._pressed = False
+    return pressed
 
 
 class MultipleButtonActionSP(MultipleButtonAction):
@@ -89,9 +118,11 @@ class ListItemSP(ListItem):
       self._rect.height += style.ITEM_BASE_HEIGHT/1.75
     self._right_value_source: str | Callable[[], str] | None = None
     self._right_value_font = gui_app.font(FontWeight.NORMAL)
+    self._right_value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
 
-  def set_right_value(self, value: str | Callable[[], str]):
+  def set_right_value(self, value: str | Callable[[], str], color: rl.Color = style.ITEM_TEXT_VALUE_COLOR):
     self._right_value_source = value
+    self._right_value_color = color
 
   @property
   def right_value(self) -> str:
@@ -127,17 +158,17 @@ class ListItemSP(ListItem):
 
       return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
 
-    right_width = self.action_item.rect.width
+    right_width = self.action_item.get_width_hint()
     if right_width == 0:
       return rl.Rectangle(item_rect.x + style.ITEM_PADDING, item_rect.y, item_rect.width - (style.ITEM_PADDING * 2), style.ITEM_BASE_HEIGHT)
 
-    action_width = self.action_item.rect.width
-    if isinstance(self.action_item, ToggleAction):
-      action_x = item_rect.x
-    else:
-      action_x = item_rect.x + item_rect.width - action_width
+    content_width = item_rect.width - (style.ITEM_PADDING * 2)
+    title_width = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE).x
+    right_width = min(content_width - title_width, right_width)
+
+    action_x = item_rect.x + item_rect.width - right_width
     action_y = item_rect.y
-    return rl.Rectangle(action_x, action_y, action_width, style.ITEM_BASE_HEIGHT)
+    return rl.Rectangle(action_x, action_y, right_width, style.ITEM_BASE_HEIGHT)
 
   def _render(self, _):
     if not self.is_visible:
@@ -176,7 +207,7 @@ class ListItemSP(ListItem):
           style.ITEM_BASE_HEIGHT,
         )
         if value_rect.width > 0:
-          gui_label(value_rect, value_text, font_size=style.ITEM_TEXT_FONT_SIZE, color=style.ITEM_TEXT_VALUE_COLOR, font_weight=FontWeight.NORMAL,
+          gui_label(value_rect, value_text, font_size=style.ITEM_TEXT_FONT_SIZE, color=self._right_value_color, font_weight=FontWeight.NORMAL,
                     alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
       # Render toggle and handle callback
@@ -236,3 +267,9 @@ def option_item_sp(title: str | Callable[[], str], param: str,
     enabled, on_value_changed, value_map, label_width, use_float_scaling, label_callback
   )
   return ListItemSP(title=title, description=description, action_item=action, icon=icon)
+
+
+def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
+                   callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItemSP:
+  action = ButtonActionSP(text=button_text, enabled=enabled)
+  return ListItemSP(title=title, description=description, action_item=action, callback=callback)
