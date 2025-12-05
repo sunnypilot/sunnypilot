@@ -13,19 +13,29 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 
+IN_MODIFY = 0x00000002
+IN_CREATE = 0x00000100
+IN_DELETE = 0x00000200
+IN_MOVED_TO = 0x00000080
+IN_CLOSE_WRITE = 0x00000008
+
 
 def sync_layout_params(layout, param_name, params):
   for item in getattr(layout, 'items', []):
     if not (action := getattr(item, 'action_item', None)):
       continue
 
-    if (toggle := getattr(action, 'toggle', None)) and getattr(toggle, 'param_key', None) == param_name:
-      action.set_state(params.get_bool(param_name))
-    elif getattr(action, 'param_key', None) == param_name:
-      value = int(params.get(param_name, return_default=True))
-      for attribute in ['selected_button', 'current_value']:
-        if hasattr(action, attribute):
-          setattr(action, attribute, value)
+    toggle_key = getattr(getattr(action, 'toggle', None), 'param_key', None)
+    action_key = getattr(action, 'param_key', None)
+
+    if param_name is None or toggle_key == param_name or action_key == param_name:
+      if toggle_key:
+        action.set_state(params.get_bool(toggle_key))
+      elif action_key:
+        value = int(params.get(action_key, return_default=True))
+        for attribute in ['selected_button', 'current_value']:
+          if hasattr(action, attribute):
+            setattr(action, attribute, value)
 
 
 class ParamWatcher(Params):
@@ -51,8 +61,7 @@ class ParamWatcher(Params):
       self._callbacks.append(callback)
 
   def _trigger_callbacks(self, path, mask):
-    # IN_CLOSE_WRITE or IN_MOVED_TO
-    if platform.system() == "Linux" and not (mask & (0x00000008 | 0x00000080)):
+    if platform.system() == "Linux" and not (mask & (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)):
       return
 
     with self._lock:
@@ -111,12 +120,6 @@ class ParamWatcher(Params):
     # more docs: https://linux.die.net/man/7/inotify
     # inotify init docs: https://www.man7.org/linux/man-pages/man2/inotify_init.2.html
     # docs for add watch: https://www.man7.org/linux/man-pages/man2/inotify_add_watch.2.html
-    IN_MODIFY = 0x00000002
-    IN_CREATE = 0x00000100
-    IN_DELETE = 0x00000200
-    IN_MOVED_TO = 0x00000080
-    IN_CLOSE_WRITE = 0x00000008
-
     path = Paths.params_root()
 
     if hasattr(os, "inotify_init"):
