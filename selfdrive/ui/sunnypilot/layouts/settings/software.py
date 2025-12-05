@@ -24,7 +24,8 @@ class SoftwareLayoutSP(SoftwareLayout):
     self.disable_updates_toggle = toggle_item_sp(tr("Disable Updates"), "", param="DisableUpdates", callback=self._on_disable_updates_toggled)
     self._scroller.add_widget(self.disable_updates_toggle)
 
-  def _handle_reboot(self, result):
+  @staticmethod
+  def _handle_reboot(result):
     if result == DialogResult.CONFIRM:
       ui_state.params.put_bool("DoReboot", True)
 
@@ -78,4 +79,3 @@ class SoftwareLayoutSP(SoftwareLayout):
       self.disable_updates_toggle.set_description(tr("When enabled, automatic software updates will be off.<br><b>This requires a reboot to take effect.</b>"))
     else:
       self.disable_updates_toggle.set_description(tr("Please enable always offroad mode or turn off vehicle to adjust these toggles"))
-    self.disable_updates_toggle.show_description(True)
