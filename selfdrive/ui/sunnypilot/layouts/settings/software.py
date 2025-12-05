@@ -28,8 +28,8 @@ class SoftwareLayoutSP(SoftwareLayout):
       initial_state=ui_state.params.get_bool("DisableUpdates"),)
     self._scroller.add_widget(self.disable_updates_toggle)
 
-  @staticmethod
-  def _handle_reboot(result):
+
+  def _handle_reboot(self, result):
     if result == DialogResult.CONFIRM:
       ui_state.params.put_bool("DisableUpdates", self.disable_updates_toggle.action_item.get_state())
       ui_state.params.put_bool("DoReboot", True)
