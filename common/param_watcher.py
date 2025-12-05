@@ -55,10 +55,7 @@ class ParamWatcher(Params):
         if bucket:
           to_refresh.append((k, list(bucket.keys())))
 
-      # Regenerate cache for previously cached keys
       if to_refresh:
-        # Small sleep to ensure FS is ready if needed
-        time.sleep(0.01)
         for key, sigs in to_refresh:
           for sig in sigs:
             try:
@@ -68,9 +65,6 @@ class ParamWatcher(Params):
                 self.get(key, block=sig[0], return_default=sig[1])
             except Exception:
               cloudlog.exception(f"ParamWatcher: Failed to regenerate {key} {sig}")
-
-      if path in ["GithubRunnerSufficientVoltage", "NetworkMetered"]:
-        return
 
       for callback in self._callbacks:
         try:
@@ -92,7 +86,6 @@ class ParamWatcher(Params):
     with self._lock:
       current_version = self._version.get(k, 0)
       if current_version != start_version:
-        # Version changed during fetch, fetch again to get latest
         val = getter()
       self._cache.setdefault(k, {})[sig] = (self._version.get(k, 0), val)
     return val
