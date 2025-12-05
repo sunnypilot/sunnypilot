@@ -44,8 +44,8 @@ class ModelsLayout(Widget):
     self._initialize_items()
 
     self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
-    for ctrl, key, default in [(self.lane_turn_value_control, "LaneTurnValue", "19.0"), (self.delay_control, "LagdToggleDelay", "0.2")]:
-      ctrl.action_item.set_value(int(float(ui_state.params.get(key, default)) * 100))
+    for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay")]:
+      ctrl.action_item.set_value(int(float(ui_state.params.get(key, return_default=True)) * 100))
 
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
