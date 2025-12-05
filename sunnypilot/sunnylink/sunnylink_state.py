@@ -207,7 +207,7 @@ class SunnylinkState:
     tier = self.get_sponsor_tier()
 
     if tier == SponsorTier.GUARDIAN:
-      return rl.Color(255, 215,   0, 255)
+      return rl.Color(255, 215, 0, 255)
     elif tier == SponsorTier.BENEFACTOR:
       return rl.Color(60, 179, 113, 255)
     elif tier == SponsorTier.CONTRIBUTOR:
