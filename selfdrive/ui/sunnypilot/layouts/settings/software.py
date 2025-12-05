@@ -78,7 +78,7 @@ class SoftwareLayoutSP(SoftwareLayout):
   def _update_state(self):
     super()._update_state()
     offroad = ui_state.is_offroad()
-    show_advanced = True #ui_state.params.get_bool("ShowAdvancedControls")
+    show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
     self.disable_updates_toggle.action_item.set_enabled(offroad)
     self.disable_updates_toggle.set_visible(show_advanced)
 
