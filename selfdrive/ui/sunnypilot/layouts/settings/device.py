@@ -84,7 +84,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._quiet_mode_btn = self._quiet_mode_and_dcam.action_item.left_button
     self._dcam_btn = self._quiet_mode_and_dcam.action_item.right_button
     self._dcam_btn.set_button_style(ButtonStyle.NORMAL)
-    self._quiet_mode_btn._border_radius = 15
+    self._quiet_mode_btn._border_radius = 20
 
     self._reg_and_training = dual_button_item_sp(
       left_text=lambda: tr("Regulatory"),
