@@ -12,11 +12,9 @@ from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, \
-  ButtonAction, \
-  _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, DualButtonAction
+  ButtonAction, _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, DualButtonAction
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -315,7 +313,8 @@ def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[
   action = ButtonActionSP(text=button_text, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
 
-def dual_button_item_sp(left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None, right_callback: Callable = None,
-                     description: str | Callable[[], str] | None = None, enabled: bool | Callable[[], bool] = True, border_radius: int = 15) -> ListItemSP:
+def dual_button_item_sp(left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
+                        right_callback: Callable = None, description: str | Callable[[], str] | None = None,
+                        enabled: bool | Callable[[], bool] = True, border_radius: int = 15) -> ListItemSP:
   action = DualButtonActionSP(left_text, right_text, left_callback, right_callback, enabled, border_radius)
   return ListItemSP(title="", description=description, action_item=action)
