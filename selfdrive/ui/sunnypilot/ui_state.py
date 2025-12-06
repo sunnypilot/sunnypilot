@@ -27,3 +27,11 @@ class UIStateSP:
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
+
+class DeviceSP:
+  def __init__(self):
+    self._params = Params()
+
+  def _set_awake(self, on: bool):
+    if on and not self._awake and self._params.get("DeviceBootMode", return_default=True) == 1:
+      self._params.put_bool("OffroadMode", True)
