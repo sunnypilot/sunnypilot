@@ -127,6 +127,15 @@ class DeviceLayoutSP(DeviceLayout):
       LineSeparator(),
     ]
 
+    self._power_buttons = dual_button_item(
+      left_text=lambda: tr("Reboot"),
+      right_text=lambda: tr("Power Off"),
+      left_callback=self._reboot_prompt,
+      right_callback=self._power_off_prompt
+    )
+    self._reboot_btn = self._power_buttons.action_item.left_button
+    self._power_btn = self._power_buttons.action_item.right_button
+
     items += [
       dual_button_item(
         left_text=lambda: tr("Reboot"),
@@ -225,3 +234,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._dcam_btn.set_enabled(ui_state.is_offroad())
     self._reg_btn.set_enabled(ui_state.is_offroad())
     self._training_btn.set_enabled(ui_state.is_offroad())
+
+    # Always enabled buttons
+    self._reboot_btn.set_visible(True)
+    self._power_btn.set_visible(True)
