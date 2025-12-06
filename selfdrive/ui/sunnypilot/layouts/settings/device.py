@@ -9,11 +9,12 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, multiple_button_item_sp, button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, multiple_button_item_sp, button_item_sp, \
+  dual_button_item_sp, Spacer
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import ButtonStyle
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.list_view import dual_button_item, text_item
+from openpilot.system.ui.widgets.list_view import text_item
 from openpilot.system.ui.widgets.scroller_tici import LineSeparator
 
 offroad_time_options = {
@@ -40,7 +41,7 @@ class DeviceLayoutSP(DeviceLayout):
     DeviceLayout._initialize_items(self)
 
     # Using dual button with no right button for better alignment
-    self._always_offroad_btn = dual_button_item(
+    self._always_offroad_btn = dual_button_item_sp(
       left_text=lambda: tr("Enable Always Offroad"),
       left_callback=self._handle_always_offroad,
       right_text="",
@@ -59,7 +60,7 @@ class DeviceLayoutSP(DeviceLayout):
       enabled=True,
       icon="",
       value_map=offroad_time_options,
-      label_width=355,
+      label_width=360,
       use_float_scaling=False,
       label_callback=self._update_max_time_offroad_label
     )
@@ -69,12 +70,12 @@ class DeviceLayoutSP(DeviceLayout):
       description=self.wake_mode_description,
       param="DeviceBootMode",
       buttons=[lambda: tr("Default"), lambda: tr("Offroad")],
-      button_width=360,
+      button_width=364,
       callback=None,
       inline=True,
     )
 
-    self._quiet_mode_and_dcam = dual_button_item(
+    self._quiet_mode_and_dcam = dual_button_item_sp(
       left_text=lambda: tr("Quiet Mode"),
       right_text=lambda: tr("Driver Camera Preview"),
       left_callback=self._handle_quiet_mode,
@@ -83,8 +84,9 @@ class DeviceLayoutSP(DeviceLayout):
     self._quiet_mode_btn = self._quiet_mode_and_dcam.action_item.left_button
     self._dcam_btn = self._quiet_mode_and_dcam.action_item.right_button
     self._dcam_btn.set_button_style(ButtonStyle.NORMAL)
+    self._quiet_mode_btn._border_radius = 15
 
-    self._reg_and_training = dual_button_item(
+    self._reg_and_training = dual_button_item_sp(
       left_text=lambda: tr("Regulatory"),
       left_callback=self._on_regulatory,
       right_text=lambda: tr("Training Guide"),
@@ -94,7 +96,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._training_btn = self._reg_and_training.action_item.right_button
     self._training_btn.set_button_style(ButtonStyle.NORMAL)
 
-    self._onroad_uploads_and_reset = dual_button_item(
+    self._onroad_uploads_and_reset = dual_button_item_sp(
       left_text=lambda: tr("Onroad Uploads"),
       left_callback=self._onroad_uploads,
       right_text=lambda: tr("Reset Settings"),
@@ -120,14 +122,15 @@ class DeviceLayoutSP(DeviceLayout):
       self._device_wake_mode,
       LineSeparator(),
       self._max_time_offroad,
-      LineSeparator(),
+      LineSeparator(height=10),
       self._quiet_mode_and_dcam,
       self._reg_and_training,
       self._onroad_uploads_and_reset,
-      LineSeparator(),
+      Spacer(10),
+      LineSeparator(height=10),
     ]
 
-    self._power_buttons = dual_button_item(
+    self._power_buttons = dual_button_item_sp(
       left_text=lambda: tr("Reboot"),
       right_text=lambda: tr("Power Off"),
       left_callback=self._reboot_prompt,
@@ -137,7 +140,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._power_btn = self._power_buttons.action_item.right_button
 
     items += [
-      dual_button_item(
+      dual_button_item_sp(
         left_text=lambda: tr("Reboot"),
         right_text=lambda: tr("Power Off"),
         left_callback=self._reboot_prompt,
