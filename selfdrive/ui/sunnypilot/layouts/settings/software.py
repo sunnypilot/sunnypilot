@@ -67,23 +67,23 @@ class SoftwareLayoutSP(SoftwareLayout):
 
     folders = [
       TreeFolder("", top_level_nodes),
-      TreeFolder("Prebuilt branches", prebuilt_nodes),
-      TreeFolder("Non-prebuilt branches", non_prebuilt_nodes),
+      TreeFolder("Prebuilt Branches", prebuilt_nodes),
+      TreeFolder("Non-Prebuilt Branches", non_prebuilt_nodes),
     ]
 
+    def _on_branch_selected(result):
+      if result == DialogResult.CONFIRM and self._branch_dialog is not None:
+        selection = self._branch_dialog.selection_ref
+        if selection:
+          ui_state.params.put("UpdaterTargetBranch", selection)
+          self._branch_btn.action_item.set_value(selection)
+          os.system("pkill -SIGUSR1 -f system.updated.updated")
+      self._branch_dialog = None
+
     self._branch_dialog = TreeOptionDialog(tr("Select a branch"), folders, current_target, "",
-                                           on_exit=self._on_branch_selected)
+                                           on_exit=_on_branch_selected)
 
-    gui_app.set_modal_overlay(self._branch_dialog, callback=self._on_branch_selected)
-
-  def _on_branch_selected(self, result):
-    if result == DialogResult.CONFIRM and self._branch_dialog is not None:
-      selection = self._branch_dialog.selection_ref
-      if selection:
-        ui_state.params.put("UpdaterTargetBranch", selection)
-        self._branch_btn.action_item.set_value(selection)
-        os.system("pkill -SIGUSR1 -f system.updated.updated")
-    self._branch_dialog = None
+    gui_app.set_modal_overlay(self._branch_dialog, callback=_on_branch_selected)
 
   def _update_state(self):
     super()._update_state()
