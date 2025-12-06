@@ -26,6 +26,8 @@ class UIStateSP:
 
   def set_active_layout(self, layout):
     self.active_layout = layout
+    if layout:
+      sync_layout_params(layout, None, self.params)
 
   def on_param_change(self, param_name, mask):
     self.changed_params.add(param_name)

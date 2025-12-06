@@ -20,25 +20,40 @@ IN_MOVED_TO = 0x00000080
 IN_CLOSE_WRITE = 0x00000008
 
 
+def update_item_from_param(item, key, params):
+  if not (action := getattr(item, 'action_item', None)):
+    return
+
+  if hasattr(action, 'set_state'):
+    action.set_state(params.get_bool(key))
+  elif hasattr(action, 'set_value'):
+    action.set_value(params.get(key, return_default=True))
+  else:
+    try:
+      val = int(params.get(key, return_default=True))
+      if hasattr(action, 'selected_button'):
+        action.selected_button = val
+      if hasattr(action, 'current_value'):
+        action.current_value = val
+    except (ValueError, TypeError):
+      pass
+
+
 def sync_layout_params(layout, param_name, params):
+  targets = []
+  if toggles := getattr(layout, '_toggles', None):
+    targets.extend([(item, k) for k, item in toggles.items()])
+
   items = getattr(layout, 'items', []) or getattr(getattr(layout, '_scroller', None), '_items', [])
   for item in items:
-    if not (action := getattr(item, 'action_item', None)):
-      continue
+    action = getattr(item, 'action_item', None)
+    if key := getattr(action, 'param_key', None) or getattr(getattr(action, 'toggle', None), 'param_key', None):
+      targets.append((item, key))
 
-    toggle = getattr(getattr(action, 'toggle', None), 'param_key', None)
-    param_key = toggle or getattr(action, 'param_key', None)
+  for item, key in targets:
+    if param_name is None or key == param_name:
+      update_item_from_param(item, key, params)
 
-    if param_key and (param_name is None or param_key == param_name):
-      if toggle:
-        action.set_state(params.get_bool(param_key))
-      elif hasattr(action, 'set_value'):
-        action.set_value(params.get(param_key, return_default=True))
-      else:
-        param_value = int(params.get(param_key, return_default=True))
-        for attribute in ['selected_button', 'current_value']:
-          if hasattr(action, attribute):
-            setattr(action, attribute, param_value)
 
 class ParamWatcher(Params):
   def __init__(self):
@@ -48,6 +63,7 @@ class ParamWatcher(Params):
     self._version = {}
     self._lock = threading.Lock()
     self._callbacks = []
+    self.last_accessed_param = None
 
   def start(self):
     if getattr(self, '_thread', None) and self._thread.is_alive():
@@ -96,12 +112,14 @@ class ParamWatcher(Params):
     return val
 
   def get(self, key, block=False, return_default=False):
+    self.last_accessed_param = key
     if block:
       return super().get(key, block, return_default)
     fetcher = super().get
     return self._get_cached(key, lambda: fetcher(key, block, return_default), (block, return_default))
 
   def get_bool(self, key, block=False):
+    self.last_accessed_param = key
     if block:
       return super().get_bool(key, block)
     fetcher = super().get_bool
