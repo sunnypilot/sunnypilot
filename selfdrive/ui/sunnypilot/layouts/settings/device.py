@@ -4,19 +4,17 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from itertools import filterfalse
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, multiple_button_item_sp, \
-  simple_button_item_sp, button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, multiple_button_item_sp, button_item_sp
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import ButtonStyle
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
-from openpilot.system.ui.widgets.list_view import DualButtonAction, dual_button_item, text_item
-from openpilot.system.ui.widgets.scroller_tici import LineSeparator, Scroller
+from openpilot.system.ui.widgets.list_view import dual_button_item, text_item
+from openpilot.system.ui.widgets.scroller_tici import LineSeparator
 
 offroad_time_options = {
   0: 0,
@@ -63,6 +61,7 @@ class DeviceLayoutSP(DeviceLayout):
       value_map=offroad_time_options,
       label_width=355,
       use_float_scaling=False,
+      label_callback=self._update_max_time_offroad_label
     )
 
     self._device_wake_mode = multiple_button_item_sp(
@@ -188,6 +187,11 @@ class DeviceLayoutSP(DeviceLayout):
           text=tr("Are you sure you want to enter Always Offroad mode?"),
           confirm_text=tr("Confirm")
         ), callback=lambda result: _set_always_offroad(result, True))
+
+  def _update_max_time_offroad_label(self, value: int) -> str:
+    label = tr("Always On") if value == 0 else f"{value}" + tr("m") if value < 60 else f"{value//60}" + tr("h")
+    label += tr(" (Default)") if value == 1800 else ""
+    return label
 
   def _update_state(self):
     super()._update_state()
