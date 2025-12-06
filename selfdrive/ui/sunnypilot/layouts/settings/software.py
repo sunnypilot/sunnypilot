@@ -10,12 +10,22 @@ from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
+
+
+DESCRIPTIONS = {
+  'disable_updates_offroad': tr_noop(
+    "When enabled, automatic software updates will be off.<br><b>This requires a reboot to take effect.</b>"
+  ),
+  'disable_updates_onroad': tr_noop(
+    "Please enable \"Always Offroad\" mode or turn off the vehicle to adjust these toggles."
+  )
+}
 
 
 class SoftwareLayoutSP(SoftwareLayout):
@@ -27,7 +37,6 @@ class SoftwareLayoutSP(SoftwareLayout):
       callback=self._on_disable_updates_toggled,
       initial_state=ui_state.params.get_bool("DisableUpdates"),)
     self._scroller.add_widget(self.disable_updates_toggle)
-
 
   def _handle_reboot(self, result):
     if result == DialogResult.CONFIRM:
@@ -77,12 +86,9 @@ class SoftwareLayoutSP(SoftwareLayout):
 
   def _update_state(self):
     super()._update_state()
-    offroad = ui_state.is_offroad()
     show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
-    self.disable_updates_toggle.action_item.set_enabled(offroad)
+    self.disable_updates_toggle.action_item.set_enabled(ui_state.is_offroad())
     self.disable_updates_toggle.set_visible(show_advanced)
 
-    if offroad:
-      self.disable_updates_toggle.set_description(tr("When enabled, automatic software updates will be off.<br><b>This requires a reboot to take effect.</b>"))
-    else:
-      self.disable_updates_toggle.set_description(tr("Please enable always offroad mode or turn off vehicle to adjust these toggles"))
+    disable_updates_desc = tr(DESCRIPTIONS["disable_updates_offroad"] if ui_state.is_offroad() else DESCRIPTIONS["disable_updates_onroad"])
+    self.disable_updates_toggle.set_description(disable_updates_desc)
