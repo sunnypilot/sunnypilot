@@ -17,7 +17,7 @@ class SunnylinkPairingDialog(PairingDialog):
   def __init__(self, sponsor_pairing: bool = False):
     PairingDialog.__init__(self)
     self._sponsor_pairing = sponsor_pairing
-    label_text = tr("become a sunnypilot sponsor") if sponsor_pairing else tr("pair with sunnylink")
+    label_text = tr("pair with sunnylink") if sponsor_pairing else tr("become a sunnypilot sponsor")
     self._pair_label = MiciLabel(label_text, 48, font_weight=FontWeight.BOLD,
                                  color=rl.Color(255, 255, 255, int(255 * 0.9)), line_height=40, wrap_text=True)
 
