@@ -269,8 +269,8 @@ class Device(DeviceSP):
     self._set_awake(ui_state.ignition or not interaction_timeout or PC)
 
   def _set_awake(self, on: bool):
-    DeviceSP._set_awake(self, on)
     if on != self._awake:
+      DeviceSP._set_awake(self, on)
       self._awake = on
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)
