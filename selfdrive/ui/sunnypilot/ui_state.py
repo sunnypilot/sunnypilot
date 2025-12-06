@@ -5,22 +5,44 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import messaging, custom
-from openpilot.common.params import Params
+from openpilot.common.param_watcher import ParamWatcher, sync_layout_params
+from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 
 
 class UIStateSP:
   def __init__(self):
-    self.params = Params()
+    self.params = ParamWatcher()
+    self.params.add_watcher(self.on_param_change)
+    self.params.start()
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "liveDelay"
     ]
 
     self.sunnylink_state = SunnylinkState()
+    self.active_layout = None
+    self.changed_params = set()
+
+  def set_active_layout(self, layout):
+    self.active_layout = layout
+
+  def on_param_change(self, param_name, mask):
+    self.changed_params.add(param_name)
 
   def update(self) -> None:
     self.sunnylink_state.start()
+
+    if not self.params.is_watching():
+      cloudlog.warning("ParamWatcher thread died, restarting...")
+      self.params.start()
+
+    if self.changed_params:
+      while self.changed_params:
+        self.changed_params.pop()
+
+      if self.active_layout:
+        sync_layout_params(self.active_layout, None, self.params)
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
