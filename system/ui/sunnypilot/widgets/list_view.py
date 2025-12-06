@@ -165,8 +165,10 @@ class ListItemSP(ListItem):
     content_width = item_rect.width - (style.ITEM_PADDING * 2)
     title_width = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE).x
     right_width = min(content_width - title_width, right_width)
-
-    action_x = item_rect.x + item_rect.width - right_width
+    if isinstance(self.action_item, ToggleAction):
+      action_x = item_rect.x
+    else:
+      action_x = item_rect.x + item_rect.width - right_width
     action_y = item_rect.y
     return rl.Rectangle(action_x, action_y, right_width, style.ITEM_BASE_HEIGHT)
 
