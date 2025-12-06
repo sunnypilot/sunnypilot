@@ -52,7 +52,7 @@ class SunnylinkLayoutMici(NavWidget):
 
     if ui_state.sunnylink_state.is_sponsor():
       self._sunnylink_sponsor_button.set_text(tr("thanks"))
-      self._sunnylink_sponsor_button.set_value(tr("for sponsoring"))
+      self._sunnylink_sponsor_button.set_value(ui_state.sunnylink_state.get_sponsor_tier().name.lower())
       self._sunnylink_sponsor_button.set_enabled(False)
     else:
       self._sunnylink_sponsor_button.set_text(tr("sponsor"))
