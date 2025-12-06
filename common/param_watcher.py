@@ -21,22 +21,24 @@ IN_CLOSE_WRITE = 0x00000008
 
 
 def sync_layout_params(layout, param_name, params):
-  for item in getattr(layout, 'items', []):
+  items = getattr(layout, 'items', []) or getattr(getattr(layout, '_scroller', None), '_items', [])
+  for item in items:
     if not (action := getattr(item, 'action_item', None)):
       continue
 
-    toggle_key = getattr(getattr(action, 'toggle', None), 'param_key', None)
-    action_key = getattr(action, 'param_key', None)
+    toggle = getattr(getattr(action, 'toggle', None), 'param_key', None)
+    param_key = toggle or getattr(action, 'param_key', None)
 
-    if param_name is None or toggle_key == param_name or action_key == param_name:
-      if toggle_key:
-        action.set_state(params.get_bool(toggle_key))
-      elif action_key:
-        value = int(params.get(action_key, return_default=True))
+    if param_key and (param_name is None or param_key == param_name):
+      if toggle:
+        action.set_state(params.get_bool(param_key))
+      elif hasattr(action, 'set_value'):
+        action.set_value(params.get(param_key, return_default=True))
+      else:
+        param_value = int(params.get(param_key, return_default=True))
         for attribute in ['selected_button', 'current_value']:
           if hasattr(action, attribute):
-            setattr(action, attribute, value)
-
+            setattr(action, attribute, param_value)
 
 class ParamWatcher(Params):
   def __init__(self):
