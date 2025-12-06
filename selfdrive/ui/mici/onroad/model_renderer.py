@@ -32,6 +32,7 @@ LANE_LINE_COLORS = {
   UIStatus.DISENGAGED: rl.Color(200, 200, 200, 255),
   UIStatus.OVERRIDE: rl.Color(255, 255, 255, 255),
   UIStatus.ENGAGED: rl.Color(0, 255, 64, 255),
+  UIStatus.LAT_ONLY: rl.Color(0, 255, 64, 255),
 }
 
 
@@ -299,7 +300,7 @@ class ModelRenderer(Widget):
     else:
       color = rl.Color(255, 255, 255, int(alpha * 255))
 
-    if ui_state.status == UIStatus.DISENGAGED:
+    if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LONG_ONLY, UIStatus.OVERRIDE):
       color = rl.Color(0, 0, 0, int(alpha * 255))
 
     return color
@@ -332,7 +333,7 @@ class ModelRenderer(Widget):
 
     if self._experimental_mode:
       # Draw with acceleration coloring
-      if ui_state.status == UIStatus.DISENGAGED:
+      if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LAT_ONLY, UIStatus.OVERRIDE):
         draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
       elif len(self._exp_gradient.colors) > 1:
         draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
@@ -349,7 +350,7 @@ class ModelRenderer(Widget):
         stops=[0.0, 0.5, 1.0],
       )
 
-      if ui_state.status == UIStatus.DISENGAGED:
+      if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LAT_ONLY, UIStatus.OVERRIDE):
         draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
       else:
         draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
