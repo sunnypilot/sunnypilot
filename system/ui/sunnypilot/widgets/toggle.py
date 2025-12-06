@@ -24,6 +24,9 @@ class ToggleSP(Toggle):
       initial_state = self.params.get_bool(self.param_key)
     Toggle.__init__(self, initial_state, callback)
 
+  def set_rect(self, rect: rl.Rectangle):
+    self._rect = rl.Rectangle(rect.x, rect.y, style.TOGGLE_WIDTH, style.TOGGLE_HEIGHT)
+
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
     if self._enabled and self.param_key:
