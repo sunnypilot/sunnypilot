@@ -44,12 +44,6 @@ class UIStateSP:
       if self.active_layout:
         sync_layout_params(self.active_layout, None, self.params)
 
-      if self.active_layout:
-        for method in ['update_settings', '_update_state', '_update_toggles']:
-          if function := getattr(self.active_layout, method, None):
-            function()
-            break
-
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
