@@ -22,14 +22,14 @@ class SunnylinkLayoutMici(NavWidget):
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
 
-    self._sunnylink_toggle = BigToggle(text="enable sunnylink",
+    self._sunnylink_toggle = BigToggle(text="",
                                        initial_state=self._sunnylink_enabled,
                                        toggle_callback=self._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
     self._sunnylink_pair_button = SunnylinkPairBigButton(sponsor_pairing=True)
-    self._backup_btn = BigButton("backup settings", "", "")
+    self._backup_btn = BigButton(tr("backup settings"), "", "")
     self._backup_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=False))
-    self._restore_btn = BigButton("restore settings", "", "")
+    self._restore_btn = BigButton(tr("restore settings"), "", "")
     self._restore_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=True))
 
     self._scroller = Scroller([
@@ -43,7 +43,7 @@ class SunnylinkLayoutMici(NavWidget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.sunnylink_enabled
-    self._sunnylink_toggle.set_text("enable sunnylink")
+    self._sunnylink_toggle.set_text(tr("enable sunnylink"))
     self._sunnylink_pair_button.set_visible(self._sunnylink_enabled)
     self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
     self._backup_btn.set_visible(self._sunnylink_enabled)
@@ -51,17 +51,17 @@ class SunnylinkLayoutMici(NavWidget):
     self.handle_backup_restore_progress()
 
     if ui_state.sunnylink_state.is_sponsor():
-      self._sunnylink_sponsor_button.set_text("thanks")
-      self._sunnylink_sponsor_button.set_value("for sponsoring")
+      self._sunnylink_sponsor_button.set_text(tr("thanks"))
+      self._sunnylink_sponsor_button.set_value(tr("for sponsoring"))
       self._sunnylink_sponsor_button.set_enabled(False)
     else:
-      self._sunnylink_sponsor_button.set_text("sponsor")
+      self._sunnylink_sponsor_button.set_text(tr("sponsor"))
       self._sunnylink_sponsor_button.set_value("")
 
     if ui_state.sunnylink_state.is_paired():
-      self._sunnylink_pair_button.set_text("paired")
+      self._sunnylink_pair_button.set_text(tr("paired"))
     else:
-      self._sunnylink_pair_button.set_text("pair")
+      self._sunnylink_pair_button.set_text(tr("pair"))
 
   def show_event(self):
     super().show_event()
@@ -100,7 +100,11 @@ class SunnylinkLayoutMici(NavWidget):
     restore_progress = sunnylink_backup_manager.restoreProgress
 
     if self._backup_in_progress:
+      self._restore_btn.set_enabled(False)
+      self._backup_btn.set_enabled(False)
+
       if backup_status == custom.BackupManagerSP.Status.inProgress:
+        self._backup_in_progress = True
         text = tr(f"{backup_progress}%")
         self._backup_btn.set_value(text)
 
@@ -109,15 +113,19 @@ class SunnylinkLayoutMici(NavWidget):
         self._backup_btn.set_enabled(not ui_state.is_onroad())
         self._backup_btn.set_value(tr("Failed"))
 
-      elif backup_status == custom.BackupManagerSP.Status.completed:
+      elif (backup_status == custom.BackupManagerSP.Status.completed or
+            (backup_status == custom.BackupManagerSP.Status.idle and backup_progress == 100.0)):
         self._backup_in_progress = False
         dialog = BigDialog(title=tr("Settings backed up"), description="")
         gui_app.set_modal_overlay(dialog)
         self._backup_btn.set_enabled(not ui_state.is_onroad())
 
     elif self._restore_in_progress:
+      self._restore_btn.set_enabled(False)
+      self._backup_btn.set_enabled(False)
+
       if restore_status == custom.BackupManagerSP.Status.inProgress:
-        self._restore_btn.set_enabled(False)
+        self._restore_in_progress = True
         text = tr(f"{restore_progress}%")
         self._restore_btn.set_value(text)
 
@@ -128,12 +136,11 @@ class SunnylinkLayoutMici(NavWidget):
         dialog = BigDialog(title=tr("Unable to restore"), description="Try again later.")
         gui_app.set_modal_overlay(dialog)
 
-      elif restore_status == custom.BackupManagerSP.Status.completed:
+      elif (restore_status == custom.BackupManagerSP.Status.completed or
+            (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
         dialog = BigConfirmationDialogV2("slide to restart", "", confirm_callback=None)
-        gui_app.set_modal_overlay(dialog, callback=lambda: {
-          gui_app.request_close()
-        })
+        gui_app.set_modal_overlay(dialog, callback=lambda: gui_app.request_close())
 
     else:
       can_enable = self._sunnylink_enabled and not ui_state.is_onroad()
@@ -141,7 +148,6 @@ class SunnylinkLayoutMici(NavWidget):
       self._backup_btn.set_text(tr("backup settings"))
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("restore settings"))
-
 
 
 class SunnylinkPairBigButton(BigButton):
