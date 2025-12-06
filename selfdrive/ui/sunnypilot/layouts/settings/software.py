@@ -32,10 +32,11 @@ class SoftwareLayoutSP(SoftwareLayout):
   def __init__(self):
     super().__init__()
     self.disable_updates_toggle = toggle_item_sp(
-      title=tr("Disable Updates"),
+      lambda: tr("Disable Updates"),
       description="",
+      initial_state=ui_state.params.get_bool("DisableUpdates"),
       callback=self._on_disable_updates_toggled,
-      initial_state=ui_state.params.get_bool("DisableUpdates"),)
+    )
     self._scroller.add_widget(self.disable_updates_toggle)
 
   def _handle_reboot(self, result):
