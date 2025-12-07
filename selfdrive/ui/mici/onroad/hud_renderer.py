@@ -2,6 +2,7 @@ import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
+from openpilot.selfdrive.ui.mici.onroad.speed_limit_ui import SpeedLimitRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -117,6 +118,7 @@ class HudRenderer(Widget):
 
     self._turn_intent = TurnIntent()
     self._torque_bar = TorqueBar()
+    self._speed_limit = SpeedLimitRenderer()
 
     self._txt_wheel: rl.Texture = gui_app.texture('icons_mici/wheel.png', 50, 50)
     self._txt_wheel_critical: rl.Texture = gui_app.texture('icons_mici/wheel_critical.png', 50, 50)
@@ -186,6 +188,8 @@ class HudRenderer(Widget):
     self._draw_steering_wheel(rect)
 
     self._draw_blind_spot_indicators(rect)
+
+    self._speed_limit.render(rect)
 
   def _draw_blind_spot_indicators(self, rect: rl.Rectangle) -> None:
     sm = ui_state.sm
