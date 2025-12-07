@@ -1,4 +1,3 @@
-
 # Comparative Analysis of Parameter Access Methods: `Params::get` vs. `ParamWatcher`
 
 ## Inefficiencies in Standard Parameter Access
