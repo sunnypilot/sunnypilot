@@ -50,7 +50,7 @@ class ScreenSaverSP(Widget):
     self.logo_width = text_size.x
     self.logo_height = text_size.y
 
-    if time.monotonic() - self._start_time > self.screensaver_timeout:
+    if self._start_time and time.monotonic() - self._start_time > self.screensaver_timeout:
       self._reset()
 
     dt = rl.get_frame_time()
