@@ -36,8 +36,7 @@ While `ParamWatcher` offers superior performance for UI rendering, it presents s
 *   **Event Latency**: In high-load scenarios, `inotify` events may experience slight delays or coalescing compared to direct reads. However, for user interface applications, this latency (<10ms) is imperceptible.
 *   **Complexity**: The solution requires managing a singleton background thread and OS-specific event loops, increasing code complexity compared to the synchronous `Params::get` function.
 
-## 5. Implementation Analysis: `param_watcher.py`
-
+## Implementation Analysis
 The `ParamWatcher` class provides a cross-platform solution for monitoring file system changes, specifically targeting the parameter files used in Openpilot. The implementation leverages the `ctypes` library to interface directly with operating system kernels, bypassing higher-level abstractions for maximum performance.
 
 ### Linux Implementation (`_run_linux`)
@@ -69,7 +68,6 @@ The use of `ctypes` (Python Software Foundation, n.d.) is a strategic choice. It
  With 232 defined parameters in `param_keys.h`, the maximum static RAM footprint of `ParamWatcher` is estimated to be **less than 250 KB**. Even if every single parameter were cached simultaneously, this static usage is negligible. Crucially, this stable footprint is likely more probable to maintain no trend of memory increase, whenc compared to the standard `Params::get` approach, which generates **megabytes** of short-lived "garbage" allocations per second, forcing the Python Garbage Collector to pause execution repeatedly.
 
 ## Architectural Integration: The Process-Local Singleton Pattern
-
 To ensure resource efficiency within openpilot's multi-process architecture (e.g., `ui`, `controlsd`, `modeld`), `ParamWatcher` implements the Singleton design pattern (Gamma et al., 1994) using the Python `__new__` allocator.
 
 ### Process Isolation and Concurrency
@@ -89,7 +87,6 @@ Runtime analysis demonstrates that multiple instantiation attempts result in a s
 Replacing polling mechanisms with event-driven caching shifts the computational load from kernel space (syscalls) to user space (RAM). This transition eliminates I/O overhead and UI stutters caused by garbage collection, resulting in a more responsive user experience.
 
 ## References
-
 Apple Inc. (n.d.-a). *File System Events*. Retrieved from https://developer.apple.com/documentation/coreservices/file_system_events
 
 Apple Inc. (n.d.-b). *CFRunLoop*. Retrieved from https://developer.apple.com/documentation/corefoundation/cfrunloop-rhk
