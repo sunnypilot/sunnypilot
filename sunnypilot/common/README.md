@@ -5,10 +5,10 @@
 The standard `Params::get()` method executes a full file I/O lifecycle—opening, allocating, reading, and closing—for every function call. This approach results in significant CPU overhead and memory churn due to the frequency of these operations in the user interface loop.
 
 ### System Overhead Analysis
-*   **System Call Overhead**: Every read operation requires context switches into kernel mode. The `Params::get` function calls `util::read_file` (sunnypilot, 2024), which subsequently invokes `std::ifstream` (sunnypilot, 2024).
+*   **System Call Overhead**: Every read operation requires context switches into kernel mode. The `Params::get` function calls `util::read_file` (sunnypilot, 2025), which subsequently invokes `std::ifstream` (sunnypilot, 2025).
 *   **Impact**: Frequent context switching degrades performance (Linux man-pages, 2025 -a; Linux man-pages, 2025 -b).
 *   **C++ Stream Overhead**: The use of `std::ifstream` introduces additional overhead for maintaining stream state and buffering compared to raw file descriptors (cppreference.com, n.d.-a; Codezup, 2025).
-*   **Memory Churn**: The instantiation of `std::string result(size, '\0');` forces heap allocation and deallocation during every call (sunnypilot, 2024). This stresses the memory allocator and can lead to fragmentation (cppreference.com, n.d.).
+*   **Memory Churn**: The instantiation of `std::string result(size, '\0');` forces heap allocation and deallocation during every call (sunnypilot, 2025). This stresses the memory allocator and can lead to fragmentation (cppreference.com, n.d.).
 
 ## The `ParamWatcher` Optimization
 The `ParamWatcher` implementation utilizes OS-level file system events, such as `inotify` on Linux or `FSEvents` on macOS, to maintain a Random Access Memory (RAM) cache. This architecture eliminates the need for continuous polling.
