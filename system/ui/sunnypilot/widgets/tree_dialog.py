@@ -78,7 +78,7 @@ class TreeItemWidget(Button):
 class TreeOptionDialog(MultiOptionDialog):
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
                get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None, search_title=None, search_subtitle=None):
-    super().__init__(title, [], "", option_font_weight)
+    super().__init__(title, [], current_ref, option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
     self.fav_param = fav_param
@@ -100,6 +100,19 @@ class TreeOptionDialog(MultiOptionDialog):
     self.search_subtitle = search_subtitle
     self.search_dialog = None
     self._search_pressed = False
+
+    if current_ref:
+      found = False
+      for folder in folders:
+        for node in folder.nodes:
+          if node.ref == current_ref:
+            display = self.display_func(node)
+            self.selection = display
+            self.current = display
+            found = True
+            break
+        if found:
+          break
 
     self._build_visible_items()
 
@@ -156,6 +169,7 @@ class TreeOptionDialog(MultiOptionDialog):
           self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
                                                    lambda node_ref=node: self._select_node(node_ref),
                                                    favorite_cb, node.ref in self.favorites, is_expanded=expanded))
+
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
     self.scroller._items = self.visible_items
