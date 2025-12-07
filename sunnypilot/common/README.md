@@ -105,6 +105,6 @@ Python Software Foundation. (2025). *ctypes — A foreign function library for P
 
 Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software*. Addison-Wesley.
 
-sunnypilot. (2025). *common/params.cc* [Source code]. GitHub. https://github.com/sunnypilot/sunnypilot/blob/master/common/params.cc
+sunnypilot. (2025). *common/params.cc* [Source code]. GitHub. https://github.com/sunnypilot/sunnypilot/blob/master/common/params.cc#L180C1-L206C2
 
-sunnypilot. (2025). *common/util.cc* [Source code]. GitHub. https://github.com/sunnypilot/sunnypilot/blob/master/common/util.cc
+sunnypilot. (2025). *common/util.cc* [Source code]. GitHub. https://github.com/sunnypilot/sunnypilot/blob/master/common/util.cc#L79C1-L117C2
