@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import os
 import platform
 import struct
@@ -18,41 +24,6 @@ IN_CREATE = 0x00000100
 IN_DELETE = 0x00000200
 IN_MOVED_TO = 0x00000080
 IN_CLOSE_WRITE = 0x00000008
-
-
-def update_item_from_param(item, key, params):
-  if not (action := getattr(item, 'action_item', None)):
-    return
-
-  if hasattr(action, 'set_state'):
-    action.set_state(params.get_bool(key))
-  elif hasattr(action, 'set_value'):
-    action.set_value(params.get(key, return_default=True))
-  else:
-    try:
-      val = int(params.get(key, return_default=True))
-      if hasattr(action, 'selected_button'):
-        action.selected_button = val
-      if hasattr(action, 'current_value'):
-        action.current_value = val
-    except (ValueError, TypeError):
-      pass
-
-
-def sync_layout_params(layout, param_name, params):
-  targets = []
-  if toggles := getattr(layout, '_toggles', None):
-    targets.extend([(item, k) for k, item in toggles.items()])
-
-  items = getattr(layout, 'items', []) or getattr(getattr(layout, '_scroller', None), '_items', [])
-  for item in items:
-    action = getattr(item, 'action_item', None)
-    if key := getattr(action, 'param_key', None) or getattr(getattr(action, 'toggle', None), 'param_key', None):
-      targets.append((item, key))
-
-  for item, key in targets:
-    if param_name is None or key == param_name:
-      update_item_from_param(item, key, params)
 
 
 class ParamWatcher(Params):
@@ -136,21 +107,10 @@ class ParamWatcher(Params):
       traceback.print_exc()
 
   def _run_linux(self):
-    # inotify constants: https://sites.uclouvain.be/SystInfo/usr/include/linux/inotify.h.html
-    # more docs: https://linux.die.net/man/7/inotify
-    # inotify init docs: https://www.man7.org/linux/man-pages/man2/inotify_init.2.html
-    # docs for add watch: https://www.man7.org/linux/man-pages/man2/inotify_add_watch.2.html
     path = Paths.params_root()
-
-    if hasattr(os, "inotify_init"):
-      cloudlog.warning("taking the os.inotify path")
-      fd = os.inotify_init()
-      os.inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
-    else:
-      cloudlog.warning("fell back to libc from ctypes")
-      libc = ctypes.CDLL('libc.so.6')
-      fd = libc.inotify_init()
-      libc.inotify_add_watch(fd, path.encode(), IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
+    libc = ctypes.CDLL('libc.so.6')
+    fd = libc.inotify_init()
+    libc.inotify_add_watch(fd, path.encode(), IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)
 
     try:
       poll = select.epoll()
@@ -171,8 +131,6 @@ class ParamWatcher(Params):
       os.close(fd)
 
   def _run_darwin(self):
-    # FS documentation: https://developer.apple.com/documentation/coreservices/file_system_events
-    # More FS documentation: https://wiki.python.org/moin/MacPython/ctypes/CoreFoundation
     CS = ctypes.cdll.LoadLibrary(ctypes.util.find_library("CoreServices"))
     CF = ctypes.cdll.LoadLibrary(ctypes.util.find_library("CoreFoundation"))
 

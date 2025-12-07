@@ -5,9 +5,11 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import messaging, custom
-from openpilot.common.param_watcher import ParamWatcher, sync_layout_params
 from openpilot.common.swaglog import cloudlog
+
+from openpilot.sunnypilot.common.param_watcher import ParamWatcher
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
+from openpilot.selfdrive.ui.sunnypilot.ui_helpers import sync_layout_params
 
 
 class UIStateSP:
