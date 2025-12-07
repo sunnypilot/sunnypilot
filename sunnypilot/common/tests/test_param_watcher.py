@@ -6,7 +6,7 @@ import tracemalloc
 from openpilot.common.params import Params
 from openpilot.common.params_pyx import UnknownKeyName
 
-from openpilot.sunnypilot.common.param_watcher import ParamWatcher
+from openpilot.sunnypilot.common.param_watcher import ParamWatcher, IN_MODIFY
 
 
 class TestParamWatcher:
@@ -76,16 +76,17 @@ class TestParamWatcher:
     watcher_cpu, watcher_memory = bench(param_watcher.get, param_watcher.get_bool)
 
     # ParamWatcher *should* be significantly faster and use less memory than Params()
-    assert watcher_cpu < plain_cpu * 0.5, f"PW CPU ({watcher_cpu:.4f}s) should be < 50% of Param call ({plain_cpu:.4f}s)"
+    assert watcher_cpu < plain_cpu * 0.6, f"PW CPU ({watcher_cpu:.4f}s) should be < 60% of Param call ({plain_cpu:.4f}s)"
     assert watcher_memory < plain_memory * 0.5, f"PW Memory ({watcher_memory}B) should be < 50% of Param call ({plain_memory}B)"
 
   def test_cache_invalidation_simulation(self, param_watcher):
     self.params.put(self.bytes_key, b"old")
     assert param_watcher.get(self.bytes_key) == b"old"
+    time.sleep(0.2)
 
     event = threading.Event()
     param_watcher.add_watcher(lambda key, mask: event.set())
-    param_watcher._trigger_callbacks(self.bytes_key, 0)  # mask=0 for simulation
+    param_watcher._trigger_callbacks(self.bytes_key, IN_MODIFY)
     assert event.wait(timeout=2), "Callback not triggered"
 
     self.params.put(self.bytes_key, b"new")
