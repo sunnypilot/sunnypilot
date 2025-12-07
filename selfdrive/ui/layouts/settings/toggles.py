@@ -1,5 +1,5 @@
 from cereal import log
-from openpilot.common.params import UnknownKeyName
+from openpilot.common.params import Params, UnknownKeyName
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import multiple_button_item, toggle_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
@@ -41,7 +41,7 @@ DESCRIPTIONS = {
 class TogglesLayout(Widget):
   def __init__(self):
     super().__init__()
-    self._params = ui_state.params
+    self._params = Params()
     self._is_release = self._params.get_bool("IsReleaseBranch")
 
     # param, title, desc, icon, needs_restart
@@ -197,6 +197,11 @@ class TogglesLayout(Widget):
       self._toggles["ExperimentalMode"].set_description(e2e_description)
 
     self._update_experimental_mode_icon()
+
+    # TODO: make a param control list item so we don't need to manage internal state as much here
+    # refresh toggles from params to mirror external changes
+    for param in self._toggle_defs:
+      self._toggles[param].action_item.set_state(self._params.get_bool(param))
 
     # these toggles need restart, block while engaged
     for toggle_def in self._toggle_defs:

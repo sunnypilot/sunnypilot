@@ -6,6 +6,7 @@ from collections.abc import Callable
 from enum import Enum
 from cereal import messaging, car, log
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
 from openpilot.system.ui.lib.application import gui_app
@@ -33,6 +34,7 @@ class UIState(UIStateSP):
 
   def _initialize(self):
     UIStateSP.__init__(self)
+    self.params = Params()
     self.sm = messaging.SubMaster(
       [
         "modelV2",

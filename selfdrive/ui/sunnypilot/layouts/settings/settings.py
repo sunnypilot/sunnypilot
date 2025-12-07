@@ -31,7 +31,6 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import Steering
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import DisplayLayout
-from openpilot.selfdrive.ui.ui_state import ui_state
 
 # from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
 
@@ -196,10 +195,6 @@ class SettingsLayoutSP(OP.SettingsLayout):
         return True
 
     return False
-
-  def set_current_panel(self, panel_type: OP.PanelType):
-    super().set_current_panel(panel_type)
-    ui_state.set_active_layout(self._panels[self._current_panel].instance)
 
   def show_event(self):
     super().show_event()
