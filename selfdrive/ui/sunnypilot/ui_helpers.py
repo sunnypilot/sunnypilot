@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 
-@staticmethod
 def update_item_from_param(item, key, params):
   if not (action := getattr(item, 'action_item', None)):
     return
@@ -26,7 +25,6 @@ def update_item_from_param(item, key, params):
       pass
 
 
-@staticmethod
 def sync_layout_params(layout, param_name, params):
   targets = []
   if toggles := getattr(layout, '_toggles', None):
