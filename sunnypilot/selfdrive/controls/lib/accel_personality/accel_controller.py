@@ -14,19 +14,19 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.20, 1.15, 1.05, 0.90, 0.70, 0.52, 0.40, 0.30, 0.20, 0.12],
-  AccelPersonality.normal:   [1.80, 1.70, 1.40, 1.24, 1.00, 0.71, 0.58, 0.45, 0.30, 0.17],
-  AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.50, 1.25, 1.00, 0.78, 0.58, 0.38, 0.22],
+  AccelPersonality.eco:      [1.20, 1.15, 1.05, 0.83, 0.68, 0.53, 0.40, 0.30, 0.20, 0.12],
+  AccelPersonality.normal:   [1.80, 1.70, 1.40, 0.91, 0.76, 0.61, 0.50, 0.45, 0.30, 0.17],
+  AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.25, 0.88, 0.74, 0.60, 0.50, 0.38, 0.22],
 }
 MAX_ACCEL_BREAKPOINTS =      [0.,   3.,   5.,   8.,   12.,  18.,  24.,  32.,  42.,  55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.50, -0.50, -0.46, -1.20],
-  AccelPersonality.normal: [-0.55, -0.55, -0.50, -1.30],
-  AccelPersonality.sport:  [-0.54, -0.60, -0.54, -1.40],
+  AccelPersonality.eco:    [-0.007, -0.007, -0.30, -0.35, -1.2, -1.2],
+  AccelPersonality.normal: [-0.008, -0.008, -0.40, -0.40, -1.3, -1.3],
+  AccelPersonality.sport:  [-0.540, -0.600, -0.54, -0.54, -1.4, -1.4],
 }
-MIN_ACCEL_BREAKPOINTS =    [0.,    5.,    14.,   25.]
+MIN_ACCEL_BREAKPOINTS =    [0.,     5.,    5.5,    14.,   15.,  25.]
 
 
 class AccelPersonalityController:
