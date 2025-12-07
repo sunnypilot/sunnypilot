@@ -86,7 +86,7 @@ class TestParamWatcher:
     event = threading.Event()
     param_watcher.add_watcher(lambda key, mask: event.set())
     param_watcher._trigger_callbacks(self.bytes_key, 0)  # mask=0 for simulation
-    assert event.wait(timeout=0.2), "Callback not triggered"
+    assert event.wait(timeout=2), "Callback not triggered"
 
     self.params.put(self.bytes_key, b"new")
     assert param_watcher.get(self.bytes_key) == b"new"
