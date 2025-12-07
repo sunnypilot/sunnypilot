@@ -27,7 +27,17 @@ IN_CLOSE_WRITE = 0x00000008
 
 
 class ParamWatcher(Params):
+  _instance = None
+
+  def __new__(cls):
+    if cls._instance is None:
+      cls._instance = super().__new__(cls)
+      cls._instance._initialized = False
+    return cls._instance
+
   def __init__(self):
+    if self._initialized:
+      return
     super().__init__()
     self._cache = {}
     self._last_trigger = {}
@@ -35,6 +45,8 @@ class ParamWatcher(Params):
     self._lock = threading.Lock()
     self._callbacks = []
     self.last_accessed_param = None
+    self._initialized = True
+    self.start()
 
   def start(self):
     if getattr(self, '_thread', None) and self._thread.is_alive():
