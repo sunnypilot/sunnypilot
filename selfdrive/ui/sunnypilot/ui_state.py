@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 
 class UIStateSP:
@@ -18,6 +19,7 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
+    self.screensaver = ScreenSaverSP()
 
   def update(self) -> None:
     self.sunnylink_state.start()

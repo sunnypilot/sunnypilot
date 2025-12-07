@@ -11,39 +11,47 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 class ScreenSaverSP(Widget):
-  def __init__(self, dismiss_callback: Callable):
+  def __init__(self):
     super().__init__()
-    self.dismiss_callback = dismiss_callback
-    self.screensaver_timeout = Params().get("ScreenSaverTimeout")
-
     self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
+    self.screensaver_timeout = Params().get("ScreenSaverTimeout")
     self._is_mici = HARDWARE.get_device_type() == 'mici' or (HARDWARE.get_device_type() == "pc" and os.getenv("BIG") != "1")
-
-    self.text = "sunnypilot"
-    self.font_size = 50 if self._is_mici else 200
-    self.font = gui_app.font(FontWeight.AUDIOWIDE)
-    text_size = measure_text_cached(self.font, self.text, self.font_size, 0)
-    self.logo_width = text_size.x
-    self.logo_height = text_size.y
-    self._start_time = time.monotonic()
 
     self.x = 0.0
     self.y = 100.0
     self.vx = 120.0 if self._is_mici else 300.0
     self.vy = 70.0 if self._is_mici else 200.0
-    self.color = rl.Color(0, 255, 0, 255)
+    self._hue = 150
+    self.color = rl.color_from_hsv(self._hue, 1, 1)
 
+    self.text = "sunnypilot"
+    self.font_size = 50 if self._is_mici else 200
+    self._start_time = None
+
+  def initialize(self, dismiss_callback: Callable):
+    if self._start_time is None:
+      self._start_time = time.monotonic()
+    self.dismiss_callback = dismiss_callback
     self._dismiss = False
 
   def _handle_mouse_press(self, mouse_pos) -> bool:
-    self._dismiss = True
+    self._reset()
     return super()._handle_mouse_press(mouse_pos)
+
+  def _reset(self):
+    self._dismiss = True
+    self._start_time = None
 
   def _update_state(self):
     super()._update_state()
 
+    self.font = gui_app.font(FontWeight.AUDIOWIDE)
+    text_size = measure_text_cached(self.font, self.text, self.font_size, 0)
+    self.logo_width = text_size.x
+    self.logo_height = text_size.y
+
     if time.monotonic() - self._start_time > self.screensaver_timeout:
-      self._dismiss = True
+      self._reset()
 
     dt = rl.get_frame_time()
 
@@ -70,7 +78,10 @@ class ScreenSaverSP(Widget):
       hit_y = True
 
     if hit_x or hit_y:
-      self.color = rl.color_from_hsv(rl.get_random_value(0, 360), 1, 1)
+      while not abs((new_hue := rl.get_random_value(0, 360)) - self._hue) >= 50:
+        pass
+      self._hue = new_hue
+      self.color = rl.color_from_hsv(self._hue, 1, 1)
 
   def _render(self, rect: rl.Rectangle):
     if self._dismiss:
