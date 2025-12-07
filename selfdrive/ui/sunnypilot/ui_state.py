@@ -7,14 +7,14 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, custom
 from openpilot.common.swaglog import cloudlog
 
-from openpilot.sunnypilot.common.param_watcher import ParamWatcher
+from openpilot.sunnypilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.selfdrive.ui.sunnypilot.ui_helpers import sync_layout_params
 
 
 class UIStateSP:
   def __init__(self):
-    self.params = ParamWatcher()
+    self.params = Params()
     self.params.add_watcher(self.on_param_change)
     self.params.start()
     self.sm_services_ext = [
