@@ -101,18 +101,22 @@ class TreeOptionDialog(MultiOptionDialog):
     self.search_dialog = None
     self._search_pressed = False
 
-    if current_ref:
-      found = False
-      for folder in folders:
-        for node in folder.nodes:
-          if node.ref == current_ref:
-            display = self.display_func(node)
-            self.selection = display
-            self.current = display
-            found = True
-            break
-        if found:
+    self.selection_node = None
+    # Try to match by ref, by display text, or fall back to "Default" when no ref is set
+    for folder in self.folders:
+      for node in folder.nodes:
+        display = self.display_func(node)
+        if (
+          node.ref == current_ref or
+          display == current_ref or
+          (not current_ref and node.ref == "Default")
+        ):
+          self.selection = display
+          self.current = display
+          self.selection_node = node
           break
+      if self.selection_node is not None:
+        break
 
     self._build_visible_items()
 
@@ -155,6 +159,17 @@ class TreeOptionDialog(MultiOptionDialog):
 
   def _build_visible_items(self, reset_scroll=True):
     self.visible_items = []
+
+    # Pinned selected item at the very top (if any)
+    if getattr(self, "selection_node", None) is not None:
+      node = self.selection_node
+      display = self.display_func(node)
+      self.selection = self.current = display
+      favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
+      self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 0,
+                                               lambda node_ref=node: self._select_node(node_ref),
+                                               favorite_cb, node.ref in self.favorites, is_expanded=True))
+
     for folder in self.folders:
       nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [search_func(node) for search_func in self.search_funcs])]
       if not nodes and self.query:
@@ -165,6 +180,10 @@ class TreeOptionDialog(MultiOptionDialog):
                                                  lambda folder_ref=folder: self._toggle_folder(folder_ref)))
       if expanded:
         for node in nodes:
+          # Skip duplicate root-level item for the selected node
+          if self.selection_node is not None and node.ref == self.selection_node.ref and not folder.folder:
+            continue
+
           favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
           self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
                                                    lambda node_ref=node: self._select_node(node_ref),
