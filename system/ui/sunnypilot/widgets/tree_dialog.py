@@ -81,10 +81,6 @@ class TreeOptionDialog(MultiOptionDialog):
     super().__init__(title, [], current_ref, option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
-    if current_ref:
-      self.selection = current_ref
-      self.current = current_ref
-
     self.fav_param = fav_param
     self.expanded = set()
     self.params = Params()
@@ -104,6 +100,19 @@ class TreeOptionDialog(MultiOptionDialog):
     self.search_subtitle = search_subtitle
     self.search_dialog = None
     self._search_pressed = False
+
+    if current_ref:
+      found = False
+      for folder in folders:
+        for node in folder.nodes:
+          if node.ref == current_ref:
+            display = self.display_func(node)
+            self.selection = display
+            self.current = display
+            found = True
+            break
+        if found:
+          break
 
     self._build_visible_items()
 
@@ -157,14 +166,7 @@ class TreeOptionDialog(MultiOptionDialog):
       if expanded:
         for node in nodes:
           favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
-          text = self.display_func(node)
-
-          if node.ref == self.selection_ref and self.selection == self.selection_ref:
-            self.selection = text
-            if self.current == self.selection_ref:
-              self.current = text
-
-          self.visible_items.append(TreeItemWidget(text, node.ref, False, 1 if folder.folder else 0,
+          self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
                                                    lambda node_ref=node: self._select_node(node_ref),
                                                    favorite_cb, node.ref in self.favorites, is_expanded=expanded))
 
