@@ -54,7 +54,7 @@ class SoftwareLayoutSP(SoftwareLayout):
     branches_str = ui_state.params.get("UpdaterAvailableBranches") or ""
     branches = [b for b in branches_str.split(",") if b]
     current_target = ui_state.params.get("UpdaterTargetBranch") or ""
-    default_branches = ["release-tizi", "staging", "dev"]
+    default_branches = ["release-mici", "release-tizi", "staging", "dev", "master"]
 
     if HARDWARE.get_device_type() == "tici":
       default_branches = ["release-tici", "staging-tici"]
