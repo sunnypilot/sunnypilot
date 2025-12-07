@@ -28,6 +28,7 @@ class TestParamWatcher:
 
   @pytest.fixture
   def param_watcher(self):
+    ParamWatcher._instance = None
     param_watch = ParamWatcher()
     param_watch.start()
     assert param_watch.is_watching(), "ParamWatcher thread died"
