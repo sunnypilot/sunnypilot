@@ -14,7 +14,6 @@ The standard `Params::get()` method executes a full file I/O lifecycle—opening
 The `ParamWatcher` implementation utilizes OS-level file system events, such as `inotify` on Linux or `FSEvents` on macOS, to maintain a Random Access Memory (RAM) cache. This architecture eliminates the need for continuous polling.
 
 ### Performance Comparison
-
 | Feature | Standard `Params::get` | Optimized `ParamWatcher` |
 | :--- | :--- | :--- |
 | **Workflow** | `open` → `malloc` → `read` → `close` | `dict.get()` (RAM lookup) |
@@ -28,13 +27,6 @@ Standard C++ modules like `std::ifstream` are optimized for **throughput**—rea
 *   **The I/O Trap**: Even when a file resides in the OS page cache (RAM), invoking `open()` and `read()` forces a CPU mode switch (User → Kernel → User). Executing this sequence 1,000 times per second consumes CPU cycles merely to verify state constancy.
 *   **The Memory Trap**: The `std::string` class allocates memory on the heap. Repeated allocation creates short-lived objects, which in C++ fragments memory. In Python (which wraps this), it triggers the Garbage Collector, pausing the UI.
 *   **The Query Mismatch**: `Params::get` queries the current value every frame, whereas `ParamWatcher` waits for a notification of change, serving cached values in the interim.
-
-## Limitations and Trade-offs
-While `ParamWatcher` offers superior performance for UI rendering, it presents specific trade-offs:
-
-*   **Static RAM Usage**: `ParamWatcher` maintains a persistent dictionary cache of all accessed parameters (~50KB), whereas `Params::get` uses zero static RAM but incurs high dynamic memory access.
-*   **Event Latency**: In high-load scenarios, `inotify` events may experience slight delays or coalescing compared to direct reads. However, for user interface applications, this latency (<10ms) is imperceptible.
-*   **Complexity**: The solution requires managing a singleton background thread and OS-specific event loops, increasing code complexity compared to the synchronous `Params::get` function.
 
 ## Implementation Analysis
 The `ParamWatcher` class provides a cross-platform solution for monitoring file system changes, specifically targeting the parameter files used in Openpilot. The implementation leverages the `ctypes` library to interface directly with operating system kernels, bypassing higher-level abstractions for maximum performance.
@@ -82,6 +74,13 @@ Runtime analysis demonstrates that multiple instantiation attempts result in a s
 *   **Test Case**: Instantiating `ParamWatcher` in `UIStateSP` and subsequently in a standalone script within the same process.
 *   **Result**: Both instances report the exact same memory address (`4814358960`) and share the same background thread ID (`6114635776`).
 *   **Impact**: The system incurs the overhead of the watcher thread (measured at < 0.1% CPU idle usage) only once per active process, regardless of import frequency. The average CPU usage across one minute was 0.002%.
+
+## Limitations and Trade-offs
+While `ParamWatcher` offers superior performance for UI rendering, it presents specific trade-offs:
+
+*   **Static RAM Usage**: `ParamWatcher` maintains a persistent dictionary cache of all accessed parameters (~50KB), whereas `Params::get` uses zero static RAM but incurs high dynamic memory access.
+*   **Event Latency**: In high-load scenarios, `inotify` events may experience slight delays or coalescing compared to direct reads. However, for user interface applications, this latency (<10ms) is imperceptible.
+*   **Complexity**: The solution (the process singleton approach) requires managing a background thread and OS-specific event loops, increasing code complexity compared to the synchronous `Params::get` function.
 
 ## Conclusion
 Replacing polling mechanisms with event-driven caching shifts the computational load from kernel space (syscalls) to user space (RAM). This transition eliminates I/O overhead and UI stutters caused by garbage collection, resulting in a more responsive user experience.
