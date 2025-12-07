@@ -9,7 +9,7 @@ The standard `Params::get()` method executes a full file I/O lifecycle—opening
 *   **C++ Stream Overhead**: The use of `std::ifstream` introduces additional overhead for maintaining stream state and buffering compared to raw file descriptors (cppreference.com, n.d.-a; Codezup, 2025).
 *   **Memory Churn**: The instantiation of `std::string result(size, '\0');` forces heap allocation and deallocation during every call (sunnypilot, 2025). This stresses the memory allocator and can lead to fragmentation (cppreference.com, n.d.).
 
-## The `ParamWatcher` Optimization
+## The ParamWatcher Optimization
 The `ParamWatcher` implementation utilizes OS-level file system events, such as `inotify` on Linux or `FSEvents` on macOS, to maintain a Random Access Memory (RAM) cache. This architecture eliminates the need for continuous polling.
 
 ### Performance Comparison
@@ -52,7 +52,7 @@ The macOS implementation uses the `FSEvents` API from the `CoreServices` framewo
 *   **Execution**: `CFRunLoopRun()` starts the event loop. This passes control to the OS, which wakes the thread only when necessary.
 *   **Handling**: Inside the callback, the code iterates through the changed paths provided by the OS. It extracts the filename and calls `_trigger_callbacks` to invalidate the cache for that specific parameter.
 
-### Python `ctypes` Integration
+### Python ctypes Integration
 The use of `ctypes` (Python Software Foundation, 2025) is a strategic choice. It allows the Python interpreter to load shared libraries (`libc.so.6` on Linux, `CoreServices` on macOS) and call C functions directly. This approach avoids the overhead of spawning subprocesses or compiling external C extensions, keeping the codebase pure Python while achieving C-level system integration.
 
 ### Memory Impact Analysis
