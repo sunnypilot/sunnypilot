@@ -1,0 +1,133 @@
+import numpy as np
+import pyray as rl
+from dataclasses import dataclass
+from openpilot.common.params import Params
+from openpilot.system.ui.lib.application import gui_app, FontWeight
+
+CHEVRON_DISTANCE = 1
+CHEVRON_SPEED = 2
+CHEVRON_TTC = 3
+CHEVRON_ALL = 4
+
+MS_TO_KPH = 3.6
+MS_TO_MPH = 2.23694
+
+
+@dataclass
+class LeadVehicle:
+  glow: list[float]
+  chevron: list[float]
+  fill_alpha: int
+
+
+class DevUI:
+  def __init__(self):
+    self._chevron_info = 0
+    self._is_metric = True
+    self._lead_status_alpha = 0.0
+    self._font = gui_app.font(FontWeight.SEMI_BOLD)
+
+    try:
+      chevron_val = Params().get("DevUIInfo")
+      self._chevron_info = int(chevron_val) if chevron_val else 0
+    except (ValueError, TypeError):
+      self._chevron_info = 1
+
+    self._is_metric = Params().get_bool("IsMetric")
+
+  def update_alpha(self, has_lead: bool):
+    """Update the alpha value for fade in/out animation"""
+    if not has_lead:
+      self._lead_status_alpha = max(0.0, self._lead_status_alpha - 0.05)
+    else:
+      self._lead_status_alpha = min(1.0, self._lead_status_alpha + 0.1)
+
+  def should_render(self) -> bool:
+    """Check if dev UI should be rendered"""
+    return self._chevron_info != 0 and self._lead_status_alpha > 0.0
+
+  def draw_lead_status(self, lead_data, lead_vehicle: LeadVehicle, v_ego: float, rect: rl.Rectangle):
+    """Draw lead vehicle status information (distance, speed, TTC)"""
+    if not self.should_render():
+      return
+
+    d_rel = lead_data.dRel
+    v_rel = lead_data.vRel
+
+    if not lead_vehicle.chevron or len(lead_vehicle.chevron) < 2:
+      return
+
+    chevron_x = lead_vehicle.chevron[1][0]
+    chevron_y = lead_vehicle.chevron[1][1]
+    sz = np.clip((25 * 30) / (d_rel / 3 + 30), 15.0, 30.0) * 2.35
+
+    text_lines = self._build_text_lines(d_rel, v_rel, v_ego)
+    if not text_lines:
+      return
+
+    self._render_text_lines(text_lines, chevron_x, chevron_y, sz, rect)
+
+  def _build_text_lines(self, d_rel: float, v_rel: float, v_ego: float) -> list[str]:
+    """Build text lines based on chevron info setting"""
+    text_lines = []
+
+    # Distance
+    if self._chevron_info == CHEVRON_DISTANCE or self._chevron_info == CHEVRON_ALL:
+      val = max(0.0, d_rel)
+      unit = "m" if self._is_metric else "ft"
+      if not self._is_metric:
+        val *= 3.28084
+      text_lines.append(f"{val:.0f} {unit}")
+
+    # Speed
+    if self._chevron_info == CHEVRON_SPEED or self._chevron_info == CHEVRON_ALL:
+      multiplier = MS_TO_KPH if self._is_metric else MS_TO_MPH
+      val = max(0.0, (v_rel + v_ego) * multiplier)
+      unit = "km/h" if self._is_metric else "mph"
+      text_lines.append(f"{val:.0f} {unit}")
+
+    # Time to collision
+    if self._chevron_info == CHEVRON_TTC or self._chevron_info == CHEVRON_ALL:
+      val = (d_rel / v_ego) if (d_rel > 0 and v_ego > 0) else 0.0
+      ttc_text = f"{val:.1f}s" if (0 < val < 200) else "---"
+      text_lines.append(ttc_text)
+
+    return text_lines
+
+  def _render_text_lines(self, text_lines: list[str], chevron_x: float, chevron_y: float,
+                         sz: float, rect: rl.Rectangle):
+    """Render text lines with proper centering and positioning"""
+    font_size = 40
+    line_height = 50
+    margin = 20
+
+    text_y = chevron_y + sz + 15
+    total_height = len(text_lines) * line_height
+
+    # Adjust Y position if text would go off screen
+    if text_y + total_height > rect.height - margin:
+      y_max = min(chevron_y, rect.height - margin)
+      text_y = y_max - 15 - total_height
+      text_y = max(margin, text_y)
+
+    alpha = int(255 * self._lead_status_alpha)
+    text_color = rl.Color(255, 255, 255, alpha)
+    shadow_color = rl.Color(0, 0, 0, int(200 * self._lead_status_alpha))
+
+    for i, line in enumerate(text_lines):
+      y = int(text_y + (i * line_height))
+      if y + line_height > rect.height - margin:
+        break
+
+      # Measure actual text width for proper centering
+      text_size = rl.measure_text_ex(self._font, line, font_size, 0)
+      text_width = text_size.x
+
+      # Center the text horizontally on the chevron
+      x = int(chevron_x - text_width / 2)
+      x = int(np.clip(x, margin, rect.width - text_width - margin))
+
+      # Draw shadow
+      rl.draw_text_ex(self._font, line, rl.Vector2(x + 2, y + 2), font_size, 0, shadow_color)
+      # Draw text
+      rl.draw_text_ex(self._font, line, rl.Vector2(x, y), font_size, 0, text_color)
