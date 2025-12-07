@@ -51,17 +51,18 @@ class SoftwareLayoutSP(SoftwareLayout):
     gui_app.set_modal_overlay(dialog, callback=self._handle_reboot)
 
   def _on_select_branch(self):
+    current_git_branch = ui_state.params.get("GitBranch") or ""
     branches_str = ui_state.params.get("UpdaterAvailableBranches") or ""
     branches = [b for b in branches_str.split(",") if b]
     current_target = ui_state.params.get("UpdaterTargetBranch") or ""
-    default_branches = ["release-mici", "release-tizi", "staging", "dev", "master"]
+    top_level_branches = [current_git_branch, "release-mici", "release-tizi", "staging", "dev", "master"]
 
     if HARDWARE.get_device_type() == "tici":
-      default_branches = ["release-tici", "staging-tici"]
+      top_level_branches = ["release-tici", "staging-tici"]
       branches = [b for b in branches if b.endswith("-tici")]
 
-    top_level_nodes = [TreeNode(b, {'display_name': b}) for b in default_branches if b in branches]
-    remaining_branches = [b for b in branches if b not in default_branches]
+    top_level_nodes = [TreeNode(b, {'display_name': b}) for b in top_level_branches if b in branches]
+    remaining_branches = [b for b in branches if b not in top_level_branches]
     prebuilt_nodes = [TreeNode(b, {'display_name': b}) for b in remaining_branches if b.endswith("-prebuilt")]
     non_prebuilt_nodes = [TreeNode(b, {'display_name': b}) for b in remaining_branches if not b.endswith("-prebuilt")]
 
