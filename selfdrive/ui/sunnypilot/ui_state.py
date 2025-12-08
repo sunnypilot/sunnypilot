@@ -31,7 +31,7 @@ class UIStateSP:
     if layout:
       sync_layout_params(layout, None, self.params)
 
-  def on_param_change(self, param_name, mask):
+  def on_param_change(self, param_name):
     self.changed_params.add(param_name)
 
   def update(self) -> None:
