@@ -39,6 +39,7 @@ class ParamWatcher(Params):
     if self._initialized:
       return
     super().__init__()
+    cloudlog.warning("ParamWatcher initialized")
     self._cache = {}
     self._last_trigger = {}
     self._version = {}
@@ -134,7 +135,9 @@ class ParamWatcher(Params):
             while i + 16 <= len(buffer):
               _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
               if mask & (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE):
-                self._trigger_callbacks(buffer[i+16:i+16+name_len].rstrip(b"\0").decode())
+                name = buffer[i+16:i+16+name_len].rstrip(b"\0").decode()
+                if not name.startswith("."):
+                  self._trigger_callbacks(name)
               i += 16 + name_len
     finally:
       if 'poll' in locals():
