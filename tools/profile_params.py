@@ -3,6 +3,7 @@ import os
 import sys
 import platform
 import struct
+import random
 import select
 import time
 import ctypes
@@ -73,7 +74,7 @@ def get_darwin_monitor(params_path, reads, writes):
 def profile_params():
   parser = argparse.ArgumentParser(description="Profile Params I/O")
   parser.add_argument("--timeout", type=int, default=1800, help="Timeout in seconds (default: 30 mins)")
-  default_out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "params_profile.csv")
+  default_out = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"params_profile_{random.randrange(99999)}.csv")
   parser.add_argument("--out", type=str, default=default_out, help="Output CSV file")
   args = parser.parse_args()
 
