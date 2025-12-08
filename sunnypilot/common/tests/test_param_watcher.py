@@ -6,7 +6,7 @@ import tracemalloc
 from openpilot.common.params import Params
 from openpilot.common.params_pyx import UnknownKeyName
 
-from openpilot.sunnypilot.common.param_watcher import ParamWatcher, IN_MODIFY
+from openpilot.sunnypilot.common.param_watcher import ParamWatcher
 
 
 class TestParamWatcher:
@@ -86,8 +86,8 @@ class TestParamWatcher:
     time.sleep(0.2)
 
     event = threading.Event()
-    param_watcher.add_watcher(lambda key, mask: event.set())
-    param_watcher._trigger_callbacks(self.bytes_key, IN_MODIFY)
+    param_watcher.add_watcher(lambda key: event.set())
+    param_watcher._trigger_callbacks(self.bytes_key)
     assert event.wait(timeout=2), "Callback not triggered"
 
     self.params.put(self.bytes_key, b"new")

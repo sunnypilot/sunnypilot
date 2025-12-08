@@ -35,7 +35,7 @@ The Linux implementation interacts directly with the kernel's `inotify` subsyste
 
 *   **Library Loading**: `libc = ctypes.CDLL('libc.so.6')` loads the standard C library to access system calls.
 *   **Initialization**: `inotify_init()` is called to create a new inotify instance, returning a file descriptor.
-*   **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` to capture all relevant file changes.
+*   **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` (Linux Kernel Organization, 2005) to capture all relevant file changes.
 *   **Event Loop**:
     *   **Polling**: `select.epoll()` is used to efficiently wait for activity on the file descriptor without busy-waiting.
     *   **Reading**: When events occur, `os.read(fd, 1024)` retrieves the raw binary event data.
@@ -48,6 +48,7 @@ The macOS implementation uses the `FSEvents` API from the `CoreServices` framewo
 *   **Framework Loading**: `ctypes.cdll.LoadLibrary` loads `CoreServices` and `CoreFoundation`.
 *   **Callback Definition**: `CFUNCTYPE` is used to define a C-compatible callback function. This function is invoked by the OS whenever a change occurs in the watched directory.
 *   **Stream Creation**: `FSEventStreamCreate` creates a stream for the target directory. The `kFSEventStreamCreateFlagFileEvents` flag is used to request file-level granularity where available.
+*   **Event Filtering**: The callback filters events using flags such as `kFSEventStreamEventFlagItemCreated` and `kFSEventStreamEventFlagItemModified` to ensure only relevant file changes trigger updates (Apple Inc., n.d.-c).
 *   **Scheduling**: `FSEventStreamScheduleWithRunLoop` attaches the stream to the current thread's run loop (Apple Inc., n.d.-b).
 *   **Execution**: `CFRunLoopRun()` starts the event loop. This passes control to the OS, which wakes the thread only when necessary.
 *   **Handling**: Inside the callback, the code iterates through the changed paths provided by the OS. It extracts the filename and calls `_trigger_callbacks` to invalidate the cache for that specific parameter.
@@ -81,13 +82,33 @@ While `ParamWatcher` offers superior performance for UI rendering, it presents s
 *   **Event Latency**: In high-load scenarios, `inotify` events may experience slight delays or coalescing compared to direct reads. However, for user interface applications, this latency (<10ms) is imperceptible.
 *   **Complexity**: The solution (the process singleton approach) requires managing a background thread and OS-specific event loops, increasing code complexity compared to the synchronous `Params::get` function.
 
+## Alternative Architecture Considered: ZeroMQ Service (ZMQ)
+During the development of `ParamWatcher`, a Client-Server architecture using ZMQ was evaluated. In this architecture, a single background service process would monitor file system events and publish changes over a ZMQ PUB socket to multiple client processes (SUB).
+
+### Trade-off Analysis
+| Metric | In-Process (Current) | ZMQ Service (Rejected)                                |
+| :--- | :--- |:------------------------------------------------------|
+| **Memory Usage** | Low (1 thread/process) | High (1 full Python process + ZMQ buffers per client) |
+| **CPU Usage** | Low (Direct callback) | High (Serialization + TCP Stack + Deserialization)    |
+| **Latency** | Instant (<0.1ms) | Variable (TCP Loopback overhead)                      |
+| **Scalability** | Limited by OS file handles | Limited by TCP ports/buffers                          |
+| **Robustness** | Process-isolated failure | Single point of failure (Service crash affects all)   |
+
+### Decision Rationale
+While the ZMQ approach offers better isolation and reduces the total number of OS file watchers (1 vs N), the overhead of inter-process communication (IPC) proved excessive for this use case.
+*   **Efficiency**: Even with 50+ processes, the memory footprint of 50 simple threads is significantly lower than the overhead of a dedicated Python service process plus the ZMQ context in every client.
+*   **Complexity**: The ZMQ architecture introduced synchronization challenges (e.g., service startup race conditions, "Address already in use" errors) that outweighed its benefits.
+*   **Performance**: The latency of serializing messages and passing them through the TCP stack is orders of magnitude higher than a direct function call within the same process memory space.
+
 ## Conclusion
-Replacing polling mechanisms with event-driven caching shifts the computational load from kernel space (syscalls) to user space (RAM). This transition eliminates I/O overhead and UI stutters caused by garbage collection, resulting in a more responsive user experience.
+Replacing polling mechanisms with event-driven caching shifts the computational load from kernel space (syscalls) to user space (RAM). This transition eliminates I/O overhead and UI stutters caused by garbage collection, resulting in a more responsive user experience. The In-Process Singleton approach was selected as the optimal balance between performance, complexity, and resource efficiency.
 
 ## References
 Apple Inc. (n.d.-a). *File System Events*. Retrieved from https://developer.apple.com/documentation/coreservices/file_system_events
 
 Apple Inc. (n.d.-b). *CFRunLoop*. Retrieved from https://developer.apple.com/documentation/corefoundation/cfrunloop
+
+Apple Inc. (n.d.-c). *FSEventStreamEventFlags*. Retrieved from https://developer.apple.com/documentation/coreservices/1455361-fseventstreameventflags
 
 Codezup. (2025). *Efficient File I/O in C++*. Retrieved from https://codezup.com/efficient-file-io-cpp-best-practices/
 
@@ -100,6 +121,8 @@ Linux man-pages. (2025 -a). *open(2)*. Retrieved from https://man7.org/linux/man
 Linux man-pages. (2025-b). *read(2)*. Retrieved from https://man7.org/linux/man-pages/man2/read.2.html
 
 Linux man-pages. (2025 -c). *inotify(7)*. Retrieved from https://man7.org/linux/man-pages/man7/inotify.7.html
+
+Linux Kernel Organization. (2005). *include/uapi/linux/inotify.h*. Retrieved from https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/inotify.h
 
 Python Software Foundation. (2025). *ctypes — A foreign function library for Python*. Retrieved from https://docs.python.org/3/library/ctypes.html
 
