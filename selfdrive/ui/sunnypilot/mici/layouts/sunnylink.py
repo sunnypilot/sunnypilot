@@ -24,13 +24,15 @@ class SunnylinkLayoutMici(NavWidget):
 
     self._sunnylink_toggle = BigToggle(text="",
                                        initial_state=self._sunnylink_enabled,
-                                       toggle_callback=self._sunnylink_toggle_callback)
+                                       toggle_callback=SunnylinkLayoutMici._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
     self._sunnylink_pair_button = SunnylinkPairBigButton(sponsor_pairing=True)
     self._backup_btn = BigButton(tr("backup settings"), "", "")
     self._backup_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=False))
     self._restore_btn = BigButton(tr("restore settings"), "", "")
     self._restore_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=True))
+    self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
+                                                toggle_callback=SunnylinkLayoutMici._sunnylink_uploader_callback)
 
     self._scroller = Scroller([
       self._sunnylink_toggle,
@@ -38,6 +40,7 @@ class SunnylinkLayoutMici(NavWidget):
       self._sunnylink_pair_button,
       self._backup_btn,
       self._restore_btn,
+      self._sunnylink_uploader_toggle
     ], snap_items=False)
 
   def _update_state(self):
@@ -48,6 +51,7 @@ class SunnylinkLayoutMici(NavWidget):
     self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
     self._backup_btn.set_visible(self._sunnylink_enabled)
     self._restore_btn.set_visible(self._sunnylink_enabled)
+    self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
     if ui_state.sunnylink_state.is_sponsor():
@@ -71,9 +75,14 @@ class SunnylinkLayoutMici(NavWidget):
   def _render(self, rect: rl.Rectangle):
     self._scroller.render(rect)
 
-  def _sunnylink_toggle_callback(self, state: bool):
+  @staticmethod
+  def _sunnylink_toggle_callback(state: bool):
     ui_state.params.put_bool("SunnylinkEnabled", state)
     ui_state.update_params()
+
+  @staticmethod
+  def _sunnylink_uploader_callback(state: bool):
+    ui_state.params.put_bool("EnableSunnylinkUploader", state)
 
   def _handle_backup_restore_btn(self, restore:bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
