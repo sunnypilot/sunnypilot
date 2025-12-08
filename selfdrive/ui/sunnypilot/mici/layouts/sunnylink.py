@@ -78,15 +78,15 @@ class SunnylinkLayoutMici(NavWidget):
   def _handle_backup_restore_btn(self, restore:bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
     icon = "icons_mici/settings/device/update.png"
-    dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=None)
-    gui_app.set_modal_overlay(dlg, callback=self._restore_handler if restore else self._backup_handler)
+    dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=self._restore_handler if restore else self._backup_handler)
+    gui_app.set_modal_overlay(dlg)
 
-  def _backup_handler(self, dialog_result: int):
+  def _backup_handler(self):
     self._backup_in_progress = True
     self._backup_btn.set_enabled(False)
     ui_state.params.put_bool("BackupManager_CreateBackup", True)
 
-  def _restore_handler(self, dialog_result: int):
+  def _restore_handler(self):
     self._restore_in_progress = True
     self._restore_btn.set_enabled(False)
     ui_state.params.put("BackupManager_RestoreVersion", "latest")
