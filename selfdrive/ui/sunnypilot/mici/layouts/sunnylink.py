@@ -77,7 +77,7 @@ class SunnylinkLayoutMici(NavWidget):
 
   def _handle_backup_restore_btn(self, restore:bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
-    icon = "icons_mici/settings/network/new/trash.png"
+    icon = "icons_mici/settings/device/update.png"
     dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=None)
     gui_app.set_modal_overlay(dlg, callback=self._restore_handler if restore else self._backup_handler)
 
@@ -142,7 +142,7 @@ class SunnylinkLayoutMici(NavWidget):
             (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
         gui_app.set_modal_overlay(BigConfirmationDialogV2(
-          title="slide to restart", icon="icons_mici/settings/network/new/trash.png",
+          title="slide to restart", icon="icons_mici/settings/device/reboot.png",
           confirm_callback=lambda: gui_app.request_close()))
 
     else:
