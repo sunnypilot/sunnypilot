@@ -90,9 +90,9 @@ def get_key_path(use_aes_256=False) -> str:
   key_path = ""
   for key in KEYS:
     if os.path.isfile(Paths.persist_root() + f'/comma/{key}') and os.path.isfile(Paths.persist_root() + f'/comma/{key}.pub'):
-      key_path = Path(f"{Paths.persist_root()}/comma/{key}") if use_aes_256 else Path(f"{Paths.persist_root()}/comma/{key}.pub")
+      key_path = str(Path(Paths.persist_root() + f'/comma/{key}') if use_aes_256 else Path(Paths.persist_root() + f'/comma/{key}.pub'))
       break
-  return str(key_path)
+  return key_path
 
 def decrypt_compressed_data(encrypted_base64, use_aes_256=False):
   """
