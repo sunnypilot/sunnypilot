@@ -61,10 +61,7 @@ class ParamWatcher(Params):
     if callback not in self._callbacks:
       self._callbacks.append(callback)
 
-  def _trigger_callbacks(self, path, mask):
-    if platform.system() == "Linux" and not (mask & (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE)):
-      return
-
+  def _trigger_callbacks(self, path):
     with self._lock:
       if (now := time.monotonic()) - self._last_trigger.get(path, 0) < 0.1:
         return
@@ -74,7 +71,7 @@ class ParamWatcher(Params):
 
     for callback in self._callbacks:
       try:
-        callback(path, mask)
+        callback(path)
       except Exception:
         cloudlog.exception("Param watcher callback failed")
 
@@ -110,13 +107,15 @@ class ParamWatcher(Params):
 
   def _run_watcher(self):
     system = platform.system()
-    try:
-      if system == "Linux":
-        self._run_linux()
-      elif system == "Darwin":
-        self._run_darwin()
-    except Exception:
-      traceback.print_exc()
+    while True:
+      try:
+        if system == "Linux":
+          self._run_linux()
+        elif system == "Darwin":
+          self._run_darwin()
+      except Exception:
+        cloudlog.exception("Param watcher crashed")
+        time.sleep(2)
 
   def _run_linux(self):
     path = Paths.params_root()
@@ -134,7 +133,8 @@ class ParamWatcher(Params):
             i = 0
             while i + 16 <= len(buffer):
               _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
-              self._trigger_callbacks(buffer[i+16:i+16+name_len].rstrip(b"\0").decode(), mask)
+              if mask & (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE):
+                self._trigger_callbacks(buffer[i+16:i+16+name_len].rstrip(b"\0").decode())
               i += 16 + name_len
     finally:
       if 'poll' in locals():
@@ -149,6 +149,10 @@ class ParamWatcher(Params):
     kCFAllocatorDefault = c_void_p(0)
     kCFStringEncodingUTF8 = 0x08000100
     kFSEventStreamCreateFlagFileEvents = 0x00000010
+    kFSEventStreamEventFlagItemCreated = 0x00000100
+    kFSEventStreamEventFlagItemRemoved = 0x00000200
+    kFSEventStreamEventFlagItemRenamed = 0x00000800
+    kFSEventStreamEventFlagItemModified = 0x00001000
 
     CF.CFStringCreateWithCString.restype = c_void_p
     CF.CFStringCreateWithCString.argtypes = [c_void_p, ctypes.c_char_p, c_uint32]
@@ -166,8 +170,9 @@ class ParamWatcher(Params):
         flags_arr = ctypes.cast(flags, POINTER(c_uint32))
         for i in range(num):
           path = ctypes.cast(paths_arr[i], ctypes.c_char_p).value
-          if path:
-            self._trigger_callbacks(os.path.basename(path.decode('utf-8').rstrip('/')), flags_arr[i])
+          if path and (flags_arr[i] & (kFSEventStreamEventFlagItemCreated | kFSEventStreamEventFlagItemRemoved |
+                                       kFSEventStreamEventFlagItemRenamed | kFSEventStreamEventFlagItemModified)):
+            self._trigger_callbacks(os.path.basename(path.decode('utf-8').rstrip('/')))
       except Exception:
         traceback.print_exc()
 
