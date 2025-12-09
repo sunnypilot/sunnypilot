@@ -130,17 +130,18 @@ def profile_params():
       data.append((k, reads[k]/duration, writes[k]/duration))
 
     if data:
+      data = data[:30]
       names = [x[0] for x in data]
       read_rates = [x[1] for x in data]
       write_rates = [x[2] for x in data]
 
-      plt.figure(figsize=(10, len(names) * 0.3 + 2))
+      plt.figure(figsize=(10, len(names) * 0.3 + 2), dpi=150)
       y_pos = range(len(names))
-      plt.barh(y_pos, read_rates, align='center', alpha=0.7, label='Reads/sec')
-      plt.barh(y_pos, write_rates, align='center', alpha=0.7, left=read_rates, label='Writes/sec')
+      plt.barh(y_pos, read_rates, align='center', color='dodgerblue', alpha=0.7, label='Reads/sec')
+      plt.barh(y_pos, write_rates, align='center', color='red', alpha=0.7, left=read_rates, label='Writes/sec')
       plt.yticks(y_pos, names)
       plt.xlabel('Rate (Hz)')
-      plt.title('Params I/O Profile')
+      plt.title('Top 30 Params I/O Profile')
       plt.legend()
       plt.tight_layout()
       plt.gca().invert_yaxis()
