@@ -11,8 +11,10 @@ import argparse
 import csv
 try:
   import matplotlib.pyplot as plt
+  import matplotlib.ticker as ticker
 except ImportError:
   plt = None
+  ticker = None
 from collections import defaultdict
 
 from openpilot.system.hardware.hw import Paths
@@ -130,19 +132,36 @@ def profile_params():
       data.append((k, reads[k]/duration, writes[k]/duration))
 
     if data:
-      data = data[:30]
+      data = data[:10]
       names = [x[0] for x in data]
       read_rates = [x[1] for x in data]
       write_rates = [x[2] for x in data]
 
-      plt.figure(figsize=(10, len(names) * 0.3 + 2), dpi=150)
+      bar_height = 0.35
+      plt.figure(figsize=(12, len(names) * 0.5 + 2), dpi=150)
       y_pos = range(len(names))
-      plt.barh(y_pos, read_rates, align='center', color='dodgerblue', alpha=0.7, label='Reads/sec')
-      plt.barh(y_pos, write_rates, align='center', color='red', alpha=0.7, left=read_rates, label='Writes/sec')
+
+      y_pos_reads = [y - bar_height/2 for y in y_pos]
+      y_pos_writes = [y + bar_height/2 for y in y_pos]
+
+      plt.barh(y_pos_reads, read_rates, height=bar_height, align='center', color='dodgerblue', alpha=0.8, label='Reads/sec')
+      plt.barh(y_pos_writes, write_rates, height=bar_height, align='center', color='red', alpha=0.8, label='Writes/sec')
+
+      for i, (r_rate, w_rate) in enumerate(zip(read_rates, write_rates, strict=False)):
+        if r_rate > 0:
+          plt.text(r_rate, y_pos_reads[i], f"{r_rate:.2f}", va='center', fontsize=8, color='#005a9e', fontweight='bold')
+        if w_rate > 0:
+          plt.text(w_rate, y_pos_writes[i], f"{w_rate:.2f}", va='center', fontsize=8, color='#a30000', fontweight='bold')
+
+      max_val = max(max(read_rates), max(write_rates)) if read_rates else 0
+      plt.xlim(0, max_val * 1.15)
+
       plt.yticks(y_pos, names)
       plt.xlabel('Rate (Hz)')
-      plt.title('Top 30 Params I/O Profile')
+      plt.title('Top 10 Params I/O Profile')
       plt.legend()
+      plt.grid(axis='x', linestyle='--', alpha=0.5)
+      plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins='auto'))
       plt.tight_layout()
       plt.gca().invert_yaxis()
 
