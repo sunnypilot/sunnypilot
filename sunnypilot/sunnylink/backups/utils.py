@@ -45,7 +45,7 @@ class KeyDerivation:
       )
     elif "public" in key_plain.lower():
       public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())
-      if not (isinstance(public_key, rsa.RSAPrivateKey) or isinstance(public_key, ec.EllipticCurvePublicKey)):
+      if not (isinstance(public_key, rsa.RSAPublicKey) or isinstance(public_key, ec.EllipticCurvePublicKey)):
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
 
       der_data = public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.PKCS1)
