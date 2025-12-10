@@ -197,9 +197,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     return False
 
-  def set_current_panel(self, panel_type: OP.PanelType):
-    super().set_current_panel(panel_type)
-    ui_state.set_active_layout(self._panels[self._current_panel].instance)
+  # def set_current_panel(self, panel_type: OP.PanelType):
+  #   super().set_current_panel(panel_type)
+  #   ui_state.set_active_layout(self._panels[self._current_panel].instance)
 
   def show_event(self):
     super().show_event()
