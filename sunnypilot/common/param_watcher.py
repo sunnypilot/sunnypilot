@@ -130,7 +130,7 @@ class ParamWatcher(Params):
       while True:
         for fileno, _ in poll.poll():
           if fileno == fd:
-            buffer = os.read(fd, 1024)
+            buffer = os.read(fd, 2048)
             i = 0
             while i + 16 <= len(buffer):
               _, mask, _, name_len = struct.unpack_from("iIII", buffer, i)
