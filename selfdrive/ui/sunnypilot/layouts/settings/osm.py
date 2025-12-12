@@ -91,7 +91,7 @@ class OSMLayout(Widget):
 
   def _on_confirm_delete_maps(self):
     self._delete_maps_btn.set_enabled(False)
-    self._delete_maps_btn.action_item.set_text("Deleting...")
+    self._delete_maps_btn.action_item.set_text("DELETING...")
     threading.Thread(target=self._do_delete_maps).start()
 
   def _delete_maps(self):
@@ -106,7 +106,7 @@ class OSMLayout(Widget):
     is_country = region_type == "Country"
     btn = self._country_btn if is_country else self._state_btn
     btn.set_enabled(False)
-    btn.action_item.set_text(tr("Fetching..."))
+    btn.action_item.set_text(tr("FETCHING..."))
     threading.Thread(target=self._do_select_region, args=(region_type, btn)).start()
 
   def _handle_region_selection(self, region_type, locations, key, res, ref):
@@ -183,7 +183,7 @@ class OSMLayout(Widget):
         btn_text = tr("Downloading Maps...")
 
       self._progress.action_item.update(self._current_percent, text, show_progress=total > 0 and downloading and not failed)
-      self._update_btn.action_item.set_text(tr("Refresh") if downloading else tr("CHECK"))
+      self._update_btn.action_item.set_text(tr("REFRESH") if downloading else tr("CHECK"))
       self._update_btn.action_item.set_value(btn_text)
     else:
       self._progress.set_visible(False)
