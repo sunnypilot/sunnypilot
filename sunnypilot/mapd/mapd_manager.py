@@ -64,13 +64,10 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str] = No
     "states": states or []
   }
 
-  osm_download_locations_dump = json.dumps({
-    "nations": nations,
-    "states": states or []
-  })
+  osm_download_locations_dump = json.dumps(osm_download_locations)
 
   print(f"Downloading maps for {osm_download_locations_dump}")
-  mem_params.put("OSMDownloadLocations", osm_download_locations)
+  mem_params.put("OSMDownloadLocations", osm_download_locations_dump)
 
 
 def filter_nations_and_states(nations: list[str], states: list[str] = None) -> tuple[list[str], list[str]]:
@@ -91,20 +88,21 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
   tuple: Two lists. The first list is filtered nations and the second list is filtered states.
   """
 
+  nations = [n for n in nations if n]
+  states = [s for s in (states or []) if s]
+
   if "US" in nations and states and not any(x.lower() == "all" for x in states):
-    # If a specific state in the US is provided, remove 'US' from nations
+    # Specific state(s) in US → only download states, not the whole US
     nations.remove("US")
   elif "US" in nations and states and any(x.lower() == "all" for x in states):
-    # If 'All' is provided as a state (case invariant), remove those instances from states
+    # 'All' states in US → we download entire US; 'All' isn't a real state
     states = [x for x in states if x.lower() != "all"]
   elif "US" not in nations and states and any(x.lower() == "all" for x in states):
-    states.remove("All")
+    states = [x for x in states if x.lower() != "all"]
   return nations, states or []
 
 
 def update_osm_db() -> None:
-  # last_downloaded_date = params.get("OsmDownloadedDate", return_default=True)
-  # if params.get_bool("OsmDbUpdatesCheck") or time.monotonic() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
     cleanup_old_osm_data(get_files_for_cleanup())
     country = params.get("OsmLocationName", return_default=True)
