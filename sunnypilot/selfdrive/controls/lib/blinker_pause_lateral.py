@@ -37,7 +37,7 @@ class BlinkerPauseLateral:
 
     below_speed = CS.vEgo < min_speed_ms
 
-    if one_blinker and below_speed:
+    if one_blinker and below_speed and not self.prev_one_blinker:
       self.blinker_off_timer = self.reengage_delay
     elif self.blinker_off_timer > 0:
       self.blinker_off_timer -= DT_CTRL
