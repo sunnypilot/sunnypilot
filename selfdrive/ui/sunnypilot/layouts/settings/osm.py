@@ -15,6 +15,7 @@ from time import monotonic
 
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.ui_state import device, ui_state
+from openpilot.selfdrive.ui.layouts.settings.software import time_ago
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
@@ -195,12 +196,20 @@ class OSMLayout(Widget):
     else:
       self._progress.set_visible(False)
       self._update_btn.action_item.set_text(tr("CHECK"))
+
       ts = ui_state.params.get("OsmDownloadedDate")
-      try:
-        dt = datetime.datetime.fromtimestamp(float(ts))
-        self._update_btn.action_item.set_value(dt.strftime("%Y-%m-%d %H:%M:%S"))
-      except (ValueError, TypeError):
-        self._update_btn.action_item.set_value("")
+      dt: datetime.datetime | None = None
+
+      if ts:
+        try:
+          ts_f = float(ts)
+          if ts_f > 0:
+            dt = datetime.datetime.fromtimestamp(ts_f, tz=datetime.UTC)
+        except (ValueError, TypeError):
+          dt = None
+
+      formatted = time_ago(dt)
+      self._update_btn.action_item.set_value(tr("Last checked {}").format(formatted))
 
   def show_event(self):
     self._scroller.show_event()
