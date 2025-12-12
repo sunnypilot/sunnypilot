@@ -24,16 +24,12 @@ from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 from openpilot.system.ui.widgets.list_view import text_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
-from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, ButtonActionSP
+from openpilot.system.ui.sunnypilot.lib.utils import NoElideButtonAction
+from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeFolder, TreeNode, TreeOptionDialog
 from openpilot.system.ui.sunnypilot.widgets.progress_bar import progress_item
 
 MAP_PATH = Path(Paths.mapd_root()) / "offline"
-
-
-class NoElide(ButtonActionSP):
-  def get_width_hint(self):
-    return super().get_width_hint() + 20
 
 
 class OSMLayout(Widget):
@@ -51,11 +47,11 @@ class OSMLayout(Widget):
 
   def _initialize_items(self):
     self._mapd_version = text_item(tr("Mapd Version"), lambda: ui_state.params.get("MapdVersion") or "Loading...")
-    self._delete_maps_btn = ListItemSP(tr("Downloaded Maps"), action_item=NoElide(tr("DELETE"), enabled=True), callback=self._delete_maps)
+    self._delete_maps_btn = ListItemSP(tr("Downloaded Maps"), action_item=NoElideButtonAction(tr("DELETE"), enabled=True), callback=self._delete_maps)
     self._progress = progress_item(tr("Downloading Map"))
-    self._update_btn = ListItemSP(tr("Database Update"), action_item=NoElide(tr("CHECK"), enabled=True), callback=self._update_db)
-    self._country_btn = ListItemSP(tr("Country"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("Country"))
-    self._state_btn = ListItemSP(tr("State"), action_item=NoElide(tr("SELECT"), enabled=True), callback=lambda: self._select_region("State"))
+    self._update_btn = ListItemSP(tr("Database Update"), action_item=NoElideButtonAction(tr("CHECK"), enabled=True), callback=self._update_db)
+    self._country_btn = ListItemSP(tr("Country"), action_item=NoElideButtonAction(tr("SELECT"), enabled=True), callback=lambda: self._select_region("Country"))
+    self._state_btn = ListItemSP(tr("State"), action_item=NoElideButtonAction(tr("SELECT"), enabled=True), callback=lambda: self._select_region("State"))
 
     self.items = [self._mapd_version, self._delete_maps_btn, self._progress, self._update_btn, self._country_btn, self._state_btn]
 
