@@ -53,7 +53,8 @@ class DeveloperLayoutSP(DeveloperLayout):
 
     self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,]
 
-  def _on_prebuilt_toggled(self, state):
+  @staticmethod
+  def _on_prebuilt_toggled(state):
     if state:
       open(PREBUILT_PATH, 'w').close()
     elif os.path.exists(PREBUILT_PATH):
@@ -86,7 +87,7 @@ class DeveloperLayoutSP(DeveloperLayout):
     disable_updates = ui_state.params.get_bool("DisableUpdates")
     show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
 
-    if (prebuilt_file:= os.path.exists(PREBUILT_PATH)) != ui_state.params.get_bool("QuickBootToggle"):
+    if (prebuilt_file := os.path.exists(PREBUILT_PATH)) != ui_state.params.get_bool("QuickBootToggle"):
       ui_state.params.put_bool("QuickBootToggle", prebuilt_file)
       self.prebuilt_toggle.action_item.set_state(prebuilt_file)
 
