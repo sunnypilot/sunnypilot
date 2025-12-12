@@ -48,7 +48,7 @@ BUTTON_DISABLED_TEXT_COLORS = {
 BUTTON_BACKGROUND_COLORS = {
   ButtonStyle.NORMAL: rl.Color(51, 51, 51, 255),
   ButtonStyle.PRIMARY: rl.Color(70, 91, 234, 255),
-  ButtonStyle.DANGER: rl.Color(226, 44, 44, 255),
+  ButtonStyle.DANGER: rl.Color(175, 44, 44, 255),
   ButtonStyle.TRANSPARENT: rl.BLACK,
   ButtonStyle.TRANSPARENT_WHITE_TEXT: rl.BLANK,
   ButtonStyle.TRANSPARENT_WHITE_BORDER: rl.BLACK,
