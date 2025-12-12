@@ -90,8 +90,8 @@ class OSMLayout(Widget):
     threading.Thread(target=self._do_delete_maps).start()
 
   def _delete_maps(self):
-    self._show_confirm(tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"),
-                       tr("Yes, delete all the maps."), self._on_confirm_delete_maps)
+    self._show_confirm(tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all maps?"),
+                       tr("Yes, delete all maps"), self._on_confirm_delete_maps)
 
   def _update_db(self):
     self._show_confirm(tr("This will start the download process and it might take a while to complete."), tr("Start Download"),
