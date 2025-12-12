@@ -14,12 +14,10 @@ class HtmlModalSP(HtmlModal):
     super().__init__(file_path=file_path, text=text)
     self._callback = callback
     self._dialog_result = DialogResult.NO_ACTION
-
     self._ok_button._click_callback = self._on_ok_clicked
 
   def _on_ok_clicked(self):
     self._dialog_result = DialogResult.CONFIRM
-
     gui_app.set_modal_overlay(None)
 
     if self._callback:
