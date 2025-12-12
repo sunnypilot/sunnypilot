@@ -14,9 +14,10 @@ from openpilot.system.hardware.hw import Paths
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
-from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
+from openpilot.system.ui.widgets.list_view import button_item
 
+from openpilot.system.ui.sunnypilot.widgets.html_render import HtmlModalSP
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
 PREBUILT_PATH = os.path.join(Paths.comma_home(), "openpilot", "prebuilt") if PC else "/data/openpilot/prebuilt"
@@ -78,8 +79,8 @@ class DeveloperLayoutSP(DeveloperLayout):
           text += file.read()
       except Exception:
         pass
-    dialog = ConfirmDialog(text, tr("OK"), cancel_text="", rich=True)
-    gui_app.set_modal_overlay(dialog, callback=lambda result: self._on_error_log_closed(result, os.path.exists(self.error_log_path)))
+    dialog = HtmlModalSP(text=text, callback=lambda result: self._on_error_log_closed(result, os.path.exists(self.error_log_path)))
+    gui_app.set_modal_overlay(dialog)
 
   def _update_state(self):
     disable_updates = ui_state.params.get_bool("DisableUpdates")
