@@ -46,7 +46,7 @@ class DeveloperLayoutSP(DeveloperLayout):
     self.enable_copyparty_toggle = toggle_item_sp(tr("Enable Copyparty service"),
                                                   tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs " +
                                                      "and even make some edits on some files from your browser. " +
-                                                     "Requires you to connect to your comma locally via it's IP."), param="EnableCopyparty")
+                                                     "Requires you to connect to your comma locally via its IP address."), param="EnableCopyparty")
 
     self.prebuilt_toggle = toggle_item_sp(tr("Enable Quickboot Mode"), "", param="QuickBootToggle", callback=self._on_prebuilt_toggled)
 
