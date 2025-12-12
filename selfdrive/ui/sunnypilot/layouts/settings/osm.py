@@ -195,7 +195,7 @@ class OSMLayout(Widget):
       self._update_btn.action_item.set_value(btn_text)
     else:
       self._progress.set_visible(False)
-      self._update_btn.action_item.set_text(tr("CHECK"))
+      self._update_btn.action_item.set_enabled(True)
 
       ts = ui_state.params.get("OsmDownloadedDate")
       dt: datetime.datetime | None = None
