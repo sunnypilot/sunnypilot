@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import datetime
 import os
+from pathlib import Path
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.layouts.settings.developer import DeveloperLayout
@@ -20,7 +21,7 @@ from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.sunnypilot.widgets.html_render import HtmlModalSP
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
-PREBUILT_PATH = os.path.join(Paths.comma_home(), "openpilot", "prebuilt") if PC else "/data/openpilot/prebuilt"
+PREBUILT_PATH = os.path.join(Paths.comma_home(), "prebuilt") if PC else "/data/openpilot/prebuilt"
 
 
 class DeveloperLayoutSP(DeveloperLayout):
@@ -56,8 +57,8 @@ class DeveloperLayoutSP(DeveloperLayout):
   @staticmethod
   def _on_prebuilt_toggled(state):
     if state:
-      open(PREBUILT_PATH, 'w').close()
-    elif os.path.exists(PREBUILT_PATH):
+      Path(PREBUILT_PATH).touch(exist_ok=True)
+    else:
       os.remove(PREBUILT_PATH)
     ui_state.params.put_bool("QuickBootToggle", state)
 
