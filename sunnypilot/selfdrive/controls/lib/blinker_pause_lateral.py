@@ -19,7 +19,6 @@ class BlinkerPauseLateral:
     self.min_speed = 0
     self.reengage_delay = int(self.params.get("BlinkerLateralReengageDelay"))
     self.blinker_off_timer = 0.0
-    self.prev_one_blinker = False
 
   def get_params(self) -> None:
     self.enabled = self.params.get_bool("BlinkerPauseLateralControl")
@@ -41,7 +40,5 @@ class BlinkerPauseLateral:
       self.blinker_off_timer = self.reengage_delay
     elif self.blinker_off_timer > 0:
       self.blinker_off_timer -= DT_CTRL
-
-    self.prev_one_blinker = one_blinker
 
     return bool((one_blinker and below_speed) or self.blinker_off_timer > 0)
