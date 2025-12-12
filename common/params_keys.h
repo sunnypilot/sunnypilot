@@ -234,7 +234,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"OSMDownloadLocations", {PERSISTENT, JSON}},
     {"OSMDownloadProgress", {CLEAR_ON_MANAGER_START, JSON}},
     {"OsmLocal", {PERSISTENT, BOOL}},
-    {"OsmLocationName", {PERSISTENT, STRING}},
+    {"OsmLocationName", {PERSISTENT, STRING, ""}},
     {"OsmLocationTitle", {PERSISTENT, STRING}},
     {"OsmLocationUrl", {PERSISTENT, STRING}},
     {"OsmStateName", {PERSISTENT, STRING, "All"}},
