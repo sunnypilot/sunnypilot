@@ -91,7 +91,7 @@ class DeveloperLayoutSP(DeveloperLayout):
       ui_state.params.put_bool("QuickBootToggle", prebuilt_file)
       self.prebuilt_toggle.action_item.set_state(prebuilt_file)
 
-    self.prebuilt_toggle.set_visible(show_advanced and (not (self._is_release_branch or self._is_development_branch)))
+    self.prebuilt_toggle.set_visible(show_advanced and not (self._is_release_branch or self._is_development_branch))
     self.prebuilt_toggle.action_item.set_enabled(disable_updates)
 
     if disable_updates:
