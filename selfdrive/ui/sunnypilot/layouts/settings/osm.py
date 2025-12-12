@@ -191,7 +191,7 @@ class OSMLayout(Widget):
         btn_text = tr("Downloading Maps...")
 
       self._progress.action_item.update(self._current_percent, text, show_progress=total > 0 and downloading and not failed)
-      self._update_btn.action_item.set_text(tr("REFRESH") if downloading else tr("CHECK"))
+      self._update_btn.action_item.set_enabled(not downloading)  # TODO-SP: introduce CANCEL database download with mapd
       self._update_btn.action_item.set_value(btn_text)
     else:
       self._progress.set_visible(False)
