@@ -111,7 +111,14 @@ class OSMLayout(Widget):
 
   def _handle_region_selection(self, region_type, locations, key, res, ref):
     if res != DialogResult.CONFIRM or not ref:
+      if region_type == "State":
+        if ui_state.params.get("OsmLocationName") == "US" and not ui_state.params.get("OsmStateName"):
+          ui_state.params.remove("OsmLocationName")
+          ui_state.params.remove("OsmLocationTitle")
+          ui_state.params.remove("OsmLocal")
+          self._update_labels()
       return
+
     if region_type == "Country":
       ui_state.params.put_bool("OsmLocal", True)
       ui_state.params.remove("OsmStateName")
