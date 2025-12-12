@@ -81,6 +81,10 @@ class OSMLayout(Widget):
   def _do_delete_maps(self):
     if MAP_PATH.exists():
       shutil.rmtree(MAP_PATH)
+
+    for param in ("OsmDownloadedDate", "OsmLocal", "OsmLocationName", "OsmLocationTitle", "OsmStateName", "OsmStateTitle"):
+      ui_state.params.remove(param)
+
     self._delete_maps_btn.set_enabled(True)
     self._delete_maps_btn.action_item.set_text(tr("DELETE"))
     self._update_map_size()
