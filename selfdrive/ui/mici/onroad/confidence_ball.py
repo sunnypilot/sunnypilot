@@ -1,6 +1,7 @@
 import math
 import pyray as rl
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
+from openpilot.selfdrive.ui.onroad.augmented_road_view import BORDER_COLORS
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.application import gui_app
@@ -38,7 +39,12 @@ class ConfidenceBall(Widget):
     if ui_state.status == UIStatus.DISENGAGED:
       self._confidence_filter.update(-0.5)
     else:
-      self._confidence_filter.update((1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs or [1])) *
+      if ui_state.status == UIStatus.LAT_ONLY:
+        self._confidence_filter.update(1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.steerOverrideProbs or [1]))
+      elif ui_state.status == UIStatus.LONG_ONLY:
+        self._confidence_filter.update(1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs or [1]))
+      else:
+        self._confidence_filter.update((1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs or [1])) *
                                                         (1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.steerOverrideProbs or [1])))
 
   def _render(self, _):
@@ -64,6 +70,12 @@ class ConfidenceBall(Widget):
       else:
         top_dot_color = rl.Color(255, 0, 21, 255)
         bottom_dot_color = rl.Color(255, 0, 89, 255)
+
+    elif ui_state.status == UIStatus.LAT_ONLY:
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
+
+    elif ui_state.status == UIStatus.LONG_ONLY:
+      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
 
     elif ui_state.status == UIStatus.OVERRIDE:
       top_dot_color = rl.Color(255, 255, 255, 255)
