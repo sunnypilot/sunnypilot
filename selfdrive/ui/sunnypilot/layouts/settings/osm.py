@@ -117,7 +117,8 @@ class OSMLayout(Widget):
           ui_state.params.remove("OsmLocationName")
           ui_state.params.remove("OsmLocationTitle")
           ui_state.params.remove("OsmLocal")
-          self._update_labels()
+
+      self._update_labels()
       return
 
     if region_type == "Country":
