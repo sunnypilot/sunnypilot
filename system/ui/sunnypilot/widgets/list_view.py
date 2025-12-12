@@ -53,6 +53,19 @@ class ButtonActionSP(ButtonAction):
     self._pressed = False
     return pressed
 
+class SimpleButtonActionSP(ItemAction):
+  def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
+               enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH):
+    super().__init__(width=button_width, enabled=enabled)
+    self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
+                                border_radius=20)
+
+  def set_touch_valid_callback(self, touch_callback: Callable[[], bool]) -> None:
+    super().set_touch_valid_callback(touch_callback)
+    self.button_action.set_touch_valid_callback(touch_callback)
+
+  def _render(self, rect: rl.Rectangle):
+    self.button_action.render(rect)
 
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None,
