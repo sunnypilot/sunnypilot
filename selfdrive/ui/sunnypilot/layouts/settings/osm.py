@@ -86,7 +86,7 @@ class OSMLayout(Widget):
     for param in ("OsmDownloadedDate", "OsmLocal", "OsmLocationName", "OsmLocationTitle", "OsmStateName", "OsmStateTitle"):
       ui_state.params.remove(param)
 
-    self._delete_maps_btn.set_enabled(True)
+    self._delete_maps_btn.action_item.set_enabled(True)
     self._delete_maps_btn.action_item.set_text(tr("DELETE"))
     self._update_map_size()
 
@@ -146,7 +146,7 @@ class OSMLayout(Widget):
     if region_type == "State":
       locations.insert(0, TreeNode(ref="All", data={'display_name': tr("All states (~5.2 GB)")}))
 
-    btn.set_enabled(True)
+    btn.action_item.set_enabled(True)
     btn.action_item.set_text(tr("SELECT"))
 
     key = "OsmLocation" if region_type == "Country" else "OsmState"
