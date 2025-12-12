@@ -177,16 +177,22 @@ class OSMLayout(Widget):
       done = progress.get('downloaded_files', 0) if progress else 0
       failed = total > 0 and not downloading and done < total
 
+      if total > 0:
+        progress_perc = max(0.0, min(100.0, (done / total) * 100.0))
+      else:
+        progress_perc = 0.0
+
       if failed:
         text = "0% - Downloading Maps"
         btn_text = tr("Error: Invalid download. Retry.")
-        self._current_percent = 0
-      elif total > 0 and downloading and done < total:
-        self._current_percent = min(self._current_percent + 2, (done / total) * 100)
-        text = f"{int(100.0 * done / total)}% - Downloading Maps"
-        btn_text = f"{done}/{total} ({int(100.0 * done / total)}%)"
+        self._current_percent = 0.0
+      elif total > 0 and downloading:
+        self._current_percent = progress_perc
+        perc_int = int(progress_perc)
+        text = f"{perc_int}% - Downloading Maps"
+        btn_text = f"{done}/{total} ({perc_int}%)"
       else:
-        self._current_percent = 0
+        self._current_percent = 0.0
         text = "0% - Downloading Maps"
         btn_text = tr("Downloading Maps...")
 
