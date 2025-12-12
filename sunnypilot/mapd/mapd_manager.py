@@ -89,15 +89,18 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
   nations = [n for n in nations if n]
   states = [s for s in (states or []) if s]
 
-  if "US" in nations and states and not any(x.lower() == "all" for x in states):
-    # Specific state(s) in US → only download states, not the whole US
-    nations.remove("US")
-  elif "US" in nations and states and any(x.lower() == "all" for x in states):
-    # 'All' states in US → we download entire US; 'All' isn't a real state
-    states = [x for x in states if x.lower() != "all"]
-  elif "US" not in nations and states and any(x.lower() == "all" for x in states):
-    states = [x for x in states if x.lower() != "all"]
-  return nations, states or []
+  has_us = "US" in nations
+  has_states = len(states) > 0
+  has_all = any(s.lower() == "all" for s in states)
+
+  if has_us:
+    if has_all:
+      states = []
+  else:
+    if has_states:
+      nations.append("US")
+
+  return nations, states
 
 
 def update_osm_db() -> None:
