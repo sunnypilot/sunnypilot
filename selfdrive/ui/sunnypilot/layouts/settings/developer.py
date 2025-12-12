@@ -43,8 +43,8 @@ class DeveloperLayoutSP(DeveloperLayout):
     self.enable_github_runner_toggle = toggle_item_sp(tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."),
                                                       param="EnableGithubRunner")
 
-    self.enable_copyparty_toggle = toggle_item_sp(tr("Enable Copyparty service"),
-                                                  tr("Copyparty is a very capable file server, you can use it to download your routes, view your logs " +
+    self.enable_copyparty_toggle = toggle_item_sp(tr("Enable copyparty service"),
+                                                  tr("copyparty is a very capable file server, you can use it to download your routes, view your logs " +
                                                      "and even make some edits on some files from your browser. " +
                                                      "Requires you to connect to your comma locally via its IP address."), param="EnableCopyparty")
 
