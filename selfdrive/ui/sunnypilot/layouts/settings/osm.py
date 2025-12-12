@@ -91,7 +91,7 @@ class OSMLayout(Widget):
     self._update_map_size()
 
   def _on_confirm_delete_maps(self):
-    self._delete_maps_btn.set_enabled(False)
+    self._delete_maps_btn.action_item.set_enabled(False)
     self._delete_maps_btn.action_item.set_text("DELETING...")
     threading.Thread(target=self._do_delete_maps).start()
 
@@ -106,7 +106,7 @@ class OSMLayout(Widget):
   def _select_region(self, region_type):
     is_country = region_type == "Country"
     btn = self._country_btn if is_country else self._state_btn
-    btn.set_enabled(False)
+    btn.action_item.set_enabled(False)
     btn.action_item.set_text(tr("FETCHING..."))
     threading.Thread(target=self._do_select_region, args=(region_type, btn)).start()
 
