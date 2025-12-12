@@ -17,14 +17,14 @@ class BlinkerPauseLateral:
     self.enabled = self.params.get_bool("BlinkerPauseLateralControl")
     self.is_metric = self.params.get_bool("IsMetric")
     self.min_speed = 0
-    self.reengage_delay = int(self.params.get("BlinkerLateralReengageDelay"))
+    self.reengage_delay = self.params.get("BlinkerLateralReengageDelay")
     self.blinker_off_timer = 0.0
 
   def get_params(self) -> None:
     self.enabled = self.params.get_bool("BlinkerPauseLateralControl")
     self.is_metric = self.params.get_bool("IsMetric")
     self.min_speed = self.params.get("BlinkerMinLateralControlSpeed")
-    self.reengage_delay = int(self.params.get("BlinkerLateralReengageDelay"))
+    self.reengage_delay = self.params.get("BlinkerLateralReengageDelay")
 
   def update(self, CS: car.CarState, DT_CTRL: float = 0.01) -> bool:
     if not self.enabled:
