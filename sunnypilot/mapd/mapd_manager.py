@@ -86,21 +86,15 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
   tuple: Two lists. The first list is filtered nations and the second list is filtered states.
   """
 
-  nations = [n for n in nations if n]
-  states = [s for s in (states or []) if s]
-
-  has_us = "US" in nations
-  has_states = len(states) > 0
-  has_all = any(s.lower() == "all" for s in states)
-
-  if has_us:
-    if has_all:
-      states = []
-  else:
-    if has_states:
-      nations.append("US")
-
-  return nations, states
+  if "US" in nations and states and not any(x.lower() == "all" for x in states):
+    # If a specific state in the US is provided, remove 'US' from nations
+    nations.remove("US")
+  elif "US" in nations and states and any(x.lower() == "all" for x in states):
+    # If 'All' is provided as a state (case invariant), remove those instances from states
+    states = [x for x in states if x.lower() != "all"]
+  elif "US" not in nations and states and any(x.lower() == "all" for x in states):
+    states.remove("All")
+  return nations, states or []
 
 
 def update_osm_db() -> None:
