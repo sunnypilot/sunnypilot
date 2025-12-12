@@ -62,18 +62,18 @@ class OSMLayout(Widget):
     gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
 
   def calculate_size(self):
-      total_size = 0
-      directories_to_scan = [MAP_PATH] if MAP_PATH.exists() else []
-      while directories_to_scan:
-        try:
-          for entry in os.scandir(directories_to_scan.pop()):
-            if entry.is_file():
-              total_size += entry.stat().st_size
-            elif entry.is_dir():
-              directories_to_scan.append(entry.path)
-        except OSError:
-          pass
-      self._delete_maps_btn.action_item.set_value(f"{total_size / 1024**2:.2f} MB" if total_size < 1024**3 else f"{total_size / 1024**3:.2f} GB")
+    total_size = 0
+    directories_to_scan = [MAP_PATH] if MAP_PATH.exists() else []
+    while directories_to_scan:
+      try:
+        for entry in os.scandir(directories_to_scan.pop()):
+          if entry.is_file():
+            total_size += entry.stat().st_size
+          elif entry.is_dir():
+            directories_to_scan.append(entry.path)
+      except OSError:
+        pass
+    self._delete_maps_btn.action_item.set_value(f"{total_size / 1024 ** 2:.2f} MB" if total_size < 1024 ** 3 else f"{total_size / 1024 ** 3:.2f} GB")
 
   def _update_map_size(self):
     threading.Thread(target=self.calculate_size, daemon=True).start()
