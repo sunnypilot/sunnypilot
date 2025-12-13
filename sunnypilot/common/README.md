@@ -103,16 +103,16 @@ Trade-offs: Static RAM (~17 KB) vs. dynamic churn; benefits outweigh costs for p
 ## <br> Appendix A: Memory Usage Graphs
 
 ### Base Params Memory Usage
-![Base Params Memory Usage](https://github.com/sunnyhaibin/sunnypilot/blob/paramwatcher/sunnypilot/common/assets/memory_usage_pre_paramwatcher.png?raw=true)
+![Base Params Memory Usage](assets/memory_usage_pre_paramwatcher.jpg)
 
 ### ParamWatcher Memory Usage
-![ParamWatcher Memory Usage](https://github.com/sunnyhaibin/sunnypilot/blob/paramwatcher/sunnypilot/common/assets/memory_usage_00000025--d50a4a3471.png?raw=true)
+![ParamWatcher Memory Usage](assets/memory_usage_00000025--d50a4a3471.jpg)
 
 ### Base Params IO Usage
-![Base Params IO Usage](https://github.com/sunnyhaibin/sunnypilot/blob/paramwatcher/sunnypilot/common/assets/io_usage_pre_paramwatcher.png?raw=true)
+![Base Params IO Usage](assets/io_usage_pre_paramwatcher.jpg)
 
 ### ParamWatcher IO Usage
-![ParamWatcher IO Usage](https://github.com/sunnyhaibin/sunnypilot/blob/paramwatcher/sunnypilot/common/assets/io_usage_param_watcher.png?raw=true)
+![ParamWatcher IO Usage](assets/io_usage_param_watcher.jpg)
 
 
 ## <br>References
