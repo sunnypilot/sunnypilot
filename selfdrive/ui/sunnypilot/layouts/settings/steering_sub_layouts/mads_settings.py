@@ -11,13 +11,14 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_ite
 MADS_STEERING_MODE_OPTIONS = [
   (tr("Remain Active"), tr_noop("Remain Active: ALC will remain active when the brake pedal is pressed.")),
   (tr("Pause"), tr_noop("Pause: ALC will pause when the brake pedal is pressed.")),
-  (tr("Disengage"),tr_noop("Disengage: ALC will disengage when the brake pedal is pressed."))
+  (tr("Disengage"), tr_noop("Disengage: ALC will disengage when the brake pedal is pressed.")),
 ]
 
 MADS_MAIN_CRUISE_BASE_DESC = tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.")
-MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = "{engage}<br><h4>{note}</h4>".format(engage =
-  tr("Engage lateral and longitudinal control with cruise control engagement."), note =
-  tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."))
+MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = "{engage}<br><h4>{note}</h4>".format(
+  engage=tr("Engage lateral and longitudinal control with cruise control engagement."),
+  note=tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."),
+)
 
 STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibility.")
 DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.")
@@ -51,7 +52,7 @@ class MadsSettingsLayout(Widget):
       buttons=[opt[0] for opt in MADS_STEERING_MODE_OPTIONS],
       inline=False,
       button_width=350,
-      callback=self._update_steering_mode_description
+      callback=self._update_steering_mode_description,
     )
 
     self.items = [
@@ -68,8 +69,7 @@ class MadsSettingsLayout(Widget):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)
     self._back_button.render()
     # subtract button
-    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40,
-                                rect.width, rect.height - self._back_button.rect.height - 40)
+    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40, rect.width, rect.height - self._back_button.rect.height - 40)
     self._scroller.render(content_rect)
 
   def show_event(self):
@@ -98,7 +98,6 @@ class MadsSettingsLayout(Widget):
       result += desc + "<br>"
     self._steering_mode.set_description(result)
 
-
   def _update_toggles(self):
     self._update_steering_mode_description(self._steering_mode.action_item.get_selected_button())
     if self._mads_limited_settings():
@@ -125,4 +124,3 @@ class MadsSettingsLayout(Widget):
       self._unified_engagement_toggle.set_description("")
 
       self._steering_mode.action_item.set_enabled(True)
-

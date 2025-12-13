@@ -8,6 +8,7 @@ from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
 
+
 class LaneChangeSettingsLayout(Widget):
   def __init__(self, back_btn_callback: Callable):
     super().__init__()
@@ -55,8 +56,7 @@ class LaneChangeSettingsLayout(Widget):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)
     self._back_button.render()
     # subtract button
-    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40,
-                                rect.width, rect.height - self._back_button.rect.height - 40)
+    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40, rect.width, rect.height - self._back_button.rect.height - 40)
     self._scroller.render(content_rect)
 
   def show_event(self):
@@ -65,5 +65,5 @@ class LaneChangeSettingsLayout(Widget):
   def _update_toggles(self):
     enable_bsm = ui_state.CP and ui_state.CP.enableBsm
     if not enable_bsm:
-        ui_state.params.remove("AutoLaneChangeBsmDelay")
+      ui_state.params.remove("AutoLaneChangeBsmDelay")
     self._bsm_delay.set_visible(enable_bsm and int(ui_state.params.get("AutoLaneChangeTimer", return_default=True)) > 0)
