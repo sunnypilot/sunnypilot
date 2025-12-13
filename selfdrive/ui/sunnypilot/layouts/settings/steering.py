@@ -22,6 +22,7 @@ class PanelType(IntEnum):
   LANE_CHANGE = 2
   TORQUE_CONTROL = 3
 
+
 class SteeringLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -63,7 +64,7 @@ class SteeringLayout(Widget):
       max_value=255,
       value_change_step=5,
       description="",
-      label_callback=lambda speed: f'{speed} {"km/h" if ui_state.is_metric else "mph"}'
+      label_callback=lambda speed: f'{speed} {"km/h" if ui_state.is_metric else "mph"}',
     )
     self._torque_control_toggle = toggle_item_sp(
       param="EnforceTorqueControl",
@@ -93,7 +94,7 @@ class SteeringLayout(Widget):
       self._torque_control_toggle,
       self._torque_customization_button,
       LineSeparator(),
-      self._nnlc_toggle
+      self._nnlc_toggle,
     ]
     return items
 
@@ -103,8 +104,7 @@ class SteeringLayout(Widget):
   def _update_state(self):
     super()._update_state()
     self._mads_toggle.action_item.set_enabled(ui_state.is_offroad())
-    self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad())
-    self._mads_settings_button.set_visible(self._mads_toggle.action_item.get_state())
+    self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad() and self._mads_toggle.action_item.get_state())
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
     self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())
 
