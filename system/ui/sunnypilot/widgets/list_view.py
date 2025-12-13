@@ -38,7 +38,9 @@ class SimpleButtonActionSP(ItemAction):
     self.button_action.set_touch_valid_callback(touch_callback)
 
   def _render(self, rect: rl.Rectangle):
+    self.button_action.set_enabled(self.enabled)
     self.button_action.render(rect)
+
 
 class ButtonActionSP(ButtonAction):
   def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_WIDTH, enabled: bool | Callable[[], bool] = True):
