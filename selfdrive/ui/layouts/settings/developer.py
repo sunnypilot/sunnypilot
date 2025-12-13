@@ -1,4 +1,3 @@
-from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.ssh_key import ssh_key_item
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
@@ -35,7 +34,7 @@ DESCRIPTIONS = {
 class DeveloperLayout(Widget):
   def __init__(self):
     super().__init__()
-    self._params = Params()
+    self._params = ui_state.params
     self._is_release = self._params.get_bool("IsReleaseBranch")
 
     # Build items and keep references for callbacks/state updates

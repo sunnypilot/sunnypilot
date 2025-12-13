@@ -320,7 +320,6 @@ class SunnylinkLayout(Widget):
     self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
     self._sunnylink_toggle.set_right_value(tr("Dongle ID") + ": " + self._get_sunnylink_dongle_id())
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
-    self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 

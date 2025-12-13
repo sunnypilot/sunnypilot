@@ -3,7 +3,6 @@ import math
 
 from cereal import messaging, log
 from openpilot.common.basedir import BASEDIR
-from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.onroad.driver_camera_dialog import DriverCameraDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -35,7 +34,7 @@ class DeviceLayout(Widget):
   def __init__(self):
     super().__init__()
 
-    self._params = Params()
+    self._params = ui_state.params
     self._select_language_dialog: MultiOptionDialog | None = None
     self._driver_camera: DriverCameraDialog | None = None
     self._pair_device_dialog: PairingDialog | None = None
