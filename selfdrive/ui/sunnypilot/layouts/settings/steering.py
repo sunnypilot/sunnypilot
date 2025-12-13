@@ -108,7 +108,6 @@ class SteeringLayout(Widget):
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
     self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())
 
-
   def _render(self, rect):
     if self._current_panel == PanelType.LANE_CHANGE:
       self._lane_change_settings_layout.render(rect)
