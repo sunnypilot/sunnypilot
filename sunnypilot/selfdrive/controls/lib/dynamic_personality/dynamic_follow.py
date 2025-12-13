@@ -14,13 +14,16 @@ LongPersonality = log.LongitudinalPersonality
 
 # Follow distance profiles mapped to LongPersonality
 FOLLOW_PROFILES = {
-  LongPersonality.relaxed:    [1.60, 1.62, 1.64, 1.65, 1.75, 1.75, 1.80, 1.85, 1.87, 1.90],
-  LongPersonality.standard:   [1.40, 1.42, 1.44, 1.45, 1.45, 1.45, 1.45, 1.50, 1.52, 1.54],
-  LongPersonality.aggressive: [0.85, 0.87, 1.12, 1.12, 1.17, 1.22, 1.26, 1.28, 1.30, 1.32],
+  LongPersonality.relaxed:    [1.65, 1.65, 1.665, 1.66, 1.64, 1.89],
+  LongPersonality.standard:   [1.45, 1.45, 1.464, 1.46, 1.44, 1.50],
+  LongPersonality.aggressive: [0.96, 0.96, 1.251, 1.25, 1.26, 1.28],
 }
 
-FOLLOW_BREAKPOINTS =          [0.,   5.,   5.5,  15.,  20.,  25.,  30.,  36.,  42.,  50.]
+FOLLOW_BREAKPOINTS =          [0.,   3.,   4,   12,   25.,  36]
 
+SMOOTHING_BASE = 0.70  # Base smoothing factor (higher = smoother)
+SMOOTHING_RANGE = 0.25  # Additional smoothing at high speeds
+SMOOTHING_SPEED_THRESHOLD = 36.0  # m/s (~80 mph) for max smoothing
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
 
@@ -29,6 +32,8 @@ class FollowDistanceController:
     self.params = Params()
     self.frame = 0
     self.personality = LongPersonality.standard
+    self.current_multiplier = None
+    self.first_run = True
     self.personality_change_cooldown = 0
     self.personality_cooldown_frames = int(PERSONALITY_CHANGE_COOLDOWN_S / DT_MDL)
     self._load_personality()
@@ -61,6 +66,10 @@ class FollowDistanceController:
             self.personality_change_cooldown = self.personality_cooldown_frames
     except (ValueError, TypeError):
       pass
+
+  def _get_smoothing_factor(self, v_ego: float) -> float:
+    speed_factor = np.clip(v_ego / SMOOTHING_SPEED_THRESHOLD, 0.3, 1.0)
+    return SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
 
   def is_enabled(self) -> bool:
     return self.params.get_bool('DynamicFollow')
@@ -95,12 +104,23 @@ class FollowDistanceController:
   def get_follow_distance_multiplier(self, v_ego: float) -> float:
     self._update_from_params()
     v_ego = max(0.0, v_ego)
-    multiplier = float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self.personality]))
-    return multiplier
+    target = float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self.personality]))
+
+    if self.first_run:
+      self.current_multiplier = target
+      self.first_run = False
+      return self.current_multiplier
+
+    #exponential smoothing with speedadaptive factor
+    alpha = self._get_smoothing_factor(v_ego)
+    self.current_multiplier = alpha * self.current_multiplier + (1.0 - alpha) * target
+    return self.current_multiplier
 
   def reset(self):
     self.personality = LongPersonality.standard
     self.frame = 0
+    self.current_multiplier = None
+    self.first_run = True
     self.personality_change_cooldown = 0
 
   def update(self):
