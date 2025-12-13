@@ -89,10 +89,6 @@ ALERT_CRITICAL_REBOOT = Alert(
 class AlertRenderer(Widget):
   def __init__(self):
     super().__init__()
-    self.font_regular: rl.Font = gui_app.font(FontWeight.MEDIUM)
-    self.font_roman: rl.Font = gui_app.font(FontWeight.ROMAN)
-    self.font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
-    self.font_display: rl.Font = gui_app.font(FontWeight.DISPLAY)
 
     self._alert_text1_label = UnifiedLabel(text="", font_size=ALERT_FONT_BIG, font_weight=FontWeight.DISPLAY, line_height=0.86,
                                            letter_spacing=-0.02)
@@ -204,11 +200,11 @@ class AlertRenderer(Widget):
     text_x = self._rect.x + ALERT_MARGIN
     text_width = self._rect.width - ALERT_MARGIN
     if icon_side == 'left':
-      text_x = self._rect.x + self._txt_turn_signal_right.width + 20 * 2
-      text_width = self._rect.width - ALERT_MARGIN - self._txt_turn_signal_right.width - 20 * 2
+      text_x = self._rect.x + self._txt_turn_signal_right.width
+      text_width = self._rect.width - ALERT_MARGIN - self._txt_turn_signal_right.width
     elif icon_side == 'right':
       text_x = self._rect.x + ALERT_MARGIN
-      text_width = self._rect.width - ALERT_MARGIN - self._txt_turn_signal_right.width - 20 * 2
+      text_width = self._rect.width - ALERT_MARGIN - self._txt_turn_signal_right.width
 
     text_rect = rl.Rectangle(
       text_x,
