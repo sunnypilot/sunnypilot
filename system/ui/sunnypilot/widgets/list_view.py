@@ -11,10 +11,10 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
                                                   _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
-from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -180,7 +180,7 @@ class ListItemSP(ListItem):
     content_width = item_rect.width - (style.ITEM_PADDING * 2)
     title_width = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE).x
     right_width = min(content_width - title_width, right_width)
-    if (isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)):
+    if isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP):
       action_x = item_rect.x
     else:
       action_x = item_rect.x + item_rect.width - right_width
@@ -197,7 +197,7 @@ class ListItemSP(ListItem):
 
     content_x = self._rect.x + style.ITEM_PADDING
     text_x = content_x
-    left_action_item = (isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP))
+    left_action_item = isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)
 
     if left_action_item:
       left_rect = rl.Rectangle(
