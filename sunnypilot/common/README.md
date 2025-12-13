@@ -1,109 +1,122 @@
-# Comparative Analysis of Parameter Access Methods: `Params::get` vs. `ParamWatcher`
+<center>
 
-## Inefficiencies in Standard Parameter Access
-The standard `Params::get()` method executes a full file I/O lifecycle—opening, allocating, reading, and closing—for every function call. This approach results in significant CPU overhead and memory churn due to the frequency of these operations in the user interface loop.
+# Comparative Analysis of Parameter Getter Methods: Params vs. ParamWatcher
 
-### System Overhead Analysis
-*   **System Call Overhead**: Every read operation requires context switches into kernel mode. The `Params::get` function calls `util::read_file` (sunnypilot, 2025), which subsequently invokes `std::ifstream` (sunnypilot, 2025).
-*   **Impact**: Frequent context switching degrades performance (Linux man-pages, 2025 -a; Linux man-pages, 2025 -b).
-*   **C++ Stream Overhead**: The use of `std::ifstream` introduces additional overhead for maintaining stream state and buffering compared to raw file descriptors (cppreference.com, n.d.-a; Codezup, 2025).
-*   **Memory Churn**: The instantiation of `std::string result(size, '\0');` forces heap allocation and deallocation during every call (sunnypilot, 2025). This stresses the memory allocator and can lead to fragmentation (cppreference.com, n.d.).
+James (sunnypilot Developer) <br>
+December 13, 2025
 
-## The ParamWatcher Optimization
-The `ParamWatcher` implementation utilizes OS-level file system events, such as `inotify` on Linux or `FSEvents` on macOS, to maintain a Random Access Memory (RAM) cache. This architecture eliminates the need for continuous polling.
+</center>
 
-### Performance Comparison
-| Feature | Standard `Params::get` | Optimized `ParamWatcher` |
-| :--- | :--- | :--- |
-| **Workflow** | `open` → `malloc` → `read` → `close` | `dict.get()` (RAM lookup) |
-| **Complexity** | **O(N * F)** (Linear to toggles & FPS) | **O(1)** (Constant time) |
-| **Disk I/O** | ~1,000 reads/sec (50 toggles @ 20FPS) | **0 reads/sec** (Steady state) |
-| **Memory** | New string object per call (High GC pressure) | Returns reference (Zero GC pressure) |
 
-## Architectural Mismatch of Standard Modules
-Standard C++ modules like `std::ifstream` are optimized for **throughput**—reading large files sequentially—rather than **latency** required for polling small files frequently.
+## <br><br> Abstract
 
-*   **The I/O Trap**: Even when a file resides in the OS page cache (RAM), invoking `open()` and `read()` forces a CPU mode switch (User → Kernel → User). Executing this sequence 1,000 times per second consumes CPU cycles merely to verify state constancy.
-*   **The Memory Trap**: The `std::string` class allocates memory on the heap. Repeated allocation creates short-lived objects, which in C++ fragments memory. In Python (which wraps this), it triggers the Garbage Collector, pausing the UI.
-*   **The Query Mismatch**: `Params::get` queries the current value every frame, whereas `ParamWatcher` waits for a notification of change, serving cached values in the interim.
+This research report examines the inefficiencies in standard parameter access methods within sunnypilot and proposes an optimized alternative, ParamWatcher. The standard `Params::get()` method incurs significant CPU and memory overhead due to repeated file I/O operations (sunnypilot, 2025). ParamWatcher utilizes OS-level file system events (inotify on Linux, FSEvents on macOS) to maintain an in-memory cache, reducing I/O to near zero (Linux man-pages, 2025-c; Apple Inc., n.d.-a). Empirical benchmarks with ~10 million parameter accesses demonstrate a 14.5x CPU speedup and flat memory usage (514.7 KB vs. 497.7 KB for base Params, with only 17 KB overhead). The implementation employs a process-local singleton pattern for efficiency in multi-process architectures (Gamma et al., 1994). Results indicate ParamWatcher eliminates UI stutters and GC pauses, enhancing system responsiveness without compromising data freshness.
 
-## Implementation Analysis
-The `ParamWatcher` class provides a cross-platform solution for monitoring file system changes, specifically targeting the parameter files used in Openpilot. The implementation leverages the `ctypes` library to interface directly with operating system kernels, bypassing higher-level abstractions for maximum performance.
+**Keywords:** parameter access, file I/O optimization, event-driven caching, autonomous driving systems, performance benchmarking
 
-### Linux Implementation (`_run_linux`)
-The Linux implementation interacts directly with the kernel's `inotify` subsystem (Linux man-pages, 2025 -c).
+## Introduction
 
-*   **Library Loading**: `libc = ctypes.CDLL('libc.so.6')` loads the standard C library to access system calls.
-*   **Initialization**: `inotify_init()` is called to create a new inotify instance, returning a file descriptor.
-*   **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` (Linux Kernel Organization, 2005) to capture all relevant file changes.
-*   **Event Loop**:
-    *   **Polling**: `select.epoll()` is used to efficiently wait for activity on the file descriptor without busy-waiting.
-    *   **Reading**: When events occur, `os.read(fd, 1024)` retrieves the raw binary event data.
-    *   **Parsing**: The code uses Python's `struct` module (`struct.unpack_from("iIII", ...)`) to parse the C-style `inotify_event` structures directly from the buffer, avoiding the overhead of defining `ctypes` structures.
-    *   **Handling**: Extracted filenames are passed to `_trigger_callbacks`, which invalidates the specific cache entry (`self._cache.pop(path, None)`), forcing a fresh read on the next access.
+In sunnypilot, efficient parameter management is important for real-time system access. The standard `Params::get()` method, implemented in C++ and wrapped in Python, performs full file I/O cycles for each access, leading to high CPU overhead and memory churn (sunnypilot, 2025). This is particularly problematic in UI loops where parameters are queried frequently (e.g., 50 toggles at 20 FPS equates to ~1,000 reads/second).
 
-### macOS Implementation (`_run_darwin`)
-The macOS implementation uses the `FSEvents` API from the `CoreServices` framework (Apple Inc., n.d.-a), which is more efficient than `kqueue` for directory monitoring.
+This inefficiency stems from architectural mismatches: C++ streams are designed for throughput, not latency (cppreference.com, n.d.-a). Each call triggers kernel mode switches, heap allocations, and garbage collection in Python, causing UI stutters (Linux man-pages, 2025-a; Linux man-pages, 2025-b).
 
-*   **Framework Loading**: `ctypes.cdll.LoadLibrary` loads `CoreServices` and `CoreFoundation`.
-*   **Callback Definition**: `CFUNCTYPE` is used to define a C-compatible callback function. This function is invoked by the OS whenever a change occurs in the watched directory.
-*   **Stream Creation**: `FSEventStreamCreate` creates a stream for the target directory. The `kFSEventStreamCreateFlagFileEvents` flag is used to request file-level granularity where available.
-*   **Event Filtering**: The callback filters events using flags such as `kFSEventStreamEventFlagItemCreated` and `kFSEventStreamEventFlagItemModified` to ensure only relevant file changes trigger updates (Apple Inc., n.d.-c).
-*   **Scheduling**: `FSEventStreamScheduleWithRunLoop` attaches the stream to the current thread's run loop (Apple Inc., n.d.-b).
-*   **Execution**: `CFRunLoopRun()` starts the event loop. This passes control to the OS, which wakes the thread only when necessary.
-*   **Handling**: Inside the callback, the code iterates through the changed paths provided by the OS. It extracts the filename and calls `_trigger_callbacks` to invalidate the cache for that specific parameter.
+### Inefficiencies in Standard Parameter Access
+The standard `Params::get()` method executes a full file I/O lifecycle—opening, allocating, reading, and closing—for every function call. This results in significant CPU overhead and memory churn due to the frequency of these operations in the user interface loop.
 
-### Python ctypes Integration
-The use of `ctypes` (Python Software Foundation, 2025) is a strategic choice. It allows the Python interpreter to load shared libraries (`libc.so.6` on Linux, `CoreServices` on macOS) and call C functions directly. This approach avoids the overhead of spawning subprocesses or compiling external C extensions, keeping the codebase pure Python while achieving C-level system integration.
+#### System Overhead Analysis
+- **System Call Overhead**: Every read operation requires context switches into kernel mode. The `Params::get` function calls `util::read_file` (sunnypilot, 2025), which subsequently invokes `std::ifstream` (sunnypilot, 2025).
+- **Impact**: Frequent context switching degrades performance (Linux man-pages, 2025-a; Linux man-pages, 2025-b).
+- **C++ Stream Overhead**: The use of `std::ifstream` introduces additional overhead for maintaining stream state and buffering compared to raw file descriptors (cppreference.com, n.d.-a; Codezup, 2025).
+- **Memory Churn**: The instantiation of `std::string result(size, '\0');` forces heap allocation and deallocation during every call (sunnypilot, 2025). This stresses the memory allocator and can lead to fragmentation (cppreference.com, n.d.-b).
 
-### Memory Impact Analysis
- With 232 defined parameters in `param_keys.h`, the maximum static RAM footprint of `ParamWatcher` is estimated to be **less than 250 KB**. Even if every single parameter were cached simultaneously, this static usage is negligible. Importantly, this stable footprint is likely more probable to maintain no trend of memory increase, whenc compared to the standard `Params::get` approach, which generates **megabytes** of short-lived "garbage" allocations per second, forcing the Python Garbage Collector to pause execution repeatedly.
+This report introduces ParamWatcher, an event-driven caching solution using OS file system events. It shifts from polling to notifications, caching converted values in static RAM. I propose that ParamWatcher achieves minimum 10x+ CPU gains with bounded non increasing memory, improving sunnypilot's performance both on latency and responsiveness.
 
-## Architectural Integration: The Process-Local Singleton Pattern
-To ensure resource efficiency within openpilot's multi-process architecture (e.g., `ui`, `controlsd`, `modeld`), `ParamWatcher` implements the Singleton design pattern (Gamma et al., 1994) using the Python `__new__` allocator.
+## Method
 
-### Process Isolation and Concurrency
-In the context of Python's memory model, a Singleton ensures a single instance exists *per process*. This behavior aligns with openpilot's multiprocess design:
+### Materials
+- **System:** sunnypilot, running on macOS, Ubuntu/Linux, comma 3x, and comma four.
+- **Parameters:** 231 defined keys in `param_keys.h`.
+- **Tools:** Python 3, tracemalloc for memory profiling, time.perf_counter for CPU timing, ctypes for OS integration (Python Software Foundation, 2025).
 
-*   **Intra-Process Efficiency**: Within a single heavy process like `ui`, multiple sub-components (e.g., `UIState`, `SunnylinkState`) import and use `Params`. The Singleton pattern ensures they share a single `inotify` thread and a unified RAM cache. This prevents the proliferation of redundant watcher threads, which would otherwise compete for the Global Interpreter Lock (GIL).
-*   **Inter-Process Safety**: Distinct processes (e.g., `modeld` vs. `ui`) maintain completely isolated `ParamWatcher` instances. This isolation eliminates the need for complex Inter-Process Communication (IPC) locking mechanisms for the cache, as each process synchronizes its independent state via the OS file system events.
+### Implementation Details
+ParamWatcher provides cross-platform file system monitoring using ctypes for direct OS integration (Python Software Foundation, 2025).
 
-### Empirical Verification
-Runtime analysis demonstrates that multiple instantiation attempts result in a shared object reference, minimizing memory footprint.
+#### Linux Implementation
+On Linux, ParamWatcher uses the inotify subsystem for efficient file change detection (Linux man-pages, 2025-c). It loads `libc.so.6` to access system calls, initializes an inotify instance, and watches the parameters directory for events like `IN_MODIFY` and `IN_CLOSE_WRITE` (Linux Kernel Organization, 2005). Events are polled with `select.epoll()` and parsed using `struct.unpack_from()` to avoid ctypes overhead. Filenames are extracted and passed to cache invalidation, ensuring real-time updates without polling (Codezup, 2025).
 
-*   **Test Case**: Instantiating `ParamWatcher` in `UIStateSP` and subsequently in a standalone script within the same process.
-*   **Result**: Both instances report the exact same memory address (`4814358960`) and share the same background thread ID (`6114635776`).
-*   **Impact**: The system incurs the overhead of the watcher thread (measured at < 0.1% CPU idle usage) only once per active process, regardless of import frequency. The average CPU usage across one minute was 0.002%.
+- **Library Loading**: `libc = ctypes.CDLL('libc.so.6')` loads the standard C library to access system calls.
+- **Initialization**: `inotify_init()` is called to create a new inotify instance, returning a file descriptor.
+- **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` (Linux Kernel Organization, 2005) to capture all relevant file changes.
+- **Event Loop**:
+  - **Polling**: `select.epoll()` is used to efficiently wait for activity on the file descriptor without busy-waiting.
+  - **Reading**: When events occur, `os.read(fd, 1024)` retrieves the raw binary event data.
+  - **Parsing**: The code uses Python's `struct` module (`struct.unpack_from("iIII", ...)`) to parse the C-style `inotify_event` structures directly from the buffer, avoiding the overhead of defining `ctypes` structures.
+  - **Handling**: Extracted filenames are passed to `_trigger_callbacks`, which invalidates the specific cache entry (`self._cache.pop(path, None)`), forcing a fresh read on the next access.
 
-## Limitations and Trade-offs
-While `ParamWatcher` offers superior performance for UI rendering, it presents specific trade-offs:
+#### macOS Implementation
+On macOS, ParamWatcher leverages FSEvents from CoreServices for directory monitoring (Apple Inc., n.d.-a). It defines a C-compatible callback using `CFUNCTYPE`, creates an `FSEventStream` with `kFSEventStreamCreateFlagFileEvents`, and schedules it on the run loop (Apple Inc., n.d.-b). Events are filtered for modifications, creations, and renames (Apple Inc., n.d.-c), triggering cache invalidation for affected parameters.
 
-*   **Static RAM Usage**: `ParamWatcher` maintains a persistent dictionary cache of all accessed parameters (~50KB), whereas `Params::get` uses zero static RAM but incurs high dynamic memory access.
-*   **Event Latency**: In high-load scenarios, `inotify` events may experience slight delays or coalescing compared to direct reads. However, for user interface applications, this latency (<10ms) is imperceptible.
-*   **Complexity**: The solution (the process singleton approach) requires managing a background thread and OS-specific event loops, increasing code complexity compared to the synchronous `Params::get` function.
+- **Framework Loading**: `ctypes.cdll.LoadLibrary` loads `CoreServices` and `CoreFoundation`.
+- **Callback Definition**: `CFUNCTYPE` is used to define a C-compatible callback function. This function is invoked by the OS whenever a change occurs in the watched directory.
+- **Stream Creation**: `FSEventStreamCreate` creates a stream for the target directory. The `kFSEventStreamCreateFlagFileEvents` flag is used to request file-level granularity where available.
+- **Event Filtering**: The callback filters events using flags such as `kFSEventStreamEventFlagItemCreated` and `kFSEventStreamEventFlagItemModified` to ensure only relevant file changes trigger updates (Apple Inc., n.d.-c).
+- **Scheduling**: `FSEventStreamScheduleWithRunLoop` attaches the stream to the current thread's run loop (Apple Inc., n.d.-b).
+- **Execution**: `CFRunLoopRun()` starts the event loop. This passes control to the OS, which wakes the thread only when necessary.
+- **Handling**: Inside the callback, the code iterates through the changed paths provided by the OS. It extracts the filename and calls `_trigger_callbacks` to invalidate the cache for that specific parameter.
 
-## Alternative Architecture Considered: ZeroMQ Service (ZMQ)
-During the development of `ParamWatcher`, a Client-Server architecture using ZMQ was evaluated. In this architecture, a single background service process would monitor file system events and publish changes over a ZMQ PUB socket to multiple client processes (SUB).
+### Procedure
+Benchmarks simulated heavy load:
+- **Memory Test:** ~10 million gets (43,290 loops over 231 keys), measured with tracemalloc.
+- **CPU Test:** Same load, timed with perf_counter.
+- Comparisons: Base Params vs. ParamWatcher.
 
-### Trade-off Analysis
-| Metric | In-Process (Current) | ZMQ Service (Rejected)                                |
-| :--- | :--- |:------------------------------------------------------|
-| **Memory Usage** | Low (1 thread/process) | High (1 full Python process + ZMQ buffers per client) |
-| **CPU Usage** | Low (Direct callback) | High (Serialization + TCP Stack + Deserialization)    |
-| **Latency** | Instant (<0.1ms) | Variable (TCP Loopback overhead)                      |
-| **Scalability** | Limited by OS file handles | Limited by TCP ports/buffers                          |
-| **Robustness** | Process-isolated failure | Single point of failure (Service crash affects all)   |
+## Results
 
-### Decision Rationale
-While the ZMQ approach offers better isolation and reduces the total number of OS file watchers (1 vs N), the overhead of inter-process communication (IPC) proved excessive for this use case.
-*   **Efficiency**: Even with 50+ processes, the memory footprint of 50 simple threads is significantly lower than the overhead of a dedicated Python service process plus the ZMQ context in every client.
-*   **Complexity**: The ZMQ architecture introduced synchronization challenges (e.g., service startup race conditions, "Address already in use" errors) that outweighed its benefits.
-*   **Performance**: The latency of serializing messages and passing them through the TCP stack is orders of magnitude higher than a direct function call within the same process memory space.
+### Memory Usage
+Using tracemalloc for peak memory measurement during ~10 million parameter accesses (43,290 loops over 231 keys), base Params peaked at 497.7 KB, while ParamWatcher peaked at 514.7 KB (17 KB overhead). ParamWatcher's memory remained flat post-initialization, preventing churn.
 
-## Conclusion
-Replacing polling mechanisms with event-driven caching shifts the computational load from kernel space (syscalls) to user space (RAM). This transition eliminates I/O overhead and UI stutters caused by garbage collection, resulting in a more responsive user experience. The In-Process Singleton approach was selected as the optimal balance between performance, complexity, and resource efficiency.
+| Condition | Memory (KB) | Overhead |
+|-----------|-------------|----------|
+| Base Params | 497.7 | - |
+| ParamWatcher | 514.7 | 17 KB |
+### CPU Performance
+ParamWatcher was 14.5x faster: 4.52s vs. 65.43s to complete ~10 million param gets.
 
-## References
+| Condition | Time (s) | Speedup |
+|-----------|----------|---------|
+| Base Params | 65.43 | 1x |
+| ParamWatcher | 4.52 | 14.5x |
+
+### Scalability
+No degradation at scale; cache invalidation maintained freshness.
+
+See Appendix A for visual graphs of memory usage over a 30-minute time span, captured on comma four. These two routes are of equal conditions: each route started completely unplugged to two minutes offroad, followed by onroad state, with ambient temperature at 75 degrees fahrenheit. These routes are direct comparisons of pre-ParamWatcher and ParamWatcher implementations. Appendix A also includes I/O capture graphs for those 30-minute routes, demonstrating reductions in file system activity post-ParamWatcher.
+
+## Discussion
+
+ParamWatcher successfully optimizes parameter access, delivering substantial CPU gains with minimal memory overhead. The event-driven approach eliminates I/O bottlenecks, reducing GC pressure and UI stutters (cppreference.com, n.d.-b). The 17 KB memory overhead is negligible compared to the megabytes of churn from base Params, ensuring bounded usage in multi-process environments via the singleton pattern (Gamma et al., 1994).
+
+Results demonstrate scalability without degradation, with cache invalidation maintaining data freshness. This optimization enhances system responsiveness.
+Limitations include potential event latency in high-load scenarios (<10 ms, imperceptible for UI) and increased complexity from background threads.
+Trade-offs: Static RAM (~17 KB) vs. dynamic churn; benefits outweigh costs for param-heavy workloads.
+
+## <br> Appendix A: Memory Usage Graphs
+
+### Base Params Memory Usage
+![Base Params Memory Usage](assets/memory_usage_pre_paramwatcher.png)
+
+### ParamWatcher Memory Usage
+![ParamWatcher Memory Usage](assets/memory_usage_00000025--d50a4a3471.png)
+
+### Base Params IO Usage
+![Base Params IO Usage](assets/io_usage_pre_paramwatcher.png)
+
+### ParamWatcher IO Usage
+![Base Params IO Usage](assets/io_usage_param_watcher.png)
+
+
+## <br>References
+
 Apple Inc. (n.d.-a). *File System Events*. Retrieved from https://developer.apple.com/documentation/coreservices/file_system_events
 
 Apple Inc. (n.d.-b). *CFRunLoop*. Retrieved from https://developer.apple.com/documentation/corefoundation/cfrunloop
@@ -116,17 +129,17 @@ cppreference.com. (n.d.-a). *std::basic_ifstream*. Retrieved from https://en.cpp
 
 cppreference.com. (n.d.-b). *std::basic_string*. Retrieved from https://en.cppreference.com/w/cpp/string/basic_string/basic_string
 
-Linux man-pages. (2025 -a). *open(2)*. Retrieved from https://man7.org/linux/man-pages/man2/open.2.html
-
-Linux man-pages. (2025-b). *read(2)*. Retrieved from https://man7.org/linux/man-pages/man2/read.2.html
-
-Linux man-pages. (2025 -c). *inotify(7)*. Retrieved from https://man7.org/linux/man-pages/man7/inotify.7.html
+Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software*. Addison-Wesley.
 
 Linux Kernel Organization. (2005). *include/uapi/linux/inotify.h*. Retrieved from https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/inotify.h
 
-Python Software Foundation. (2025). *ctypes — A foreign function library for Python*. Retrieved from https://docs.python.org/3/library/ctypes.html
+Linux man-pages. (2025-a). *open(2)*. Retrieved from https://man7.org/linux/man-pages/man2/open.2.html
 
-Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software*. Addison-Wesley.
+Linux man-pages. (2025-b). *read(2)*. Retrieved from https://man7.org/linux/man-pages/man2/read.2.html
+
+Linux man-pages. (2025-c). *inotify(7)*. Retrieved from https://man7.org/linux/man-pages/man7/inotify.7.html
+
+Python Software Foundation. (2025). *ctypes — A foreign function library for Python*. Retrieved from https://docs.python.org/3/library/ctypes.html
 
 sunnypilot. (2025). *common/params.cc* [Source code]. GitHub. https://github.com/sunnypilot/sunnypilot/blob/master/common/params.cc#L180C1-L206C2
 
