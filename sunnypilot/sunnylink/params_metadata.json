@@ -258,11 +258,11 @@
     "description": ""
   },
   "EnableCopyparty": {
-    "title": "Enable copyparty",
+    "title": "copyparty Service",
     "description": ""
   },
   "EnableGithubRunner": {
-    "title": "Enable GitHub Runner",
+    "title": "GitHub Runner Service",
     "description": ""
   },
   "EnableSunnylinkUploader": {

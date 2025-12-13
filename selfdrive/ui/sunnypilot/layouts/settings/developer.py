@@ -40,15 +40,15 @@ class DeveloperLayoutSP(DeveloperLayout):
                                                  tr("Toggle visibility of advanced sunnypilot controls.<br>This only changes the visibility of the toggles; " +
                                                     "it does not change the actual enabled/disabled state."), param="ShowAdvancedControls")
 
-    self.enable_github_runner_toggle = toggle_item_sp(tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."),
+    self.enable_github_runner_toggle = toggle_item_sp(tr("GitHub Runner Service"), tr("Enables or disables the GitHub runner service."),
                                                       param="EnableGithubRunner")
 
-    self.enable_copyparty_toggle = toggle_item_sp(tr("Enable copyparty service"),
+    self.enable_copyparty_toggle = toggle_item_sp(tr("copyparty Service"),
                                                   tr("copyparty is a very capable file server, you can use it to download your routes, view your logs " +
                                                      "and even make some edits on some files from your browser. " +
                                                      "Requires you to connect to your comma locally via its IP address."), param="EnableCopyparty")
 
-    self.prebuilt_toggle = toggle_item_sp(tr("Enable Quickboot Mode"), "", param="QuickBootToggle", callback=self._on_prebuilt_toggled)
+    self.prebuilt_toggle = toggle_item_sp(tr("Quickboot Mode"), "", param="QuickBootToggle", callback=self._on_prebuilt_toggled)
 
     self.error_log_btn = button_item(tr("Error Log"), tr("View"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
