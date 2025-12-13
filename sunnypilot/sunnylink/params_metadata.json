@@ -458,6 +458,10 @@
     "title": "Language",
     "description": ""
   },
+  "LastAgnosPowerMonitorShutdown": {
+    "title": "Last AGNOS Power Monitor Shutdown",
+    "description": ""
+  },
   "LastAthenaPingTime": {
     "title": "Last Athena Ping Time",
     "description": ""
