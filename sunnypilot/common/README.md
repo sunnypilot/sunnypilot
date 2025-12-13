@@ -49,7 +49,7 @@ On Linux, ParamWatcher uses the inotify subsystem for efficient file change dete
 - **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` (Linux Kernel Organization, 2005) to capture all relevant file changes.
 - **Event Loop**:
   - **Polling**: `select.epoll()` is used to efficiently wait for activity on the file descriptor without busy-waiting.
-  - **Reading**: When events occur, `os.read(fd, 1024)` retrieves the raw binary event data.
+  - **Reading**: When events occur, `os.read(fd, 2048)` retrieves the raw binary event data.
   - **Parsing**: The code uses Python's `struct` module (`struct.unpack_from("iIII", ...)`) to parse the C-style `inotify_event` structures directly from the buffer, avoiding the overhead of defining `ctypes` structures.
   - **Handling**: Extracted filenames are passed to `_trigger_callbacks`, which invalidates the specific cache entry (`self._cache.pop(path, None)`), forcing a fresh read on the next access.
 
