@@ -369,6 +369,7 @@ def create_screenshots():
     with OpenpilotPrefix():
       params = Params()
       params.put("DongleId", "123456789012345")
+      params.put("SunnylinkDongleId", "123456789012345")
 
       # Set branch name
       params.put("UpdaterCurrentDescription", VERSION)
