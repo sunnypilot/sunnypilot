@@ -197,7 +197,7 @@ class ListItemSP(ListItem):
 
     content_x = self._rect.x + style.ITEM_PADDING
     text_x = content_x
-    left_action_item = (isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP))
+    left_action_item = isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)
 
     if left_action_item:
       left_rect = rl.Rectangle(
