@@ -11,6 +11,7 @@ from cereal import log, custom
 
 from opendbc.car import structs
 from openpilot.common.params import Params
+from openpilot.common.realtime import DT_CTRL
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
@@ -43,7 +44,7 @@ class ControlsExt(ModelStateBase):
       self._param_update_time = time.monotonic()
 
   def get_lat_active(self, sm: messaging.SubMaster) -> bool:
-    if self.blinker_pause_lateral.update(sm['carState']):
+    if self.blinker_pause_lateral.update(sm['carState'], DT_CTRL):
       return False
 
     ss_sp = sm['selfdriveStateSP']
