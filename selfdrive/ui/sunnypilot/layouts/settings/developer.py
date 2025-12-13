@@ -50,7 +50,7 @@ class DeveloperLayoutSP(DeveloperLayout):
 
     self.prebuilt_toggle = toggle_item_sp(tr("Quickboot Mode"), "", param="QuickBootToggle", callback=self._on_prebuilt_toggled)
 
-    self.error_log_btn = button_item(tr("Error Log"), tr("View"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
+    self.error_log_btn = button_item(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
     self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,]
 
