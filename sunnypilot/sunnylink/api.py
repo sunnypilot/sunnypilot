@@ -2,9 +2,10 @@ import json
 import os
 import random
 import time
-from datetime import datetime, timedelta
-
 import jwt
+from typing import cast
+from datetime import datetime, timedelta, UTC
+
 from openpilot.common.api.base import BaseApi
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
@@ -92,7 +93,8 @@ class SunnylinkApi(BaseApi):
 
       backoff = 1
       while True:
-        register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm=jwt_algo)
+        register_token = jwt.encode({'register': True, 'exp': datetime.now(UTC).replace(tzinfo=None) + timedelta(hours=1)},
+                                    cast(str, private_key), algorithm=jwt_algo)
         try:
           if verbose or time.monotonic() - start_time < timeout / 2:
             self._status_update("Registering device to sunnylink...")
