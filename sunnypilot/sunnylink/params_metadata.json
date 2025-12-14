@@ -1,4 +1,12 @@
 {
+  "AccelPersonality": {
+    "title": "AccelPersonality",
+    "description": ""
+  },
+  "AccelPersonalityEnabled": {
+    "title": "AccelPersonalityEnabled",
+    "description": ""
+  },
   "AccessToken": {
     "title": "AccessTokenIsNice",
     "description": ""
