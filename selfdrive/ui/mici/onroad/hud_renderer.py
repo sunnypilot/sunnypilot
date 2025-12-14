@@ -199,7 +199,7 @@ class HudRenderer(Widget):
       self._wheel_alpha_filter.update(255)
       self._wheel_y_filter.update(0)
     else:
-      if ui_state.status in (UIStatus.DISENGAGED, UIStatus.LONG_ONLY):
+      if ui_state.status == UIStatus.DISENGAGED:
         self._wheel_alpha_filter.update(0)
         self._wheel_y_filter.update(wheel_txt.height / 2)
       else:
