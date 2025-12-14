@@ -1,11 +1,25 @@
 {
   "AccelPersonality": {
-    "title": "AccelPersonality",
-    "description": ""
+    "title": "Acceleration Personality",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Sport"
+      },
+      {
+        "value": 1,
+        "label": "Normal"
+      },
+      {
+        "value": 2,
+        "label": "Eco"
+      }
+    ]
   },
   "AccelPersonalityEnabled": {
-    "title": "AccelPersonalityEnabled",
-    "description": ""
+    "title": "Enable Acceleration Personality",
+    "description": "Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive)."
   },
   "AccessToken": {
     "title": "AccessTokenIsNice",
