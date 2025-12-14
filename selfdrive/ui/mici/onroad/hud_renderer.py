@@ -182,7 +182,17 @@ class HudRenderer(Widget):
     if ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
       self._torque_bar.render(rect)
 
+    draw_set_speed = False
     if self.is_cruise_set:
+      alpha = self._set_speed_alpha_filter.update(
+        0 < rl.get_time() - self._set_speed_changed_time < SET_SPEED_PERSISTENCE and
+        self._can_draw_top_icons and self._engaged
+      )
+      draw_set_speed = alpha >= 1e-2
+
+    self._speed_limit.set_hide_for_hud(draw_set_speed)
+
+    if draw_set_speed:
       self._draw_set_speed(rect)
 
     self._draw_steering_wheel(rect)
