@@ -55,7 +55,7 @@ class ModelsLayoutMici(NavWidget):
 
     self.main_items: list[Widget] = [self.current_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn, self.lane_turn_toggle,
                        self.lane_turn_value_btn, self.lagd_toggle, self.delay_btn]
-    self._scroller = Scroller(self.main_items)
+    self._scroller = Scroller(self.main_items, snap_items=False)
 
   @property
   def model_manager(self):
@@ -143,11 +143,14 @@ class ModelsLayoutMici(NavWidget):
 
     for folder in sorted(folders.keys(), key=lambda f: max((b.index for b in folders[f]), default=-1), reverse=True):
       if folder:
-        btn = BigButton(folder, "", "")
+        btn = BigButton(folder.lower(), "", "")
         btn.set_click_callback(lambda f=folder: self._select_folder(f))
         folder_buttons.append(btn)
 
     self._scroller._items = folder_buttons
+    for item in folder_buttons:
+      item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
+    self._scroller.scroll_panel.set_offset(0)
     self.set_back_callback(self._back_from_selection)
 
   def _handle_refresh(self):
@@ -196,6 +199,9 @@ class ModelsLayoutMici(NavWidget):
       bundle_buttons.append(btn)
 
     self._scroller._items = bundle_buttons
+    for item in bundle_buttons:
+      item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
+    self._scroller.scroll_panel.set_offset(0)
     self.set_back_callback(self._back_from_selection)
 
   def _reset_main_view(self):
@@ -231,6 +237,9 @@ class ModelsLayoutMici(NavWidget):
       btn.set_click_callback(lambda v=value: self._set_lane_turn(v))
       adjust_buttons.append(btn)
     self._scroller._items = adjust_buttons
+    for item in adjust_buttons:
+      item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
+    self._scroller.scroll_panel.set_offset(0)
     self.set_back_callback(self._reset_main_view)
 
   def _set_lane_turn(self, value):
@@ -254,6 +263,9 @@ class ModelsLayoutMici(NavWidget):
       btn.set_click_callback(lambda v=value: self._set_delay(v))
       adjust_buttons.append(btn)
     self._scroller._items = adjust_buttons
+    for item in adjust_buttons:
+      item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
+    self._scroller.scroll_panel.set_offset(0)
     self.set_back_callback(self._reset_main_view)
 
   def _set_delay(self, value):
