@@ -18,9 +18,9 @@ METER_TO_MILE = 0.000621371
 UI_FREQ = 20
 SPEED_LIMIT_AHEAD_VALID_FRAME_THRESHOLD = 5
 
-SPEED_LIMIT_SIZE_METRIC = 75
-SPEED_LIMIT_SIZE_IMPERIAL_W = 70
-SPEED_LIMIT_SIZE_IMPERIAL_H = 90
+SPEED_LIMIT_SIZE_METRIC = 95
+SPEED_LIMIT_SIZE_IMPERIAL_W = 88
+SPEED_LIMIT_SIZE_IMPERIAL_H = 110
 
 
 class SpeedLimitMode(IntEnum):
@@ -68,10 +68,17 @@ class SpeedLimitRenderer(Widget):
     self.speed_limit_assist_frame: int = 0
     self.long_override: bool = False
     self.current_speed: float = 0.0
+    self._hide_for_hud: bool = False
 
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
+
+    from openpilot.common.filter_simple import FirstOrderFilter
+    self._alpha_filter = FirstOrderFilter(0.0, 0.15, 1 / gui_app.target_fps)
+
+  def set_hide_for_hud(self, hide: bool):
+    self._hide_for_hud = hide
 
   def _update_state(self) -> None:
     sm = ui_state.sm
@@ -124,10 +131,17 @@ class SpeedLimitRenderer(Widget):
 
   def _render(self, rect: rl.Rectangle) -> None:
     sm = ui_state.sm
-    if sm['onroadEvents']:
-        return
 
-    show_speed_limit = False
+    should_show = True
+    if sm['onroadEvents']:
+      should_show = False
+
+    ss = sm['selfdriveState']
+    if ss.alertSize != 0:
+      should_show = False
+
+    if self._hide_for_hud:
+      should_show = False
 
     if self.speed_limit_assist_state == 1:
       self.speed_limit_assist_frame += 1
@@ -138,12 +152,15 @@ class SpeedLimitRenderer(Widget):
       self.assist_pulse_alpha = 255
       show_speed_limit = self.speed_limit_mode != SpeedLimitMode.OFF
 
-
     if not show_speed_limit:
+      should_show = False
+
+    self._alpha_filter.update(1.0 if should_show else 0.0)
+    if self._alpha_filter.x < 0.01:
       return
 
     margin_left = 21
-    margin_bottom = 140
+    margin_bottom = 120
 
     if ui_state.is_metric:
       sign_width = SPEED_LIMIT_SIZE_METRIC
@@ -178,16 +195,18 @@ class SpeedLimitRenderer(Widget):
     speed_limit_str = str(round(self.speed_limit_last)) if has_speed_limit else "---"
 
     ring_color = COLORS.red
-    speed_color = COLORS.black
+    speed_color_base = COLORS.black
     bg_alpha = 230
 
     if speed_limit_warning_enabled and overspeed:
-      speed_color = COLORS.red
+      speed_color_base = COLORS.red
       ring_color = COLORS.red
     elif not self.speed_limit_valid and self.speed_limit_last_valid:
-      speed_color = COLORS.grey
+      speed_color_base = COLORS.grey
       ring_color = COLORS.grey
       bg_alpha = 180
+
+    alpha_multiplier = self._alpha_filter.x
 
     shadow_offset = 3
     center = rl.Vector2(
@@ -195,16 +214,27 @@ class SpeedLimitRenderer(Widget):
       sign_rect.y + sign_rect.height / 2 + shadow_offset
     )
     radius = sign_rect.width / 2
-    rl.draw_circle_v(center, radius, rl.Color(0, 0, 0, 80))
+    rl.draw_circle_v(center, radius, rl.Color(0, 0, 0, int(80 * alpha_multiplier)))
 
     center = rl.Vector2(sign_rect.x + sign_rect.width / 2, sign_rect.y + sign_rect.height / 2)
-    rl.draw_circle_v(center, radius, rl.Color(255, 255, 255, bg_alpha))
+    rl.draw_circle_v(center, radius, rl.Color(255, 255, 255, int(bg_alpha * alpha_multiplier)))
 
-    rl.draw_ring(center, radius * 0.82, radius * 0.95, 0, 360, 36, ring_color)
+    if isinstance(ring_color, tuple):
+      ring_r, ring_g, ring_b, _ = ring_color
+    else:
+      ring_r, ring_g, ring_b = ring_color.r, ring_color.g, ring_color.b
+    ring_color_alpha = rl.Color(ring_r, ring_g, ring_b, int(255 * alpha_multiplier))
+    rl.draw_ring(center, radius * 0.82, radius * 0.95, 0, 360, 36, ring_color_alpha)
 
     font_size = 36 if len(speed_limit_str) >= 3 else 50  # Bigger text
     text_size = measure_text_cached(self._font_bold, speed_limit_str, font_size)
     text_pos = rl.Vector2(center.x - text_size.x / 2, center.y - text_size.y / 2)
+
+    if isinstance(speed_color_base, tuple):
+      speed_r, speed_g, speed_b, _ = speed_color_base
+    else:
+      speed_r, speed_g, speed_b = speed_color_base.r, speed_color_base.g, speed_color_base.b
+    speed_color = rl.Color(speed_r, speed_g, speed_b, int(255 * alpha_multiplier))
     rl.draw_text_ex(self._font_bold, speed_limit_str, text_pos, font_size, 0, speed_color)
 
     if self.speed_limit_offset != 0 and has_speed_limit:
@@ -217,11 +247,14 @@ class SpeedLimitRenderer(Widget):
     overspeed = has_speed_limit and round(self.speed_limit_final_last) < round(self.current_speed)
     speed_limit_str = str(round(self.speed_limit_last)) if has_speed_limit else "---"
 
-    speed_color = COLORS.black
     if speed_limit_warning_enabled and overspeed:
-      speed_color = COLORS.red
+      speed_color_base = COLORS.red
     elif not self.speed_limit_valid and self.speed_limit_last_valid:
-      speed_color = COLORS.grey
+      speed_color_base = COLORS.grey
+    else:
+      speed_color_base = COLORS.black
+
+    alpha_multiplier = self._alpha_filter.x
 
     shadow_offset = 3
     shadow_rect = rl.Rectangle(
@@ -230,32 +263,41 @@ class SpeedLimitRenderer(Widget):
       sign_rect.width,
       sign_rect.height
     )
-    rl.draw_rectangle_rounded(shadow_rect, 0.15, 10, rl.Color(0, 0, 0, 80))
-    rl.draw_rectangle_rounded(sign_rect, 0.15, 10, COLORS.white)
-    rl.draw_rectangle_rounded_lines_ex(sign_rect, 0.15, 10, 3, COLORS.black)
+    rl.draw_rectangle_rounded(shadow_rect, 0.15, 10, rl.Color(0, 0, 0, int(80 * alpha_multiplier)))
+    rl.draw_rectangle_rounded(sign_rect, 0.15, 10, rl.Color(255, 255, 255, int(255 * alpha_multiplier)))
+    rl.draw_rectangle_rounded_lines_ex(sign_rect, 0.15, 10, 3, rl.Color(0, 0, 0, int(255 * alpha_multiplier)))
 
     speed_text = tr("SPEED")
     limit_text = tr("LIMIT")
 
-    header_font_size = 22
+    header_font_size = 28
     speed_size = measure_text_cached(self._font_semi_bold, speed_text, header_font_size)
     limit_size = measure_text_cached(self._font_semi_bold, limit_text, header_font_size)
 
     speed_pos = rl.Vector2(sign_rect.x + (sign_rect.width - speed_size.x) / 2, sign_rect.y + 3)
-    limit_pos = rl.Vector2(sign_rect.x + (sign_rect.width - limit_size.x) / 2, sign_rect.y + 22)
+    limit_pos = rl.Vector2(sign_rect.x + (sign_rect.width - limit_size.x) / 2, sign_rect.y + 26)
 
-    rl.draw_text_ex(self._font_semi_bold, speed_text, speed_pos, header_font_size, 0, COLORS.black)
-    rl.draw_text_ex(self._font_semi_bold, limit_text, limit_pos, header_font_size, 0, COLORS.black)
-    number_font_size = 40 if len(speed_limit_str) >= 3 else 48  # Bigger text
+    text_color = rl.Color(0, 0, 0, int(255 * alpha_multiplier))
+    rl.draw_text_ex(self._font_semi_bold, speed_text, speed_pos, header_font_size, 0, text_color)
+    rl.draw_text_ex(self._font_semi_bold, limit_text, limit_pos, header_font_size, 0, text_color)
+
+    number_font_size = 40 if len(speed_limit_str) >= 3 else 60  # Bigger text
     number_size = measure_text_cached(self._font_bold, speed_limit_str, number_font_size)
     number_pos = rl.Vector2(
       sign_rect.x + (sign_rect.width - number_size.x) / 2,
-      sign_rect.y + 35
+      sign_rect.y + 45
     )
+
+    if isinstance(speed_color_base, tuple):
+      r, g, b, _ = speed_color_base
+    else:
+      r, g, b = speed_color_base.r, speed_color_base.g, speed_color_base.b
+    speed_color = rl.Color(r, g, b, int(255 * alpha_multiplier))
     rl.draw_text_ex(self._font_bold, speed_limit_str, number_pos, number_font_size, 0, speed_color)
 
     if self.speed_limit_offset != 0 and has_speed_limit:
-      self._draw_offset_compact_rectangular(sign_rect)
+      return
+      #self._draw_offset_compact_rectangular(sign_rect)
 
   def _draw_offset_compact_circular(self, sign_rect: rl.Rectangle, center: rl.Vector2, radius: float) -> None:
     """Draw compact offset sign"""
@@ -267,7 +309,7 @@ class SpeedLimitRenderer(Widget):
     pill_y = sign_rect.y + sign_rect.height + 5
 
     pill_rect = rl.Rectangle(pill_x, pill_y, pill_width, pill_height)
-    rl.draw_rectangle_rounded(pill_rect, 0.5, 10, COLORS.black_translucent)
+    rl.draw_rectangle_rounded(pill_rect, 0.5, 10, rl.Color(0, 0, 0, int(166 * self._alpha_filter.x)))
 
     offset_font_size = 13
     offset_size = measure_text_cached(self._font_semi_bold, offset_str, offset_font_size)
@@ -275,7 +317,8 @@ class SpeedLimitRenderer(Widget):
       pill_x + (pill_width - offset_size.x) / 2,
       pill_y + (pill_height - offset_size.y) / 2
     )
-    rl.draw_text_ex(self._font_semi_bold, offset_str, offset_pos, offset_font_size, 0, COLORS.white)
+    rl.draw_text_ex(self._font_semi_bold, offset_str, offset_pos, offset_font_size, 0,
+                    rl.Color(255, 255, 255, int(255 * self._alpha_filter.x)))
 
   def _draw_offset_compact_rectangular(self, sign_rect: rl.Rectangle) -> None:
     """Draw compact offset MUTCD"""
@@ -287,7 +330,7 @@ class SpeedLimitRenderer(Widget):
     box_y = sign_rect.y + sign_rect.height + 5
 
     box_rect = rl.Rectangle(box_x, box_y, box_width, box_height)
-    rl.draw_rectangle_rounded(box_rect, 0.3, 10, COLORS.black_translucent)
+    rl.draw_rectangle_rounded(box_rect, 0.3, 10, rl.Color(0, 0, 0, int(166 * self._alpha_filter.x)))
 
     offset_font_size = 12
     offset_size = measure_text_cached(self._font_semi_bold, offset_str, offset_font_size)
@@ -295,7 +338,8 @@ class SpeedLimitRenderer(Widget):
       box_x + (box_width - offset_size.x) / 2,
       box_y + (box_height - offset_size.y) / 2
     )
-    rl.draw_text_ex(self._font_semi_bold, offset_str, offset_pos, offset_font_size, 0, COLORS.white)
+    rl.draw_text_ex(self._font_semi_bold, offset_str, offset_pos, offset_font_size, 0,
+                    rl.Color(255, 255, 255, int(255 * self._alpha_filter.x)))
 
   def _draw_upcoming_compact(self, sign_rect: rl.Rectangle) -> None:
     """Draw upcoming speed limit indicator to the right"""
@@ -312,6 +356,7 @@ class SpeedLimitRenderer(Widget):
 
     speed_str = str(round(self.speed_limit_ahead))
     distance_str = self._format_distance(self.speed_limit_ahead_distance)
+    alpha_multiplier = self._alpha_filter.x
 
     spacing = 10
     ahead_size = 60
@@ -321,18 +366,21 @@ class SpeedLimitRenderer(Widget):
 
     center = rl.Vector2(ahead_rect.x + ahead_rect.width / 2, ahead_rect.y + ahead_rect.height / 2)
     radius = ahead_size / 2
-    rl.draw_circle_v(center, radius, rl.Color(0, 0, 0, 160))
-    rl.draw_ring(center, radius * 0.88, radius * 0.95, 0, 360, 36, COLORS.border_translucent)
+    rl.draw_circle_v(center, radius, rl.Color(0, 0, 0, int(160 * alpha_multiplier)))
+    border_color = rl.Color(255, 255, 255, int(75 * alpha_multiplier))
+    rl.draw_ring(center, radius * 0.88, radius * 0.95, 0, 360, 36, border_color)
 
     speed_font_size = 26
     speed_size = measure_text_cached(self._font_bold, speed_str, speed_font_size)
     speed_pos = rl.Vector2(center.x - speed_size.x / 2, center.y - speed_size.y / 2 - 6)
-    rl.draw_text_ex(self._font_bold, speed_str, speed_pos, speed_font_size, 0, COLORS.white)
+    rl.draw_text_ex(self._font_bold, speed_str, speed_pos, speed_font_size, 0,
+                    rl.Color(255, 255, 255, int(255 * alpha_multiplier)))
 
     distance_font_size = 11
     distance_size = measure_text_cached(self._font_medium, distance_str, distance_font_size)
     distance_pos = rl.Vector2(center.x - distance_size.x / 2, center.y + 9)
-    rl.draw_text_ex(self._font_medium, distance_str, distance_pos, distance_font_size, 0, COLORS.light_grey)
+    rl.draw_text_ex(self._font_medium, distance_str, distance_pos, distance_font_size, 0,
+                    rl.Color(200, 200, 200, int(255 * alpha_multiplier)))
 
   def _format_distance(self, distance: float) -> str:
     """Format distance string"""
