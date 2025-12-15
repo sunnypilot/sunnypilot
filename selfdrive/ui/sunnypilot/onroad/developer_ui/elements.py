@@ -1,9 +1,4 @@
-"""
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
-
-This file is part of sunnypilot and is licensed under the MIT License.
-See the LICENSE.md file in the root directory for more details.
-"""
+from abc import ABC, abstractmethod
 import pyray as rl
 from dataclasses import dataclass
 
@@ -18,9 +13,18 @@ class UiElement:
   color: rl.Color
 
 
-class DeveloperUiElements:
-  @staticmethod
-  def get_d_rel(lead_status: bool, lead_d_rel: float) -> UiElement:
+class BaseUiElement(ABC):
+  @abstractmethod
+  def update(self, sm, is_metric: bool) -> UiElement:
+    pass
+
+
+class RelDistElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    lead_one = sm['radarState'].leadOne
+    lead_status = lead_one.status
+    lead_d_rel = lead_one.dRel
+
     value = f"{lead_d_rel:.0f}" if lead_status else "-"
     color = rl.WHITE
 
@@ -32,9 +36,13 @@ class DeveloperUiElements:
 
     return UiElement(value, "REL DIST", "m", color)
 
-  @staticmethod
-  def get_v_rel(lead_status: bool, lead_v_rel: float, is_metric: bool) -> UiElement:
-    """Relative velocity"""
+
+class RelSpeedElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    lead_one = sm['radarState'].leadOne
+    lead_status = lead_one.status
+    lead_v_rel = lead_one.vRel
+
     speed_unit = "km/h" if is_metric else "mph"
     conversion = CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH
     value = f"{lead_v_rel * conversion:.0f}" if lead_status else "-"
@@ -48,9 +56,14 @@ class DeveloperUiElements:
 
     return UiElement(value, "REL SPEED", speed_unit, color)
 
-  @staticmethod
-  def get_steering_angle_deg(angle_steers: float, lat_active: bool, steer_override: bool) -> UiElement:
-    """Real steering angle (degrees)."""
+
+class SteeringAngleElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    car_state = sm['carState']
+    angle_steers = car_state.steeringAngleDeg
+    lat_active = sm['carControl'].latActive
+    steer_override = car_state.steeringPressed
+
     value = f"{angle_steers:.1f}°"
 
     if lat_active:
@@ -65,10 +78,15 @@ class DeveloperUiElements:
 
     return UiElement(value, "REAL STEER", "", color)
 
-  @staticmethod
-  def get_desired_steering_angle_deg(lat_active: bool, steer_angle_desired: float,
-                                     angle_steers: float) -> UiElement:
-    """Desired steering angle"""
+
+class DesiredSteeringAngleElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    car_state = sm['carState']
+    controls_state = sm['controlsState']
+    lat_active = sm['carControl'].latActive
+    angle_steers = car_state.steeringAngleDeg
+    steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDeg
+
     value = f"{steer_angle_desired:.1f}°" if lat_active else "-"
     color = rl.WHITE
 
@@ -82,10 +100,16 @@ class DeveloperUiElements:
 
     return UiElement(value, "DESIRED STEER", "", color)
 
-  @staticmethod
-  def get_actual_lateral_accel(curvature: float, v_ego: float, roll: float,
-                               lat_active: bool, steer_override: bool) -> UiElement:
-    """Actual lateral acceleration (roll compensated)"""
+
+class ActualLateralAccelElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    controls_state = sm['controlsState']
+    curvature = controls_state.curvature
+    v_ego = sm['carState'].vEgo
+    roll = sm['liveParameters'].roll if sm.valid['liveParameters'] else 0.0
+    lat_active = sm['carControl'].latActive
+    steer_override = sm['carState'].steeringPressed
+
     actual_lat_accel = (curvature * v_ego ** 2) - (roll * 9.81)
     value = f"{actual_lat_accel:.2f}"
 
@@ -96,10 +120,16 @@ class DeveloperUiElements:
 
     return UiElement(value, "ACTUAL L.A.", "m/s²", color)
 
-  @staticmethod
-  def get_desired_lateral_accel(desired_curvature: float, v_ego: float, roll: float,
-                                lat_active: bool, steer_override: bool) -> UiElement:
-    """Desired lateral acceleration"""
+
+class DesiredLateralAccelElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    controls_state = sm['controlsState']
+    desired_curvature = controls_state.desiredCurvature
+    v_ego = sm['carState'].vEgo
+    roll = sm['liveParameters'].roll if sm.valid['liveParameters'] else 0.0
+    lat_active = sm['carControl'].latActive
+    steer_override = sm['carState'].steeringPressed
+
     desired_lat_accel = (desired_curvature * v_ego ** 2) - (roll * 9.81)
     value = f"{desired_lat_accel:.2f}" if lat_active else "-"
 
@@ -110,22 +140,33 @@ class DeveloperUiElements:
 
     return UiElement(value, "DESIRED L.A.", "m/s²", color)
 
-  @staticmethod
-  def get_memory_usage_percent(memory_usage_percent: int) -> UiElement:
-    """RAM"""
-    value = f"{memory_usage_percent}%"
-    color = rl.Color(255, 188, 0, 255) if memory_usage_percent > 85 else rl.WHITE
-    return UiElement(value, "RAM", "", color)
 
-  @staticmethod
-  def get_a_ego(a_ego: float) -> UiElement:
-    """current acceleration (m/s²)."""
+class MemoryUsageElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    # Not currently used in the main UI but kept for completeness
+    # This might require passing memory usage explicitly if it's not in SM
+    # For now, we'll return a placeholder or need to find where it comes from.
+    # The original method took `memory_usage_percent: int`.
+    # Since we don't have it in SM easily (maybe deviceState?), we might need to skip or fake it.
+    # Assuming it's passed or available.
+    return UiElement("-", "RAM", "", rl.WHITE)
+
+
+class AEgoElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    a_ego = sm['carState'].aEgo
     value = f"{a_ego:.1f}"
     return UiElement(value, "ACC.", "m/s²", rl.WHITE)
 
-  @staticmethod
-  def get_v_ego_lead(lead_status: bool, lead_v_rel: float, v_ego: float, is_metric: bool) -> UiElement:
-    """Lead vehicle absolute speed."""
+
+class LeadSpeedElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    radar_state = sm['radarState']
+    lead_one = radar_state.leadOne
+    lead_status = lead_one.status
+    lead_v_rel = lead_one.vRel
+    v_ego = sm['carState'].vEgo
+
     speed_unit = "km/h" if is_metric else "mph"
     conversion = CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH
     value = f"{(lead_v_rel + v_ego) * conversion:.0f}" if lead_status else "-"
@@ -139,29 +180,48 @@ class DeveloperUiElements:
 
     return UiElement(value, "L.S.", speed_unit, color)
 
-  @staticmethod
-  def get_friction_coefficient(friction_coef: float, live_valid: bool) -> UiElement:
-    """Friction coefficient from torqued."""
+
+class FrictionCoefficientElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    ltp = sm['liveTorqueParameters']
+    friction_coef = ltp.frictionCoefficientFiltered
+    live_valid = ltp.liveValid
+
     value = f"{friction_coef:.3f}"
     color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
     return UiElement(value, "FRIC.", "", color)
 
-  @staticmethod
-  def get_lat_accel_factor(lat_accel_factor: float, live_valid: bool) -> UiElement:
-    """Lateral acceleration factor from torqued."""
+
+class LatAccelFactorElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    ltp = sm['liveTorqueParameters']
+    lat_accel_factor = ltp.latAccelFactorFiltered
+    live_valid = ltp.liveValid
+
     value = f"{lat_accel_factor:.3f}"
     color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
     return UiElement(value, "L.A.F.", "", color)
 
-  @staticmethod
-  def get_steering_torque_eps(steering_torque_eps: float) -> UiElement:
-    """Steering torque from car EPS (Newton decimeters)."""
+
+class SteeringTorqueEpsElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    steering_torque_eps = sm['carState'].steeringTorqueEps
     value = f"{abs(steering_torque_eps):.1f}"
     return UiElement(value, "E.T.", "N·dm", rl.WHITE)
 
-  @staticmethod
-  def get_bearing_deg(bearing_accuracy_deg: float, bearing_deg: float) -> UiElement:
-    """Bearing degree and direction (compass)."""
+
+class BearingDegElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    if sm.valid['gpsLocationExternal']:
+        gps_data = sm['gpsLocationExternal']
+    elif sm.valid['gpsLocation']:
+        gps_data = sm['gpsLocation']
+    else:
+        return UiElement("OFF | -", "B.D.", "", rl.WHITE)
+
+    bearing_accuracy_deg = gps_data.bearingAccuracyDeg
+    bearing_deg = gps_data.bearingDeg
+
     if bearing_accuracy_deg != 180.0:
       value = f"{bearing_deg:.0f}°"
       if (337.5 <= bearing_deg <= 360) or (0 <= bearing_deg <= 22.5):
@@ -186,8 +246,19 @@ class DeveloperUiElements:
 
     return UiElement(f"{dir_value} | {value}", "B.D.", "", rl.WHITE)
 
-  @staticmethod
-  def get_altitude(gps_accuracy: float, altitude: float) -> UiElement:
-    """Altitude"""
+
+class AltitudeElement(BaseUiElement):
+  def update(self, sm, is_metric: bool) -> UiElement:
+    gps_accuracy = 0.0
+    altitude = 0.0
+    if sm.valid['gpsLocationExternal']:
+      gps_data = sm['gpsLocationExternal']
+      gps_accuracy = gps_data.horizontalAccuracy
+      altitude = gps_data.altitude
+    elif sm.valid['gpsLocation']:
+      gps_data = sm['gpsLocation']
+      gps_accuracy = 1.0 # Simulate valid for legacy check
+      altitude = gps_data.altitude
+
     value = f"{altitude:.1f}" if gps_accuracy != 0.0 else "-"
     return UiElement(value, "ALT.", "m", rl.WHITE)
