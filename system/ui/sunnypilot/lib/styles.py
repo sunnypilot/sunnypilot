@@ -29,7 +29,7 @@ class Base:
 
   # Button Control
   BUTTON_ACTION_WIDTH = 300
-  BUTTON_HEIGHT = 150
+  BUTTON_HEIGHT = 120
 
 
 @dataclass
