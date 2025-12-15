@@ -210,7 +210,7 @@ class DeveloperUiRenderer(Widget):
     self.dev_ui_mode = self.DEV_UI_OFF
 
   def _update_state(self) -> None:
-    pass
+    self.dev_ui_mode = ui_state.developer_ui
 
   def _render(self, rect: rl.Rectangle) -> None:
     if self.dev_ui_mode == self.DEV_UI_OFF:
