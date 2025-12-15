@@ -41,7 +41,7 @@ class DefaultStyleSP(Base):
   ON_HOVER_BG_COLOR = rl.Color(17, 78, 150, 255)  # Dark Blue
   OFF_HOVER_BG_COLOR = rl.Color(21, 21, 21, 255)  # Dark gray
   DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255)  # Dull Blue
-  DISABLED_OFF_BG_COLOR = rl.Color(18, 18, 18, 255)  # Dark Grey
+  DISABLED_OFF_BG_COLOR = rl.Color(39, 39, 39, 255)  # Grey
   ITEM_TEXT_COLOR = rl.WHITE
   ITEM_DISABLED_TEXT_COLOR = rl.Color(88, 88, 88, 255)
   ITEM_DESC_TEXT_COLOR = rl.Color(128, 128, 128, 255)
