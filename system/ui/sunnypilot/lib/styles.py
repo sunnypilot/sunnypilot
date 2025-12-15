@@ -31,6 +31,10 @@ class Base:
   BUTTON_ACTION_WIDTH = 300
   BUTTON_HEIGHT = 120
 
+  # Simple Button Control
+  SIMPLE_BUTTON_WIDTH = 800
+  SIMPLE_BUTTON_HEIGHT = 150
+
 
 @dataclass
 class DefaultStyleSP(Base):
