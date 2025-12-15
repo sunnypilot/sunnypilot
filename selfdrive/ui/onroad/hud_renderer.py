@@ -2,7 +2,6 @@ import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
-from openpilot.selfdrive.ui.sunnypilot.onroad.dev_ui import DeveloperUiRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -73,13 +72,6 @@ class HudRenderer(Widget):
 
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
 
-    self._dev_ui: DeveloperUiRenderer = DeveloperUiRenderer()
-    self._dev_ui.dev_ui_mode = DeveloperUiRenderer.DEV_UI_BOTH
-
-  def set_dev_ui_mode(self, mode: int):
-    """0=off, 1=right, 2=bottom, 3=both"""
-    self._dev_ui.dev_ui_mode = mode
-
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
     sm = ui_state.sm
@@ -128,8 +120,6 @@ class HudRenderer(Widget):
     button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
     button_y = rect.y + UI_CONFIG.border_size
     self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
-
-    self._dev_ui.render(rect)
 
   def user_interacting(self) -> bool:
     return self._exp_button.is_pressed

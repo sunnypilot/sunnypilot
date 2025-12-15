@@ -1,5 +1,12 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import pyray as rl
 from dataclasses import dataclass
+
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
@@ -200,7 +207,7 @@ class DeveloperUiRenderer(Widget):
     super().__init__()
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
-    self.dev_ui_mode = self.DEV_UI_RIGHT
+    self.dev_ui_mode = self.DEV_UI_OFF
 
   def _update_state(self) -> None:
     pass
