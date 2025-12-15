@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import DeveloperUi, UiElement
+from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import DeveloperUiElements, UiElement
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
@@ -23,6 +23,8 @@ class DeveloperUiRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self.dev_ui_mode = self.DEV_UI_OFF
+
+    self.elements = DeveloperUiElements()
 
   def _update_state(self) -> None:
     self.dev_ui_mode = ui_state.developer_ui
@@ -63,9 +65,9 @@ class DeveloperUiRenderer(Widget):
     y = int(rect.y + UI_BORDER_SIZE * 1.5)
 
     elements = [
-      DeveloperUi.get_d_rel(lead_status, lead_d_rel),
-      DeveloperUi.get_v_rel(lead_status, lead_v_rel, ui_state.is_metric),
-      DeveloperUi.get_steering_angle_deg(angle_steers, lat_active, steer_override),
+      self.elements.get_d_rel(lead_status, lead_d_rel),
+      self.elements.get_v_rel(lead_status, lead_v_rel, ui_state.is_metric),
+      self.elements.get_steering_angle_deg(angle_steers, lat_active, steer_override),
     ]
     if controls_state.lateralControlState.which() == 'torqueState':
       roll = sm['liveParameters'].roll if sm.valid['liveParameters'] else 0.0
@@ -73,15 +75,15 @@ class DeveloperUiRenderer(Widget):
       desired_curvature = controls_state.desiredCurvature
       v_ego = car_state.vEgo
 
-      elements.append(DeveloperUi.get_desired_lateral_accel(
+      elements.append(self.elements.get_desired_lateral_accel(
         desired_curvature, v_ego, roll, lat_active, steer_override
       ))
-      elements.append(DeveloperUi.get_actual_lateral_accel(
+      elements.append(self.elements.get_actual_lateral_accel(
         curvature, v_ego, roll, lat_active, steer_override
       ))
     else:
       steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDeg
-      elements.append(DeveloperUi.get_desired_steering_angle_deg(
+      elements.append(self.elements.get_desired_steering_angle_deg(
         lat_active, steer_angle_desired, angle_steers
       ))
 
@@ -131,8 +133,8 @@ class DeveloperUiRenderer(Widget):
                       rl.Color(0, 0, 0, 100))
 
     elements = [
-      DeveloperUi.get_a_ego(a_ego),
-      DeveloperUi.get_v_ego_lead(lead_status, lead_v_rel, v_ego, ui_state.is_metric),
+      self.elements.get_a_ego(a_ego),
+      self.elements.get_v_ego_lead(lead_status, lead_v_rel, v_ego, ui_state.is_metric),
     ]
 
     # Add torque-specific elements if using torque control
@@ -140,36 +142,36 @@ class DeveloperUiRenderer(Widget):
       if sm.valid['liveTorqueParameters']:
         ltp = sm['liveTorqueParameters']
         elements.extend([
-          DeveloperUi.get_friction_coefficient(
+          self.elements.get_friction_coefficient(
             ltp.frictionCoefficientFiltered, ltp.liveValid
           ),
-          DeveloperUi.get_lat_accel_factor(
+          self.elements.get_lat_accel_factor(
             ltp.latAccelFactorFiltered, ltp.liveValid
           ),
         ])
     else:
       # Non-torque: show steering torque and GPS data
       steering_torque_eps = car_state.steeringTorqueEps
-      elements.append(DeveloperUi.get_steering_torque_eps(steering_torque_eps))
+      elements.append(self.elements.get_steering_torque_eps(steering_torque_eps))
 
       if sm.valid['gpsLocationExternal']:
         gps_data = sm['gpsLocationExternal']
-        elements.append(DeveloperUi.get_bearing_deg(
+        elements.append(self.elements.get_bearing_deg(
           gps_data.bearingAccuracyDeg, gps_data.bearingDeg
         ))
       elif sm.valid['gpsLocation']:
         gps_data = sm['gpsLocation']
-        elements.append(DeveloperUi.get_bearing_deg(
+        elements.append(self.elements.get_bearing_deg(
           gps_data.bearingAccuracyDeg, gps_data.bearingDeg
         ))
 
     # Add altitude if GPS available
     if sm.valid['gpsLocationExternal']:
       gps_data = sm['gpsLocationExternal']
-      elements.append(DeveloperUi.get_altitude(gps_data.horizontalAccuracy, gps_data.altitude))
+      elements.append(self.elements.get_altitude(gps_data.horizontalAccuracy, gps_data.altitude))
     elif sm.valid['gpsLocation']:
       gps_data = sm['gpsLocation']
-      elements.append(DeveloperUi.get_altitude(1.0, gps_data.altitude))
+      elements.append(self.elements.get_altitude(1.0, gps_data.altitude))
 
     current_x = int(rect.x + 90)
     center_y = y + bar_height // 2

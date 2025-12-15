@@ -18,7 +18,7 @@ class UiElement:
   color: rl.Color
 
 
-class DeveloperUi:
+class DeveloperUiElements:
   @staticmethod
   def get_d_rel(lead_status: bool, lead_d_rel: float) -> UiElement:
     value = f"{lead_d_rel:.0f}" if lead_status else "-"
