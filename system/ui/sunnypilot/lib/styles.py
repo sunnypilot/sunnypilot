@@ -41,7 +41,7 @@ class DefaultStyleSP(Base):
   ON_HOVER_BG_COLOR = rl.Color(17, 78, 150, 255)  # Dark Blue
   OFF_HOVER_BG_COLOR = rl.Color(21, 21, 21, 255)  # Dark gray
   DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255)  # Dull Blue
-  DISABLED_OFF_BG_COLOR = rl.Color(39, 39, 39, 255)  # Grey
+  DISABLED_OFF_BG_COLOR = rl.Color(18, 18, 18, 255)  # Dark Grey
   ITEM_TEXT_COLOR = rl.WHITE
   ITEM_DISABLED_TEXT_COLOR = rl.Color(88, 88, 88, 255)
   ITEM_DESC_TEXT_COLOR = rl.Color(128, 128, 128, 255)
@@ -80,6 +80,12 @@ class DefaultStyleSP(Base):
   GREEN = rl.Color(0, 241, 0, 255)
   BLUE = rl.Color(0, 134, 233, 255)
   YELLOW = rl.Color(255, 213, 0, 255)
+
+  # Button Colors
+  BUTTON_ENABLED_OFF = rl.Color(0x39, 0x39, 0x39, 0xFF)
+  BUTTON_OFF_PRESSED = rl.Color(0x4A, 0x4A, 0x4A, 0xFF)
+  BUTTON_DISABLED = rl.Color(0x12, 0x12, 0x12, 0xFF)
+  BUTTON_TEXT_DISABLED = rl.Color(0x5C, 0x5C, 0x5C, 0xFF)
 
 
 style = DefaultStyleSP
