@@ -28,8 +28,12 @@ class Base:
   TOGGLE_BG_HEIGHT = TOGGLE_HEIGHT - 20
 
   # Button Control
-  BUTTON_WIDTH = 300
+  BUTTON_ACTION_WIDTH = 300
   BUTTON_HEIGHT = 120
+
+  # Simple Button Control
+  SIMPLE_BUTTON_WIDTH = 800
+  SIMPLE_BUTTON_HEIGHT = 150
 
 
 @dataclass
@@ -80,6 +84,12 @@ class DefaultStyleSP(Base):
   GREEN = rl.Color(0, 241, 0, 255)
   BLUE = rl.Color(0, 134, 233, 255)
   YELLOW = rl.Color(255, 213, 0, 255)
+
+  # Button Colors
+  BUTTON_ENABLED_OFF = rl.Color(0x39, 0x39, 0x39, 0xFF)
+  BUTTON_OFF_PRESSED = rl.Color(0x4A, 0x4A, 0x4A, 0xFF)
+  BUTTON_DISABLED = rl.Color(0x12, 0x12, 0x12, 0xFF)
+  BUTTON_TEXT_DISABLED = rl.Color(0x5C, 0x5C, 0x5C, 0xFF)
 
 
 style = DefaultStyleSP
