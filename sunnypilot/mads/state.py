@@ -25,6 +25,7 @@ GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brak
 
 class StateMachine:
   def __init__(self, mads):
+    self.mads = mads
     self.selfdrive = mads.selfdrive
     self.ss_state_machine = mads.selfdrive.state_machine
     self._events = mads.selfdrive.events
@@ -41,6 +42,9 @@ class StateMachine:
 
   def check_contains_in_list(self) -> bool:
     return bool(self._events.contains_in_list(GEARS_ALLOW_PAUSED) or self._events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT))
+
+  def lateral_active(self) -> bool:
+    return bool(self.mads.enabled)
 
   def update(self):
     # soft disable timer and current alert types are from the state machine of openpilot
@@ -70,7 +74,7 @@ class StateMachine:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
 
-          elif self.check_contains(ET.OVERRIDE_LATERAL):
+          elif self.lateral_active() and self.check_contains(ET.OVERRIDE_LATERAL):
             self.state = State.overriding
             self.add_current_alert_types(ET.OVERRIDE_LATERAL)
 
@@ -93,7 +97,7 @@ class StateMachine:
               self.add_current_alert_types(ET.NO_ENTRY)
 
             else:
-              if self.check_contains(ET.OVERRIDE_LATERAL):
+              if self.lateral_active() and self.check_contains(ET.OVERRIDE_LATERAL):
                 self.state = State.overriding
               else:
                 self.state = State.enabled
@@ -106,7 +110,7 @@ class StateMachine:
             if not self.selfdrive.enabled:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
-          elif not self.check_contains(ET.OVERRIDE_LATERAL):
+          elif not (self.lateral_active() and self.check_contains(ET.OVERRIDE_LATERAL)):
             self.state = State.enabled
           else:
             self.ss_state_machine.current_alert_types += [ET.OVERRIDE_LATERAL]
@@ -120,7 +124,7 @@ class StateMachine:
           self.add_current_alert_types(ET.NO_ENTRY)
 
         else:
-          if self.check_contains(ET.OVERRIDE_LATERAL):
+          if self.lateral_active() and self.check_contains(ET.OVERRIDE_LATERAL):
             self.state = State.overriding
           else:
             self.state = State.enabled
