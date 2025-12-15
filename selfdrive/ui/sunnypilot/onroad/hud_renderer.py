@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import pyray as rl
 
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
-from openpilot.selfdrive.ui.sunnypilot.onroad.dev_ui import DeveloperUiRenderer
+from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
 
 
 class HudRendererSP(HudRenderer):
