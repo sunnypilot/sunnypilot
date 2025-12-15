@@ -146,6 +146,8 @@ class CarSpecificEvents:
       events.add(EventName.wrongGear)
     if CS.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)
+    if CS.gearShifter == GearShifter.neutral:
+      events.add(EventName.neutralGear)
     if not CS.cruiseState.available:
       events.add(EventName.wrongCarMode)
     if CS.espDisabled:
