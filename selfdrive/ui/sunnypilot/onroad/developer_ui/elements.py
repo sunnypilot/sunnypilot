@@ -1,9 +1,7 @@
-from abc import ABC, abstractmethod
 import pyray as rl
 from dataclasses import dataclass
 
 from openpilot.common.constants import CV
-from openpilot.system.ui.widgets.label import Label
 
 
 @dataclass
@@ -14,51 +12,83 @@ class UiElement:
   color: rl.Color
 
 
-class BaseUiElement(ABC):
-  @abstractmethod
-  def update(self, sm, is_metric: bool) -> UiElement:
-    pass
-
-
-class RelDistElement(BaseUiElement):
-  def update(self, sm, is_metric: bool) -> UiElement:
+class LeadInfoElement:
+  @staticmethod
+  def get_lead_status(sm):
     lead_one = sm['radarState'].leadOne
-    lead_status = lead_one.status
-    lead_d_rel = lead_one.dRel
+    return lead_one.status, lead_one.dRel, lead_one.vRel
 
-    value = f"{lead_d_rel:.0f}" if lead_status else "-"
-    color = rl.WHITE
-
-    if lead_status:
+  @staticmethod
+  def get_lead_color(lead_d_rel: float, lead_v_rel: float = 0.0, use_v_rel: bool = False) -> rl.Color:
+    if use_v_rel:
+      if lead_v_rel < -4.4704:
+        return rl.RED
+      elif lead_v_rel < 0:
+        return rl.Color(255, 188, 0, 255)  # Orange
+    else:
       if lead_d_rel < 5:
-        color = rl.RED
+        return rl.RED
       elif lead_d_rel < 15:
-        color = rl.Color(255, 188, 0, 255)  # Orange
+        return rl.Color(255, 188, 0, 255)  # Orange
+    return rl.WHITE
 
-    return UiElement(value, "REL DIST", "m", color)
+
+class LateralControlElement:
+  @staticmethod
+  def get_lat_color(lat_active: bool, steer_override: bool, angle_steers: float = 0.0,
+                    check_angle: bool = False) -> rl.Color:
+    color = rl.WHITE
+    if lat_active:
+      color = rl.Color(145, 155, 149, 255) if steer_override else rl.Color(0, 255, 0, 255)
+
+    if check_angle and lat_active:
+      if abs(angle_steers) > 180:
+        color = rl.RED
+      elif abs(angle_steers) > 90:
+        color = rl.Color(255, 188, 0, 255)
+      else:
+        # Keep green/grey from above
+        pass
+    elif check_angle and not lat_active:
+      if abs(angle_steers) > 180:
+        color = rl.RED
+      elif abs(angle_steers) > 90:
+        color = rl.Color(255, 188, 0, 255)
+
+    return color
 
 
-class RelSpeedElement(BaseUiElement):
+class RelDistElement(LeadInfoElement):
+  def __init__(self):
+    self.unit = "m"
+
   def update(self, sm, is_metric: bool) -> UiElement:
-    lead_one = sm['radarState'].leadOne
-    lead_status = lead_one.status
-    lead_v_rel = lead_one.vRel
+    lead_status, lead_d_rel, _ = self.get_lead_status(sm)
+    value = f"{lead_d_rel:.0f}" if lead_status else "-"
+    color = self.get_lead_color(lead_d_rel) if lead_status else rl.WHITE
+    return UiElement(value, "REL DIST", self.unit, color)
 
-    speed_unit = "km/h" if is_metric else "mph"
+
+class RelSpeedElement(LeadInfoElement):
+  def __init__(self):
+    self.unit = "km/h"
+
+  def update(self, sm, is_metric: bool) -> UiElement:
+    lead_status, _, lead_v_rel = self.get_lead_status(sm)
+
+    self.unit = "km/h" if is_metric else "mph"
+
     conversion = CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH
     value = f"{lead_v_rel * conversion:.0f}" if lead_status else "-"
-    color = rl.WHITE
+    color = self.get_lead_color(0, lead_v_rel, use_v_rel=True) if lead_status else rl.WHITE
 
-    if lead_status:
-      if lead_v_rel < -4.4704:
-        color = rl.RED
-      elif lead_v_rel < 0:
-        color = rl.Color(255, 188, 0, 255)  # Orange
-
-    return UiElement(value, "REL SPEED", speed_unit, color)
+    return UiElement(value, "REL SPEED", self.unit, color)
 
 
-class SteeringAngleElement(BaseUiElement):
+class SteeringAngleElement(LateralControlElement):
+  def __init__(self):
+    self.unit = ""
+
   def update(self, sm, is_metric: bool) -> UiElement:
     car_state = sm['carState']
     angle_steers = car_state.steeringAngleDeg
@@ -66,21 +96,15 @@ class SteeringAngleElement(BaseUiElement):
     steer_override = car_state.steeringPressed
 
     value = f"{angle_steers:.1f}°"
+    color = self.get_lat_color(lat_active, steer_override, angle_steers, check_angle=True)
 
-    if lat_active:
-      color = rl.Color(145, 155, 149, 255) if steer_override else rl.Color(0, 255, 0, 255)
-    else:
-      color = rl.WHITE
-
-    if abs(angle_steers) > 180:
-      color = rl.RED
-    elif abs(angle_steers) > 90:
-      color = rl.Color(255, 188, 0, 255)
-
-    return UiElement(value, "REAL STEER", "", color)
+    return UiElement(value, "REAL STEER", self.unit, color)
 
 
-class DesiredSteeringAngleElement(BaseUiElement):
+class DesiredSteeringAngleElement(LateralControlElement):
+  def __init__(self):
+    self.unit = ""
+
   def update(self, sm, is_metric: bool) -> UiElement:
     car_state = sm['carState']
     controls_state = sm['controlsState']
@@ -89,8 +113,8 @@ class DesiredSteeringAngleElement(BaseUiElement):
     steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDeg
 
     value = f"{steer_angle_desired:.1f}°" if lat_active else "-"
-    color = rl.WHITE
 
+    color = rl.WHITE
     if lat_active:
       if abs(angle_steers) > 180:
         color = rl.RED
@@ -99,10 +123,13 @@ class DesiredSteeringAngleElement(BaseUiElement):
       else:
         color = rl.Color(0, 255, 0, 255)
 
-    return UiElement(value, "DESIRED STEER", "", color)
+    return UiElement(value, "DESIRED STEER", self.unit, color)
 
 
-class ActualLateralAccelElement(BaseUiElement):
+class ActualLateralAccelElement(LateralControlElement):
+  def __init__(self):
+    self.unit = "m/s²"
+
   def update(self, sm, is_metric: bool) -> UiElement:
     controls_state = sm['controlsState']
     curvature = controls_state.curvature
@@ -113,16 +140,15 @@ class ActualLateralAccelElement(BaseUiElement):
 
     actual_lat_accel = (curvature * v_ego ** 2) - (roll * 9.81)
     value = f"{actual_lat_accel:.2f}"
+    color = self.get_lat_color(lat_active, steer_override)
 
-    if lat_active:
-      color = rl.Color(145, 155, 149, 255) if steer_override else rl.Color(0, 255, 0, 255)
-    else:
-      color = rl.WHITE
-
-    return UiElement(value, "ACTUAL L.A.", "m/s²", color)
+    return UiElement(value, "ACTUAL L.A.", self.unit, color)
 
 
-class DesiredLateralAccelElement(BaseUiElement):
+class DesiredLateralAccelElement(LateralControlElement):
+  def __init__(self):
+    self.unit = "m/s²"
+
   def update(self, sm, is_metric: bool) -> UiElement:
     controls_state = sm['controlsState']
     desired_curvature = controls_state.desiredCurvature
@@ -133,56 +159,42 @@ class DesiredLateralAccelElement(BaseUiElement):
 
     desired_lat_accel = (desired_curvature * v_ego ** 2) - (roll * 9.81)
     value = f"{desired_lat_accel:.2f}" if lat_active else "-"
+    color = self.get_lat_color(lat_active, steer_override)
 
-    if lat_active:
-      color = rl.Color(145, 155, 149, 255) if steer_override else rl.Color(0, 255, 0, 255)
-    else:
-      color = rl.WHITE
-
-    return UiElement(value, "DESIRED L.A.", "m/s²", color)
+    return UiElement(value, "DESIRED L.A.", self.unit, color)
 
 
-class MemoryUsageElement(BaseUiElement):
-  def update(self, sm, is_metric: bool) -> UiElement:
-    # Not currently used in the main UI but kept for completeness
-    # This might require passing memory usage explicitly if it's not in SM
-    # For now, we'll return a placeholder or need to find where it comes from.
-    # The original method took `memory_usage_percent: int`.
-    # Since we don't have it in SM easily (maybe deviceState?), we might need to skip or fake it.
-    # Assuming it's passed or available.
-    return UiElement("-", "RAM", "", rl.WHITE)
+class AEgoElement:
+  def __init__(self):
+    self.unit = "m/s²"
 
-
-class AEgoElement(BaseUiElement):
   def update(self, sm, is_metric: bool) -> UiElement:
     a_ego = sm['carState'].aEgo
     value = f"{a_ego:.1f}"
-    return UiElement(value, "ACC.", "m/s²", rl.WHITE)
+    return UiElement(value, "ACC.", self.unit, rl.WHITE)
 
 
-class LeadSpeedElement(BaseUiElement):
+class LeadSpeedElement(LeadInfoElement):
+  def __init__(self):
+    self.unit = "km/h"
+
   def update(self, sm, is_metric: bool) -> UiElement:
-    radar_state = sm['radarState']
-    lead_one = radar_state.leadOne
-    lead_status = lead_one.status
-    lead_v_rel = lead_one.vRel
+    lead_status, _, lead_v_rel = self.get_lead_status(sm)
     v_ego = sm['carState'].vEgo
 
-    speed_unit = "km/h" if is_metric else "mph"
+    self.unit = "km/h" if is_metric else "mph"
+
     conversion = CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH
     value = f"{(lead_v_rel + v_ego) * conversion:.0f}" if lead_status else "-"
-    color = rl.WHITE
+    color = self.get_lead_color(0, lead_v_rel, use_v_rel=True) if lead_status else rl.WHITE
 
-    if lead_status:
-      if lead_v_rel < -4.4704:
-        color = rl.RED
-      elif lead_v_rel < 0:
-        color = rl.Color(255, 188, 0, 255)
-
-    return UiElement(value, "L.S.", speed_unit, color)
+    return UiElement(value, "L.S.", self.unit, color)
 
 
-class FrictionCoefficientElement(BaseUiElement):
+class FrictionCoefficientElement:
+  def __init__(self):
+    self.unit = ""
+
   def update(self, sm, is_metric: bool) -> UiElement:
     ltp = sm['liveTorqueParameters']
     friction_coef = ltp.frictionCoefficientFiltered
@@ -190,10 +202,13 @@ class FrictionCoefficientElement(BaseUiElement):
 
     value = f"{friction_coef:.3f}"
     color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
-    return UiElement(value, "FRIC.", "", color)
+    return UiElement(value, "FRIC.", self.unit, color)
 
 
-class LatAccelFactorElement(BaseUiElement):
+class LatAccelFactorElement:
+  def __init__(self):
+    self.unit = ""
+
   def update(self, sm, is_metric: bool) -> UiElement:
     ltp = sm['liveTorqueParameters']
     lat_accel_factor = ltp.latAccelFactorFiltered
@@ -201,24 +216,37 @@ class LatAccelFactorElement(BaseUiElement):
 
     value = f"{lat_accel_factor:.3f}"
     color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
-    return UiElement(value, "L.A.F.", "", color)
+    return UiElement(value, "L.A.F.", self.unit, color)
 
 
-class SteeringTorqueEpsElement(BaseUiElement):
+class SteeringTorqueEpsElement:
+  def __init__(self):
+    self.unit = "N·dm"
+
   def update(self, sm, is_metric: bool) -> UiElement:
     steering_torque_eps = sm['carState'].steeringTorqueEps
     value = f"{abs(steering_torque_eps):.1f}"
-    return UiElement(value, "E.T.", "N·dm", rl.WHITE)
+    return UiElement(value, "E.T.", self.unit, rl.WHITE)
 
 
-class BearingDegElement(BaseUiElement):
-  def update(self, sm, is_metric: bool) -> UiElement:
+class GpsInfoElement:
+  @staticmethod
+  def get_gps_data(sm):
     if sm.valid['gpsLocationExternal']:
-        gps_data = sm['gpsLocationExternal']
+      return sm['gpsLocationExternal'], True
     elif sm.valid['gpsLocation']:
-        gps_data = sm['gpsLocation']
-    else:
-        return UiElement("OFF | -", "B.D.", "", rl.WHITE)
+      return sm['gpsLocation'], True
+    return None, False
+
+
+class BearingDegElement(GpsInfoElement):
+  def __init__(self):
+    self.unit = ""
+
+  def update(self, sm, is_metric: bool) -> UiElement:
+    gps_data, valid = self.get_gps_data(sm)
+    if not valid:
+      return UiElement("OFF | -", "B.D.", self.unit, rl.WHITE)
 
     bearing_accuracy_deg = gps_data.bearingAccuracyDeg
     bearing_deg = gps_data.bearingDeg
@@ -245,21 +273,25 @@ class BearingDegElement(BaseUiElement):
       value = "-"
       dir_value = "OFF"
 
-    return UiElement(f"{dir_value} | {value}", "B.D.", "", rl.WHITE)
+    return UiElement(f"{dir_value} | {value}", "B.D.", self.unit, rl.WHITE)
 
 
-class AltitudeElement(BaseUiElement):
+class AltitudeElement(GpsInfoElement):
+  def __init__(self):
+    self.unit = "m"
+
   def update(self, sm, is_metric: bool) -> UiElement:
+    gps_data, valid = self.get_gps_data(sm)
+
     gps_accuracy = 0.0
     altitude = 0.0
-    if sm.valid['gpsLocationExternal']:
-      gps_data = sm['gpsLocationExternal']
-      gps_accuracy = gps_data.horizontalAccuracy
+
+    if valid:
       altitude = gps_data.altitude
-    elif sm.valid['gpsLocation']:
-      gps_data = sm['gpsLocation']
-      gps_accuracy = 1.0 # Simulate valid for legacy check
-      altitude = gps_data.altitude
+      if sm.valid['gpsLocationExternal']:
+        gps_accuracy = gps_data.horizontalAccuracy
+      else:
+        gps_accuracy = 1.0  # Simulate valid for legacy check
 
     value = f"{altitude:.1f}" if gps_accuracy != 0.0 else "-"
-    return UiElement(value, "ALT.", "m", rl.WHITE)
+    return UiElement(value, "ALT.", self.unit, rl.WHITE)
