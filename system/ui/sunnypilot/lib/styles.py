@@ -29,8 +29,11 @@ class Base:
 
   # Button Control
   BUTTON_ACTION_WIDTH = 300
+  BUTTON_HEIGHT = 120
+
+  # Simple Button Control
   SIMPLE_BUTTON_WIDTH = 800
-  BUTTON_HEIGHT = 150
+  SIMPLE_BUTTON_HEIGHT = 150
 
   # SP Button Control
   SP_BUTTON_WIDTH = 800
@@ -46,7 +49,7 @@ class DefaultStyleSP(Base):
   ON_HOVER_BG_COLOR = rl.Color(17, 78, 150, 255)  # Dark Blue
   OFF_HOVER_BG_COLOR = rl.Color(21, 21, 21, 255)  # Dark gray
   DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255)  # Dull Blue
-  DISABLED_OFF_BG_COLOR = rl.Color(18, 18, 18, 255)  # Dark Grey (Qt #121212)
+  DISABLED_OFF_BG_COLOR = rl.Color(39, 39, 39, 255)  # Grey
   ITEM_TEXT_COLOR = rl.WHITE
   ITEM_DISABLED_TEXT_COLOR = rl.Color(88, 88, 88, 255)
   ITEM_DESC_TEXT_COLOR = rl.Color(128, 128, 128, 255)
@@ -86,13 +89,11 @@ class DefaultStyleSP(Base):
   BLUE = rl.Color(0, 134, 233, 255)
   YELLOW = rl.Color(255, 213, 0, 255)
 
-  # Simple Button Action
-  SIMPLE_BUTTON_ACTION_ENABLED_OFF = rl.Color(0x39, 0x39, 0x39, 0xFF)
-  SIMPLE_BUTTON_ACTION_ENABLED_ON = rl.Color(0x1e, 0x79, 0xe8, 0xFF)
-  SIMPLE_BUTTON_ACTION_OFF_PRESSED = rl.Color(0x4A, 0x4A, 0x4A, 0xFF)
-  SIMPLE_BUTTON_ACTION_ON_PRESSED = rl.Color(0x1E, 0x8F, 0xFF, 0xFF)
-  SIMPLE_BUTTON_ACTION_DISABLED = rl.Color(0x12, 0x12, 0x12, 0xFF)
-  SIMPLE_BUTTON_ACTION_TEXT_DISABLED = rl.Color(0x5C, 0x5C, 0x5C, 0xFF)
+  # Button Colors
+  BUTTON_ENABLED_OFF = rl.Color(0x39, 0x39, 0x39, 0xFF)
+  BUTTON_OFF_PRESSED = rl.Color(0x4A, 0x4A, 0x4A, 0xFF)
+  BUTTON_DISABLED = rl.Color(0x12, 0x12, 0x12, 0xFF)
+  BUTTON_TEXT_DISABLED = rl.Color(0x5C, 0x5C, 0x5C, 0xFF)
 
 
 style = DefaultStyleSP

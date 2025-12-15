@@ -32,12 +32,12 @@ class ButtonSP(Button):
     super()._update_state()
     if self.enabled:
       if self.is_pressed:
-        self._background_color = style.SIMPLE_BUTTON_ACTION_OFF_PRESSED
+        self._background_color = style.BUTTON_OFF_PRESSED
       else:
-        self._background_color = style.SIMPLE_BUTTON_ACTION_ENABLED_OFF
+        self._background_color = style.BUTTON_ENABLED_OFF
     else:
-      self._background_color = style.SIMPLE_BUTTON_ACTION_DISABLED
-      self._label.set_text_color(style.SIMPLE_BUTTON_ACTION_TEXT_DISABLED)
+      self._background_color = style.BUTTON_DISABLED
+      self._label.set_text_color(style.BUTTON_TEXT_DISABLED)
 
 
 class SimpleButtonActionSP(ItemAction):
