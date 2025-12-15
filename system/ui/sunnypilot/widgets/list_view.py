@@ -216,7 +216,7 @@ class ListItemSP(ListItem):
     left_action_item = isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)
 
     if left_action_item:
-      item_height = style.BUTTON_HEIGHT if isinstance(self.action_item, SimpleButtonActionSP) else style.TOGGLE_HEIGHT
+      item_height = style.SIMPLE_BUTTON_HEIGHT if isinstance(self.action_item, SimpleButtonActionSP) else style.TOGGLE_HEIGHT
       left_rect = rl.Rectangle(
         content_x,
         self._rect.y + (style.ITEM_BASE_HEIGHT - item_height) // 2,
