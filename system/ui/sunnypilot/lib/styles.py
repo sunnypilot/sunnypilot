@@ -29,11 +29,8 @@ class Base:
 
   # Button Control
   BUTTON_ACTION_WIDTH = 300
+  SIMPLE_BUTTON_WIDTH = 800
   BUTTON_HEIGHT = 150
-
-  # SP Button Control
-  SP_BUTTON_WIDTH = 800
-  SP_BUTTON_HEIGHT = 150
 
 
 @dataclass
