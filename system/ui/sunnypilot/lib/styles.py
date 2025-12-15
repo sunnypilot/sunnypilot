@@ -85,5 +85,13 @@ class DefaultStyleSP(Base):
   BLUE = rl.Color(0, 134, 233, 255)
   YELLOW = rl.Color(255, 213, 0, 255)
 
+  # Simple Button Action
+  SIMPLE_BUTTON_ACTION_ENABLED_OFF = rl.Color(0x39, 0x39, 0x39, 0xFF)
+  SIMPLE_BUTTON_ACTION_ENABLED_ON = rl.Color(0x1e, 0x79, 0xe8, 0xFF)
+  SIMPLE_BUTTON_ACTION_OFF_PRESSED = rl.Color(0x4A, 0x4A, 0x4A, 0xFF)
+  SIMPLE_BUTTON_ACTION_ON_PRESSED = rl.Color(0x1E, 0x8F, 0xFF, 0xFF)
+  SIMPLE_BUTTON_ACTION_DISABLED = rl.Color(0x12, 0x12, 0x12, 0xFF)
+  SIMPLE_BUTTON_ACTION_TEXT_DISABLED = rl.Color(0x5C, 0x5C, 0x5C, 0xFF)
+
 
 style = DefaultStyleSP

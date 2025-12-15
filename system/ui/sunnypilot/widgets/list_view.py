@@ -27,12 +27,25 @@ class ToggleActionSP(ToggleAction):
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
 
+class ButtonSP(Button):
+  def _update_state(self):
+    super()._update_state()
+    if self.enabled:
+      if self.is_pressed:
+        self._background_color = style.SIMPLE_BUTTON_ACTION_OFF_PRESSED
+      else:
+        self._background_color = style.SIMPLE_BUTTON_ACTION_ENABLED_OFF
+    else:
+      self._background_color = style.SIMPLE_BUTTON_ACTION_DISABLED
+      self._label.set_text_color(style.SIMPLE_BUTTON_ACTION_TEXT_DISABLED)
+
+
 class SimpleButtonActionSP(ItemAction):
   def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
                enabled: bool | Callable[[], bool] = True, button_width: int = style.SP_BUTTON_WIDTH):
     super().__init__(width=button_width, enabled=enabled)
-    self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
-                                border_radius=20)
+    self.button_action = ButtonSP(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
+                                  border_radius=20)
 
   def set_touch_valid_callback(self, touch_callback: Callable[[], bool]) -> None:
     super().set_touch_valid_callback(touch_callback)
