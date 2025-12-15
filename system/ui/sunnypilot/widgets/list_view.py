@@ -42,7 +42,7 @@ class ButtonSP(Button):
 
 class SimpleButtonActionSP(ItemAction):
   def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
-               enabled: bool | Callable[[], bool] = True, button_width: int = style.SP_BUTTON_WIDTH):
+               enabled: bool | Callable[[], bool] = True, button_width: int = style.SIMPLE_BUTTON_WIDTH):
     super().__init__(width=button_width, enabled=enabled)
     self.button_action = ButtonSP(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
                                   border_radius=20)
@@ -57,7 +57,7 @@ class SimpleButtonActionSP(ItemAction):
 
 
 class ButtonActionSP(ButtonAction):
-  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_WIDTH, enabled: bool | Callable[[], bool] = True):
+  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_ACTION_WIDTH, enabled: bool | Callable[[], bool] = True):
     super().__init__(text=text, width=width, enabled=enabled)
     self._value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
 
@@ -216,7 +216,7 @@ class ListItemSP(ListItem):
     left_action_item = isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)
 
     if left_action_item:
-      item_height = style.SP_BUTTON_HEIGHT if isinstance(self.action_item, SimpleButtonActionSP) else style.TOGGLE_HEIGHT
+      item_height = style.BUTTON_HEIGHT if isinstance(self.action_item, SimpleButtonActionSP) else style.TOGGLE_HEIGHT
       left_rect = rl.Rectangle(
         content_x,
         self._rect.y + (style.ITEM_BASE_HEIGHT - item_height) // 2,
@@ -278,7 +278,7 @@ class ListItemSP(ListItem):
 
 
 def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
-                          enabled: bool | Callable[[], bool] = True, button_width: int = style.SP_BUTTON_WIDTH) -> ListItemSP:
+                          enabled: bool | Callable[[], bool] = True, button_width: int = style.SIMPLE_BUTTON_WIDTH) -> ListItemSP:
   action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
   return ListItemSP(title="", callback=callback, description="", action_item=action)
 
@@ -290,7 +290,7 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
-                            selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
+                            selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
