@@ -13,7 +13,7 @@ from openpilot.common.git import get_commit, get_origin, get_branch, get_short_b
 RELEASE_SP_BRANCHES = ['release-c3', 'release', 'release-tizi', 'release-tici', 'release-tizi-staging', 'release-tici-staging']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
 MASTER_SP_BRANCHES = ['master']
-RELEASE_BRANCHES = ['release-tizi-staging', 'release-tici', 'release-tizi', 'nightly']
+RELEASE_BRANCHES = ['release-tizi-staging', 'release-mici-staging', 'release-tizi', 'release-mici', 'nightly']
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel-staging', 'nightly-dev'] + RELEASE_SP_BRANCHES + TESTED_SP_BRANCHES
 
 SP_BRANCH_MIGRATIONS = {
