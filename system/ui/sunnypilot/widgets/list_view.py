@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
                                                   _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
@@ -28,7 +29,7 @@ class ToggleActionSP(ToggleAction):
 
 class SimpleButtonActionSP(ItemAction):
   def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
-               enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH):
+               enabled: bool | Callable[[], bool] = True, button_width: int = style.SP_BUTTON_WIDTH):
     super().__init__(width=button_width, enabled=enabled)
     self.button_action = Button(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
                                 border_radius=20)
@@ -202,11 +203,12 @@ class ListItemSP(ListItem):
     left_action_item = isinstance(self.action_item, ToggleAction) or isinstance(self.action_item, SimpleButtonActionSP)
 
     if left_action_item:
+      item_height = style.SP_BUTTON_HEIGHT if isinstance(self.action_item, SimpleButtonActionSP) else style.TOGGLE_HEIGHT
       left_rect = rl.Rectangle(
         content_x,
-        self._rect.y + (style.ITEM_BASE_HEIGHT - style.TOGGLE_HEIGHT) // 2,
+        self._rect.y + (style.ITEM_BASE_HEIGHT - item_height) // 2,
         self.action_item.rect.width,
-        style.TOGGLE_HEIGHT
+        item_height
       )
       text_x = left_rect.x + left_rect.width + style.ITEM_PADDING * 1.5
 
@@ -263,7 +265,7 @@ class ListItemSP(ListItem):
 
 
 def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callable | None = None,
-                          enabled: bool | Callable[[], bool] = True, button_width: int = style.BUTTON_WIDTH) -> ListItemSP:
+                          enabled: bool | Callable[[], bool] = True, button_width: int = style.SP_BUTTON_WIDTH) -> ListItemSP:
   action = SimpleButtonActionSP(button_text=button_text, enabled=enabled, callback=callback, button_width=button_width)
   return ListItemSP(title="", callback=callback, description="", action_item=action)
 
@@ -286,15 +288,34 @@ def option_item_sp(title: str | Callable[[], str], param: str,
                    value_change_step: int = 1, on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
                    icon: str = "", label_width: int = LABEL_WIDTH, value_map: dict[int, int] | None = None,
-                   use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None) -> ListItemSP:
+                   use_float_scaling: bool = False, label_callback: Callable[[int], str] | None = None, inline: bool = False) -> ListItemSP:
   action = OptionControlSP(
     param, min_value, max_value, value_change_step,
     enabled, on_value_changed, value_map, label_width, use_float_scaling, label_callback
   )
-  return ListItemSP(title=title, description=description, action_item=action, icon=icon)
+  return ListItemSP(title=title, description=description, action_item=action, icon=icon, inline=inline)
 
 
 def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
                    callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItemSP:
   action = ButtonActionSP(text=button_text, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
+
+
+class LineSeparatorSP(Widget):
+  def __init__(self, height: int = 36):
+    super().__init__()
+    self._rect = rl.Rectangle(0, 0, 0, height)
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    self._rect.width = parent_rect.width
+
+  def _render(self, _):
+    line_y = int(self._rect.y + self._rect.height // 2)
+    rl.draw_line_ex(
+      rl.Vector2(int(self._rect.x) + 40, line_y),
+      rl.Vector2(int(self._rect.x + self._rect.width) - 40, line_y),
+      2,
+      rl.GRAY
+    )

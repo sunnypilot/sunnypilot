@@ -8,8 +8,8 @@ from enum import IntEnum
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp
-from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, simple_button_item_sp, option_item_sp, LineSeparatorSP
+from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.lane_change_settings import LaneChangeSettingsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering_sub_layouts.mads_settings import MadsSettingsLayout
@@ -44,7 +44,7 @@ class SteeringLayout(Widget):
     )
     self._mads_settings_button = simple_button_item_sp(
       button_text=lambda: tr("Customize MADS"),
-      button_width=600,
+      button_width=800,
       callback=lambda: self._set_current_panel(PanelType.MADS)
     )
     self._lane_change_settings_button = simple_button_item_sp(
@@ -83,17 +83,17 @@ class SteeringLayout(Widget):
     )
 
     items = [
-      self._lane_change_settings_button,
-      LineSeparator(),
       self._mads_toggle,
       self._mads_settings_button,
-      LineSeparator(),
+      LineSeparatorSP(),
+      self._lane_change_settings_button,
+      LineSeparatorSP(),
       self._blinker_control_toggle,
       self._blinker_control_options,
-      LineSeparator(),
+      LineSeparatorSP(),
       self._torque_control_toggle,
       self._torque_customization_button,
-      LineSeparator(),
+      LineSeparatorSP(),
       self._nnlc_toggle,
     ]
     return items
@@ -106,7 +106,7 @@ class SteeringLayout(Widget):
     self._mads_toggle.action_item.set_enabled(ui_state.is_offroad())
     self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad() and self._mads_toggle.action_item.get_state())
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
-    self._torque_customization_button.set_visible(self._torque_control_toggle.action_item.get_state())
+    self._torque_customization_button.action_item.set_enabled(self._torque_control_toggle.action_item.get_state())
 
   def _render(self, rect):
     if self._current_panel == PanelType.LANE_CHANGE:
