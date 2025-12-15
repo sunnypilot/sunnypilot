@@ -11,6 +11,7 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets.button import Button
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
                                                   _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
@@ -25,8 +26,21 @@ class ToggleActionSP(ToggleAction):
     self.toggle = ToggleSP(initial_state=initial_state, callback=callback, param=param)
 
 
+class ButtonSP(Button):
+  def _update_state(self):
+    super()._update_state()
+    if self.enabled:
+      if self.is_pressed:
+        self._background_color = style.SIMPLE_BUTTON_ACTION_OFF_PRESSED
+      else:
+        self._background_color = style.SIMPLE_BUTTON_ACTION_ENABLED_OFF
+    else:
+      self._background_color = style.SIMPLE_BUTTON_ACTION_DISABLED
+      self._label.set_text_color(style.SIMPLE_BUTTON_ACTION_TEXT_DISABLED)
+
+
 class ButtonActionSP(ButtonAction):
-  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_WIDTH, enabled: bool | Callable[[], bool] = True):
+  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_ACTION_WIDTH, enabled: bool | Callable[[], bool] = True):
     super().__init__(text=text, width=width, enabled=enabled)
     self._value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
 
@@ -252,7 +266,7 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
-                            selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
+                            selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
