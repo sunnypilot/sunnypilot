@@ -50,9 +50,9 @@ class SimpleButtonActionSP(ItemAction):
     super().set_touch_valid_callback(touch_callback)
     self.button_action.set_touch_valid_callback(touch_callback)
 
-  def _render(self, rect: rl.Rectangle):
+  def _render(self, rect: rl.Rectangle) -> bool | int | None:
     self.button_action.set_enabled(self.enabled)
-    self.button_action.render(rect)
+    return self.button_action.render(rect)
 
 
 class ButtonActionSP(ButtonAction):
