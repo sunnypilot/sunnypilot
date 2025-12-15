@@ -3,13 +3,14 @@ import pyray as rl
 from dataclasses import dataclass
 
 from openpilot.common.constants import CV
+from openpilot.system.ui.widgets.label import Label
 
 
 @dataclass
 class UiElement:
   value: str
   label: str
-  units: str
+  unit: str
   color: rl.Color
 
 

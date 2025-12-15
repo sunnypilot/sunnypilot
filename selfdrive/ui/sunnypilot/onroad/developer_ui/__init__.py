@@ -102,13 +102,13 @@ class DeveloperUiRenderer(Widget):
     centered_value_x = x + (container_width - value_width) / 2
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
-    if element.units:
-      units_height = measure_text_cached(self._font_bold, element.units, unit_size, 0).x
+    if element.unit:
+      units_height = measure_text_cached(self._font_bold, element.unit, unit_size, 0).x
 
       units_x = x + container_width - 10
       units_y = y + (value_size / 2) + (units_height / 2)
 
-      rl.draw_text_pro(self._font_bold, element.units, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
+      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
 
     return 130
 
@@ -158,7 +158,7 @@ class DeveloperUiRenderer(Widget):
     value_width = measure_text_cached(self._font_bold, element.value, font_size, 0).x
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(x + label_width + 10, y - font_size // 2), font_size, 0, element.color)
 
-    if element.units:
-      rl.draw_text_ex(self._font_bold, element.units, rl.Vector2(x + label_width + value_width + 20, y - font_size // 2), font_size, 0, rl.WHITE)
+    if element.unit:
+      rl.draw_text_ex(self._font_bold, element.unit, rl.Vector2(x + label_width + value_width + 20, y - font_size // 2), font_size, 0, rl.WHITE)
 
     return 400
