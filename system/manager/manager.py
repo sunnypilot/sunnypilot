@@ -215,7 +215,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-  unblock_stdout()
+  if sys.platform != 'darwin':
+    unblock_stdout()
 
   try:
     main()
