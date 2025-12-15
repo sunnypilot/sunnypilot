@@ -57,7 +57,7 @@ class SimpleButtonActionSP(ItemAction):
 
 
 class ButtonActionSP(ButtonAction):
-  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_WIDTH, enabled: bool | Callable[[], bool] = True):
+  def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_ACTION_WIDTH, enabled: bool | Callable[[], bool] = True):
     super().__init__(text=text, width=width, enabled=enabled)
     self._value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
 
@@ -290,7 +290,7 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
-                            selected_index: int = 0, button_width: int = style.BUTTON_WIDTH, callback: Callable = None,
+                            selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
