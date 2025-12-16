@@ -24,6 +24,7 @@ class ModelsLayoutMici(NavWidget):
     self.set_back_callback(back_callback)
     self.original_back_callback = back_callback
     self.refresh_start_time = 0
+    self.focused_widget = None
 
     self.current_model_btn = BigButton(tr("current model"), "", "")
     self.current_model_btn.set_click_callback(self._show_folders)
@@ -72,6 +73,7 @@ class ModelsLayoutMici(NavWidget):
     self.set_back_callback(back_callback)
 
   def _show_folders(self):
+    self.focused_widget = self.current_model_btn
     folders = self._get_grouped_bundles()
     folder_buttons = []
     default_btn = BigButton(tr("default model"), "", "")
@@ -122,6 +124,19 @@ class ModelsLayoutMici(NavWidget):
   def _reset_main_view(self):
     self._scroller._items = self.main_items
     self.set_back_callback(self.original_back_callback)
+    if self.focused_widget and self.focused_widget in self.main_items:
+      x = self._scroller._pad_start
+      for item in self.main_items:
+        if not item.is_visible:
+          continue
+        if item == self.focused_widget:
+          break
+        x += item.rect.width + self._scroller._spacing
+      self._scroller.scroll_panel.set_offset(0)
+      self._scroller.scroll_to(x)
+      self.focused_widget = None
+    else:
+      self._scroller.scroll_panel.set_offset(0)
 
   def _create_buttons(self, values, current_val, label, callback):
     buttons = []
@@ -133,6 +148,7 @@ class ModelsLayoutMici(NavWidget):
     return buttons
 
   def _adjust_lane_turn(self):
+    self.focused_widget = self.lane_turn_value_btn
     lane_turn_value = float(ui_state.params.get("LaneTurnValue", return_default=True))
     is_metric = ui_state.is_metric
     cur = int(round(lane_turn_value * CV.MPH_TO_KPH)) if is_metric else int(round(lane_turn_value))
@@ -147,6 +163,7 @@ class ModelsLayoutMici(NavWidget):
     self._reset_main_view()
 
   def _adjust_delay(self):
+    self.focused_widget = self.delay_btn
     current_delay = float(ui_state.params.get("LagdToggleDelay", return_default=True))
     values = [round(i * 0.01, 2) for i in range(10, 31)]
     btns = self._create_buttons(values, current_delay, lambda v: f"{v:.2f}s", self._set_delay)
