@@ -12,7 +12,7 @@ from openpilot.selfdrive.ui.lib.prime_state import PrimeState
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.hardware import HARDWARE, PC
 
-from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
+from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP, DeviceSP
 
 BACKLIGHT_OFFROAD = 65 if HARDWARE.get_device_type() == "mici" else 50
 
@@ -188,8 +188,9 @@ class UIState(UIStateSP):
     self._param_update_time = time.monotonic()
 
 
-class Device:
+class Device(DeviceSP):
   def __init__(self):
+    DeviceSP.__init__(self)
     self._ignition = False
     self._interaction_time: float = -1
     self._interactive_timeout_callbacks: list[Callable] = []
@@ -273,6 +274,7 @@ class Device:
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)
       gui_app.set_should_render(on)
+      DeviceSP._display_power_changed(self, on)
 
 
 # Global instance

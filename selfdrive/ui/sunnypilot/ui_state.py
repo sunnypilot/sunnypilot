@@ -27,3 +27,13 @@ class UIStateSP:
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
+
+class DeviceSP:
+  def __init__(self):
+    pass
+
+  def _display_power_changed(self, on: bool):
+    if not on:
+      from openpilot.selfdrive.ui.ui_state import ui_state
+      if ui_state.params.get("DeviceBootMode", return_default=True) == 1:
+        ui_state.params.put_bool("OffroadMode", True)
