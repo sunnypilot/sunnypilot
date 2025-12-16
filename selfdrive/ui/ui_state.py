@@ -230,6 +230,7 @@ class Device:
   def _update_brightness(self):
     clipped_brightness = self._offroad_brightness
     brightness_override = ui_state.params.get("Brightness", return_default=True)
+    brightness = self._last_brightness
 
     if ui_state.started and ui_state.light_sensor >= 0:
       clipped_brightness = ui_state.light_sensor
