@@ -30,10 +30,10 @@ class UIStateSP:
 
 class DeviceSP:
   def __init__(self):
-    self._params = Params()
     pass
 
   def _display_power_changed(self, on: bool):
     if not on:
-      if self._params.get_bool("DeviceBootMode"):
-        self._params.put_bool("OffroadMode", False)
+      from openpilot.selfdrive.ui.ui_state import ui_state
+      if ui_state.params.get("DeviceBootMode", return_default=True) == 1:
+        ui_state.params.put_bool("OffroadMode", True)
