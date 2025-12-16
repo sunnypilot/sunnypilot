@@ -201,6 +201,24 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       thread.join()
 
 
+@dispatcher.add_method
+def webrtc(sdp:str, cameras: list[str], bridge_services_in: list[str], bridge_services_out: list[str]):
+  try:
+    data = {
+      "sdp": sdp,
+      "cameras": cameras,
+      "bridge_services_in": bridge_services_in,
+      "bridge_services_out": bridge_services_out
+    }
+    response = requests.post("http://0.0.0.0:5001/stream", json=data, timeout=60)
+    response.raise_for_status()
+    res = response.json()
+    return res
+  except Exception as e:
+    cloudlog.exception("athena.webrtc.exception")
+    return {"error": str(e)}
+
+
 def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None) -> None:
   dispatcher["startLocalProxy"] = localProxyHandler or partial(startLocalProxy, end_event)
   while not end_event.is_set():

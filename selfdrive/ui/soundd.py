@@ -2,6 +2,9 @@ import math
 import numpy as np
 import time
 import wave
+import socket
+import struct
+import threading
 
 
 from cereal import car, messaging, custom
@@ -70,6 +73,58 @@ def check_selfdrive_timeout_alert(sm):
 
   return False
 
+  return False
+
+
+class WebRTCAudioReceiver:
+  def __init__(self):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.sock.bind(('127.0.0.1', 27000))
+    self.sock.settimeout(0.1)
+
+    self.buffer = []
+    self.lock = threading.Lock()
+
+    self.thread = threading.Thread(target=self.rx_thread, daemon=True)
+    self.thread.start()
+
+  def rx_thread(self):
+    while True:
+      try:
+        data, _ = self.sock.recvfrom(4096)
+        # Assuming incoming data is S16LE PCM
+        samples = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+
+        with self.lock:
+          self.buffer.extend(samples)
+          # Keep buffer size reasonable (manage latency vs dropout)
+          # 48000 Hz * 0.2s = 9600 samples
+          if len(self.buffer) > 24000: # 0.5s buffer max
+             self.buffer = self.buffer[-9600:] # Keep last 0.2s
+
+      except socket.timeout:
+        pass
+      except Exception:
+        cloudlog.exception("WebRTCAudioReceiver rx error")
+        time.sleep(1)
+
+  def get_data(self, frames):
+    with self.lock:
+      if len(self.buffer) < frames:
+        # Not enough data, pad with zeros? Or just return what we have?
+        # Better to return zeros if buffer empty to maintain sync?
+        # Or consume what we have and pad rest.
+        ret = np.zeros(frames, dtype=np.float32)
+        n = len(self.buffer)
+        if n > 0:
+          ret[:n] = self.buffer
+          self.buffer = []
+        return ret
+      else:
+        ret = np.array(self.buffer[:frames], dtype=np.float32)
+        self.buffer = self.buffer[frames:]
+        return ret
+
 
 class Soundd(QuietMode):
   def __init__(self):
@@ -84,6 +139,7 @@ class Soundd(QuietMode):
     self.selfdrive_timeout_alert = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
+    self.webrtc_receiver = WebRTCAudioReceiver()
 
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
@@ -124,7 +180,15 @@ class Soundd(QuietMode):
   def callback(self, data_out: np.ndarray, frames: int, time, status) -> None:
     if status:
       cloudlog.warning(f"soundd stream over/underflow: {status}")
-    data_out[:frames, 0] = self.get_sound_data(frames)
+
+    alert_audio = self.get_sound_data(frames)
+    webrtc_audio = self.webrtc_receiver.get_data(frames)
+
+    mixed = alert_audio + webrtc_audio
+    # Simple limiter
+    mixed = np.clip(mixed, -1.0, 1.0)
+
+    data_out[:frames, 0] = mixed
 
   def update_alert(self, new_alert):
     current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame > len(self.loaded_sounds[self.current_alert])

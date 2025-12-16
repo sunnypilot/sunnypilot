@@ -1,5 +1,6 @@
 import asyncio
 import io
+import socket
 
 import aiortc
 import av
@@ -107,3 +108,91 @@ class AudioOutputSpeaker:
     self.stream.stop_stream()
     self.stream.close()
     self.p.terminate()
+
+
+class CerealAudioStreamTrack(aiortc.mediastreams.AudioStreamTrack):
+  def __init__(self, rate: int = 16000, channels: int = 1):
+    super().__init__()
+    from cereal import messaging
+    self.sm = messaging.SubMaster(['rawAudioData'])
+    self.rate = rate
+    self.channels = channels
+    self.buffer = bytearray()
+    self.pts = 0
+    # 20ms frames
+    self.samples_per_frame = int(0.020 * rate)
+    self.bytes_per_frame = self.samples_per_frame * 2 * channels  # 16-bit
+
+  async def recv(self):
+    while len(self.buffer) < self.bytes_per_frame:
+      self.sm.update(0)
+      if self.sm.updated['rawAudioData']:
+        self.buffer.extend(self.sm['rawAudioData'].data)
+
+      if len(self.buffer) < self.bytes_per_frame:
+        await asyncio.sleep(0.005)  # Wait for more data
+
+    # Extract one frame
+    chunk = self.buffer[:self.bytes_per_frame]
+    self.buffer = self.buffer[self.bytes_per_frame:]
+
+    mic_array = np.frombuffer(chunk, dtype=np.int16)
+    mic_array = np.expand_dims(mic_array, axis=0)
+    layout = 'stereo' if self.channels > 1 else 'mono'
+
+    frame = av.AudioFrame.from_ndarray(mic_array, format='s16', layout=layout)
+    frame.rate = self.rate
+    frame.pts = self.pts
+    self.pts += frame.samples
+    return frame
+
+
+class SocketAudioOutput:
+  def __init__(self, audio_format: int = pyaudio.paInt16, rate: int = 48000, channels: int = 1):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.dest = ('127.0.0.1', 27000)
+    self.rate = rate
+    self.channels = channels
+    self.tracks_and_tasks: list[tuple[aiortc.MediaStreamTrack, asyncio.Task | None]] = []
+    # Ensure output is s16, 48kHz, mono
+    self.resampler = av.AudioResampler(format='s16', layout='mono', rate=rate)
+
+  async def __consume(self, track):
+    count = 0
+    while True:
+      try:
+        frame = await track.recv()
+      except aiortc.MediaStreamError:
+        return
+
+      try:
+        # Resample to ensure correct format/rate/channels
+        resampled_frames = self.resampler.resample(frame)
+        for r_frame in resampled_frames:
+          data = bytes(r_frame.planes[0])
+          self.sock.sendto(data, self.dest)
+
+        count += 1
+        if count % 200 == 0:
+            print(f"Sent {count} audio frames", flush=True)
+      except Exception as e:
+        print(f"Socket send/resample error: {e}", flush=True)
+
+  def hasTrack(self, track: aiortc.MediaStreamTrack) -> bool:
+    return any(t == track for t, _ in self.tracks_and_tasks)
+
+  def addTrack(self, track: aiortc.MediaStreamTrack):
+    if not self.hasTrack(track):
+      self.tracks_and_tasks.append((track, None))
+
+  def start(self):
+    for index, (track, task) in enumerate(self.tracks_and_tasks):
+      if task is None:
+        self.tracks_and_tasks[index] = (track, asyncio.create_task(self.__consume(track)))
+
+  def stop(self):
+    for _, task in self.tracks_and_tasks:
+      if task is not None:
+        task.cancel()
+    self.tracks_and_tasks = []
+    self.sock.close()
