@@ -118,10 +118,10 @@ jobs:
       with:
         save: false # No need save here if we manually save it later conditionally
         path: ~/Library/Caches/Homebrew
-        key: brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
+        key: v1-brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
         restore-keys: |
-          brew-macos-${{ hashFiles('tools/Brewfile') }}
-          brew-macos-
+          v1-brew-macos-${{ hashFiles('tools/Brewfile') }}
+          v1-brew-macos-
     - name: Install dependencies
       run: ./tools/mac_setup.sh
       env:
@@ -132,7 +132,7 @@ jobs:
       if: github.ref == 'refs/heads/master'
       with:
         path: ~/Library/Caches/Homebrew
-        key: brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
+        key: v1-brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
     - run: git lfs pull
     - name: Getting scons cache
       uses: ./.github/workflows/auto-cache
