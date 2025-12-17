@@ -8,7 +8,7 @@ from collections import deque
 import math
 import numpy as np
 
-from opendbc.car.lateral import FRICTION_THRESHOLD, get_friction
+from opendbc.car.lateral import get_friction, get_friction_threshold
 from opendbc.sunnypilot.car.interfaces import LatControlInputs
 from opendbc.sunnypilot.car.lateral_ext import get_friction as get_friction_in_torque_space
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -82,7 +82,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self._ff = self.torque_from_lateral_accel_in_torque_space(LatControlInputs(self._gravity_adjusted_lateral_accel, self._roll_compensation,
                                                                                CS.vEgo, CS.aEgo), self.lac_torque.torque_params, gravity_adjusted=True)
     self._ff += get_friction_in_torque_space(self._desired_lateral_accel - self._actual_lateral_accel, self._lateral_accel_deadzone,
-                                             FRICTION_THRESHOLD, self.lac_torque.torque_params)
+                                             get_friction_threshold(CS.vEgo), self.lac_torque.torque_params)
 
   def update_output_torque(self, CS):
     freeze_integrator = self._steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
@@ -159,6 +159,6 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
 
     # apply friction override for cars with low NN friction response
     if self.model.friction_override:
-      self._pid_log.error += get_friction(friction_input, self._lateral_accel_deadzone, FRICTION_THRESHOLD, self.lac_torque.torque_params)
+      self._pid_log.error += get_friction(friction_input, self._lateral_accel_deadzone, get_friction_threshold(CS.vEgo), self.lac_torque.torque_params)
 
     self.update_output_torque(CS)

@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 
 from cereal import log
-from opendbc.car.lateral import FRICTION_THRESHOLD, get_friction
+from opendbc.car.lateral import get_friction, get_friction_threshold
 from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
@@ -95,7 +95,7 @@ class LatControlTorque(LatControl):
       # latAccelOffset corrects roll compensation bias from device roll misalignment relative to car roll
       ff -= self.torque_params.latAccelOffset
       # TODO jerk is weighted by lat_delay for legacy reasons, but should be made independent of it
-      ff += get_friction(error, lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
+      ff += get_friction(error, lateral_accel_deadzone, get_friction_threshold(CS.vEgo), self.torque_params)
 
       freeze_integrator = steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
       output_lataccel = self.pid.update(pid_log.error,
