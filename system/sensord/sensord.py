@@ -97,7 +97,7 @@ def main() -> None:
     (LSM6DS3_Gyro(I2C_BUS_IMU), "gyroscope", True),
     (LSM6DS3_Temp(I2C_BUS_IMU), "temperatureSensor", False),
   ]
-  if HARDWARE.get_device_type() == "tizi":
+  if HARDWARE.get_device_type() in ("tizi", "tici"):
     sensors_cfg.append(
       (MMC5603NJ_Magn(I2C_BUS_IMU), "magnetometer", False),
     )
