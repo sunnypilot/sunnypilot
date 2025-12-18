@@ -63,7 +63,7 @@ public:
   // Panda functionality
   cereal::PandaState::PandaType get_hw_type();
   void set_safety_model(cereal::CarParams::SafetyModel safety_model, uint16_t safety_param=0U);
-  void set_alternative_experience(uint16_t alternative_experience);
+  void set_alternative_experience(uint16_t alternative_experience, uint16_t safety_param_sp=0U);
   std::string serial_read(int port_number = 0);
   void set_uart_baud(int uart, int rate);
   void set_fan_speed(uint16_t fan_speed);
@@ -77,7 +77,7 @@ public:
   std::optional<std::string> get_serial();
   void set_power_saving(bool power_saving);
   void enable_deepsleep();
-  void send_heartbeat(bool engaged);
+  void send_heartbeat(bool engaged, bool engaged_mads);
   void set_can_speed_kbps(uint16_t bus, uint16_t speed);
   void set_can_fd_auto(uint16_t bus, bool enabled);
   void set_data_speed_kbps(uint16_t bus, uint16_t speed);

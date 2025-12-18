@@ -9,6 +9,8 @@
 #include "system/hardware/hw.h"
 #include "third_party/json11/json11.hpp"
 
+#include "sunnypilot/common/version.h"
+
 std::string daemon_name = "testy";
 std::string dongle_id = "test_dongle_id";
 int LINE_NO = 0;
@@ -53,7 +55,7 @@ void recv_log(int thread_cnt, int thread_msg_cnt) {
     REQUIRE(ctx["dongle_id"].string_value() == dongle_id);
     REQUIRE(ctx["dirty"].bool_value() == true);
 
-    REQUIRE(ctx["version"].string_value() == COMMA_VERSION);
+    REQUIRE(ctx["version"].string_value() == SUNNYPILOT_VERSION);
 
     std::string device = Hardware::get_name();
     REQUIRE(ctx["device"].string_value() == device);

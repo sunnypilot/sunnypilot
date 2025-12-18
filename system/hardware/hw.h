@@ -5,7 +5,7 @@
 #include "system/hardware/base.h"
 #include "common/util.h"
 
-#if QCOM2
+#if __TICI__
 #include "system/hardware/tici/hardware.h"
 #define Hardware HardwareTici
 #else
@@ -55,4 +55,8 @@ namespace Path {
      return "/dev/shm";
     #endif
  }
+
+  inline std::string model_root() {
+    return Hardware::PC() ? Path::comma_home() + "/media/0/models" : "/data/media/0/models";
+  }
 }  // namespace Path

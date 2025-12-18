@@ -1,0 +1,221 @@
+name: Build Model from Upstream
+
+env:
+  BUILD_DIR: "/data/openpilot"
+  OUTPUT_DIR: ${{ github.workspace }}/output
+  SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
+  UPSTREAM_REPO: "commaai/openpilot"
+  TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
+  MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
+
+on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream branch to build from'
+        required: true
+        default: 'master'
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      upstream_branch:
+        description: 'Upstream branch to build from'
+        required: true
+        default: 'master'
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
+
+
+run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
+
+jobs:
+  get_model:
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ inputs.upstream_branch }}
+    outputs:
+      model_date: ${{ steps.commit-date.outputs.model_date }}
+    steps:
+      # Note: To allow dynamic models from both openpilot and sunnypilot (merges/mashups), we try commaai as default,
+      # and fallback to sunnypilot if the ref checkout fails.
+      - name: Checkout commaai/openpilot
+        id: checkout_upstream
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: commaai/openpilot
+          ref: ${{ inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
+
+      - name: Fallback to sunnypilot/sunnypilot
+        if: steps.checkout_upstream.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          ref: ${{ inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
+      - name: Get commit date
+        id: commit-date
+        run: |
+          cd ${{ github.workspace }}/openpilot
+          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
+          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+      - run: |
+          cd ${{ github.workspace }}/openpilot
+          git lfs pull
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
+          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
+
+  build_model:
+    runs-on: [self-hosted, tici]
+    needs: get_model
+    env:
+      MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
+      REF: ${{ inputs.upstream_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - run: git lfs pull
+      - name: Cache SCons
+        uses: actions/cache@v4
+        with:
+          path: ${{env.SCONS_CACHE_DIR}}
+          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
+          #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
+          restore-keys: |
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}-model
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
+          fi
+
+      - name: Setup build environment
+        run: |
+          mkdir -p "${BUILD_DIR}/"
+          sudo find $BUILD_DIR/ -mindepth 1 -delete
+          echo "Starting build stage..."
+          echo "BUILD_DIR: ${BUILD_DIR}"
+          echo "CI_DIR: ${CI_DIR}"
+          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
+          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
+          echo "-------"
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            printenv
+          fi
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx
+
+      - name: Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
+          path: ${{ github.workspace }}/selfdrive/modeld/models
+      - run: |
+          rm -f ${{ github.workspace }}/selfdrive/modeld/models/{dmonitoring_model,big_driving_policy,big_driving_vision}.onnx
+
+      - name: Build Model
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+
+          # Loop through all .onnx files
+          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            base_name=$(basename "$onnx_file" .onnx)
+            output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
+
+            echo "Compiling: $onnx_file -> $output_file"
+            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+          done
+
+      - name: Prepare Output
+        run: |
+          sudo rm -rf ${{ env.OUTPUT_DIR }}
+          mkdir -p ${{ env.OUTPUT_DIR }}
+
+          # Copy the model files
+          rsync -avm \
+            --include='*.dlc' \
+            --include='*.thneed' \
+            --include='*.pkl' \
+            --include='*.onnx' \
+            --exclude='*' \
+            --delete-excluded \
+            --chown=comma:comma \
+            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "${{ env.MODELS_DIR }}" \
+            --output-dir "${{ env.OUTPUT_DIR }}" \
+            --custom-name "${{ env.MODEL_NAME }}" \
+            --upstream-branch "${{ inputs.upstream_branch }}" \
+            ${{ inputs.is_20hz && '--is-20hz' || '' }}
+
+      - name: Write artifact name to file
+        run: echo "model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}" > ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
+      - name: Upload Build Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
+          path: ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable

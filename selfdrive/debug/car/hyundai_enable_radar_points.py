@@ -71,6 +71,13 @@ SUPPORTED_FW_VERSIONS = {
   b"DLhe SCC FHCUP      1.00 1.02 99110-L7000 \x01 \x102    ": ConfigValues(
     default_config=b"\x00\x00\x00\x01\x00\x00",
     tracks_enabled=b"\x00\x00\x00\x01\x00\x01"),
+  # 2022 Niro EV
+  b"DEev SCC F-CUP      1.00 1.00 99110-Q4600\x01\x42      ": ConfigValues(
+    default_config=b"\x00\x00\x00\x01\x00\x00",
+    tracks_enabled=b"\x00\x00\x00\x01\x00\x01"),
+  b"DEev SCC F-CUP      1.00 1.00 99110-Q4600 \x07\x03\t%      ": ConfigValues(
+    default_config=b"\x00\x00\x00\x01\x00\x00",
+    tracks_enabled=b"\x00\x00\x00\x01\x00\x01"),
 }
 
 if __name__ == "__main__":

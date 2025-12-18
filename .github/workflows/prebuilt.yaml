@@ -6,13 +6,13 @@ on:
 
 env:
   DOCKER_LOGIN: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-  BUILD: selfdrive/test/docker_build.sh prebuilt
+  BUILD: release/ci/docker_build_sp.sh prebuilt
 
 jobs:
   build_prebuilt:
     name: build prebuilt
     runs-on: ubuntu-latest
-    if: github.repository == 'commaai/openpilot'
+    if: github.repository == 'sunnypilot/sunnypilot'
     env:
       PUSH_IMAGE: true
     permissions:

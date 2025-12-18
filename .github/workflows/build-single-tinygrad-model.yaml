@@ -1,0 +1,228 @@
+name: Build Single Tinygrad Model and Push
+
+on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream commit to build from'
+        required: true
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      recompiled_dir:
+        description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
+        required: true
+        type: string
+      json_version:
+        description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
+        required: true
+        type: string
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
+      bypass_push:
+        description: 'Bypass pushing to GitLab for build-all'
+        required: false
+        default: true
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      upstream_branch:
+        description: 'Upstream commit to build from'
+        required: true
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      recompiled_dir:
+        description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
+        required: true
+        type: string
+      json_version:
+        description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
+        required: true
+        type: string
+      model_folder:
+        description: 'Model folder'
+        type: choice
+        default: 'None'
+        options:
+          - None
+          - Simple Plan Models
+          - Space Lab Models
+          - TR Models
+          - DTR Models
+          - Custom Merge Models
+          - FOF series models
+          - Other
+      custom_model_folder:
+        description: 'Custom model folder name (if "Other" selected)'
+        required: false
+        type: string
+      generation:
+        description: 'Model generation'
+        required: false
+        type: string
+      version:
+        description: 'Minimum selector version'
+        required: false
+        type: string
+env:
+  RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
+  JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
+
+jobs:
+  build_model:
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    with:
+      upstream_branch: ${{ inputs.upstream_branch }}
+      custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
+      is_20hz: true
+      artifact_suffix: ${{ inputs.artifact_suffix }}
+    secrets: inherit
+
+  publish_model:
+    if: ${{ !inputs.bypass_push && !cancelled() }}
+    concurrency:
+      group: gitlab-push-${{ inputs.recompiled_dir }}
+      cancel-in-progress: false
+    needs: build_model
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab.com SSH key to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Clone GitLab docs repo
+        env:
+          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
+        run: |
+          echo "Cloning GitLab"
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
+          cd gitlab_docs
+          echo "checkout models/${RECOMPILED_DIR}"
+          git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
+          git checkout main
+          cd ..
+
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
+      - name: Validate recompiled dir and JSON version
+        run: |
+          if [ ! -d "gitlab_docs/models/$RECOMPILED_DIR" ]; then
+            echo "Recompiled dir $RECOMPILED_DIR does not exist in GitLab repo"
+            exit 1
+          fi
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "JSON file $JSON_FILE does not exist!"
+            exit 1
+          fi
+
+      - name: Download artifact name file
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
+          path: artifact_name
+
+      - name: Read artifact name
+        id: read-artifact-name
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download and extract model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
+          path: output
+
+      - name: Remove unwanted files
+        run: |
+          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
+          find output -type f -name 'dmonitoring_model.onnx' -delete
+
+      - name: Copy model artifact(s) to GitLab recompiled dir
+        env:
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
+        run: |
+          ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
+          mkdir -p "$ARTIFACT_DIR"
+          for path in output/*; do
+            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
+              continue
+            fi
+            name="$(basename "$path")"
+            if [ -d "$path" ]; then
+              mkdir -p "$ARTIFACT_DIR/$name"
+              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
+              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
+            else
+              cp "$path" "$ARTIFACT_DIR/"
+              echo "Copied file $name -> $ARTIFACT_DIR/"
+            fi
+          done
+
+      - name: Push recompiled dir to GitLab
+        env:
+          GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+        run: |
+          cd gitlab_docs
+          git checkout main
+          git pull origin main
+          for d in models/"$RECOMPILED_DIR"/*/; do
+            git sparse-checkout add "$d"
+          done
+          git add models/"$RECOMPILED_DIR"
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
+          git push origin main
+
+      - run: |
+          cd docs
+          git pull origin gh-pages
+
+      - name: Run json_parser.py to update JSON
+        run: |
+          FOLDER="${{ inputs.model_folder }}"
+          if [ "$FOLDER" = "Other" ]; then
+            FOLDER="${{ inputs.custom_model_folder }}"
+          fi
+          ARGS=""
+          if [ "$FOLDER" != "None" ] && [ -n "$FOLDER" ]; then
+            ARGS="$ARGS --model-folder \"$FOLDER\""
+          fi
+          [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
+          [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
+          eval python3 docs/json_parser.py \
+            --json-path "$JSON_FILE" \
+            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --sort-by-date \
+            $ARGS
+
+      - name: Push updated JSON to GitHub docs repo
+        run: |
+          cd docs
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git checkout gh-pages
+          git add docs/"$(basename $JSON_FILE)"
+          git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
+          git push origin gh-pages

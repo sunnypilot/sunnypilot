@@ -1,4 +1,5 @@
 import time
+import copy
 import os
 import pytest
 import random
@@ -150,7 +151,9 @@ class TestCarModelBase(unittest.TestCase):
 
     cls.CarInterface = interfaces[cls.platform]
     cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, False, docs=False)
+    cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, alpha_long, False, docs=False)
     assert cls.CP
+    assert cls.CP_SP
     assert cls.CP.carFingerprint == cls.platform
 
     os.environ["COMMA_CACHE"] = DEFAULT_DOWNLOAD_CACHE_ROOT
@@ -160,11 +163,14 @@ class TestCarModelBase(unittest.TestCase):
     del cls.can_msgs
 
   def setUp(self):
-    self.CI = self.CarInterface(self.CP.copy())
+    self.CI = self.CarInterface(self.CP.copy(), copy.deepcopy(self.CP_SP))
     assert self.CI
 
     # TODO: check safetyModel is in release panda build
     self.safety = libsafety_py.libsafety
+
+    safety_param_sp = self.CP_SP.safetyParam
+    self.safety.set_current_safety_param_sp(safety_param_sp)
 
     cfg = self.CP.safetyConfigs[-1]
     set_status = self.safety.set_safety_hooks(cfg.safetyModel.raw, cfg.safetyParam)
@@ -183,7 +189,7 @@ class TestCarModelBase(unittest.TestCase):
       if tuning == 'pid':
         self.assertTrue(len(self.CP.lateralTuning.pid.kpV))
       elif tuning == 'torque':
-        self.assertTrue(self.CP.lateralTuning.torque.kf > 0)
+        self.assertTrue(self.CP.lateralTuning.torque.latAccelFactor > 0)
       else:
         raise Exception("unknown tuning")
 
@@ -191,10 +197,11 @@ class TestCarModelBase(unittest.TestCase):
     # TODO: also check for checksum violations from can parser
     can_invalid_cnt = 0
     CC = structs.CarControl().as_reader()
+    CC_SP = structs.CarControlSP()
 
     for i, msg in enumerate(self.can_msgs):
-      CS = self.CI.update(msg)
-      self.CI.apply(CC, msg[0])
+      CS, _ = self.CI.update(msg)
+      self.CI.apply(CC, CC_SP, msg[0])
 
       # wait max of 2s for low frequency msgs to be seen
       if i > 250:
@@ -203,7 +210,7 @@ class TestCarModelBase(unittest.TestCase):
     self.assertEqual(can_invalid_cnt, 0)
 
   def test_radar_interface(self):
-    RI = self.CarInterface.RadarInterface(self.CP)
+    RI = self.CarInterface.RadarInterface(self.CP, self.CP_SP)
     assert RI
 
     # Since OBD port is multiplexed to bus 1 (commonly radar bus) while fingerprinting,
@@ -263,13 +270,13 @@ class TestCarModelBase(unittest.TestCase):
     if self.CP.notCar:
       self.skipTest("Skipping test for notCar")
 
-    def test_car_controller(car_control):
+    def test_car_controller(car_control, car_control_sp):
       now_nanos = 0
       msgs_sent = 0
-      CI = self.CarInterface(self.CP)
+      CI = self.CarInterface(self.CP, self.CP_SP)
       for _ in range(round(10.0 / DT_CTRL)):  # make sure we hit the slowest messages
         CI.update([])
-        _, sendcan = CI.apply(car_control, now_nanos)
+        _, sendcan = CI.apply(car_control, car_control_sp, now_nanos)
 
         now_nanos += DT_CTRL * 1e9
         msgs_sent += len(sendcan)
@@ -282,17 +289,18 @@ class TestCarModelBase(unittest.TestCase):
 
     # Make sure we can send all messages while inactive
     CC = structs.CarControl()
-    test_car_controller(CC.as_reader())
+    CC_SP = structs.CarControlSP()
+    test_car_controller(CC.as_reader(), CC_SP)
 
     # Test cancel + general messages (controls_allowed=False & cruise_engaged=True)
     self.safety.set_cruise_engaged_prev(True)
     CC = structs.CarControl(cruiseControl=structs.CarControl.CruiseControl(cancel=True))
-    test_car_controller(CC.as_reader())
+    test_car_controller(CC.as_reader(), CC_SP)
 
     # Test resume + general messages (controls_allowed=True & cruise_engaged=True)
     self.safety.set_controls_allowed(True)
     CC = structs.CarControl(cruiseControl=structs.CarControl.CruiseControl(resume=True))
-    test_car_controller(CC.as_reader())
+    test_car_controller(CC.as_reader(), CC_SP)
 
   # Skip stdout/stderr capture with pytest, causes elevated memory usage
   @pytest.mark.nocapture
@@ -334,7 +342,7 @@ class TestCarModelBase(unittest.TestCase):
       self.safety.safety_rx_hook(to_send)
 
       can = [(int(time.monotonic() * 1e9), [CanData(address=address, dat=dat, src=bus)])]
-      CS = self.CI.update(can)
+      CS, _ = self.CI.update(can)
       if n < 5:  # CANParser warmup time
         continue
 
@@ -396,7 +404,8 @@ class TestCarModelBase(unittest.TestCase):
     checks = defaultdict(int)
     vehicle_speed_seen = self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar
     for idx, can in enumerate(self.can_msgs):
-      CS = self.CI.update(can).as_reader()
+      CS, _ = self.CI.update(can)
+      CS = CS.as_reader()
       for msg in filter(lambda m: m.src < 64, can[1]):
         to_send = libsafety_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         ret = self.safety.safety_rx_hook(to_send)

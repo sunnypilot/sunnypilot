@@ -1,0 +1,303 @@
+name: Build and push all tinygrad models
+
+on:
+  workflow_dispatch:
+    inputs:
+      set_min_version:
+        description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
+        required: true
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      json_version: ${{ steps.get-json.outputs.json_version }}
+      recompiled_dir: ${{ steps.create-recompiled-dir.outputs.recompiled_dir }}
+      json_file: ${{ steps.get-json.outputs.json_file }}
+      model_matrix: ${{ steps.set-matrix.outputs.model_matrix }}
+      tinygrad_ref: ${{ steps.get-tinygrad-ref.outputs.tinygrad_ref }}
+    steps:
+      - name: Checkout sunnypilot repo
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          path: sunnypilot
+          submodules: recursive
+
+      - name: Get tinygrad_repo ref
+        id: get-tinygrad-ref
+        run: |
+          cd sunnypilot
+          export PYTHONPATH=$(pwd)
+          ref=$(python3 sunnypilot/models/tinygrad_ref.py)
+          echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
+          echo "tinygrad_ref is $ref"
+
+      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
+      - name: Get next JSON version to use (from GitHub docs repo)
+        id: get-json
+        run: |
+          cd docs/docs
+          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
+          next=$((latest+1))
+          json_file="driving_models_v${next}.json"
+          cp "driving_models_v${latest}.json" "$json_file"
+          echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
+          echo "json_version=$((next+0))" >> $GITHUB_OUTPUT
+          echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
+
+      - name: Extract tinygrad models
+        id: set-matrix
+        working-directory: docs/docs
+        run: |
+          jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | gsub(" \\([^)]*\\)"; "")), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
+          echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+      - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Clone GitLab docs repo and create new recompiled dir
+        id: create-recompiled-dir
+        env:
+          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
+        run: |
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
+          cd gitlab_docs
+          git checkout main
+          git sparse-checkout set --no-cone models/
+          cd models
+          latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
+          if [[ -z "$latest_dir" ]]; then
+            next_dir=1
+          else
+            next_dir=$((latest_dir+1))
+          fi
+          recompiled_dir="${next_dir}"
+          mkdir -p "recompiled${recompiled_dir}"
+          touch "recompiled${recompiled_dir}/.gitkeep"
+          cd ../..
+          echo "recompiled_dir=$recompiled_dir" >> $GITHUB_OUTPUT
+
+      - name: Push empty recompiled dir to GitLab
+        run: |
+          cd gitlab_docs
+          git add models/recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }}
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git commit -m "Add recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }} for build-all" || echo "No changes to commit"
+          git push origin main
+
+      - name: Push new JSON to GitHub docs repo
+        run: |
+          cd docs
+          git pull origin gh-pages
+          git add docs/"$(basename ${{ steps.get-json.outputs.json_file }})"
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git commit -m "Add new ${{ steps.get-json.outputs.json_file }} for build-all" || echo "No changes to commit"
+          git push origin gh-pages
+
+  get_and_build:
+    needs: [setup]
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+      fail-fast: false
+    uses: ./.github/workflows/build-single-tinygrad-model.yaml
+    with:
+      upstream_branch: ${{ matrix.model.ref }}
+      custom_name: ${{ matrix.model.display_name }}
+      recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
+      json_version: ${{ needs.setup.outputs.json_version }}
+    secrets: inherit
+
+  retry_failed_models:
+    needs: [setup, get_and_build]
+    runs-on: ubuntu-latest
+    if: ${{ needs.setup.result != 'failure' && !cancelled() }}
+    outputs:
+      retry_matrix: ${{ steps.set-retry-matrix.outputs.retry_matrix }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: model-*
+          path: output
+
+      - id: set-retry-matrix
+        run: |
+          echo '${{ needs.setup.outputs.model_matrix }}' > matrix.json
+          built=(); while IFS= read -r line; do built+=("$line"); done < <(
+            ls output | sed -E 's/^model-//' | sed -E 's/-[0-9]+$//' | sed -E 's/ \([^)]*\)//' | awk '{gsub(/^ +| +$/, ""); print}'
+          )
+          jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
+            'map(select(.display_name as $n | ($built | index($n | gsub("^ +| +$"; "")) | not)))' matrix.json > retry_matrix.json
+          echo "retry_matrix=$(cat retry_matrix.json)" >> $GITHUB_OUTPUT
+
+  retry_get_and_build:
+    needs: [setup, get_and_build, retry_failed_models]
+    if: ${{ needs.get_and_build.result == 'failure' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '') }}
+    strategy:
+      matrix:
+        model: ${{ fromJson(needs.retry_failed_models.outputs.retry_matrix) }}
+      fail-fast: false
+    uses: ./.github/workflows/build-single-tinygrad-model.yaml
+    with:
+      upstream_branch: ${{ matrix.model.ref }}
+      custom_name: ${{ matrix.model.display_name }}
+      recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
+      json_version: ${{ needs.setup.outputs.json_version }}
+      artifact_suffix: -retry
+    secrets: inherit
+
+  publish_models:
+    name: Publish models sequentially
+    needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
+    if: ${{ !cancelled() && (needs.get_and_build.result != 'failure' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '')) }}
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
+    env:
+      RECOMPILED_DIR: recompiled${{ needs.setup.outputs.recompiled_dir }}
+      JSON_FILE: ${{ needs.setup.outputs.json_file }}
+      ARTIFACT_NAME_INPUT: ${{ matrix.model.display_name }}
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab.com SSH key to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Clone GitLab docs repo
+        env:
+          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
+        run: |
+          echo "Cloning GitLab"
+          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
+          cd gitlab_docs
+          echo "checkout models/${RECOMPILED_DIR}"
+          git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
+          git checkout main
+          cd ..
+
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot-docs
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
+      - name: Validate recompiled dir and JSON version
+        run: |
+          if [ ! -d "gitlab_docs/models/$RECOMPILED_DIR" ]; then
+            echo "Recompiled dir $RECOMPILED_DIR does not exist in GitLab repo"
+            exit 1
+          fi
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "JSON file $JSON_FILE does not exist!"
+            exit 1
+          fi
+
+      - name: Download artifact name file
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-${{ env.ARTIFACT_NAME_INPUT }}
+          path: artifact_name
+
+      - name: Read artifact name
+        id: read-artifact-name
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
+          path: output
+
+      - name: Remove onnx files bc not needed for recompiled dir since they already exist from single build
+        run: |
+          find output -type f -name '*.onnx' -delete
+          find output -type f -name 'big_*.pkl' -delete
+          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
+
+      - name: Copy model artifacts to gitlab
+        env:
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
+        run: |
+          ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
+          mkdir -p "$ARTIFACT_DIR"
+          for path in output/*; do
+            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
+              continue
+            fi
+            name="$(basename "$path")"
+            if [ -d "$path" ]; then
+              mkdir -p "$ARTIFACT_DIR/$name"
+              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
+              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
+            else
+              cp "$path" "$ARTIFACT_DIR/"
+              echo "Copied file $name -> $ARTIFACT_DIR/"
+            fi
+          done
+
+      - name: Push recompiled dir to GitLab
+        env:
+          GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+        run: |
+          cd gitlab_docs
+          git checkout main
+          git pull origin main
+          for d in models/"$RECOMPILED_DIR"/*/; do
+            git sparse-checkout add "$d"
+          done
+          git add models/"$RECOMPILED_DIR"
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git commit -m "Update $RECOMPILED_DIR with model from build-all-tinygrad-models" || echo "No changes to commit"
+          git push origin main
+      - run: |
+          cd docs
+          git pull origin gh-pages
+
+      - name: update json
+        run: |
+          ARGS=""
+          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
+          ARGS="$ARGS --sort-by-date"
+          ARGS="$ARGS --tinygrad-ref \"${{ needs.setup.outputs.tinygrad_ref }}\""
+          eval python3 docs/json_parser.py \
+            --json-path "$JSON_FILE" \
+            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            $ARGS
+
+      - name: Push updated json to GitHub
+        run: |
+          cd docs
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git checkout gh-pages
+          git add docs/"$(basename $JSON_FILE)"
+          git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
+          git push origin gh-pages

@@ -10,8 +10,21 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.git import get_commit, get_origin, get_branch, get_short_branch, get_commit_date
 
-RELEASE_BRANCHES = ['release3-staging', 'release3', 'release-tici', 'nightly']
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev']
+RELEASE_SP_BRANCHES = ['release-c3', 'release', 'release-tizi', 'release-tici', 'release-tizi-staging', 'release-tici-staging']
+TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
+MASTER_SP_BRANCHES = ['master']
+RELEASE_BRANCHES = ['release-tizi-staging', 'release-mici-staging', 'release-tizi', 'release-mici', 'nightly']
+TESTED_BRANCHES = RELEASE_BRANCHES + ['devel-staging', 'nightly-dev'] + RELEASE_SP_BRANCHES + TESTED_SP_BRANCHES
+
+SP_BRANCH_MIGRATIONS = {
+  ("tici", "staging-c3-new"): "staging-tici",
+  ("tici", "dev-c3-new"): "staging-tici",
+  ("tici", "master"): "master-tici",
+  ("tici", "master-dev-c3-new"): "master-tici",
+  ("tizi", "staging-c3-new"): "staging",
+  ("tizi", "dev-c3-new"): "dev",
+  ("tizi", "master-dev-c3-new"): "master-dev",
+}
 
 BUILD_METADATA_FILENAME = "build.json"
 
@@ -20,13 +33,13 @@ terms_version: str = "2"
 
 
 def get_version(path: str = BASEDIR) -> str:
-  with open(os.path.join(path, "common", "version.h")) as _versionf:
+  with open(os.path.join(path, "sunnypilot", "common", "version.h")) as _versionf:
     version = _versionf.read().split('"')[1]
   return version
 
 
 def get_release_notes(path: str = BASEDIR) -> str:
-  with open(os.path.join(path, "RELEASES.md")) as f:
+  with open(os.path.join(path, "CHANGELOG.md")) as f:
     return f.read().split('\n\n', 1)[0]
 
 
@@ -37,9 +50,7 @@ def is_prebuilt(path: str = BASEDIR) -> bool:
 
 @cache
 def is_dirty(cwd: str = BASEDIR) -> bool:
-  origin = get_origin()
-  branch = get_branch()
-  if not origin or not branch:
+  if not get_origin() or not get_short_branch():
     return True
 
   dirty = False
@@ -52,6 +63,9 @@ def is_dirty(cwd: str = BASEDIR) -> bool:
       except subprocess.CalledProcessError:
         pass
 
+      branch = get_branch()
+      if not branch:
+        return True
       dirty = (subprocess.call(["git", "diff-index", "--quiet", branch, "--"], cwd=cwd)) != 0
   except subprocess.CalledProcessError:
     cloudlog.exception("git subprocess failed while checking dirty")
@@ -81,6 +95,13 @@ class OpenpilotMetadata:
     return self.git_normalized_origin == "github.com/commaai/openpilot"
 
   @property
+  def sunnypilot_remote(self) -> bool:
+    return self.git_normalized_origin in ("github.com/sunnypilot/sunnypilot",
+                                          "github.com/sunnypilot/openpilot",
+                                          "github.com/sunnyhaibin/sunnypilot",
+                                          "github.com/sunnyhaibin/openpilot")
+
+  @property
   def git_normalized_origin(self) -> str:
     return self.git_origin \
       .replace("git@", "", 1) \
@@ -103,12 +124,39 @@ class BuildMetadata:
     return self.channel in RELEASE_BRANCHES
 
   @property
+  def release_sp_channel(self) -> bool:
+    return self.channel in RELEASE_SP_BRANCHES
+
+  @property
   def canonical(self) -> str:
     return f"{self.openpilot.version}-{self.openpilot.git_commit}-{self.openpilot.build_style}"
 
   @property
   def ui_description(self) -> str:
     return f"{self.openpilot.version} / {self.openpilot.git_commit[:6]} / {self.channel}"
+
+  @property
+  def master_channel(self) -> bool:
+    return self.channel in MASTER_SP_BRANCHES
+
+  @property
+  def development_channel(self) -> bool:
+    return self.channel == "dev" or self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
+
+  @property
+  def channel_type(self) -> str:
+    if self.channel.endswith("-tici"):
+      return "tici"
+    elif self.development_channel:
+      return "development"
+    elif self.tested_channel:
+      return "staging"
+    elif self.master_channel:
+      return "master"
+    elif self.release_channel or self.release_sp_channel:
+      return "release"
+    else:
+      return "feature"
 
 
 def build_metadata_from_dict(build_metadata: dict) -> BuildMetadata:
@@ -156,10 +204,4 @@ def get_build_metadata(path: str = BASEDIR) -> BuildMetadata:
 
 
 if __name__ == "__main__":
-  from openpilot.common.params import Params
-
-  params = Params()
-  params.put("TermsVersion", terms_version)
-  params.put("TrainingVersion", training_version)
-
   print(get_build_metadata())

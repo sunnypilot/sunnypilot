@@ -18,6 +18,7 @@ cdef extern from "common/params.h":
     CLEAR_ON_OFFROAD_TRANSITION
     DEVELOPMENT_ONLY
     CLEAR_ON_IGNITION_ON
+    BACKUP
     ALL
 
   cpdef enum ParamKeyType:
@@ -43,7 +44,7 @@ cdef extern from "common/params.h":
     optional[string] getKeyDefaultValue(string) nogil
     string getParamPath(string) nogil
     void clearAll(ParamKeyFlag)
-    vector[string] allKeys()
+    vector[string] allKeys(ParamKeyFlag)
 
 PYTHON_2_CPP = {
   (str, STRING): lambda v: v,
@@ -181,8 +182,8 @@ cdef class Params:
   def get_type(self, key):
     return self.p.getKeyType(self.check_key(key))
 
-  def all_keys(self):
-    return self.p.allKeys()
+  def all_keys(self, flag=ParamKeyFlag.ALL):
+    return self.p.allKeys(flag)
 
   def get_default_value(self, key):
     cdef string k = self.check_key(key)

@@ -12,7 +12,7 @@ ButtonType = car.CarState.ButtonEvent.Type
 def main():
   params = Params()
   pm = messaging.PubMaster(['userBookmark', 'audioFeedback'])
-  sm = messaging.SubMaster(['rawAudioData', 'bookmarkButton', 'carState'])
+  sm = messaging.SubMaster(['rawAudioData', 'bookmarkButton', 'carState', 'selfdriveStateSP'])
   should_record_audio = False
   block_num = 0
   waiting_for_release = False
@@ -23,7 +23,8 @@ def main():
     should_send_bookmark = False
 
     # TODO: https://github.com/commaai/openpilot/issues/36015
-    if False and sm.updated['carState'] and sm['carState'].canValid:
+    # only allow the LKAS button to record feedback when MADS is disabled
+    if False and sm.updated['carState'] and sm['carState'].canValid and not sm['selfdriveStateSP'].mads.available:
       for be in sm['carState'].buttonEvents:
         if be.type == ButtonType.lkas:
           if be.pressed:
