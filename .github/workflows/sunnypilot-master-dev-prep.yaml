@@ -49,6 +49,7 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for all branches
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
@@ -173,10 +174,19 @@ jobs:
           echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
           echo '    locksverify = false' >> .lfsconfig
 
+      - uses: actions/create-github-app-token@v2
+        id: ci-token
+        with:
+          app-id: ${{ secrets.CI_GITHUB_ACTIONS_TOKEN_APP_ID }}
+          private-key: ${{ secrets.CI_GITHUB_ACTIONS_TOKEN_APP_PRIVATE_KEY }}
+
       - name: Push changes if there are diffs
-        id: push-changes  # Add an id so we can reference this step
+        id: push-changes
         run: |
           TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+
+          # Use the App Token to set the remote URL with authentication
+          git remote set-url origin "https://x-access-token:${{ steps.ci-token.outputs.token }}@github.com/${{ github.repository }}.git"
 
           # Fetch the latest from remote
           git fetch origin $TARGET_BRANCH
@@ -188,7 +198,7 @@ jobs:
             exit 0
           fi
 
-          # If we get here, there are diffs, so push
+          # Push with the authenticated origin
           if ! git push origin $TARGET_BRANCH --force; then
             echo "Failed to push changes to $TARGET_BRANCH"
             exit 1

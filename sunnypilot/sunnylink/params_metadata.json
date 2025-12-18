@@ -125,6 +125,10 @@
     "title": "Car Battery Capacity",
     "description": ""
   },
+  "CarList": {
+    "title": "Supported Car List",
+    "description": "All supported platform in sunnypilot"
+  },
   "CarParams": {
     "title": "Car Params",
     "description": ""

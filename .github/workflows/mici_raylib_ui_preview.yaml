@@ -24,7 +24,7 @@ env:
 
 jobs:
   preview:
-    if: github.repository == 'commaai/openpilot'
+    if: github.repository == 'sunnypilot/sunnypilot'
     name: preview
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -64,7 +64,7 @@ jobs:
       - name: Getting master ui  # filename: master_ui_raylib/mici_ui_replay.mp4
         uses: actions/checkout@v4
         with:
-          repository: commaai/ci-artifacts
+          repository: sunnypilot/ci-artifacts
           ssh-key: ${{ secrets.CI_ARTIFACTS_DEPLOY_KEY }}
           path: ${{ github.workspace }}/master_ui_raylib
           ref: ${{ env.MASTER_BRANCH_NAME }}
@@ -100,7 +100,7 @@ jobs:
 
           # Run report
           export PYTHONPATH=${{ github.workspace }}
-          baseurl="https://github.com/commaai/ci-artifacts/raw/refs/heads/${{ env.BRANCH_NAME }}"
+          baseurl="https://github.com/sunnypilot/ci-artifacts/raw/refs/heads/${{ env.BRANCH_NAME }}"
           diff_exit_code=0
           python3 ${{ github.workspace }}/selfdrive/ui/tests/diff/diff.py "${{ github.workspace }}/pr_ui/mici_ui_replay_master.mp4" "${{ github.workspace }}/pr_ui/mici_ui_replay_proposed.mp4" "diff.html" --basedir "$baseurl" --no-open || diff_exit_code=$?
 
@@ -108,7 +108,7 @@ jobs:
           cp ${{ github.workspace }}/selfdrive/ui/tests/diff/report/diff.html ${{ github.workspace }}/pr_ui/
           cp ${{ github.workspace }}/selfdrive/ui/tests/diff/report/diff.mp4 ${{ github.workspace }}/pr_ui/
 
-          REPORT_URL="https://commaai.github.io/ci-artifacts/diff_pr_${{ github.event.number }}.html"
+          REPORT_URL="https://sunnypilot.github.io/ci-artifacts/diff_pr_${{ github.event.number }}.html"
           if [ $diff_exit_code -eq 0 ]; then
             DIFF="✅ Videos are identical! [View Diff Report]($REPORT_URL)"
           else

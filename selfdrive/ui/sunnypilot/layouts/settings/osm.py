@@ -165,7 +165,7 @@ class OSMLayout(Widget):
     pending = ui_state.params.get_bool("OsmDbUpdatesCheck")
     if downloading or pending:
       if downloading:
-        device.reset_interactive_timeout()
+        device._reset_interactive_timeout()
         self._update_map_size()
       self._progress.set_visible(True)
       progress = ui_state.params.get("OSMDownloadProgress")
