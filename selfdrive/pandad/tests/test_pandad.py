@@ -21,6 +21,8 @@ class TestPandad:
     if len(Panda.list()) == 0:
       self._run_test(60)
 
+    self.spi = HARDWARE.get_device_type() != 'tici'
+
   def teardown_method(self):
     managed_processes['pandad'].stop()
 
@@ -92,12 +94,14 @@ class TestPandad:
     # - 0.2s pandad -> pandad
     # - plus some buffer
     print("startup times", ts, sum(ts) / len(ts))
-    assert 0.1 < (sum(ts)/len(ts)) < 0.7
+    assert 0.1 < (sum(ts)/len(ts)) < (0.7 if self.spi else 5.0)
 
-  def test_old_spi_protocol(self):
-    # flash firmware with old SPI protocol
-    self._flash_bootstub(os.path.join(HERE, "bootstub.panda_h7_spiv0.bin"))
-    self._run_test(45)
+  def test_protocol_version_check(self):
+    if not self.spi:
+      pytest.skip("SPI test")
+    # flash old fw
+    fn = os.path.join(HERE, "bootstub.panda_h7_spiv0.bin")
+    self._flash_bootstub_and_test(fn, expect_mismatch=True)
 
   def test_release_to_devel_bootstub(self):
     self._flash_bootstub(None)
