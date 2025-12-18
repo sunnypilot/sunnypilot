@@ -128,7 +128,7 @@ class DesiredSteeringAngleElement(LateralControlElement):
 
 class ActualLateralAccelElement(LateralControlElement):
   def __init__(self):
-    self.unit = "m/s²"
+    self.unit = "m/s^2"
 
   def update(self, sm, is_metric: bool) -> UiElement:
     controls_state = sm['controlsState']
@@ -147,7 +147,7 @@ class ActualLateralAccelElement(LateralControlElement):
 
 class DesiredLateralAccelElement(LateralControlElement):
   def __init__(self):
-    self.unit = "m/s²"
+    self.unit = "m/s^2"
 
   def update(self, sm, is_metric: bool) -> UiElement:
     controls_state = sm['controlsState']
@@ -166,7 +166,7 @@ class DesiredLateralAccelElement(LateralControlElement):
 
 class AEgoElement:
   def __init__(self):
-    self.unit = "m/s²"
+    self.unit = "m/s^2"
 
   def update(self, sm, is_metric: bool) -> UiElement:
     a_ego = sm['carState'].aEgo
