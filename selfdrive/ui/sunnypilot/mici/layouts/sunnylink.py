@@ -1,5 +1,12 @@
-import pyray as rl
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from collections.abc import Callable
+
+import pyray as rl
 from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
@@ -11,7 +18,6 @@ from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.widgets import NavWidget
 from openpilot.selfdrive.ui.ui_state import ui_state
-
 
 
 class SunnylinkLayoutMici(NavWidget):
@@ -84,7 +90,7 @@ class SunnylinkLayoutMici(NavWidget):
   def _sunnylink_uploader_callback(state: bool):
     ui_state.params.put_bool("EnableSunnylinkUploader", state)
 
-  def _handle_backup_restore_btn(self, restore:bool = False):
+  def _handle_backup_restore_btn(self, restore: bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
     icon = "icons_mici/settings/device/update.png"
     dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=self._restore_handler if restore else self._backup_handler)

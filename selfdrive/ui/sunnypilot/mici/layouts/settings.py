@@ -20,6 +20,7 @@ OP.PanelType = IntEnum(  # type: ignore
   start=0,
 )
 
+
 class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
