@@ -25,11 +25,13 @@ class TogglesLayoutMici(NavWidget):
     record_front = BigParamControl("record & upload driver camera", "RecordFront", toggle_callback=restart_needed_callback)
     record_mic = BigParamControl("record & upload mic audio", "RecordAudio", toggle_callback=restart_needed_callback)
     enable_openpilot = BigParamControl("enable sunnypilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback)
+    hide_camera = BigParamControl("hide camera view", "HideCameraView")
 
     self._scroller = Scroller([
       self._personality_toggle,
       self._experimental_btn,
       is_metric_toggle,
+      hide_camera,
       ldw_toggle,
       always_on_dm_toggle,
       record_front,
@@ -41,6 +43,7 @@ class TogglesLayoutMici(NavWidget):
     self._refresh_toggles = (
       ("ExperimentalMode", self._experimental_btn),
       ("IsMetric", is_metric_toggle),
+      ("HideCameraView", hide_camera),
       ("IsLdwEnabled", ldw_toggle),
       ("AlwaysOnDM", always_on_dm_toggle),
       ("RecordFront", record_front),
