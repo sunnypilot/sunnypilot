@@ -90,8 +90,8 @@ _services: dict[str, tuple] = {
   "qRoadEncodeData": (False, 20., None, QueueSize.BIG),
 
   # sunnypilot
-  "modelManagerSP": (False, 1., 1),
-  "backupManagerSP": (False, 1., 1),
+  "modelManagerSP": (False, 1., 1, QueueSize.BIG),
+  "backupManagerSP": (False, 1., 1, QueueSize.BIG),
   "selfdriveStateSP": (True, 100., 10),
   "longitudinalPlanSP": (True, 20., 10),
   "onroadEventsSP": (True, 1., 1),
@@ -99,7 +99,7 @@ _services: dict[str, tuple] = {
   "carControlSP": (True, 100., 10),
   "carStateSP": (True, 100., 10),
   "liveMapDataSP": (True, 1., 1),
-  "modelDataV2SP": (True, 20.),
+  "modelDataV2SP": (True, 20., None, QueueSize.BIG),
   "liveLocationKalman": (True, 20.),
 
   # debug
