@@ -182,19 +182,11 @@ class DriverStateRenderer(Widget):
     pitch, yaw, roll = driver_orient
 
     # Correct for driver position relative to center-mounted camera
-    # Calculate offset based on face position
-    # driver_data.facePosition is [x, y] in frame coordinates where x is horizontal
-    if len(driver_data.facePosition) > 0:
-      face_x = driver_data.facePosition[0]
-      # Calibrate this factor based on camera FOV.
-      # Assuming mostly linear relationship for small angles or standard lens
-      # Calibrated based on user feedback (0.165 face_x ~= 20 deg offset)
-      # 2.5 scaling factor approximates this relationship
-      yaw_offset = math.atan(face_x * 2.5)
-      if DEBUG:
-        print(f"FaceX: {face_x:.3f}, Yaw Offset: {math.degrees(yaw_offset):.1f} deg (Target: 20.0 deg)")
+    yaw_offset = math.radians(20)
+    if self._is_rhd:
+      yaw += yaw_offset
+    else:
       yaw -= yaw_offset
-
     pitch = self._pitch_filter.update(pitch)
     yaw = self._yaw_filter.update(yaw)
 
