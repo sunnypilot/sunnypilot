@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import numpy as np
 
 import pyray as rl
-from openpilot.common.params import Params
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 
 CHEVRON_DISTANCE = 1
@@ -21,18 +21,8 @@ MS_TO_MPH = 2.23694
 
 class ChevronMetrics:
   def __init__(self):
-    self._chevron_info = 0
-    self._is_metric = True
     self._lead_status_alpha = 0.0
     self._font = gui_app.font(FontWeight.SEMI_BOLD)
-
-    try:
-      chevron_val = Params().get("DevUIInfo")
-      self._chevron_info = int(chevron_val) if chevron_val else 0
-    except (ValueError, TypeError):
-      self._chevron_info = 1
-
-    self._is_metric = Params().get_bool("IsMetric")
 
   def update_alpha(self, has_lead: bool):
     """Update the alpha value for fade in/out animation"""
@@ -43,7 +33,7 @@ class ChevronMetrics:
 
   def should_render(self) -> bool:
     """Check if dev UI should be rendered"""
-    return self._chevron_info != 0 and self._lead_status_alpha > 0.0
+    return ui_state.chevron_metrics != 0 and self._lead_status_alpha > 0.0
 
   def _draw_lead(self, lead_data, lead_vehicle, v_ego: float, rect: rl.Rectangle):
     """Draw lead vehicle status information (distance, speed, TTC)"""
@@ -71,22 +61,22 @@ class ChevronMetrics:
     text_lines = []
 
     # Distance
-    if self._chevron_info == CHEVRON_DISTANCE or self._chevron_info == CHEVRON_ALL:
+    if ui_state.chevron_metrics == CHEVRON_DISTANCE or ui_state.chevron_metrics == CHEVRON_ALL:
       val = max(0.0, d_rel)
-      unit = "m" if self._is_metric else "ft"
-      if not self._is_metric:
+      unit = "m" if ui_state.is_metric else "ft"
+      if not ui_state.is_metric:
         val *= 3.28084
       text_lines.append(f"{val:.0f} {unit}")
 
     # Speed
-    if self._chevron_info == CHEVRON_SPEED or self._chevron_info == CHEVRON_ALL:
-      multiplier = MS_TO_KPH if self._is_metric else MS_TO_MPH
+    if ui_state.chevron_metrics == CHEVRON_SPEED or ui_state.chevron_metrics == CHEVRON_ALL:
+      multiplier = MS_TO_KPH if ui_state.is_metric else MS_TO_MPH
       val = max(0.0, (v_rel + v_ego) * multiplier)
-      unit = "km/h" if self._is_metric else "mph"
+      unit = "km/h" if ui_state.is_metric else "mph"
       text_lines.append(f"{val:.0f} {unit}")
 
     # Time to collision
-    if self._chevron_info == CHEVRON_TTC or self._chevron_info == CHEVRON_ALL:
+    if ui_state.chevron_metrics == CHEVRON_TTC or ui_state.chevron_metrics == CHEVRON_ALL:
       val = (d_rel / v_ego) if (d_rel > 0 and v_ego > 0) else 0.0
       ttc_text = f"{val:.1f}s" if (0 < val < 200) else "---"
       text_lines.append(ttc_text)
