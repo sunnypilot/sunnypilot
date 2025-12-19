@@ -5,9 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
+
 import pyray as rl
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.onroad.model_renderer import LeadVehicle
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 
 CHEVRON_DISTANCE = 1
@@ -45,7 +45,7 @@ class ChevronMetrics:
     """Check if dev UI should be rendered"""
     return self._chevron_info != 0 and self._lead_status_alpha > 0.0
 
-  def _draw_lead(self, lead_data, lead_vehicle: LeadVehicle, v_ego: float, rect: rl.Rectangle):
+  def _draw_lead(self, lead_data, lead_vehicle, v_ego: float, rect: rl.Rectangle):
     """Draw lead vehicle status information (distance, speed, TTC)"""
     if not self.should_render():
       return
