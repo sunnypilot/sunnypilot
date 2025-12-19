@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
 import base64
 import hashlib
 import os
@@ -35,13 +34,13 @@ class KeyDerivation:
 
     if "private" in key_plain.lower():
       private_key = serialization.load_pem_private_key(key_pem, password=None, backend=default_backend())
-      if isinstance(private_key, rsa.RSAPrivateKey) or isinstance(private_key, ec.EllipticCurvePrivateKey):
+      if isinstance(private_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)):
         public_key = private_key.public_key()
       else:
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
     elif "public" in key_plain.lower():
-      public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())
-      if not (isinstance(public_key, rsa.RSAPublicKey) or isinstance(public_key, ec.EllipticCurvePublicKey)):
+      public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())  # type: ignore[assignment]
+      if not isinstance(public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)):
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
     else:
       raise ValueError("Invalid key format: Unable to determine if key is public or private.")
@@ -65,7 +64,7 @@ class KeyDerivation:
     return key, iv
 
 
-def qUncompress(data):
+def uncompress_dat(data):
   """
   Decompress data using zlib.
 
@@ -79,7 +78,7 @@ def qUncompress(data):
   return zlib.decompress(data_stripped_4)
 
 
-def qCompress(data):
+def compress_dat(data):
   """
   Compress data using zlib.
 
@@ -127,7 +126,7 @@ def decrypt_compressed_data(encrypted_base64, use_aes_256=False):
     decrypted_data = cipher.decrypt(encrypted_data)
 
     # Decompress
-    decompressed_data = qUncompress(decrypted_data)
+    decompressed_data = uncompress_dat(decrypted_data)
 
     # Decode UTF-8
     result = decompressed_data.decode('utf-8')
@@ -137,7 +136,7 @@ def decrypt_compressed_data(encrypted_base64, use_aes_256=False):
     return ""
 
 
-def encrypt_compress_data(text, use_aes_256=True):
+def encrypt_compressed_data(text, use_aes_256=True):
   """
   Compress and encrypt string data to base64.
 
@@ -153,7 +152,7 @@ def encrypt_compress_data(text, use_aes_256=True):
     text_bytes = text.encode('utf-8')
 
     # Compress
-    compressed_data = qCompress(text_bytes)
+    compressed_data = compress_dat(text_bytes)
 
     # Encrypt
     key, iv = KeyDerivation.derive_aes_key_iv(get_key_path(use_aes_256), use_aes_256)
