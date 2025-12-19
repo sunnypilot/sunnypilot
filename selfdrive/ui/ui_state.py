@@ -4,7 +4,7 @@ import time
 import threading
 from collections.abc import Callable
 from enum import Enum
-from cereal import messaging, car, log, custom
+from cereal import messaging, car, log
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
@@ -149,25 +149,12 @@ class UIState(UIStateSP):
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
 
   def _update_status(self) -> None:
-    if self.started and (self.sm.updated["selfdriveState"] or self.sm.updated["selfdriveStateSP"]):
+    if self.started and self.sm.updated["selfdriveState"]:
       ss = self.sm["selfdriveState"]
-      mads = self.sm["selfdriveStateSP"].mads
       state = ss.state
-      state_mads = mads.state
 
-      if state in (log.SelfdriveState.OpenpilotState.preEnabled, log.SelfdriveState.OpenpilotState.overriding) or state_mads in (
-                   custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState.paused,
-                   custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState.overriding):
+      if state in (log.SelfdriveState.OpenpilotState.preEnabled, log.SelfdriveState.OpenpilotState.overriding):
         self.status = UIStatus.OVERRIDE
-      elif mads.available:
-        if mads.enabled and ss.enabled:
-          self.status = UIStatus.ENGAGED
-        elif mads.enabled:
-          self.status = UIStatus.LAT_ONLY
-        elif ss.enabled:
-          self.status = UIStatus.LONG_ONLY
-        else:
-          self.status = UIStatus.DISENGAGED
       else:
         self.status = UIStatus.ENGAGED if ss.enabled else UIStatus.DISENGAGED
 
