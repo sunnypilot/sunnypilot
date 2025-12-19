@@ -904,7 +904,7 @@ def backoff(retries: int) -> int:
 @dispatcher.add_method
 def webrtc(sdp:str, cameras: list[str], bridge_services_in: list[str], bridge_services_out: list[str]):
   if not Params().get_bool("EnableWebRTC"):
-    return {"error": "WebRTC is disabled on this device", "disabled": True}
+    raise Exception("EnableWebRTC is disabled")
   try:
     data = {
       "sdp": sdp,
@@ -921,9 +921,9 @@ def webrtc(sdp:str, cameras: list[str], bridge_services_in: list[str], bridge_se
     return {"error": str(e)}
 
 @dispatcher.add_method
-def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]] | dict[str, str | bool]:
+def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]]:
   if not Params().get_bool("EnableRemoteParams"):
-    return {"error": "Remote params editing is disabled on this device", "disabled": True}
+    raise Exception("EnableRemoteParams is disabled")
 
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
@@ -950,9 +950,9 @@ def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]] |
 
 
 @dispatcher.add_method
-def saveParams(params_to_update: dict[str, str | None], compression: bool = False) -> dict[str, str] | dict[str, str | bool]:
+def saveParams(params_to_update: dict[str, str | None], compression: bool = False) -> dict[str, str]:
   if not Params().get_bool("EnableRemoteParams"):
-    return {"error": "Remote params editing is disabled on this device", "disabled": True}
+    raise Exception("EnableRemoteParams is disabled")
   from openpilot.common.params_pyx import ParamKeyType
   params = Params()
   results = {}
