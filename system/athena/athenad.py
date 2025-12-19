@@ -49,6 +49,7 @@ LOCAL_PORT_WHITELIST = {22, }  # SSH
 LOG_ATTR_NAME = 'user.upload'
 LOG_ATTR_VALUE_MAX_UNIX_TIME = int.to_bytes(2147483647, 4, sys.byteorder)
 RECONNECT_TIMEOUT_S = 70
+METADATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "params_metadata.json")
 
 RETRY_DELAY = 10  # seconds
 MAX_RETRY_COUNT = 30  # Try for at most 5 minutes if upload fails immediately
@@ -899,6 +900,92 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
 
 def backoff(retries: int) -> int:
   return random.randrange(0, min(128, int(2 ** retries)))
+
+
+@dispatcher.add_method
+def webrtc(sdp:str, cameras: list[str], bridge_services_in: list[str], bridge_services_out: list[str]):
+  try:
+    data = {
+      "sdp": sdp,
+      "cameras": cameras,
+      "bridge_services_in": bridge_services_in,
+      "bridge_services_out": bridge_services_out
+    }
+    response = requests.post("http://0.0.0.0:5001/stream", json=data, timeout=60)
+    response.raise_for_status()
+    res = response.json()
+    return res
+  except Exception as e:
+    cloudlog.exception("athena.webrtc.exception")
+    return {"error": str(e)}
+
+@dispatcher.add_method
+def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]]:
+  try:
+    with open(METADATA_PATH) as f:
+      metadata = json.load(f)
+  except Exception:
+    cloudlog.exception("athenad.getParamsAllKeysV1.exception")
+    metadata = {}
+
+  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+
+  params_list:  list[dict[str, str | bool | int | object | dict | None]] = []
+  params = Params()
+  for key in available_keys:
+    value = params.get(key)
+
+    if value is not None and not isinstance(value, bytes):
+      if isinstance(value, bool):
+        value = b"1" if value else b"0"
+      else:
+        value = str(value).encode('utf-8')
+
+    entry = {
+      "key": key,
+      "type": int(params.get_type(key).value),
+      "value": base64.b64encode(value).decode('utf-8') if value else None,
+    }
+
+    if key in metadata: entry["metadata"] = metadata[key].copy()
+
+    params_list.append(entry)
+
+  return params_list
+
+
+@dispatcher.add_method
+def saveParams(params_to_update: dict[str, str | None], compression: bool = False) -> dict[str, str]:
+  from openpilot.common.params_pyx import ParamKeyType
+  params = Params()
+  results = {}
+  for key, value in params_to_update.items():
+    try:
+      if value is None or value == "":
+        params.remove(key)
+        results[key] = "ok: removed"
+        continue
+
+      decoded_value = base64.b64decode(value)
+      if compression:
+        decoded_value = gzip.decompress(decoded_value)
+      decoded_str = decoded_value.decode('utf-8')
+
+      key_type = params.get_type(key)
+      if key_type == ParamKeyType.BOOL:
+        typed_value = decoded_str in ('1', 'true', 'True')
+      elif key_type == ParamKeyType.INT:
+        typed_value = int(decoded_str)
+      elif key_type == ParamKeyType.FLOAT:
+        typed_value = float(decoded_str)
+      else:
+        typed_value = decoded_str
+
+      params.put(key, typed_value)
+      results[key] = f"ok: {decoded_str}"
+    except Exception as e:
+      results[key] = f"error: {e}"
+  return results
 
 
 def main(exit_event: threading.Event = None):
