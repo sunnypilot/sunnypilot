@@ -7,12 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 import time
 import colorsys
 import pyray as rl
-from openpilot.common.params import Params
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 
 
 class RainbowPath:
-
   DEFAULT_NUM_SEGMENTS = 8
   DEFAULT_SPEED = 50.0  # degrees per second
   DEFAULT_SATURATION = 0.9
@@ -25,15 +23,6 @@ class RainbowPath:
     self.speed = speed if speed is not None else self.DEFAULT_SPEED
     self.saturation = saturation if saturation is not None else self.DEFAULT_SATURATION
     self.lightness = lightness if lightness is not None else self.DEFAULT_LIGHTNESS
-
-    self._enabled = bool(Params().get_bool("RainbowMode"))
-
-  def set_enabled(self, enabled: bool):
-    self._enabled = enabled
-
-  @property
-  def enabled(self) -> bool:
-    return self._enabled
 
   def set_speed(self, speed: float):
     self.speed = speed
