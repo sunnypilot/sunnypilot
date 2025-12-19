@@ -10,7 +10,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
-from openpilot.selfdrive.ui.sunnypilot.onroad.dev_ui import DevUI, LeadVehicle
+from openpilot.selfdrive.ui.sunnypilot.onroad.chevron_metrics import ChevronMetrics, LeadVehicle
 
 from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ModelRendererSP
 
@@ -51,7 +51,7 @@ class ModelRenderer(Widget, ModelRendererSP):
                           LeadVehicle(glow=[], chevron=[], fill_alpha=0)]
     self._path_offset_z = HEIGHT_INIT[0]
 
-    self._dev_ui = DevUI()
+    self._chevron_metrics = ChevronMetrics()
 
     # Initialize ModelPoints objects
     self._path = ModelPoints()
@@ -321,20 +321,20 @@ class ModelRenderer(Widget, ModelRendererSP):
     has_lead_one = lead_one.status if lead_one else False
     has_lead_two = lead_two.status if lead_two else False
 
-    self._dev_ui.update_alpha(has_lead_one or has_lead_two)
+    self._chevron_metrics.update_alpha(has_lead_one or has_lead_two)
 
-    if not self._dev_ui.should_render():
+    if not self._chevron_metrics.should_render():
       return
 
     v_ego = sm['carState'].vEgo
 
     if has_lead_one and self._lead_vehicles[0].chevron:
-      self._dev_ui.draw_lead_status(lead_one, self._lead_vehicles[0], v_ego, self._rect)
+      self._chevron_metrics.draw_lead_status(lead_one, self._lead_vehicles[0], v_ego, self._rect)
 
     if has_lead_two and self._lead_vehicles[1].chevron:
       d_rel_diff = abs(lead_one.dRel - lead_two.dRel) if has_lead_one else float('inf')
       if d_rel_diff > 3.0:
-        self._dev_ui.draw_lead_status(lead_two, self._lead_vehicles[1], v_ego, self._rect)
+        self._chevron_metrics.draw_lead_status(lead_two, self._lead_vehicles[1], v_ego, self._rect)
 
   @staticmethod
   def _get_path_length_idx(pos_x_array: np.ndarray, path_distance: float) -> int:

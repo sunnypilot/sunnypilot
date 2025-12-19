@@ -20,7 +20,7 @@ class LeadVehicle:
   fill_alpha: int
 
 
-class DevUI:
+class ChevronMetrics:
   def __init__(self):
     self._chevron_info = 0
     self._is_metric = True
