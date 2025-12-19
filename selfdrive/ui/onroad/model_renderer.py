@@ -285,7 +285,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     self._blend_filter.update(int(allow_throttle))
 
     if ui_state.rainbow_path:
-      ModelRendererSP().rainbow_path.draw_rainbow_path(self, self._rect, self._path)
+      ModelRendererSP().rainbow_path.draw_rainbow_path(self._rect, self._path)
       return
 
     if self._experimental_mode:
