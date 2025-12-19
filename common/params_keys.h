@@ -267,6 +267,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // new-connect
     {"WebRTCOnline", {CLEAR_ON_MANAGER_START, BOOL}},
-    {"EnableRemoteParams", {PERSISTENT | BACKUP, BOOL, "1"}},
-    {"EnableWebRTC", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"EnableRemoteParams", {PERSISTENT, BOOL, "1"}},
+    {"EnableWebRTC", {PERSISTENT, BOOL, "1"}},
 };

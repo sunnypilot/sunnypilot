@@ -269,13 +269,9 @@
     "title": "GitHub Runner Service",
     "description": ""
   },
-  "EnableRemoteParams": {
-    "title": "Enable Remote Params",
-    "description": "Allow remote parameter editing via Connect"
-  },
-  "EnableWebRTC": {
-    "title": "Enable WebRTC",
-    "description": "Allow remote live streaming via Connect"
+  "EnableSunnylinkUploader": {
+    "title": "Enable sunnylink Uploader",
+    "description": ""
   },
   "EnforceTorqueControl": {
     "title": "Enforce Torque Control",
@@ -492,6 +488,10 @@
   },
   "LastPowerDropDetected": {
     "title": "Last Power Drop Detected",
+    "description": ""
+  },
+  "LastSunnylinkPingTime": {
+    "title": "Last sunnylink Ping Time",
     "description": ""
   },
   "LastUpdateException": {
@@ -985,6 +985,30 @@
   },
   "SubaruStopAndGoManualParkingBrake": {
     "title": "Subaru Stop and Go Manual Parking Brake",
+    "description": ""
+  },
+  "SunnylinkCache_Roles": {
+    "title": "sunnylink Cache  Roles",
+    "description": ""
+  },
+  "SunnylinkCache_Users": {
+    "title": "sunnylink Cache  Users",
+    "description": ""
+  },
+  "SunnylinkDongleId": {
+    "title": "sunnylink Dongle ID",
+    "description": ""
+  },
+  "SunnylinkEnabled": {
+    "title": "sunnylink Enabled",
+    "description": ""
+  },
+  "SunnylinkTempFault": {
+    "title": "sunnylink Temp Fault",
+    "description": ""
+  },
+  "SunnylinkdPid": {
+    "title": "Sunnylinkd Pid",
     "description": ""
   },
   "TermsVersion": {
