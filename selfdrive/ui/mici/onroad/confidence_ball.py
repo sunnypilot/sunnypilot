@@ -7,6 +7,8 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.filter_simple import FirstOrderFilter
 
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.confidence_ball import ConfidenceBallSP
+
 
 def draw_circle_gradient(center_x: float, center_y: float, radius: int,
                          top: rl.Color, bottom: rl.Color) -> None:
@@ -22,9 +24,10 @@ def draw_circle_gradient(center_x: float, center_y: float, radius: int,
                20, rl.BLACK)
 
 
-class ConfidenceBall(Widget):
+class ConfidenceBall(Widget, ConfidenceBallSP):
   def __init__(self, demo: bool = False):
-    super().__init__()
+    Widget.__init__(self)
+    ConfidenceBallSP.__init__(self)
     self._demo = demo
     self._confidence_filter = FirstOrderFilter(-0.5, 0.5, 1 / gui_app.target_fps)
 
@@ -38,6 +41,8 @@ class ConfidenceBall(Widget):
     # animate status dot in from bottom
     if ui_state.status == UIStatus.DISENGAGED:
       self._confidence_filter.update(-0.5)
+    elif ui_state.status in (UIStatus.LAT_ONLY, UIStatus.LONG_ONLY):
+      self._confidence_filter.update(1 - max(self.get_animate_status_probs() or [1]))
     else:
       if ui_state.status == UIStatus.LAT_ONLY:
         self._confidence_filter.update(1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.steerOverrideProbs or [1]))
@@ -71,11 +76,8 @@ class ConfidenceBall(Widget):
         top_dot_color = rl.Color(255, 0, 21, 255)
         bottom_dot_color = rl.Color(255, 0, 89, 255)
 
-    elif ui_state.status == UIStatus.LAT_ONLY:
-      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LAT_ONLY]
-
-    elif ui_state.status == UIStatus.LONG_ONLY:
-      top_dot_color = bottom_dot_color = BORDER_COLORS[UIStatus.LONG_ONLY]
+    elif ui_state.status in (UIStatus.LAT_ONLY, UIStatus.LONG_ONLY):
+      top_dot_color = bottom_dot_color = self.get_lat_long_dot_color()
 
     elif ui_state.status == UIStatus.OVERRIDE:
       top_dot_color = rl.Color(255, 255, 255, 255)
