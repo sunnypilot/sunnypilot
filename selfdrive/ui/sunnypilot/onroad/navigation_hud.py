@@ -85,6 +85,7 @@ class NavigationHudRenderer(Widget):
     self._next_maneuver_type = ""
     self._next_modifier = ""
     self._has_next = False
+    self._debug_info = ""
 
   def _get_icon(self, maneuver_type: str, modifier: str) -> Texture2D | None:
     normalized_type = maneuver_type
@@ -132,15 +133,30 @@ class NavigationHudRenderer(Widget):
 
   def _update_state(self) -> None:
     sm = ui_state.sm
-    if "navigationd" not in sm.data or sm.recv_frame.get("navigationd", 0) < ui_state.started_frame:
+    if "navigationd" not in sm.data:
+      self._debug_info = "NAV: not subscribed"
+      self._valid = False
+      return
+
+    recv_frame = sm.recv_frame.get("navigationd", 0)
+    if recv_frame < ui_state.started_frame:
+      self._debug_info = f"NAV: no msg (frame {recv_frame} < {ui_state.started_frame})"
       self._valid = False
       return
 
     nav = sm["navigationd"]
-    self._valid = nav.valid
-    if not self._valid or len(nav.allManeuvers) == 0:
+    if not nav.valid:
+      self._debug_info = f"NAV: invalid (maneuvers={len(nav.allManeuvers)})"
       self._valid = False
       return
+
+    if len(nav.allManeuvers) == 0:
+      self._debug_info = "NAV: no maneuvers"
+      self._valid = False
+      return
+
+    self._debug_info = f"NAV: OK ({len(nav.allManeuvers)} maneuvers)"
+    self._valid = True
 
     curr_idx = 1 if len(nav.allManeuvers) > 1 else 0
     maneuver = nav.allManeuvers[curr_idx]
@@ -163,6 +179,10 @@ class NavigationHudRenderer(Widget):
       self._has_next = False
 
   def _render(self, rect: rl.Rectangle) -> None:
+    # Always show debug info at bottom left
+    if self._debug_info:
+      rl.draw_text_ex(self._font_medium, self._debug_info, rl.Vector2(20, rect.height - 60), 36, 0, rl.Color(255, 255, 0, 200))
+
     if not self._valid:
       return
 
