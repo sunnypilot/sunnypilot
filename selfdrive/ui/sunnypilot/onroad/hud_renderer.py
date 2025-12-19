@@ -8,13 +8,16 @@ import pyray as rl
 
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
+from openpilot.selfdrive.ui.sunnypilot.onroad.navigation_hud import NavigationHudRenderer
 
 
 class HudRendererSP(HudRenderer):
   def __init__(self):
     super().__init__()
     self.developer_ui = DeveloperUiRenderer()
+    self.navigation_hud = NavigationHudRenderer()
 
   def _render(self, rect: rl.Rectangle) -> None:
+    self.navigation_hud.render(rect)
     super()._render(rect)
     self.developer_ui.render(rect)

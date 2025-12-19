@@ -265,6 +265,29 @@ def setup_onroad_full_alert_long_text(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.full, "TAKE CONTROL IMMEDIATELY", "Calibration Invalid: Remount Device & Recalibrate", AlertStatus.userPrompt)
 
 
+def setup_onroad_navigation(click, pm: PubMaster, scroll=None):
+  setup_onroad(click, pm)
+  from cereal import custom
+  nav = messaging.new_message('navigationd')
+  nav.navigationd.valid = True
+  nav.navigationd.upcomingTurn = "left"
+  nav.navigationd.currentSpeedLimit = 50
+  nav.navigationd.bannerInstructions = "Turn left onto Main Street"
+  nav.navigationd.distanceFromRoute = 5.0
+
+  maneuvers = [
+    custom.Navigationd.Maneuver.new_message(distance=150.0, type="turn", modifier="left", instruction="Turn left onto Main Street"),
+    custom.Navigationd.Maneuver.new_message(distance=850.0, type="turn", modifier="right", instruction="Turn right onto Oak Avenue"),
+    custom.Navigationd.Maneuver.new_message(distance=2500.0, type="arrive", modifier="right", instruction="Your destination is on the right"),
+  ]
+  nav.navigationd.allManeuvers = maneuvers
+
+  for _ in range(5):
+    pm.send('navigationd', nav)
+    nav.clear_write_flag()
+    time.sleep(0.05)
+
+
 CASES = {
   "homescreen": setup_homescreen,
   "homescreen_paired": setup_homescreen,
@@ -294,6 +317,7 @@ CASES = {
   "onroad_full_alert": setup_onroad_full_alert,
   "onroad_full_alert_multiline": setup_onroad_full_alert_multiline,
   "onroad_full_alert_long_text": setup_onroad_full_alert_long_text,
+  "onroad_navigation": setup_onroad_navigation,
 }
 
 # sunnypilot cases
@@ -318,7 +342,7 @@ class TestUI:
 
   def setup(self):
     # Seed minimal offroad state
-    self.pm = PubMaster(["deviceState", "pandaStates", "driverStateV2", "selfdriveState"])
+    self.pm = PubMaster(["deviceState", "pandaStates", "driverStateV2", "selfdriveState", "navigationd"])
     ds = messaging.new_message('deviceState')
     ds.deviceState.networkType = log.DeviceState.NetworkType.wifi
     for _ in range(5):

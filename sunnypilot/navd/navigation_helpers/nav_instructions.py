@@ -21,6 +21,7 @@ class NavigationInstructions:
     self._no_route = False
 
     self.closest_idx: float = 0
+    self.min_distance: float = 0
 
   def get_route_progress(self, current_lat, current_lon) -> dict | None:
     route = self.get_current_route()
@@ -31,7 +32,7 @@ class NavigationInstructions:
     self.coord.longitude = current_lon
 
     # Find the closest point on the route relative to self
-    self.closest_idx, min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
+    self.closest_idx, self.min_distance = min(((idx, self.coord.distance_to(coord)) for idx, coord in enumerate(route['geometry'])), key=lambda x: x[1])
     closest_cumulative = distance_along_geometry(route['geometry'], self.coord)
 
     # Find the current step index, which is the HIGHEST idx where the step location cumulative less/equal closest cumulative
@@ -57,7 +58,7 @@ class NavigationInstructions:
       all_maneuvers.append({'distance': distance, 'type': step['maneuver'], 'modifier': step['modifier'], 'instruction': step['instruction']})
 
     return {
-      'distance_from_route': min_distance,
+      'distance_from_route': self.min_distance,
       'current_step': current_step,
       'next_turn': next_turn,
       'current_maxspeed': current_maxspeed,
@@ -119,12 +120,12 @@ class NavigationInstructions:
 
     if v_ego < 5.0:
       route_bearing_misalign = False
-    elif 0 < self.closest_idx < len(route['geometry']) -1:
+    elif self.closest_idx > 0 and self.closest_idx < len(route['geometry']) - 1:
       route_bearing = route['bearings'][self.closest_idx -1]
       current_bearing_normalized = (bearing + 360) % 360
       bearing_difference = abs(current_bearing_normalized - route_bearing)
 
-      if min(bearing_difference, 360 - bearing_difference) > 95:
+      if min(bearing_difference, 360 - bearing_difference) > 110:
         route_bearing_misalign = True  # flag for recompute/cancellation
     return route_bearing_misalign
 
