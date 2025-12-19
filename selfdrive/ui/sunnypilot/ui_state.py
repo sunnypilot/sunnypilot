@@ -4,9 +4,12 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from cereal import messaging, custom
+from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
+
+OpenpilotState = log.SelfdriveState.OpenpilotState
+MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 
 
 class UIStateSP:
@@ -21,6 +24,30 @@ class UIStateSP:
 
   def update(self) -> None:
     self.sunnylink_state.start()
+
+  @staticmethod
+  def update_status(ss, ss_sp) -> str:
+    state = ss.state
+    mads = ss_sp.mads
+    mads_state = mads.state
+
+    if state in (OpenpilotState.preEnabled, OpenpilotState.overriding):
+      return "override"
+
+    if mads_state in (MADSState.paused, MADSState.overriding):
+      return "override"
+
+    if mads.available:
+      if mads.enabled and ss.enabled:
+        return "engaged"
+      elif mads.enabled:
+        return "lat_only"
+      elif ss.enabled:
+        return "long_only"
+      else:
+        return "disengaged"
+
+    return "engaged" if ss.enabled else "disengaged"
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
