@@ -20,6 +20,8 @@ class UIStatus(Enum):
   DISENGAGED = "disengaged"
   ENGAGED = "engaged"
   OVERRIDE = "override"
+  LAT_ONLY = "lat_only"
+  LONG_ONLY = "long_only"
 
 
 class UIState(UIStateSP):
@@ -153,6 +155,8 @@ class UIState(UIStateSP):
         self.status = UIStatus.OVERRIDE
       else:
         self.status = UIStatus.ENGAGED if ss.enabled else UIStatus.DISENGAGED
+
+      self.status = UIStatus(UIStateSP.update_status(ss, self.sm["selfdriveStateSP"], self.sm["onroadEvents"]))
 
     # Check for engagement state changes
     if self.engaged != self._engaged_prev:

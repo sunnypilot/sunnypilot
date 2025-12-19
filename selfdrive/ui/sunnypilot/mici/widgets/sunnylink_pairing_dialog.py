@@ -1,8 +1,13 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import base64
 
 import pyray as rl
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.mici.widgets.pairing_dialog import PairingDialog
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID, API_HOST
 from openpilot.system.ui.lib.application import FontWeight, gui_app
@@ -26,7 +31,7 @@ class SunnylinkPairingDialog(PairingDialog):
 
     if self._sponsor_pairing:
       try:
-        sl_dongle_id = ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
+        sl_dongle_id = self._params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID
         token = SunnylinkApi(sl_dongle_id).get_token()
         inner_string = f"1|{sl_dongle_id}|{token}"
         payload_bytes = base64.b64encode(inner_string.encode('utf-8')).decode('utf-8')
@@ -38,6 +43,7 @@ class SunnylinkPairingDialog(PairingDialog):
 
   def _update_state(self):
     NavWidget._update_state(self)
+
 
 if __name__ == "__main__":
   gui_app.init_window("pairing device")

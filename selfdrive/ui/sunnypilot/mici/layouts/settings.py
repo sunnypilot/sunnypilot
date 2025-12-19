@@ -22,6 +22,7 @@ OP.PanelType = IntEnum(  # type: ignore
   start=0,
 )
 
+
 class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
@@ -37,8 +38,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     items = self._scroller._items.copy()
 
-    items.insert(1, models_btn)
-    items.insert(2, sunnylink_btn)
+    items.insert(1, sunnylink_btn)
+    items.insert(2, models_btn)
     self._scroller._items.clear()
     for item in items:
       self._scroller.add_widget(item)
