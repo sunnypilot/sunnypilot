@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from __future__ import annotations
 
 import base64
@@ -23,6 +28,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
                        create_connection, WebSocketConnectionClosedException)
 
 import cereal.messaging as messaging
+from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
 
@@ -32,8 +38,10 @@ LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require a change on sidebar.cc
 DISALLOW_LOG_UPLOAD = threading.Event()
+METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "params_metadata.json")
 
 params = Params()
+
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
@@ -180,16 +188,30 @@ def getParamsAllKeys() -> list[str]:
 
 @dispatcher.add_method
 def getParamsAllKeysV1() -> dict[str, str]:
+  try:
+    with open(METADATA_PATH) as f:
+      metadata = json.load(f)
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.exception")
+    metadata = {}
+
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
-  params_dict: dict[str, list[dict[str, str | bool | int | None]]] = {"params": []}
+  params_dict: dict[str, list[dict[str, str | bool | int | object | dict | None]]] = {"params": []}
   for key in available_keys:
     value = get_param_as_byte(key, get_default=True)
-    params_dict["params"].append({
+
+    param_entry = {
       "key": key,
       "type": int(params.get_type(key).value),
       "default_value": base64.b64encode(value).decode('utf-8') if value else None,
-    })
+    }
+
+    if key in metadata:
+      meta_copy = metadata[key].copy()
+      param_entry["_extra"] = meta_copy
+
+    params_dict["params"].append(param_entry)
 
   return {"keys": json.dumps(params_dict.get("params", []))}
 
@@ -238,10 +260,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
 
   cloudlog.debug("athena.startLocalProxy.starting")
   ws = create_connection(
-    remote_ws_uri,
-    header={"Authorization": f"Bearer {sunnylink_api.get_token()}"},
-    enable_multithread=True,
-    sslopt={"cert_reqs": ssl.CERT_NONE}
+    remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True, sslopt={"cert_reqs": ssl.CERT_NONE}
   )
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
@@ -260,6 +279,8 @@ def main(exit_event: threading.Event = None):
   sunnylink_dongle_id = params.get("SunnylinkDongleId")
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   UploadQueueCache.initialize(upload_queue)
+
+  update_car_list_param()
 
   ws_uri = f"{SUNNYLINK_ATHENA_HOST}"
   conn_start = None

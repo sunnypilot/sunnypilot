@@ -18,6 +18,7 @@ from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.test.helpers import with_processes
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.updated.updated import parse_release_notes
+from openpilot.system.version import terms_version, training_version
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -40,47 +41,47 @@ def put_update_params(params: Params):
   params.put("UpdaterTargetBranch", BRANCH_NAME)
 
 
-def setup_homescreen(click, pm: PubMaster):
+def setup_homescreen(click, pm: PubMaster, scroll=None):
   pass
 
 
-def setup_homescreen_update_available(click, pm: PubMaster):
+def setup_homescreen_update_available(click, pm: PubMaster, scroll=None):
   params = Params()
   params.put_bool("UpdateAvailable", True)
   put_update_params(params)
   setup_offroad_alert(click, pm)
 
 
-def setup_settings(click, pm: PubMaster):
+def setup_settings(click, pm: PubMaster, scroll=None):
   click(100, 100)
 
 
-def close_settings(click, pm: PubMaster):
-  click(240, 216)
+def close_settings(click, pm: PubMaster, scroll=None):
+  click(140, 120)
 
 
-def setup_settings_network(click, pm: PubMaster):
+def setup_settings_network(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   click(278, 450)
 
 
-def setup_settings_network_advanced(click, pm: PubMaster):
-  setup_settings_network(click, pm)
+def setup_settings_network_advanced(click, pm: PubMaster, scroll=None):
+  setup_settings_network(click, pm, scroll=scroll)
   click(1880, 100)
 
 
-def setup_settings_toggles(click, pm: PubMaster):
+def setup_settings_toggles(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 600)
+  click(278, 620)
 
 
-def setup_settings_software(click, pm: PubMaster):
+def setup_settings_software(click, pm: PubMaster, scroll=None):
   put_update_params(Params())
   setup_settings(click, pm)
-  click(278, 720)
+  click(278, 730)
 
 
-def setup_settings_software_download(click, pm: PubMaster):
+def setup_settings_software_download(click, pm: PubMaster, scroll=None):
   params = Params()
   # setup_settings_software but with "DOWNLOAD" button to test long text
   params.put("UpdaterState", "idle")
@@ -88,13 +89,13 @@ def setup_settings_software_download(click, pm: PubMaster):
   setup_settings_software(click, pm)
 
 
-def setup_settings_software_release_notes(click, pm: PubMaster):
-  setup_settings_software(click, pm)
+def setup_settings_software_release_notes(click, pm: PubMaster, scroll=None):
+  setup_settings_software(click, pm, scroll=scroll)
   click(588, 110)  # expand description for current version
 
 
-def setup_settings_software_branch_switcher(click, pm: PubMaster):
-  setup_settings_software(click, pm)
+def setup_settings_software_branch_switcher(click, pm: PubMaster, scroll=None):
+  setup_settings_software(click, pm, scroll=scroll)
   params = Params()
   params.put("UpdaterAvailableBranches", f"master,nightly,release,{BRANCH_NAME}")
   params.put("GitBranch", BRANCH_NAME)  # should be on top
@@ -102,30 +103,32 @@ def setup_settings_software_branch_switcher(click, pm: PubMaster):
   click(1984, 449)
 
 
-def setup_settings_firehose(click, pm: PubMaster):
+def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 845)
+  scroll(-20, 278, 950)
+  click(278, 850)
 
 
-def setup_settings_developer(click, pm: PubMaster):
+def setup_settings_developer(click, pm: PubMaster, scroll=None):
   CP = car.CarParams()
   CP.alphaLongitudinalAvailable = True  # show alpha long control toggle
   Params().put("CarParamsPersistent", CP.to_bytes())
 
   setup_settings(click, pm)
+  scroll(-20, 278, 950)
   click(278, 950)
 
 
-def setup_keyboard(click, pm: PubMaster):
-  setup_settings_developer(click, pm)
+def setup_keyboard(click, pm: PubMaster, scroll=None):
+  setup_settings_developer(click, pm, scroll=scroll)
   click(1930, 470)
 
 
-def setup_pair_device(click, pm: PubMaster):
+def setup_pair_device(click, pm: PubMaster, scroll=None):
   click(1950, 800)
 
 
-def setup_offroad_alert(click, pm: PubMaster):
+def setup_offroad_alert(click, pm: PubMaster, scroll=None):
   put_update_params(Params())
   set_offroad_alert("Offroad_TemperatureTooHigh", True, extra_text='99C')
   set_offroad_alert("Offroad_ExcessiveActuation", True, extra_text='longitudinal')
@@ -136,22 +139,73 @@ def setup_offroad_alert(click, pm: PubMaster):
   close_settings(click, pm)
 
 
-def setup_confirmation_dialog(click, pm: PubMaster):
+def setup_confirmation_dialog(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
   click(1985, 791)  # reset calibration
 
 
-def setup_experimental_mode_description(click, pm: PubMaster):
+def setup_experimental_mode_description(click, pm: PubMaster, scroll=None):
   setup_settings_toggles(click, pm)
   click(1200, 280)  # expand description for experimental mode
 
 
-def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster):
-  setup_settings_developer(click, pm)
-  click(650, 960)  # toggle openpilot longitudinal control
+def setup_openpilot_long_confirmation_dialog(click, pm: PubMaster, scroll=None):
+  setup_settings_developer(click, pm, scroll=scroll)
+  click(650, 960)  # toggle sunnypilot longitudinal control
 
 
-def setup_onroad(click, pm: PubMaster):
+def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  click(278, 510)
+
+
+def setup_settings_models(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  click(278, 840)
+
+
+def setup_settings_steering(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  click(278, 950)
+
+
+def setup_settings_cruise(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-4, 278, 950)
+  click(278, 860)
+
+
+def setup_settings_visuals(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-20, 278, 950)
+  click(278, 330)
+
+
+def setup_settings_display(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-20, 278, 950)
+  click(278, 420)
+
+
+def setup_settings_osm(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-20, 278, 950)
+  click(278, 520)
+
+
+def setup_settings_trips(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-20, 278, 950)
+  click(278, 630)
+
+
+def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
+  setup_settings(click, pm)
+  scroll(-20, 278, 950)
+  click(278, 750)
+
+
+def setup_onroad(click, pm: PubMaster, scroll=None):
   ds = messaging.new_message('deviceState')
   ds.deviceState.started = True
 
@@ -172,7 +226,7 @@ def setup_onroad(click, pm: PubMaster):
     time.sleep(0.05)
 
 
-def setup_onroad_sidebar(click, pm: PubMaster):
+def setup_onroad_sidebar(click, pm: PubMaster, scroll=None):
   setup_onroad(click, pm)
   click(100, 100)  # open sidebar
 
@@ -191,23 +245,23 @@ def setup_onroad_alert(click, pm: PubMaster, size: log.SelfdriveState.AlertSize,
     time.sleep(0.05)
 
 
-def setup_onroad_small_alert(click, pm: PubMaster):
+def setup_onroad_small_alert(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.small, "Small Alert", "This is a small alert", AlertStatus.normal)
 
 
-def setup_onroad_medium_alert(click, pm: PubMaster):
+def setup_onroad_medium_alert(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.mid, "Medium Alert", "This is a medium alert", AlertStatus.userPrompt)
 
 
-def setup_onroad_full_alert(click, pm: PubMaster):
+def setup_onroad_full_alert(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.full, "DISENGAGE IMMEDIATELY", "Driver Distracted", AlertStatus.critical)
 
 
-def setup_onroad_full_alert_multiline(click, pm: PubMaster):
+def setup_onroad_full_alert_multiline(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.full, "Reverse\nGear", "", AlertStatus.normal)
 
 
-def setup_onroad_full_alert_long_text(click, pm: PubMaster):
+def setup_onroad_full_alert_long_text(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, AlertSize.full, "TAKE CONTROL IMMEDIATELY", "Calibration Invalid: Remount Device & Recalibrate", AlertStatus.userPrompt)
 
 
@@ -242,10 +296,24 @@ CASES = {
   "onroad_full_alert_long_text": setup_onroad_full_alert_long_text,
 }
 
+# sunnypilot cases
+CASES.update({
+  "settings_sunnylink": setup_settings_sunnylink,
+  "settings_models": setup_settings_models,
+  "settings_steering": setup_settings_steering,
+  "settings_cruise": setup_settings_cruise,
+  "settings_visuals": setup_settings_visuals,
+  "settings_display": setup_settings_display,
+  "settings_osm": setup_settings_osm,
+  "settings_trips": setup_settings_trips,
+  "settings_vehicle": setup_settings_vehicle,
+})
+
 
 class TestUI:
   def __init__(self):
     os.environ["SCALE"] = os.getenv("SCALE", "1")
+    os.environ["BIG"] = "1"
     sys.modules["mouseinfo"] = False
 
   def setup(self):
@@ -274,11 +342,20 @@ class TestUI:
     time.sleep(0.01)
     pyautogui.mouseUp(self.ui.left + x, self.ui.top + y, *args, **kwargs)
 
+  def scroll(self, clicks: int, x, y, *args, **kwargs):
+    if clicks == 0:
+      return
+    click = -1 if clicks < 0 else 1  # -1 = down, 1 = up
+    for _ in range(abs(clicks)):
+      pyautogui.scroll(click, self.ui.left + x, self.ui.top + y, *args, **kwargs)  # scroll for individual clicks since we need to delay between clicks
+      time.sleep(0.01)  # small delay between scroll clicks to work properly
+    time.sleep(2)  # wait for scroll to fully settle
+
   @with_processes(["ui"])
   def test_ui(self, name, setup_case):
     self.setup()
     time.sleep(UI_DELAY)  # wait for UI to start
-    setup_case(self.click, self.pm)
+    setup_case(self.click, self.pm, self.scroll)
     self.screenshot(name)
 
 
@@ -292,11 +369,15 @@ def create_screenshots():
     with OpenpilotPrefix():
       params = Params()
       params.put("DongleId", "123456789012345")
-      params.put_bool("sunnypilot_ui", True)
+      params.put("SunnylinkDongleId", "123456789012345")
 
       # Set branch name
       params.put("UpdaterCurrentDescription", VERSION)
       params.put("UpdaterNewDescription", VERSION)
+
+      # Set terms and training version (to skip onboarding)
+      params.put("HasAcceptedTerms", terms_version)
+      params.put("CompletedTrainingVersion", training_version)
 
       if name == "homescreen_paired":
         params.put("PrimeType", 0)  # NONE

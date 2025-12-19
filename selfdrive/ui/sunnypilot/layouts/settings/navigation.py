@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import json
 from functools import partial
 
@@ -8,7 +14,7 @@ from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog
 from openpilot.system.ui.widgets.list_view import button_item
 from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 from openpilot.sunnypilot.navd.navigationd import Navigationd
 from openpilot.system.ui.sunnypilot.widgets.input_dialog import InputDialogSP

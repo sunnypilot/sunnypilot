@@ -7,10 +7,9 @@ import numpy as np
 
 from msgq.visionipc import VisionIpcServer, VisionStreamType
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.selfdrive.ui.layouts.main import MainLayout
+from openpilot.selfdrive.ui.mici.layouts.main import MiciMainLayout
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.tools.lib.logreader import LogReader
-from openpilot.tools.plotjuggler.juggle import DEMO_ROUTE
 
 FPS = 60
 
@@ -56,7 +55,7 @@ def patch_submaster(message_chunks):
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Profile openpilot UI rendering and state updates')
-  parser.add_argument('route', type=str, nargs='?', default=DEMO_ROUTE + "/1",
+  parser.add_argument('route', type=str, nargs='?', default="302bab07c1511180/00000006--0b9a7005f1/3",
                       help='Route to use for profiling')
   parser.add_argument('--loop', type=int, default=1,
                       help='Number of times to loop the log (default: 1)')
@@ -82,16 +81,16 @@ if __name__ == "__main__":
   if args.headless:
     os.environ['SDL_VIDEODRIVER'] = 'dummy'
 
-  gui_app.init_window("UI Profiling")
-  main_layout = MainLayout()
+  gui_app.init_window("UI Profiling", fps=600)
+  main_layout = MiciMainLayout()
   main_layout.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
 
   print("Running...")
   patch_submaster(message_chunks)
 
-  W, H = 1928, 1208
+  W, H = 2048, 1216
   vipc = VisionIpcServer("camerad")
-  vipc.create_buffers(VisionStreamType.VISION_STREAM_ROAD, 5, 1928, 1208)
+  vipc.create_buffers(VisionStreamType.VISION_STREAM_ROAD, 5, W, H)
   vipc.start_listener()
   yuv_buffer_size = W * H + (W // 2) * (H // 2) * 2
   yuv_data = np.random.randint(0, 256, yuv_buffer_size, dtype=np.uint8).tobytes()
