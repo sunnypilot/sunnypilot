@@ -10,7 +10,8 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
-from openpilot.selfdrive.ui.sunnypilot.onroad.rainbow_path import RainbowPath
+
+from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ModelRendererSP
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -42,12 +43,12 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget):
+class ModelRenderer(Widget, ModelRendererSP):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
-    self._rainbow_path = RainbowPath()
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
     self._prev_allow_throttle = True
     self._lane_line_probs = np.zeros(4, dtype=np.float32)
@@ -283,10 +284,11 @@ class ModelRenderer(Widget):
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
 
-    if self._rainbow_path.enabled:
-      gradient = self._rainbow_path.get_gradient()
-      draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
-    elif self._experimental_mode:
+    if ui_state.rainbow_path:
+      ModelRendererSP().rainbow_path.draw_rainbow_path(self, self._rect, self._path)
+      return
+
+    if self._experimental_mode:
       # Draw with acceleration coloring
       if len(self._exp_gradient.colors) > 1:
         draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
