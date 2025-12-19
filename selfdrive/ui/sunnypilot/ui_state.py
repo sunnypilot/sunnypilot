@@ -31,7 +31,7 @@ class UIStateSP:
     mads = ss_sp.mads
     mads_state = mads.state
 
-    if state in OpenpilotState.preEnabled:
+    if state == OpenpilotState.preEnabled:
       return "override"
 
     if state == OpenpilotState.overriding:
