@@ -11,10 +11,15 @@ class TestSunnylinkdMethods:
   def setup_method(self):
     self.saved_params = []
 
+    self.original_save = sunnylinkd.save_param_from_base64_encoded_string
+
     def mock_save_param(key, value, compression=False):
       self.saved_params.append((key, value, compression))
 
-    self.mock_save_param = mock_save_param
+    sunnylinkd.save_param_from_base64_encoded_string = mock_save_param
+
+  def teardown_method(self):
+    sunnylinkd.save_param_from_base64_encoded_string = self.original_save
 
   def test_saveParams_blocked(self):
     blocked_params = {
@@ -22,7 +27,7 @@ class TestSunnylinkdMethods:
       "GithubSshKeys": "ssh-rsa attacker_key",
     }
 
-    sunnylinkd.saveParams(blocked_params, save_param_func=self.mock_save_param)
+    sunnylinkd.saveParams(blocked_params)
 
     assert len(self.saved_params) == 0
 
@@ -32,11 +37,10 @@ class TestSunnylinkdMethods:
       "MyCustomParam": "123"
     }
 
-    sunnylinkd.saveParams(allowed_params, save_param_func=self.mock_save_param)
-
-    assert len(self.saved_params) == 2
+    sunnylinkd.saveParams(allowed_params)
 
     # verify content
+    assert len(self.saved_params) == 2
     keys_saved = [p[0] for p in self.saved_params]
     assert "SpeedLimitOffset" in keys_saved
     assert "MyCustomParam" in keys_saved
@@ -47,7 +51,7 @@ class TestSunnylinkdMethods:
       "SpeedLimitOffset": "10"
     }
 
-    sunnylinkd.saveParams(mixed_params, save_param_func=self.mock_save_param)
+    sunnylinkd.saveParams(mixed_params)
 
     # should save allowed one
     assert len(self.saved_params) == 1
