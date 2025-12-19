@@ -38,7 +38,7 @@ class UIStateSP:
       if not mads.available:
         return "override"
 
-      if any(e.overrideLongitudinal for e in onroad_evt) and not mads.enabled:
+      if any(e.overrideLongitudinal for e in onroad_evt):
         return "override"
 
     if mads_state in (MADSState.paused, MADSState.overriding):
