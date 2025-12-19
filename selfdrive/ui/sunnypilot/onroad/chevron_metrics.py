@@ -7,16 +7,17 @@ See the LICENSE.md file in the root directory for more details.
 import numpy as np
 
 import pyray as rl
+from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 
-CHEVRON_DISTANCE = 1
-CHEVRON_SPEED = 2
-CHEVRON_TTC = 3
-CHEVRON_ALL = 4
 
-MS_TO_KPH = 3.6
-MS_TO_MPH = 2.23694
+class ChevronOptions:
+  OFF = 0
+  DISTANCE_ONLY = 1
+  SPEED_ONLY = 2
+  TTC_ONLY = 3
+  ALL = 4
 
 
 class ChevronMetrics:
@@ -56,12 +57,13 @@ class ChevronMetrics:
 
     self._render_text_lines(text_lines, chevron_x, chevron_y, sz, rect)
 
-  def _build_text_lines(self, d_rel: float, v_rel: float, v_ego: float) -> list[str]:
+  @staticmethod
+  def _build_text_lines(d_rel: float, v_rel: float, v_ego: float) -> list[str]:
     """Build text lines based on chevron info setting"""
     text_lines = []
 
     # Distance
-    if ui_state.chevron_metrics == CHEVRON_DISTANCE or ui_state.chevron_metrics == CHEVRON_ALL:
+    if ui_state.chevron_metrics == ChevronOptions.DISTANCE_ONLY or ui_state.chevron_metrics == ChevronOptions.ALL:
       val = max(0.0, d_rel)
       unit = "m" if ui_state.is_metric else "ft"
       if not ui_state.is_metric:
@@ -69,14 +71,14 @@ class ChevronMetrics:
       text_lines.append(f"{val:.0f} {unit}")
 
     # Speed
-    if ui_state.chevron_metrics == CHEVRON_SPEED or ui_state.chevron_metrics == CHEVRON_ALL:
-      multiplier = MS_TO_KPH if ui_state.is_metric else MS_TO_MPH
+    if ui_state.chevron_metrics == ChevronOptions.SPEED_ONLY or ui_state.chevron_metrics == ChevronOptions.ALL:
+      multiplier = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
       val = max(0.0, (v_rel + v_ego) * multiplier)
       unit = "km/h" if ui_state.is_metric else "mph"
       text_lines.append(f"{val:.0f} {unit}")
 
     # Time to collision
-    if ui_state.chevron_metrics == CHEVRON_TTC or ui_state.chevron_metrics == CHEVRON_ALL:
+    if ui_state.chevron_metrics == ChevronOptions.TTC_ONLY or ui_state.chevron_metrics == ChevronOptions.ALL:
       val = (d_rel / v_ego) if (d_rel > 0 and v_ego > 0) else 0.0
       ttc_text = f"{val:.1f}s" if (0 < val < 200) else "---"
       text_lines.append(ttc_text)
