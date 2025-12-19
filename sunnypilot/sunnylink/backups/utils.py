@@ -86,6 +86,7 @@ def qCompress(data):
   compressed_data = zlib.compress(data, level=9)
   return b"ZLIB" + compressed_data
 
+
 def get_key_path(use_aes_256=False) -> str:
   key_path = ""
   for key in KEYS:
@@ -93,6 +94,7 @@ def get_key_path(use_aes_256=False) -> str:
       key_path = str(Path(Paths.persist_root() + f'/comma/{key}') if use_aes_256 else Path(Paths.persist_root() + f'/comma/{key}.pub'))
       break
   return key_path
+
 
 def decrypt_compressed_data(encrypted_base64, use_aes_256=False):
   """
