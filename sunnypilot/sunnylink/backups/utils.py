@@ -35,28 +35,34 @@ class KeyDerivation:
 
     if "private" in key_plain.lower():
       private_key = serialization.load_pem_private_key(key_pem, password=None, backend=default_backend())
-      if not (isinstance(private_key, rsa.RSAPrivateKey) or isinstance(private_key, ec.EllipticCurvePrivateKey)):
+      if isinstance(private_key, rsa.RSAPrivateKey) or isinstance(private_key, ec.EllipticCurvePrivateKey):
+        public_key = private_key.public_key()
+      else:
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
-
-      der_data = private_key.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption()
-      )
     elif "public" in key_plain.lower():
       public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())
       if not (isinstance(public_key, rsa.RSAPublicKey) or isinstance(public_key, ec.EllipticCurvePublicKey)):
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
-
-      der_data = public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.PKCS1)
     else:
-      raise ValueError("Unknown key format: Unable to determine if key is public or private.")
+      raise ValueError("Invalid key format: Unable to determine if key is public or private.")
 
-    sha256_hash = hashlib.sha256(der_data).digest()
-    aes_key = sha256_hash[:32] if use_aes_256 else sha256_hash[:16]
-    aes_iv = sha256_hash[16:32]
+    if isinstance(public_key, rsa.RSAPublicKey):
+      der_data = public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.PKCS1)
+    elif isinstance(public_key, ec.EllipticCurvePublicKey):
+      der_data = public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    else:
+      raise ValueError("Unsupported key type.")
 
-    return aes_key, aes_iv
+    if use_aes_256:
+      # AES-256-CBC
+      key = hashlib.sha256(der_data).digest()
+      iv = hashlib.md5(der_data).digest()
+    else:
+      # AES-128-CBC
+      key = hashlib.md5(der_data).digest()
+      iv = hashlib.md5(der_data).digest()  # Insecure IV reuse, kept for compatibility
+
+    return key, iv
 
 
 def qUncompress(data):
@@ -93,6 +99,10 @@ def get_key_path(use_aes_256=False) -> str:
     if os.path.isfile(Paths.persist_root() + f'/comma/{key}') and os.path.isfile(Paths.persist_root() + f'/comma/{key}.pub'):
       key_path = str(Path(Paths.persist_root() + f'/comma/{key}') if use_aes_256 else Path(Paths.persist_root() + f'/comma/{key}.pub'))
       break
+
+  if not key_path:
+    raise FileNotFoundError("No valid key pair found in persist storage.")
+
   return key_path
 
 
