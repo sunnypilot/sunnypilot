@@ -26,28 +26,41 @@ class UIStateSP:
     self.sunnylink_state.start()
 
   @staticmethod
-  def update_status(ss, ss_sp) -> str:
+  def update_status(ss, ss_sp, onroad_evt) -> str:
     state = ss.state
     mads = ss_sp.mads
     mads_state = mads.state
 
-    if state in (OpenpilotState.preEnabled, OpenpilotState.overriding):
+    if state in OpenpilotState.preEnabled:
       return "override"
+
+    if state == OpenpilotState.overriding:
+      if not mads.available:
+        return "override"
+
+      if any(e.overrideLongitudinal for e in onroad_evt) and not mads.enabled:
+        return "override"
 
     if mads_state in (MADSState.paused, MADSState.overriding):
       return "override"
 
-    if mads.available:
-      if mads.enabled and ss.enabled:
-        return "engaged"
-      elif mads.enabled:
-        return "lat_only"
-      elif ss.enabled:
-        return "long_only"
-      else:
-        return "disengaged"
+    # MADS specific statuses
+    if not mads.available:
+      return "engaged" if ss.enabled else "disengaged"
 
-    return "engaged" if ss.enabled else "disengaged"
+    if not mads.enabled and not ss.enabled:
+      return "disengaged"
+
+    if mads.enabled and ss.enabled:
+      return "engaged"
+
+    if mads.enabled:
+      return "lat_only"
+
+    if ss.enabled:
+      return "long_only"
+
+    return "disengaged"
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
