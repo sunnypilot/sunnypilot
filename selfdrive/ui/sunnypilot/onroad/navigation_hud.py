@@ -20,7 +20,7 @@ from openpilot.system.ui.widgets import Widget
 if TYPE_CHECKING:
   from pyray import Texture2D
 
-ASSETS_PATH = Path(__file__).parents[4] / "sunnypilot" / "selfdrive" / "assets" / "navigation"
+ASSETS_PATH = Path(__file__).parents[4] / "sunnypilot" / "sunnypilot" / "selfdrive" / "assets" / "navigation"
 
 ICON_MAP = {
   "turn|uturn": "direction_uturn.png",
