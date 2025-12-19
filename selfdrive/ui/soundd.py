@@ -72,57 +72,42 @@ def check_selfdrive_timeout_alert(sm):
 
   return False
 
-  return False
-
 
 class WebRTCAudioReceiver:
   def __init__(self):
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.sock.bind(('127.0.0.1', 27000))
     self.sock.settimeout(0.1)
-
     self.buffer = []
     self.lock = threading.Lock()
+    threading.Thread(target=self._rx_thread, daemon=True).start()
 
-    self.thread = threading.Thread(target=self.rx_thread, daemon=True)
-    self.thread.start()
-
-  def rx_thread(self):
+  def _rx_thread(self):
     while True:
       try:
         data, _ = self.sock.recvfrom(4096)
-        # Assuming incoming data is S16LE PCM
         samples = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
-
         with self.lock:
           self.buffer.extend(samples)
-          # Keep buffer size reasonable (manage latency vs dropout)
-          # 48000 Hz * 0.2s = 9600 samples
-          if len(self.buffer) > 24000: # 0.5s buffer max
-             self.buffer = self.buffer[-9600:] # Keep last 0.2s
-
+          if len(self.buffer) > 24000:
+            self.buffer = self.buffer[-9600:]
       except socket.timeout:
         pass
       except Exception:
-        cloudlog.exception("WebRTCAudioReceiver rx error")
+        cloudlog.exception("WebRTCAudioReceiver error")
         time.sleep(1)
 
-  def get_data(self, frames):
+  def get_frames(self, n):
     with self.lock:
-      if len(self.buffer) < frames:
-        # Not enough data, pad with zeros? Or just return what we have?
-        # Better to return zeros if buffer empty to maintain sync?
-        # Or consume what we have and pad rest.
-        ret = np.zeros(frames, dtype=np.float32)
-        n = len(self.buffer)
-        if n > 0:
-          ret[:n] = self.buffer
-          self.buffer = []
+      if len(self.buffer) >= n:
+        ret = np.array(self.buffer[:n], dtype=np.float32)
+        self.buffer = self.buffer[n:]
         return ret
-      else:
-        ret = np.array(self.buffer[:frames], dtype=np.float32)
-        self.buffer = self.buffer[frames:]
-        return ret
+      ret = np.zeros(n, dtype=np.float32)
+      if self.buffer:
+        ret[:len(self.buffer)] = self.buffer
+        self.buffer = []
+      return ret
 
 
 class Soundd(QuietMode):
@@ -181,7 +166,7 @@ class Soundd(QuietMode):
       cloudlog.warning(f"soundd stream over/underflow: {status}")
 
     alert_audio = self.get_sound_data(frames)
-    webrtc_audio = self.webrtc_receiver.get_data(frames)
+    webrtc_audio = self.webrtc_receiver.get_frames(frames)
 
     mixed = alert_audio + webrtc_audio
     # Simple limiter

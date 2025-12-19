@@ -134,15 +134,13 @@ class StreamSession:
     for cam in cameras:
       builder.add_video_stream(cam, LiveStreamVideoStreamTrack(cam) if not debug_mode else VideoStreamTrack())
     if config.expected_audio_track:
-      if not debug_mode:
+      if debug_mode:
+        audio_track = AudioStreamTrack()
+      else:
         try:
           audio_track = AudioInputStreamTrack()
         except Exception:
-          self.logger = logging.getLogger("webrtcd")
-          self.logger.warning("Failed to open audio device, falling back to Cereal audio")
           audio_track = CerealAudioStreamTrack()
-      else:
-        audio_track = AudioStreamTrack()
       builder.add_audio_stream(audio_track)
     if config.incoming_audio_track:
       self.audio_output_cls = SocketAudioOutput if not debug_mode else MediaBlackhole
