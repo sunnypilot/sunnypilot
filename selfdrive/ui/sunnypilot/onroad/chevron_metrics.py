@@ -81,7 +81,7 @@ class ChevronMetrics:
     # Time to collision
     if ui_state.chevron_metrics == ChevronOptions.TTC_ONLY or ui_state.chevron_metrics == ChevronOptions.ALL:
       val = (d_rel / v_ego) if (d_rel > 0 and v_ego > 0) else 0.0
-      ttc_text = f"{val:.1f}s" if (0 < val < 200) else "---"
+      ttc_text = f"{val:.1f} s" if (0 < val < 200) else "---"
       text_lines.append(ttc_text)
 
     return text_lines
