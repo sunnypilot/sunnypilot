@@ -10,6 +10,7 @@ import pyray as rl
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 
 class ChevronOptions:
@@ -111,7 +112,7 @@ class ChevronMetrics:
         break
 
       # Measure actual text width for proper centering
-      text_size = rl.measure_text_ex(self._font, line, font_size, 0)
+      text_size = measure_text_cached(self._font, line, font_size, 0)
       text_width = text_size.x
 
       # Center the text horizontally on the chevron
