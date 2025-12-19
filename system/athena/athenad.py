@@ -49,7 +49,6 @@ LOCAL_PORT_WHITELIST = {22, }  # SSH
 LOG_ATTR_NAME = 'user.upload'
 LOG_ATTR_VALUE_MAX_UNIX_TIME = int.to_bytes(2147483647, 4, sys.byteorder)
 RECONNECT_TIMEOUT_S = 70
-METADATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "params_metadata.json")
 
 RETRY_DELAY = 10  # seconds
 MAX_RETRY_COUNT = 30  # Try for at most 5 minutes if upload fails immediately
@@ -925,12 +924,6 @@ def webrtc(sdp:str, cameras: list[str], bridge_services_in: list[str], bridge_se
 def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]] | dict[str, str | bool]:
   if not Params().get_bool("EnableRemoteParams"):
     return {"error": "Remote params editing is disabled on this device", "disabled": True}
-  try:
-    with open(METADATA_PATH) as f:
-      metadata = json.load(f)
-  except Exception:
-    cloudlog.exception("athenad.getParamsAllKeysV1.exception")
-    metadata = {}
 
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
@@ -950,8 +943,6 @@ def getAllParams() -> list[dict[str, str | bool | int | object | dict | None]] |
       "type": int(params.get_type(key).value),
       "value": base64.b64encode(value).decode('utf-8') if value else None,
     }
-
-    if key in metadata: entry["metadata"] = metadata[key].copy()
 
     params_list.append(entry)
 
