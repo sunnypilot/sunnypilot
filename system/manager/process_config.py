@@ -38,8 +38,7 @@ def ublox(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and use_ublox
 
 def webrtc(started: bool, params: Params, CP: car.CarParams) -> bool:
-  # TODO: add a toggle
-  return True
+  return bool(params.get_bool("EnableWebRTC"))
 
 def joystick(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and params.get_bool("JoystickDebugMode")

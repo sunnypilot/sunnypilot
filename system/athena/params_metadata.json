@@ -269,6 +269,14 @@
     "title": "GitHub Runner Service",
     "description": ""
   },
+  "EnableRemoteParams": {
+    "title": "Enable Remote Params",
+    "description": "Allow remote parameter editing via Connect"
+  },
+  "EnableWebRTC": {
+    "title": "Enable WebRTC",
+    "description": "Allow remote live streaming via Connect"
+  },
   "EnforceTorqueControl": {
     "title": "Enforce Torque Control",
     "description": ""
