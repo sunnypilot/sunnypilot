@@ -1,7 +1,13 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import numpy as np
 import pyray as rl
-from dataclasses import dataclass
 from openpilot.common.params import Params
+from openpilot.selfdrive.ui.onroad.model_renderer import LeadVehicle
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 
 CHEVRON_DISTANCE = 1
@@ -11,13 +17,6 @@ CHEVRON_ALL = 4
 
 MS_TO_KPH = 3.6
 MS_TO_MPH = 2.23694
-
-
-@dataclass
-class LeadVehicle:
-  glow: list[float]
-  chevron: list[float]
-  fill_alpha: int
 
 
 class ChevronMetrics:
@@ -46,7 +45,7 @@ class ChevronMetrics:
     """Check if dev UI should be rendered"""
     return self._chevron_info != 0 and self._lead_status_alpha > 0.0
 
-  def draw_lead_status(self, lead_data, lead_vehicle: LeadVehicle, v_ego: float, rect: rl.Rectangle):
+  def _draw_lead(self, lead_data, lead_vehicle: LeadVehicle, v_ego: float, rect: rl.Rectangle):
     """Draw lead vehicle status information (distance, speed, TTC)"""
     if not self.should_render():
       return
@@ -131,3 +130,25 @@ class ChevronMetrics:
       rl.draw_text_ex(self._font, line, rl.Vector2(x + 2, y + 2), font_size, 0, shadow_color)
       # Draw text
       rl.draw_text_ex(self._font, line, rl.Vector2(x, y), font_size, 0, text_color)
+
+  def draw_lead_status(self, sm, radar_state, rect, lead_vehicles):
+    lead_one = radar_state.leadOne
+    lead_two = radar_state.leadTwo
+
+    has_lead_one = lead_one.status if lead_one else False
+    has_lead_two = lead_two.status if lead_two else False
+
+    self.update_alpha(has_lead_one or has_lead_two)
+
+    if not self.should_render():
+      return
+
+    v_ego = sm['carState'].vEgo
+
+    if has_lead_one and lead_vehicles[0].chevron:
+      self._draw_lead(lead_one, lead_vehicles[0], v_ego, rect)
+
+    if has_lead_two and lead_vehicles[1].chevron:
+      d_rel_diff = abs(lead_one.dRel - lead_two.dRel) if has_lead_one else float('inf')
+      if d_rel_diff > 3.0:
+        self._draw_lead(lead_two, lead_vehicles[1], v_ego, rect)
