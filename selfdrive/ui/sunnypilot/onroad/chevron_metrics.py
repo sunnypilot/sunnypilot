@@ -23,7 +23,7 @@ class ChevronOptions:
 
 class ChevronMetrics:
   def __init__(self):
-    self._lead_status_alpha = 0.0
+    self._lead_status_alpha: float = 0.0
     self._font = gui_app.font(FontWeight.SEMI_BOLD)
 
   def update_alpha(self, has_lead: bool):
@@ -35,7 +35,7 @@ class ChevronMetrics:
 
   def should_render(self) -> bool:
     """Check if dev UI should be rendered"""
-    return ui_state.chevron_metrics != 0 and self._lead_status_alpha > 0.0
+    return ui_state.chevron_metrics != ChevronOptions.OFF and self._lead_status_alpha > 0.0
 
   def _draw_lead(self, lead_data, lead_vehicle, v_ego: float, rect: rl.Rectangle):
     """Draw lead vehicle status information (distance, speed, TTC)"""
