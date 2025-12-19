@@ -9,7 +9,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 
 AlertSize = log.SelfdriveState.AlertSize
 
-DEBUG = True
+DEBUG = False
 
 LOOKING_CENTER_THRESHOLD_UPPER = math.radians(6)
 LOOKING_CENTER_THRESHOLD_LOWER = math.radians(3)
