@@ -11,7 +11,7 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
-from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ModelRendererSP
+from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ChevronMetrics, ModelRendererSP
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -43,9 +43,10 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget, ModelRendererSP):
+class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
   def __init__(self):
     Widget.__init__(self)
+    ChevronMetrics.__init__(self)
     ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
@@ -131,6 +132,7 @@ class ModelRenderer(Widget, ModelRendererSP):
 
     if render_lead_indicator and radar_state:
       self._draw_lead_indicator()
+      self.chevron_metrics.draw_lead_status(sm, radar_state, self._rect, self._lead_vehicles)
 
   def _update_raw_points(self, model):
     """Update raw 3D points from model data"""
