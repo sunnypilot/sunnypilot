@@ -11,6 +11,8 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
+from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ChevronMetrics, ModelRendererSP
+
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
 MAX_DRAW_DISTANCE = 100.0
@@ -41,9 +43,11 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget):
+class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    ChevronMetrics.__init__(self)
+    ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
@@ -128,6 +132,7 @@ class ModelRenderer(Widget):
 
     if render_lead_indicator and radar_state:
       self._draw_lead_indicator()
+      self.chevron_metrics.draw_lead_status(sm, radar_state, self._rect, self._lead_vehicles)
 
   def _update_raw_points(self, model):
     """Update raw 3D points from model data"""
@@ -280,6 +285,10 @@ class ModelRenderer(Widget):
 
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
+
+    if ui_state.rainbow_path:
+      self.rainbow_path.draw_rainbow_path(self._rect, self._path)
+      return
 
     if self._experimental_mode:
       # Draw with acceleration coloring
