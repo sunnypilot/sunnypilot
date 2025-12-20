@@ -19,6 +19,7 @@ from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAc
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
+
 class Spacer(Widget):
   def __init__(self, height: int = 1):
     super().__init__()
@@ -30,6 +31,7 @@ class Spacer(Widget):
 
   def _render(self, _):
     rl.draw_rectangle(int(self._rect.x), int(self._rect.y), int(self._rect.x + self._rect.width), int(self._rect.y), rl.Color(0,0,0,0))
+
 
 class ToggleActionSP(ToggleAction):
   def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True,
@@ -94,6 +96,7 @@ class ButtonActionSP(ButtonAction):
     self._pressed = False
     return pressed
 
+
 class DualButtonActionSP(DualButtonAction):
   def __init__(self, left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
                right_callback: Callable = None, enabled: bool | Callable[[], bool] = True, border_radius: int = 15):
@@ -119,6 +122,7 @@ class DualButtonActionSP(DualButtonAction):
     # Render buttons
     self.left_button.render(left_rect)
     self.right_button.render(right_rect)
+
 
 class MultipleButtonActionSP(MultipleButtonAction):
   def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None,

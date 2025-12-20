@@ -71,6 +71,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
 
+
 class DeviceSP:
   def __init__(self):
     self._params = Params()

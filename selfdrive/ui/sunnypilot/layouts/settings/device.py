@@ -32,6 +32,7 @@ offroad_time_options = {
   11: 1800,
 }
 
+
 class DeviceLayoutSP(DeviceLayout):
   def __init__(self):
     DeviceLayout.__init__(self)
@@ -201,7 +202,7 @@ class DeviceLayoutSP(DeviceLayout):
         ), callback=lambda result: _set_always_offroad(result, True))
 
   def _update_max_time_offroad_label(self, value: int) -> str:
-    label = tr("Always On") if value == 0 else f"{value}" + tr("m") if value < 60 else f"{value//60}" + tr("h")
+    label = tr("Always On") if value == 0 else f"{value}" + tr("m") if value < 60 else f"{value // 60}" + tr("h")
     label += tr(" (Default)") if value == 1800 else ""
     return label
 
