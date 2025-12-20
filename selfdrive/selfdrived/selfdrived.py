@@ -22,8 +22,10 @@ from openpilot.selfdrive.selfdrived.state import StateMachine
 from openpilot.selfdrive.selfdrived.alertmanager import AlertManager, set_offroad_alert
 
 from openpilot.system.version import get_build_metadata
+from openpilot.system.hardware import HARDWARE
 
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
+from openpilot.sunnypilot import get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
 from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
@@ -43,6 +45,7 @@ LaneChangeDirection = log.LaneChangeDirection
 EventName = log.OnroadEvent.EventName
 ButtonType = car.CarState.ButtonEvent.Type
 SafetyModel = car.CarParams.SafetyModel
+TurnDirection = custom.ModelDataV2SP.TurnDirection
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
@@ -130,7 +133,12 @@ class SelfdriveD(CruiseHelper):
     self.logged_comm_issue = None
     self.not_running_prev = None
     self.experimental_mode = False
-    self.personality = self.params.get("LongitudinalPersonality", return_default=True)
+    self.personality = get_sanitize_int_param(
+      "LongitudinalPersonality",
+      min(log.LongitudinalPersonality.schema.enumerants.values()),
+      max(log.LongitudinalPersonality.schema.enumerants.values()),
+      self.params
+    )
     self.recalibrating_seen = False
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -140,6 +148,8 @@ class SelfdriveD(CruiseHelper):
     # Determine startup event
     is_remote = build_metadata.openpilot.comma_remote or build_metadata.openpilot.sunnypilot_remote
     self.startup_event = EventName.startup if is_remote and build_metadata.tested_channel else EventName.startupMaster
+    if HARDWARE.get_device_type() == 'mici':
+      self.startup_event = None
     if not car_recognized:
       self.startup_event = EventName.startupNoCar
     elif car_recognized and self.CP.passive:
@@ -299,9 +309,9 @@ class SelfdriveD(CruiseHelper):
 
     # Handle lane turn
     lane_turn_direction = self.sm['modelDataV2SP'].laneTurnDirection
-    if lane_turn_direction == custom.TurnDirection.turnLeft:
+    if lane_turn_direction == TurnDirection.turnLeft:
       self.events_sp.add(custom.OnroadEventSP.EventName.laneTurnLeft)
-    elif lane_turn_direction == custom.TurnDirection.turnRight:
+    elif lane_turn_direction == TurnDirection.turnRight:
       self.events_sp.add(custom.OnroadEventSP.EventName.laneTurnRight)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):

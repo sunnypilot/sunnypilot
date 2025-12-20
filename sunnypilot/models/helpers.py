@@ -19,8 +19,8 @@ from openpilot.system.hardware.hw import Paths
 from pathlib import Path
 
 # see the README.md for more details on the model selector versioning
-CURRENT_SELECTOR_VERSION = 10
-REQUIRED_MIN_SELECTOR_VERSION = 9
+CURRENT_SELECTOR_VERSION = 13
+REQUIRED_MIN_SELECTOR_VERSION = 12
 
 USE_ONNX = os.getenv('USE_ONNX', PC)
 

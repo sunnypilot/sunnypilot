@@ -4,13 +4,13 @@ from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
 
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
+AudibleAlertSP = custom.SelfdriveStateSP.AudibleAlert
 EventNameSP = custom.OnroadEventSP.EventName
 
 
@@ -33,6 +33,9 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
   speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
   speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
+  alert_1_str = ""
+  alert_2_str = ""
+  alert_size = AlertSize.none
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
     # PCM long
@@ -40,25 +43,16 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     pcm_long_required_max = cst_low if speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[metric] else cst_high
     pcm_long_required_max_set_speed_conv = round(pcm_long_required_max * speed_conv)
     speed_unit = "km/h" if metric else "mph"
+
+    alert_1_str = "Speed Limit Assist: Activation Required"
     alert_2_str = f"Manually change set speed to {pcm_long_required_max_set_speed_conv} {speed_unit} to activate"
-  else:
-    # Non PCM long
-    v_cruise_cluster = CS.vCruiseCluster * CV.KPH_TO_MS
-
-    req_plus, req_minus = compare_cluster_target(v_cruise_cluster, speed_limit_final_last, metric)
-    arrow_str = ""
-    if req_plus:
-      arrow_str = "RES/+"
-    elif req_minus:
-      arrow_str = "SET/-"
-
-    alert_2_str = f"Operate the {arrow_str} cruise control button to activate"
+    alert_size = AlertSize.mid
 
   return Alert(
-    "Speed Limit Assist: Activation Required",
+    alert_1_str,
     alert_2_str,
-    AlertStatus.normal, AlertSize.mid,
-    Priority.LOW, VisualAlert.none, AudibleAlert.none, .1)
+    AlertStatus.normal, alert_size,
+    Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleLow, .1)
 
 
 class EventsSP(EventsBase):
@@ -202,7 +196,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Automatically adjusting to the posted speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+      Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
   },
 
   EventNameSP.speedLimitChanged: {
@@ -210,7 +204,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Set speed changed",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+      Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
   },
 
   EventNameSP.speedLimitPreActive: {
@@ -222,7 +216,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Automatically adjusting to the last speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.),
+      Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
   },
 
   EventNameSP.e2eChime: {
@@ -230,6 +224,6 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.prompt, 0.1),
+      Priority.MID, VisualAlert.none, AudibleAlert.prompt, 3.),
   },
 }
