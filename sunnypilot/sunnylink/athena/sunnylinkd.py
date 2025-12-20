@@ -253,10 +253,17 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
+  is_engaged = params.get_bool("IsEngaged")
+
   for key, value in params_to_update.items():
     # disallow modifications to blocked parameters
     if key in BLOCKED_PARAMS:
       cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
+      continue
+
+    # Block all params while engaged
+    if is_engaged:
+      cloudlog.warning(f"sunnylinkd.saveParams.blocked_engaged: Attempted to modify '{key}' while engaged")
       continue
 
     try:
