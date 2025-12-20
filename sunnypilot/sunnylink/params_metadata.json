@@ -125,6 +125,10 @@
     "title": "Car Battery Capacity",
     "description": ""
   },
+  "CarList": {
+    "title": "Supported Car List",
+    "description": "All supported platform in sunnypilot"
+  },
   "CarParams": {
     "title": "Car Params",
     "description": ""
@@ -258,11 +262,11 @@
     "description": ""
   },
   "EnableCopyparty": {
-    "title": "Enable Copyparty",
+    "title": "copyparty Service",
     "description": ""
   },
   "EnableGithubRunner": {
-    "title": "Enable GitHub Runner",
+    "title": "GitHub Runner Service",
     "description": ""
   },
   "EnableSunnylinkUploader": {
@@ -456,6 +460,10 @@
   },
   "LanguageSetting": {
     "title": "Language",
+    "description": ""
+  },
+  "LastAgnosPowerMonitorShutdown": {
+    "title": "Last AGNOS Power Monitor Shutdown",
     "description": ""
   },
   "LastAthenaPingTime": {
