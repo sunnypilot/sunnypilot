@@ -68,3 +68,5 @@ class UIStateSP:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.developer_ui = self.params.get("DevUIInfo")
+    self.rainbow_path = self.params.get_bool("RainbowMode")
+    self.chevron_metrics = self.params.get("ChevronInfo")
