@@ -37,12 +37,12 @@ class MadsSettingsLayout(Widget):
   def _initialize_items(self):
     self._main_cruise_toggle = toggle_item_sp(
       title=lambda: tr("Toggle with Main Cruise"),
-      description="",
+      description=MADS_MAIN_CRUISE_BASE_DESC,
       param="MadsMainCruiseAllowed",
     )
     self._unified_engagement_toggle = toggle_item_sp(
       title=lambda: tr("Unified Engagement Mode (UEM)"),
-      description="",
+      description=MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC,
       param="MadsUnifiedEngagementMode"
     )
     self._steering_mode = multiple_button_item_sp(
@@ -97,6 +97,7 @@ class MadsSettingsLayout(Widget):
       desc = "<b>" + opt[1] + "</b>" if button_index == MADS_STEERING_MODE_OPTIONS.index(opt) else opt[1]
       result += desc + "<br>"
     self._steering_mode.set_description(result)
+    self._steering_mode.show_description(True)
 
   def _update_toggles(self):
     self._update_steering_mode_description(self._steering_mode.action_item.get_selected_button())
@@ -118,9 +119,9 @@ class MadsSettingsLayout(Widget):
       self._steering_mode.action_item.set_selected_button(2)
     else:
       self._main_cruise_toggle.action_item.set_enabled(True)
-      self._main_cruise_toggle.set_description("")
+      self._main_cruise_toggle.set_description(MADS_MAIN_CRUISE_BASE_DESC)
 
       self._unified_engagement_toggle.action_item.set_enabled(True)
-      self._unified_engagement_toggle.set_description("")
+      self._unified_engagement_toggle.set_description(MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
 
       self._steering_mode.action_item.set_enabled(True)

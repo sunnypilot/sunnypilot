@@ -161,6 +161,13 @@ class ListItemSP(ListItem):
       return ""
     return str(_resolve_value(self._right_value_source, ""))
 
+  def _update_state(self):
+    prev_desc = self._prev_description
+    super()._update_state()
+    if self.description_visible and self._prev_description != prev_desc:
+      content_width = int(self._rect.width - style.ITEM_PADDING * 2)
+      self._rect.height = self.get_item_height(self._font, content_width)
+
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
 
