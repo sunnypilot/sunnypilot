@@ -19,7 +19,7 @@ from openpilot.system.version import get_version
 
 from cereal import messaging, custom
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
-from openpilot.sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
+from openpilot.sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compressed_data, SnakeCaseEncoder
 from openpilot.sunnypilot.sunnylink.utils import get_param_as_byte, save_param_from_base64_encoded_string
 
 
@@ -95,7 +95,7 @@ class BackupManagerSP:
 
       # Serialize and encrypt config data
       config_json = json.dumps(config_data)
-      encrypted_config = encrypt_compress_data(config_json, use_aes_256=True)
+      encrypted_config = encrypt_compressed_data(config_json, use_aes_256=True)
       self._update_progress(50.0, OperationType.BACKUP)
 
       backup_info = custom.BackupManagerSP.BackupInfo()

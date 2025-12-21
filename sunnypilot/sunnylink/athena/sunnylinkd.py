@@ -28,6 +28,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
                        create_connection, WebSocketConnectionClosedException)
 
 import cereal.messaging as messaging
+from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
 
@@ -40,6 +41,12 @@ DISALLOW_LOG_UPLOAD = threading.Event()
 METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "params_metadata.json")
 
 params = Params()
+
+# Parameters that should never be remotely modified for security reasons
+BLOCKED_PARAMS = {
+  "GithubUsername",  # Could grant SSH access
+  "GithubSshKeys",   # Direct SSH key injection
+}
 
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
@@ -247,6 +254,11 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
   for key, value in params_to_update.items():
+    # disallow modifications to blocked parameters
+    if key in BLOCKED_PARAMS:
+      cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
+      continue
+
     try:
       save_param_from_base64_encoded_string(key, value, compression)
     except Exception as e:
@@ -278,6 +290,8 @@ def main(exit_event: threading.Event = None):
   sunnylink_dongle_id = params.get("SunnylinkDongleId")
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
   UploadQueueCache.initialize(upload_queue)
+
+  update_car_list_param()
 
   ws_uri = f"{SUNNYLINK_ATHENA_HOST}"
   conn_start = None
