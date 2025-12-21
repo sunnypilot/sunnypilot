@@ -56,8 +56,8 @@ class DeveloperLayoutSP(DeveloperLayout):
     self.external_storage = external_storage_item(tr("External Storage"), description=tr("Extend your comma device's storage by inserting a USB drive " +
                                                                                          "into the aux port."))
 
-    self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.external_storage,
-                        self.error_log_btn,]
+    self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle,
+                        self.external_storage, self.error_log_btn,]
 
   @staticmethod
   def _on_prebuilt_toggled(state):
