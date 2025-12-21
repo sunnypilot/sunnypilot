@@ -169,7 +169,7 @@ class DeveloperUiRenderer(Widget):
     current_x = rect.x + gap_width
 
     for i, element in enumerate(elements):
-      element_center_x = current_x + element_widths[i] / 2
+      element_center_x = int(current_x + element_widths[i] / 2)
       self._draw_bottom_dev_ui_element(element_center_x, center_y, element)
       current_x += element_widths[i] + gap_width
 
