@@ -13,9 +13,9 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
-from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
                                                   _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
+from openpilot.system.ui.widgets.scroller_tici import LineSeparator, LINE_COLOR, LINE_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -315,20 +315,13 @@ def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
 
 
-class LineSeparatorSP(Widget):
-  def __init__(self, height: int = 36):
+class LineSeparatorSP(LineSeparator):
+  def __init__(self, height: int = 1):
     super().__init__()
     self._rect = rl.Rectangle(0, 0, 0, height)
 
-  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
-    super().set_parent_rect(parent_rect)
-    self._rect.width = parent_rect.width
-
   def _render(self, _):
     line_y = int(self._rect.y + self._rect.height // 2)
-    rl.draw_line_ex(
-      rl.Vector2(int(self._rect.x) + 40, line_y),
-      rl.Vector2(int(self._rect.x + self._rect.width) - 40, line_y),
-      2,
-      rl.GRAY
-    )
+    rl.draw_line(int(self._rect.x) + LINE_PADDING, line_y,
+                 int(self._rect.x + self._rect.width) - LINE_PADDING, line_y,
+                 LINE_COLOR)

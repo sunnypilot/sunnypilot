@@ -85,15 +85,15 @@ class SteeringLayout(Widget):
     items = [
       self._mads_toggle,
       self._mads_settings_button,
-      LineSeparatorSP(),
+      LineSeparatorSP(40),
       self._lane_change_settings_button,
-      LineSeparatorSP(),
+      LineSeparatorSP(40),
       self._blinker_control_toggle,
       self._blinker_control_options,
-      LineSeparatorSP(),
+      LineSeparatorSP(40),
       self._torque_control_toggle,
       self._torque_customization_button,
-      LineSeparatorSP(),
+      LineSeparatorSP(40),
       self._nnlc_toggle,
     ]
     return items
