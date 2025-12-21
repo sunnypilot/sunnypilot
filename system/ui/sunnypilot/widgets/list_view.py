@@ -180,13 +180,8 @@ class ListItemSP(ListItem):
       return rl.Rectangle(0, 0, 0, 0)
 
     if not self.inline:
-      has_description = bool(self.description) and self.description_visible
-
-      if has_description:
-        action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
-      else:
-        action_y = item_rect.y + item_rect.height - style.BUTTON_HEIGHT - style.ITEM_PADDING * 1.5
-
+      text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
+      action_y = item_rect.y + text_size.y + style.ITEM_PADDING * 3
       return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
 
     right_width = self.action_item.get_width_hint()
