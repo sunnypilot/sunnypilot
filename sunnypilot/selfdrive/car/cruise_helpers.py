@@ -46,8 +46,5 @@ class CruiseHelper:
     if self.button_frame_counts[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS and not self.experimental_mode_switched:
       self._experimental_mode = not experimental_mode
       self.params.put_bool_nonblocking("ExperimentalMode", self._experimental_mode)
-      if self._experimental_mode:
-        events.add(EventNameSP.experimentalModeSwitched)
-      else:
-        events.add(EventNameSP.chillModeSwitched)
+      events.add(EventNameSP.experimentalModeSwitched)
       self.experimental_mode_switched = True
