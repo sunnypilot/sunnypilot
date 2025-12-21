@@ -449,7 +449,8 @@ class DriverMonitoring:
       rpyCalib = [0., 0., 0.]
     else:
       highway_speed = sm['carState'].vEgo
-      enabled = sm['selfdriveState'].enabled
+      # TODO-SP: unit test to assert both control checks are always present
+      enabled = sm['selfdriveState'].enabled or sm['carControl'].latActive
       wrong_gear = sm['carState'].gearShifter not in (car.CarState.GearShifter.drive, car.CarState.GearShifter.low)
       standstill = sm['carState'].standstill
       driver_engaged = sm['carState'].steeringPressed or sm['carState'].gasPressed

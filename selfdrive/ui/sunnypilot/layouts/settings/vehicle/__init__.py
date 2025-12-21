@@ -23,7 +23,7 @@ class VehicleLayout(Widget):
     self._current_brand = None
     self._platform_selector = PlatformSelector(self._update_brand_settings)
 
-    self._vehicle_item = ListItemSP(title=self._platform_selector.text, action_item=ButtonAction(text=tr("Select")),
+    self._vehicle_item = ListItemSP(title=self._platform_selector.text, action_item=ButtonAction(text=tr("SELECT")),
                                     callback=self._platform_selector._on_clicked)
     self._vehicle_item.title_color = self._platform_selector.color
     self._legend_widget = LegendWidget(self._platform_selector)
@@ -42,7 +42,7 @@ class VehicleLayout(Widget):
   def _update_brand_settings(self):
     self._vehicle_item._title = self._platform_selector.text
     self._vehicle_item.title_color = self._platform_selector.color
-    vehicle_text = tr("Remove") if ui_state.params.get("CarPlatformBundle") else tr("Select")
+    vehicle_text = tr("REMOVE") if ui_state.params.get("CarPlatformBundle") else tr("SELECT")
     self._vehicle_item.action_item.set_text(vehicle_text)
 
     brand = self.get_brand()

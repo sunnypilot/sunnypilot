@@ -1037,6 +1037,10 @@
     "max": 5.0,
     "step": 0.1
   },
+  "ToyotaEnforceStockLongitudinal": {
+    "title": "Toyota: Enforce Factory Longitudinal Control",
+    "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used."
+  },
   "TrainingVersion": {
     "title": "Training Version",
     "description": ""
