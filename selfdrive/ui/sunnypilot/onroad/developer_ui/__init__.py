@@ -143,22 +143,50 @@ class DeveloperUiRenderer(Widget):
     if sm.valid['gpsLocationExternal'] or sm.valid['gpsLocation']:
       elements.append(self.altitude_elem.update(sm, ui_state.is_metric))
 
-    current_x = int(rect.x + 90)
-    center_y = y + bar_height // 2
-    for element in elements:
-      current_x += self._draw_bottom_dev_ui_element(current_x, center_y, element)
+    if not elements:
+      return
 
-  def _draw_bottom_dev_ui_element(self, x: int, y: int, element: UiElement) -> int:
+    font_size = 38
+    element_widths = []
+    for element in elements:
+      label_text = f"{element.label} "
+      value_text = element.value
+      unit_text = f" {element.unit}" if element.unit else ""
+
+      label_width = measure_text_cached(self._font_bold, label_text, font_size, 0).x
+      value_width = measure_text_cached(self._font_bold, value_text, font_size, 0).x
+      unit_width = measure_text_cached(self._font_bold, unit_text, font_size, 0).x if element.unit else 0
+
+      total_width = label_width + value_width + unit_width
+      element_widths.append(total_width)
+
+    total_element_width = sum(element_widths)
+    num_gaps = len(elements) + 1
+    available_width = rect.width
+    gap_width = (available_width - total_element_width) / num_gaps
+
+    center_y = y + bar_height // 2
+    current_x = rect.x + gap_width
+
+    for i, element in enumerate(elements):
+      element_center_x = current_x + element_widths[i] / 2
+      self._draw_bottom_dev_ui_element(element_center_x, center_y, element)
+      current_x += element_widths[i] + gap_width
+
+  def _draw_bottom_dev_ui_element(self, center_x: int, y: int, element: UiElement) -> None:
     font_size = 38
 
     label_text = f"{element.label} "
+    value_text = element.value
+    unit_text = f" {element.unit}" if element.unit else ""
     label_width = measure_text_cached(self._font_bold, label_text, font_size, 0).x
-    rl.draw_text_ex(self._font_bold, label_text, rl.Vector2(x, y - font_size // 2), font_size, 0, rl.WHITE)
+    value_width = measure_text_cached(self._font_bold, value_text, font_size, 0).x
+    unit_width = measure_text_cached(self._font_bold, unit_text, font_size, 0).x if element.unit else 0
+    total_width = label_width + value_width + unit_width
+    start_x = center_x - total_width / 2
 
-    value_width = measure_text_cached(self._font_bold, element.value, font_size, 0).x
-    rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(x + label_width + 10, y - font_size // 2), font_size, 0, element.color)
+    rl.draw_text_ex(self._font_bold, label_text, rl.Vector2(start_x, y - font_size // 2), font_size, 0, rl.WHITE)
+    rl.draw_text_ex(self._font_bold, value_text, rl.Vector2(start_x + label_width, y - font_size // 2), font_size, 0, element.color)
 
     if element.unit:
-      rl.draw_text_ex(self._font_bold, element.unit, rl.Vector2(x + label_width + value_width + 20, y - font_size // 2), font_size, 0, rl.WHITE)
-
-    return 400
+      rl.draw_text_ex(self._font_bold, unit_text, rl.Vector2(start_x + label_width + value_width, y - font_size // 2), font_size, 0, rl.WHITE)
