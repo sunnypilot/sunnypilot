@@ -927,6 +927,7 @@ if HARDWARE.get_device_type() == 'mici':
         "",
         AlertStatus.normal, AlertSize.full,
         Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
+      ET.USER_DISABLE: ImmediateDisableAlert("Neutral"),
       ET.NO_ENTRY: NoEntryAlert("Neutral"),
     },
   })
