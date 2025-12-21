@@ -70,3 +70,5 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.auto_lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
+    self.auto_lane_change_timer = self.params.get("AutoLaneChangeTimer", return_default=True)

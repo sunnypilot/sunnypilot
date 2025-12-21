@@ -1,12 +1,20 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from collections.abc import Callable
 import pyray as rl
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, LineSeparatorSP
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
+
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
 
 
 class LaneChangeSettingsLayout(Widget):
@@ -14,8 +22,9 @@ class LaneChangeSettingsLayout(Widget):
     super().__init__()
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(back_btn_callback)
-    self._initialize_items()
-    self._scroller = Scroller(self.items, line_separator=True, spacing=0)
+
+    items = self._initialize_items()
+    self._scroller = Scroller(items, line_separator=False, spacing=0)
 
   def _initialize_items(self):
     self._lane_change_timer = option_item_sp(
@@ -43,10 +52,13 @@ class LaneChangeSettingsLayout(Widget):
                              "(BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
     )
 
-    self.items = [
+    items = [
       self._lane_change_timer,
+      LineSeparatorSP(40),
       self._bsm_delay,
     ]
+
+    return items
 
   def _update_state(self):
     super()._update_state()
@@ -64,6 +76,6 @@ class LaneChangeSettingsLayout(Widget):
 
   def _update_toggles(self):
     enable_bsm = ui_state.CP and ui_state.CP.enableBsm
-    if not enable_bsm:
+    if not enable_bsm and ui_state.auto_lane_change_bsm_delay:
       ui_state.params.remove("AutoLaneChangeBsmDelay")
-    self._bsm_delay.set_visible(enable_bsm and int(ui_state.params.get("AutoLaneChangeTimer", return_default=True)) > 0)
+    self._bsm_delay.action_item.set_enabled(enable_bsm and ui_state.auto_lane_change_timer > AutoLaneChangeMode.NUDGE)
