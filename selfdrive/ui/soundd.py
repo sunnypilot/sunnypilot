@@ -2,6 +2,8 @@ import math
 import numpy as np
 import time
 import wave
+import socket
+import threading
 
 
 from cereal import car, messaging, custom
@@ -71,6 +73,43 @@ def check_selfdrive_timeout_alert(sm):
   return False
 
 
+class WebRTCAudioReceiver:
+  def __init__(self):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.sock.bind(('127.0.0.1', 27000))
+    self.sock.settimeout(0.1)
+    self.buffer = []
+    self.lock = threading.Lock()
+    threading.Thread(target=self._rx_thread, daemon=True).start()
+
+  def _rx_thread(self):
+    while True:
+      try:
+        data, _ = self.sock.recvfrom(4096)
+        samples = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+        with self.lock:
+          self.buffer.extend(samples)
+          if len(self.buffer) > 24000:
+            self.buffer = self.buffer[-9600:]
+      except socket.timeout:
+        pass
+      except Exception:
+        cloudlog.exception("WebRTCAudioReceiver error")
+        time.sleep(1)
+
+  def get_frames(self, n):
+    with self.lock:
+      if len(self.buffer) >= n:
+        ret = np.array(self.buffer[:n], dtype=np.float32)
+        self.buffer = self.buffer[n:]
+        return ret
+      ret = np.zeros(n, dtype=np.float32)
+      if self.buffer:
+        ret[:len(self.buffer)] = self.buffer
+        self.buffer = []
+      return ret
+
+
 class Soundd(QuietMode):
   def __init__(self):
     super().__init__()
@@ -84,6 +123,7 @@ class Soundd(QuietMode):
     self.selfdrive_timeout_alert = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
+    self.webrtc_receiver = WebRTCAudioReceiver()
 
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
@@ -124,7 +164,15 @@ class Soundd(QuietMode):
   def callback(self, data_out: np.ndarray, frames: int, time, status) -> None:
     if status:
       cloudlog.warning(f"soundd stream over/underflow: {status}")
-    data_out[:frames, 0] = self.get_sound_data(frames)
+
+    alert_audio = self.get_sound_data(frames)
+    webrtc_audio = self.webrtc_receiver.get_frames(frames)
+
+    mixed = alert_audio + webrtc_audio
+    # Simple limiter
+    mixed = np.clip(mixed, -1.0, 1.0)
+
+    data_out[:frames, 0] = mixed
 
   def update_alert(self, new_alert):
     current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame > len(self.loaded_sounds[self.current_alert])
