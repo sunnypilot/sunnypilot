@@ -30,7 +30,7 @@ class SunnylinkLayoutMici(NavWidget):
 
     self._sunnylink_toggle = BigToggle(text="",
                                        initial_state=self._sunnylink_enabled,
-                                       toggle_callback=SunnylinkLayoutMici._sunnylink_toggle_callback)
+                                       toggle_callback=self._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
     self._sunnylink_pair_button = SunnylinkPairBigButton(sponsor_pairing=True)
     self._backup_btn = BigButton(tr("backup settings"), "", "")
@@ -81,10 +81,25 @@ class SunnylinkLayoutMici(NavWidget):
   def _render(self, rect: rl.Rectangle):
     self._scroller.render(rect)
 
-  @staticmethod
-  def _sunnylink_toggle_callback(state: bool):
-    ui_state.params.put_bool("SunnylinkEnabled", state)
-    ui_state.update_params()
+  def _sunnylink_toggle_callback(self, state: bool):
+    if not state:
+      ui_state.params.put_bool("SunnylinkEnabled", False)
+      ui_state.update_params()
+      return
+
+    # Revert toggle until consent given
+    self._sunnylink_toggle.set_checked(False)
+
+    def on_confirm():
+      ui_state.params.put_bool("SunnylinkEnabled", True)
+      self._sunnylink_toggle.set_checked(True)
+      ui_state.update_params()
+
+    warning_msg = (
+      tr("Admins can potentially access device location, state, and settings and link to online account if paired.")
+    )
+    dlg = BigDialog(tr("Warning"), warning_msg, right_btn="check", right_btn_callback=on_confirm)
+    gui_app.set_modal_overlay(dlg)
 
   @staticmethod
   def _sunnylink_uploader_callback(state: bool):
