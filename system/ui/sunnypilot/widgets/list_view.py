@@ -15,6 +15,7 @@ from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
                                                   _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
+from openpilot.system.ui.widgets.scroller_tici import LineSeparator, LINE_COLOR, LINE_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
 
@@ -179,13 +180,8 @@ class ListItemSP(ListItem):
       return rl.Rectangle(0, 0, 0, 0)
 
     if not self.inline:
-      has_description = bool(self.description) and self.description_visible
-
-      if has_description:
-        action_y = item_rect.y + self._text_size.y + style.ITEM_PADDING * 3
-      else:
-        action_y = item_rect.y + item_rect.height - style.BUTTON_HEIGHT - style.ITEM_PADDING * 1.5
-
+      text_size = measure_text_cached(self._font, self.title, style.ITEM_TEXT_FONT_SIZE)
+      action_y = item_rect.y + text_size.y + style.ITEM_PADDING * 3
       return rl.Rectangle(item_rect.x + style.ITEM_PADDING, action_y, item_rect.width - (style.ITEM_PADDING * 2), style.BUTTON_HEIGHT)
 
     right_width = self.action_item.get_width_hint()
@@ -312,3 +308,15 @@ def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[
                    callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItemSP:
   action = ButtonActionSP(text=button_text, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
+
+
+class LineSeparatorSP(LineSeparator):
+  def __init__(self, height: int = 1):
+    super().__init__()
+    self._rect = rl.Rectangle(0, 0, 0, height)
+
+  def _render(self, _):
+    line_y = int(self._rect.y + self._rect.height // 2)
+    rl.draw_line(int(self._rect.x) + LINE_PADDING, line_y,
+                 int(self._rect.x + self._rect.width) - LINE_PADDING, line_y,
+                 LINE_COLOR)
