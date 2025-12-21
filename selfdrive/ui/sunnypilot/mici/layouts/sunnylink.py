@@ -8,9 +8,10 @@ from collections.abc import Callable
 
 import pyray as rl
 from cereal import custom
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2, BigMultiOptionDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.athena.sunnylinkd import SENSITIVE_PARAMS
 from openpilot.system.ui.lib.multilang import tr
 
 from openpilot.system.ui.widgets.scroller import Scroller
@@ -40,13 +41,20 @@ class SunnylinkLayoutMici(NavWidget):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=SunnylinkLayoutMici._sunnylink_uploader_callback)
 
+    self._remote_sensitive_toggle = BigToggle(
+      text=tr("sensitive parameters"),
+      initial_state=ui_state.params.get_bool("SunnylinkAllowSensitiveWrite"),
+      toggle_callback=self._on_remote_sensitive_toggle
+    )
+
     self._scroller = Scroller([
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
       self._backup_btn,
       self._restore_btn,
-      self._sunnylink_uploader_toggle
+      self._sunnylink_uploader_toggle,
+      self._remote_sensitive_toggle,
     ], snap_items=False)
 
   def _update_state(self):
@@ -58,6 +66,8 @@ class SunnylinkLayoutMici(NavWidget):
     self._backup_btn.set_visible(self._sunnylink_enabled)
     self._restore_btn.set_visible(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
+    self._remote_sensitive_toggle.set_visible(self._sunnylink_enabled)
+    self._remote_sensitive_toggle.set_checked(ui_state.params.get_bool("SunnylinkAllowSensitiveWrite"))
     self.handle_backup_restore_progress()
 
     if ui_state.sunnylink_state.is_sponsor():
@@ -89,6 +99,39 @@ class SunnylinkLayoutMici(NavWidget):
   @staticmethod
   def _sunnylink_uploader_callback(state: bool):
     ui_state.params.put_bool("EnableSunnylinkUploader", state)
+
+  def _on_remote_sensitive_toggle(self, state: bool):
+    if not state:
+      ui_state.params.put_bool("SunnylinkAllowSensitiveWrite", False)
+      return
+
+    # Revert toggle until confirmed
+    self._remote_sensitive_toggle.set_checked(False)
+
+    def on_second_confirm():
+      def on_final_confirm():
+        ui_state.params.put_bool("SunnylinkAllowSensitiveWrite", True)
+        self._remote_sensitive_toggle.set_checked(True)
+
+      dlg3 = BigConfirmationDialogV2(
+        "swipe to confirm",
+        "icons_mici/exclamation_point.png",
+        red=True,
+        confirm_callback=on_final_confirm
+      )
+      gui_app.set_modal_overlay(dlg3)
+
+    def on_first_confirm():
+      # Use BigMultiOptionDialog as a scrollable list viewer
+      sorted_params = sorted(SENSITIVE_PARAMS)
+      # firs element as title, prepend one space to the rest
+      params_list = ["PARAMS:"] + [f" {p}" for p in sorted_params]
+      dlg2 = BigMultiOptionDialog(params_list, params_list[0], right_btn="check", right_btn_callback=on_second_confirm)
+      gui_app.set_modal_overlay(dlg2)
+
+    warning_msg = tr("Allow modification of sensitive parameters by you or Sunnylink admins")
+    dlg = BigDialog(tr("Warning"), warning_msg, right_btn="check", right_btn_callback=on_first_confirm)
+    gui_app.set_modal_overlay(dlg)
 
   def _handle_backup_restore_btn(self, restore: bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")

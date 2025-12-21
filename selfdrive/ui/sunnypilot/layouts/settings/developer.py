@@ -20,6 +20,7 @@ from openpilot.system.ui.widgets.list_view import button_item
 
 from openpilot.system.ui.sunnypilot.widgets.html_render import HtmlModalSP
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from openpilot.sunnypilot.sunnylink.athena.sunnylinkd import SENSITIVE_PARAMS
 
 PREBUILT_PATH = os.path.join(Paths.comma_home(), "prebuilt") if PC else "/data/openpilot/prebuilt"
 
@@ -52,7 +53,17 @@ class DeveloperLayoutSP(DeveloperLayout):
 
     self.error_log_btn = button_item(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."), callback=self._on_error_log_clicked)
 
-    self.items: list = [self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle, self.prebuilt_toggle, self.error_log_btn,]
+    self.allow_remote_sensitive_toggle = toggle_item_sp(
+      tr("Sunnylink: sensitive params"),
+      tr("Allow remote modification of sensitive parameters via sunnylink."),
+      param="SunnylinkAllowSensitiveWrite",
+      callback=self._on_allow_remote_sensitive_toggle
+    )
+
+    self.items: list = [
+      self.show_advanced_controls, self.enable_github_runner_toggle, self.enable_copyparty_toggle,
+      self.prebuilt_toggle, self.allow_remote_sensitive_toggle, self.error_log_btn
+    ]
 
   @staticmethod
   def _on_prebuilt_toggled(state):
@@ -84,6 +95,49 @@ class DeveloperLayoutSP(DeveloperLayout):
     dialog = HtmlModalSP(text=text, callback=lambda result: self._on_error_log_closed(result, os.path.exists(self.error_log_path)))
     gui_app.set_modal_overlay(dialog)
 
+  def _on_allow_remote_sensitive_toggle(self, state: bool):
+    if not state:
+      # Disabling doesn't need confirmation
+      ui_state.params.put_bool("SunnylinkAllowSensitiveWrite", False)
+      return
+
+    # Revert toggle until confirmed
+    self.allow_remote_sensitive_toggle.action_item.set_state(False)
+
+    def on_third_confirm(result):
+      if result == DialogResult.CONFIRM:
+        ui_state.params.put_bool("SunnylinkAllowSensitiveWrite", True)
+        self.allow_remote_sensitive_toggle.action_item.set_state(True)
+
+    def on_second_confirm(result):
+      if result == DialogResult.CONFIRM:
+        dialog3 = ConfirmDialog(
+          tr("Are you sure? This will allow Sunnylink to modify/restore sensitive device parameters."),
+          tr("Yes, I understand"),
+          tr("Cancel"),
+          rich=False
+        )
+        gui_app.set_modal_overlay(dialog3, callback=on_third_confirm)
+
+    def on_first_confirm(result):
+      if result == DialogResult.CONFIRM:
+        params_list = "<br>".join(f"• {p}" for p in sorted(SENSITIVE_PARAMS))
+        dialog2 = HtmlModalSP(
+          text=f"<b>{tr('The following parameters will be remotely writable:')}</b><br><br>{params_list}",
+          callback=on_second_confirm
+        )
+        gui_app.set_modal_overlay(dialog2)
+
+    dialog = ConfirmDialog(
+      tr("Allow remote modification/restore of sensitive parameters. " +
+         "You and anyone with access to Sunnylink servers will have permission to change " +
+         "sensitive parameters such as recording permissions, dongleId, and network ports."),
+      tr("Continue"),
+      tr("Cancel"),
+      rich=False
+    )
+    gui_app.set_modal_overlay(dialog, callback=on_first_confirm)
+
   def _update_state(self):
     disable_updates = ui_state.params.get_bool("DisableUpdates")
     show_advanced = ui_state.params.get_bool("ShowAdvancedControls")
@@ -104,3 +158,4 @@ class DeveloperLayoutSP(DeveloperLayout):
     self.enable_copyparty_toggle.set_visible(show_advanced)
     self.enable_github_runner_toggle.set_visible(show_advanced and not self._is_release_branch)
     self.error_log_btn.set_visible(not self._is_release_branch)
+    self.allow_remote_sensitive_toggle.set_visible(show_advanced)
