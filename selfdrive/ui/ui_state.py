@@ -100,7 +100,7 @@ class UIState(UIStateSP):
 
   @property
   def engaged(self) -> bool:
-    return self.started and self.sm["selfdriveState"].enabled
+    return self.started and (self.sm["selfdriveState"].enabled or self.sm["selfdriveStateSP"].mads.enabled)
 
   def is_onroad(self) -> bool:
     return self.started
