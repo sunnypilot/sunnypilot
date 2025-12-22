@@ -79,7 +79,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._quiet_mode_and_dcam = dual_button_item_sp(
       left_text=lambda: tr("Quiet Mode"),
       right_text=lambda: tr("Driver Camera Preview"),
-      left_callback=self._handle_quiet_mode,
+      left_callback=ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
       right_callback=self._show_driver_camera
     )
     self._quiet_mode_btn = self._quiet_mode_and_dcam.action_item.left_button
@@ -99,7 +99,7 @@ class DeviceLayoutSP(DeviceLayout):
 
     self._onroad_uploads_and_reset = dual_button_item_sp(
       left_text=lambda: tr("Onroad Uploads"),
-      left_callback=self._onroad_uploads,
+      left_callback=ui_state.params.put_bool("OnroadUploads", not ui_state.params.get_bool("OnroadUploads")),
       right_text=lambda: tr("Reset Settings"),
       right_callback=self._reset_settings
     )
@@ -150,20 +150,16 @@ class DeviceLayoutSP(DeviceLayout):
 
     return items
 
-  def wake_mode_description(self) -> str:
+  @staticmethod
+  def wake_mode_description() -> str:
     def_str = tr("Default: Device will boot/wake-up normally & will be ready to engage.")
     offrd_str = tr("Offroad: Device will be in Always Offroad mode after boot/wake-up.")
     header = tr("Controls state of the device after boot/sleep.")
 
     return f"{header}\n\n{def_str}\n{offrd_str}"
 
-  def _handle_quiet_mode(self):
-    ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode"))
-
-  def _onroad_uploads(self):
-    ui_state.params.put_bool("OnroadUploads", not ui_state.params.get_bool("OnroadUploads"))
-
-  def _reset_settings(self):
+  @staticmethod
+  def _reset_settings():
     def _do_reset(result: int):
       if result == DialogResult.CONFIRM:
         for _key in ui_state.params.all_keys():
@@ -182,7 +178,8 @@ class DeviceLayoutSP(DeviceLayout):
       confirm_text=tr("Reset")
     ), callback=_second_confirm)
 
-  def _handle_always_offroad(self):
+  @staticmethod
+  def _handle_always_offroad():
     def _set_always_offroad(result: int, value: bool):
       if result == DialogResult.CONFIRM and not ui_state.engaged:
         ui_state.params.put_bool("OffroadMode", value)
@@ -201,7 +198,8 @@ class DeviceLayoutSP(DeviceLayout):
           confirm_text=tr("Confirm")
         ), callback=lambda result: _set_always_offroad(result, True))
 
-  def _update_max_time_offroad_label(self, value: int) -> str:
+  @staticmethod
+  def _update_max_time_offroad_label(value: int) -> str:
     label = tr("Always On") if value == 0 else f"{value}" + tr("m") if value < 60 else f"{value // 60}" + tr("h")
     label += tr(" (Default)") if value == 1800 else ""
     return label
