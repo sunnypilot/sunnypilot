@@ -50,7 +50,12 @@ class ExpButton(Widget):
 
     texture = self._txt_exp if self._held_or_actual_mode() else self._txt_wheel
     rl.draw_circle(center_x, center_y, self._rect.width / 2, self._black_bg)
-    rl.draw_texture(texture, center_x - texture.width // 2, center_y - texture.height // 2, self._white_color)
+
+    src_rect = rl.Rectangle(0.0, 0.0, texture.width, texture.height)
+    dest_rect = rl.Rectangle(center_x, center_y, texture.width, texture.height)
+    origin = rl.Vector2(texture.width / 2.0, texture.height / 2.0)
+    rotation = -ui_state.sm['carState'].steeringAngleDeg
+    rl.draw_texture_pro(texture, src_rect, dest_rect, origin, rotation, self._white_color)
 
   def _held_or_actual_mode(self):
     now = time.monotonic()
