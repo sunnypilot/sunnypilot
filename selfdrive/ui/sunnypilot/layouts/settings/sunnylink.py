@@ -303,12 +303,10 @@ class SunnylinkLayout(Widget):
 
   def _sunnylink_toggle_callback(self, state: bool):
     if state:
-      description = tr(
-        "Welcome back!! We're excited to see you've enabled sunnylink again!")
+      description = tr("Thanks for enabling sunnylink!")
       color = rl.Color(0, 255, 0, 255)  # Green
     else:
-      description = ("😢 " + tr("Not going to lie, it's sad to see you disabled sunnylink") +
-                     tr(", but we'll be here when you're ready to come back."))
+      description = tr("Sunnylink disabled. You can re-enable anytime.")
       color = rl.Color(255, 165, 0, 255)  # Orange
     self._sunnylink_description.set_text(description)
     self._sunnylink_description.set_color(color)
