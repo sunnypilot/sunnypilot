@@ -23,7 +23,10 @@ class UIStateSP:
     self.sunnylink_state = SunnylinkState()
 
   def update(self) -> None:
-    self.sunnylink_state.start()
+    if self.sunnylink_enabled:
+      self.sunnylink_state.start()
+    else:
+      self.sunnylink_state.stop()
 
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
