@@ -174,6 +174,24 @@ jobs:
           echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
           echo '    locksverify = false' >> .lfsconfig
 
+      - name: Restore workflows from source
+        run: |
+          TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+          SOURCE_BRANCH="${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
+
+          # Ensure we are on the target branch
+          git checkout $TARGET_BRANCH
+
+          echo "Restoring .github/workflows from $SOURCE_BRANCH"
+          git checkout origin/$SOURCE_BRANCH -- .github/workflows
+
+          if ! git diff --cached --quiet; then
+            echo "Workflows differ. Committing restoration."
+            git commit -m "chore: restore .github/workflows from $SOURCE_BRANCH"
+          else
+            echo "Workflows match $SOURCE_BRANCH."
+          fi
+
       - uses: actions/create-github-app-token@v2
         id: ci-token
         with:
