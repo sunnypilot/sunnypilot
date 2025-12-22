@@ -60,10 +60,10 @@ class TestCarInterfaces:
     # Test controller initialization
     # TODO: wait until card refactor is merged to run controller a few times,
     #  hypothesis also slows down significantly with just one more message draw
-    LongControl(car_params)
+    LongControl(car_params, car_params_sp)
     if car_params.steerControlType == CarParams.SteerControlType.angle:
-      LatControlAngle(car_params, car_params_sp, car_interface)
+      LatControlAngle(car_params, car_params_sp, car_interface, DT_CTRL)
     elif car_params.lateralTuning.which() == 'pid':
-      LatControlPID(car_params, car_params_sp, car_interface)
+      LatControlPID(car_params, car_params_sp, car_interface, DT_CTRL)
     elif car_params.lateralTuning.which() == 'torque':
-      LatControlTorque(car_params, car_params_sp, car_interface)
+      LatControlTorque(car_params, car_params_sp, car_interface, DT_CTRL)

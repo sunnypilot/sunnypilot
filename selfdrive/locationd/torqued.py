@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import numpy as np
 from collections import deque, defaultdict
 
@@ -11,6 +12,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.selfdrive.locationd.torqued_ext import TorqueEstimatorExt
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -50,9 +52,10 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator):
+class TorqueEstimator(ParameterEstimator, TorqueEstimatorExt):
   def __init__(self, CP, decimated=False, track_all_points=False):
-    super().__init__()
+    ParameterEstimator.__init__(self)
+    TorqueEstimatorExt.__init__(self, CP)
     self.CP = CP
     self.hist_len = int(HISTORY / DT_MDL)
     self.lag = 0.0
@@ -81,6 +84,8 @@ class TorqueEstimator(ParameterEstimator):
       self.offline_latAccelFactor = CP.lateralTuning.torque.latAccelFactor
 
     self.calibrator = PoseCalibrator()
+
+    TorqueEstimatorExt.initialize_custom_params(self, decimated)
 
     self.reset()
 
@@ -246,6 +251,8 @@ class TorqueEstimator(ParameterEstimator):
 def main(demo=False):
   config_realtime_process([0, 1, 2, 3], 5)
 
+  DEBUG = bool(int(os.getenv("DEBUG", "0")))
+
   pm = messaging.PubMaster(['liveTorqueParameters'])
   sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose', 'liveDelay'], poll='livePose')
 
@@ -260,9 +267,11 @@ def main(demo=False):
           t = sm.logMonoTime[which] * 1e-9
           estimator.handle_log(t, which, sm[which])
 
+    TorqueEstimatorExt.update_use_params(estimator)
+
     # 4Hz driven by livePose
     if sm.frame % 5 == 0:
-      pm.send('liveTorqueParameters', estimator.get_msg(valid=sm.all_checks()))
+      pm.send('liveTorqueParameters', estimator.get_msg(valid=sm.all_checks(), with_points=DEBUG))
 
     # Cache points every 60 seconds while onroad
     if sm.frame % 240 == 0:

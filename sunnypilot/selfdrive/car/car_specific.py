@@ -18,9 +18,9 @@ GearShifter = structs.CarState.GearShifter
 
 
 class CarSpecificEventsSP:
-  def __init__(self, CP: structs.CarParams, params):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     self.CP = CP
-    self.params = params
+    self.CP_SP = CP_SP
 
     self.low_speed_alert = False
 
@@ -37,9 +37,15 @@ class CarSpecificEventsSP:
         # TODO-SP: add 1 m/s hysteresis
         if CS.vEgo >= self.CP.minEnableSpeed:
           self.low_speed_alert = False
-        if CS.gearShifter != GearShifter.drive:
+        if self.CP.minEnableSpeed >= 14.5 and CS.gearShifter != GearShifter.drive:
           self.low_speed_alert = True
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
+
+    elif self.CP.brand == 'toyota':
+      if self.CP.openpilotLongitudinalControl:
+        if CS.cruiseState.standstill and not CS.brakePressed and self.CP_SP.enableGasInterceptor:
+          if events.has(EventName.resumeRequired):
+            events.remove(EventName.resumeRequired)
 
     return events_sp

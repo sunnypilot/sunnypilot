@@ -39,7 +39,7 @@ cd $BUILD_DIR
 rm -f panda/board/obj/panda.bin.signed
 rm -f panda/board/obj/panda_h7.bin.signed
 
-VERSION=$(cat common/version.h | awk -F[\"-]  '{print $2}')
+VERSION=$(cat sunnypilot/common/version.h | awk -F[\"-]  '{print $2}')
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git commit -a -m "openpilot v$VERSION release"

@@ -37,15 +37,14 @@ def live_map_data_sp_thread():
 
 
 def live_map_data_sp_thread_debug(gps_location_service):
-  _sub_master = messaging.SubMaster(['carState', 'livePose', 'liveMapDataSP', 'longitudinalPlanSP', gps_location_service])
+  _sub_master = messaging.SubMaster(['carState', 'livePose', 'liveMapDataSP', 'longitudinalPlanSP', 'carStateSP', gps_location_service])
   _sub_master.update()
 
   v_ego = _sub_master['carState'].vEgo
-  long_spl = _sub_master['longitudinalPlanSP'].speedLimit
-  _policy = Policy.car_state_priority
-  _resolver = SpeedLimitResolver(_policy)
-  _speed_limit, _distance, _source = _resolver.resolve(v_ego, long_spl, _sub_master)
-  print(_speed_limit, _distance, _source, " <-> ", long_spl)
+  _resolver = SpeedLimitResolver()
+  _resolver.policy = Policy.car_state_priority
+  _resolver.update(v_ego, _sub_master)
+  print(_resolver.speed_limit, _resolver.distance, _resolver.source)
 
 
 def main():
