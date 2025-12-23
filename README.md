@@ -11,66 +11,10 @@ Join the official sunnypilot community forum to stay up to date with all the lat
 https://docs.sunnypilot.ai/ is your one stop shop for everything from features to installation to FAQ about the sunnypilot
 
 ## 🚘 Running on a dedicated device in a car
-* A supported device to run this software
-    * a [comma three](https://comma.ai/shop/products/three) or a [C3X](https://comma.ai/shop/comma-3x)
-* This software
-* One of [the 325+ supported cars](https://github.com/sunnypilot/sunnypilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford, and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
-* A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
-
-Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
+First, check out this list of items you'll need to [get started](https://community.sunnypilot.ai/t/getting-started-using-sunnypilot-in-your-supported-car/251).
 
 ## Installation
-Please refer to [Recommended Branches](#recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `staging` branch.
-
-### If you want to use our newest branches (our rewrite)
-> [!TIP]
->You can see the rewrite state on our [rewrite project board](https://github.com/orgs/sunnypilot/projects/2), and to install the new branches, you can use the following links
-
-* sunnypilot not installed or you installed a version before 0.8.17?
-  1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
-  2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#recommended-branches). Example: ```https://staging.sunnypilot.ai```.
-  4. Complete the rest of the installation following the onscreen instructions.
-
-* sunnypilot already installed and you installed a version after 0.8.17?
-  1. On the comma three/3X, go to `Settings` ▶️ `Software`.
-  2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
-  3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
-  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `staging`
-
-### Recommended Branches
-|      Branch     |                 Installation URL              |
-|:---------------:|:---------------------------------------------:|
-| `release`       | `https://release.sunnypilot.ai`               |
-| `staging`       | `https://staging.sunnypilot.ai`               |
-|   `dev`         | `https://dev.sunnypilot.ai`                   |
-| `custom-branch` | `https://install.sunnypilot.ai/{branch_name}` |
-
-> [!TIP]
-> You can use sunnypilot/targetbranch as an install URL. Example: 'sunnypilot/staging'.
-
-> [!NOTE]
-> Do you require further assistance with software installation? Join the [sunnypilot community forum](https://community.sunnypilot.ai/new-topic?category=general/qa) and create a topic in the General/Q&A Category channel.
-
-
-<details>
-
-<summary>Older legacy branches</summary>
-
-### If you want to use our older legacy branches (*not recommended*)
-
-> [**IMPORTANT**]
-> It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
-> You can still restore the latest sunnylink backup made on the old branches.
-
-|    Branch    |         Installation URL         |
-|:------------:|:--------------------------------:|
-| `release-c3` | https://release-c3.sunnypilot.ai |
-| `staging-c3` | https://staging-c3.sunnypilot.ai |
-|   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
-
-</details>
-
+Next, refer to the sunnypilot community forum for [installation instructions](https://community.sunnypilot.ai/t/read-before-installing-sunnypilot/254), as well as a complete list of [Recommended Branch Installations](https://community.sunnypilot.ai/t/recommended-branch-installations/235).
 
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.

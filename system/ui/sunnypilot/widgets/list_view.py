@@ -11,13 +11,27 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
-                                                  _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING
+                                                  _resolve_value, BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, DualButtonAction
 from openpilot.system.ui.widgets.scroller_tici import LineSeparator, LINE_COLOR, LINE_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
+
+
+class Spacer(Widget):
+  def __init__(self, height: int = 1):
+    super().__init__()
+    self._rect = rl.Rectangle(0, 0, 0, height)
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    self._rect.width = parent_rect.width
+
+  def _render(self, _):
+    rl.draw_rectangle(int(self._rect.x), int(self._rect.y), int(self._rect.x + self._rect.width), int(self._rect.y), rl.Color(0,0,0,0))
 
 
 class ToggleActionSP(ToggleAction):
@@ -82,6 +96,33 @@ class ButtonActionSP(ButtonAction):
     pressed = self._pressed
     self._pressed = False
     return pressed
+
+
+class DualButtonActionSP(DualButtonAction):
+  def __init__(self, left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
+               right_callback: Callable = None, enabled: bool | Callable[[], bool] = True, border_radius: int = 15):
+    DualButtonAction.__init__(self, left_text, right_text, left_callback, right_callback, enabled)
+    self.left_button._border_radius = self.right_button._border_radius = border_radius
+
+  def _render(self, rect: rl.Rectangle):
+    button_spacing = 20
+    button_height = 150
+    button_width = (rect.width - button_spacing) / 2
+    button_y = rect.y + (rect.height - button_height) / 2
+
+    left_rect = rl.Rectangle(rect.x, button_y, button_width, button_height)
+    right_rect = rl.Rectangle(rect.x + button_width + button_spacing, button_y, button_width, button_height)
+
+    # expand one to full width if other is not visible
+    if not self.left_button.is_visible:
+      right_rect.x = rect.x
+      right_rect.width = rect.width
+    elif not self.right_button.is_visible:
+      left_rect.width = rect.width
+
+    # Render buttons
+    self.left_button.render(left_rect)
+    self.right_button.render(right_rect)
 
 
 class MultipleButtonActionSP(MultipleButtonAction):
@@ -251,13 +292,13 @@ class ListItemSP(ListItem):
         item_y = self._rect.y + (style.ITEM_BASE_HEIGHT - self._text_size.y) // 2 if self.inline else self._rect.y + style.ITEM_PADDING * 1.5
         rl.draw_text_ex(self._font, self.title, rl.Vector2(text_x, item_y), style.ITEM_TEXT_FONT_SIZE, 0, self.title_color)
 
-        # Draw right item if present
-        if self.action_item:
-          right_rect = self.get_right_item_rect(self._rect)
-          if self.action_item.render(right_rect) and self.action_item.enabled:
-            # Right item was clicked/activated
-            if self.callback:
-              self.callback()
+      # Draw right item if present
+      if self.action_item:
+        right_rect = self.get_right_item_rect(self._rect)
+        if self.action_item.render(right_rect) and self.action_item.enabled:
+          # Right item was clicked/activated
+          if self.callback:
+            self.callback()
 
     # Draw description if visible
     if self.description_visible:
@@ -308,6 +349,13 @@ def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[
                    callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItemSP:
   action = ButtonActionSP(text=button_text, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
+
+
+def dual_button_item_sp(left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
+                        right_callback: Callable = None, description: str | Callable[[], str] | None = None,
+                        enabled: bool | Callable[[], bool] = True, border_radius: int = 15) -> ListItemSP:
+  action = DualButtonActionSP(left_text, right_text, left_callback, right_callback, enabled, border_radius)
+  return ListItemSP(title="", description=description, action_item=action)
 
 
 class LineSeparatorSP(LineSeparator):
