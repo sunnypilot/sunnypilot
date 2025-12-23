@@ -73,3 +73,12 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+
+
+class DeviceSP:
+  def __init__(self):
+    self._params = Params()
+
+  def _set_awake(self, on: bool):
+    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
+      self._params.put_bool("OffroadMode", True)

@@ -11,6 +11,7 @@ from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.toggle import ToggleSP
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAction, MultipleButtonAction, ButtonAction, \
@@ -18,6 +19,19 @@ from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAc
 from openpilot.system.ui.widgets.scroller_tici import LineSeparator, LINE_COLOR, LINE_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
+
+
+class Spacer(Widget):
+  def __init__(self, height: int = 1):
+    super().__init__()
+    self._rect = rl.Rectangle(0, 0, 0, height)
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    self._rect.width = parent_rect.width
+
+  def _render(self, _):
+    rl.draw_rectangle(int(self._rect.x), int(self._rect.y), int(self._rect.x + self._rect.width), int(self._rect.y), rl.Color(0,0,0,0))
 
 
 class ToggleActionSP(ToggleAction):
