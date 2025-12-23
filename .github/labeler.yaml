@@ -18,22 +18,6 @@ ui:
   - changed-files:
     - any-glob-to-all-files: '{selfdrive/assets/**,selfdrive/ui/**,system/ui/**}'
 
-ui-tici:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'selfdrive/ui/!(mici)/**'
-      - 'selfdrive/ui/sunnypilot/!(mici)/**'
-      - 'system/ui/!(mici)/**'
-      - 'system/ui/sunnypilot/!(mici)/**'
-
-ui-mici:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'selfdrive/ui/mici/**'
-      - 'selfdrive/ui/sunnypilot/mici/**'
-      - 'system/ui/mici/**'
-      - 'system/ui/sunnypilot/mici/**'
-
 tools:
   - changed-files:
     - any-glob-to-all-files: 'tools/**'
