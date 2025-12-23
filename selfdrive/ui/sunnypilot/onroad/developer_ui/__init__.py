@@ -106,7 +106,7 @@ class DeveloperUiRenderer(Widget):
     if element.unit:
       units_height = measure_text_cached(self._font_bold, element.unit, unit_size, 0).x
 
-      units_x = x + container_width - 10
+      units_x = x + container_width
       units_y = y + (value_size / 2) + (units_height / 2)
 
       rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size,
