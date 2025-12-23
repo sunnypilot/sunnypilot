@@ -80,7 +80,7 @@ class DeviceLayoutSP(DeviceLayout):
     self._quiet_mode_and_dcam = dual_button_item_sp(
       left_text=lambda: tr("Quiet Mode"),
       right_text=lambda: tr("Driver Camera Preview"),
-      left_callback=ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
+      left_callback=lambda: ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
       right_callback=self._show_driver_camera
     )
     self._quiet_mode_btn = self._quiet_mode_and_dcam.action_item.left_button
@@ -100,7 +100,7 @@ class DeviceLayoutSP(DeviceLayout):
 
     self._onroad_uploads_and_reset = dual_button_item_sp(
       left_text=lambda: tr("Onroad Uploads"),
-      left_callback=ui_state.params.put_bool("OnroadUploads", not ui_state.params.get_bool("OnroadUploads")),
+      left_callback=lambda: ui_state.params.put_bool("OnroadUploads", not ui_state.params.get_bool("OnroadUploads")),
       right_text=lambda: tr("Reset Settings"),
       right_callback=self._reset_settings
     )
