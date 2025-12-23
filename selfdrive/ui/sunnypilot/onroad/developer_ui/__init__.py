@@ -78,9 +78,10 @@ class DeveloperUiRenderer(Widget):
     ]
     if controls_state.lateralControlState.which() == 'torqueState':
       elements.append(self.desired_lat_accel_elem.update(sm, ui_state.is_metric))
-      elements.append(self.actual_lat_accel_elem.update(sm, ui_state.is_metric))
     else:
       elements.append(self.desired_steer_elem.update(sm, ui_state.is_metric))
+
+    elements.append(self.actual_lat_accel_elem.update(sm, ui_state.is_metric))
 
     current_y = y
     for element in elements:
