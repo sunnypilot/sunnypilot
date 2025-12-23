@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, UTC
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.version import get_version
 
-       # name : jwt signature algorithm
-KEYS = {"id_rsa" : "RS256",
-        "id_ecdsa" : "ES256"}
+# name: jwt signature algorithm
+KEYS = {"id_rsa": "RS256",
+        "id_ecdsa": "ES256"}
 
 
 class BaseApi:
@@ -62,7 +62,7 @@ class BaseApi:
     return requests.request(method, f"{self.api_host}/{endpoint}", timeout=timeout, headers=headers, json=json, params=params)
 
   @staticmethod
-  def get_key_pair():
+  def get_key_pair() -> tuple[str, str, str] | tuple[None, None, None]:
     for key in KEYS:
       if os.path.isfile(Paths.persist_root() + f'/comma/{key}') and os.path.isfile(Paths.persist_root() + f'/comma/{key}.pub'):
         with open(Paths.persist_root() + f'/comma/{key}') as private, open(Paths.persist_root() + f'/comma/{key}.pub') as public:

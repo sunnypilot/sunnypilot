@@ -100,56 +100,67 @@ class Widget(abc.ABC):
     if not self.is_visible:
       return None
 
+    self._layout()
     ret = self._render(self._rect)
 
     # Keep track of whether mouse down started within the widget's rectangle
     if self.enabled and self.__was_awake:
-      for mouse_event in gui_app.mouse_events:
-        if not self._multi_touch and mouse_event.slot != 0:
-          continue
-
-        # Ignores touches/presses that start outside our rect
-        # Allows touch to leave the rect and come back in focus if mouse did not release
-        if mouse_event.left_pressed and self._touch_valid():
-          if rl.check_collision_point_rec(mouse_event.pos, self._hit_rect):
-            self._handle_mouse_press(mouse_event.pos)
-            self.__is_pressed[mouse_event.slot] = True
-            self.__tracking_is_pressed[mouse_event.slot] = True
-            self._handle_mouse_event(mouse_event)
-
-        # Callback such as scroll panel signifies user is scrolling
-        elif not self._touch_valid():
-          self.__is_pressed[mouse_event.slot] = False
-          self.__tracking_is_pressed[mouse_event.slot] = False
-
-        elif mouse_event.left_released:
-          self._handle_mouse_event(mouse_event)
-          if self.__is_pressed[mouse_event.slot] and rl.check_collision_point_rec(mouse_event.pos, self._hit_rect):
-            self._handle_mouse_release(mouse_event.pos)
-          self.__is_pressed[mouse_event.slot] = False
-          self.__tracking_is_pressed[mouse_event.slot] = False
-
-        # Mouse/touch is still within our rect
-        elif rl.check_collision_point_rec(mouse_event.pos, self._hit_rect):
-          if self.__tracking_is_pressed[mouse_event.slot]:
-            self.__is_pressed[mouse_event.slot] = True
-            self._handle_mouse_event(mouse_event)
-
-        # Mouse/touch left our rect but may come back into focus later
-        elif not rl.check_collision_point_rec(mouse_event.pos, self._hit_rect):
-          self.__is_pressed[mouse_event.slot] = False
-          self._handle_mouse_event(mouse_event)
+      self._process_mouse_events()
 
     self.__was_awake = device.awake
 
     return ret
 
-  @abc.abstractmethod
-  def _render(self, rect: rl.Rectangle) -> bool | int | None:
-    """Render the widget within the given rectangle."""
+  def _process_mouse_events(self) -> None:
+    hit_rect = self._hit_rect
+    touch_valid = self._touch_valid()
+
+    for mouse_event in gui_app.mouse_events:
+      if not self._multi_touch and mouse_event.slot != 0:
+        continue
+
+      mouse_in_rect = rl.check_collision_point_rec(mouse_event.pos, hit_rect)
+      # Ignores touches/presses that start outside our rect
+      # Allows touch to leave the rect and come back in focus if mouse did not release
+      if mouse_event.left_pressed and touch_valid:
+        if mouse_in_rect:
+          self._handle_mouse_press(mouse_event.pos)
+          self.__is_pressed[mouse_event.slot] = True
+          self.__tracking_is_pressed[mouse_event.slot] = True
+          self._handle_mouse_event(mouse_event)
+
+      # Callback such as scroll panel signifies user is scrolling
+      elif not touch_valid:
+        self.__is_pressed[mouse_event.slot] = False
+        self.__tracking_is_pressed[mouse_event.slot] = False
+
+      elif mouse_event.left_released:
+        self._handle_mouse_event(mouse_event)
+        if self.__is_pressed[mouse_event.slot] and mouse_in_rect:
+          self._handle_mouse_release(mouse_event.pos)
+        self.__is_pressed[mouse_event.slot] = False
+        self.__tracking_is_pressed[mouse_event.slot] = False
+
+      # Mouse/touch is still within our rect
+      elif mouse_in_rect:
+        if self.__tracking_is_pressed[mouse_event.slot]:
+          self.__is_pressed[mouse_event.slot] = True
+          self._handle_mouse_event(mouse_event)
+
+      # Mouse/touch left our rect but may come back into focus later
+      elif not mouse_in_rect:
+        self.__is_pressed[mouse_event.slot] = False
+        self._handle_mouse_event(mouse_event)
+
+  def _layout(self) -> None:
+    """Optionally lay out child widgets separately. This is called before rendering."""
 
   def _update_state(self):
     """Optionally update the widget's non-layout state. This is called before rendering."""
+
+  @abc.abstractmethod
+  def _render(self, rect: rl.Rectangle) -> bool | int | None:
+    """Render the widget within the given rectangle."""
 
   def _update_layout_rects(self) -> None:
     """Optionally update any layout rects on Widget rect change."""
@@ -263,13 +274,17 @@ class NavWidget(Widget, abc.ABC):
       in_dismiss_area = mouse_event.pos.y < self._rect.height * self.BACK_TOUCH_AREA_PERCENTAGE
 
       scroller_at_top = False
+      vertical_scroller = False
       # TODO: -20? snapping in WiFi dialog can make offset not be positive at the top
       if hasattr(self, '_scroller'):
         scroller_at_top = self._scroller.scroll_panel.get_offset() >= -20 and not self._scroller._horizontal
+        vertical_scroller = not self._scroller._horizontal
       elif hasattr(self, '_scroll_panel'):
         scroller_at_top = self._scroll_panel.get_offset() >= -20 and not self._scroll_panel._horizontal
+        vertical_scroller = not self._scroll_panel._horizontal
 
-      if in_dismiss_area or scroller_at_top:
+      # Vertical scrollers need to be at the top to swipe away to prevent erroneous swipes
+      if (not vertical_scroller and in_dismiss_area) or scroller_at_top:
         self._can_swipe_away = True
         self._back_button_start_pos = mouse_event.pos
 
@@ -358,6 +373,10 @@ class NavWidget(Widget, abc.ABC):
 
       self._nav_bar.set_position(bar_x, round(self._nav_bar_y_filter.x))
       self._nav_bar.render()
+
+      # draw black above widget when dismissing
+      if self._rect.y > 0:
+        rl.draw_rectangle(int(self._rect.x), 0, int(self._rect.width), int(self._rect.y), rl.BLACK)
 
     return ret
 

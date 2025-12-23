@@ -200,37 +200,28 @@ jobs:
           sudo rm -rf ${OUTPUT_DIR}
           mkdir -p ${OUTPUT_DIR}
           rsync -am${RUNNER_DEBUG:+v} \
-            --include='**/panda/board/' \
-            --include='**/panda/board/obj' \
-            --include='**/panda/board/obj/panda.bin.signed' \
-            --include='**/panda/board/obj/panda_h7.bin.signed' \
-            --include='**/panda/board/obj/bootstub.panda.bin' \
-            --include='**/panda/board/obj/bootstub.panda_h7.bin' \
             --exclude='.sconsign.dblite' \
             --exclude='*.a' \
             --exclude='*.o' \
             --exclude='*.os' \
             --exclude='*.pyc' \
             --exclude='moc_*' \
-            --exclude='*.cc' \
+            --exclude='__pycache__' \
             --exclude='Jenkinsfile' \
-            --exclude='supercombo.onnx' \
-            --exclude='**/panda/board/*' \
-            --exclude='**/panda/board/obj/**' \
-            --exclude='**/panda/certs/' \
-            --exclude='**/panda/crypto/' \
             --exclude='**/release/' \
             --exclude='**/.github/' \
             --exclude='**/selfdrive/ui/replay/' \
             --exclude='**/__pycache__/' \
-            --exclude='**/selfdrive/ui/*.h' \
-            --exclude='**/selfdrive/ui/**/*.h' \
-            --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/' \
             --exclude='${{env.SCONS_CACHE_DIR}}' \
             --exclude='**/.git/' \
             --exclude='**/SConstruct' \
             --exclude='**/SConscript' \
             --exclude='**/.venv/' \
+            --exclude='selfdrive/modeld/models/driving_vision.onnx' \
+            --exclude='selfdrive/modeld/models/driving_policy.onnx' \
+            --exclude='sunnypilot/modeld*/models/supercombo.onnx' \
+            --exclude='third_party/*x86*' \
+            --exclude='third_party/*Darwin*' \
             --delete-excluded \
             --chown=comma:comma \
             ${BUILD_DIR}/ ${OUTPUT_DIR}/
