@@ -192,12 +192,10 @@ class DeviceLayoutSP(DeviceLayout):
     always_offroad = ui_state.params.get_bool("OffroadMode")
 
     # Text & Color
-    if always_offroad:
-      self._always_offroad_btn.action_item.left_button.set_text(tr("Exit Always Offroad"))
-      self._always_offroad_btn.action_item.left_button.set_button_style(ButtonStyle.NORMAL)
-    else:
-      self._always_offroad_btn.action_item.left_button.set_text(tr("Enable Always Offroad"))
-      self._always_offroad_btn.action_item.left_button.set_button_style(ButtonStyle.DANGER)
+    offroad_mode_btn_text = tr("Exit Always Offroad") if always_offroad else tr("Enable Always Offroad")
+    offroad_mode_btn_style = ButtonStyle.NORMAL if always_offroad else ButtonStyle.DANGER
+    self._always_offroad_btn.action_item.left_button.set_text(offroad_mode_btn_text)
+    self._always_offroad_btn.action_item.left_button.set_button_style(offroad_mode_btn_style)
 
     # Position
     if self._scroller._items.__contains__(self._always_offroad_btn):
