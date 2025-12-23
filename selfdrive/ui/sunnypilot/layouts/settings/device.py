@@ -63,6 +63,7 @@ class DeviceLayoutSP(DeviceLayout):
       value_map=offroad_time_options,
       label_width=360,
       use_float_scaling=False,
+      inline=True,
       label_callback=self._update_max_time_offroad_label
     )
 
