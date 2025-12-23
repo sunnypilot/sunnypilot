@@ -100,6 +100,13 @@ class DeviceLayoutSP(DeviceLayout):
       right_callback=self._reset_settings
     )
 
+    self._power_buttons = dual_button_item_sp(
+      left_text=lambda: tr("Reboot"),
+      right_text=lambda: tr("Power Off"),
+      left_callback=self._reboot_prompt,
+      right_callback=self._power_off_prompt
+    )
+
     items = [
       text_item(lambda: tr("Dongle ID"), self._params.get("DongleId") or (lambda: tr("N/A"))),
       LineSeparator(),
@@ -111,25 +118,13 @@ class DeviceLayoutSP(DeviceLayout):
       LineSeparator(),
       button_item_sp(lambda: tr("Change Language"), lambda: tr("CHANGE"), callback=self._show_language_dialog),
       LineSeparator(),
-    ]
-
-    self._power_buttons = dual_button_item_sp(
-      left_text=lambda: tr("Reboot"),
-      right_text=lambda: tr("Power Off"),
-      left_callback=self._reboot_prompt,
-      right_callback=self._power_off_prompt
-    )
-    self._reboot_btn = self._power_buttons.action_item.left_button
-    self._power_btn = self._power_buttons.action_item.right_button
-
-    items += [
       self._device_wake_mode,
       LineSeparator(),
       self._max_time_offroad,
       LineSeparator(height=10),
       self._quiet_mode_and_dcam,
       self._reg_and_training,
-      self._onroad_uploads_and_reset,
+      self._onroad_uploads_and_reset_settings,
       Spacer(10),
       LineSeparator(height=10),
       self._power_buttons,
