@@ -11,13 +11,7 @@ Join the official sunnypilot community forum to stay up to date with all the lat
 https://docs.sunnypilot.ai/ is your one stop shop for everything from features to installation to FAQ about the sunnypilot
 
 ## 🚘 Running on a dedicated device in a car
-* A supported device to run this software
-    * a comma three ([limited support](https://community.sunnypilot.ai/t/limited-support-with-comma-three-c3-tici/380)), comma 3X, or [comma four](https://comma.ai/shop/comma-four)
-* This software
-* One of [the 325+ supported cars](https://github.com/sunnypilot/sunnypilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford, and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
-* A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
-
-Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
+First, check out this list of items you'll need to [get started](https://community.sunnypilot.ai/t/getting-started-using-sunnypilot-in-your-supported-car/251).
 
 ## Installation
 Please refer to the sunnypilot community forum for [installation instructions](https://community.sunnypilot.ai/t/read-before-installing-sunnypilot/254), as well as a complete list of [Recommended Branch Installations](https://community.sunnypilot.ai/t/recommended-branch-installations/235).
