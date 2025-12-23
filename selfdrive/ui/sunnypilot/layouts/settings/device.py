@@ -83,10 +83,7 @@ class DeviceLayoutSP(DeviceLayout):
       left_callback=lambda: ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
       right_callback=self._show_driver_camera
     )
-    self._quiet_mode_btn = self._quiet_mode_and_dcam.action_item.left_button
-    self._dcam_btn = self._quiet_mode_and_dcam.action_item.right_button
-    self._dcam_btn.set_button_style(ButtonStyle.NORMAL)
-    self._quiet_mode_btn._border_radius = 20
+    self._quiet_mode_and_dcam.action_item.right_button.set_button_style(ButtonStyle.NORMAL)
 
     self._reg_and_training = dual_button_item_sp(
       left_text=lambda: tr("Regulatory"),
@@ -224,13 +221,13 @@ class DeviceLayoutSP(DeviceLayout):
       self._scroller._items.insert(0, self._always_offroad_btn)
 
     # Quiet Mode button
-    self._quiet_mode_btn.set_button_style(ButtonStyle.PRIMARY if ui_state.params.get_bool("QuietMode") else ButtonStyle.NORMAL)
+    self._quiet_mode_and_dcam.action_item.left_button.set_button_style(ButtonStyle.PRIMARY if ui_state.params.get_bool("QuietMode") else ButtonStyle.NORMAL)
 
     # Onroad Uploads
     self._onroad_uploads_btn.set_button_style(ButtonStyle.PRIMARY if ui_state.params.get_bool("OnroadUploads") else ButtonStyle.NORMAL)
 
     # Offroad only buttons
-    self._dcam_btn.set_enabled(ui_state.is_offroad())
+    self._quiet_mode_and_dcam.action_item.right_button.set_enabled(ui_state.is_offroad())
     self._reg_btn.set_enabled(ui_state.is_offroad())
     self._training_btn.set_enabled(ui_state.is_offroad())
     self._reset_settings_btn.set_enabled(ui_state.is_offroad())
