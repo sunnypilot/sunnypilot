@@ -165,23 +165,19 @@ class DeviceLayoutSP(DeviceLayout):
 
   @staticmethod
   def _handle_always_offroad():
-    def _set_always_offroad(result: int, value: bool):
-      if result == DialogResult.CONFIRM and not ui_state.engaged:
-        ui_state.params.put_bool("OffroadMode", value)
-
     if ui_state.engaged:
       gui_app.set_modal_overlay(alert_dialog(tr("Disengage to Enter Always Offroad Mode")))
-    else:
-      if ui_state.params.get_bool("OffroadMode"):
-        gui_app.set_modal_overlay(ConfirmDialog(
-          text=tr("Are you sure you want to exit Always Offroad mode?"),
-          confirm_text=tr("Confirm")
-        ), callback=lambda result: _set_always_offroad(result, False))
-      else:
-        gui_app.set_modal_overlay(ConfirmDialog(
-          text=tr("Are you sure you want to enter Always Offroad mode?"),
-          confirm_text=tr("Confirm")
-        ), callback=lambda result: _set_always_offroad(result, True))
+      return
+
+    _offroad_mode_state = ui_state.params.get_bool("OffroadMode")
+    _offroad_mode_str = tr("Are you sure you want to exit Always Offroad mode?") if _offroad_mode_state else \
+                        tr("Are you sure you want to enter Always Offroad mode?")
+
+    def _set_always_offroad(result: int):
+      if result == DialogResult.CONFIRM and not ui_state.engaged:
+        ui_state.params.put_bool("OffroadMode", not _offroad_mode_state)
+
+    gui_app.set_modal_overlay(ConfirmDialog(_offroad_mode_str, tr("Confirm")), callback=lambda result: _set_always_offroad(result))
 
   @staticmethod
   def _update_max_time_offroad_label(value: int) -> str:
