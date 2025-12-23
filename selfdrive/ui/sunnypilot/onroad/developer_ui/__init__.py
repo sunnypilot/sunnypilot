@@ -109,7 +109,8 @@ class DeveloperUiRenderer(Widget):
       units_x = x + container_width - 10
       units_y = y + (value_size / 2) + (units_height / 2)
 
-      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
+      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size,
+                       0, rl.WHITE)
 
     return 130
 
