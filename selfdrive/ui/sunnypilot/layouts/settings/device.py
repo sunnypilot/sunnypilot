@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.hardware import HARDWARE
+from openpilot.system.hardware import HARDWARE, TICI
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, multiple_button_item_sp, button_item_sp, \
@@ -120,18 +120,6 @@ class DeviceLayoutSP(DeviceLayout):
       LineSeparator(),
     ]
 
-    items += [
-      self._device_wake_mode,
-      LineSeparator(),
-      self._max_time_offroad,
-      LineSeparator(height=10),
-      self._quiet_mode_and_dcam,
-      self._reg_and_training,
-      self._onroad_uploads_and_reset,
-      Spacer(10),
-      LineSeparator(height=10),
-    ]
-
     self._power_buttons = dual_button_item_sp(
       left_text=lambda: tr("Reboot"),
       right_text=lambda: tr("Power Off"),
@@ -142,14 +130,22 @@ class DeviceLayoutSP(DeviceLayout):
     self._power_btn = self._power_buttons.action_item.right_button
 
     items += [
-      dual_button_item_sp(
-        left_text=lambda: tr("Reboot"),
-        right_text=lambda: tr("Power Off"),
-        left_callback=self._reboot_prompt,
-        right_callback=self._power_off_prompt),
+      self._device_wake_mode,
+      LineSeparator(),
+      self._max_time_offroad,
+      LineSeparator(height=10),
+      self._quiet_mode_and_dcam,
+      self._reg_and_training,
+      self._onroad_uploads_and_reset,
+      Spacer(10),
+      LineSeparator(height=10),
+      self._power_buttons,
     ]
 
     return items
+
+  def _offroad_transition(self):
+    self._power_buttons.action_item.right_button.set_visible(ui_state.is_offroad())
 
   @staticmethod
   def wake_mode_description() -> str:
@@ -238,7 +234,3 @@ class DeviceLayoutSP(DeviceLayout):
     self._reg_btn.set_enabled(ui_state.is_offroad())
     self._training_btn.set_enabled(ui_state.is_offroad())
     self._reset_settings_btn.set_enabled(ui_state.is_offroad())
-
-    # Always enabled buttons
-    self._reboot_btn.set_visible(True)
-    self._power_btn.set_visible(True)
