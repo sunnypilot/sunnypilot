@@ -17,10 +17,14 @@ simulation:
 ui:
   - changed-files:
     - any-glob-to-any-file:
-      - 'selfdrive/ui/!(mici)/**'
-      - 'selfdrive/ui/sunnypilot/!(mici)/**'
-      - 'system/ui/!(mici)/**'
-      - 'system/ui/sunnypilot/!(mici)/**'
+      - 'selfdrive/ui/**'
+      - 'selfdrive/ui/sunnypilot/**'
+      - 'system/ui/**'
+      - 'system/ui/sunnypilot/**'
+      - '!selfdrive/ui/mici/**'
+      - '!selfdrive/ui/sunnypilot/mici/**'
+      - '!system/ui/mici/**'
+      - '!system/ui/sunnypilot/mici/**'
 
 ui-mici:
   - changed-files:
