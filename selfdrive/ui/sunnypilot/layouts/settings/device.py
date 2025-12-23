@@ -91,9 +91,7 @@ class DeviceLayoutSP(DeviceLayout):
       right_text=lambda: tr("Training Guide"),
       right_callback=self._on_review_training_guide
     )
-    self._reg_btn = self._reg_and_training.action_item.left_button
-    self._training_btn = self._reg_and_training.action_item.right_button
-    self._training_btn.set_button_style(ButtonStyle.NORMAL)
+    self._reg_and_training.action_item.right_button.set_button_style(ButtonStyle.NORMAL)
 
     self._onroad_uploads_and_reset = dual_button_item_sp(
       left_text=lambda: tr("Onroad Uploads"),
@@ -228,6 +226,6 @@ class DeviceLayoutSP(DeviceLayout):
 
     # Offroad only buttons
     self._quiet_mode_and_dcam.action_item.right_button.set_enabled(ui_state.is_offroad())
-    self._reg_btn.set_enabled(ui_state.is_offroad())
-    self._training_btn.set_enabled(ui_state.is_offroad())
+    self._reg_and_training.action_item.left_button.set_enabled(ui_state.is_offroad())
+    self._reg_and_training.action_item.right_button.set_enabled(ui_state.is_offroad())
     self._reset_settings_btn.set_enabled(ui_state.is_offroad())
