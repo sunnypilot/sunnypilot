@@ -20,7 +20,7 @@ https://docs.sunnypilot.ai/ is your one stop shop for everything from features t
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
 ## Installation
-Please refer to the sunnypilot community forum for a complete list of [Recommended Branch Installations](https://community.sunnypilot.ai/t/recommended-branch-installations/235).
+Please refer to the sunnypilot community forum for [installation instructions](https://community.sunnypilot.ai/t/read-before-installing-sunnypilot/254), as well as a complete list of [Recommended Branch Installations](https://community.sunnypilot.ai/t/recommended-branch-installations/235).
 
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
