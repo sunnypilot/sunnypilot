@@ -245,6 +245,8 @@ class Device(DeviceSP):
 
   def _update_brightness(self):
     clipped_brightness = self._offroad_brightness
+    brightness_override = ui_state.params.get("Brightness", return_default=True)
+    brightness = self._last_brightness
 
     if ui_state.started and ui_state.light_sensor >= 0:
       clipped_brightness = ui_state.light_sensor
@@ -255,9 +257,13 @@ class Device(DeviceSP):
       else:
         clipped_brightness = ((clipped_brightness + 16.0) / 116.0) ** 3.0
 
-      clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
+      if brightness_override <= 0:
+        min_brightness = 1 if brightness_override < 0 else 30
+        clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [min_brightness, 100]))
+        brightness = round(self._brightness_filter.update(clipped_brightness))
+      else:
+        brightness = brightness_override
 
-    brightness = round(self._brightness_filter.update(clipped_brightness))
     if not self._awake:
       brightness = 0
 
