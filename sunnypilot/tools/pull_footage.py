@@ -9,7 +9,7 @@ from openpilot.tools.lib.route import Route
 
 
 def get_segments(source, route_id, camera, seg_range):
-  if "@" in source or "comma-" or "sunny-" in source:  # SSH
+  if "@" in source or "comma-" in source or "sunny-" in source:  # SSH
     if not route_id:
       raise ValueError("route_id required for SSH")
     cmd = ["ssh", source, f"ls -d /data/media/0/realdata/{route_id.split('--')[0]}--*"]
@@ -87,7 +87,7 @@ def main():
       if ":" in range_str or range_str.isdigit():
         segment_range = range_str
 
-    is_ssh = "@" in args.source or "comma-" in args.source
+    is_ssh = "@" in args.source or "comma-" in args.source or "sunny-" in args.source
     if not is_ssh and len(route_id_str.split("--")) > 2:
       route_id_str = "--".join(route_id_str.split("--")[:2])
 
