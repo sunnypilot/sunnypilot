@@ -31,6 +31,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
+from openpilot.sunnypilot.modeld_v2.camera_offset_helper import apply_camera_offset
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 
@@ -284,6 +285,7 @@ def main(demo=False):
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
   meta_extra = FrameMeta()
+  camera_offset_param: float = 0.04
 
 
   if demo:
@@ -339,12 +341,21 @@ def main(demo=False):
     v_ego = max(sm["carState"].vEgo, 0.)
     if sm.frame % 60 == 0:
       model.lat_delay = get_lat_delay(params, sm["liveDelay"].lateralDelay)
+      camera_offset_param = float(params.get("CameraOffset", return_default=True))
     lat_delay = model.lat_delay + LAT_SMOOTH_SECONDS
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
-      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics, False).astype(np.float32)
-      model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics, True).astype(np.float32)
+      height = sm["liveCalibration"].height[0] if sm['liveCalibration'].height else 1.22
+
+      intrinsics_main = dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics
+      model_transform_main = get_warp_matrix(device_from_calib_euler, intrinsics_main, False).astype(np.float32)
+      model_transform_main = apply_camera_offset(model_transform_main, intrinsics_main, height, camera_offset_param)
+
+      intrinsics_extra = dc.ecam.intrinsics
+      model_transform_extra = get_warp_matrix(device_from_calib_euler, intrinsics_extra, True).astype(np.float32)
+      model_transform_extra = apply_camera_offset(model_transform_extra, intrinsics_extra, height, camera_offset_param)
+
       live_calib_seen = True
 
     traffic_convention = np.zeros(2)
