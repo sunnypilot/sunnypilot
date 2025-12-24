@@ -209,8 +209,8 @@ class SunnylinkLayout(Widget):
     return items
 
   @staticmethod
-  def _get_sunnylink_dongle_id() -> str | None:
-    return str(ui_state.params.get("SunnylinkDongleId") or (lambda: tr("N/A")))
+  def _get_sunnylink_dongle_id() -> str:
+    return ui_state.params.get("SunnylinkDongleId") or tr("N/A")
 
   def _handle_pair_btn(self, sponsor_pairing: bool = False):
     sunnylink_dongle_id = self._get_sunnylink_dongle_id()
