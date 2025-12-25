@@ -81,7 +81,7 @@ class ModelRenderer(Widget):
     self._clip_region = None
 
     self._counter = -1
-    self._camera_offset = 0.04
+    self._camera_offset = 0.0
     if camera_offset := ui_state.params.get("CameraOffset"):
       self._camera_offset = float(camera_offset)
 

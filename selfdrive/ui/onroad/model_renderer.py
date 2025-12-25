@@ -57,7 +57,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
     self._path_offset_z = HEIGHT_INIT[0]
     self._counter = -1
-    self._camera_offset = 0.04
+    self._camera_offset = 0.0
     if camera_offset := ui_state.params.get("CameraOffset"):
       self._camera_offset = float(camera_offset)
 
