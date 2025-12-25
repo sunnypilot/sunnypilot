@@ -29,7 +29,7 @@ _FINISH_LAT_ACC_TH = 0.6  # Lat Acc threshold to trigger the end of the turn cyc
 
 _A_LAT_REG_MAX = 2.0  # Maximum lateral acceleration
 
-_NO_OVERSHOOT_TIME_HORIZON = 5.  # s. Time to use for velocity desired based on a_target when not overshooting.
+_NO_OVERSHOOT_TIME_HORIZON = 4.  # s. Time to use for velocity desired based on a_target when not overshooting.
 
 # Lookup table for the minimum smooth deceleration during the ENTERING state
 # depending on the actual maximum absolute lateral acceleration predicted on the turn ahead.
@@ -38,10 +38,10 @@ _ENTERING_SMOOTH_DECEL_BP = [0.8, 2.5]  # absolute value of lat acc ahead
 
 # Lookup table for the acceleration for the TURNING state
 # depending on the current lateral acceleration of the vehicle.
-_TURNING_ACC_V = [0.0, -0.3, -0.6667]  # acc value
-_TURNING_ACC_BP = [1.4, 1.7, 2.0]  # absolute value of current lat acc
+_TURNING_ACC_V = [0.5, 0., -0.4]  # acc value
+_TURNING_ACC_BP = [1.5, 2.0, 2.25]  # absolute value of current lat acc
 
-_LEAVING_ACC_V = [0.3, 0.1]  # Conformable acceleration to regain speed while leaving a turn.
+_LEAVING_ACC_V = [0.5, 0.1]  # Conformable acceleration to regain speed while leaving a turn.
 _LEAVING_ACC_BP = [0.6, 1.2]
 
 
