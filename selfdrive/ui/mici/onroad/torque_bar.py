@@ -130,6 +130,9 @@ def arc_bar_pts(cx: float, cy: float,
 
   pts = np.vstack((outer, cap_end, inner, cap_start, outer[:1])).astype(np.float32)
 
+  # Rotate to start from middle of cap for proper triangulation
+  pts = np.roll(pts, cap_segs, axis=0)
+
   if DEBUG:
     n = len(pts)
     idx = int(time.monotonic() * 12) % max(1, n)  # speed: 12 pts/sec
@@ -182,13 +185,13 @@ class TorqueBar(Widget):
 
     # animate alpha and angle span
     if not self._demo:
-      self._torque_line_alpha_filter.update(ui_state.status != UIStatus.DISENGAGED)
+      self._torque_line_alpha_filter.update(ui_state.status not in (UIStatus.DISENGAGED, UIStatus.LONG_ONLY))
     else:
       self._torque_line_alpha_filter.update(1.0)
 
     torque_line_bg_alpha = np.interp(abs(self._torque_filter.x), [0.5, 1.0], [0.25, 0.5])
     torque_line_bg_color = rl.Color(255, 255, 255, int(255 * torque_line_bg_alpha * self._torque_line_alpha_filter.x))
-    if ui_state.status != UIStatus.ENGAGED and not self._demo:
+    if ui_state.status not in (UIStatus.ENGAGED, UIStatus.LAT_ONLY) and not self._demo:
       torque_line_bg_color = rl.Color(255, 255, 255, int(255 * 0.15 * self._torque_line_alpha_filter.x))
 
     # draw curved line polygon torque bar
@@ -231,7 +234,7 @@ class TorqueBar(Widget):
       max(0, abs(self._torque_filter.x) - 0.75) * 4,
     )
 
-    if ui_state.status != UIStatus.ENGAGED and not self._demo:
+    if ui_state.status not in (UIStatus.ENGAGED, UIStatus.LAT_ONLY) and not self._demo:
       start_color = end_color = rl.Color(255, 255, 255, int(255 * 0.35 * self._torque_line_alpha_filter.x))
 
     gradient = Gradient(

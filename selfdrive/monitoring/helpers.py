@@ -40,6 +40,9 @@ class DRIVER_MONITOR_SETTINGS:
     self._PHONE_THRESH2 = 15.0
     self._PHONE_MAX_OFFSET = 0.06
     self._PHONE_MIN_OFFSET = 0.025
+    self._PHONE_DATA_AVG = 0.05
+    self._PHONE_DATA_VAR = 3*0.005
+    self._PHONE_MAX_COUNT = int(360 / self._DT_DMON)
 
     self._POSE_PITCH_THRESHOLD = 0.3133
     self._POSE_PITCH_THRESHOLD_SLACK = 0.3237
@@ -47,9 +50,11 @@ class DRIVER_MONITOR_SETTINGS:
     self._POSE_YAW_THRESHOLD = 0.4020
     self._POSE_YAW_THRESHOLD_SLACK = 0.5042
     self._POSE_YAW_THRESHOLD_STRICT = self._POSE_YAW_THRESHOLD
-    self._PITCH_NATURAL_OFFSET = 0.029 # initial value before offset is learned
+    self._PITCH_NATURAL_OFFSET = 0.011 # initial value before offset is learned
     self._PITCH_NATURAL_THRESHOLD = 0.449
-    self._YAW_NATURAL_OFFSET = 0.097 # initial value before offset is learned
+    self._YAW_NATURAL_OFFSET = 0.075 # initial value before offset is learned
+    self._PITCH_NATURAL_VAR = 3*0.01
+    self._YAW_NATURAL_VAR = 3*0.05
     self._PITCH_MAX_OFFSET = 0.124
     self._PITCH_MIN_OFFSET = -0.0881
     self._YAW_MAX_OFFSET = 0.289
@@ -70,6 +75,9 @@ class DRIVER_MONITOR_SETTINGS:
     self._WHEELPOS_CALIB_MIN_SPEED = 11
     self._WHEELPOS_THRESHOLD = 0.5
     self._WHEELPOS_FILTER_MIN_COUNT = int(15 / self._DT_DMON) # allow 15 seconds to converge wheel side
+    self._WHEELPOS_DATA_AVG = 0.03
+    self._WHEELPOS_DATA_VAR = 3*5.5e-5
+    self._WHEELPOS_MAX_COUNT = -1
 
     self._RECOVERY_FACTOR_MAX = 5.  # relative to minus step change
     self._RECOVERY_FACTOR_MIN = 1.25  # relative to minus step change
@@ -78,30 +86,33 @@ class DRIVER_MONITOR_SETTINGS:
     self._MAX_TERMINAL_DURATION = int(30 / self._DT_DMON)  # not allowed to engage after 30s of terminal alerts
 
 class DistractedType:
+
   NOT_DISTRACTED = 0
   DISTRACTED_POSE = 1 << 0
   DISTRACTED_BLINK = 1 << 1
   DISTRACTED_PHONE = 1 << 2
 
 class DriverPose:
-  def __init__(self, max_trackable):
+  def __init__(self, settings):
+    pitch_filter_raw_priors = (settings._PITCH_NATURAL_OFFSET, settings._PITCH_NATURAL_VAR, 2)
+    yaw_filter_raw_priors = (settings._YAW_NATURAL_OFFSET, settings._YAW_NATURAL_VAR, 2)
     self.yaw = 0.
     self.pitch = 0.
     self.roll = 0.
     self.yaw_std = 0.
     self.pitch_std = 0.
     self.roll_std = 0.
-    self.pitch_offseter = RunningStatFilter(max_trackable=max_trackable)
-    self.yaw_offseter = RunningStatFilter(max_trackable=max_trackable)
+    self.pitch_offseter = RunningStatFilter(raw_priors=pitch_filter_raw_priors, max_trackable=settings._POSE_OFFSET_MAX_COUNT)
+    self.yaw_offseter = RunningStatFilter(raw_priors=yaw_filter_raw_priors, max_trackable=settings._POSE_OFFSET_MAX_COUNT)
     self.calibrated = False
     self.low_std = True
     self.cfactor_pitch = 1.
     self.cfactor_yaw = 1.
 
-class DriverPhone:
-  def __init__(self, max_trackable):
+class DriverProb:
+  def __init__(self, raw_priors, max_trackable):
     self.prob = 0.
-    self.prob_offseter = RunningStatFilter(max_trackable=max_trackable)
+    self.prob_offseter = RunningStatFilter(raw_priors=raw_priors, max_trackable=max_trackable)
     self.prob_calibrated = False
 
 class DriverBlink:
@@ -140,9 +151,11 @@ class DriverMonitoring:
     self.settings = settings if settings is not None else DRIVER_MONITOR_SETTINGS(device_type=HARDWARE.get_device_type())
 
     # init driver status
-    self.wheelpos_learner = RunningStatFilter()
-    self.pose = DriverPose(self.settings._POSE_OFFSET_MAX_COUNT)
-    self.phone = DriverPhone(self.settings._POSE_OFFSET_MAX_COUNT)
+    wheelpos_filter_raw_priors = (self.settings._WHEELPOS_DATA_AVG, self.settings._WHEELPOS_DATA_VAR, 2)
+    phone_filter_raw_priors = (self.settings._PHONE_DATA_AVG, self.settings._PHONE_DATA_VAR, 2)
+    self.wheelpos = DriverProb(raw_priors=wheelpos_filter_raw_priors, max_trackable=self.settings._WHEELPOS_MAX_COUNT)
+    self.phone = DriverProb(raw_priors=phone_filter_raw_priors, max_trackable=self.settings._PHONE_MAX_COUNT)
+    self.pose = DriverPose(settings=self.settings)
     self.blink = DriverBlink()
 
     self.always_on = always_on
@@ -234,8 +247,11 @@ class DriverMonitoring:
                                                     self.settings._YAW_MIN_OFFSET), self.settings._YAW_MAX_OFFSET)
     pitch_error = 0 if pitch_error > 0 else abs(pitch_error) # no positive pitch limit
     yaw_error = abs(yaw_error)
-    if pitch_error > (self.settings._POSE_PITCH_THRESHOLD*self.pose.cfactor_pitch if self.pose.calibrated else self.settings._PITCH_NATURAL_THRESHOLD) or \
-       yaw_error > self.settings._POSE_YAW_THRESHOLD*self.pose.cfactor_yaw:
+
+    pitch_threshold = self.settings._POSE_PITCH_THRESHOLD * self.pose.cfactor_pitch if self.pose.calibrated else self.settings._PITCH_NATURAL_THRESHOLD
+    yaw_threshold = self.settings._POSE_YAW_THRESHOLD * self.pose.cfactor_yaw
+
+    if pitch_error > pitch_threshold or yaw_error > yaw_threshold:
       distracted_types.append(DistractedType.DISTRACTED_POSE)
 
     if (self.blink.left + self.blink.right)*0.5 > self.settings._BLINK_THRESHOLD:
@@ -256,9 +272,12 @@ class DriverMonitoring:
     # calibrates only when there's movement and either face detected
     if car_speed > self.settings._WHEELPOS_CALIB_MIN_SPEED and (driver_state.leftDriverData.faceProb > self.settings._FACE_THRESHOLD or
                                           driver_state.rightDriverData.faceProb > self.settings._FACE_THRESHOLD):
-      self.wheelpos_learner.push_and_update(rhd_pred)
-    if self.wheelpos_learner.filtered_stat.n > self.settings._WHEELPOS_FILTER_MIN_COUNT or demo_mode:
-      self.wheel_on_right = self.wheelpos_learner.filtered_stat.M > self.settings._WHEELPOS_THRESHOLD
+      self.wheelpos.prob_offseter.push_and_update(rhd_pred)
+
+    self.wheelpos.prob_calibrated = self.wheelpos.prob_offseter.filtered_stat.n > self.settings._WHEELPOS_FILTER_MIN_COUNT
+
+    if self.wheelpos.prob_calibrated or demo_mode:
+      self.wheel_on_right = self.wheelpos.prob_offseter.filtered_stat.M > self.settings._WHEELPOS_THRESHOLD
     else:
       self.wheel_on_right = self.wheel_on_right_default # use default/saved if calibration is unfinished
     # make sure no switching when engaged
@@ -430,7 +449,7 @@ class DriverMonitoring:
       rpyCalib = [0., 0., 0.]
     else:
       highway_speed = sm['carState'].vEgo
-      enabled = sm['selfdriveState'].enabled
+      enabled = sm['selfdriveState'].enabled or sm['carControl'].latActive
       wrong_gear = sm['carState'].gearShifter not in (car.CarState.GearShifter.drive, car.CarState.GearShifter.low)
       standstill = sm['carState'].standstill
       driver_engaged = sm['carState'].steeringPressed or sm['carState'].gasPressed
