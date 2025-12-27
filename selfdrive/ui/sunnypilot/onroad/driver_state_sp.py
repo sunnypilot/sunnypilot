@@ -6,16 +6,11 @@ See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
 from openpilot.selfdrive.ui import UI_BORDER_SIZE
-from openpilot.selfdrive.ui.onroad.driver_state import ARC_LENGTH
-from openpilot.selfdrive.ui.onroad.driver_state import DriverStateRenderer, BTN_SIZE
+from openpilot.selfdrive.ui.onroad.driver_state import DriverStateRenderer, BTN_SIZE, ARC_LENGTH
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
 
 
 class DriverStateRendererSP(DriverStateRenderer):
-  def __init__(self):
-    super().__init__()
-    self.developer_ui = DeveloperUiRenderer()
-
   def _pre_calculate_drawing_elements(self):
     """Pre-calculate all drawing elements based on the current rectangle"""
     # Get dev UI offset once from the DeveloperUiRenderer instance
