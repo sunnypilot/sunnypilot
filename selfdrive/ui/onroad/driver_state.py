@@ -6,7 +6,6 @@ from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
-from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
 
 AlertSize = log.SelfdriveState.AlertSize
 
@@ -163,14 +162,11 @@ class DriverStateRenderer(Widget):
 
   def _pre_calculate_drawing_elements(self):
     """Pre-calculate all drawing elements based on the current rectangle"""
-    # Check if bottom dev UI is active
-    dev_ui_offset = DeveloperUiRenderer.get_bottom_dev_ui_offset()
-
     # Calculate icon position (bottom-left or bottom-right)
     width, height = self._rect.width, self._rect.height
     offset = UI_BORDER_SIZE + BTN_SIZE // 2
     self.position_x = self._rect.x + (width - offset if self.is_rhd else offset)
-    self.position_y = self._rect.y + height - offset - dev_ui_offset
+    self.position_y = self._rect.y + height - offset
 
     # Pre-calculate the face lines positions
     positioned_keypoints = self.face_keypoints_transformed + np.array([self.position_x, self.position_y])
