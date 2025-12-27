@@ -182,4 +182,5 @@ class DeveloperUiRenderer(Widget):
     rl.draw_text_ex(self._font_bold, element.val_text, rl.Vector2(start_x + element.label_width, y - font_size // 2), font_size, 0, element.color)
 
     if element.unit:
-      rl.draw_text_ex(self._font_bold, element.unit_text, rl.Vector2(start_x + element.label_width + element.val_width, y - font_size // 2), font_size, 0, rl.WHITE)
+      rl.draw_text_ex(self._font_bold, element.unit_text, rl.Vector2(start_x + element.label_width + element.val_width, y - font_size // 2),
+                      font_size, 0, rl.WHITE)
