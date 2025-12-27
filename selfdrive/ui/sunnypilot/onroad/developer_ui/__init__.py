@@ -22,6 +22,7 @@ class DeveloperUiRenderer(Widget):
   DEV_UI_RIGHT = 1
   DEV_UI_BOTTOM = 2
   DEV_UI_BOTH = 3
+  BOTTOM_BAR_HEIGHT = 61
 
   def __init__(self):
     super().__init__()
@@ -42,6 +43,12 @@ class DeveloperUiRenderer(Widget):
     self.steering_torque_elem = SteeringTorqueEpsElement()
     self.bearing_elem = BearingDegElement()
     self.altitude_elem = AltitudeElement()
+
+  @staticmethod
+  def get_bottom_dev_ui_offset():
+    if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_BOTTOM, DeveloperUiRenderer.DEV_UI_BOTH):
+      return DeveloperUiRenderer.BOTTOM_BAR_HEIGHT
+    return 0
 
   def _update_state(self) -> None:
     self.dev_ui_mode = ui_state.developer_ui
