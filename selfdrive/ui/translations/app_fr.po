@@ -3,8 +3,10 @@
 # This file is distributed under the same license as the PACKAGE package.
 # Automatically generated, 2025.
 #
+#, fuzzy
 msgid ""
 msgstr ""
+"#-#-#-#-#  app_fr.po (PACKAGE VERSION)  #-#-#-#-#\n"
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-23 00:50-0700\n"
@@ -16,21 +18,33 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"#-#-#-#-#  sunnypilot_fr.po (PACKAGE VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-23 15:34+0100\n"
+"PO-Revision-Date: 2025-12-23 15:34+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: selfdrive/ui/layouts/settings/device.py:160
 #, python-format
 msgid " Steering torque response calibration is complete."
-msgstr ""
+msgstr " Calibration de la réponse du couple de direction terminée."
 
 #: selfdrive/ui/layouts/settings/device.py:158
-#, python-format
+#, python-brace-format
 msgid " Steering torque response calibration is {}% complete."
-msgstr ""
+msgstr " Calibration du couple de direction : {}% effectué."
 
 #: selfdrive/ui/layouts/settings/device.py:133
 #, python-format
 msgid " Your device is pointed {:.1f}° {} and {:.1f}° {}."
-msgstr ""
+msgstr " Votre appareil est orienté {:.1f}° {} et {:.1f}° {}."
 
 #: selfdrive/ui/layouts/sidebar.py:43
 msgid "--"
@@ -79,12 +93,12 @@ msgstr ""
 #: selfdrive/ui/layouts/settings/device.py:148
 #, python-format
 msgid "<br><br>Steering lag calibration is complete."
-msgstr ""
+msgstr "<br><br>La calibration du délai de direction est terminée."
 
 #: selfdrive/ui/layouts/settings/device.py:146
-#, python-format
+#, python-brace-format
 msgid "<br><br>Steering lag calibration is {}% complete."
-msgstr ""
+msgstr "<br><br>Calibration du délai de direction : {}% effectué."
 
 #: selfdrive/ui/layouts/settings/firehose.py:138
 #, python-format
@@ -107,7 +121,7 @@ msgstr "AJOUTER"
 #: system/ui/widgets/network.py:139
 #, python-format
 msgid "APN Setting"
-msgstr ""
+msgstr "Paramètre APN"
 
 #: selfdrive/ui/widgets/offroad_alerts.py:109
 #, python-format
@@ -117,7 +131,7 @@ msgstr "Accuser réception d'actionnement excessif"
 #: system/ui/widgets/network.py:74 system/ui/widgets/network.py:95
 #, python-format
 msgid "Advanced"
-msgstr ""
+msgstr "Avancé"
 
 #: selfdrive/ui/layouts/settings/toggles.py:98
 #, python-format
@@ -208,18 +222,18 @@ msgstr "CONNECTER"
 #: system/ui/widgets/network.py:369
 #, python-format
 msgid "CONNECTING..."
-msgstr "CONNECTER"
+msgstr "CONNEXION..."
 
 #: system/ui/widgets/confirm_dialog.py:23 system/ui/widgets/option_dialog.py:35
 #: system/ui/widgets/keyboard.py:81 system/ui/widgets/network.py:318
 #, python-format
 msgid "Cancel"
-msgstr ""
+msgstr "Annuler"
 
 #: system/ui/widgets/network.py:134
 #, python-format
 msgid "Cellular Metered"
-msgstr ""
+msgstr "Données cellulaires limitées"
 
 #: selfdrive/ui/layouts/settings/device.py:68
 #, python-format
@@ -318,7 +332,7 @@ msgstr "Personnalité de conduite"
 #: system/ui/widgets/network.py:123 system/ui/widgets/network.py:139
 #, python-format
 msgid "EDIT"
-msgstr ""
+msgstr "MODIFIER"
 
 #: selfdrive/ui/layouts/sidebar.py:138
 msgid "ERROR"
@@ -352,7 +366,7 @@ msgstr "Activer les alertes de sortie de voie"
 #: system/ui/widgets/network.py:129
 #, python-format
 msgid "Enable Roaming"
-msgstr "Activer openpilot"
+msgstr "Activer l'itinérance"
 
 #: selfdrive/ui/layouts/settings/developer.py:48
 #, python-format
@@ -362,7 +376,7 @@ msgstr "Activer SSH"
 #: system/ui/widgets/network.py:120
 #, python-format
 msgid "Enable Tethering"
-msgstr "Activer les alertes de sortie de voie"
+msgstr "Activer le partage de connexion"
 
 #: selfdrive/ui/layouts/settings/toggles.py:30
 msgid "Enable driver monitoring even when openpilot is not engaged."
@@ -387,22 +401,22 @@ msgstr ""
 #: system/ui/widgets/network.py:204
 #, python-format
 msgid "Enter APN"
-msgstr ""
+msgstr "Entrez l'APN"
 
 #: system/ui/widgets/network.py:241
 #, python-format
 msgid "Enter SSID"
-msgstr ""
+msgstr "Entrez le SSID"
 
 #: system/ui/widgets/network.py:254
 #, python-format
 msgid "Enter new tethering password"
-msgstr ""
+msgstr "Entrez un nouveau mot de passe de partage"
 
 #: system/ui/widgets/network.py:237 system/ui/widgets/network.py:314
 #, python-format
 msgid "Enter password"
-msgstr ""
+msgstr "Entrez le mot de passe"
 
 #: selfdrive/ui/widgets/ssh_key.py:89
 #, python-format
@@ -412,7 +426,7 @@ msgstr "Entrez votre nom d'utilisateur GitHub"
 #: system/ui/widgets/list_view.py:123 system/ui/widgets/list_view.py:160
 #, python-format
 msgid "Error"
-msgstr ""
+msgstr "Erreur"
 
 #: selfdrive/ui/layouts/settings/toggles.py:52
 #, python-format
@@ -431,7 +445,7 @@ msgstr ""
 #: system/ui/widgets/network.py:373
 #, python-format
 msgid "FORGETTING..."
-msgstr ""
+msgstr "SUPPRESSION..."
 
 #: selfdrive/ui/widgets/setup.py:44
 #, python-format
@@ -493,16 +507,16 @@ msgstr ""
 #: system/ui/widgets/network.py:318 system/ui/widgets/network.py:451
 #, python-format
 msgid "Forget"
-msgstr ""
+msgstr "Oublier"
 
 #: system/ui/widgets/network.py:319
 #, python-format
 msgid "Forget Wi-Fi Network \"{}\"?"
-msgstr ""
+msgstr "Oublier le réseau Wi‑Fi \"{}\" ?"
 
 #: selfdrive/ui/layouts/sidebar.py:71 selfdrive/ui/layouts/sidebar.py:125
 msgid "GOOD"
-msgstr "BON"
+msgstr "SATISFAISANT"
 
 #: selfdrive/ui/widgets/pairing_dialog.py:128
 #, python-format
@@ -516,7 +530,7 @@ msgstr "ÉLEVÉ"
 #: system/ui/widgets/network.py:155
 #, python-format
 msgid "Hidden Network"
-msgstr "Réseau"
+msgstr "Réseau masqué"
 
 #: selfdrive/ui/layouts/settings/firehose.py:140
 #, python-format
@@ -532,7 +546,7 @@ msgstr "INSTALLER"
 #: system/ui/widgets/network.py:150
 #, python-format
 msgid "IP Address"
-msgstr ""
+msgstr "Adresse IP"
 
 #: selfdrive/ui/layouts/settings/software.py:53
 #, python-format
@@ -574,7 +588,7 @@ msgstr ""
 #: selfdrive/ui/layouts/settings/device.py:60
 #, python-format
 msgid "N/A"
-msgstr ""
+msgstr "N/A"
 
 #: selfdrive/ui/layouts/sidebar.py:142
 msgid "NO"
@@ -592,7 +606,7 @@ msgstr "Aucune clé SSH trouvée"
 #: selfdrive/ui/widgets/ssh_key.py:126
 #, python-format
 msgid "No SSH keys found for user '{}'"
-msgstr "Aucune clé SSH trouvée pour l'utilisateur '{username}'"
+msgstr "Aucune clé SSH trouvée pour l'utilisateur '{}'"
 
 #: selfdrive/ui/widgets/offroad_alerts.py:320
 #, python-format
@@ -676,12 +690,13 @@ msgstr "Éteindre"
 #: system/ui/widgets/network.py:144
 #, python-format
 msgid "Prevent large data uploads when on a metered Wi-Fi connection"
-msgstr ""
+msgstr "Empêcher les téléversements volumineux sur une connexion Wi‑Fi limitée"
 
 #: system/ui/widgets/network.py:135
 #, python-format
 msgid "Prevent large data uploads when on a metered cellular connection"
 msgstr ""
+"Empêcher les téléversements volumineux sur une connexion cellulaire limitée"
 
 #: selfdrive/ui/layouts/settings/device.py:25
 msgid ""
@@ -802,32 +817,32 @@ msgstr "Consultez les règles, fonctionnalités et limitations d'openpilot"
 #: selfdrive/ui/layouts/settings/software.py:61
 #, python-format
 msgid "SELECT"
-msgstr ""
+msgstr "SÉLECTIONNER"
 
 #: selfdrive/ui/layouts/settings/developer.py:53
 #, python-format
 msgid "SSH Keys"
-msgstr ""
+msgstr "Clés SSH"
 
 #: system/ui/widgets/network.py:310
 #, python-format
 msgid "Scanning Wi-Fi networks..."
-msgstr ""
+msgstr "Recherche des réseaux Wi‑Fi..."
 
 #: system/ui/widgets/option_dialog.py:36
 #, python-format
 msgid "Select"
-msgstr ""
+msgstr "Sélectionner"
 
 #: selfdrive/ui/layouts/settings/software.py:183
 #, python-format
 msgid "Select a branch"
-msgstr ""
+msgstr "Sélectionner une branche"
 
 #: selfdrive/ui/layouts/settings/device.py:91
 #, python-format
 msgid "Select a language"
-msgstr ""
+msgstr "Sélectionner une langue"
 
 #: selfdrive/ui/layouts/settings/device.py:60
 #, python-format
@@ -880,12 +895,12 @@ msgstr "TEMPÉRATURE"
 #: selfdrive/ui/layouts/settings/software.py:61
 #, python-format
 msgid "Target Branch"
-msgstr ""
+msgstr "Branche cible"
 
 #: system/ui/widgets/network.py:124
 #, python-format
 msgid "Tethering Password"
-msgstr ""
+msgstr "Mot de passe de partage"
 
 #: selfdrive/ui/layouts/settings/settings.py:64
 msgid "Toggles"
@@ -986,12 +1001,12 @@ msgstr "Wi‑Fi"
 #: system/ui/widgets/network.py:144
 #, python-format
 msgid "Wi-Fi Network Metered"
-msgstr ""
+msgstr "Réseau Wi‑Fi limité"
 
 #: system/ui/widgets/network.py:314
 #, python-format
 msgid "Wrong password"
-msgstr ""
+msgstr "Mot de passe incorrect"
 
 #: selfdrive/ui/layouts/onboarding.py:145
 #, python-format
@@ -1020,12 +1035,12 @@ msgstr "comma prime"
 #: system/ui/widgets/network.py:142
 #, python-format
 msgid "default"
-msgstr ""
+msgstr "par défaut"
 
 #: selfdrive/ui/layouts/settings/device.py:133
 #, python-format
 msgid "down"
-msgstr ""
+msgstr "bas"
 
 #: selfdrive/ui/layouts/settings/software.py:106
 #, python-format
@@ -1035,7 +1050,7 @@ msgstr "échec de la vérification de mise à jour"
 #: system/ui/widgets/network.py:237 system/ui/widgets/network.py:314
 #, python-format
 msgid "for \"{}\""
-msgstr ""
+msgstr "pour \"{}\""
 
 #: selfdrive/ui/onroad/hud_renderer.py:177
 #, python-format
@@ -1045,17 +1060,17 @@ msgstr "km/h"
 #: system/ui/widgets/network.py:204
 #, python-format
 msgid "leave blank for automatic configuration"
-msgstr ""
+msgstr "laisser vide pour configuration automatique"
 
 #: selfdrive/ui/layouts/settings/device.py:134
 #, python-format
 msgid "left"
-msgstr ""
+msgstr "gauche"
 
 #: system/ui/widgets/network.py:142
 #, python-format
 msgid "metered"
-msgstr ""
+msgstr "limité"
 
 #: selfdrive/ui/onroad/hud_renderer.py:177
 #, python-format
@@ -1153,17 +1168,17 @@ msgstr ""
 #: selfdrive/ui/layouts/settings/device.py:134
 #, python-format
 msgid "right"
-msgstr ""
+msgstr "droite"
 
 #: system/ui/widgets/network.py:142
 #, python-format
 msgid "unmetered"
-msgstr ""
+msgstr "illimité"
 
 #: selfdrive/ui/layouts/settings/device.py:133
 #, python-format
 msgid "up"
-msgstr ""
+msgstr "haut"
 
 #: selfdrive/ui/layouts/settings/software.py:117
 #, python-format
@@ -1228,3 +1243,1012 @@ msgstr "✓ ABONNÉ"
 #, python-format
 msgid "🔥 Firehose Mode 🔥"
 msgstr "🔥 Mode Firehose 🔥"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:39
+#, python-brace-format
+msgid "Show Advanced Controls"
+msgstr "Afficher les contrôles avancés"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:40
+#, python-brace-format
+msgid ""
+"Toggle visibility of advanced sunnypilot controls.<br>This only changes the "
+"visibility of the toggles; it does not change the actual enabled/disabled "
+"state."
+msgstr ""
+"Basculer la visibilité des contrôles avancés sunnypilot.<br>Cela ne change "
+"que la visibilité des options, pas leur état activé/désactivé réel."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:43
+#, python-brace-format
+msgid "GitHub Runner Service"
+msgstr "Service GitHub Runner"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:43
+#, python-brace-format
+msgid "Enables or disables the GitHub runner service."
+msgstr "Active ou désactive le service GitHub runner."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:46
+#, python-brace-format
+msgid "copyparty Service"
+msgstr "Service copyparty"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:47
+#, python-brace-format
+msgid ""
+"copyparty is a very capable file server, you can use it to download your "
+"routes, view your logs and even make some edits on some files from your "
+"browser. Requires you to connect to your comma locally via its IP address."
+msgstr ""
+"copyparty est un serveur de fichiers très performant, vous pouvez "
+"l'utiliser pour télécharger vos trajets, consulter vos logs et même "
+"modifier certains fichiers depuis votre navigateur. Nécessite de vous "
+"connecter à votre comma localement via son adresse IP."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:51
+#, python-brace-format
+msgid "Quickboot Mode"
+msgstr "Mode démarrage rapide"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:53
+#, python-brace-format
+msgid "Error Log"
+msgstr "Journal d'erreurs"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:53
+#, python-brace-format
+msgid "View the error log for sunnypilot crashes."
+msgstr "Voir le journal d'erreurs pour les plantages sunnypilot."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:72
+#, python-brace-format
+msgid "Would you like to delete this log?"
+msgstr "Voulez-vous supprimer ce journal ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:72
+#, python-brace-format
+msgid "Yes"
+msgstr "Oui"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:72
+#, python-brace-format
+msgid "No"
+msgstr "Non"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:99
+#, python-brace-format
+msgid ""
+"When toggled on, this creates a prebuilt file to allow accelerated boot "
+"times. When toggled off, it removes the prebuilt file so compilation of "
+"locally edited cpp files can be made."
+msgstr ""
+"Lorsqu'activé, cela crée un fichier précompilé pour accélérer le temps de "
+"démarrage. Lorsque désactivé, le fichier précompilé est supprimé pour "
+"permettre la compilation des fichiers cpp modifiés localement."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/developer.py:102
+#, python-brace-format
+msgid ""
+"Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' "
+"in the Software panel first."
+msgstr ""
+"Le mode démarrage rapide nécessite que les mises à jour soient désactivées."
+"<br>Activez d'abord 'Désactiver les mises à jour' dans le panneau Logiciel."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:46
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:195
+#, python-brace-format
+msgid "Enable Always Offroad"
+msgstr "Activer le mode toujours hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:54
+#, python-brace-format
+msgid "Max Time Offroad"
+msgstr "Durée max hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:55
+#, python-brace-format
+msgid ""
+"Device will automatically shutdown after set time once the engine is turned "
+"off.\n"
+"(30h is the default)"
+msgstr ""
+"L'appareil s'éteindra automatiquement après le temps défini une fois le "
+"moteur coupé.\n"
+"(30h par défaut)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:71
+#, python-brace-format
+msgid "Wake Up Behavior"
+msgstr "Comportement au réveil"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:74
+#, python-brace-format
+msgid "Default"
+msgstr "Par défaut"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:74
+#, python-brace-format
+msgid "Offroad"
+msgstr "Hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:81
+#, python-brace-format
+msgid "Quiet Mode"
+msgstr "Mode silencieux"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:82
+#, python-brace-format
+msgid "Driver Camera Preview"
+msgstr "Aperçu caméra conducteur"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:91
+#, python-brace-format
+msgid "Training Guide"
+msgstr "Guide d'entraînement"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:97
+#, python-brace-format
+msgid "Onroad Uploads"
+msgstr "Téléversements en conduite"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:99
+#, python-brace-format
+msgid "Reset Settings"
+msgstr "Réinitialiser les paramètres"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:140
+#, python-brace-format
+msgid "Default: Device will boot/wake-up normally & will be ready to engage."
+msgstr "Par défaut : L'appareil démarrera normalement et sera prêt à engager."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:141
+#, python-brace-format
+msgid "Offroad: Device will be in Always Offroad mode after boot/wake-up."
+msgstr "Hors route : L'appareil sera en mode toujours hors route après démarrage."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:142
+#, python-brace-format
+msgid "Controls state of the device after boot/sleep."
+msgstr "Contrôle l'état de l'appareil après démarrage/veille."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:157
+#, python-brace-format
+msgid "The reset cannot be undone. You have been warned."
+msgstr "La réinitialisation ne peut pas être annulée. Vous êtes prévenu."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:158
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:180
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:98
+#, python-brace-format
+msgid "Confirm"
+msgstr "Confirmer"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:162
+#, python-brace-format
+msgid ""
+"Are you sure you want to reset all sunnypilot settings to default? Once the "
+"settings are reset, there is no going back."
+msgstr ""
+"Êtes-vous sûr de vouloir réinitialiser tous les paramètres sunnypilot par "
+"défaut ? Une fois les paramètres réinitialisés, il n'y a pas de retour en arrière."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:169
+#, python-brace-format
+msgid "Disengage to Enter Always Offroad Mode"
+msgstr "Désengager pour entrer en mode toujours hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:173
+#, python-brace-format
+msgid "Are you sure you want to exit Always Offroad mode?"
+msgstr "Êtes-vous sûr de vouloir quitter le mode toujours hors route ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:174
+#, python-brace-format
+msgid "Are you sure you want to enter Always Offroad mode?"
+msgstr "Êtes-vous sûr de vouloir entrer en mode toujours hors route ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:184
+#, python-brace-format
+msgid "Always On"
+msgstr "Toujours allumé"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:184
+#, python-brace-format
+msgid "m"
+msgstr "min"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:184
+#, python-brace-format
+msgid "h"
+msgstr "h"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:185
+#, python-brace-format
+msgid " (Default)"
+msgstr " (Par défaut)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/device.py:195
+#, python-brace-format
+msgid "Exit Always Offroad"
+msgstr "Quitter le mode toujours hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:52
+#, python-brace-format
+msgid "Current Model"
+msgstr "Modèle actuel"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:58
+#, python-brace-format
+msgid "Driving Model"
+msgstr "Modèle de conduite"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:59
+#, python-brace-format
+msgid "Vision Model"
+msgstr "Modèle de vision"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:60
+#, python-brace-format
+msgid "Policy Model"
+msgstr "Modèle de politique"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:62
+#, python-brace-format
+msgid "Refresh Model List"
+msgstr "Actualiser la liste des modèles"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:62
+#, python-brace-format
+msgid "REFRESH"
+msgstr "ACTUALISER"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:64
+#, python-brace-format
+msgid "Fetching Latest Models"
+msgstr "Récupération des derniers modèles"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:67
+#, python-brace-format
+msgid "Clear Model Cache"
+msgstr "Vider le cache des modèles"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:69
+#, python-brace-format
+msgid "CLEAR"
+msgstr "VIDER"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:73
+#, python-brace-format
+msgid "Cancel Download"
+msgstr "Annuler le téléchargement"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:75
+#, python-brace-format
+msgid "Adjust Lane Turn Speed"
+msgstr "Ajuster la vitesse de virage de voie"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:76
+#, python-brace-format
+msgid "Set the maximum speed for lane turn desires. Default is 19 mph."
+msgstr "Définir la vitesse maximale pour les désirs de virage de voie. Par défaut : 30 km/h."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:81
+#, python-brace-format
+msgid "Use Lane Turn Desires"
+msgstr "Utiliser les désirs de virage de voie"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:82
+#, python-brace-format
+msgid ""
+"If you're driving at 20 mph (32 km/h) or below and have your blinker on, the "
+"car will plan a turn in that direction at the nearest drivable path. This "
+"prevents situations (like at red lights) where the car might plan the wrong "
+"turn direction."
+msgstr ""
+"Si vous roulez à 32 km/h ou moins avec le clignotant activé, la voiture "
+"planifiera un virage dans cette direction vers le chemin praticable le plus "
+"proche. Cela évite les situations (comme aux feux rouges) où la voiture "
+"pourrait planifier la mauvaise direction de virage."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:87
+#, python-brace-format
+msgid "Adjust Software Delay"
+msgstr "Ajuster le délai logiciel"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:88
+#, python-brace-format
+msgid ""
+"Adjust the software delay when Live Learning Steer Delay is toggled off. The "
+"default software delay value is 0.2"
+msgstr ""
+"Ajuster le délai logiciel lorsque l'apprentissage en direct du délai de "
+"direction est désactivé. La valeur par défaut du délai logiciel est 0.2"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:91
+#, python-brace-format
+msgid "Live Learning Steer Delay"
+msgstr "Apprentissage en direct du délai de direction"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:98
+#, python-brace-format
+msgid ""
+"Enable this for the car to learn and adapt its steering response time. "
+"Disable to use a fixed steering response time. Keeping this on provides the "
+"stock openpilot experience."
+msgstr ""
+"Activez pour que la voiture apprenne et adapte son temps de réponse de "
+"direction. Désactivez pour utiliser un temps de réponse fixe. Garder activé "
+"offre l'expérience openpilot d'origine."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:101
+#, python-brace-format
+msgid "Live Steer Delay:"
+msgstr "Délai direction en direct :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-brace-format
+msgid "Actuator Delay:"
+msgstr "Délai actionneur :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-brace-format
+msgid "Software Delay:"
+msgstr "Délai logiciel :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-brace-format
+msgid "Total Delay:"
+msgstr "Délai total :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:125
+#, python-brace-format
+msgid ""
+"This will delete ALL downloaded models from the cache except the currently "
+"active model. Are you sure?"
+msgstr ""
+"Cela supprimera TOUS les modèles téléchargés du cache sauf le modèle "
+"actuellement actif. Êtes-vous sûr ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:126
+#, python-brace-format
+msgid "Clear Cache"
+msgstr "Vider le cache"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:166
+#, python-brace-format
+msgid "from cache"
+msgstr "depuis le cache"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:167
+#, python-brace-format
+msgid "ready"
+msgstr "prêt"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:178
+#, python-brace-format
+msgid ""
+"Model download has started in the background. We suggest resetting "
+"calibration. Would you like to do that now?"
+msgstr ""
+"Le téléchargement du modèle a démarré en arrière-plan. Nous suggérons de "
+"réinitialiser la calibration. Voulez-vous le faire maintenant ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:204
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:240
+#, python-brace-format
+msgid "Default Model"
+msgstr "Modèle par défaut"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:220
+#, python-brace-format
+msgid "Select a Model"
+msgstr "Sélectionner un modèle"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:245
+#, python-brace-format
+msgid "Only available when vehicle is off, or always offroad mode is on"
+msgstr "Disponible uniquement lorsque le véhicule est éteint ou en mode toujours hors route"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/network.py:20
+#: selfdrive/ui/sunnypilot/layouts/settings/network.py:38
+#, python-brace-format
+msgid "Scan"
+msgstr "Analyser"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/network.py:28
+#, python-brace-format
+msgid "Scanning..."
+msgstr "Analyse en cours..."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:49
+#, python-brace-format
+msgid "Mapd Version"
+msgstr "Version Mapd"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:50
+#, python-brace-format
+msgid "Downloaded Maps"
+msgstr "Cartes téléchargées"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:50
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:86
+#, python-brace-format
+msgid "DELETE"
+msgstr "SUPPRIMER"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:51
+#, python-brace-format
+msgid "Downloading Map"
+msgstr "Téléchargement de la carte"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:52
+#, python-brace-format
+msgid "Database Update"
+msgstr "Mise à jour de la base de données"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:53
+#, python-brace-format
+msgid "Country"
+msgstr "Pays"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:54
+#, python-brace-format
+msgid "State"
+msgstr "Région"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:95
+#, python-brace-format
+msgid ""
+"This will delete ALL downloaded maps\n"
+"\n"
+"Are you sure you want to delete all maps?"
+msgstr ""
+"Cela supprimera TOUTES les cartes téléchargées\n"
+"\n"
+"Êtes-vous sûr de vouloir supprimer toutes les cartes ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:96
+#, python-brace-format
+msgid "Yes, delete all maps"
+msgstr "Oui, supprimer toutes les cartes"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:99
+#, python-brace-format
+msgid ""
+"This will start the download process and it might take a while to complete."
+msgstr "Cela démarrera le téléchargement et peut prendre un certain temps."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:99
+#, python-brace-format
+msgid "Start Download"
+msgstr "Démarrer le téléchargement"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:106
+#, python-brace-format
+msgid "FETCHING..."
+msgstr "RÉCUPÉRATION..."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:143
+#, python-brace-format
+msgid "All states (~6.0 GB)"
+msgstr "Toutes les régions (~6.0 Go)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:183
+#, python-brace-format
+msgid "Error: Invalid download. Retry."
+msgstr "Erreur : Téléchargement invalide. Réessayez."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:193
+#, python-brace-format
+msgid "Downloading Maps..."
+msgstr "Téléchargement des cartes..."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/osm.py:220
+#, python-brace-format
+msgid "Last checked {}"
+msgstr "Dernière vérification {}"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:115
+msgid "sunnylink"
+msgstr "sunnylink"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:118
+msgid "Models"
+msgstr "Modèles"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:119
+msgid "Steering"
+msgstr "Direction"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:120
+msgid "Cruise"
+msgstr "Régulateur"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:121
+msgid "Visuals"
+msgstr "Visuels"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:122
+msgid "Display"
+msgstr "Affichage"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:123
+msgid "OSM"
+msgstr "OSM"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:125
+msgid "Trips"
+msgstr "Trajets"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/settings.py:126
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:60
+#, python-brace-format
+msgid "Vehicle"
+msgstr "Véhicule"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/software.py:23
+msgid ""
+"When enabled, automatic software updates will be off.<br><b>This requires a "
+"reboot to take effect.</b>"
+msgstr ""
+"Lorsqu'activé, les mises à jour automatiques seront désactivées.<br><b>Cela "
+"nécessite un redémarrage pour prendre effet.</b>"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/software.py:26
+msgid ""
+"Please enable \"Always Offroad\" mode or turn off the vehicle to adjust "
+"these toggles."
+msgstr ""
+"Veuillez activer le mode \"Toujours hors route\" ou éteindre le véhicule "
+"pour ajuster ces options."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/software.py:35
+#, python-brace-format
+msgid "Disable Updates"
+msgstr "Désactiver les mises à jour"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/software.py:50
+#, python-brace-format
+msgid "System reboot required for changes to take effect. Reboot now?"
+msgstr "Redémarrage système nécessaire pour appliquer les changements. Redémarrer maintenant ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:42
+#, python-brace-format
+msgid "For secure backup, restore, and remote configuration"
+msgstr "Pour la sauvegarde sécurisée, la restauration et la configuration à distance"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:53
+#, python-brace-format
+msgid "Sponsorship isn't required for basic backup/restore"
+msgstr "Le parrainage n'est pas requis pour la sauvegarde/restauration de base"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:54
+#, python-brace-format
+msgid "Click the Sponsor button for more details"
+msgstr "Cliquez sur le bouton Sponsor pour plus de détails"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:154
+#, python-brace-format
+msgid "Enable sunnylink"
+msgstr "Activer sunnylink"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:155
+#, python-brace-format
+msgid ""
+"This is the master switch, it will allow you to cutoff any sunnylink "
+"requests should you want to do that."
+msgstr ""
+"C'est l'interrupteur principal, il vous permettra de couper toutes les "
+"requêtes sunnylink si vous le souhaitez."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:164
+#, python-brace-format
+msgid "Sponsor Status"
+msgstr "Statut de parrainage"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:165
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:327
+#, python-brace-format
+msgid "SPONSOR"
+msgstr "PARRAINER"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:167
+#, python-brace-format
+msgid ""
+"Become a sponsor of sunnypilot to get early access to sunnylink features "
+"when they become available."
+msgstr ""
+"Devenez parrain de sunnypilot pour obtenir un accès anticipé aux "
+"fonctionnalités sunnylink dès leur disponibilité."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:171
+#, python-brace-format
+msgid "Pair GitHub Account"
+msgstr "Associer un compte GitHub"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:172
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:333
+#, python-brace-format
+msgid "Not Paired"
+msgstr "Non associé"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:174
+#, python-brace-format
+msgid ""
+"Pair your GitHub account to grant your device sponsor benefits, including "
+"API access on sunnylink."
+msgstr ""
+"Associez votre compte GitHub pour accorder à votre appareil les avantages "
+"de parrain, y compris l'accès API sur sunnylink."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:178
+#, python-brace-format
+msgid "Enable sunnylink uploader (infrastructure test)"
+msgstr "Activer le téléversement sunnylink (test d'infrastructure)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:179
+#, python-brace-format
+msgid ""
+"Enable sunnylink uploader to allow sunnypilot to upload your driving data to "
+"sunnypilot servers. "
+msgstr ""
+"Activer le téléversement sunnylink pour permettre à sunnypilot de téléverser "
+"vos données de conduite vers les serveurs sunnypilot. "
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:180
+#, python-brace-format
+msgid ""
+"(Only for highest tiers, and does NOT bring ANY benefit to you yet. We are "
+"just testing data volume.)"
+msgstr ""
+"(Réservé aux niveaux les plus élevés, et ne vous apporte AUCUN avantage pour "
+"l'instant. Nous testons juste le volume de données.)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:185
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:300
+#, python-brace-format
+msgid "Backup Settings"
+msgstr "Sauvegarder les paramètres"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:186
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:302
+#, python-brace-format
+msgid "Restore Settings"
+msgstr "Restaurer les paramètres"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:218
+#, python-brace-format
+msgid "sunnylink Dongle ID not found. "
+msgstr "ID Dongle sunnylink introuvable. "
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:219
+#, python-brace-format
+msgid ""
+"This may be due to weak internet connection or sunnylink registration issue. "
+msgstr ""
+"Cela peut être dû à une connexion internet faible ou un problème "
+"d'enregistrement sunnylink. "
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:220
+#, python-brace-format
+msgid "Please reboot and try again."
+msgstr "Veuillez redémarrer et réessayer."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:226
+#, python-brace-format
+msgid "Are you sure you want to backup your current sunnypilot settings?"
+msgstr "Êtes-vous sûr de vouloir sauvegarder vos paramètres sunnypilot actuels ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:231
+#, python-brace-format
+msgid ""
+"Are you sure you want to restore the last backed up sunnypilot settings?"
+msgstr ""
+"Êtes-vous sûr de vouloir restaurer la dernière sauvegarde des paramètres "
+"sunnypilot ?"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:266
+#, python-brace-format
+msgid "Backup Failed"
+msgstr "Échec de la sauvegarde"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:271
+#, python-brace-format
+msgid "Settings backup completed."
+msgstr "Sauvegarde des paramètres terminée."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:287
+#, python-brace-format
+msgid "Restore Failed"
+msgstr "Échec de la restauration"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:288
+#, python-brace-format
+msgid "Unable to restore the settings, try again later."
+msgstr "Impossible de restaurer les paramètres, réessayez plus tard."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:294
+#, python-brace-format
+msgid "Settings restored. Confirm to restart the interface."
+msgstr "Paramètres restaurés. Confirmez pour redémarrer l'interface."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:307
+#, python-brace-format
+msgid "Welcome back!! We're excited to see you've enabled sunnylink again!"
+msgstr "Bon retour !! Nous sommes ravis de voir que vous avez réactivé sunnylink !"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:310
+#, python-brace-format
+msgid "Not going to lie, it's sad to see you disabled sunnylink"
+msgstr "Honnêtement, c'est triste de voir que vous avez désactivé sunnylink"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:311
+#, python-brace-format
+msgid ", but we'll be here when you're ready to come back."
+msgstr ", mais nous serons là quand vous serez prêt à revenir."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:327
+#, python-brace-format
+msgid "THANKS ♥"
+msgstr "MERCI ♥"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:328
+#, python-brace-format
+msgid "Not Sponsor"
+msgstr "Non parrain"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py:333
+#, python-brace-format
+msgid "Paired"
+msgstr "Associé"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:38
+#, python-brace-format
+msgid "Select vehicle to force fingerprint manually."
+msgstr "Sélectionnez le véhicule pour forcer l'empreinte manuellement."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:40
+#, python-brace-format
+msgid "Colors represent vehicle fingerprint status:"
+msgstr "Les couleurs représentent le statut d'empreinte du véhicule :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:44
+#, python-brace-format
+msgid "Fingerprinted automatically"
+msgstr "Empreinte automatique"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:45
+#, python-brace-format
+msgid "Manually selected fingerprint"
+msgstr "Empreinte sélectionnée manuellement"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:46
+#, python-brace-format
+msgid "Not fingerprinted or manually selected"
+msgstr "Pas d'empreinte ou sélection manuelle"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:95
+#, python-brace-format
+msgid "This setting will take effect immediately."
+msgstr "Ce paramètre prendra effet immédiatement."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:96
+#, python-brace-format
+msgid "This setting will take effect once the device enters offroad state."
+msgstr "Ce paramètre prendra effet une fois l'appareil en mode hors route."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:115
+#, python-brace-format
+msgid "Select a vehicle"
+msgstr "Sélectionner un véhicule"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:117
+#, python-brace-format
+msgid "Search your vehicle"
+msgstr "Rechercher votre véhicule"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:118
+#, python-brace-format
+msgid "Enter model year (e.g., 2021) and model (Toyota Corolla):"
+msgstr "Entrez l'année (ex. 2021) et le modèle (Toyota Corolla) :"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:127
+#, python-brace-format
+msgid "Unrecognized Vehicle"
+msgstr "Véhicule non reconnu"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/platform_selector.py:128
+#, python-brace-format
+msgid "No vehicle selected"
+msgstr "Aucun véhicule sélectionné"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:19
+#, python-brace-format
+msgid "Off"
+msgstr "Désactivé"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:19
+#, python-brace-format
+msgid "Dynamic"
+msgstr "Dynamique"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:19
+#, python-brace-format
+msgid "Predictive"
+msgstr "Prédictif"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:20
+#, python-brace-format
+msgid "Custom Longitudinal Tuning"
+msgstr "Réglage longitudinal personnalisé"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:42
+#, python-brace-format
+msgid "Your vehicle will use the Default longitudinal tuning."
+msgstr "Votre véhicule utilisera le réglage longitudinal par défaut."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:43
+#, python-brace-format
+msgid "Your vehicle will use the Dynamic longitudinal tuning."
+msgstr "Votre véhicule utilisera le réglage longitudinal dynamique."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:44
+#, python-brace-format
+msgid "Your vehicle will use the Predictive longitudinal tuning."
+msgstr "Votre véhicule utilisera le réglage longitudinal prédictif."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:51
+#, python-brace-format
+msgid "This feature is unavailable while the car is onroad."
+msgstr "Cette fonctionnalité est indisponible lorsque la voiture est sur la route."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/hyundai.py:53
+#, python-brace-format
+msgid ""
+"This feature is unavailable because sunnypilot Longitudinal Control (Alpha) "
+"is not enabled."
+msgstr ""
+"Cette fonctionnalité est indisponible car le contrôle longitudinal "
+"sunnypilot (Alpha) n'est pas activé."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:19
+#, python-brace-format
+msgid "Stop and Go (Beta)"
+msgstr "Stop and Go (Bêta)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:21
+#, python-brace-format
+msgid "Stop and Go for Manual Parking Brake (Beta)"
+msgstr "Stop and Go pour frein à main manuel (Bêta)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:31
+#, python-brace-format
+msgid "This feature is currently not available on this platform."
+msgstr "Cette fonctionnalité n'est actuellement pas disponible sur cette plateforme."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:33
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/tesla.py:30
+#, python-brace-format
+msgid ""
+"Enable \"Always Offroad\" in Device panel, or turn vehicle off to toggle."
+msgstr ""
+"Activez \"Toujours hors route\" dans le panneau Appareil, ou éteignez le "
+"véhicule pour basculer."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:47
+#, python-brace-format
+msgid ""
+"Experimental feature to enable auto-resume during stop-and-go for certain "
+"supported Subaru platforms."
+msgstr ""
+"Fonctionnalité expérimentale pour activer la reprise automatique en "
+"stop-and-go pour certaines plateformes Subaru supportées."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/subaru.py:48
+#, python-brace-format
+msgid ""
+"Experimental feature to enable stop and go for Subaru Global models with "
+"manual handbrake. Models with electric parking brake should keep this "
+"disabled. Thanks to martinl for this implementation!"
+msgstr ""
+"Fonctionnalité expérimentale pour activer le stop and go pour les modèles "
+"Subaru Global avec frein à main manuel. Les modèles avec frein de "
+"stationnement électrique doivent garder ceci désactivé. Merci à martinl "
+"pour cette implémentation !"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/tesla.py:20
+#, python-brace-format
+msgid "Cooperative Steering (Beta)"
+msgstr "Direction coopérative (Bêta)"
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/tesla.py:32
+#, python-brace-format
+msgid "recommend disabling this feature if you experience these."
+msgstr "nous recommandons de désactiver cette fonctionnalité si vous rencontrez ces problèmes."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/tesla.py:35
+#, python-brace-format
+msgid ""
+"Allows the driver to provide limited steering input while openpilot is "
+"engaged."
+msgstr ""
+"Permet au conducteur de fournir une entrée de direction limitée pendant "
+"qu'openpilot est engagé."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/toyota.py:18
+msgid ""
+"sunnypilot will not take over control of gas and brakes. Factory Toyota "
+"longitudinal control will be used."
+msgstr ""
+"sunnypilot ne prendra pas le contrôle de l'accélérateur et des freins. Le "
+"contrôle longitudinal Toyota d'origine sera utilisé."
+
+#: selfdrive/ui/sunnypilot/layouts/settings/vehicle/brands/toyota.py:28
+#, python-brace-format
+msgid "Enforce Factory Longitudinal Control"
+msgstr "Forcer le contrôle longitudinal d'usine"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:68
+#, python-brace-format
+msgid "Pair your GitHub account"
+msgstr "Associer votre compte GitHub"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:68
+#, python-brace-format
+msgid "Early Access: Become a sunnypilot Sponsor"
+msgstr "Accès anticipé : Devenez parrain sunnypilot"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:94
+#, python-brace-format
+msgid "Scan the QR code to login to your GitHub account"
+msgstr "Scannez le code QR pour vous connecter à votre compte GitHub"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:95
+#, python-brace-format
+msgid "Follow the prompts to complete the pairing process"
+msgstr "Suivez les instructions pour terminer le processus d'association"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:96
+#, python-brace-format
+msgid "Re-enter the \"sunnylink\" panel to verify sponsorship status"
+msgstr "Retournez dans le panneau \"sunnylink\" pour vérifier le statut de parrainage"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:97
+#, python-brace-format
+msgid ""
+"If sponsorship status was not updated, please contact a moderator on the "
+"community forum at https://community.sunnypilot.ai"
+msgstr ""
+"Si le statut de parrainage n'a pas été mis à jour, veuillez contacter un "
+"modérateur sur le forum communautaire à https://community.sunnypilot.ai"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:101
+#, python-brace-format
+msgid "Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"
+msgstr "Scannez le code QR pour visiter la page GitHub Sponsors de sunnyhaibin"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:102
+#, python-brace-format
+msgid "Choose your sponsorship tier and confirm your support"
+msgstr "Choisissez votre niveau de parrainage et confirmez votre soutien"
+
+#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py:103
+#, python-brace-format
+msgid ""
+"Join our Community Forum at https://community.sunnypilot.ai and reach out to "
+"a moderator if you have issues"
+msgstr ""
+"Rejoignez notre forum communautaire à https://community.sunnypilot.ai et "
+"contactez un modérateur si vous avez des problèmes"
+
+#: system/ui/sunnypilot/widgets/tree_dialog.py:90
+#, python-brace-format
+msgid "Search"
+msgstr "Rechercher"
+
+#: system/ui/sunnypilot/widgets/tree_dialog.py:99
+#, python-brace-format
+msgid "Enter search query"
+msgstr "Entrez votre recherche"
