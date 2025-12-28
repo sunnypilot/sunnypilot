@@ -105,8 +105,8 @@ class ModelRenderer(Widget):
     sm = ui_state.sm
 
     if self._counter % 180 == 0:  # This mf runs at 60fps, so every 3 seconds...
-      if camera_offset := ui_state.params.get("CameraOffset") if ui_state.active_bundle else 0.0:
-        self._camera_offset = float(camera_offset)
+      if camera_offset := ui_state.params.get("CameraOffset"):
+        self._camera_offset = float(camera_offset) if ui_state.active_bundle else 0.0
     self._counter += 1
 
     self._torque_filter.update(-ui_state.sm['carOutput'].actuatorsOutput.torque)
