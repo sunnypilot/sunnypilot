@@ -57,9 +57,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
     self._path_offset_z = HEIGHT_INIT[0]
     self._counter = -1
-    self._camera_offset = 0.0
-    if camera_offset := ui_state.params.get("CameraOffset") if ui_state.active_bundle else 0.0:
-      self._camera_offset = float(camera_offset)
+    self._camera_offset = ui_state.params.get("CameraOffset") if ui_state.active_bundle else 0.0
     # Initialize ModelPoints objects
     self._path = ModelPoints()
     self._lane_lines = [ModelPoints() for _ in range(4)]
@@ -107,8 +105,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._path_offset_z = live_calib.height[0] if live_calib.height else HEIGHT_INIT[0]
 
     if self._counter % 60 == 0:
-      if camera_offset := ui_state.params.get("CameraOffset") if ui_state.active_bundle else 0.0:
-        self._camera_offset = float(camera_offset)
+      self._camera_offset = ui_state.params.get("CameraOffset") if ui_state.active_bundle else 0.0
     self._counter += 1
 
     if sm.updated['carParams']:
