@@ -31,22 +31,18 @@ class TestCameraOffset:
 
     intrinsics_main = self.dc.fcam.intrinsics
     intrinsics_extra = self.dc.ecam.intrinsics
-
     device_from_calib_euler = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-
     main_transform = get_warp_matrix(device_from_calib_euler, intrinsics_main, False).astype(np.float32)
     extra_transform = get_warp_matrix(device_from_calib_euler, intrinsics_extra, True).astype(np.float32)
 
     self.camera_offset.update(main_transform, extra_transform, sm, False)
     np.testing.assert_almost_equal(self.camera_offset.actual_camera_offset, 0.02)
-
     self.camera_offset.update(main_transform, extra_transform, sm, False)
     np.testing.assert_almost_equal(self.camera_offset.actual_camera_offset, 0.038)
 
   def test_camera_offset_(self):
     intrinsics = self.dc.fcam.intrinsics
     transform = np.eye(3, dtype=np.float32)
-
     height = 1.22
     offset = 0.1
 
