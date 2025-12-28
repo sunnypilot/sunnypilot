@@ -62,7 +62,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
               threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-              # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
+              threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
               threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
             ] + [
               threading.Thread(target=jsonrpc_handler, args=(end_event, partial(startLocalProxy, end_event),), name=f'worker_{x}')
