@@ -89,7 +89,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
 
     # Check if data is up-to-date
     if (sm.recv_frame["liveCalibration"] < ui_state.started_frame or
-      sm.recv_frame["modelV2"] < ui_state.started_frame):
+        sm.recv_frame["modelV2"] < ui_state.started_frame):
       return
 
     # Set up clipping region
