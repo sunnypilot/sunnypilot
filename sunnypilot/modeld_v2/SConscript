@@ -32,12 +32,20 @@ lenvCython.Program('models/commonmodel_pyx.so', 'models/commonmodel_pyx.pyx', LI
 tinygrad_files = ["#"+x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**", recursive=True, root_dir=env.Dir("#").abspath) if 'pycache' not in x]
 
 # Get model metadata
-for model_name in ['supercombo', 'driving_vision', 'driving_policy']:
-  fn = File(f"models/{model_name}").abspath
-  if File(f"models/{model_name}.onnx").exists():
-    script_files = [File(Dir("#sunnypilot/modeld_v2").File("get_model_metadata.py").abspath)]
-    cmd = f'python3 {Dir("#sunnypilot/modeld_v2").abspath}/get_model_metadata.py {fn}.onnx'
-    lenv.Command(fn + "_metadata.pkl", [fn + ".onnx"] + tinygrad_files + script_files, cmd)
+PC = not os.path.isfile('/TICI')
+if PC:
+  inputs = tinygrad_files + [File(Dir("#sunnypilot/modeld_v2").File("install_models_pc.py").abspath)]
+  outputs = []
+  model_dir = Dir("models").abspath
+  cmd = f'python3 {Dir("#sunnypilot/modeld_v2").abspath}/install_models_pc.py {model_dir}'
+
+  for model_name in ['supercombo', 'driving_vision', 'driving_policy']:
+    if File(f"models/{model_name}.onnx").exists():
+        inputs.append(File(f"models/{model_name}.onnx"))
+        inputs.append(File(f"models/{model_name}_tinygrad.pkl"))
+        outputs.append(File(f"models/{model_name}_metadata.pkl"))
+  if outputs:
+    lenv.Command(outputs, inputs, cmd)
 
 def tg_compile(flags, model_name):
   pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + '"'
@@ -56,18 +64,3 @@ for model_name in ['supercombo', 'driving_vision', 'driving_policy']:
       'Darwin': f'DEV=CPU HOME={os.path.expanduser("~")} IMAGE=0', # tinygrad calls brew which needs a $HOME in the env
     }.get(arch, 'DEV=CPU CPU_LLVM=1 IMAGE=0')
     tg_compile(flags, model_name)
-
-# Compile BIG model if USB GPU is available
-if "USBGPU" in os.environ:
-  import subprocess
-  # because tg doesn't support multi-process
-  devs = subprocess.check_output('python3 -c "from tinygrad import Device; print(list(Device.get_available_devices()))"', shell=True, cwd=env.Dir('#').abspath)
-  if b"AMD" in devs:
-    for model_name in ['driving_vision', 'driving_policy']:
-      if File(f"models/{model_name}.onnx").exists():
-        print("USB GPU detected... building")
-        flags = "DEV=AMD AMD_IFACE=USB AMD_LLVM=1 NOLOCALS=0 IMAGE=0"
-        bp = tg_compile(flags, model_name)
-        lenv.SideEffect('lock', [bp])  # tg doesn't support multi-process so build serially
-  else:
-    print("USB GPU not detected... skipping")
