@@ -42,11 +42,12 @@ def test_recovery_power_scaling():
 
   test_cases: list = [
     # (control, v_ego, expected_factor)
-    (1.0, 20.0, 1.0),
-    (1.0, 25.0, 1.0),
-    (1.0, 25.1, 0.75),
-    (0.8, 20.0, 1.0),
-    (0.8, 30.0, 0.75),
+    (0.55, 20.0, 1.0),
+    (1.0, 25.0, .75),
+    (1.5, 25.1, 0.75),
+    (2.0, 20.0, 1.0),
+    (0.75, 19.0, 1.0),
+    (0.8, 25.1, 0.75),
   ]
 
   for control, v_ego, factor in test_cases:
