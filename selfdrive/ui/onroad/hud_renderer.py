@@ -114,7 +114,7 @@ class HudRenderer(Widget):
       COLORS.HEADER_GRADIENT_END,
     )
 
-    if ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
+    if ui_state.torque_bar and ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
       self._torque_bar.render(rect)
 
     if self.is_cruise_available:
