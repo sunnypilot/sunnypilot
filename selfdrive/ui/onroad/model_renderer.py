@@ -1,3 +1,4 @@
+import math
 import colorsys
 import numpy as np
 import pyray as rl
@@ -129,6 +130,9 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     # Draw elements
     self._draw_lane_lines()
     self._draw_path(sm)
+
+    if (sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame):
+      self._draw_radar_tracks(sm['liveTracks'])
 
     if render_lead_indicator and radar_state:
       self._draw_lead_indicator()
@@ -307,6 +311,19 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
         stops=[0.0, 0.5, 1.0],
       )
       draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
+
+  def _draw_radar_tracks(self, live_tracks):
+    for track in live_tracks.points:
+      d_rel, y_rel, v_rel, a_rel = track.dRel, track.yRel, track.vRel, track.aRel
+      if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel) and math.isfinite(a_rel)):
+        continue
+
+      pt = self._map_to_screen(d_rel, -y_rel, self._path_offset_z)
+      if pt is None:
+        continue
+
+      x, y = pt
+      rl.draw_circle(int(x), int(y), 6, rl.Color(0, 255, 64, 255))
 
   def _draw_lead_indicator(self):
     # Draw lead vehicles if available
