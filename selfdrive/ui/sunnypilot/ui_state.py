@@ -73,7 +73,7 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
-    self.radar_tracks = self.params.get_bool("RadarTracks")
+    self.radar_tracks = self.params.get_bool("RadarTracks") or True
 
 
 class DeviceSP:
