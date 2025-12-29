@@ -30,7 +30,7 @@ class TogglesLayoutMici(NavWidget):
     radar_tracks = BigParamControl("radar tracks", "RadarTracks")
 
     self._scroller = Scroller([
-      radar_tracks
+      radar_tracks,
       hide_camera,
       hyundai_radar,
       self._personality_toggle,
