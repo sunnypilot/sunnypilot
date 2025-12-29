@@ -74,6 +74,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.hide_camera = self.params.get("HideCamera")
+    self.radar_tracks = self.params.get_bool("RadarTracks")
 
 
 class DeviceSP:
