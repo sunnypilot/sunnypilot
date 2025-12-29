@@ -87,20 +87,6 @@ class DeveloperLayout(Widget):
     )
     self._on_enable_ui_debug(self._params.get_bool("ShowDebugInfo"))
 
-    self._webrtc_toggle = toggle_item(
-      lambda: tr("Enable WebRTC"),
-      description=lambda: tr("Allow remote live streaming via Connect"),
-      initial_state=self._params.get_bool("EnableWebRTC"),
-      callback=self._on_enable_webrtc,
-    )
-
-    self._remote_params_toggle = toggle_item(
-      lambda: tr("Enable Remote Params"),
-      description=lambda: tr("Allow remote parameter editing via Connect"),
-      initial_state=self._params.get_bool("EnableRemoteParams"),
-      callback=self._on_enable_remote_params,
-    )
-
     self._scroller = Scroller([
       self._adb_toggle,
       self._ssh_toggle,
@@ -109,8 +95,6 @@ class DeveloperLayout(Widget):
       self._long_maneuver_toggle,
       self._alpha_long_toggle,
       self._ui_debug_toggle,
-      self._webrtc_toggle,
-      self._remote_params_toggle,
     ], line_separator=True, spacing=0)
 
     # Toggles should be not available to change in onroad state
@@ -158,8 +142,6 @@ class DeveloperLayout(Widget):
       ("LongitudinalManeuverMode", self._long_maneuver_toggle),
       ("AlphaLongitudinalEnabled", self._alpha_long_toggle),
       ("ShowDebugInfo", self._ui_debug_toggle),
-      ("EnableWebRTC", self._webrtc_toggle),
-      ("EnableRemoteParams", self._remote_params_toggle),
     ):
       item.action_item.set_state(self._params.get_bool(key))
 
@@ -206,9 +188,3 @@ class DeveloperLayout(Widget):
       self._params.put_bool("AlphaLongitudinalEnabled", False)
       self._params.put_bool("OnroadCycleRequested", True)
       self._update_toggles()
-
-  def _on_enable_webrtc(self, state: bool):
-    self._params.put_bool("EnableWebRTC", state)
-
-  def _on_enable_remote_params(self, state: bool):
-    self._params.put_bool("EnableRemoteParams", state)
