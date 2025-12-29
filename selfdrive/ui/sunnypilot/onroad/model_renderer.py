@@ -15,5 +15,3 @@ class ModelRendererSP:
     self.chevron_metrics = ChevronMetrics()
     self.radar_tracks = RadarTracks()
 
-  def _draw_radar_tracks(self, live_tracks, track_size=6):
-    self.radar_tracks.draw_radar_tracks(live_tracks, self._map_to_screen, self._path_offset_z, track_size)
