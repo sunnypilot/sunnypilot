@@ -11,16 +11,17 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRen
 
 
 class DriverStateRendererSP(DriverStateRenderer):
+  def __init__(self):
+    super().__init__()
+    self.dev_ui_offset = DeveloperUiRenderer.get_bottom_dev_ui_offset()
+
   def _pre_calculate_drawing_elements(self):
     """Pre-calculate all drawing elements based on the current rectangle"""
-    # Get dev UI offset once from the DeveloperUiRenderer instance
-    dev_ui_offset = DeveloperUiRenderer.get_bottom_dev_ui_offset()
-
     # Calculate icon position (bottom-left or bottom-right)
     width, height = self._rect.width, self._rect.height
     offset = UI_BORDER_SIZE + BTN_SIZE // 2
     self.position_x = self._rect.x + (width - offset if self.is_rhd else offset)
-    self.position_y = self._rect.y + height - offset - dev_ui_offset
+    self.position_y = self._rect.y + height - offset - self.dev_ui_offset
 
     # Pre-calculate the face lines positions
     positioned_keypoints = self.face_keypoints_transformed + np.array([self.position_x, self.position_y])
