@@ -27,8 +27,10 @@ class TogglesLayoutMici(NavWidget):
     enable_openpilot = BigParamControl("enable sunnypilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback)
     hide_camera = BigParamControl("hide camera", "HideCamera")
     hyundai_radar = BigMultiParamToggle("hyundai radar", "HyundaiRadar", ["off", "lead only", "full radar"])
+    radar_tracks = BigParamControl("radar tracks", "RadarTracks")
 
     self._scroller = Scroller([
+      radar_tracks
       hide_camera,
       hyundai_radar,
       self._personality_toggle,
@@ -45,6 +47,7 @@ class TogglesLayoutMici(NavWidget):
     self._refresh_toggles = (
       ("HideCamera", hide_camera),
       ("HyundaiRadar", hyundai_radar),
+      ("RadarTracks", radar_tracks),
       ("ExperimentalMode", self._experimental_btn),
       ("IsMetric", is_metric_toggle),
       ("IsLdwEnabled", ldw_toggle),
