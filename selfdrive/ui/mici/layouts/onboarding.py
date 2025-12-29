@@ -454,6 +454,10 @@ class SunnylinkTermsPage(SetupTermsPage):
   def _content_height(self):
     return self._terms_label.rect.y + self._terms_label.rect.height - self._scroll_panel.get_offset()
 
+  def _render(self, _):
+    super()._render(_)
+    return -1
+
   def _render_content(self, scroll_offset):
     self._title_header.set_position(self._rect.x + 16, self._rect.y + 12 + scroll_offset)
     self._title_header.render()

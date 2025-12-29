@@ -8,6 +8,7 @@ from collections.abc import Callable
 
 import pyray as rl
 from cereal import custom
+from openpilot.selfdrive.ui.mici.layouts.onboarding import SunnylinkTermsPage
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
@@ -18,6 +19,7 @@ from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.widgets import NavWidget
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.system.version import terms_version_sl
 
 
 class SunnylinkLayoutMici(NavWidget):
@@ -28,7 +30,7 @@ class SunnylinkLayoutMici(NavWidget):
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
 
-    self._sunnylink_toggle = BigToggle(text="",
+    self._sunnylink_toggle = BigToggle(text=tr("enable sunnylink"),
                                        initial_state=self._sunnylink_enabled,
                                        toggle_callback=SunnylinkLayoutMici._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
@@ -51,8 +53,8 @@ class SunnylinkLayoutMici(NavWidget):
 
   def _update_state(self):
     super()._update_state()
-    self._sunnylink_enabled = ui_state.sunnylink_enabled
-    self._sunnylink_toggle.set_text(tr("enable sunnylink"))
+    self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
+    self._sunnylink_toggle.set_checked(self._sunnylink_enabled)
     self._sunnylink_pair_button.set_visible(self._sunnylink_enabled)
     self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
     self._backup_btn.set_visible(self._sunnylink_enabled)
@@ -83,7 +85,21 @@ class SunnylinkLayoutMici(NavWidget):
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
-    ui_state.params.put_bool("SunnylinkEnabled", state)
+    sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsent") == terms_version_sl
+    sl_enabled: bool = ui_state.params.get("SunnylinkEnabled")
+    def sl_terms_accepted():
+      ui_state.params.put("CompletedSunnylinkConsent", terms_version_sl)
+      ui_state.params.put_bool("SunnylinkEnabled", True)
+      gui_app.set_modal_overlay(None)
+    def sl_terms_declined():
+      ui_state.params.put("CompletedSunnylinkConsent", "-1")
+      ui_state.params.put_bool("SunnylinkEnabled", False)
+      gui_app.set_modal_overlay(None)
+    if state and not sl_consent and not sl_enabled:
+        sl_terms_dlg = SunnylinkTermsPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
+        gui_app.set_modal_overlay(sl_terms_dlg)
+    else:
+      ui_state.params.put_bool("SunnylinkEnabled", state)
     ui_state.update_params()
 
   @staticmethod
