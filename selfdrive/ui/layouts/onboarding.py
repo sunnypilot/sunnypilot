@@ -151,58 +151,36 @@ class SunnylinkPage(Widget):
 
     self._content = [
       {
-        "text": tr("sunnylink provides remote fleet management capabilities for your sunnypilot device. Securely access your device from anywhere, view real-time dashboard, and manage settings."),
+        "text": tr("sunnylink enables remote management for your sunnypilot device, including remote monitoring, a real-time dashboard, and settings management."),
         "primary_btn": tr("Enable"),
-        "secondary_btn": tr("Disable"),
+        "secondary_btn": tr("Not now"),
         "highlight_primary": True
       },
       {
-        "text": tr("Continuing without sunnylink enabled would lose essential features such as remote monitoring, fleet management, and real-time dashboard."),
-        "primary_btn": tr("Enable"),
-        "secondary_btn": tr("Disable"),
-        "highlight_primary": True
-      },
-      {
-        "text": tr("You'll have a subpar experience with sunnylink disabled. Do you want to actually continue or uninstall sunnypilot?"),
-        "primary_btn": tr("Enable"),
-        "secondary_btn": tr("Disable"),
+        "text": tr("sunnypilot is offered with sunnylink enabled as part of its core functionality. If you choose not to enable sunnylink, you can uninstall sunnypilot. Without sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable."),
+        "secondary_btn": tr("Back"),
         "danger_btn": tr("Uninstall sunnypilot"),
         "highlight_primary": True
-      },
-      {
-        "text": tr("Do you want to uninstall sunnypilot?"),
-        "back_btn": tr("Back"),
-        "danger_btn": tr("Uninstall sunnypilot")
       }
     ]
 
     self._primary_btn = Button("", button_style=ButtonStyle.PRIMARY, click_callback=lambda: self._handle_choice("enable"))
-    self._secondary_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("disable"))
+    self._secondary_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("secondary"))
     self._danger_btn = Button("", button_style=ButtonStyle.DANGER, click_callback=lambda: self._handle_choice("uninstall"))
-    self._back_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("back"))
 
   def _handle_choice(self, choice):
     if choice == "enable":
       ui_state.params.put_bool("SunnylinkEnabled", True)
       if self._done_callback:
         self._done_callback()
-    elif choice == "disable":
+    elif choice == "secondary":
       if self._step == 0:
         self._step = 1
       elif self._step == 1:
-        self._step = 2
-      elif self._step == 2:
-        ui_state.params.put_bool("SunnylinkEnabled", False)
-        if self._done_callback:
-          self._done_callback()
+        self._step = 0
     elif choice == "uninstall":
-      if self._step == 2:
-        self._step = 3
-      elif self._step == 3:
-        ui_state.params.put_bool("DoUninstall", True)
-        gui_app.request_close()
-    elif choice == "back":
-      self._step = 0
+      ui_state.params.put_bool("DoUninstall", True)
+      gui_app.request_close()
 
   def _render(self, _):
     step_data = self._content[self._step]
@@ -221,28 +199,14 @@ class SunnylinkPage(Widget):
 
     btn_y = self._rect.y + self._rect.height - 160 - 45
 
-    if self._step == 3:
+    if "danger_btn" in step_data:
       btn_width = (self._rect.width - 45 * 3) / 2
-
-      self._back_btn.set_text(step_data["back_btn"])
-      self._back_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
-
-      self._danger_btn.set_text(step_data["danger_btn"])
-      self._danger_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
-
-    elif "danger_btn" in step_data:
-      btn_width = (self._rect.width - 45 * 4) / 3
 
       self._secondary_btn.set_text(step_data["secondary_btn"])
       self._secondary_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
 
       self._danger_btn.set_text(step_data["danger_btn"])
-      self._danger_btn.set_button_style(ButtonStyle.DANGER)
       self._danger_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
-
-      self._primary_btn.set_text(step_data["primary_btn"])
-      self._primary_btn.set_button_style(ButtonStyle.PRIMARY if step_data["highlight_primary"] else ButtonStyle.STANDARD)
-      self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 3 + btn_width * 2, btn_y, btn_width, 160))
 
     else:
       btn_width = (self._rect.width - 45 * 3) / 2
@@ -251,7 +215,6 @@ class SunnylinkPage(Widget):
       self._secondary_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
 
       self._primary_btn.set_text(step_data["primary_btn"])
-      self._primary_btn.set_button_style(ButtonStyle.PRIMARY if step_data["highlight_primary"] else ButtonStyle.STANDARD)
       self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
 
     return -1

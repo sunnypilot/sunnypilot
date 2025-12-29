@@ -446,37 +446,30 @@ class SunnylinkPage(Widget):
 
     self._content = [
       {
-        "text": tr("sunnylink provides remote fleet management capabilities for your sunnypilot device. Securely access your device from anywhere, view real-time dashboard, and manage settings."),
-        "primary_btn": tr("enable"),
-        "secondary_btn": tr("disable"),
+        "text": tr("sunnylink enables remote management for your sunnypilot device, including remote monitoring, a real-time dashboard, and settings management."),
+        "primary_btn": tr("Enable"),
+        "secondary_btn": tr("Not now"),
         "highlight_primary": True
       },
       {
-        "text": tr("Continuing without sunnylink enabled would lose essential features such as remote monitoring, fleet management, and real-time dashboard."),
-        "primary_btn": tr("enable"),
-        "secondary_btn": tr("disable"),
-        "highlight_primary": True
-      },
-      {
-        "text": tr("You'll have a subpar experience with sunnylink disabled. Do you want to actually continue or uninstall sunnypilot?"),
-        "primary_btn": tr("enable"),
-        "secondary_btn": tr("disable"),
-        "slider_btn": tr("uninstall sunnypilot"),
+        "text": tr("sunnypilot is offered with sunnylink enabled as part of its core functionality. If you choose not to enable sunnylink, you can uninstall sunnypilot. Without sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable."),
+        "secondary_btn": tr("Back"),
+        "slider_btn": tr("Uninstall sunnypilot"),
         "highlight_primary": True
       }
     ]
 
     self._label = UnifiedLabel("", 42, FontWeight.ROMAN)
 
-    self._primary_btn = WideRoundedButton("enable")
+    self._primary_btn = WideRoundedButton("Enable")
     self._primary_btn.set_click_callback(lambda: self._handle_choice("enable"))
     self._primary_btn.set_enabled(False)
 
-    self._secondary_btn = SmallButton("decline")
-    self._secondary_btn.set_click_callback(lambda: self._handle_choice("disable"))
+    self._secondary_btn = SmallButton("Not now")
+    self._secondary_btn.set_click_callback(lambda: self._handle_choice("secondary"))
     self._secondary_btn.set_enabled(False)
 
-    self._uninstall_slider = SmallSlider("uninstall sunnypilot", self._on_uninstall)
+    self._uninstall_slider = SmallSlider("Uninstall sunnypilot", self._on_uninstall)
     self._uninstall_slider.set_enabled(False)
 
     self._scroll_down_indicator = IconButton(gui_app.texture("icons_mici/setup/scroll_down_indicator.png", 64, 78))
@@ -495,17 +488,13 @@ class SunnylinkPage(Widget):
       ui_state.params.put_bool("SunnylinkEnabled", True)
       if self._done_callback:
         self._done_callback()
-    elif choice == "disable":
+    elif choice == "secondary":
       if self._step == 0:
         self._step = 1
         self._scroll_panel.set_offset(0)
       elif self._step == 1:
-        self._step = 2
+        self._step = 0
         self._scroll_panel.set_offset(0)
-      elif self._step == 2:
-        ui_state.params.put_bool("SunnylinkEnabled", False)
-        if self._done_callback:
-          self._done_callback()
 
   @property
   def _content_height(self):
@@ -528,7 +517,7 @@ class SunnylinkPage(Widget):
     label_height = self._label.get_content_height(int(label_width))
     total_content_height = 12 + header_height + 20 + label_height # Match TermsPage: 12px top padding
 
-    footer_height = 360 if self._step == 2 else 180
+    footer_height = 180 if self._step == 1 else 180
 
     content_fits = (total_content_height + footer_height) < self._rect.height
 
@@ -581,31 +570,18 @@ class SunnylinkPage(Widget):
       label_end_y = self._rect.y + 12 + scroll_offset + header_height + 20 + label_height
       ref_btn_y = label_end_y + 40 # 40px gap from text to buttons
     else:
-      if self._step == 2:
-        ref_btn_y = self._rect.y + self._rect.height - self._primary_btn.rect.height - 16 - self._primary_btn.rect.height
-      else:
-        ref_btn_y = self._rect.y + self._rect.height - self._primary_btn.rect.height
+      ref_btn_y = self._rect.y + self._rect.height - self._primary_btn.rect.height
 
-    if self._step == 2:
+    if self._step == 1:
       if content_fits:
-        row1_y = ref_btn_y
-        row2_y = row1_y + self._primary_btn.rect.height + 16
+        btn_y = ref_btn_y
       else:
-        row2_y = self._rect.y + self._rect.height - self._primary_btn.rect.height - padding_bottom
-        row1_y = row2_y - self._primary_btn.rect.height - 16
-
-      self._primary_btn.set_text(step_data["primary_btn"])
-      self._primary_btn.render(rl.Rectangle(
-        self._rect.x + (self._rect.width - self._primary_btn.rect.width) / 2,
-        row1_y,
-        self._primary_btn.rect.width,
-        self._primary_btn.rect.height,
-      ))
+        btn_y = self._rect.y + self._rect.height - 180 # Fixed height for footer area in step 1
 
       self._secondary_btn.set_text(step_data["secondary_btn"])
       self._secondary_btn.render(rl.Rectangle(
         self._rect.x + padding_x,
-        row2_y,
+        btn_y,
         self._secondary_btn.rect.width,
         self._secondary_btn.rect.height,
       ))
@@ -613,7 +589,7 @@ class SunnylinkPage(Widget):
       if "slider_btn" in step_data:
         self._uninstall_slider.render(rl.Rectangle(
           self._rect.x + self._rect.width - self._uninstall_slider.rect.width - padding_x,
-          row2_y,
+          btn_y,
           self._uninstall_slider.rect.width,
           self._uninstall_slider.rect.height
         ))
