@@ -73,6 +73,7 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.hide_camera = self.params.get("HideCamera")
 
 
 class DeviceSP:
