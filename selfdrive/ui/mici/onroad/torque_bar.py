@@ -179,7 +179,7 @@ class TorqueBar(Widget):
 
   def _render(self, rect: rl.Rectangle) -> None:
     ui_state.status = UIStatus.ENGAGED if self._always else ui_state.status
-    
+
     # adjust y pos with torque
     torque_line_offset = np.interp(abs(self._torque_filter.x), [0.5, 1], [22 * self._scale, 26 * self._scale])
     torque_line_height = np.interp(abs(self._torque_filter.x), [0.5, 1], [14 * self._scale, 56 * self._scale])
