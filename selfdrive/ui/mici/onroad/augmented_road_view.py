@@ -170,7 +170,7 @@ class AugmentedRoadView(CameraView):
     self._update_params()
 
   def _update_params(self):
-    self._hide_camera = ui_state.params.get_bool("HideCameraView")
+    self._hide_camera = ui_state.params.get_bool("HideCamera")
 
   def is_swiping_left(self) -> bool:
     """Check if currently swiping left (for scroller to disable)."""
