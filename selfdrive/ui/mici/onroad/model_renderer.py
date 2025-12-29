@@ -333,6 +333,10 @@ class ModelRenderer(Widget):
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
 
+    if ui_state.rainbow_path:
+      self.rainbow_path.draw_rainbow_path(self._rect, self._path)
+      return
+
     if self._experimental_mode:
       # Draw with acceleration coloring
       if ui_state.status == UIStatus.DISENGAGED:
