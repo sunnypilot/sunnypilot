@@ -838,6 +838,10 @@
     "title": "Quiet Mode",
     "description": ""
   },
+  "RadarTracks": {
+    "title": "Radar Tracks",
+    "description": ""
+  },
   "RainbowMode": {
     "title": "Rainbow Mode",
     "description": ""
