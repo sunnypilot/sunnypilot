@@ -73,6 +73,7 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.confidence_ball = self.params.get("ConfidenceBall")
 
 
 class DeviceSP:

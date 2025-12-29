@@ -103,7 +103,8 @@ class AugmentedRoadView(CameraView):
     # End clipping region
     rl.end_scissor_mode()
 
-    self._confidence_ball.render(self._content_rect)
+    if ui_state.confidence_ball:
+      self._confidence_ball.render(self._content_rect)
 
     # Draw colored border based on driving state
     self._draw_border(rect)
