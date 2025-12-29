@@ -42,6 +42,12 @@ METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 params = Params()
 
+# Parameters that should never be remotely modified for security reasons
+BLOCKED_PARAMS = {
+  "GithubUsername",  # Could grant SSH access
+  "GithubSshKeys",   # Direct SSH key injection
+}
+
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
@@ -56,7 +62,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
               threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
               threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-              # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
+              threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
               threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
             ] + [
               threading.Thread(target=jsonrpc_handler, args=(end_event, partial(startLocalProxy, end_event),), name=f'worker_{x}')
@@ -248,6 +254,11 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
   for key, value in params_to_update.items():
+    # disallow modifications to blocked parameters
+    if key in BLOCKED_PARAMS:
+      cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
+      continue
+
     try:
       save_param_from_base64_encoded_string(key, value, compression)
     except Exception as e:

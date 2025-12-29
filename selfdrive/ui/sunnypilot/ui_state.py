@@ -38,7 +38,10 @@ class UIStateSP:
     self.changed_params.add(param_name)
 
   def update(self) -> None:
-    self.sunnylink_state.start()
+    if self.sunnylink_enabled:
+      self.sunnylink_state.start()
+    else:
+      self.sunnylink_state.stop()
 
     if not self.params.is_watching():
       cloudlog.warning("ParamWatcher thread died, restarting...")
@@ -50,6 +53,7 @@ class UIStateSP:
 
       if self.active_layout:
         sync_layout_params(self.active_layout, None, self.params)
+
 
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
@@ -64,7 +68,7 @@ class UIStateSP:
       if not mads.available:
         return "override"
 
-      if any(e.overrideLongitudinal for e in onroad_evt) and not mads.enabled:
+      if any(e.overrideLongitudinal for e in onroad_evt):
         return "override"
 
     if mads_state in (MADSState.paused, MADSState.overriding):
@@ -94,3 +98,14 @@ class UIStateSP:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.developer_ui = self.params.get("DevUIInfo")
+    self.rainbow_path = self.params.get_bool("RainbowMode")
+    self.chevron_metrics = self.params.get("ChevronInfo")
+
+
+class DeviceSP:
+  def __init__(self):
+    self._params = Params()
+
+  def _set_awake(self, on: bool):
+    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
+      self._params.put_bool("OffroadMode", True)
