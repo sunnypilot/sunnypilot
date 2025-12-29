@@ -1,4 +1,3 @@
-import math
 import colorsys
 import numpy as np
 import pyray as rl
