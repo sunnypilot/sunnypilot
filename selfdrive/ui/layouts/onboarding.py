@@ -11,7 +11,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import Label
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.version import terms_version, training_version
+from openpilot.system.version import terms_version, training_version, terms_version_sp
 
 DEBUG = False
 
@@ -31,8 +31,9 @@ RESTART_TRAINING_RECT = rl.Rectangle(87, 795, 472, 186)
 
 class OnboardingState(IntEnum):
   TERMS = 0
-  ONBOARDING = 1
-  DECLINE = 2
+  SUNNYLINK = 1
+  ONBOARDING = 2
+  DECLINE = 3
 
 
 class TrainingGuide(Widget):
@@ -110,14 +111,14 @@ class TermsPage(Widget):
     self._on_decline = on_decline
 
     self._title = Label(tr("Welcome to sunnypilot"), font_size=90, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
-    self._desc = Label(tr("You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at https://comma.ai/terms before continuing."),
+    self._desc = Label(tr("You must accept the Terms of Service to use sunnypilot. Read the latest terms at https://sunnypilot.ai/terms before continuing."),
                        font_size=90, font_weight=FontWeight.MEDIUM, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
 
     self._decline_btn = Button(tr("Decline"), click_callback=on_decline)
     self._accept_btn = Button(tr("Agree"), button_style=ButtonStyle.PRIMARY, click_callback=on_accept)
 
   def _render(self, _):
-    welcome_x = self._rect.x + 165
+    welcome_x = self._rect.x + 95
     welcome_y = self._rect.y + 165
     welcome_rect = rl.Rectangle(welcome_x, welcome_y, self._rect.width - welcome_x, 90)
     self._title.render(welcome_rect)
@@ -140,10 +141,126 @@ class TermsPage(Widget):
     return -1
 
 
+class SunnylinkPage(Widget):
+  def __init__(self, done_callback=None):
+    super().__init__()
+    self._done_callback = done_callback
+    self._step = 0
+
+    self._title = Label(tr("sunnylink Remote Management"), font_size=90, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
+
+    self._content = [
+      {
+        "text": tr("sunnylink provides remote fleet management capabilities for your sunnypilot device. Securely access your device from anywhere, view real-time dashboard, and manage settings."),
+        "primary_btn": tr("Enable"),
+        "secondary_btn": tr("Disable"),
+        "highlight_primary": True
+      },
+      {
+        "text": tr("Continuing without sunnylink enabled would lose essential features such as remote monitoring, fleet management, and real-time dashboard."),
+        "primary_btn": tr("Enable"),
+        "secondary_btn": tr("Disable"),
+        "highlight_primary": True
+      },
+      {
+        "text": tr("You'll have a subpar experience with sunnylink disabled. Do you want to actually continue or uninstall sunnypilot?"),
+        "primary_btn": tr("Enable"),
+        "secondary_btn": tr("Disable"),
+        "danger_btn": tr("Uninstall sunnypilot"),
+        "highlight_primary": True
+      },
+      {
+        "text": tr("Do you want to uninstall sunnypilot?"),
+        "back_btn": tr("Back"),
+        "danger_btn": tr("Uninstall sunnypilot")
+      }
+    ]
+
+    self._primary_btn = Button("", button_style=ButtonStyle.PRIMARY, click_callback=lambda: self._handle_choice("enable"))
+    self._secondary_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("disable"))
+    self._danger_btn = Button("", button_style=ButtonStyle.DANGER, click_callback=lambda: self._handle_choice("uninstall"))
+    self._back_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("back"))
+
+  def _handle_choice(self, choice):
+    if choice == "enable":
+      ui_state.params.put_bool("SunnylinkEnabled", True)
+      if self._done_callback:
+        self._done_callback()
+    elif choice == "disable":
+      if self._step == 0:
+        self._step = 1
+      elif self._step == 1:
+        self._step = 2
+      elif self._step == 2:
+        ui_state.params.put_bool("SunnylinkEnabled", False)
+        if self._done_callback:
+          self._done_callback()
+    elif choice == "uninstall":
+      if self._step == 2:
+        self._step = 3
+      elif self._step == 3:
+        ui_state.params.put_bool("DoUninstall", True)
+        gui_app.request_close()
+    elif choice == "back":
+      self._step = 0
+
+  def _render(self, _):
+    step_data = self._content[self._step]
+
+    welcome_x = self._rect.x + 95
+    welcome_y = self._rect.y + 165
+    welcome_rect = rl.Rectangle(welcome_x, welcome_y, self._rect.width - welcome_x, 90)
+    self._title.render(welcome_rect)
+
+    desc_x = welcome_x
+    desc_y = welcome_y + 120
+    desc_rect = rl.Rectangle(desc_x, desc_y, self._rect.width - desc_x, self._rect.height - desc_y - 250)
+
+    desc_label = Label(step_data["text"], font_size=90, font_weight=FontWeight.MEDIUM, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
+    desc_label.render(desc_rect)
+
+    btn_y = self._rect.y + self._rect.height - 160 - 45
+
+    if self._step == 3:
+      btn_width = (self._rect.width - 45 * 3) / 2
+
+      self._back_btn.set_text(step_data["back_btn"])
+      self._back_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
+
+      self._danger_btn.set_text(step_data["danger_btn"])
+      self._danger_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
+
+    elif "danger_btn" in step_data:
+      btn_width = (self._rect.width - 45 * 4) / 3
+
+      self._secondary_btn.set_text(step_data["secondary_btn"])
+      self._secondary_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
+
+      self._danger_btn.set_text(step_data["danger_btn"])
+      self._danger_btn.set_button_style(ButtonStyle.DANGER)
+      self._danger_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
+
+      self._primary_btn.set_text(step_data["primary_btn"])
+      self._primary_btn.set_button_style(ButtonStyle.PRIMARY if step_data["highlight_primary"] else ButtonStyle.STANDARD)
+      self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 3 + btn_width * 2, btn_y, btn_width, 160))
+
+    else:
+      btn_width = (self._rect.width - 45 * 3) / 2
+
+      self._secondary_btn.set_text(step_data["secondary_btn"])
+      self._secondary_btn.render(rl.Rectangle(self._rect.x + 45, btn_y, btn_width, 160))
+
+      self._primary_btn.set_text(step_data["primary_btn"])
+      self._primary_btn.set_button_style(ButtonStyle.PRIMARY if step_data["highlight_primary"] else ButtonStyle.STANDARD)
+      self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
+
+    return -1
+
+
 class DeclinePage(Widget):
   def __init__(self, back_callback=None):
     super().__init__()
-    self._text = Label(tr("You must accept the Terms and Conditions in order to use sunnypilot."),
+    self._text = Label(tr("You must accept the Terms of Service in order to use sunnypilot."),
                        font_size=90, font_weight=FontWeight.MEDIUM, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
     self._back_btn = Button(tr("Back"), click_callback=back_callback)
     self._uninstall_btn = Button(tr("Decline, uninstall sunnypilot"), button_style=ButtonStyle.DANGER,
@@ -170,19 +287,26 @@ class DeclinePage(Widget):
 class OnboardingWindow(Widget):
   def __init__(self):
     super().__init__()
-    self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version
+    self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
+                                 ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
+    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsent") == "1.0"
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
-    self._state = OnboardingState.TERMS if not self._accepted_terms else OnboardingState.ONBOARDING
+    self._state = OnboardingState.TERMS
+    if self._accepted_terms:
+      self._state = OnboardingState.SUNNYLINK
+      if self._sunnylink_consented:
+        self._state = OnboardingState.ONBOARDING
 
     # Windows
     self._terms = TermsPage(on_accept=self._on_terms_accepted, on_decline=self._on_terms_declined)
+    self._sunnylink = SunnylinkPage(done_callback=self._on_sunnylink_done)
     self._training_guide: TrainingGuide | None = None
     self._decline_page = DeclinePage(back_callback=self._on_decline_back)
 
   @property
   def completed(self) -> bool:
-    return self._accepted_terms and self._training_done
+    return self._accepted_terms and self._sunnylink_consented and self._training_done
 
   def _on_terms_declined(self):
     self._state = OnboardingState.DECLINE
@@ -192,6 +316,17 @@ class OnboardingWindow(Widget):
 
   def _on_terms_accepted(self):
     ui_state.params.put("HasAcceptedTerms", terms_version)
+    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp)
+    self._state = OnboardingState.SUNNYLINK
+    if self._sunnylink_consented:
+      self._state = OnboardingState.ONBOARDING
+
+    if self._sunnylink_consented and self._training_done:
+      gui_app.set_modal_overlay(None)
+
+  def _on_sunnylink_done(self):
+    ui_state.params.put("CompletedSunnylinkConsent", "1.0")
+    self._sunnylink_consented = True
     self._state = OnboardingState.ONBOARDING
     if self._training_done:
       gui_app.set_modal_overlay(None)
@@ -206,7 +341,9 @@ class OnboardingWindow(Widget):
 
     if self._state == OnboardingState.TERMS:
       self._terms.render(self._rect)
-    if self._state == OnboardingState.ONBOARDING:
+    elif self._state == OnboardingState.SUNNYLINK:
+      self._sunnylink.render(self._rect)
+    elif self._state == OnboardingState.ONBOARDING:
       self._training_guide.render(self._rect)
     elif self._state == OnboardingState.DECLINE:
       self._decline_page.render(self._rect)
