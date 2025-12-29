@@ -28,7 +28,7 @@ class TogglesLayoutMici(NavWidget):
     radar_tracks = BigParamControl("radar tracks", "RadarTracks")
 
     self._scroller = Scroller([
-      radar_tracks
+      radar_tracks,
       self._personality_toggle,
       self._experimental_btn,
       is_metric_toggle,
