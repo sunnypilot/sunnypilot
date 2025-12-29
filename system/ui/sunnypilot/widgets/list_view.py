@@ -35,6 +35,19 @@ class Spacer(Widget):
     rl.draw_rectangle(int(self._rect.x), int(self._rect.y), int(self._rect.x + self._rect.width), int(self._rect.y), rl.Color(0,0,0,0))
 
 
+class Spacer(Widget):
+  def __init__(self, height: int = 1):
+    super().__init__()
+    self._rect = rl.Rectangle(0, 0, 0, height)
+
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    self._rect.width = parent_rect.width
+
+  def _render(self, _):
+    rl.draw_rectangle(int(self._rect.x), int(self._rect.y), int(self._rect.x + self._rect.width), int(self._rect.y), rl.Color(0,0,0,0))
+
+
 class ToggleActionSP(ToggleAction):
   def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True,
                callback: Callable[[bool], None] | None = None, param: str | None = None):
