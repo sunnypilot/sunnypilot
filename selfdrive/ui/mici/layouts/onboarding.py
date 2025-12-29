@@ -2,13 +2,16 @@ from enum import IntEnum
 
 import weakref
 import math
+from typing import Callable
+
 import numpy as np
 import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.button import SmallButton, SmallCircleIconButton, IconButton, WideRoundedButton
+from openpilot.system.ui.widgets.button import SmallButton, SmallCircleIconButton, IconButton, WideRoundedButton, \
+  FullRoundedButton
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.slider import SmallSlider
 from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
@@ -18,14 +21,15 @@ from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer
 from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import DriverCameraDialog
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.version import terms_version, training_version, terms_version_sp
+from openpilot.system.version import terms_version, training_version, terms_version_sp, terms_version_sl
 
 
 class OnboardingState(IntEnum):
   TERMS = 0
   SUNNYLINK = 1
-  ONBOARDING = 2
-  DECLINE = 3
+  SUNNYLINK_DISABLE_CONFIRM = 2
+  ONBOARDING = 3
+  DECLINE = 4
 
 
 class DriverCameraSetupDialog(DriverCameraDialog):
@@ -435,197 +439,47 @@ class TermsPage(SetupTermsPage):
       self._terms_label.get_content_height(int(self._rect.width - 100)),
     ))
 
+class SunnylinkTermsPage(SetupTermsPage):
+  def __init__(self, on_accept=None, on_decline=None, left_text: str = "disable", right_text: str = "enable"):
+    super().__init__(on_accept, on_decline, left_text, continue_text=right_text)
 
-class SunnylinkPage(Widget):
-  def __init__(self, done_callback=None):
-    super().__init__()
-    self._done_callback = done_callback
-    self._step = 0
+    info_txt = gui_app.texture("icons/link.png", 60, 60)
+    self._title_header = TermsHeader("sunnylink remote management", info_txt)
 
-    self._title_header = TermsHeader("sunnylink remote management", gui_app.texture("icons/link.png", 60, 60))
-
-    self._content = [
-      {
-        "text": tr("sunnylink enables remote management for your sunnypilot device, including remote monitoring, a real-time dashboard, and settings management."),
-        "primary_btn": tr("Enable"),
-        "secondary_btn": tr("Not now"),
-        "highlight_primary": True
-      },
-      {
-        "text": tr("sunnypilot is offered with sunnylink enabled as part of its core functionality. If you choose not to enable sunnylink, you can uninstall sunnypilot. Without sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable."),
-        "secondary_btn": tr("Back"),
-        "slider_btn": tr("Uninstall sunnypilot"),
-        "highlight_primary": True
-      }
-    ]
-
-    self._label = UnifiedLabel("", 42, FontWeight.ROMAN)
-
-    self._primary_btn = WideRoundedButton("Enable")
-    self._primary_btn.set_click_callback(lambda: self._handle_choice("enable"))
-    self._primary_btn.set_enabled(False)
-
-    self._secondary_btn = SmallButton("Not now")
-    self._secondary_btn.set_click_callback(lambda: self._handle_choice("secondary"))
-    self._secondary_btn.set_enabled(False)
-
-    self._uninstall_slider = SmallSlider("Uninstall sunnypilot", self._on_uninstall)
-    self._uninstall_slider.set_enabled(False)
-
-    self._scroll_down_indicator = IconButton(gui_app.texture("icons_mici/setup/scroll_down_indicator.png", 64, 78))
-    self._scroll_down_indicator.set_enabled(False)
-
-    self._title_header = TermsHeader(tr("sunnylink"), gui_app.texture("icons_mici/settings/comma_icon.png", 60, 60))
-
-    self._scroll_panel = GuiScrollPanel2(horizontal=False)
-
-  def _on_uninstall(self):
-    ui_state.params.put_bool("DoUninstall", True)
-    gui_app.request_close()
-
-  def _handle_choice(self, choice):
-    if choice == "enable":
-      ui_state.params.put_bool("SunnylinkEnabled", True)
-      if self._done_callback:
-        self._done_callback()
-    elif choice == "secondary":
-      if self._step == 0:
-        self._step = 1
-        self._scroll_panel.set_offset(0)
-      elif self._step == 1:
-        self._step = 0
-        self._scroll_panel.set_offset(0)
+    self._terms_label = UnifiedLabel("sunnylink enables remote management for your sunnypilot device, "
+                                     "including remote monitoring, a real-time dashboard, and settings management.",
+                                     36, FontWeight.ROMAN)
 
   @property
   def _content_height(self):
-    step_data = self._content[self._step]
-    self._label = UnifiedLabel(step_data["text"], 36, FontWeight.ROMAN)
-    label_width = self._rect.width - 100 # Match TermsPage width
-    label_height = self._label.get_content_height(int(label_width))
+    return self._terms_label.rect.y + self._terms_label.rect.height - self._scroll_panel.get_offset()
 
-    header_height = self._title_header.rect.height
-    total_content_height = 12 + header_height + 20 + label_height # Match TermsPage: 12px top padding
-    return total_content_height
+  def _render_content(self, scroll_offset):
+    self._title_header.set_position(self._rect.x + 16, self._rect.y + 12 + scroll_offset)
+    self._title_header.render()
 
-  def _render(self, _):
-    step_data = self._content[self._step]
-
-    self._label = UnifiedLabel(step_data["text"], 36, FontWeight.ROMAN)
-
-    header_height = self._title_header.rect.height
-    label_width = self._rect.width - 100 # Match TermsPage width
-    label_height = self._label.get_content_height(int(label_width))
-    total_content_height = 12 + header_height + 20 + label_height # Match TermsPage: 12px top padding
-
-    footer_height = 180 if self._step == 1 else 180
-
-    content_fits = (total_content_height + footer_height) < self._rect.height
-
-    scroll_offset = round(self._scroll_panel.update(self._rect, total_content_height + footer_height))
-
-    buttons_visible = False
-
-    if content_fits:
-      buttons_visible = True
-    elif scroll_offset <= (-total_content_height + self._rect.height - footer_height + 10): # 10px buffer
-      buttons_visible = True
-
-    if buttons_visible:
-      self._scroll_down_indicator.set_opacity(0.0, smooth=True)
-      opacity = 1.0
-    else:
-      self._scroll_down_indicator.set_opacity(1.0, smooth=True)
-      opacity = 0.0
-
-    self._primary_btn.set_enabled(buttons_visible)
-    self._primary_btn.set_opacity(opacity, smooth=True)
-    self._secondary_btn.set_enabled(buttons_visible)
-    self._secondary_btn.set_opacity(opacity, smooth=True)
-    self._uninstall_slider.set_enabled(buttons_visible)
-    self._uninstall_slider.set_opacity(opacity, smooth=True)
-
-    self._title_header.render(rl.Rectangle(
+    self._terms_label.render(rl.Rectangle(
       self._rect.x + 16,
-      self._rect.y + 12 + scroll_offset, # Match TermsPage: 12px Y
-      self._title_header.rect.width,
-      self._title_header.rect.height,
+      self._title_header.rect.y + self._title_header.rect.height + self.ITEM_SPACING,
+      self._rect.width - 100,
+      self._terms_label.get_content_height(int(self._rect.width - 100)),
     ))
 
-    self._label.render(rl.Rectangle(
-      self._rect.x + 16, # Match TermsPage: 16px X
-      self._title_header.rect.y + self._title_header.rect.height + 20, # Spacing 20
-      self._rect.width - 100, # Match TermsPage: width - 100
-      label_height,
-    ))
+class SunnylinkDisableConfirmPage(SunnylinkTermsPage):
+  def __init__(self, on_accept=None, on_decline=None):
+    super().__init__(on_accept=on_decline, on_decline=on_accept, left_text="enable", right_text="disable")
 
-    rl.draw_rectangle_gradient_v(int(self._rect.x), int(self._rect.y),
-                                 int(self._rect.width), 20, rl.BLACK, rl.BLANK)
-    rl.draw_rectangle_gradient_v(int(self._rect.x), int(self._rect.y + self._rect.height - 20),
-                                 int(self._rect.width), 20, rl.BLANK, rl.BLACK)
+    # we flip the continue & disable buttons to use slider for disable
+    self._continue_slider = True
+    self._continue_button = SmallSlider("disable", confirm_callback=on_decline)
+    self._scroll_panel.set_enabled(lambda: not self._continue_button.is_pressed)
 
-    padding_bottom = 0
-    padding_x = 8
+    info_txt = gui_app.texture("icons/warning.png", 60, 60)
+    self._title_header = TermsHeader("disable sunnylink?", info_txt)
 
-    if content_fits:
-      label_end_y = self._rect.y + 12 + scroll_offset + header_height + 20 + label_height
-      ref_btn_y = label_end_y + 40 # 40px gap from text to buttons
-    else:
-      ref_btn_y = self._rect.y + self._rect.height - self._primary_btn.rect.height
-
-    if self._step == 1:
-      if content_fits:
-        btn_y = ref_btn_y
-      else:
-        btn_y = self._rect.y + self._rect.height - 180 # Fixed height for footer area in step 1
-
-      self._secondary_btn.set_text(step_data["secondary_btn"])
-      self._secondary_btn.render(rl.Rectangle(
-        self._rect.x + padding_x,
-        btn_y,
-        self._secondary_btn.rect.width,
-        self._secondary_btn.rect.height,
-      ))
-
-      if "slider_btn" in step_data:
-        self._uninstall_slider.render(rl.Rectangle(
-          self._rect.x + self._rect.width - self._uninstall_slider.rect.width - padding_x,
-          btn_y,
-          self._uninstall_slider.rect.width,
-          self._uninstall_slider.rect.height
-        ))
-
-    else:
-      if content_fits:
-          btn_y = ref_btn_y
-      else:
-          btn_y = self._rect.y + self._rect.height - self._primary_btn.rect.height - padding_bottom
-
-      self._primary_btn.set_text(step_data["primary_btn"])
-
-      self._primary_btn.render(rl.Rectangle(
-        self._rect.x + self._rect.width - self._primary_btn.rect.width - padding_x,
-        btn_y,
-        self._primary_btn.rect.width,
-        self._primary_btn.rect.height,
-      ))
-
-      self._secondary_btn.set_text(step_data["secondary_btn"])
-
-      self._secondary_btn.render(rl.Rectangle(
-          self._rect.x + padding_x,
-          btn_y,
-          self._secondary_btn.rect.width,
-          self._secondary_btn.rect.height,
-      ))
-
-    self._scroll_down_indicator.render(rl.Rectangle(
-      self._rect.x + self._rect.width - self._scroll_down_indicator.rect.width - 8,
-      self._rect.y + self._rect.height - self._scroll_down_indicator.rect.height - 8,
-      self._scroll_down_indicator.rect.width,
-      self._scroll_down_indicator.rect.height,
-    ))
-
-    return -1
+    self._terms_label = UnifiedLabel("sunnypilot is offered with sunnylink enabled as part of its core functionality. "
+                                     "If you choose not to enable sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable.",
+                                     36, FontWeight.ROMAN)
 
 
 class OnboardingWindow(Widget):
@@ -633,7 +487,7 @@ class OnboardingWindow(Widget):
     super().__init__()
     self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
                                  ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
-    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsent") == "1.0"
+    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsent") in {terms_version_sl, "-1"}
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
     self._state = OnboardingState.TERMS
@@ -646,7 +500,8 @@ class OnboardingWindow(Widget):
 
     # Windows
     self._terms = TermsPage(on_accept=self._on_terms_accepted, on_decline=self._on_terms_declined)
-    self._sunnylink = SunnylinkPage(done_callback=self._on_sunnylink_done)
+    self._sunnylink = SunnylinkTermsPage(on_decline=self._on_sunnylink_declined, on_accept=self._on_sunnylink_done)
+    self._sunnylink_disable_confirm = SunnylinkDisableConfirmPage(on_decline=self._on_sunnylink_decline_confirmed, on_accept=self._on_sunnylink_done)
     self._training_guide = TrainingGuide(completed_callback=self._on_completed_training)
     self._decline_page = DeclinePage(back_callback=self._on_decline_back)
 
@@ -682,8 +537,20 @@ class OnboardingWindow(Widget):
     if self._sunnylink_consented and self._training_done:
       gui_app.set_modal_overlay(None)
 
+  def _on_sunnylink_declined(self):
+    self._state = OnboardingState.SUNNYLINK_DISABLE_CONFIRM
+
+  def _on_sunnylink_decline_confirmed(self):
+    self._state = OnboardingState.ONBOARDING
+    ui_state.params.put_bool("SunnylinkEnabled", False)
+    ui_state.params.put("CompletedSunnylinkConsent", "-1")
+    self._sunnylink_consented = True
+    if self._training_done:
+      gui_app.set_modal_overlay(None)
+
   def _on_sunnylink_done(self):
-    ui_state.params.put("CompletedSunnylinkConsent", "1.0")
+    ui_state.params.put("CompletedSunnylinkConsent", terms_version_sl)
+    ui_state.params.put_bool("SunnylinkEnabled", True)
     self._sunnylink_consented = True
     self._state = OnboardingState.ONBOARDING
     if self._training_done:
@@ -698,6 +565,8 @@ class OnboardingWindow(Widget):
       self._terms.render(self._rect)
     elif self._state == OnboardingState.SUNNYLINK:
       self._sunnylink.render(self._rect)
+    elif self._state == OnboardingState.SUNNYLINK_DISABLE_CONFIRM:
+      self._sunnylink_disable_confirm.render(self._rect)
     elif self._state == OnboardingState.ONBOARDING:
       self._training_guide.render(self._rect)
     elif self._state == OnboardingState.DECLINE:
