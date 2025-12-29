@@ -164,6 +164,14 @@ class AugmentedRoadView(CameraView):
     # debug
     self._pm = messaging.PubMaster(['uiDebug'])
 
+    self._hide_camera = False
+
+  def show_event(self):
+    self._update_params()
+
+  def _update_params(self):
+    self._hide_camera = ui_state.params.get_bool("HideCameraView")
+
   def is_swiping_left(self) -> bool:
     """Check if currently swiping left (for scroller to disable)."""
     return self._bookmark_icon.is_swiping_left()
@@ -207,7 +215,16 @@ class AugmentedRoadView(CameraView):
     )
 
     # Render the base camera view
-    super()._render(self._content_rect)
+    if self._hide_camera:
+      if self._switching:
+        self._handle_switch()
+      self._ensure_connection()
+      if self.client:
+        self.client.recv(timeout_ms=0)
+      self._calc_frame_matrix(self._content_rect)
+      rl.draw_rectangle_rec(self._content_rect, rl.BLACK)
+    else:
+      super()._render(self._content_rect)
 
     # Draw all UI overlays
     self._model_renderer.render(self._content_rect)
