@@ -14,6 +14,7 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP
+from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ModelRendererSP
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -52,9 +53,10 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget):
+class ModelRenderer(Widget, ModelRendererSP):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
@@ -147,7 +149,7 @@ class ModelRenderer(Widget):
       self._draw_path(sm)
 
     if (sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame):
-      self._draw_radar_tracks(sm['liveTracks'])
+      self._draw_radar_tracks(sm['liveTracks'], track_size=3)
 
     # if render_lead_indicator and radar_state:
     #   self._draw_lead_indicator()
@@ -360,19 +362,6 @@ class ModelRenderer(Widget):
         draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
       else:
         draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
-
-  def _draw_radar_tracks(self, live_tracks):
-    for track in live_tracks.points:
-      d_rel, y_rel, v_rel, a_rel = track.dRel, track.yRel, track.vRel, track.aRel
-      if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel) and math.isfinite(a_rel)):
-        continue
-
-      pt = self._map_to_screen(d_rel, -y_rel, self._path_offset_z)
-      if pt is None:
-        continue
-
-      x, y = pt
-      rl.draw_circle(int(x), int(y), 3, rl.Color(0, 255, 64, 255))
 
   def _draw_lead_indicator(self):
     # Draw lead vehicles if available
