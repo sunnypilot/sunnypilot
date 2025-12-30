@@ -60,26 +60,29 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
 
     # confidence zones
     if ui_state.status == UIStatus.ENGAGED or self._demo:
-      if self._confidence_filter.x > 0.5:
-        top_dot_color = rl.Color(0, 255, 204, 255)
-        bottom_dot_color = rl.Color(0, 255, 38, 255)
-      elif self._confidence_filter.x > 0.2:
-        top_dot_color = rl.Color(255, 200, 0, 255)
-        bottom_dot_color = rl.Color(255, 115, 0, 255)
-      else:
-        top_dot_color = rl.Color(255, 0, 21, 255)
-        bottom_dot_color = rl.Color(255, 0, 89, 255)
+      top_dot_color = bottom_dot_color = rl.Color(0, 255, 64, 255)
+      # if self._confidence_filter.x > 0.5:
+      #   top_dot_color = rl.Color(0, 255, 204, 255)
+      #   bottom_dot_color = rl.Color(0, 255, 38, 255)
+      # elif self._confidence_filter.x > 0.2:
+      #   top_dot_color = rl.Color(255, 200, 0, 255)
+      #   bottom_dot_color = rl.Color(255, 115, 0, 255)
+      # else:
+      #   top_dot_color = rl.Color(255, 0, 21, 255)
+      #   bottom_dot_color = rl.Color(255, 0, 89, 255)
 
     elif ui_state.status in (UIStatus.LAT_ONLY, UIStatus.LONG_ONLY):
       top_dot_color = bottom_dot_color = self.get_lat_long_dot_color()
 
     elif ui_state.status == UIStatus.OVERRIDE:
-      top_dot_color = rl.Color(255, 255, 255, 255)
-      bottom_dot_color = rl.Color(82, 82, 82, 255)
+      top_dot_color = bottom_dot_color = rl.Color(255, 255, 255, 255)
+      # top_dot_color = rl.Color(255, 255, 255, 255)
+      # bottom_dot_color = rl.Color(82, 82, 82, 255)
 
     else:
-      top_dot_color = rl.Color(50, 50, 50, 255)
-      bottom_dot_color = rl.Color(13, 13, 13, 255)
+      top_dot_color = bottom_dot_color = rl.Color(200, 200, 200, 255)
+      # top_dot_color = rl.Color(50, 50, 50, 255)
+      # bottom_dot_color = rl.Color(13, 13, 13, 255)
 
     draw_circle_gradient(content_rect.x + content_rect.width - status_dot_radius,
                          dot_height, status_dot_radius,
