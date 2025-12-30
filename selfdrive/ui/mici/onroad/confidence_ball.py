@@ -88,21 +88,8 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
       bar_x = content_rect.x + content_rect.width - bar_width
       fill_h = int(content_rect.height * self._confidence_filter.x)
       fill_y = int(content_rect.y + (content_rect.height - fill_h))
-      rl.draw_rectangle(
-        int(bar_x),
-        int(content_rect.y),
-        bar_width,
-        int(content_rect.height),
-        rl.Color(20, 20, 20, 180),
-      )
-      rl.draw_rectangle_gradient_v(
-        int(bar_x),
-        fill_y,
-        bar_width,
-        fill_h,
-        top_dot_color,
-        bottom_dot_color,
-      )
+      rl.draw_rectangle(int(bar_x), int(content_rect.y), bar_width, int(content_rect.height), rl.Color(20, 20, 20, 180))
+      rl.draw_rectangle_gradient_v(int(bar_x), fill_y, bar_width, fill_h, top_dot_color, bottom_dot_color)
     else:
       draw_circle_gradient(content_rect.x + content_rect.width - status_dot_radius,
                            dot_height, status_dot_radius,
