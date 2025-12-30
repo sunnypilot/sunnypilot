@@ -479,9 +479,6 @@ class OnboardingWindow(Widget):
     ui_state.params.put_bool("HasAcceptedTermsSP", terms_version_sp)
     self._state = OnboardingState.ONBOARDING
 
-    if self._sunnylink.completed and self._training_done:
-      gui_app.set_modal_overlay(None)
-
   def _on_completed_training(self):
     ui_state.params.put("CompletedTrainingVersion", training_version)
     self.close()
@@ -490,7 +487,9 @@ class OnboardingWindow(Widget):
     if self._state == OnboardingState.TERMS:
       self._terms.render(self._rect)
     elif self._state == OnboardingState.ONBOARDING:
-      if not self._sunnylink.completed:
+      if self._sunnylink.completed and self._training_done:
+        gui_app.set_modal_overlay(None)
+      elif not self._sunnylink.completed:
         self._sunnylink.render(self._rect)
       else:
         self._training_guide.render(self._rect)
