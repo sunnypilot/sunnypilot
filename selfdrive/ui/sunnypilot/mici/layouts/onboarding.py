@@ -95,4 +95,3 @@ class SunnylinkOnboarding:
       self.confirm_page.render(rect)
     else:
       self.consent_page.render(rect)
-

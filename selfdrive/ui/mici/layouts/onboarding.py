@@ -449,11 +449,8 @@ class OnboardingWindow(Widget):
     # Windows
     self._terms = TermsPage(on_accept=self._on_terms_accepted, on_decline=self._on_terms_declined)
     self._sunnylink = SunnylinkOnboarding()
-    self._training_guide: TrainingGuide | None = None
-    self._decline_page = DeclinePage(back_callback=self._on_decline_back)
-
-    # Lazy load Training Guide on first show to save resources
     self._training_guide = TrainingGuide(completed_callback=self._on_completed_training)
+    self._decline_page = DeclinePage(back_callback=self._on_decline_back)
 
   def show_event(self):
     super().show_event()

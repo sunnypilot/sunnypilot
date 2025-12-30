@@ -114,4 +114,3 @@ class SunnylinkOnboarding:
   def render(self, rect):
     if not self.consent_done:
       self.consent_page.render(rect)
-

@@ -12,7 +12,7 @@ from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import Label
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.layouts.onboarding import SunnylinkOnboarding
-from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
+from openpilot.system.version import terms_version, training_version, terms_version_sp
 
 DEBUG = False
 

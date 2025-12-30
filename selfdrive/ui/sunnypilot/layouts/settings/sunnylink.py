@@ -22,6 +22,9 @@ import pyray as rl
 if gui_app.sunnypilot_ui():
   from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
 
+from openpilot.system.version import sunnylink_consent_version
+from openpilot.selfdrive.ui.sunnypilot.layouts.onboarding import SunnylinkConsentPage
+
 
 class SunnylinkHeader(Widget):
   def __init__(self):
@@ -302,6 +305,22 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_text(tr("Restore Settings"))
 
   def _sunnylink_toggle_callback(self, state: bool):
+    sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") == sunnylink_consent_version
+    sl_enabled: bool = ui_state.params.get_bool("SunnylinkEnabled")
+
+    if state and not sl_consent and not sl_enabled:
+      def on_consent_done():
+        enabled = ui_state.params.get_bool("SunnylinkEnabled")
+        self._update_description(enabled)
+        gui_app.set_modal_overlay(None)
+
+      sl_terms_dlg = SunnylinkConsentPage(done_callback=on_consent_done)
+      gui_app.set_modal_overlay(sl_terms_dlg)
+    else:
+      ui_state.params.put_bool("SunnylinkEnabled", state)
+      self._update_description(state)
+
+  def _update_description(self, state: bool):
     if state:
       description = tr(
         "Welcome back!! We're excited to see you've enabled sunnylink again!")
