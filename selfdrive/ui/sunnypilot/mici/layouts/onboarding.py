@@ -9,6 +9,8 @@ from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.slider import SmallSlider
 from openpilot.system.ui.mici_setup import TermsHeader, TermsPage as SetupTermsPage
+from openpilot.system.version import sunnylink_consent_version
+from openpilot.selfdrive.ui.ui_state import ui_state
 
 
 class SunnylinkConsentPage(SetupTermsPage):
@@ -58,3 +60,39 @@ class SunnylinkConsentDisableConfirmPage(SunnylinkConsentPage):
                                      "If sunnylink is disabled, features such as settings management, "
                                      "remote monitoring, real-time dashboards will be unavailable.",
                                      36, FontWeight.ROMAN)
+
+
+class SunnylinkOnboarding:
+  def __init__(self):
+    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
+    self.disable_confirm = False
+
+    self.consent_page = SunnylinkConsentPage(on_decline=self._on_decline, on_accept=self._on_accept)
+    self.confirm_page = SunnylinkConsentDisableConfirmPage(on_decline=self._on_confirm_decline, on_accept=self._on_accept)
+
+  @property
+  def completed(self) -> bool:
+    return self.consent_done
+
+  def _on_accept(self):
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
+    ui_state.params.put_bool("SunnylinkEnabled", True)
+    self.consent_done = True
+
+  def _on_decline(self):
+    self.disable_confirm = True
+
+  def _on_confirm_decline(self):
+    ui_state.params.put_bool("SunnylinkEnabled", False)
+    ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
+    self.consent_done = True
+
+  def render(self, rect):
+    if self.consent_done:
+      return
+
+    if self.disable_confirm:
+      self.confirm_page.render(rect)
+    else:
+      self.consent_page.render(rect)
+

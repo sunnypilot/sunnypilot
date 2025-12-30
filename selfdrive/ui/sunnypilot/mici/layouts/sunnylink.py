@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pyray as rl
 from cereal import custom
-from openpilot.selfdrive.ui.mici.layouts.onboarding import SunnylinkConsentPage
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID

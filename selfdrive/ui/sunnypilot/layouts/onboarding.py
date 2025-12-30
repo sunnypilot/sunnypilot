@@ -11,6 +11,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import Label
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.system.version import sunnylink_consent_version
 
 
 class SunnylinkConsentPage(Widget):
@@ -46,6 +47,7 @@ class SunnylinkConsentPage(Widget):
   def _handle_choice(self, choice):
     if choice == "enable":
       ui_state.params.put_bool("SunnylinkEnabled", True)
+      ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
       if self._done_callback:
         self._done_callback()
     elif choice == "secondary":
@@ -95,3 +97,21 @@ class SunnylinkConsentPage(Widget):
       self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
 
     return -1
+
+
+class SunnylinkOnboarding:
+  def __init__(self):
+    self.consent_page = SunnylinkConsentPage(done_callback=self._on_done)
+    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
+
+  @property
+  def completed(self) -> bool:
+    return self.consent_done
+
+  def _on_done(self):
+    self.consent_done = True
+
+  def render(self, rect):
+    if not self.consent_done:
+      self.consent_page.render(rect)
+
