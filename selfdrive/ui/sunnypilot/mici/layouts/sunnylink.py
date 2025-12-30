@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pyray as rl
 from cereal import custom
-from openpilot.selfdrive.ui.mici.layouts.onboarding import SunnylinkTermsPage
+from openpilot.selfdrive.ui.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
@@ -96,7 +96,7 @@ class SunnylinkLayoutMici(NavWidget):
       ui_state.params.put_bool("SunnylinkEnabled", False)
       gui_app.set_modal_overlay(None)
     if state and not sl_consent and not sl_enabled:
-        sl_terms_dlg = SunnylinkTermsPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
+        sl_terms_dlg = SunnylinkConsentPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
         gui_app.set_modal_overlay(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
