@@ -2,7 +2,6 @@ from enum import IntEnum
 
 import weakref
 import math
-from typing import Callable
 
 import numpy as np
 import pyray as rl
@@ -10,11 +9,9 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.button import SmallButton, SmallCircleIconButton, IconButton, WideRoundedButton, \
-  FullRoundedButton
+from openpilot.system.ui.widgets.button import SmallButton, SmallCircleIconButton
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.slider import SmallSlider
-from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
 from openpilot.system.ui.mici_setup import TermsHeader, TermsPage as SetupTermsPage
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer
@@ -439,15 +436,16 @@ class TermsPage(SetupTermsPage):
       self._terms_label.get_content_height(int(self._rect.width - 100)),
     ))
 
+
 class SunnylinkTermsPage(SetupTermsPage):
   def __init__(self, on_accept=None, on_decline=None, left_text: str = "disable", right_text: str = "enable"):
     super().__init__(on_accept, on_decline, left_text, continue_text=right_text)
 
-    info_txt = gui_app.texture("icons/link.png", 60, 60)
-    self._title_header = TermsHeader("sunnylink remote management", info_txt)
+    self._title_header = TermsHeader("sunnylink",
+                                     gui_app.texture("../../sunnypilot/selfdrive/assets/logo.png", 66, 60))
 
-    self._terms_label = UnifiedLabel("sunnylink enables remote management for your sunnypilot device, "
-                                     "including remote monitoring, a real-time dashboard, and settings management.",
+    self._terms_label = UnifiedLabel("sunnylink enables secured remote access to your comma device from anywhere, "
+                                     "including settings management, remote monitoring, real-time dashboard, etc.",
                                      36, FontWeight.ROMAN)
 
   @property
@@ -469,6 +467,7 @@ class SunnylinkTermsPage(SetupTermsPage):
       self._terms_label.get_content_height(int(self._rect.width - 100)),
     ))
 
+
 class SunnylinkDisableConfirmPage(SunnylinkTermsPage):
   def __init__(self, on_accept=None, on_decline=None):
     super().__init__(on_accept=on_decline, on_decline=on_accept, left_text="enable", right_text="disable")
@@ -478,11 +477,12 @@ class SunnylinkDisableConfirmPage(SunnylinkTermsPage):
     self._continue_button = SmallSlider("disable", confirm_callback=on_decline)
     self._scroll_panel.set_enabled(lambda: not self._continue_button.is_pressed)
 
-    info_txt = gui_app.texture("icons/warning.png", 60, 60)
-    self._title_header = TermsHeader("disable sunnylink?", info_txt)
+    self._title_header = TermsHeader("disable sunnylink?",
+                                     gui_app.texture("icons_mici/setup/red_warning.png", 66, 60))
 
-    self._terms_label = UnifiedLabel("sunnypilot is offered with sunnylink enabled as part of its core functionality. "
-                                     "If you choose not to enable sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable.",
+    self._terms_label = UnifiedLabel("sunnylink is designed to be enabled as part of sunnypilot's core functionality. "
+                                     "If sunnylink is disabled, features such as settings management, "
+                                     "remote monitoring, real-time dashboards will be unavailable.",
                                      36, FontWeight.ROMAN)
 
 

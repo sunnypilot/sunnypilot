@@ -147,26 +147,29 @@ class SunnylinkPage(Widget):
     self._done_callback = done_callback
     self._step = 0
 
-    self._title = Label(tr("sunnylink Remote Management"), font_size=90, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
+    self._title = Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT)
 
     self._content = [
       {
-        "text": tr("sunnylink enables remote management for your sunnypilot device, including remote monitoring, a real-time dashboard, and settings management."),
+        "text": tr("sunnylink enables secured remote access to your comma device from anywhere, "
+                   "including settings management, remote monitoring, real-time dashboard, etc."),
         "primary_btn": tr("Enable"),
-        "secondary_btn": tr("Not now"),
+        "secondary_btn": tr("Disable"),
         "highlight_primary": True
       },
       {
-        "text": tr("sunnypilot is offered with sunnylink enabled as part of its core functionality. If you choose not to enable sunnylink, you can uninstall sunnypilot. Without sunnylink, features such as remote monitoring and the real-time dashboard will be unavailable."),
+        "text": tr("sunnylink is designed to be enabled as part of sunnypilot's core functionality. "
+                   "If sunnylink is disabled, features such as settings management, remote monitoring, "
+                   "real-time dashboards will be unavailable."),
         "secondary_btn": tr("Back"),
-        "danger_btn": tr("Uninstall sunnypilot"),
+        "danger_btn": tr("Disable"),
         "highlight_primary": True
       }
     ]
 
     self._primary_btn = Button("", button_style=ButtonStyle.PRIMARY, click_callback=lambda: self._handle_choice("enable"))
     self._secondary_btn = Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("secondary"))
-    self._danger_btn = Button("", button_style=ButtonStyle.DANGER, click_callback=lambda: self._handle_choice("uninstall"))
+    self._danger_btn = Button("", button_style=ButtonStyle.DANGER, click_callback=lambda: self._handle_choice("disable"))
 
   def _handle_choice(self, choice):
     if choice == "enable":
@@ -178,9 +181,10 @@ class SunnylinkPage(Widget):
         self._step = 1
       elif self._step == 1:
         self._step = 0
-    elif choice == "uninstall":
-      ui_state.params.put_bool("DoUninstall", True)
-      gui_app.request_close()
+    elif choice == "disable":
+      ui_state.params.put_bool("SunnylinkEnabled", False)
+      if self._done_callback:
+        self._done_callback()
 
   def _render(self, _):
     step_data = self._content[self._step]
