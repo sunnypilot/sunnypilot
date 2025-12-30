@@ -19,7 +19,7 @@ from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.widgets import NavWidget
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.version import terms_version_sl
+from openpilot.system.version import sunnylink_consent_version
 
 
 class SunnylinkLayoutMici(NavWidget):
@@ -85,14 +85,14 @@ class SunnylinkLayoutMici(NavWidget):
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
-    sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsent") == terms_version_sl
+    sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") == sunnylink_consent_version
     sl_enabled: bool = ui_state.params.get("SunnylinkEnabled")
     def sl_terms_accepted():
-      ui_state.params.put("CompletedSunnylinkConsent", terms_version_sl)
+      ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
       ui_state.params.put_bool("SunnylinkEnabled", True)
       gui_app.set_modal_overlay(None)
     def sl_terms_declined():
-      ui_state.params.put("CompletedSunnylinkConsent", "-1")
+      ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
       ui_state.params.put_bool("SunnylinkEnabled", False)
       gui_app.set_modal_overlay(None)
     if state and not sl_consent and not sl_enabled:

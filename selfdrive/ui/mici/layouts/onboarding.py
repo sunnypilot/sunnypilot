@@ -18,7 +18,7 @@ from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer
 from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import DriverCameraDialog
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.version import terms_version, training_version, terms_version_sp, terms_version_sl
+from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
 
 
 class OnboardingState(IntEnum):
@@ -491,7 +491,7 @@ class OnboardingWindow(Widget):
     super().__init__()
     self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
                                  ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
-    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsent") in {terms_version_sl, "-1"}
+    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
     self._state = OnboardingState.TERMS
@@ -547,13 +547,13 @@ class OnboardingWindow(Widget):
   def _on_sunnylink_decline_confirmed(self):
     self._state = OnboardingState.ONBOARDING
     ui_state.params.put_bool("SunnylinkEnabled", False)
-    ui_state.params.put("CompletedSunnylinkConsent", "-1")
+    ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
     self._sunnylink_consented = True
     if self._training_done:
       gui_app.set_modal_overlay(None)
 
   def _on_sunnylink_done(self):
-    ui_state.params.put("CompletedSunnylinkConsent", terms_version_sl)
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
     ui_state.params.put_bool("SunnylinkEnabled", True)
     self._sunnylink_consented = True
     self._state = OnboardingState.ONBOARDING

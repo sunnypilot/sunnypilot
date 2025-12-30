@@ -11,7 +11,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
 from openpilot.system.ui.widgets.label import Label
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.version import terms_version, training_version, terms_version_sp
+from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
 
 DEBUG = False
 
@@ -183,6 +183,7 @@ class SunnylinkPage(Widget):
         self._step = 0
     elif choice == "disable":
       ui_state.params.put_bool("SunnylinkEnabled", False)
+      ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
       if self._done_callback:
         self._done_callback()
 
@@ -256,7 +257,7 @@ class OnboardingWindow(Widget):
     super().__init__()
     self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
                                  ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
-    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsent") == "1.0"
+    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
     self._state = OnboardingState.TERMS
@@ -292,7 +293,7 @@ class OnboardingWindow(Widget):
       gui_app.set_modal_overlay(None)
 
   def _on_sunnylink_done(self):
-    ui_state.params.put("CompletedSunnylinkConsent", "1.0")
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
     self._sunnylink_consented = True
     self._state = OnboardingState.ONBOARDING
     if self._training_done:
