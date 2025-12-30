@@ -442,13 +442,13 @@ class OnboardingWindow(Widget):
     super().__init__()
     self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
                                  ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
-    self._sunnylink_consented: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
+    self._sunnylink_consent_done: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
     self._state = OnboardingState.TERMS
     if self._accepted_terms:
       self._state = OnboardingState.SUNNYLINK
-      if self._sunnylink_consented:
+      if self._sunnylink_consent_done:
         self._state = OnboardingState.ONBOARDING
 
     self.set_rect(rl.Rectangle(0, 0, 458, gui_app.height))
@@ -470,7 +470,7 @@ class OnboardingWindow(Widget):
 
   @property
   def completed(self) -> bool:
-    return self._accepted_terms and self._sunnylink_consented and self._training_done
+    return self._accepted_terms and self._sunnylink_consent_done and self._training_done
 
   def _on_terms_declined(self):
     self._state = OnboardingState.DECLINE
@@ -486,10 +486,10 @@ class OnboardingWindow(Widget):
     ui_state.params.put("HasAcceptedTerms", terms_version)
     ui_state.params.put_bool("HasAcceptedTermsSP", terms_version_sp)
     self._state = OnboardingState.SUNNYLINK
-    if self._sunnylink_consented:
+    if self._sunnylink_consent_done:
       self._state = OnboardingState.ONBOARDING
 
-    if self._sunnylink_consented and self._training_done:
+    if self._sunnylink_consent_done and self._training_done:
       gui_app.set_modal_overlay(None)
 
   def _on_sunnylink_declined(self):
@@ -499,14 +499,14 @@ class OnboardingWindow(Widget):
     self._state = OnboardingState.ONBOARDING
     ui_state.params.put_bool("SunnylinkEnabled", False)
     ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
-    self._sunnylink_consented = True
+    self._sunnylink_consent_done = True
     if self._training_done:
       gui_app.set_modal_overlay(None)
 
   def _on_sunnylink_done(self):
     ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
     ui_state.params.put_bool("SunnylinkEnabled", True)
-    self._sunnylink_consented = True
+    self._sunnylink_consent_done = True
     self._state = OnboardingState.ONBOARDING
     if self._training_done:
       gui_app.set_modal_overlay(None)
