@@ -8,17 +8,16 @@ from collections.abc import Callable
 
 import pyray as rl
 from cereal import custom
-from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
-from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
-from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.system.ui.lib.multilang import tr
-
-from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
-from openpilot.system.ui.lib.application import gui_app, MousePos
-from openpilot.system.ui.widgets import NavWidget
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
+from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.system.ui.lib.application import gui_app, MousePos
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import NavWidget
+from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.version import sunnylink_consent_version
 
 
