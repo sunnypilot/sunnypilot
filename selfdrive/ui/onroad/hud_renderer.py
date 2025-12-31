@@ -1,6 +1,7 @@
 import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
+from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
@@ -71,6 +72,7 @@ class HudRenderer(Widget):
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
 
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
+    self._torque_bar = TorqueBar(scale=3.0, always=True)
 
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
@@ -111,6 +113,9 @@ class HudRenderer(Widget):
       COLORS.HEADER_GRADIENT_START,
       COLORS.HEADER_GRADIENT_END,
     )
+
+    if ui_state.torque_bar and ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
+      self._torque_bar.render(rect)
 
     if self.is_cruise_available:
       self._draw_set_speed(rect)

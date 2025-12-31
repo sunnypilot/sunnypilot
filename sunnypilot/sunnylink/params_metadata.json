@@ -1034,6 +1034,10 @@
     "title": "Tesla Coop Steering",
     "description": ""
   },
+  "TorqueBar": {
+    "title": "Torque Bar",
+    "description": ""
+  },
   "TorqueParamsOverrideEnabled": {
     "title": "Torque Params Override Enabled",
     "description": ""
