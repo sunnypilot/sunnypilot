@@ -31,7 +31,7 @@ class SunnylinkLayoutMici(NavWidget):
 
     self._sunnylink_toggle = BigToggle(text=tr("enable sunnylink"),
                                        initial_state=self._sunnylink_enabled,
-                                       toggle_callback=SunnylinkLayoutMici._sunnylink_toggle_callback)
+                                       toggle_callback=self._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
     self._sunnylink_pair_button = SunnylinkPairBigButton(sponsor_pairing=True)
     self._backup_btn = BigButton(tr("backup settings"), "", "")
@@ -39,7 +39,7 @@ class SunnylinkLayoutMici(NavWidget):
     self._restore_btn = BigButton(tr("restore settings"), "", "")
     self._restore_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=True))
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
-                                                toggle_callback=SunnylinkLayoutMici._sunnylink_uploader_callback)
+                                                toggle_callback=self._sunnylink_uploader_callback)
 
     self._scroller = Scroller([
       self._sunnylink_toggle,
@@ -86,19 +86,23 @@ class SunnylinkLayoutMici(NavWidget):
   def _sunnylink_toggle_callback(state: bool):
     sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") == sunnylink_consent_version
     sl_enabled: bool = ui_state.params.get("SunnylinkEnabled")
+
     def sl_terms_accepted():
       ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
       ui_state.params.put_bool("SunnylinkEnabled", True)
       gui_app.set_modal_overlay(None)
+
     def sl_terms_declined():
       ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
       ui_state.params.put_bool("SunnylinkEnabled", False)
       gui_app.set_modal_overlay(None)
+
     if state and not sl_consent and not sl_enabled:
-        sl_terms_dlg = SunnylinkConsentPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
-        gui_app.set_modal_overlay(sl_terms_dlg)
+      sl_terms_dlg = SunnylinkConsentPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
+      gui_app.set_modal_overlay(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
+
     ui_state.update_params()
 
   @staticmethod
