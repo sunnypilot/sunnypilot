@@ -357,6 +357,10 @@
     "title": "Has Accepted sunnypilot Terms",
     "description": ""
   },
+  "HideCamera": {
+    "title": "Hide Camera",
+    "description": "hide camera from onroad ui"
+  },
   "HideVEgoUI": {
     "title": "Hide vEgo UI",
     "description": ""

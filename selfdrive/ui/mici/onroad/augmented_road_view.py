@@ -208,6 +208,8 @@ class AugmentedRoadView(CameraView):
 
     # Render the base camera view
     super()._render(self._content_rect)
+    if ui_state.hide_camera:
+      rl.draw_rectangle_rec(self._content_rect, rl.BLACK)
 
     # Draw all UI overlays
     self._model_renderer.render(self._content_rect)
