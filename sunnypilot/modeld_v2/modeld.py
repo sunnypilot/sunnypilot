@@ -29,7 +29,6 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
-RECOVERY_POWER = 1.0 # The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong
 
 
 class FrameMeta:
@@ -160,7 +159,7 @@ class ModelState(ModelStateBase):
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
     plan = model_output['plan'][0]
     if 'planplus' in model_output:
-      recovery_power = self.PLANPLUS_CONTROL * (0.75 if v_ego > 25.0 else 1.0)
+      recovery_power = self.PLANPLUS_CONTROL * (0.75 if v_ego > 20.0 else 1.0)
       plan = plan + recovery_power * model_output['planplus'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
                                                      action_t=long_action_t)
