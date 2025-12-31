@@ -487,7 +487,7 @@ class OnboardingWindow(Widget):
 
   def _on_terms_accepted(self):
     ui_state.params.put("HasAcceptedTerms", terms_version)
-    ui_state.params.put_bool("HasAcceptedTermsSP", terms_version_sp)
+    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp)
     if not self._sunnylink.completed:
       self._state = OnboardingState.SUNNYLINK_CONSENT
     elif not self._training_done:
