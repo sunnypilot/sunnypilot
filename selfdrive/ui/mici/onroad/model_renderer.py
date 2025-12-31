@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP
+from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ModelRendererSP
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -51,9 +52,10 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget):
+class ModelRenderer(Widget, ModelRendererSP):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
@@ -144,6 +146,10 @@ class ModelRenderer(Widget):
     if ui_state.status != UIStatus.DISENGAGED:
       self._draw_lane_lines()
       self._draw_path(sm)
+
+    if ui_state.radar_tracks and sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
+      self.radar_tracks.draw_radar_tracks(sm['liveTracks'], self._map_to_screen, self._path_offset_z, track_size=3)
+      return
 
     # if render_lead_indicator and radar_state:
     #   self._draw_lead_indicator()
