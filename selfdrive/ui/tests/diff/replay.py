@@ -13,7 +13,7 @@ if "RECORD_OUTPUT" not in os.environ:
 os.environ["RECORD_OUTPUT"] = os.path.join(DIFF_OUT_DIR, os.environ["RECORD_OUTPUT"])
 
 from openpilot.common.params import Params
-from openpilot.system.version import terms_version, training_version
+from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
 from openpilot.system.ui.lib.application import gui_app, MousePos, MouseEvent
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.mici.layouts.main import MiciMainLayout
@@ -45,6 +45,8 @@ def setup_state():
   params.put("CompletedTrainingVersion", training_version)
   params.put("DongleId", "test123456789")
   params.put("UpdaterCurrentDescription", "0.10.1 / test-branch / abc1234 / Nov 30")
+  params.put("HasAcceptedTermsSP", terms_version_sp)
+  params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
   return None
 
 
