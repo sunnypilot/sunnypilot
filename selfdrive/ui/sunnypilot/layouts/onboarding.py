@@ -24,15 +24,15 @@ class SunnylinkConsentPage(Widget):
 
     self._content = [
       {
-        "text": tr("sunnylink enables secured remote access to your comma device from anywhere, "
+        "text": tr("sunnylink enables secured remote access to your comma device from anywhere, " +
                    "including settings management, remote monitoring, real-time dashboard, etc."),
         "primary_btn": tr("Enable"),
         "secondary_btn": tr("Disable"),
         "highlight_primary": True
       },
       {
-        "text": tr("sunnylink is designed to be enabled as part of sunnypilot's core functionality. "
-                   "If sunnylink is disabled, features such as settings management, remote monitoring, "
+        "text": tr("sunnylink is designed to be enabled as part of sunnypilot's core functionality. " +
+                   "If sunnylink is disabled, features such as settings management, remote monitoring, " +
                    "real-time dashboards will be unavailable."),
         "secondary_btn": tr("Back"),
         "danger_btn": tr("Disable"),
@@ -102,7 +102,7 @@ class SunnylinkConsentPage(Widget):
 class SunnylinkOnboarding:
   def __init__(self):
     self.consent_page = SunnylinkConsentPage(done_callback=self._on_done)
-    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, sunnylink_consent_declined}
+    self.consent_done: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, sunnylink_consent_declined}
 
   @property
   def completed(self) -> bool:

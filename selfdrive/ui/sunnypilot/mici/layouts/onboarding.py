@@ -20,7 +20,7 @@ class SunnylinkConsentPage(SetupTermsPage):
     self._title_header = TermsHeader("sunnylink",
                                      gui_app.texture("../../sunnypilot/selfdrive/assets/logo.png", 66, 60))
 
-    self._terms_label = UnifiedLabel("sunnylink enables secured remote access to your comma device from anywhere, "
+    self._terms_label = UnifiedLabel("sunnylink enables secured remote access to your comma device from anywhere, " +
                                      "including settings management, remote monitoring, real-time dashboard, etc.",
                                      36, FontWeight.ROMAN)
 
@@ -56,15 +56,15 @@ class SunnylinkConsentDisableConfirmPage(SunnylinkConsentPage):
     self._title_header = TermsHeader("disable sunnylink?",
                                      gui_app.texture("icons_mici/setup/red_warning.png", 66, 60))
 
-    self._terms_label = UnifiedLabel("sunnylink is designed to be enabled as part of sunnypilot's core functionality. "
-                                     "If sunnylink is disabled, features such as settings management, "
+    self._terms_label = UnifiedLabel("sunnylink is designed to be enabled as part of sunnypilot's core functionality. " +
+                                     "If sunnylink is disabled, features such as settings management, " +
                                      "remote monitoring, real-time dashboards will be unavailable.",
                                      36, FontWeight.ROMAN)
 
 
 class SunnylinkOnboarding:
   def __init__(self):
-    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, sunnylink_consent_declined}
+    self.consent_done: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, sunnylink_consent_declined}
     self.disable_confirm = False
 
     self.consent_page = SunnylinkConsentPage(on_decline=self._on_decline, on_accept=self._on_accept)
