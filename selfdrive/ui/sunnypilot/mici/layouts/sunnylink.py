@@ -18,7 +18,7 @@ from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import NavWidget
 from openpilot.system.ui.widgets.scroller import Scroller
-from openpilot.system.version import sunnylink_consent_version
+from openpilot.system.version import sunnylink_consent_version, sunnylink_consent_declined
 
 
 class SunnylinkLayoutMici(NavWidget):
@@ -93,7 +93,7 @@ class SunnylinkLayoutMici(NavWidget):
       gui_app.set_modal_overlay(None)
 
     def sl_terms_declined():
-      ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
+      ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_declined)
       ui_state.params.put_bool("SunnylinkEnabled", False)
       gui_app.set_modal_overlay(None)
 

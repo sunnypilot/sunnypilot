@@ -9,7 +9,7 @@ from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.slider import SmallSlider
 from openpilot.system.ui.mici_setup import TermsHeader, TermsPage as SetupTermsPage
-from openpilot.system.version import sunnylink_consent_version
+from openpilot.system.version import sunnylink_consent_version, sunnylink_consent_declined
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 
@@ -64,7 +64,7 @@ class SunnylinkConsentDisableConfirmPage(SunnylinkConsentPage):
 
 class SunnylinkOnboarding:
   def __init__(self):
-    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, "-1"}
+    self.consent_done = ui_state.params.get("CompletedSunnylinkConsentVersion") in {sunnylink_consent_version, sunnylink_consent_declined}
     self.disable_confirm = False
 
     self.consent_page = SunnylinkConsentPage(on_decline=self._on_decline, on_accept=self._on_accept)
@@ -84,7 +84,7 @@ class SunnylinkOnboarding:
 
   def _on_confirm_decline(self):
     ui_state.params.put_bool("SunnylinkEnabled", False)
-    ui_state.params.put("CompletedSunnylinkConsentVersion", "-1")
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_declined)
     self.consent_done = True
 
   def render(self, rect):

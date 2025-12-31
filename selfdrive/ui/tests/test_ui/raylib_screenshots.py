@@ -18,7 +18,7 @@ from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.test.helpers import with_processes
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.updated.updated import parse_release_notes
-from openpilot.system.version import terms_version, training_version, terms_version_sp
+from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -379,6 +379,7 @@ def create_screenshots():
       params.put("HasAcceptedTerms", terms_version)
       params.put("CompletedTrainingVersion", training_version)
       params.put("HasAcceptedTermsSP", terms_version_sp)
+      params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
 
       if name == "homescreen_paired":
         params.put("PrimeType", 0)  # NONE
