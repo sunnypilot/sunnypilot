@@ -165,6 +165,10 @@
     "title": "Chevron Info",
     "description": ""
   },
+  "CompletedSunnylinkConsentVersion": {
+    "title": "Completed sunnylink Consent Version",
+    "description": ""
+  },
   "CompletedTrainingVersion": {
     "title": "Completed Training Version",
     "description": ""
@@ -347,6 +351,10 @@
   },
   "HasAcceptedTerms": {
     "title": "Has Accepted Terms",
+    "description": ""
+  },
+  "HasAcceptedTermsSP": {
+    "title": "Has Accepted sunnypilot Terms",
     "description": ""
   },
   "HideVEgoUI": {
