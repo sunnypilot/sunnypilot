@@ -73,7 +73,7 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
-    self.flat_ui_state = self.params.get("FlatUIState")
+    self.flat_ui_state = self.params.get_bool("FlatUIState")
 
 
 class DeviceSP:
