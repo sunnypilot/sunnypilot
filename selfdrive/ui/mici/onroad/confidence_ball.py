@@ -24,10 +24,12 @@ def draw_circle_gradient(center_x: float, center_y: float, radius: int,
 
 
 class ConfidenceBall(Widget, ConfidenceBallSP):
-  def __init__(self, demo: bool = False):
+  def __init__(self, demo: bool = False, scale: float = 1.0, bar: bool = False):
     Widget.__init__(self)
     ConfidenceBallSP.__init__(self)
     self._demo = demo
+    self._scale = scale
+    self._bar = bar
     self._confidence_filter = FirstOrderFilter(-0.5, 0.5, 1 / gui_app.target_fps)
 
   def update_filter(self, value: float):
@@ -54,7 +56,7 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
       self.rect.height,
     )
 
-    status_dot_radius = 24
+    status_dot_radius = int(24 * self._scale)
     dot_height = (1 - self._confidence_filter.x) * (content_rect.height - 2 * status_dot_radius) + status_dot_radius
     dot_height = self._rect.y + dot_height
 
@@ -81,6 +83,14 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
       top_dot_color = rl.Color(50, 50, 50, 255)
       bottom_dot_color = rl.Color(13, 13, 13, 255)
 
-    draw_circle_gradient(content_rect.x + content_rect.width - status_dot_radius,
-                         dot_height, status_dot_radius,
-                         top_dot_color, bottom_dot_color)
+    if (self._bar):
+      bar_width = int(20 * self._scale)
+      bar_x = content_rect.x + content_rect.width - bar_width
+      fill_h = int(content_rect.height * self._confidence_filter.x)
+      fill_y = int(content_rect.y + (content_rect.height - fill_h))
+      rl.draw_rectangle(int(bar_x), int(content_rect.y), bar_width, int(content_rect.height), rl.Color(20, 20, 20, 180))
+      rl.draw_rectangle_gradient_v(int(bar_x), fill_y, bar_width, fill_h, top_dot_color, bottom_dot_color)
+    else:
+      draw_circle_gradient(content_rect.x + content_rect.width - status_dot_radius,
+                           dot_height, status_dot_radius,
+                           top_dot_color, bottom_dot_color)
