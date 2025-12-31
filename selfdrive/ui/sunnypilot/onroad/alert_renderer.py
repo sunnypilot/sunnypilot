@@ -80,16 +80,16 @@ class AlertRendererSP(AlertRenderer):
     if size == AlertSize.small:
       lines = wrap_text(self.font_bold, alert.text1, ALERT_FONT_MEDIUM, wrap_width)
       line_height = measure_text_cached(self.font_bold, "A", ALERT_FONT_MEDIUM).y
-      height += len(lines) * line_height
+      height += int(len(lines) * line_height)
     elif size == AlertSize.mid:
       lines1 = wrap_text(self.font_bold, alert.text1, ALERT_FONT_BIG, wrap_width)
       line_height1 = measure_text_cached(self.font_bold, "A", ALERT_FONT_BIG).y
-      height += len(lines1) * line_height1
+      height += int(len(lines1) * line_height1)
 
       if alert.text2:
         lines2 = wrap_text(self.font_regular, alert.text2, ALERT_FONT_SMALL, wrap_width)
         line_height2 = measure_text_cached(self.font_regular, "A", ALERT_FONT_SMALL).y
-        height += ALERT_LINE_SPACING + len(lines2) * line_height2
+        height += int(ALERT_LINE_SPACING + len(lines2) * line_height2)
     else:
       height = ALERT_HEIGHTS.get(size, 271)
 
