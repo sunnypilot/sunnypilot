@@ -25,6 +25,7 @@ class OnboardingState(IntEnum):
   TERMS = 0
   ONBOARDING = 1
   DECLINE = 2
+  SUNNYLINK_CONSENT = 3
 
 
 class DriverCameraSetupDialog(DriverCameraDialog):
@@ -452,6 +453,15 @@ class OnboardingWindow(Widget):
     self._training_guide = TrainingGuide(completed_callback=self._on_completed_training)
     self._decline_page = DeclinePage(back_callback=self._on_decline_back)
 
+    if not self._accepted_terms:
+      self._state = OnboardingState.TERMS
+    elif not self._sunnylink.completed:
+      self._state = OnboardingState.SUNNYLINK_CONSENT
+    elif not self._training_done:
+      self._state = OnboardingState.ONBOARDING
+    else:
+      self._state = OnboardingState.ONBOARDING
+
   def show_event(self):
     super().show_event()
     device.set_override_interactive_timeout(300)
@@ -477,7 +487,12 @@ class OnboardingWindow(Widget):
   def _on_terms_accepted(self):
     ui_state.params.put("HasAcceptedTerms", terms_version)
     ui_state.params.put_bool("HasAcceptedTermsSP", terms_version_sp)
-    self._state = OnboardingState.ONBOARDING
+    if not self._sunnylink.completed:
+      self._state = OnboardingState.SUNNYLINK_CONSENT
+    elif not self._training_done:
+      self._state = OnboardingState.ONBOARDING
+    else:
+      self.close()
 
   def _on_completed_training(self):
     ui_state.params.put("CompletedTrainingVersion", training_version)
@@ -486,13 +501,18 @@ class OnboardingWindow(Widget):
   def _render(self, _):
     if self._state == OnboardingState.TERMS:
       self._terms.render(self._rect)
+    elif self._state == OnboardingState.SUNNYLINK_CONSENT:
+      self._sunnylink.render(self._rect)
+      if self._sunnylink.completed:
+        if not self._training_done:
+          self._state = OnboardingState.ONBOARDING
+        else:
+          self.close()
     elif self._state == OnboardingState.ONBOARDING:
-      if self._sunnylink.completed and self._training_done:
-        gui_app.set_modal_overlay(None)
-      elif not self._sunnylink.completed:
-        self._sunnylink.render(self._rect)
-      else:
+      if not self._training_done:
         self._training_guide.render(self._rect)
+      else:
+        self.close()
     elif self._state == OnboardingState.DECLINE:
       self._decline_page.render(self._rect)
     return -1

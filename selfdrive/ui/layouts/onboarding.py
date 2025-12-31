@@ -34,6 +34,7 @@ class OnboardingState(IntEnum):
   TERMS = 0
   ONBOARDING = 1
   DECLINE = 2
+  SUNNYLINK_CONSENT = 3
 
 
 class TrainingGuide(Widget):
@@ -175,13 +176,20 @@ class OnboardingWindow(Widget):
                                  ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
 
-    self._state = OnboardingState.TERMS if not self._accepted_terms else OnboardingState.ONBOARDING
-
     # Windows
     self._terms = TermsPage(on_accept=self._on_terms_accepted, on_decline=self._on_terms_declined)
     self._sunnylink = SunnylinkOnboarding()
     self._training_guide: TrainingGuide | None = None
     self._decline_page = DeclinePage(back_callback=self._on_decline_back)
+
+    if not self._accepted_terms:
+      self._state = OnboardingState.TERMS
+    elif not self._sunnylink.completed:
+      self._state = OnboardingState.SUNNYLINK_CONSENT
+    elif not self._training_done:
+      self._state = OnboardingState.ONBOARDING
+    else:
+      self._state = OnboardingState.ONBOARDING
 
   @property
   def completed(self) -> bool:
@@ -196,9 +204,11 @@ class OnboardingWindow(Widget):
   def _on_terms_accepted(self):
     ui_state.params.put("HasAcceptedTerms", terms_version)
     ui_state.params.put("HasAcceptedTermsSP", terms_version_sp)
-    self._state = OnboardingState.ONBOARDING
-
-    if self._sunnylink.completed and self._training_done:
+    if not self._sunnylink.completed:
+      self._state = OnboardingState.SUNNYLINK_CONSENT
+    elif not self._training_done:
+      self._state = OnboardingState.ONBOARDING
+    else:
       gui_app.set_modal_overlay(None)
 
   def _on_completed_training(self):
@@ -211,11 +221,18 @@ class OnboardingWindow(Widget):
 
     if self._state == OnboardingState.TERMS:
       self._terms.render(self._rect)
+    elif self._state == OnboardingState.SUNNYLINK_CONSENT:
+      self._sunnylink.render(self._rect)
+      if self._sunnylink.completed:
+        if not self._training_done:
+          self._state = OnboardingState.ONBOARDING
+        else:
+          gui_app.set_modal_overlay(None)
     elif self._state == OnboardingState.ONBOARDING:
-      if not self._sunnylink.completed:
-        self._sunnylink.render(self._rect)
-      else:
+      if not self._training_done:
         self._training_guide.render(self._rect)
+      else:
+        gui_app.set_modal_overlay(None)
     elif self._state == OnboardingState.DECLINE:
       self._decline_page.render(self._rect)
     return -1
