@@ -172,16 +172,19 @@ class DeclinePage(Widget):
 class OnboardingWindow(Widget):
   def __init__(self):
     super().__init__()
-    self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version and \
-                                 ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
+    self._accepted_terms: bool = ui_state.params.get("HasAcceptedTerms") == terms_version
     self._training_done: bool = ui_state.params.get("CompletedTrainingVersion") == training_version
+
+    self._state = OnboardingState.TERMS if not self._accepted_terms else OnboardingState.ONBOARDING
 
     # Windows
     self._terms = TermsPage(on_accept=self._on_terms_accepted, on_decline=self._on_terms_declined)
-    self._sunnylink = SunnylinkOnboarding()
     self._training_guide: TrainingGuide | None = None
     self._decline_page = DeclinePage(back_callback=self._on_decline_back)
 
+    # sunnylink consent pages
+    self._accepted_terms = self._accepted_terms and ui_state.params.get("HasAcceptedTermsSP") == terms_version_sp
+    self._sunnylink = SunnylinkOnboarding()
     if not self._accepted_terms:
       self._state = OnboardingState.TERMS
     elif not self._sunnylink.completed:
