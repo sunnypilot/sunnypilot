@@ -289,6 +289,10 @@
     "title": "Firmware Query Done",
     "description": ""
   },
+  "FlatUIState": {
+    "title": "Flat UI State",
+    "description": ""
+  },
   "ForcePowerDown": {
     "title": "Force Power Down",
     "description": ""
