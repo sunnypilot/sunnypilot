@@ -121,6 +121,13 @@
     "title": "Camera Debug Exp Time",
     "description": ""
   },
+  "CameraOffset": {
+    "title": "Adjust Camera Offset on non Default Model",
+    "description": "Adjust this to center the car in its lane by virtually shifting the camera's perspective. Negative Values: Shears the image to the left, moving the model's center to the Right; Positive Values: Shears the image to the right, moving the model's center to the Left. Note: these values are in meters.",
+    "min": -0.35,
+    "max": 0.35,
+    "step": 0.01
+  },
   "CarBatteryCapacity": {
     "title": "Car Battery Capacity",
     "description": ""
