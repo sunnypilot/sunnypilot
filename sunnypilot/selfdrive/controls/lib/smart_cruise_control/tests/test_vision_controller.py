@@ -199,7 +199,6 @@ class TestSmartCruiseControlVision:
     # allow tiny numeric differences due to float conversions/interpolation
     assert np.isclose(self.scc_v.max_pred_lat_acc, expected_p97, rtol=1e-6, atol=1e-5)
 
-
     if should_enter:
       # We assert entering primarily by state (this is the actual intended behavior).
       assert self.scc_v.state == VisionState.entering
