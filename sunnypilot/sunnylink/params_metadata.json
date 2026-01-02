@@ -122,8 +122,8 @@
     "description": ""
   },
   "CameraOffset": {
-    "title": "Adjust Camera Offset on non Default Model",
-    "description": "Adjust this to center the car in its lane by virtually shifting the camera's perspective. Negative Values: Shears the image to the left, moving the model's center to the Right; Positive Values: Shears the image to the right, moving the model's center to the Left. Note: these values are in meters.",
+    "title": "Adjust Camera Offset",
+    "description": "Virtually shift camera's perspective to move model's center to Left(+ve values) or Right (-ve values)",
     "min": -0.35,
     "max": 0.35,
     "step": 0.01
@@ -451,12 +451,15 @@
     "description": ""
   },
   "LagdToggle": {
-    "title": "LaGD Toggle",
-    "description": ""
+    "title": "Live Learning Steer Delay",
+    "description": "Allow device to learn and adapt car's steering response time"
   },
   "LagdToggleDelay": {
-    "title": "LaGD Toggle Delay",
-    "description": ""
+    "title": "Manual Software Delay",
+    "description": "Software delay to use when Live Learning Steer Delay is toggled off",
+    "min": 0.05,
+    "max": 0.5,
+    "step": 0.01
   },
   "LagdValueCache": {
     "title": "LaGD Value Cache",
@@ -464,11 +467,11 @@
   },
   "LaneTurnDesire": {
     "title": "Lane Turn Desire",
-    "description": ""
+    "description": "Force model to plan an intent to turn based on blinker"
   },
   "LaneTurnValue": {
-    "title": "Lane Turn Value",
-    "description": "",
+    "title": "Lane Turn Speed",
+    "description": "Maximum speed for lane turn desire",
     "min": 0,
     "max": 20,
     "step": 1
