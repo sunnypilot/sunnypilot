@@ -180,6 +180,13 @@ class DriverStateRenderer(Widget):
       return
 
     pitch, yaw, roll = driver_orient
+
+    # Correct for driver position relative to center-mounted camera
+    yaw_offset = math.radians(20)
+    if self._is_rhd:
+      yaw += yaw_offset
+    else:
+      yaw -= yaw_offset
     pitch = self._pitch_filter.update(pitch)
     yaw = self._yaw_filter.update(yaw)
 
