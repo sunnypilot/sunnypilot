@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -21,6 +22,7 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
+    self.screensaver = ScreenSaverSP()
 
   def update(self) -> None:
     if self.sunnylink_enabled:
