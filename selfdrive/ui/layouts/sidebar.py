@@ -153,7 +153,7 @@ class Sidebar(Widget):
       self._panda_status.update(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
 
   @staticmethod
-  def _is_sunnylink_registering(dongle_id: str | None) -> bool:
+  def _is_sunnylink_unregistered(dongle_id: str | None) -> bool:
     return dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
   def _update_sunnylink_status(self):
@@ -167,7 +167,7 @@ class Sidebar(Widget):
 
     if sunnylink_enabled:
       if last_ping == 0:
-        registering = self._is_sunnylink_registering(sunnylink_dongle_id)
+        registering = self._is_sunnylink_unregistered(sunnylink_dongle_id)
         status = tr_noop("REGIST...") if registering else tr_noop("OFFLINE")
         color = Colors.PROGRESS if registering else Colors.SUNNYLINK_WARNING
       else:
@@ -247,11 +247,11 @@ class Sidebar(Widget):
       spacing = 0
     else:
       available_height = HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y
-      if available_height > 0:
-        ideal_spacing = available_height / (len(metrics) - 1)
-        spacing = max(min(ideal_spacing, METRIC_HEIGHT + METRIC_MARGIN), METRIC_HEIGHT)
-      else:
+      if available_height <= 0:
         spacing = METRIC_HEIGHT + METRIC_MARGIN
+      else:
+        ideal_spacing = available_height / (len(metrics) - 1)
+        spacing = max(ideal_spacing, METRIC_HEIGHT + METRIC_MARGIN)
 
     for idx, metric in enumerate(metrics):
       self._draw_metric(rect, metric, start_y + idx * spacing)
