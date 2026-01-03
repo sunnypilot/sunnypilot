@@ -14,7 +14,7 @@ class ScreenSaverSP(Widget):
   def __init__(self):
     super().__init__()
     self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
-    self.screensaver_timeout = Params().get("ScreenSaverTimeout")
+    self.screensaver_timeout = Params().get("ScreenSaverTimeout", return_default=True)
     self._is_mici = HARDWARE.get_device_type() == 'mici' or (HARDWARE.get_device_type() == "pc" and os.getenv("BIG") != "1")
 
     self.x = 0.0
