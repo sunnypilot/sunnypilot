@@ -123,7 +123,7 @@
   },
   "CameraOffset": {
     "title": "Adjust Camera Offset",
-    "description": "Virtually shift camera's perspective to move model's center to Left(+ve values) or Right (-ve values)",
+    "description": "Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)",
     "min": -0.35,
     "max": 0.35,
     "step": 0.01
