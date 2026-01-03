@@ -17,7 +17,7 @@ class BlinkerPauseLateral:
     self.enabled = self.params.get_bool("BlinkerPauseLateralControl")
     self.is_metric = self.params.get_bool("IsMetric")
     self.min_speed = 0
-    self.reengage_delay = 0.0
+    self.reengage_delay = 0
     self.blinker_off_timer = 0.0
 
   def get_params(self) -> None:

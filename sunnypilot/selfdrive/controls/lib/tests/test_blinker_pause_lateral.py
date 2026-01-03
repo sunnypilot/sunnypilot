@@ -20,7 +20,7 @@ class TestBlinkerPauseLateral:
     self.blinker_pause_lateral.enabled = True
     self.blinker_pause_lateral.is_metric = False
     self.blinker_pause_lateral.min_speed = 20  # MPH
-    self.blinker_pause_lateral.reengage_delay = 0.0
+    self.blinker_pause_lateral.reengage_delay = 0
     self.blinker_pause_lateral.blinker_off_timer = 0.0
 
     self.CS = car.CarState.new_message()
@@ -49,7 +49,7 @@ class TestBlinkerPauseLateral:
     self._test_should_blinker_pause_lateral(expected_results)
 
   def test_reengage_delay(self):
-    self.blinker_pause_lateral.reengage_delay = 0.5
+    self.blinker_pause_lateral.reengage_delay = 1 # seconds
     self.CS.vEgo = 4.5
 
     expected_results = {
