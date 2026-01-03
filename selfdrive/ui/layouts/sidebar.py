@@ -189,7 +189,7 @@ class Sidebar(Widget):
         elapsed = time.monotonic_ns() - last_ping
         online = elapsed < PING_TIMEOUT_NS
         status = tr_noop("ONLINE") if online else tr_noop("ERROR")
-        color = Colors.SUNNYLINK_GOOD if online else Colors.DANGER
+        color = Colors.GOOD if online else Colors.DANGER
 
     self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
 
