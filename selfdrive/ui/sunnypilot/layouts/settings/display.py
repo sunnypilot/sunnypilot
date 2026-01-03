@@ -51,6 +51,7 @@ class DisplayLayout(Widget):
       value_change_step=1,
       value_map=onroad_brightness_timer_values,
       label_callback=lambda value: f"{value} s" if value < 60 else f"{int(value/60)} m",
+      inline=True
     )
     self._onroad_brightness = option_item_sp(
       param="OnroadScreenOffBrightness",
@@ -60,6 +61,7 @@ class DisplayLayout(Widget):
       max_value=90,
       value_change_step=5,
       label_callback=lambda value: f"{value} %" if value > 0 else tr("Screen Off"),
+      inline=True
     )
     self._global_brightness = option_item_sp(
       param="Brightness",
@@ -68,7 +70,8 @@ class DisplayLayout(Widget):
       min_value=-5,
       max_value=100,
       value_change_step=5,
-      label_callback=lambda value: f"{value}" if value > 0 else tr("Auto") if value == 0 else tr("Auto(Dark)")
+      label_callback=lambda value: f"{value}" if value > 0 else tr("Auto") if value == 0 else tr("Auto(Dark)"),
+      inline=True
     )
     self._interactivity_timeout = option_item_sp(
       param="InteractivityTimeout",
@@ -80,7 +83,8 @@ class DisplayLayout(Widget):
       max_value=120,
       value_change_step=10,
       label_callback=lambda value: (tr("Default") if not value or value == 0 else
-                                    f"{value} s" if value < 60 else f"{int(value/60)} m")
+                                    f"{value} s" if value < 60 else f"{int(value/60)} m"),
+      inline=True
     )
     items = [
       self._onroad_brightness_toggle,
