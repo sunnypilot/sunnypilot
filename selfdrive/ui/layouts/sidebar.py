@@ -249,24 +249,11 @@ class Sidebar(Widget):
     text_pos = rl.Vector2(rect.x + 58, text_y)
     rl.draw_text_ex(self._font_regular, tr(self._net_type), text_pos, FONT_SIZE, 0, Colors.WHITE)
 
-  def _metrics(self) -> list[MetricData]:
-    return [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
-
   def _draw_metrics(self, rect: rl.Rectangle):
-    metrics = self._metrics()
-    if not metrics:
-      return
-
+    metrics = [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
     start_y = rect.y + METRIC_START_Y
-    if len(metrics) <= 1:
-      spacing = 0
-    else:
-      available_height = max(0, HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y)
-      if available_height <= 0:
-        spacing = METRIC_HEIGHT + METRIC_MARGIN
-      else:
-        ideal_spacing = available_height / (len(metrics) - 1)
-        spacing = max(ideal_spacing, METRIC_HEIGHT + METRIC_MARGIN)
+    available_height = max(0, HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y)
+    spacing = available_height / max(1, len(metrics) - 1)
 
     for idx, metric in enumerate(metrics):
       self._draw_metric(rect, metric, start_y + idx * spacing)
