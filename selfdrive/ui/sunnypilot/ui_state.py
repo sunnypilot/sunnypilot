@@ -29,7 +29,7 @@ class UIStateSP:
       self.sunnylink_state.stop()
 
   @staticmethod
-  def update_status(ss, ss_sp, onroad_evt) -> str:
+  def update_state_status(ss, ss_sp, onroad_evt) -> str:
     state = ss.state
     mads = ss_sp.mads
     mads_state = mads.state

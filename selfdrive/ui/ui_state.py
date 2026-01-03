@@ -158,7 +158,7 @@ class UIState(UIStateSP):
       else:
         self.status = UIStatus.ENGAGED if ss.enabled else UIStatus.DISENGAGED
 
-      self.status = UIStatus(UIStateSP.update_status(ss, self.sm["selfdriveStateSP"], self.sm["onroadEvents"]))
+      self.status = UIStatus(UIStateSP.update_state_status(ss, self.sm["selfdriveStateSP"], self.sm["onroadEvents"]))
 
     # Check for engagement state changes
     if self.engaged != self._engaged_prev:
