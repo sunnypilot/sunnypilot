@@ -10,12 +10,33 @@ from dataclasses import dataclass
 from openpilot.common.constants import CV
 
 
+from openpilot.system.ui.lib.text_measure import measure_text_cached
+
+
 @dataclass
 class UiElement:
   value: str
   label: str
   unit: str
   color: rl.Color
+  val_text: str = ""
+  label_text: str = ""
+  unit_text: str = ""
+  val_width: float = 0.0
+  label_width: float = 0.0
+  unit_width: float = 0.0
+  total_width: float = 0.0
+
+  def measure(self, font, font_size: int):
+    self.label_text = f"{self.label} "
+    self.val_text = self.value
+    self.unit_text = f" {self.unit}" if self.unit else ""
+
+    self.label_width = measure_text_cached(font, self.label_text, font_size, 0).x
+    self.val_width = measure_text_cached(font, self.val_text, font_size, 0).x
+    self.unit_width = measure_text_cached(font, self.unit_text, font_size, 0).x if self.unit else 0
+
+    self.total_width = self.label_width + self.val_width + self.unit_width
 
 
 class LeadInfoElement:

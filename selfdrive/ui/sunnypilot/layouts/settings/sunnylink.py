@@ -4,23 +4,23 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import pyray as rl
 from cereal import custom
+from openpilot.selfdrive.ui.sunnypilot.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
+from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.label import UnifiedLabel
-from openpilot.system.ui.widgets.list_view import button_item, dual_button_item
+from openpilot.system.ui.widgets.list_view import dual_button_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
-from openpilot.system.ui.widgets import Widget, DialogResult
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
-import pyray as rl
-
-if gui_app.sunnypilot_ui():
-  from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
+from openpilot.system.version import sunnylink_consent_version
 
 
 class SunnylinkHeader(Widget):
@@ -160,14 +160,14 @@ class SunnylinkLayout(Widget):
     self._sunnylink_description = SunnylinkDescriptionItem()
     self._sunnylink_description.set_visible(False)
 
-    self._sponsor_btn = button_item(
+    self._sponsor_btn = button_item_sp(
       title=tr("Sponsor Status"),
       button_text=tr("SPONSOR"),
       description=tr(
         "Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."),
       callback=lambda: self._handle_pair_btn(False)
     )
-    self._pair_btn = button_item(
+    self._pair_btn = button_item_sp(
       title=tr("Pair GitHub Account"),
       button_text=tr("Not Paired"),
       description=tr(
@@ -302,6 +302,22 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_text(tr("Restore Settings"))
 
   def _sunnylink_toggle_callback(self, state: bool):
+    sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") == sunnylink_consent_version
+    sl_enabled: bool = ui_state.params.get_bool("SunnylinkEnabled")
+
+    if state and not sl_consent and not sl_enabled:
+      def on_consent_done():
+        enabled = ui_state.params.get_bool("SunnylinkEnabled")
+        self._update_description(enabled)
+        gui_app.set_modal_overlay(None)
+
+      sl_terms_dlg = SunnylinkConsentPage(done_callback=on_consent_done)
+      gui_app.set_modal_overlay(sl_terms_dlg)
+    else:
+      ui_state.params.put_bool("SunnylinkEnabled", state)
+      self._update_description(state)
+
+  def _update_description(self, state: bool):
     if state:
       description = tr(
         "Welcome back!! We're excited to see you've enabled sunnylink again!")

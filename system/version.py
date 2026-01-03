@@ -30,6 +30,9 @@ BUILD_METADATA_FILENAME = "build.json"
 
 training_version: str = "0.2.0"
 terms_version: str = "2"
+terms_version_sp: str = "1.0"
+sunnylink_consent_version: str = "1.0"
+sunnylink_consent_declined: str = "-1"
 
 
 def get_version(path: str = BASEDIR) -> str:

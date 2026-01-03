@@ -202,7 +202,7 @@ class DeviceLayoutSP(DeviceLayout):
       self._scroller._items.remove(self._always_offroad_btn)
     if ui_state.is_offroad() and not always_offroad:
       self._scroller._items.insert(len(self._scroller._items) - 1, self._always_offroad_btn)
-    elif not ui_state.is_offroad():
+    else:
       self._scroller._items.insert(0, self._always_offroad_btn)
 
     # Quiet Mode button
