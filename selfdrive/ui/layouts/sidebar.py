@@ -159,14 +159,16 @@ class Sidebar(Widget):
   def _update_sunnylink_status(self):
     params = ui_state.params
     sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-    last_ping = params.get_int("LastSunnylinkPingTime")
-    sunnylink_dongle_id = params.get("SunnylinkDongleId")
+    last_ping_raw = params.get("LastSunnylinkPingTime")
+    last_ping = int(last_ping_raw) if last_ping_raw not in (None, "") else None
+    raw_dongle_id = params.get("SunnylinkDongleId")
+    sunnylink_dongle_id = raw_dongle_id.decode() if isinstance(raw_dongle_id, (bytes, bytearray)) else raw_dongle_id
 
     status = tr_noop("DISABLED")
     color = Colors.DISABLED
 
     if sunnylink_enabled:
-      if last_ping == 0:
+      if not last_ping:
         registering = self._is_sunnylink_unregistered(sunnylink_dongle_id)
         status = tr_noop("REGIST...") if registering else tr_noop("OFFLINE")
         color = Colors.PROGRESS if registering else Colors.SUNNYLINK_WARNING
