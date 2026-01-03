@@ -23,7 +23,10 @@ class UIStateSP:
     self.sunnylink_state = SunnylinkState()
 
   def update(self) -> None:
-    self.sunnylink_state.start()
+    if self.sunnylink_enabled:
+      self.sunnylink_state.start()
+    else:
+      self.sunnylink_state.stop()
 
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
@@ -70,5 +73,15 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.auto_lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
     self.auto_lane_change_timer = self.params.get("AutoLaneChangeTimer", return_default=True)
+
+
+class DeviceSP:
+  def __init__(self):
+    self._params = Params()
+
+  def _set_awake(self, on: bool):
+    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
+      self._params.put_bool("OffroadMode", True)
