@@ -108,6 +108,7 @@ jobs:
   build_mac:
     name: build macOS
     runs-on: ${{ ((github.repository == 'commaai/openpilot') && ((github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))) && 'namespace-profile-macos-8x14' || 'macos-latest' }}
+    if: false  # There'll be one day that this works. That day is not today.
     steps:
     - uses: actions/checkout@v4
       with:
@@ -115,14 +116,13 @@ jobs:
     - run: echo "CACHE_COMMIT_DATE=$(git log -1 --pretty='format:%cd' --date=format:'%Y-%m-%d-%H:%M')" >> $GITHUB_ENV
     - name: Homebrew cache
       uses: ./.github/workflows/auto-cache
-      if: false # disabling the cache for now because it is breaking macos builds...
       with:
         save: false # No need save here if we manually save it later conditionally
         path: ~/Library/Caches/Homebrew
-        key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
+        key: brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
         restore-keys: |
-          brew-macos-${{ env.CACHE_COMMIT_DATE }}
-          brew-macos
+          brew-macos-${{ hashFiles('tools/Brewfile') }}
+          brew-macos-
     - name: Install dependencies
       run: ./tools/mac_setup.sh
       env:
@@ -133,7 +133,7 @@ jobs:
       if: github.ref == 'refs/heads/master'
       with:
         path: ~/Library/Caches/Homebrew
-        key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
+        key: brew-macos-${{ hashFiles('tools/Brewfile') }}-${{ github.sha }}
     - run: git lfs pull
     - name: Getting scons cache
       uses: ./.github/workflows/auto-cache
@@ -297,3 +297,29 @@ jobs:
         with:
           name: raylib-report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'master' || github.event.number }}
           path: selfdrive/ui/tests/test_ui/raylib_report/screenshots
+
+  create_mici_raylib_ui_report:
+    name: Create mici raylib UI Report
+    runs-on: ${{
+      (github.repository == 'commaai/openpilot') &&
+      ((github.event_name != 'pull_request') ||
+      (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
+      && fromJSON('["namespace-profile-amd64-8x16", "namespace-experiments:docker.builds.local-cache=separate"]')
+      || fromJSON('["ubuntu-24.04"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/workflows/setup-with-retry
+      - name: Build openpilot
+        run: ${{ env.RUN }} "scons -j$(nproc)"
+      - name: Create mici raylib UI Report
+        run: >
+          ${{ env.RUN }} "PYTHONWARNINGS=ignore &&
+                          source selfdrive/test/setup_xvfb.sh &&
+                          WINDOWED=1 python3 selfdrive/ui/tests/diff/replay.py"
+      - name: Upload Raylib UI Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mici-raylib-report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'master' || github.event.number }}
+          path: selfdrive/ui/tests/diff/report
