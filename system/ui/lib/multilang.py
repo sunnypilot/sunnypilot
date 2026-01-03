@@ -85,4 +85,4 @@ tr, trn = multilang.tr, multilang.trn
 
 # no-op marker for static strings translated later
 def tr_noop(s: str) -> str:
-  return s
+  return tr(s) #暫時性的
