@@ -117,6 +117,7 @@ class UIState(UIStateSP):
       self.update_params()
     device.update()
     UIStateSP.update(self)
+    UIStateSP.update_onroad_brightness(self, self.sm, self.started)
 
   def _update_state(self) -> None:
     # Handle panda states updates
@@ -221,6 +222,9 @@ class Device(DeviceSP):
     if self._override_interactive_timeout is not None:
       return self._override_interactive_timeout
 
+    if gui_app.sunnypilot_ui() and ui_state.interactive_timeout != 0:
+      return ui_state.interactive_timeout
+
     ignition_timeout = 10 if gui_app.big_ui() else 5
     return ignition_timeout if ui_state.ignition else 30
 
@@ -255,11 +259,25 @@ class Device(DeviceSP):
       else:
         clipped_brightness = ((clipped_brightness + 16.0) / 116.0) ** 3.0
 
+      if gui_app.sunnypilot_ui():
+        if ui_state.global_brightness_override == 1:
+          clipped_brightness = float(np.clip(100.0 * clipped_brightness, 1.0, 100.0))
+        elif ui_state.global_brightness_override == 0:
+          clipped_brightness = float(np.clip(100.0 * clipped_brightness, 10.0, 100.0))
+
       clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
 
     brightness = round(self._brightness_filter.update(clipped_brightness))
+
+    if gui_app.sunnypilot_ui() and ui_state.global_brightness_override not in (0, 1):
+      brightness = ui_state.global_brightness_override
+
     if not self._awake:
       brightness = 0
+
+    if gui_app.sunnypilot_ui():
+      if self._awake and ui_state.started and ui_state.onroad_brightness_toggle and ui_state.onroad_brightness_timer == 0:
+        brightness = ui_state.onroad_brightness * 0.01 * brightness
 
     if brightness != self._last_brightness:
       if self._brightness_thread is None or not self._brightness_thread.is_alive():
