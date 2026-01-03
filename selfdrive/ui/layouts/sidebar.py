@@ -152,24 +152,26 @@ class Sidebar(Widget):
 
   def _update_sunnylink_status(self):
     params = ui_state.params
-    sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-    sunnylink_temp_fault = params.get_bool("SunnylinkTempFault")
-    last_ping = int(params.get("LastSunnylinkPingTime"))
-    sunnylink_dongle_id = params.get("SunnylinkDongleId")
+    if not params.get_bool("SunnylinkEnabled"):
+      self._sunnylink_status.update(tr_noop("SUNNYLINK"), tr_noop("DISABLED"), Colors.DISABLED)
+      return
 
-    status = tr_noop("FAULT")
-    color = Colors.WARNING
+    last_ping = int(params.get("LastSunnylinkPingTime") or 0)
+    dongle_id = params.get("SunnylinkDongleId")
 
-    if sunnylink_enabled:
-      if not last_ping:
-        registering = sunnylink_dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
-        status = tr_noop("REGIST...") if registering else tr_noop("FAULT") if sunnylink_temp_fault else tr_noop("OFFLINE")
-        color = Colors.PROGRESS if registering else Colors.WARNING if sunnylink_temp_fault else Colors.DANGER
-      else:
-        elapsed = time.monotonic_ns() - last_ping
-        online = elapsed < PING_TIMEOUT_NS
-        status = tr_noop("ONLINE") if online else tr_noop("ERROR")
-        color = Colors.GOOD if online else Colors.DANGER
+    is_online = last_ping and (time.monotonic_ns() - last_ping) < PING_TIMEOUT_NS
+    is_temp_fault = params.get_bool("SunnylinkTempFault")
+    is_registering = not is_temp_fault and dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
+
+    # Determine status/color pair based on priority
+    if last_ping:
+      status, color = (tr_noop("ONLINE"), Colors.GOOD) if is_online else (tr_noop("ERROR"), Colors.DANGER)
+    elif is_temp_fault:
+      status, color = (tr_noop("FAULT"), Colors.WARNING)
+    elif is_registering:
+      status, color = (tr_noop("REGIST..."), Colors.PROGRESS)
+    else:
+      status, color = (tr_noop("OFFLINE"), Colors.DANGER)
 
     self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
 
