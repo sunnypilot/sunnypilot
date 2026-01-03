@@ -14,6 +14,8 @@ SIDEBAR_WIDTH = 300
 METRIC_HEIGHT = 126
 METRIC_WIDTH = 240
 METRIC_MARGIN = 30
+METRIC_START_Y = 300
+PING_TIMEOUT_NS = 80_000_000_000
 FONT_SIZE = 35
 
 SETTINGS_BTN = rl.Rectangle(50, 35, 200, 117)
@@ -139,7 +141,7 @@ class Sidebar(Widget):
     last_ping = device_state.lastAthenaPingTime
     if last_ping == 0:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("OFFLINE"), Colors.WARNING)
-    elif time.monotonic_ns() - last_ping < 80_000_000_000:  # 80 seconds in nanoseconds
+    elif time.monotonic_ns() - last_ping < PING_TIMEOUT_NS:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("ONLINE"), Colors.GOOD)
     else:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("ERROR"), Colors.DANGER)
@@ -166,7 +168,7 @@ class Sidebar(Widget):
         color = Colors.PROGRESS if registering else Colors.SUNNYLINK_WARNING
       else:
         elapsed = time.monotonic_ns() - last_ping
-        online = elapsed < 80_000_000_000
+        online = elapsed < PING_TIMEOUT_NS
         status = tr_noop("ONLINE") if online else tr_noop("ERROR")
         color = Colors.SUNNYLINK_GOOD if online else Colors.DANGER
 
@@ -230,7 +232,7 @@ class Sidebar(Widget):
 
   def _draw_metrics(self, rect: rl.Rectangle):
     metrics = [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
-    start_y = rect.y + 300
+    start_y = rect.y + METRIC_START_Y
     spacing = 0
     if len(metrics) > 1:
       available_height = HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y
