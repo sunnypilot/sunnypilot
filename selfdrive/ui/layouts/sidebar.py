@@ -230,13 +230,17 @@ class Sidebar(Widget):
     text_pos = rl.Vector2(rect.x + 58, text_y)
     rl.draw_text_ex(self._font_regular, tr(self._net_type), text_pos, FONT_SIZE, 0, Colors.WHITE)
 
+  def _metrics(self) -> list[MetricData]:
+    return [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
+
   def _draw_metrics(self, rect: rl.Rectangle):
-    metrics = [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
+    metrics = self._metrics()
     start_y = rect.y + METRIC_START_Y
-    spacing = 0
+    spacing = METRIC_HEIGHT + METRIC_MARGIN if len(metrics) > 1 else 0
     if len(metrics) > 1:
       available_height = HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y
-      spacing = available_height / (len(metrics) - 1) if available_height > 0 else 0
+      if available_height > 0:
+        spacing = max(available_height / (len(metrics) - 1), METRIC_HEIGHT)
 
     for idx, metric in enumerate(metrics):
       self._draw_metric(rect, metric, start_y + idx * spacing)
