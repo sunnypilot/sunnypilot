@@ -239,14 +239,19 @@ class Sidebar(Widget):
 
   def _draw_metrics(self, rect: rl.Rectangle):
     metrics = self._metrics()
+    if not metrics:
+      return
+
     start_y = rect.y + METRIC_START_Y
     if len(metrics) <= 1:
       spacing = 0
     else:
-      spacing = METRIC_HEIGHT + METRIC_MARGIN
       available_height = HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y
       if available_height > 0:
-        spacing = max(available_height / (len(metrics) - 1), METRIC_HEIGHT)
+        ideal_spacing = available_height / (len(metrics) - 1)
+        spacing = max(min(ideal_spacing, METRIC_HEIGHT + METRIC_MARGIN), METRIC_HEIGHT)
+      else:
+        spacing = METRIC_HEIGHT + METRIC_MARGIN
 
     for idx, metric in enumerate(metrics):
       self._draw_metric(rect, metric, start_y + idx * spacing)
