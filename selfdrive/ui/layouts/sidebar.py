@@ -37,8 +37,6 @@ class Colors:
   DANGER = rl.Color(201, 34, 49, 255)
   PROGRESS = rl.Color(0, 134, 233, 255)
   DISABLED = rl.Color(128, 128, 128, 255)
-  SUNNYLINK_GOOD = rl.Color(0, 200, 0, 255)
-  SUNNYLINK_WARNING = rl.Color(255, 165, 0, 255)
 
   # UI elements
   METRIC_BORDER = rl.Color(255, 255, 255, 85)
@@ -78,7 +76,7 @@ class Sidebar(Widget):
     self._temp_status = MetricData(tr_noop("TEMP"), tr_noop("GOOD"), Colors.GOOD)
     self._panda_status = MetricData(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
     self._connect_status = MetricData(tr_noop("CONNECT"), tr_noop("OFFLINE"), Colors.WARNING)
-    self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("DISABLED"), Colors.DISABLED)
+    self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
     self._recording_audio = False
 
     self._home_img = gui_app.texture("images/button_home.png", HOME_BTN.width, HOME_BTN.height)
@@ -152,39 +150,21 @@ class Sidebar(Widget):
     else:
       self._panda_status.update(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
 
-  @staticmethod
-  def _is_sunnylink_unregistered(dongle_id: str | None) -> bool:
-    return dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
-
-  @staticmethod
-  def _decode_param(raw_value):
-    if isinstance(raw_value, (bytes, bytearray)):
-      return raw_value.decode(errors="ignore")
-    return raw_value
-
   def _update_sunnylink_status(self):
     params = ui_state.params
     sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-    last_ping_raw = self._decode_param(params.get("LastSunnylinkPingTime"))
-    last_ping = None
-    if last_ping_raw not in (None, ""):
-      try:
-        last_ping = int(last_ping_raw)
-      except (TypeError, ValueError):
-        last_ping = None
-    raw_dongle_id = self._decode_param(params.get("SunnylinkDongleId"))
-    sunnylink_dongle_id = None
-    if raw_dongle_id not in (None, ""):
-      sunnylink_dongle_id = raw_dongle_id
+    sunnylink_temp_fault = params.get_bool("SunnylinkTempFault")
+    last_ping = int(params.get("LastSunnylinkPingTime"))
+    sunnylink_dongle_id = params.get("SunnylinkDongleId")
 
-    status = tr_noop("DISABLED")
-    color = Colors.DISABLED
+    status = tr_noop("FAULT")
+    color = Colors.WARNING
 
     if sunnylink_enabled:
       if not last_ping:
-        registering = self._is_sunnylink_unregistered(sunnylink_dongle_id)
-        status = tr_noop("REGIST...") if registering else tr_noop("OFFLINE")
-        color = Colors.PROGRESS if registering else Colors.SUNNYLINK_WARNING
+        registering = sunnylink_dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
+        status = tr_noop("REGIST...") if registering else tr_noop("FAULT") if sunnylink_temp_fault else tr_noop("OFFLINE")
+        color = Colors.PROGRESS if registering else Colors.WARNING if sunnylink_temp_fault else Colors.DANGER
       else:
         elapsed = time.monotonic_ns() - last_ping
         online = elapsed < PING_TIMEOUT_NS
