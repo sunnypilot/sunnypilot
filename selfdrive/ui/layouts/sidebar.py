@@ -233,8 +233,8 @@ class Sidebar(Widget):
 
   def _draw_metrics(self, rect: rl.Rectangle):
     metrics = [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
-    start_y = rect.y + METRIC_START_Y
-    available_height = max(0, HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y)
+    start_y = int(rect.y) + METRIC_START_Y
+    available_height = max(0, int(HOME_BTN.y) - METRIC_MARGIN - METRIC_HEIGHT - start_y)
     spacing = available_height / max(1, len(metrics) - 1)
 
     for idx, metric in enumerate(metrics):
