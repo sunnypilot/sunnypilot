@@ -156,20 +156,26 @@ class Sidebar(Widget):
   def _is_sunnylink_unregistered(dongle_id: str | None) -> bool:
     return dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
+  @staticmethod
+  def _decode_param(raw_value):
+    if isinstance(raw_value, (bytes, bytearray)):
+      return raw_value.decode(errors="ignore")
+    return raw_value
+
   def _update_sunnylink_status(self):
     params = ui_state.params
     sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-    last_ping_raw = params.get("LastSunnylinkPingTime")
+    last_ping_raw = self._decode_param(params.get("LastSunnylinkPingTime"))
     last_ping = None
     if last_ping_raw not in (None, ""):
       try:
         last_ping = int(last_ping_raw)
       except (TypeError, ValueError):
         last_ping = None
-    raw_dongle_id = params.get("SunnylinkDongleId")
+    raw_dongle_id = self._decode_param(params.get("SunnylinkDongleId"))
     sunnylink_dongle_id = None
-    if raw_dongle_id not in (None, b"", ""):
-      sunnylink_dongle_id = raw_dongle_id.decode(errors="ignore") if isinstance(raw_dongle_id, (bytes, bytearray)) else raw_dongle_id
+    if raw_dongle_id not in (None, ""):
+      sunnylink_dongle_id = raw_dongle_id
 
     status = tr_noop("DISABLED")
     color = Colors.DISABLED
