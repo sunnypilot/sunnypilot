@@ -386,6 +386,24 @@
       }
     ]
   },
+  "HyundaiRadar": {
+    "title": "Hyundai Radar",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Lead Only"
+      },
+      {
+        "value": 2,
+        "label": "Full Radar"
+      }
+    ]
+  },
   "InstallDate": {
     "title": "Install Date",
     "description": ""
