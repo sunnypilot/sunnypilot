@@ -160,9 +160,16 @@ class Sidebar(Widget):
     params = ui_state.params
     sunnylink_enabled = params.get_bool("SunnylinkEnabled")
     last_ping_raw = params.get("LastSunnylinkPingTime")
-    last_ping = int(last_ping_raw) if last_ping_raw not in (None, "") else None
+    last_ping = None
+    if last_ping_raw not in (None, ""):
+      try:
+        last_ping = int(last_ping_raw)
+      except (TypeError, ValueError):
+        last_ping = None
     raw_dongle_id = params.get("SunnylinkDongleId")
-    sunnylink_dongle_id = raw_dongle_id.decode() if isinstance(raw_dongle_id, (bytes, bytearray)) else raw_dongle_id
+    sunnylink_dongle_id = None
+    if raw_dongle_id not in (None, b"", ""):
+      sunnylink_dongle_id = raw_dongle_id.decode(errors="ignore") if isinstance(raw_dongle_id, (bytes, bytearray)) else raw_dongle_id
 
     status = tr_noop("DISABLED")
     color = Colors.DISABLED
@@ -248,7 +255,7 @@ class Sidebar(Widget):
     if len(metrics) <= 1:
       spacing = 0
     else:
-      available_height = HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y
+      available_height = max(0, HOME_BTN.y - METRIC_MARGIN - METRIC_HEIGHT - start_y)
       if available_height <= 0:
         spacing = METRIC_HEIGHT + METRIC_MARGIN
       else:
