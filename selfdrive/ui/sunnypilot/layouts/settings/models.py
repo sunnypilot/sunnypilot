@@ -153,7 +153,7 @@ class ModelsLayout(Widget):
       self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
-      device.reset_interactive_timeout()
+      device._reset_interactive_timeout()
 
     for model in bundle.models:
       if label := labels.get(getattr(model.type, 'raw', model.type)):
