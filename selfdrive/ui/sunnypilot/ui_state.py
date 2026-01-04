@@ -74,8 +74,6 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
-    self.auto_lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
-    self.auto_lane_change_timer = self.params.get("AutoLaneChangeTimer", return_default=True)
 
 
 class DeviceSP:
