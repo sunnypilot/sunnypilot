@@ -117,6 +117,7 @@ class UIState(UIStateSP):
       self.update_params()
     device.update()
     UIStateSP.update(self)
+    UIStateSP.update_onroad_brightness(self, self.sm, self.started)
 
   def _update_state(self) -> None:
     # Handle panda states updates
@@ -272,6 +273,10 @@ class Device(DeviceSP):
 
     if not self._awake:
       brightness = 0
+
+    if gui_app.sunnypilot_ui():
+      if self._awake and ui_state.started and ui_state.onroad_brightness_toggle and ui_state.onroad_brightness_timer == 0:
+        brightness = ui_state.onroad_brightness * 0.01 * brightness
 
     if brightness != self._last_brightness:
       if self._brightness_thread is None or not self._brightness_thread.is_alive():
