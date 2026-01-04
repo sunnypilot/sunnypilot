@@ -74,6 +74,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.global_brightness_override = self.params.get("Brightness", return_default=True)
 
 
 class DeviceSP:
