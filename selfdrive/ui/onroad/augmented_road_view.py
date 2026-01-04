@@ -224,6 +224,14 @@ class AugmentedRoadView(CameraView):
 
     return self._cached_matrix
 
+  def show_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer()
+
+  def hide_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer()
+
 
 if __name__ == "__main__":
   gui_app.init_window("OnRoad Camera View")
