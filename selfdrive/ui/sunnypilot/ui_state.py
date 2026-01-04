@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -21,6 +22,7 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
+    self.screensaver = ScreenSaverSP()
 
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
     self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
@@ -79,6 +81,7 @@ class UIStateSP:
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.global_brightness_override = self.params.get("Brightness", return_default=True)
+    self.screensaver_enabled = self.params.get_bool("ScreenSaverEnabled")
 
 
 class DeviceSP:
