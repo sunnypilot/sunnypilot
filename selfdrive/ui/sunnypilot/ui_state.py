@@ -79,17 +79,14 @@ class UIStateSP:
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.global_brightness_override = self.params.get("Brightness", return_default=True)
+    self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
 
 
 class DeviceSP:
   def __init__(self):
-    self._params = Params()
+    from openpilot.selfdrive.ui.ui_state import ui_state
+    self._ui_state = ui_state
 
   def _set_awake(self, on: bool):
-    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
-      self._params.put_bool("OffroadMode", True)
-
-  def _display_power_changed(self, on: bool):
-    if not on:
-      if self._params.get("DeviceBootMode", return_default=True) == 1:
-        self._params.put_bool("OffroadMode", True)
+    if self._ui_state.boot_offroad_mode == 1 and not on:
+      self._ui_state.params.put_bool("OffroadMode", True)
