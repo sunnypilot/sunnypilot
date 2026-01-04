@@ -55,16 +55,15 @@ class SidebarSP:
     self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
 
   def _update_sunnylink_status(self):
-    params = ui_state.params
-    if not params.get_bool("SunnylinkEnabled"):
+    if not ui_state.params.get_bool("SunnylinkEnabled"):
       self._sunnylink_status.update(tr_noop("SUNNYLINK"), tr_noop("DISABLED"), Colors.DISABLED)
       return
 
-    last_ping = int(params.get("LastSunnylinkPingTime") or 0)
-    dongle_id = params.get("SunnylinkDongleId")
+    last_ping = ui_state.params.get("LastSunnylinkPingTime") or 0
+    dongle_id = ui_state.params.get("SunnylinkDongleId")
 
     is_online = last_ping and (time.monotonic_ns() - last_ping) < PING_TIMEOUT_NS
-    is_temp_fault = params.get_bool("SunnylinkTempFault")
+    is_temp_fault = ui_state.params.get_bool("SunnylinkTempFault")
     is_registering = not is_temp_fault and dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
     # Determine status/color pair based on priority
