@@ -83,7 +83,7 @@ class LongitudinalPlannerSP:
     self.events_sp.clear()
     self.dec.update(sm)
     self.e2e_alerts_helper.update(sm, self.events_sp)
-    self.accel_controller.update()
+    self.accel_controller.update(sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -101,6 +101,8 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+
+    longitudinalPlanSP.accelPersonality = int(self.accel_controller.get_accel_personality())
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl
