@@ -81,6 +81,7 @@ class UIStateSP:
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.global_brightness_override = self.params.get("Brightness", return_default=True)
+    self.screensaver_enabled = self.params.get_bool("ScreenSaverEnabled")
 
 
 class DeviceSP:
