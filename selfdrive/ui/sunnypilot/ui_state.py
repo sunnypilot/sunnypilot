@@ -23,7 +23,8 @@ class UIStateSP:
 
     self.sunnylink_state = SunnylinkState()
 
-    # Onroad Screen Brightness
+    self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
     self.onroad_brightness_timer: int = 0
 
   def update(self) -> None:
@@ -93,6 +94,8 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override = self.params.get("Brightness", return_default=True)
 
     # Onroad Screen Brightness
     self.onroad_brightness_toggle = self.params.get_bool("OnroadScreenOffControl")
