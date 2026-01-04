@@ -22,6 +22,8 @@ class UIStateSP:
 
     self.sunnylink_state = SunnylinkState()
 
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
+
   def update(self) -> None:
     if self.sunnylink_enabled:
       self.sunnylink_state.start()
