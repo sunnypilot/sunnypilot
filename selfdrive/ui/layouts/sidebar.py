@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from collections.abc import Callable
 from cereal import log
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, FONT_SCALE
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -13,6 +14,8 @@ SIDEBAR_WIDTH = 300
 METRIC_HEIGHT = 126
 METRIC_WIDTH = 240
 METRIC_MARGIN = 30
+METRIC_START_Y = 300
+PING_TIMEOUT_NS = 80_000_000_000
 FONT_SIZE = 35
 
 SETTINGS_BTN = rl.Rectangle(50, 35, 200, 117)
@@ -32,6 +35,8 @@ class Colors:
   GOOD = rl.WHITE
   WARNING = rl.Color(218, 202, 37, 255)
   DANGER = rl.Color(201, 34, 49, 255)
+  PROGRESS = rl.Color(0, 134, 233, 255)
+  DISABLED = rl.Color(128, 128, 128, 255)
 
   # UI elements
   METRIC_BORDER = rl.Color(255, 255, 255, 85)
@@ -71,6 +76,7 @@ class Sidebar(Widget):
     self._temp_status = MetricData(tr_noop("TEMP"), tr_noop("GOOD"), Colors.GOOD)
     self._panda_status = MetricData(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
     self._connect_status = MetricData(tr_noop("CONNECT"), tr_noop("OFFLINE"), Colors.WARNING)
+    self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
     self._recording_audio = False
 
     self._home_img = gui_app.texture("images/button_home.png", HOME_BTN.width, HOME_BTN.height)
@@ -112,6 +118,7 @@ class Sidebar(Widget):
     self._update_temperature_status(device_state)
     self._update_connection_status(device_state)
     self._update_panda_status()
+    self._update_sunnylink_status()
 
   def _update_network_status(self, device_state):
     self._net_type = NETWORK_TYPES.get(device_state.networkType.raw, tr_noop("Unknown"))
@@ -132,7 +139,7 @@ class Sidebar(Widget):
     last_ping = device_state.lastAthenaPingTime
     if last_ping == 0:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("OFFLINE"), Colors.WARNING)
-    elif time.monotonic_ns() - last_ping < 80_000_000_000:  # 80 seconds in nanoseconds
+    elif time.monotonic_ns() - last_ping < PING_TIMEOUT_NS:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("ONLINE"), Colors.GOOD)
     else:
       self._connect_status.update(tr_noop("CONNECT"), tr_noop("ERROR"), Colors.DANGER)
@@ -142,6 +149,31 @@ class Sidebar(Widget):
       self._panda_status.update(tr_noop("NO"), tr_noop("PANDA"), Colors.DANGER)
     else:
       self._panda_status.update(tr_noop("VEHICLE"), tr_noop("ONLINE"), Colors.GOOD)
+
+  def _update_sunnylink_status(self):
+    params = ui_state.params
+    if not params.get_bool("SunnylinkEnabled"):
+      self._sunnylink_status.update(tr_noop("SUNNYLINK"), tr_noop("DISABLED"), Colors.DISABLED)
+      return
+
+    last_ping = int(params.get("LastSunnylinkPingTime") or 0)
+    dongle_id = params.get("SunnylinkDongleId")
+
+    is_online = last_ping and (time.monotonic_ns() - last_ping) < PING_TIMEOUT_NS
+    is_temp_fault = params.get_bool("SunnylinkTempFault")
+    is_registering = not is_temp_fault and dongle_id in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
+
+    # Determine status/color pair based on priority
+    if last_ping:
+      status, color = (tr_noop("ONLINE"), Colors.GOOD) if is_online else (tr_noop("ERROR"), Colors.DANGER)
+    elif is_temp_fault:
+      status, color = (tr_noop("FAULT"), Colors.WARNING)
+    elif is_registering:
+      status, color = (tr_noop("REGIST..."), Colors.PROGRESS)
+    else:
+      status, color = (tr_noop("OFFLINE"), Colors.DANGER)
+
+    self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     if rl.check_collision_point_rec(mouse_pos, SETTINGS_BTN):
@@ -200,10 +232,13 @@ class Sidebar(Widget):
     rl.draw_text_ex(self._font_regular, tr(self._net_type), text_pos, FONT_SIZE, 0, Colors.WHITE)
 
   def _draw_metrics(self, rect: rl.Rectangle):
-    metrics = [(self._temp_status, 338), (self._panda_status, 496), (self._connect_status, 654)]
+    metrics = [self._temp_status, self._panda_status, self._connect_status, self._sunnylink_status]
+    start_y = int(rect.y) + METRIC_START_Y
+    available_height = max(0, int(HOME_BTN.y) - METRIC_MARGIN - METRIC_HEIGHT - start_y)
+    spacing = available_height / max(1, len(metrics) - 1)
 
-    for metric, y_offset in metrics:
-      self._draw_metric(rect, metric, rect.y + y_offset)
+    for idx, metric in enumerate(metrics):
+      self._draw_metric(rect, metric, start_y + idx * spacing)
 
   def _draw_metric(self, rect: rl.Rectangle, metric: MetricData, y: float):
     metric_rect = rl.Rectangle(rect.x + METRIC_MARGIN, y, METRIC_WIDTH, METRIC_HEIGHT)
