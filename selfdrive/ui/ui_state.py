@@ -117,6 +117,7 @@ class UIState(UIStateSP):
       self.update_params()
     device.update()
     UIStateSP.update(self)
+    UIStateSP.update_onroad_brightness(self, self.sm, self.started)
 
   def _update_state(self) -> None:
     # Handle panda states updates
@@ -158,7 +159,7 @@ class UIState(UIStateSP):
       else:
         self.status = UIStatus.ENGAGED if ss.enabled else UIStatus.DISENGAGED
 
-      self.status = UIStatus(UIStateSP.update_status(ss, self.sm["selfdriveStateSP"], self.sm["onroadEvents"]))
+      self.status = UIStatus(UIStateSP.update_state_status(ss, self.sm["selfdriveStateSP"], self.sm["onroadEvents"]))
 
     # Check for engagement state changes
     if self.engaged != self._engaged_prev:
@@ -221,6 +222,9 @@ class Device(DeviceSP):
     if self._override_interactive_timeout is not None:
       return self._override_interactive_timeout
 
+    if gui_app.sunnypilot_ui() and ui_state.custom_interactive_timeout != 0:
+      return ui_state.custom_interactive_timeout
+
     ignition_timeout = 10 if gui_app.big_ui() else 5
     return ignition_timeout if ui_state.ignition else 30
 
@@ -255,11 +259,24 @@ class Device(DeviceSP):
       else:
         clipped_brightness = ((clipped_brightness + 16.0) / 116.0) ** 3.0
 
-      clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
+      if gui_app.sunnypilot_ui():
+        if ui_state.global_brightness_override <= 0:
+          min_global_brightness = 1 if ui_state.global_brightness_override < 0 else 30
+          clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [min_global_brightness, 100]))
+      else:
+        clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
 
     brightness = round(self._brightness_filter.update(clipped_brightness))
+
+    if gui_app.sunnypilot_ui() and ui_state.global_brightness_override > 0:
+      brightness = ui_state.global_brightness_override
+
     if not self._awake:
       brightness = 0
+
+    if gui_app.sunnypilot_ui():
+      if self._awake and ui_state.started and ui_state.onroad_brightness_toggle and ui_state.onroad_brightness_timer == 0:
+        brightness = ui_state.onroad_brightness * 0.01 * brightness
 
     if brightness != self._last_brightness:
       if self._brightness_thread is None or not self._brightness_thread.is_alive():
