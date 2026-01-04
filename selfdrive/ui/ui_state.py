@@ -290,6 +290,7 @@ class Device(DeviceSP):
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)
       gui_app.set_should_render(on)
+      DeviceSP._display_power_changed(self, on)
 
 
 # Global instance

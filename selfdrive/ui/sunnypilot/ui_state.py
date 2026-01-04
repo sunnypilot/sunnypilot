@@ -83,3 +83,8 @@ class DeviceSP:
   def _set_awake(self, on: bool):
     if on and self._params.get("DeviceBootMode", return_default=True) == 1:
       self._params.put_bool("OffroadMode", True)
+
+  def _display_power_changed(self, on: bool):
+    if not on:
+      if self._params.get("DeviceBootMode", return_default=True) == 1:
+        self._params.put_bool("OffroadMode", True)
