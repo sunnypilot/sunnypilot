@@ -74,6 +74,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
 
 
 class DeviceSP:
