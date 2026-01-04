@@ -223,7 +223,7 @@ class Device(DeviceSP):
       return self._override_interactive_timeout
 
     if gui_app.sunnypilot_ui() and ui_state.custom_interactive_timeout != 0:
-      return ui_state.custom_interactive_timeout
+      return int(ui_state.custom_interactive_timeout)
 
     ignition_timeout = 10 if gui_app.big_ui() else 5
     return ignition_timeout if ui_state.ignition else 30
