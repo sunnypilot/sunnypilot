@@ -99,7 +99,6 @@ class UIStateSP:
     self.onroad_brightness = self.params.get("OnroadScreenOffBrightness", return_default=True)
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
 
-    self.global_brightness_override = self.params.get("Brightness", return_default=True)
     self.interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
 
 
