@@ -28,6 +28,7 @@ from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wifi_manager import WifiManager
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.scroller_tici import Scroller
@@ -195,6 +196,10 @@ class SettingsLayoutSP(OP.SettingsLayout):
         return True
 
     return False
+
+  def set_current_panel(self, panel_type: OP.PanelType):
+    super().set_current_panel(panel_type)
+    ui_state.set_active_layout(self._panels[self._current_panel].instance)
 
   def show_event(self):
     super().show_event()

@@ -226,9 +226,7 @@ class ModelsLayout(Widget):
     turn_desire: bool = ui_state.params.get_bool("LaneTurnDesire")
     live_delay: bool = ui_state.params.get_bool("LagdToggle")
 
-    self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
-    self.lagd_toggle.action_item.set_state(live_delay)
     self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item.value_change_step != new_step:

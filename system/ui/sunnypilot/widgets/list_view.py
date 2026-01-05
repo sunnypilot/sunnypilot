@@ -19,6 +19,7 @@ from openpilot.system.ui.widgets.list_view import ListItem, ToggleAction, ItemAc
 from openpilot.system.ui.widgets.scroller_tici import LineSeparator, LINE_COLOR, LINE_PADDING
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP, LABEL_WIDTH
+from openpilot.selfdrive.ui.ui_state import ui_state
 
 
 class Spacer(Widget):
@@ -321,6 +322,9 @@ def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callab
 
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
                    callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
+  if param is None and hasattr(ui_state.params, 'last_accessed_param') and ui_state.params.last_accessed_param:
+    param = ui_state.params.last_accessed_param
+    ui_state.params.last_accessed_param = None
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
@@ -328,6 +332,9 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
+  if param is None and hasattr(ui_state.params, 'last_accessed_param') and ui_state.params.last_accessed_param:
+    param = ui_state.params.last_accessed_param
+    ui_state.params.last_accessed_param = None
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
 
