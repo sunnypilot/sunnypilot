@@ -221,6 +221,9 @@ class Device(DeviceSP):
     if self._override_interactive_timeout is not None:
       return self._override_interactive_timeout
 
+    if gui_app.sunnypilot_ui() and ui_state.custom_interactive_timeout != 0:
+      return ui_state.custom_interactive_timeout
+
     ignition_timeout = 10 if gui_app.big_ui() else 5
     return ignition_timeout if ui_state.ignition else 30
 
@@ -255,9 +258,18 @@ class Device(DeviceSP):
       else:
         clipped_brightness = ((clipped_brightness + 16.0) / 116.0) ** 3.0
 
-      clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
+      if gui_app.sunnypilot_ui():
+        if ui_state.global_brightness_override <= 0:
+          min_global_brightness = 1 if ui_state.global_brightness_override < 0 else 30
+          clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [min_global_brightness, 100]))
+      else:
+        clipped_brightness = float(np.interp(clipped_brightness, [0, 1], [30, 100]))
 
     brightness = round(self._brightness_filter.update(clipped_brightness))
+
+    if gui_app.sunnypilot_ui() and ui_state.global_brightness_override > 0:
+      brightness = ui_state.global_brightness_override
+
     if not self._awake:
       brightness = 0
 
