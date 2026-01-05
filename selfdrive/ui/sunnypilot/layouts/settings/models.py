@@ -74,7 +74,7 @@ class ModelsLayout(Widget):
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
                                                   tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
-                                                  int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_WIDTH, None, True,
+                                                  int(round(100 / CV.MPH_TO_KPH)), None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                                   lambda v: f"{int(round(v / 100 * (CV.MPH_TO_KPH if ui_state.is_metric else 1)))}" +
                                                             f" {'km/h' if ui_state.is_metric else 'mph'}")
 
@@ -86,7 +86,7 @@ class ModelsLayout(Widget):
 
     self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
                                         tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
-                                        1, None, True, "", style.BUTTON_WIDTH, None, True, lambda v: f"{v / 100:.2f}s")
+                                        1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True, lambda v: f"{v / 100:.2f}s")
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
@@ -153,7 +153,7 @@ class ModelsLayout(Widget):
       self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
-      device.reset_interactive_timeout()
+      device._reset_interactive_timeout()
 
     for model in bundle.models:
       if label := labels.get(getattr(model.type, 'raw', model.type)):

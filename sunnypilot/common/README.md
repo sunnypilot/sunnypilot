@@ -49,7 +49,7 @@ On Linux, ParamWatcher uses the inotify subsystem for efficient file change dete
 - **Watch Setup**: `inotify_add_watch(fd, path, mask)` registers the parameters directory. The mask includes `IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_CLOSE_WRITE` (Linux Kernel Organization, 2005) to capture all relevant file changes.
 - **Event Loop**:
   - **Polling**: `select.epoll()` is used to efficiently wait for activity on the file descriptor without busy-waiting.
-  - **Reading**: When events occur, `os.read(fd, 1024)` retrieves the raw binary event data.
+  - **Reading**: When events occur, `os.read(fd, 2048)` retrieves the raw binary event data.
   - **Parsing**: The code uses Python's `struct` module (`struct.unpack_from("iIII", ...)`) to parse the C-style `inotify_event` structures directly from the buffer, avoiding the overhead of defining `ctypes` structures.
   - **Handling**: Extracted filenames are passed to `_trigger_callbacks`, which invalidates the specific cache entry (`self._cache.pop(path, None)`), forcing a fresh read on the next access.
 
@@ -90,8 +90,6 @@ ParamWatcher was 14.5x faster: 4.52s vs. 65.43s to complete ~10 million param ge
 ### Scalability
 No degradation at scale; cache invalidation maintained freshness.
 
-See Appendix A for visual graphs of memory usage over a 30-minute time span, captured on comma four. These two routes are of equal conditions: each route started completely unplugged to two minutes offroad, followed by onroad state, with ambient temperature at 75 degrees fahrenheit. These routes are direct comparisons of pre-ParamWatcher and ParamWatcher implementations. Appendix A also includes I/O capture graphs for those 30-minute routes, demonstrating reductions in file system activity post-ParamWatcher.
-
 ## Discussion
 
 ParamWatcher successfully optimizes parameter access, delivering substantial CPU gains with minimal memory overhead. The event-driven approach eliminates I/O bottlenecks, reducing GC pressure and UI stutters (cppreference.com, n.d.-b). The 17 KB memory overhead is negligible compared to the megabytes of churn from base Params, ensuring bounded usage in multi-process environments via the singleton pattern (Gamma et al., 1994).
@@ -99,21 +97,6 @@ ParamWatcher successfully optimizes parameter access, delivering substantial CPU
 Results demonstrate scalability without degradation, with cache invalidation maintaining data freshness. This optimization enhances system responsiveness.
 Limitations include potential event latency in high-load scenarios (<10 ms, imperceptible for UI) and increased complexity from background threads.
 Trade-offs: Static RAM (~17 KB) vs. dynamic churn; benefits outweigh costs for param-heavy workloads.
-
-## <br> Appendix A: Memory Usage Graphs
-
-### Base Params Memory Usage
-![Base Params Memory Usage](assets/memory_usage_pre_paramwatcher.png)
-
-### ParamWatcher Memory Usage
-![ParamWatcher Memory Usage](assets/memory_usage_00000025--d50a4a3471.png)
-
-### Base Params IO Usage
-![Base Params IO Usage](assets/io_usage_pre_paramwatcher.png)
-
-### ParamWatcher IO Usage
-![Base Params IO Usage](assets/io_usage_param_watcher.png)
-
 
 ## <br>References
 
