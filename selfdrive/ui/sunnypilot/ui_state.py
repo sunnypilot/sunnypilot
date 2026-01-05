@@ -46,6 +46,17 @@ class UIStateSP:
     else:
       self.sunnylink_state.stop()
 
+    if not self.params.is_watching():
+      cloudlog.warning("ParamWatcher thread died, restarting...")
+      self.params.start()
+
+    if self.changed_params:
+      while self.changed_params:
+        self.changed_params.pop()
+
+      if self.active_layout:
+        sync_layout_params(self.active_layout, None, self.params)
+
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
     state = ss.state
@@ -82,17 +93,6 @@ class UIStateSP:
       return "long_only"
 
     return "disengaged"
-
-    if not self.params.is_watching():
-      cloudlog.warning("ParamWatcher thread died, restarting...")
-      self.params.start()
-
-    if self.changed_params:
-      while self.changed_params:
-        self.changed_params.pop()
-
-      if self.active_layout:
-        sync_layout_params(self.active_layout, None, self.params)
 
   def update_params(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
