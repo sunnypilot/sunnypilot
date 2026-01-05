@@ -31,93 +31,67 @@ class FollowDistanceController:
   def __init__(self):
     self.params = Params()
     self.frame = 0
-    self.personality = LongPersonality.standard
     self.current_multiplier = None
     self.first_run = True
     self.personality_change_cooldown = 0
     self.personality_cooldown_frames = int(PERSONALITY_CHANGE_COOLDOWN_S / DT_MDL)
-    self._load_personality()
-
-  def _load_personality(self):
-    try:
-      saved = self.params.get('LongitudinalPersonality')
-      if saved is not None:
-        val = int(saved)
-        if val in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-          self.personality = val
-    except (ValueError, TypeError):
-      pass
-
-  def _update_from_params(self):
-    if self.frame % int(1. / DT_MDL) != 0:
-      return
-
-    if self.personality_change_cooldown > 0:
-      self.personality_change_cooldown -= 1
-      return
-
-    try:
-      param = self.params.get('LongitudinalPersonality')
-      if param is not None:
-        val = int(param)
-        if val in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-          if val != self.personality:
-            self.personality = val
-            self.personality_change_cooldown = self.personality_cooldown_frames
-    except (ValueError, TypeError):
-      pass
+    self._personality = self.params.get('LongitudinalPersonality') or LongPersonality.standard
+    self._enabled = self.params.get_bool('DynamicFollow')
 
   def _get_smoothing_factor(self, v_ego: float) -> float:
     speed_factor = np.clip(v_ego / SMOOTHING_SPEED_THRESHOLD, 0.3, 1.0)
     return SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
 
   def is_enabled(self) -> bool:
-    return self.params.get_bool('DynamicFollow')
+    return self._enabled
 
   def set_enabled(self, enabled: bool):
+    self._enabled = enabled
     self.params.put_bool('DynamicFollow', enabled)
 
   def toggle(self) -> bool:
-    enabled = self.is_enabled()
-    self.set_enabled(not enabled)
-    return not enabled
+    current = self._enabled
+    self.set_enabled(not current)
+    return not current
+
+  @property
+  def personality(self) -> int:
+    return self._personality
 
   def get_personality(self) -> int:
-    self._update_from_params()
-    return int(self.personality)
+    return int(self._personality)
 
   def set_personality(self, personality: int):
     if personality not in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
       return
-
-    self.personality = personality
-    self.params.put('LongitudinalPersonality', str(personality))
+    self._personality = personality
+    self.params.put('LongitudinalPersonality', personality)
     self.personality_change_cooldown = self.personality_cooldown_frames
 
   def cycle_personality(self) -> int:
     personalities = [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]
-    current_idx = personalities.index(self.personality)
+    current_idx = personalities.index(self._personality)
     next_personality = personalities[(current_idx + 1) % len(personalities)]
     self.set_personality(next_personality)
     return int(next_personality)
 
   def get_follow_distance_multiplier(self, v_ego: float) -> float:
-    self._update_from_params()
     v_ego = max(0.0, v_ego)
-    target = float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self.personality]))
+    target = float(np.interp(v_ego, FOLLOW_BREAKPOINTS, FOLLOW_PROFILES[self._personality]))
 
     if self.first_run:
       self.current_multiplier = target
       self.first_run = False
       return self.current_multiplier
 
-    #exponential smoothing with speedadaptive factor
+    # exponential smoothing with speedadaptive factor
     alpha = self._get_smoothing_factor(v_ego)
     self.current_multiplier = alpha * self.current_multiplier + (1.0 - alpha) * target
     return self.current_multiplier
 
   def reset(self):
-    self.personality = LongPersonality.standard
+    self._personality = LongPersonality.standard
+    self.params.put('LongitudinalPersonality', LongPersonality.standard)
     self.frame = 0
     self.current_multiplier = None
     self.first_run = True
@@ -125,4 +99,8 @@ class FollowDistanceController:
 
   def update(self):
     self.frame += 1
-    self._update_from_params()
+    if self.personality_change_cooldown > 0:
+      self.personality_change_cooldown -= 1
+    if self.frame % int(1.0 / DT_MDL) == 0:
+      self._personality = self.params.get('LongitudinalPersonality') or LongPersonality.standard
+      self._enabled = self.params.get_bool('DynamicFollow')

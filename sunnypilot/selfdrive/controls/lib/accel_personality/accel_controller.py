@@ -11,6 +11,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
 
 AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
+ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
@@ -41,43 +42,33 @@ class AccelPersonalityController:
   def __init__(self):
     self.params = Params()
     self.frame = 0
-    self.accel_personality = AccelPersonality.normal
     self.last_max_accel = 2.0
     self.last_min_accel = -0.01
     self.first_run = True
-    self.param_keys = {'personality': 'AccelPersonality', 'enabled': 'AccelPersonalityEnabled'}
-    self._load_personality_from_params()
-
-  def _load_personality_from_params(self):
-    try:
-      saved = self.params.get(self.param_keys['personality'])
-      if saved is not None:
-        val = int(saved)
-        if val in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
-          self.accel_personality = val
-    except (ValueError, TypeError):
-      pass
-
-  def _update_from_params(self):
-    if self.frame % int(1. / DT_MDL) == 0:
-      self._load_personality_from_params()
+    self._accel_personality = self.params.get('AccelPersonality') or AccelPersonality.normal
+    self._enabled = self.params.get_bool('AccelPersonalityEnabled')
 
   def update(self, sm=None):
     self.frame += 1
-    self._update_from_params()
+    if self.frame % int(1.0 / DT_MDL) == 0:
+      self._accel_personality = self.params.get('AccelPersonality') or AccelPersonality.normal
+      self._enabled = self.params.get_bool('AccelPersonalityEnabled')
+
+  @property
+  def accel_personality(self) -> int:
+    return self._accel_personality
 
   def get_accel_personality(self) -> int:
-    self._update_from_params()
-    return int(self.accel_personality)
+    return int(self._accel_personality)
 
   def set_accel_personality(self, personality: int):
-    if personality in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
-      self.accel_personality = personality
-      self.params.put(self.param_keys['personality'], str(personality))
+    if personality in ACCEL_PERSONALITY_OPTIONS:
+      self._accel_personality = personality
+      self.params.put('AccelPersonality', personality)
 
   def cycle_accel_personality(self) -> int:
-    personality = [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]
-    next_personality = personality[(personality.index(self.accel_personality) + 1) % len(personality)]
+    current = self._accel_personality
+    next_personality = ACCEL_PERSONALITY_OPTIONS[(ACCEL_PERSONALITY_OPTIONS.index(current) + 1) % len(ACCEL_PERSONALITY_OPTIONS)]
     self.set_accel_personality(next_personality)
     return int(next_personality)
 
@@ -92,8 +83,8 @@ class AccelPersonalityController:
       return float(target_min), float(target_max)
 
     # Smoothing
-    self.last_max_accel = (ACCEL_SMOOTH_ALPHA * target_max + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel)
-    smoothed_decel = (DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel)
+    self.last_max_accel = ACCEL_SMOOTH_ALPHA * target_max + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel
+    smoothed_decel = DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel
 
     # Rate Limiting (Asymmetric)
     raw_change = smoothed_decel - self.last_min_accel
@@ -124,18 +115,20 @@ class AccelPersonalityController:
     return self.get_accel_limits(v_ego)[1]
 
   def is_enabled(self) -> bool:
-    return self.params.get_bool(self.param_keys['enabled'])
+    return self._enabled
 
   def set_enabled(self, enabled: bool):
-    self.params.put_bool(self.param_keys['enabled'], enabled)
+    self._enabled = enabled
+    self.params.put_bool('AccelPersonalityEnabled', enabled)
 
   def toggle_enabled(self) -> bool:
-    current = self.is_enabled()
+    current = self._enabled
     self.set_enabled(not current)
     return not current
 
   def reset(self):
-    self.accel_personality = AccelPersonality.normal
+    self._accel_personality = AccelPersonality.normal
+    self.params.put('AccelPersonality', AccelPersonality.normal)
     self.frame = 0
     self.last_max_accel = 2.0
     self.last_min_accel = -0.01

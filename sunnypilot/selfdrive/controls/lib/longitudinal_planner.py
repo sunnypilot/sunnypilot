@@ -18,6 +18,9 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelPersonalityController
+from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_personality.dynamic_follow import FollowDistanceController
+from opendbc.car.interfaces import ACCEL_MIN
+
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
@@ -28,6 +31,7 @@ class LongitudinalPlannerSP:
     self.resolver = SpeedLimitResolver()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.accel_controller = AccelPersonalityController()
+    self.dynamic_follow = FollowDistanceController()
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP, CP_SP)
@@ -35,8 +39,8 @@ class LongitudinalPlannerSP:
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
 
-    self.output_v_target = 0.
-    self.output_a_target = 0.
+    self.output_v_target = 0.0
+    self.output_a_target = 0.0
 
   @property
   def mlsim(self) -> bool:
@@ -48,6 +52,21 @@ class LongitudinalPlannerSP:
       return None
 
     return self.dec.mode()
+
+  def get_accel_clip(self, v_ego: float, mode: str) -> list[float] | None:
+    if mode == 'acc' and self.accel_controller.is_enabled():
+      return [ACCEL_MIN, self.accel_controller.get_max_accel(v_ego)]
+    return None
+
+  def get_cruise_min_accel(self, v_ego: float) -> float | None:
+    if self.accel_controller.is_enabled():
+      return self.accel_controller.get_min_accel(v_ego)
+    return None
+
+  def get_t_follow(self, v_ego: float) -> float | None:
+    if self.dynamic_follow.is_enabled():
+      return self.dynamic_follow.get_follow_distance_multiplier(v_ego)
+    return None
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']

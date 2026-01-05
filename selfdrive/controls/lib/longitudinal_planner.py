@@ -124,10 +124,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
     if mode == 'acc':
-      if self.accel_controller.is_enabled():
-        max_accel = self.accel_controller.get_max_accel(v_ego)
-        #print(f"Vibe personality active - max accel: {max_accel:.3f}")
-        accel_clip = [ACCEL_MIN, max_accel]
+      if sp_accel_clip := LongitudinalPlannerSP.get_accel_clip(self, v_ego, mode):
+        accel_clip = sp_accel_clip
       else:
         accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
 
@@ -160,7 +158,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality)
+    a_cruise_min_override = LongitudinalPlannerSP.get_cruise_min_accel(self, v_ego)
+    t_follow_override = LongitudinalPlannerSP.get_t_follow(self, v_ego)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality, a_cruise_min_override=a_cruise_min_override, t_follow_override=t_follow_override)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)
