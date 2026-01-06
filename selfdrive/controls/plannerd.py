@@ -27,12 +27,11 @@ def main():
   longitudinal_planner = LongitudinalPlanner(CP, CP_SP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
   sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
-                            'liveMapDataSP', 'carStateSP', gps_location_service],
+                            'carStateSP', 'mapdOut', gps_location_service],
                            poll='carState')
 
   while True:
     sm.update()
-    longitudinal_planner.sla.update_car_state(sm['carState'])
     if sm.updated['modelV2']:
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)

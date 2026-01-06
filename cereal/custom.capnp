@@ -293,6 +293,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     sccVision @1;
     sccMap @2;
     speedLimitAssist @3;
+    mapd @4;
   }
 
   struct E2eAlerts {
@@ -483,11 +484,125 @@ struct CustomReserved15 @0xbd443b539493bc68 {
 struct CustomReserved16 @0xfc6241ed8877b611 {
 }
 
-struct CustomReserved17 @0xa30662f84033036c {
+struct MapdDownloadLocationDetails @0xff889853e7b0987f {
+  location @0 :Text;
+  totalFiles @1 :UInt32;
+  downloadedFiles @2 :UInt32;
 }
 
-struct CustomReserved18 @0xc86a3d38d13eb3ef {
+struct MapdDownloadProgress @0xfaa35dcac85073a2 {
+  active @0 :Bool;
+  cancelled @1 :Bool;
+  totalFiles @2 :UInt32;
+  downloadedFiles @3 :UInt32;
+  locations @4 :List(Text);
+  locationDetails @5 :List(MapdDownloadLocationDetails);
 }
 
-struct CustomReserved19 @0xa4f1eb3323f5f582 {
+struct MapdPathPoint @0xd6f78acca1bc3939 {
+  latitude @0 :Float64;
+  longitude @1 :Float64;
+  curvature @2 :Float32;
+  targetVelocity @3 :Float32;
+}
+
+struct MapdExtendedOut @0xa30662f84033036c {
+  downloadProgress @0 :MapdDownloadProgress;
+  settings @1 :Text;
+  path @2 :List(MapdPathPoint);
+}
+
+enum MapdInputType {
+  download @0;
+  setTargetLateralAccel @1;
+  setSpeedLimitOffset @2;
+  setSpeedLimitControl @3;
+  setMapCurveSpeedControl @4;
+  setVisionCurveSpeedControl @5;
+  setLogLevel @6;
+  setVisionCurveTargetLatA @7;
+  setVisionCurveMinTargetV @8;
+  reloadSettings @9;
+  saveSettings @10;
+  setEnableSpeed @11;
+  setVisionCurveUseEnableSpeed @12;
+  setMapCurveUseEnableSpeed @13;
+  setSpeedLimitUseEnableSpeed @14;
+  setHoldLastSeenSpeedLimit @15;
+  setTargetSpeedJerk @16;
+  setTargetSpeedAccel @17;
+  setTargetSpeedTimeOffset @18;
+  setDefaultLaneWidth @19;
+  setMapCurveTargetLatA @20;
+  loadDefaultSettings @21;
+  loadRecommendedSettings @22;
+  setSlowDownForNextSpeedLimit @23;
+  setSpeedUpForNextSpeedLimit @24;
+  setHoldSpeedLimitWhileChangingSetSpeed @25;
+  loadPersistentSettings @26;
+  cancelDownload @27;
+  setLogJson @28;
+  setLogSource @29;
+  setExternalSpeedLimitControl @30;
+  setExternalSpeedLimit @31;
+  setSpeedLimitPriority @32;
+  setSpeedLimitChangeRequiresAccept @33;
+  acceptSpeedLimit @34;
+  setPressGasToAcceptSpeedLimit @35;
+  setAdjustSetSpeedToAcceptSpeedLimit @36;
+  setAcceptSpeedLimitTimeout @37;
+  setPressGasToOverrideSpeedLimit @38;
+}
+
+enum WaySelectionType {
+  current @0;
+  predicted @1;
+  possible @2;
+  extended @3;
+  fail @4;
+}
+
+enum SpeedLimitOffsetType {
+  static @0;
+  percent @1;
+}
+
+struct MapdIn @0xc86a3d38d13eb3ef {
+  type @0 :MapdInputType;
+  float @1 :Float32;
+  str @2 :Text;
+  bool @3 :Bool;
+}
+
+enum RoadContext {
+  freeway @0;
+  city @1;
+  unknown @2;
+}
+
+struct MapdOut @0xa4f1eb3323f5f582 {
+  wayName @0 :Text;
+  wayRef @1 :Text;
+  roadName @2 :Text;
+  speedLimit @3 :Float32;
+  nextSpeedLimit @4 :Float32;
+  nextSpeedLimitDistance @5 :Float32;
+  hazard @6 :Text;
+  nextHazard @7 :Text;
+  nextHazardDistance @8 :Float32;
+  advisorySpeed @9 :Float32;
+  nextAdvisorySpeed @10 :Float32;
+  nextAdvisorySpeedDistance @11 :Float32;
+  oneWay @12 :Bool;
+  lanes @13 :UInt8;
+  tileLoaded @14 :Bool;
+  speedLimitSuggestedSpeed @15 :Float32;
+  suggestedSpeed @16 :Float32;
+  estimatedRoadWidth @17 :Float32;
+  roadContext @18 :RoadContext;
+  distanceFromWayCenter @19 :Float32;
+  visionCurveSpeed @20 :Float32;
+  mapCurveSpeed @21 :Float32;
+  waySelectionType @22 :WaySelectionType;
+  speedLimitAccepted @23 :Bool;
 }
