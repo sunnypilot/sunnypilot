@@ -22,6 +22,9 @@ class UIStateSP:
 
     self.sunnylink_state = SunnylinkState()
 
+    self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
+
   def update(self) -> None:
     if self.sunnylink_enabled:
       self.sunnylink_state.start()
@@ -73,6 +76,9 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override = self.params.get("Brightness", return_default=True)
     self.hide_camera = self.params.get("HideCamera")
     self.radar_tracks = self.params.get_bool("RadarTracks")
 
