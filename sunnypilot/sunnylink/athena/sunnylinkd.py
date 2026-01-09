@@ -42,10 +42,14 @@ METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 params = Params()
 
-# Parameters that should never be remotely modified for security reasons
+# Parameters that should never be remotely modified
 BLOCKED_PARAMS = {
+  "CompletedSunnylinkConsentVersion",
+  "CompletedTrainingVersion",
   "GithubUsername",  # Could grant SSH access
   "GithubSshKeys",   # Direct SSH key injection
+  "HasAcceptedTerms",
+  "HasAcceptedTermsSP",
 }
 
 
