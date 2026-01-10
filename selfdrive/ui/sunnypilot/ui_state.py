@@ -23,6 +23,7 @@ class UIStateSP:
     self.sunnylink_state = SunnylinkState()
 
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -77,6 +78,7 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override = self.params.get("Brightness", return_default=True)
 
 
 class DeviceSP:
