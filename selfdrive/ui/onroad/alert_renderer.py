@@ -119,6 +119,9 @@ class AlertRenderer(Widget):
     if not alert:
       return
 
+    if gui_app.sunnypilot_ui() and ui_state.onroad_brightness_has_event(ui_state.sm, ui_state.started):
+      ui_state.reset_onroad_sleep_timer()
+
     alert_rect = self._get_alert_rect(rect, alert.size)
     self._draw_background(alert_rect, alert)
 

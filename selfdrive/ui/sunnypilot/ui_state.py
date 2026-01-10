@@ -46,13 +46,15 @@ class UIStateSP:
     else:
       self.sunnylink_state.stop()
 
+  def onroad_brightness_has_event(self, sm, started: bool) -> bool:
+    return started and self.onroad_brightness_toggle and sm["selfdriveState"].alertSize != log.SelfdriveState.AlertSize.none
+
   def update_onroad_brightness(self, sm, started: bool) -> None:
-    if started and self.onroad_brightness_toggle:
-      ss = sm["selfdriveState"]
-      if ss.alertSize != log.SelfdriveState.AlertSize.none:
-        self.reset_onroad_sleep_timer()
-      elif self.onroad_brightness_timer > 0:
-        self.onroad_brightness_timer -= 1
+    if self.onroad_brightness_has_event(sm, started):
+      return
+
+    if self.onroad_brightness_timer > 0:
+      self.onroad_brightness_timer -= 1
 
   def reset_onroad_sleep_timer(self, timer_status: OnroadTimerStatus = OnroadTimerStatus.NONE) -> None:
     # Toggling from active state to inactive
