@@ -32,6 +32,7 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
+    self.update_params()
 
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
