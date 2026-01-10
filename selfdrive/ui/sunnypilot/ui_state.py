@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from enum import Enum
+
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
@@ -11,6 +13,14 @@ from openpilot.system.ui.lib.application import gui_app
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
+
+ONROAD_BRIGHTNESS_TIMER_DISABLED = -1
+
+
+class OnroadTimerStatus(Enum):
+  NONE = 0
+  PAUSE = 1
+  RESUME = 2
 
 
 class UIStateSP:
@@ -23,9 +33,11 @@ class UIStateSP:
 
     self.sunnylink_state = SunnylinkState()
     self.update_params()
-    self.reset_onroad_sleep_timer()
 
     self.onroad_brightness_timer: int = 0
+    self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
+    self.reset_onroad_sleep_timer()
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -33,20 +45,28 @@ class UIStateSP:
     else:
       self.sunnylink_state.stop()
 
-  def update_onroad_brightness(self, sm, started: bool) -> None:
-    if started and self.onroad_brightness_toggle:
-      ss = sm["selfdriveState"]
-      if ss.alertSize != log.SelfdriveState.AlertSize.none and \
-         ss.alertStatus != log.SelfdriveState.AlertStatus.normal:
-        self.reset_onroad_sleep_timer()
-      elif self.onroad_brightness_timer > 0:
-        self.onroad_brightness_timer -= 1
+  def onroad_brightness_has_event(self, started: bool, alert) -> bool:
+    return started and self.onroad_brightness_toggle and alert is not None
 
-  def reset_onroad_sleep_timer(self) -> None:
-    if self.onroad_brightness_toggle >= 0 and self.onroad_brightness_toggle:
+  def update_onroad_brightness(self, has_alert: bool) -> None:
+    if has_alert:
+      return
+
+    if self.onroad_brightness_timer > 0:
+      self.onroad_brightness_timer -= 1
+
+  def reset_onroad_sleep_timer(self, timer_status: OnroadTimerStatus = OnroadTimerStatus.NONE) -> None:
+    # Toggling from active state to inactive
+    if timer_status == OnroadTimerStatus.PAUSE and self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED:
+      self.onroad_brightness_timer = ONROAD_BRIGHTNESS_TIMER_DISABLED
+    # Toggling from a previously inactive state or resetting an active timer
+    elif (self.onroad_brightness_timer_param >= 0 and self.onroad_brightness_toggle and
+          self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED) or timer_status == OnroadTimerStatus.RESUME:
       self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
-    else:
-      self.onroad_brightness_timer = -1
+
+  @property
+  def onroad_brightness_timer_expired(self) -> bool:
+    return self.onroad_brightness_toggle and self.onroad_brightness_timer == 0
 
   @staticmethod
   def update_state_status(ss, ss_sp, onroad_evt) -> str:
