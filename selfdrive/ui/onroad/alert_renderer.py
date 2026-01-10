@@ -116,11 +116,16 @@ class AlertRenderer(Widget):
 
   def _render(self, rect: rl.Rectangle):
     alert = self.get_alert(ui_state.sm)
+
+    if gui_app.sunnypilot_ui():
+      has_alert = ui_state.onroad_brightness_has_event(ui_state.started, alert)
+
+      ui_state.update_onroad_brightness(has_alert)
+      if has_alert:
+        ui_state.reset_onroad_sleep_timer()
+
     if not alert:
       return
-
-    if gui_app.sunnypilot_ui() and ui_state.onroad_brightness_has_event(ui_state.sm, ui_state.started):
-      ui_state.reset_onroad_sleep_timer()
 
     alert_rect = self._get_alert_rect(rect, alert.size)
     self._draw_background(alert_rect, alert)

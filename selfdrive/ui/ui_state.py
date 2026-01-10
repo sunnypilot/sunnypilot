@@ -115,7 +115,6 @@ class UIState(UIStateSP):
     self._update_status()
     if time.monotonic() - self._param_update_time > 5.0:
       self.update_params()
-    UIStateSP.update_onroad_brightness(self, self.sm, self.started)
     device.update()
     UIStateSP.update(self)
 
