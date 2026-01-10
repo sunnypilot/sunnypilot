@@ -48,6 +48,10 @@ class UIStateSP:
     else:
       self.onroad_brightness_timer = -1
 
+  @property
+  def onroad_brightness_timer_expired(self) -> bool:
+    return self.onroad_brightness_toggle and self.onroad_brightness_timer == 0
+
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
     state = ss.state

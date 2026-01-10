@@ -288,6 +288,11 @@ class Device(DeviceSP):
     self._ignition = ui_state.ignition
 
     if ignition_just_turned_off or any(ev.left_down for ev in gui_app.mouse_events):
+      if gui_app.sunnypilot_ui() and ui_state.started and ui_state.onroad_brightness_timer_expired:
+        if any(ev.left_down for ev in gui_app.mouse_events):
+          gui_app.mouse_events.remove()
+        ui_state.reset_onroad_sleep_timer()
+
       self._reset_interactive_timeout()
 
     interaction_timeout = time.monotonic() > self._interaction_time
