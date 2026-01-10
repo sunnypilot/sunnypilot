@@ -43,7 +43,7 @@ class UIStateSP:
         self.onroad_brightness_timer -= 1
 
   def reset_onroad_sleep_timer(self) -> None:
-    if self.onroad_brightness_toggle >= 0 and self.onroad_brightness_toggle:
+    if self.onroad_brightness_timer_param >= 0 and self.onroad_brightness_toggle:
       self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
     else:
       self.onroad_brightness_timer = -1
