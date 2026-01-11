@@ -130,3 +130,36 @@ class DeviceSP:
   def _set_awake(self, on: bool):
     if on and self._params.get("DeviceBootMode", return_default=True) == 1:
       self._params.put_bool("OffroadMode", True)
+
+  @staticmethod
+  def update_custom_global_brightness(brightness_override: int) -> float:
+    """
+    Updates the custom global brightness by constraining the value to a predefined range.
+
+    The method takes an integer `brightness` value, adjusts it to ensure it is within the
+    range of 30 to 100, inclusive, and returns the adjusted value as a float.
+
+    This method only runs if 0 (Auto) is not selected.
+
+    :param brightness_override: The desired brightness level. It is constrained between
+                       a minimum of 30 and a maximum of 100.
+    :type brightness_override: int
+    :return: The brightness value adjusted to fit within the allowable range,
+             converted to a float.
+    :rtype: float
+    """
+    return float(min(max(brightness_override, 30), 100))
+
+  @staticmethod
+  def set_onroad_brightness(_ui_state, awake: bool, clipped_brightness: float) -> float:
+    if awake and _ui_state.started and _ui_state.onroad_brightness_toggle and _ui_state.onroad_brightness_timer == 0:
+      return float(max(min(_ui_state.onroad_brightness, clipped_brightness), 0))
+
+    return clipped_brightness
+
+  @staticmethod
+  def wake_from_dimmed_onroad_brightness(_ui_state, evs) -> None:
+    if _ui_state.started and _ui_state.onroad_brightness_timer_expired:
+      if any(ev.left_down for ev in evs):
+        gui_app.mouse_events.clear()
+      _ui_state.reset_onroad_sleep_timer()
