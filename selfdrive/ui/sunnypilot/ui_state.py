@@ -36,6 +36,7 @@ class UIStateSP:
 
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
     self.reset_onroad_sleep_timer()
 
   def update(self) -> None:
@@ -114,6 +115,7 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.global_brightness_override = self.params.get("Brightness", return_default=True)
 
     # Onroad Screen Brightness
     self.onroad_brightness_toggle = self.params.get_bool("OnroadScreenOffControl")
@@ -128,6 +130,25 @@ class DeviceSP:
   def _set_awake(self, on: bool):
     if on and self._params.get("DeviceBootMode", return_default=True) == 1:
       self._params.put_bool("OffroadMode", True)
+
+  @staticmethod
+  def update_custom_global_brightness(brightness_override: int) -> float:
+    """
+    Updates the custom global brightness by constraining the value to a predefined range.
+
+    The method takes an integer `brightness` value, adjusts it to ensure it is within the
+    range of 30 to 100, inclusive, and returns the adjusted value as a float.
+
+    This method only runs if 0 (Auto) is not selected.
+
+    :param brightness_override: The desired brightness level. It is constrained between
+                       a minimum of 30 and a maximum of 100.
+    :type brightness_override: int
+    :return: The brightness value adjusted to fit within the allowable range,
+             converted to a float.
+    :rtype: float
+    """
+    return float(min(max(brightness_override, 30), 100))
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, clipped_brightness: float) -> float:
