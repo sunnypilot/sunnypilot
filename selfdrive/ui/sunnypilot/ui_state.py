@@ -90,9 +90,9 @@ class DeviceSP:
       self._params.put_bool("OffroadMode", True)
 
   @staticmethod
-  def update_custom_global_brightness(brightness_override: int) -> float:
+  def update_max_global_brightness(brightness_override: int) -> float:
     """
-    Updates the custom global brightness by constraining the value to a predefined range.
+    Updates the max global brightness by constraining the value to a predefined range.
 
     The method takes an integer `brightness` value, adjusts it to ensure it is within the
     range of 30 to 100, inclusive, and returns the adjusted value as a float.
