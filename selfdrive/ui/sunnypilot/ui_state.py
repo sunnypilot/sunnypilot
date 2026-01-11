@@ -132,9 +132,9 @@ class DeviceSP:
       self._params.put_bool("OffroadMode", True)
 
   @staticmethod
-  def update_custom_global_brightness(brightness_override: int) -> float:
+  def update_max_global_brightness(brightness_override: int) -> float:
     """
-    Updates the custom global brightness by constraining the value to a predefined range.
+    Updates the max global brightness by constraining the value to a predefined range.
 
     The method takes an integer `brightness` value, adjusts it to ensure it is within the
     range of 30 to 100, inclusive, and returns the adjusted value as a float.
@@ -151,11 +151,11 @@ class DeviceSP:
     return float(min(max(brightness_override, 30), 100))
 
   @staticmethod
-  def set_onroad_brightness(_ui_state, awake: bool, clipped_brightness: float) -> float:
+  def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
     if awake and _ui_state.started and _ui_state.onroad_brightness_toggle and _ui_state.onroad_brightness_timer == 0:
-      return float(max(min(_ui_state.onroad_brightness, clipped_brightness), 0))
+      return float(max(min(_ui_state.onroad_brightness, cur_brightness), 0))
 
-    return clipped_brightness
+    return cur_brightness
 
   @staticmethod
   def wake_from_dimmed_onroad_brightness(_ui_state, evs) -> None:
