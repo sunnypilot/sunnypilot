@@ -36,7 +36,6 @@ class UIStateSP:
 
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
-    self.global_brightness_override: int = self.params.get("Brightness", return_default=True)
     self.reset_onroad_sleep_timer()
 
   def update(self) -> None:
@@ -115,7 +114,6 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
-    self.global_brightness_override = self.params.get("Brightness", return_default=True)
 
     # Onroad Screen Brightness
     self.onroad_brightness_toggle = self.params.get_bool("OnroadScreenOffControl")
