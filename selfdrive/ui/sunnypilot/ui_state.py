@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import numpy as np
+
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
@@ -88,3 +90,22 @@ class DeviceSP:
   def _set_awake(self, on: bool):
     if on and self._params.get("DeviceBootMode", return_default=True) == 1:
       self._params.put_bool("OffroadMode", True)
+
+  @staticmethod
+  def update_custom_global_brightness(brightness_override: int) -> float:
+    """
+    Updates the custom global brightness by constraining the value to a predefined range.
+
+    The method takes an integer `brightness` value, adjusts it to ensure it is within the
+    range of 30 to 100, inclusive, and returns the adjusted value as a float.
+
+    This method only runs if 0 (Auto) is not selected.
+
+    :param brightness_override: The desired brightness level. It is constrained between
+                       a minimum of 30 and a maximum of 100.
+    :type brightness_override: int
+    :return: The brightness value adjusted to fit within the allowable range,
+             converted to a float.
+    :rtype: float
+    """
+    return float(min(max(brightness_override, 30), 100))
