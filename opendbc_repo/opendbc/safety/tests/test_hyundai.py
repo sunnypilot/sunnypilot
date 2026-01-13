@@ -244,6 +244,10 @@ class TestHyundaiSafetyAltLimits2(TestHyundaiSafety):
     self.safety.set_safety_hooks(CarParams.SafetyModel.hyundai, HyundaiSafetyFlags.ALT_LIMITS_2)
     self.safety.init_tests()
 
+class TestHyundaiSafetyHeavy(TestHyundaiSafety):
+  MAX_RATE_UP = 3
+  MAX_RATE_DOWN = 7
+  MAX_TORQUE_LOOKUP = [0], [404]
 
 @parameterized_class(LDA_BUTTON)
 class TestHyundaiSafetyCameraSCC(TestHyundaiSafety):
