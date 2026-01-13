@@ -52,6 +52,9 @@ class CarControllerParams:
       self.STEER_DELTA_UP = 2
       self.STEER_DELTA_DOWN = 3
 
+    elif CP.flags & HyundaiFlags.HEAVY:
+      self.STEER_MAX = 404
+
     # Default for most HKG
     else:
       self.STEER_MAX = 384
@@ -68,6 +71,7 @@ class HyundaiSafetyFlags(IntFlag):
   CANFD_LKA_STEERING_ALT = 128
   FCEV_GAS = 256
   ALT_LIMITS_2 = 512
+  HEAVY = 1024
 
 
 class HyundaiFlags(IntFlag):
@@ -128,6 +132,7 @@ class HyundaiFlags(IntFlag):
 
   ALT_LIMITS_2 = 2 ** 26
 
+  HEAVY = 2 ** 27
 
 class Footnote(Enum):
   CANFD = CarFootnote(
@@ -334,7 +339,7 @@ class CAR(Platforms):
       HyundaiCarDocs("Kia Telluride 2020-22", "All", car_parts=CarParts([Device.threex_angled_mount, CarHarness.hyundai_h])),
     ],
     CarSpecs(mass=1999, wheelbase=2.9, steerRatio=15.6 * 1.15, tireStiffnessFactor=0.63),
-    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8,
+    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HEAVY,
   )
   HYUNDAI_VELOSTER = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Veloster 2019-20", min_enable_speed=5. * CV.MPH_TO_MS, car_parts=CarParts.common([CarHarness.hyundai_e]))],
