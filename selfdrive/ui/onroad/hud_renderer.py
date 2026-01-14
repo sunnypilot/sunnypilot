@@ -2,6 +2,7 @@ import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
+from openpilot.selfdrive.ui.onroad.speed_limit_ui import SpeedLimitRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -71,6 +72,7 @@ class HudRenderer(Widget):
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
 
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
+    self._speed_limit_renderer: SpeedLimitRenderer = SpeedLimitRenderer()
 
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
@@ -111,6 +113,8 @@ class HudRenderer(Widget):
       COLORS.HEADER_GRADIENT_START,
       COLORS.HEADER_GRADIENT_END,
     )
+
+    self._speed_limit_renderer.render(rect)
 
     if self.is_cruise_available:
       self._draw_set_speed(rect)

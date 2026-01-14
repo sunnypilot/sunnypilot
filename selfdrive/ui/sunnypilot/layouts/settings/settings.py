@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -17,7 +18,6 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.device import DeviceLayo
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import DisplayLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.network import NetworkUISP
-from openpilot.selfdrive.ui.sunnypilot.layouts.settings.osm import OSMLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.software import SoftwareLayoutSP
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.steering import SteeringLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.sunnylink import SunnylinkLayout
@@ -39,14 +39,14 @@ ICON_SIZE = 70
 
 OP.PanelType = IntEnum(  # type: ignore
   "PanelType",
-  [es.name for es in OP.PanelType] + [
+  [es.name for es in OP.PanelType]
+  + [
     "SUNNYLINK",
     "MODELS",
     "STEERING",
     "CRUISE",
     "VISUALS",
     "DISPLAY",
-    "OSM",
     "NAVIGATION",
     "TRIPS",
     "VEHICLE",
@@ -75,22 +75,16 @@ class NavButton(Widget):
 
     # Draw background if selected
     if is_selected:
-      self.container_rect = rl.Rectangle(
-        content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT
-      )
+      self.container_rect = rl.Rectangle(content_x - 50, rect.y, OP.SIDEBAR_WIDTH - 50, OP.NAV_BTN_HEIGHT)
       rl.draw_rectangle_rounded(self.container_rect, 0.2, 5, OP.CLOSE_BTN_COLOR)
 
     if self.panel_info.icon:
       icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
-      rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2),
-                      rl.WHITE)
+      rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2), rl.WHITE)
       content_x += ICON_SIZE + 20
 
     # Draw button text (right-aligned)
-    text_pos = rl.Vector2(
-      content_x,
-      rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
-    )
+    text_pos = rl.Vector2(content_x, rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2)
     rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
 
     # Store button rect for click detection
@@ -120,7 +114,6 @@ class SettingsLayoutSP(OP.SettingsLayout):
       OP.PanelType.CRUISE: PanelInfo(tr_noop("Cruise"), CruiseLayout(), icon="icons/speed_limit.png"),
       OP.PanelType.VISUALS: PanelInfo(tr_noop("Visuals"), VisualsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
       OP.PanelType.DISPLAY: PanelInfo(tr_noop("Display"), DisplayLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_display.png"),
-      OP.PanelType.OSM: PanelInfo(tr_noop("OSM"), OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       # OP.PanelType.NAVIGATION: PanelInfo(tr_noop("Navigation"), NavigationLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       OP.PanelType.TRIPS: PanelInfo(tr_noop("Trips"), TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
       OP.PanelType.VEHICLE: PanelInfo(tr_noop("Vehicle"), VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
@@ -132,12 +125,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
     rl.draw_rectangle_rec(rect, OP.SIDEBAR_COLOR)
 
     # Close button
-    close_btn_rect = rl.Rectangle(
-      rect.x + style.ITEM_PADDING * 3, rect.y + style.ITEM_PADDING * 2, style.CLOSE_BTN_SIZE, style.CLOSE_BTN_SIZE
-    )
+    close_btn_rect = rl.Rectangle(rect.x + style.ITEM_PADDING * 3, rect.y + style.ITEM_PADDING * 2, style.CLOSE_BTN_SIZE, style.CLOSE_BTN_SIZE)
 
-    pressed = (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and
-               rl.check_collision_point_rec(rl.get_mouse_position(), close_btn_rect))
+    pressed = rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and rl.check_collision_point_rec(rl.get_mouse_position(), close_btn_rect)
     close_color = OP.CLOSE_BTN_PRESSED if pressed else OP.CLOSE_BTN_COLOR
     rl.draw_rectangle_rounded(close_btn_rect, 1.0, 20, close_color)
 
@@ -174,7 +164,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
       rect.x,
       self._close_btn_rect.height + style.ITEM_PADDING * 4,  # Starting Y position for nav items
       rect.width,
-      rect.height - 300  # Remaining height after close button
+      rect.height - 300,  # Remaining height after close button
     )
 
     if self._nav_items:

@@ -193,6 +193,9 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ModelManager_LastSyncTime", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, INT, "0"}},
     {"ModelManager_ModelsCache", {PERSISTENT | BACKUP, JSON}},
 
+    {"MapdSettings", {PERSISTENT, JSON}},
+    {"Offroad_OSMUpdateRequired", {CLEAR_ON_MANAGER_START, JSON}},
+
     // Neural Network Lateral Control
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},
 
@@ -228,38 +231,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LaneTurnDesire", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"LaneTurnValue", {PERSISTENT | BACKUP, FLOAT, "19.0"}},
     {"PlanplusControl", {PERSISTENT | BACKUP, FLOAT, "1.0"}},
-
-    // mapd
-    {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},
-    {"MapdVersion", {PERSISTENT, STRING}},
-    {"MapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT, "0.0"}},
-    {"NextMapSpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, JSON}},
-    {"Offroad_OSMUpdateRequired", {CLEAR_ON_MANAGER_START, JSON}},
-    {"OsmDbUpdatesCheck", {CLEAR_ON_MANAGER_START, BOOL}},  // mapd database update happens with device ON, reset on boot
-    {"OSMDownloadBounds", {PERSISTENT, STRING}},
-    {"OsmDownloadedDate", {PERSISTENT, STRING, "0.0"}},
-    {"OSMDownloadLocations", {PERSISTENT, JSON}},
-    {"OSMDownloadProgress", {CLEAR_ON_MANAGER_START, JSON}},
-    {"OsmLocal", {PERSISTENT, BOOL}},
-    {"OsmLocationName", {PERSISTENT, STRING}},
-    {"OsmLocationTitle", {PERSISTENT, STRING}},
-    {"OsmLocationUrl", {PERSISTENT, STRING}},
-    {"OsmStateName", {PERSISTENT, STRING, "All"}},
-    {"OsmStateTitle", {PERSISTENT, STRING}},
-    {"OsmWayTest", {PERSISTENT, STRING}},
-    {"RoadName", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
-    {"RoadNameToggle", {PERSISTENT, STRING}},
-
-    // Speed Limit
-    {"SpeedLimitMode", {PERSISTENT | BACKUP, INT, "1"}},
-    {"SpeedLimitOffsetType", {PERSISTENT | BACKUP, INT, "0"}},
-    {"SpeedLimitPolicy", {PERSISTENT | BACKUP, INT, "3"}},
-    {"SpeedLimitValueOffset", {PERSISTENT | BACKUP, INT, "0"}},
-
-    // Smart Cruise Control
-    {"MapTargetVelocities", {CLEAR_ON_ONROAD_TRANSITION, STRING}},
-    {"SmartCruiseControlMap", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // Torque lateral control custom params
     {"CustomTorqueParams", {PERSISTENT | BACKUP , BOOL}},
