@@ -100,7 +100,7 @@ _services: dict[str, tuple] = {
   "carStateSP": (True, 100., 10),
   "modelDataV2SP": (True, 20., None, QueueSize.BIG),
   "liveLocationKalman": (True, 20.),
-  "mapdOut": (True, 20., 20),
+  "mapdOut": (True, 20., 20, QueueSize.MEDIUM),
 
   # debug
   "uiDebug": (True, 0., 1),

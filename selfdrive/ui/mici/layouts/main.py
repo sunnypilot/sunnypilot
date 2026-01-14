@@ -4,6 +4,7 @@ import cereal.messaging as messaging
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsLayout
 from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
+from openpilot.selfdrive.ui.mici.layouts.mapd_panel import MapdInfoPanel
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
@@ -40,17 +41,19 @@ class MiciMainLayout(Widget):
     self._alerts_layout = MiciOffroadAlerts()
     self._settings_layout = SettingsLayout()
     self._onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked)
+    self._mapd_panel = MapdInfoPanel()
 
     # Initialize widget rects
-    for widget in (self._home_layout, self._settings_layout, self._alerts_layout, self._onroad_layout):
+    for widget in (self._home_layout, self._settings_layout, self._alerts_layout, self._onroad_layout, self._mapd_panel):
       # TODO: set parent rect and use it if never passed rect from render (like in Scroller)
       widget.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
 
     self._scroller = Scroller([
-      self._alerts_layout,
-      self._home_layout,
-      self._onroad_layout,
-    ], spacing=0, pad_start=0, pad_end=0)
+        self._alerts_layout,
+        self._home_layout,
+        self._mapd_panel,
+        self._onroad_layout,
+      ], spacing=0, pad_start=0, pad_end=0)
     self._scroller.set_reset_scroll_at_show(False)
 
     # Disable scrolling when onroad is interacting with bookmark
@@ -107,6 +110,14 @@ class MiciMainLayout(Widget):
       self._layouts[mode].show_event()
       self._current_mode = mode
 
+  def _is_on_side_panel(self) -> bool:
+    onroad_x = self._onroad_layout.rect.x
+    current_scroll = self._scroller.scroll_panel.get_offset()
+    return abs(current_scroll - onroad_x) > self._rect.width / 2
+
+  def _is_on_mapd_panel(self) -> bool:
+    return self._is_on_side_panel()
+
   def _handle_transitions(self):
     if ui_state.started != self._prev_onroad:
       self._prev_onroad = ui_state.started
@@ -123,15 +134,16 @@ class MiciMainLayout(Widget):
 
     CS = ui_state.sm["carState"]
     if not CS.standstill and self._prev_standstill:
-      self._set_mode(MainState.MAIN)
-      self._scroll_to(self._onroad_layout)
+      if not self._is_on_mapd_panel():
+        self._set_mode(MainState.MAIN)
+        self._scroll_to(self._onroad_layout)
     self._prev_standstill = CS.standstill
 
   def _set_mode_for_started(self, onroad_transition: bool = False):
     if ui_state.started:
       CS = ui_state.sm["carState"]
       # Only go onroad if car starts or is not at a standstill
-      if not CS.standstill or onroad_transition:
+      if (not CS.standstill or onroad_transition) and not self._is_on_mapd_panel():
         self._set_mode(MainState.MAIN)
         self._scroll_to(self._onroad_layout)
     else:
