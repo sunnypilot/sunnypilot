@@ -5,11 +5,13 @@
   },
   "AdbEnabled": {
     "title": "Enable ADB",
-    "description": "ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info."
+    "description": "Allow ADB connections to the device.",
+    "long_description": "ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info."
   },
   "AlphaLongitudinalEnabled": {
     "title": "sunnypilot Longitudinal Control (Alpha)",
-    "description": "<b>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</b><br><br>On this car, sunnypilot defaults to the car's built-in ACC instead of sunnypilot's longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha. Changing this setting will restart sunnypilot if the car is powered on."
+    "description": "Enable sunnypilot longitudinal control alpha for this car (disables AEB).",
+    "long_description": "<b>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</b><br><br>On this car, sunnypilot defaults to the car's built-in ACC instead of sunnypilot's longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha. Changing this setting will restart sunnypilot if the car is powered on."
   },
   "AlwaysOnDM": {
     "title": "Always-On Driver Monitoring",
@@ -222,7 +224,8 @@
   },
   "DeviceBootMode": {
     "title": "Wake Up Behavior",
-    "description": "Controls state of the device after boot/sleep.\n\nDefault: Device will boot/wake-up normally & will be ready to engage.\nOffroad: Device will be in Always Offroad mode after boot/wake-up.",
+    "description": "Choose device behavior after boot/sleep.",
+    "long_description": "Controls state of the device after boot/sleep.\n\nDefault: Device will boot/wake-up normally & will be ready to engage.\nOffroad: Device will be in Always Offroad mode after boot/wake-up.",
     "options": [
       {
         "value": 0,
@@ -284,7 +287,8 @@
   },
   "EnableSunnylinkUploader": {
     "title": "Enable sunnylink uploader (infrastructure test)",
-    "description": "Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"
+    "description": "Upload driving data to sunnypilot servers (tier-gated).",
+    "long_description": "Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. (Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"
   },
   "EnforceTorqueControl": {
     "title": "Enforce Torque Control",
@@ -292,7 +296,8 @@
   },
   "ExperimentalMode": {
     "title": "Experimental Mode",
-    "description": "sunnypilot defaults to driving in chill mode. Experimental mode enables alpha-level features that aren't ready for chill mode. Experimental features are listed below:<br><h4>End-to-End Longitudinal Control</h4><br>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.<br><h4>New Driving Visualization</h4><br>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner."
+    "description": "Enable alpha experimental features and new driving visualization.",
+    "long_description": "sunnypilot defaults to driving in chill mode. Experimental mode enables alpha-level features that aren't ready for chill mode. Experimental features are listed below:<br><h4>End-to-End Longitudinal Control</h4><br>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.<br><h4>New Driving Visualization</h4><br>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner."
   },
   "ExperimentalModeConfirmed": {
     "title": "Experimental Mode Confirmed",
@@ -415,7 +420,8 @@
   },
   "IsLdwEnabled": {
     "title": "Enable Lane Departure Warnings",
-    "description": "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."
+    "description": "Alert when drifting over lane lines without signaling.",
+    "long_description": "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."
   },
   "IsMetric": {
     "title": "Use Metric System",
@@ -455,7 +461,8 @@
   },
   "LagdToggle": {
     "title": "Live Learning Steer Delay",
-    "description": "Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."
+    "description": "Let the car learn and adapt its steering response time.",
+    "long_description": "Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."
   },
   "LagdToggleDelay": {
     "title": "Adjust Software Delay",
@@ -471,7 +478,8 @@
   },
   "LaneTurnDesire": {
     "title": "Use Lane Turn Desires",
-    "description": "If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong turn direction."
+    "description": "Plan a turn at low speeds when signaling.",
+    "long_description": "If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong turn direction."
   },
   "LaneTurnValue": {
     "title": "Adjust Lane Turn Speed",
@@ -570,7 +578,8 @@
   },
   "LongitudinalPersonality": {
     "title": "Driving Personality",
-    "description": "Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.",
+    "description": "Choose relaxed, standard, or aggressive following behavior.",
+    "long_description": "Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.",
     "options": [
       {
         "value": 0,
@@ -895,7 +904,8 @@
   },
   "OpenpilotEnabledToggle": {
     "title": "Enable sunnypilot",
-    "description": "Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature."
+    "description": "Enable sunnypilot adaptive cruise and lane keep.",
+    "long_description": "Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature."
   },
   "OsmDbUpdatesCheck": {
     "title": "OSM DB Updates Check",
@@ -947,7 +957,8 @@
   },
   "PlanplusControl": {
     "title": "Plan Plus Controls",
-    "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",
+    "description": "Adjust planplus model recentering strength.",
+    "long_description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",
     "min": 0.0,
     "max": 2.0,
     "step": 0.1
@@ -1111,7 +1122,8 @@
   },
   "SubaruStopAndGoManualParkingBrake": {
     "title": "Stop and Go for Manual Parking Brake (Beta)",
-    "description": "Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"
+    "description": "Enable stop-and-go for Subaru Global models with manual handbrake.",
+    "long_description": "Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"
   },
   "SunnylinkCache_Roles": {
     "title": "sunnylink Cache  Roles",
