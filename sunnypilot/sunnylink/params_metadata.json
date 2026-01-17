@@ -634,7 +634,7 @@
   "MaxTimeOffroad": {
     "title": "Max Time Offroad",
     "description": "",
-    "unit": "seconds"
+    "unit": "minutes"
   },
   "ModelManager_ActiveBundle": {
     "title": "Model Manager Active Bundle",
