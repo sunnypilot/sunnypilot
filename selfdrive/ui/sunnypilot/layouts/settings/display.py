@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from enum import Enum
+from enum import IntEnum
 
 from openpilot.common.params import Params
 from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlSP
@@ -29,7 +29,7 @@ ONROAD_BRIGHTNESS_TIMER_VALUES = {
 }
 
 
-class OnroadBrightness(Enum):
+class OnroadBrightness(IntEnum):
   AUTO = 0
   AUTO_DARK = 1
 
