@@ -13,20 +13,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, ToggleActionSP
 
-ONROAD_BRIGHTNESS_TIMER_VALUES = {
-  0: 15,
-  1: 30,
-  2: 60,
-  3: 120,
-  4: 180,
-  5: 240,
-  6: 300,
-  7: 360,
-  8: 420,
-  9: 480,
-  10: 540,
-  11: 600
-}
+ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 15, 1: 30, **{i: (i - 1) * 60 for i in range(2, 12)}}
 
 
 class OnroadBrightness(IntEnum):
