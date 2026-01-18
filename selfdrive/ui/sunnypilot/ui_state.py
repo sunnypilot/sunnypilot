@@ -8,6 +8,7 @@ from enum import Enum
 
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.system.ui.lib.application import gui_app
 
@@ -121,7 +122,7 @@ class UIStateSP:
 
     # Onroad Screen Brightness
     self.onroad_brightness_toggle = self.params.get_bool("OnroadScreenOffControl")
-    self.onroad_brightness = self.params.get("OnroadScreenOffBrightness", return_default=True)
+    self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
 
 
@@ -135,10 +136,25 @@ class DeviceSP:
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
-    if awake and _ui_state.started and _ui_state.onroad_brightness_toggle and _ui_state.onroad_brightness_timer == 0:
-      return float(max(min(_ui_state.onroad_brightness, cur_brightness), 0))
+    if not awake or \
+       not _ui_state.started or \
+       not _ui_state.onroad_brightness_toggle or \
+       _ui_state.onroad_brightness_timer != 0:
+      return cur_brightness
 
-    return cur_brightness
+    # 0: Auto (Default), 1: Auto (Dark)
+    if _ui_state.onroad_brightness in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK):
+      return cur_brightness
+
+    # 2-21: 5% - 100%
+    return float((_ui_state.onroad_brightness - 1) * 5)
+
+  @staticmethod
+  def set_min_onroad_brightness(_ui_state, min_brightness: int) -> int:
+    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
+      min_brightness = 10
+
+    return min_brightness
 
   @staticmethod
   def wake_from_dimmed_onroad_brightness(_ui_state, evs) -> None:
