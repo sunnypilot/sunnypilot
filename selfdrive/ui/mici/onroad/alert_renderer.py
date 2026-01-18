@@ -222,6 +222,9 @@ class AlertRenderer(Widget):
     self._alert_y_filter.update(self._rect.y - 50 if alert is None else self._rect.y)
     self._alpha_filter.update(0 if alert is None else 1)
 
+    if gui_app.sunnypilot_ui():
+      ui_state.onroad_brightness_handle_alerts(ui_state.started, alert)
+
     if alert is None:
       # If still animating out, keep the previous alert
       if self._alpha_filter.x > 0.01 and self._prev_alert is not None:
