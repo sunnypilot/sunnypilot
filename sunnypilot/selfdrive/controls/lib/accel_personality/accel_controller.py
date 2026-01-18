@@ -15,27 +15,31 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.30, 1.25, 1.15, 0.69, 0.60, 0.49, 0.28, 0.107, 0.08, 0.06],
-  AccelPersonality.normal:   [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
-  AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
+  AccelPersonality.eco:      [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
+  AccelPersonality.normal:   [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
+  AccelPersonality.sport:    [2.00, 1.99, 1.95, 1.35, 0.94, 0.78, 0.48, 0.190, 0.11, 0.09],
+  #AccelPersonality.eco:      [1.30, 1.25, 1.15, 0.69, 0.60, 0.49, 0.28, 0.107, 0.08, 0.06],
+  #AccelPersonality.normal:   [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
+  #AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
 }
 MAX_ACCEL_BREAKPOINTS =      [0.,   3.,   5.,   8.,   12.,  18.,  24.,  32.,  42.,  55.]
 
 # Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-.003, -0.3, -0.3, -0.4, -1.2, -1.2],
-  AccelPersonality.normal: [-.004, -0.4, -0.4, -0.5, -1.2, -1.3],
-  AccelPersonality.sport:  [-.005, -0.5, -0.5, -0.6, -1.3, -1.4],
+  AccelPersonality.eco:    [-1.2,  -.003, -.003, -0.30, -0.40, -0.50, -1.2, -1.2],
+  AccelPersonality.normal: [-1.3,  -.004, -.004, -0.32, -0.42, -0.52, -1.2, -1.3],
+  AccelPersonality.sport:  [-1.4,  -.005, -.005, -0.34, -0.44, -0.54, -1.3, -1.4],
 }
-MIN_ACCEL_BREAKPOINTS =    [3,     4.5,   7.,   9.,   14.,   25]
+MIN_ACCEL_BREAKPOINTS =    [0.,    0.001, 3,     4.5,   7.,    9.,    14.,  25]
 
 
 DECEL_SMOOTH_ALPHA = 0.20  # Very aggressive smoothing for decel (lower = smoother)
-ACCEL_SMOOTH_ALPHA = 0.75  # Less aggressive for accel (higher = more responsive)
+ACCEL_SMOOTH_ALPHA = 1.20  # Less aggressive for accel (higher = more responsive)
 
 # Asymmetric rate limiting
 MAX_DECEL_INCREASE_RATE = 1.3  # When braking harder (m/s² per second)
 MAX_DECEL_DECREASE_RATE = 1.0  # When releasing brake (m/s² per second)
+
 
 
 class AccelPersonalityController:
