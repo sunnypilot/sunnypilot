@@ -262,9 +262,6 @@ class Device(DeviceSP):
 
     brightness = round(self._brightness_filter.update(clipped_brightness))
 
-    if gui_app.sunnypilot_ui() and ui_state.global_brightness_override != 0:
-      brightness = DeviceSP.update_max_global_brightness(ui_state.global_brightness_override)
-
     if gui_app.sunnypilot_ui():
       brightness = DeviceSP.set_onroad_brightness(ui_state, self._awake, brightness)
 
