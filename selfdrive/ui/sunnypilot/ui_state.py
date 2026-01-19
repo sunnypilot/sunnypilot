@@ -46,7 +46,7 @@ class UIStateSP:
       self.sunnylink_state.stop()
 
   def onroad_brightness_handle_alerts(self, started: bool, alert):
-    has_alert = started and not self.auto_onroad_brightness and alert is not None
+    has_alert = started and self.onroad_brightness != OnroadBrightness.AUTO and alert is not None
 
     self.update_onroad_brightness(has_alert)
     if has_alert:
@@ -64,13 +64,16 @@ class UIStateSP:
     if timer_status == OnroadTimerStatus.PAUSE and self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED:
       self.onroad_brightness_timer = ONROAD_BRIGHTNESS_TIMER_DISABLED
     # Toggling from a previously inactive state or resetting an active timer
-    elif (self.onroad_brightness_timer_param >= 0 and not self.auto_onroad_brightness and
+    elif (self.onroad_brightness_timer_param >= 0 and self.onroad_brightness != OnroadBrightness.AUTO and
           self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED) or timer_status == OnroadTimerStatus.RESUME:
-      self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
+      if self.onroad_brightness == OnroadBrightness.AUTO_DARK:
+        self.onroad_brightness_timer = 15 * gui_app.target_fps
+      else:
+        self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
 
   @property
   def onroad_brightness_timer_expired(self) -> bool:
-    return not self.auto_onroad_brightness and self.onroad_brightness_timer == 0
+    return self.onroad_brightness != OnroadBrightness.AUTO and self.onroad_brightness_timer == 0
 
   @property
   def auto_onroad_brightness(self) -> bool:
