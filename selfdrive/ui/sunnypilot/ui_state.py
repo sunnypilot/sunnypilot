@@ -142,18 +142,19 @@ class DeviceSP:
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
-    if not awake or \
-       not _ui_state.started or \
-       _ui_state.auto_onroad_brightness or \
-       _ui_state.onroad_brightness_timer != 0:
+    if not awake or not _ui_state.started:
+      return cur_brightness
+
+    if _ui_state.onroad_brightness_timer != 0:
+      if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
+        return max(30.0, cur_brightness)
+      # For AUTO (Default) and Manual modes (while timer running), use standard brightness
       return cur_brightness
 
     # 0: Auto (Default), 1: Auto (Dark)
     if _ui_state.onroad_brightness == OnroadBrightness.AUTO:
       return cur_brightness
     elif _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
-      if not _ui_state.onroad_brightness_timer_expired:
-        return max(30.0, cur_brightness)
       return cur_brightness
 
     # 2-21: 5% - 100%
