@@ -399,7 +399,60 @@
   "InteractivityTimeout": {
     "title": "Interactivity Timeout",
     "description": "",
-    "unit": "seconds"
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 10,
+        "label": "10 s"
+      },
+      {
+        "value": 20,
+        "label": "20 s"
+      },
+      {
+        "value": 30,
+        "label": "30 s"
+      },
+      {
+        "value": 40,
+        "label": "40 s"
+      },
+      {
+        "value": 50,
+        "label": "50 s"
+      },
+      {
+        "value": 60,
+        "label": "1 m"
+      },
+      {
+        "value": 70,
+        "label": "1 m"
+      },
+      {
+        "value": 80,
+        "label": "1 m"
+      },
+      {
+        "value": 90,
+        "label": "1 m"
+      },
+      {
+        "value": 100,
+        "label": "1 m"
+      },
+      {
+        "value": 110,
+        "label": "1 m"
+      },
+      {
+        "value": 120,
+        "label": "2 m"
+      }
+    ]
   },
   "IsDevelopmentBranch": {
     "title": "Is Development Branch",
