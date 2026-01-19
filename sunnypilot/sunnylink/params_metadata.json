@@ -869,8 +869,8 @@
     ]
   },
   "OnroadScreenOffControl": {
-    "title": "Onroad Screen: Reduced Brightness",
-    "description": "Turn off device screen or reduce brightness after driving starts"
+    "title": "Onroad Brightness",
+    "description": "Adjusts the screen brightness while it's in onroad state."
   },
   "OnroadScreenOffTimer": {
     "title": "Onroad Brightness Delay",
