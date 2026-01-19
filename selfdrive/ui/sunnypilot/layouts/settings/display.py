@@ -30,6 +30,16 @@ class DisplayLayout(Widget):
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
+    self._onroad_brightness = option_item_sp(
+      param="OnroadScreenOffBrightness",
+      title=lambda: tr("Onroad Brightness"),
+      description="",
+      min_value=0,
+      max_value=21,
+      value_change_step=1,
+      label_callback=lambda value: self.update_onroad_brightness(value),
+      inline=True
+    )
     self._onroad_brightness_timer = option_item_sp(
       param="OnroadScreenOffTimer",
       title=lambda: tr("Onroad Brightness Delay"),
@@ -39,16 +49,6 @@ class DisplayLayout(Widget):
       value_change_step=1,
       value_map=ONROAD_BRIGHTNESS_TIMER_VALUES,
       label_callback=lambda value: f"{value} s" if value < 60 else f"{int(value/60)} m",
-      inline=True
-    )
-    self._onroad_brightness = option_item_sp(
-      param="OnroadScreenOffBrightness",
-      title=lambda: tr("Onroad Brightness"),
-      description="",
-      min_value=0,
-      max_value=21,
-      value_change_step=1,
-      label_callback=lambda value: self.update_onroad_brightness(value),
       inline=True
     )
     items = [
