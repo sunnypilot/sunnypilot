@@ -4,7 +4,6 @@ from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_limit_ui import SpeedLimitRenderer
-from openpilot.selfdrive.ui.sunnypilot.onroad.road_name import RoadNameRenderer
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -69,7 +68,6 @@ class HudRenderer(Widget):
     self.v_ego_cluster_seen: bool = False
 
     self._speed_limit_renderer = SpeedLimitRenderer()
-    self._road_name_renderer = RoadNameRenderer()
 
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
@@ -81,7 +79,6 @@ class HudRenderer(Widget):
     """Update HUD state based on car state and controls state."""
 
     self._speed_limit_renderer._update_state()
-    self._road_name_renderer._update_state()
 
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
@@ -127,7 +124,6 @@ class HudRenderer(Widget):
     self._draw_current_speed(rect)
 
     self._speed_limit_renderer.render(rect)
-    self._road_name_renderer.render(rect)
 
     button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
     button_y = rect.y + UI_CONFIG.border_size
