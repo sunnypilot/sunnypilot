@@ -149,7 +149,11 @@ class DeviceSP:
       return cur_brightness
 
     # 0: Auto (Default), 1: Auto (Dark)
-    if _ui_state.onroad_brightness in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK):
+    if _ui_state.onroad_brightness == OnroadBrightness.AUTO:
+      return cur_brightness
+    elif _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
+      if not _ui_state.onroad_brightness_timer_expired:
+        return max(30.0, cur_brightness)
       return cur_brightness
 
     # 2-21: 5% - 100%
@@ -157,14 +161,14 @@ class DeviceSP:
 
   @staticmethod
   def set_min_onroad_brightness(_ui_state, min_brightness: int) -> int:
-    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK and _ui_state.onroad_brightness_timer_expired:
+    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
       min_brightness = 10
 
     return min_brightness
 
   @staticmethod
   def wake_from_dimmed_onroad_brightness(_ui_state, evs) -> None:
-    if _ui_state.started and _ui_state.onroad_brightness_timer_expired:
+    if _ui_state.started and (_ui_state.onroad_brightness_timer_expired or _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK):
       if any(ev.left_down for ev in evs):
         gui_app.mouse_events.clear()
       _ui_state.reset_onroad_sleep_timer()
