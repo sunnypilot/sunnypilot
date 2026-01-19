@@ -15,7 +15,7 @@ from openpilot.system.ui.lib.application import gui_app
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 
-ONROAD_BRIGHTNESS_TIMER_DISABLED = -1
+ONROAD_BRIGHTNESS_TIMER_PAUSED = -1
 
 
 class OnroadTimerStatus(Enum):
@@ -61,11 +61,11 @@ class UIStateSP:
 
   def reset_onroad_sleep_timer(self, timer_status: OnroadTimerStatus = OnroadTimerStatus.NONE) -> None:
     # Toggling from active state to inactive
-    if timer_status == OnroadTimerStatus.PAUSE and self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED:
-      self.onroad_brightness_timer = ONROAD_BRIGHTNESS_TIMER_DISABLED
+    if timer_status == OnroadTimerStatus.PAUSE and self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_PAUSED:
+      self.onroad_brightness_timer = ONROAD_BRIGHTNESS_TIMER_PAUSED
     # Toggling from a previously inactive state or resetting an active timer
     elif (self.onroad_brightness_timer_param >= 0 and self.onroad_brightness != OnroadBrightness.AUTO and
-          self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED) or timer_status == OnroadTimerStatus.RESUME:
+          self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_PAUSED) or timer_status == OnroadTimerStatus.RESUME:
       if self.onroad_brightness == OnroadBrightness.AUTO_DARK:
         self.onroad_brightness_timer = 15 * gui_app.target_fps
       else:
