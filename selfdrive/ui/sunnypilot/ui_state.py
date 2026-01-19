@@ -46,7 +46,7 @@ class UIStateSP:
       self.sunnylink_state.stop()
 
   def onroad_brightness_handle_alerts(self, started: bool, alert):
-    has_alert = started and self.onroad_brightness_toggle and alert is not None
+    has_alert = started and not self.auto_onroad_brightness and alert is not None
 
     self.update_onroad_brightness(has_alert)
     if has_alert:
@@ -64,13 +64,17 @@ class UIStateSP:
     if timer_status == OnroadTimerStatus.PAUSE and self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED:
       self.onroad_brightness_timer = ONROAD_BRIGHTNESS_TIMER_DISABLED
     # Toggling from a previously inactive state or resetting an active timer
-    elif (self.onroad_brightness_timer_param >= 0 and self.onroad_brightness_toggle and
+    elif (self.onroad_brightness_timer_param >= 0 and not self.auto_onroad_brightness and
           self.onroad_brightness_timer != ONROAD_BRIGHTNESS_TIMER_DISABLED) or timer_status == OnroadTimerStatus.RESUME:
       self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
 
   @property
   def onroad_brightness_timer_expired(self) -> bool:
-    return self.onroad_brightness_toggle and self.onroad_brightness_timer == 0
+    return not self.auto_onroad_brightness and self.onroad_brightness_timer == 0
+
+  @property
+  def auto_onroad_brightness(self) -> bool:
+    return self.onroad_brightness in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK)
 
   @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
@@ -121,7 +125,6 @@ class UIStateSP:
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
 
     # Onroad Screen Brightness
-    self.onroad_brightness_toggle = self.params.get_bool("OnroadScreenOffControl")
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
 
@@ -138,7 +141,7 @@ class DeviceSP:
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
     if not awake or \
        not _ui_state.started or \
-       not _ui_state.onroad_brightness_toggle or \
+       _ui_state.auto_onroad_brightness or \
        _ui_state.onroad_brightness_timer != 0:
       return cur_brightness
 
@@ -151,7 +154,7 @@ class DeviceSP:
 
   @staticmethod
   def set_min_onroad_brightness(_ui_state, min_brightness: int) -> int:
-    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
+    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK and _ui_state.onroad_brightness_timer_expired:
       min_brightness = 10
 
     return min_brightness

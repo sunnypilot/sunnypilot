@@ -11,7 +11,7 @@ from openpilot.system.ui.sunnypilot.widgets.option_control import OptionControlS
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, ToggleActionSP
+from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, ToggleActionSP
 
 ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 15, 1: 30, **{i: (i - 1) * 60 for i in range(2, 12)}}
 
@@ -30,12 +30,6 @@ class DisplayLayout(Widget):
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self._onroad_brightness_toggle = toggle_item_sp(
-      param="OnroadScreenOffControl",
-      title=lambda: tr("Customize Onroad Brightness"),
-      description=lambda: tr("Turn off device screen or reduce brightness after driving starts. " +
-         "It automatically brightens again when screen is touched or a visible alert is displayed."),
-    )
     self._onroad_brightness_timer = option_item_sp(
       param="OnroadScreenOffTimer",
       title=lambda: tr("Onroad Brightness Delay"),
@@ -58,9 +52,8 @@ class DisplayLayout(Widget):
       inline=True
     )
     items = [
-      self._onroad_brightness_toggle,
-      self._onroad_brightness_timer,
       self._onroad_brightness,
+      self._onroad_brightness_timer,
     ]
     return items
 
@@ -83,8 +76,8 @@ class DisplayLayout(Widget):
       elif isinstance(_item.action_item, OptionControlSP) and _item.action_item.param_key is not None:
         _item.action_item.set_value(self._params.get(_item.action_item.param_key, return_default=True))
 
-    self._onroad_brightness_timer.set_visible(self._onroad_brightness_toggle.action_item.get_state())
-    self._onroad_brightness.set_visible(self._onroad_brightness_toggle.action_item.get_state())
+    brightness_val = self._params.get("OnroadScreenOffBrightness", return_default=True)
+    self._onroad_brightness_timer.action_item.set_enabled(brightness_val not in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK))
 
   def _render(self, rect):
     self._scroller.render(rect)
