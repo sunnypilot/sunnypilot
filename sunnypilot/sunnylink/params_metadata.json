@@ -398,7 +398,7 @@
   },
   "InteractivityTimeout": {
     "title": "Interactivity Timeout",
-    "description": "",
+    "description": "Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if user is not interacting with the screen.",
     "options": [
       {
         "value": 0,
