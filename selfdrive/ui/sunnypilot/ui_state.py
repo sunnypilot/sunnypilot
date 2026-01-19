@@ -170,5 +170,6 @@ class DeviceSP:
   def wake_from_dimmed_onroad_brightness(_ui_state, evs) -> None:
     if _ui_state.started and (_ui_state.onroad_brightness_timer_expired or _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK):
       if any(ev.left_down for ev in evs):
-        gui_app.mouse_events.clear()
-      _ui_state.reset_onroad_sleep_timer()
+        if _ui_state.onroad_brightness_timer_expired:
+          gui_app.mouse_events.clear()
+        _ui_state.reset_onroad_sleep_timer()
