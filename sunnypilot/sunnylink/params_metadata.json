@@ -126,11 +126,13 @@
     "description": "Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)",
     "min": -0.35,
     "max": 0.35,
-    "step": 0.01
+    "step": 0.01,
+    "unit": "meters"
   },
   "CarBatteryCapacity": {
     "title": "Car Battery Capacity",
-    "description": ""
+    "description": "Battery Size",
+    "unit": "kWh"
   },
   "CarList": {
     "title": "Supported Car List",
@@ -396,7 +398,61 @@
   },
   "InteractivityTimeout": {
     "title": "Interactivity Timeout",
-    "description": ""
+    "description": "Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if user is not interacting with the screen.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 10,
+        "label": "10 s"
+      },
+      {
+        "value": 20,
+        "label": "20 s"
+      },
+      {
+        "value": 30,
+        "label": "30 s"
+      },
+      {
+        "value": 40,
+        "label": "40 s"
+      },
+      {
+        "value": 50,
+        "label": "50 s"
+      },
+      {
+        "value": 60,
+        "label": "1 m"
+      },
+      {
+        "value": 70,
+        "label": "1 m"
+      },
+      {
+        "value": 80,
+        "label": "1 m"
+      },
+      {
+        "value": 90,
+        "label": "1 m"
+      },
+      {
+        "value": 100,
+        "label": "1 m"
+      },
+      {
+        "value": 110,
+        "label": "1 m"
+      },
+      {
+        "value": 120,
+        "label": "2 m"
+      }
+    ]
   },
   "IsDevelopmentBranch": {
     "title": "Is Development Branch",
@@ -630,7 +686,8 @@
   },
   "MaxTimeOffroad": {
     "title": "Max Time Offroad",
-    "description": ""
+    "description": "",
+    "unit": "minutes"
   },
   "ModelManager_ActiveBundle": {
     "title": "Model Manager Active Bundle",
@@ -773,20 +830,154 @@
   "OnroadScreenOffBrightness": {
     "title": "Onroad Brightness",
     "description": "",
-    "min": 0,
-    "max": 100,
-    "step": 5
+    "options": [
+      {
+        "value": 0,
+        "label": "Auto (Default)"
+      },
+      {
+        "value": 1,
+        "label": "Auto (Dark)"
+      },
+      {
+        "value": 2,
+        "label": "5 %"
+      },
+      {
+        "value": 3,
+        "label": "10 %"
+      },
+      {
+        "value": 4,
+        "label": "15 %"
+      },
+      {
+        "value": 5,
+        "label": "20 %"
+      },
+      {
+        "value": 6,
+        "label": "25 %"
+      },
+      {
+        "value": 7,
+        "label": "30 %"
+      },
+      {
+        "value": 8,
+        "label": "35 %"
+      },
+      {
+        "value": 9,
+        "label": "40 %"
+      },
+      {
+        "value": 10,
+        "label": "45 %"
+      },
+      {
+        "value": 11,
+        "label": "50 %"
+      },
+      {
+        "value": 12,
+        "label": "55 %"
+      },
+      {
+        "value": 13,
+        "label": "60 %"
+      },
+      {
+        "value": 14,
+        "label": "65 %"
+      },
+      {
+        "value": 15,
+        "label": "70 %"
+      },
+      {
+        "value": 16,
+        "label": "75 %"
+      },
+      {
+        "value": 17,
+        "label": "80 %"
+      },
+      {
+        "value": 18,
+        "label": "85 %"
+      },
+      {
+        "value": 19,
+        "label": "90 %"
+      },
+      {
+        "value": 20,
+        "label": "95 %"
+      },
+      {
+        "value": 21,
+        "label": "100 %"
+      }
+    ]
   },
   "OnroadScreenOffControl": {
-    "title": "Onroad Screen: Reduced Brightness",
-    "description": "Turn off device screen or reduce brightness after driving starts"
+    "title": "Onroad Brightness",
+    "description": "Adjusts the screen brightness while it's in onroad state."
   },
   "OnroadScreenOffTimer": {
     "title": "Onroad Brightness Delay",
     "description": "",
-    "min": 0,
-    "max": 60,
-    "step": 1
+    "options": [
+      {
+        "value": 15,
+        "label": "15s"
+      },
+      {
+        "value": 30,
+        "label": "30s"
+      },
+      {
+        "value": 60,
+        "label": "1m"
+      },
+      {
+        "value": 120,
+        "label": "2m"
+      },
+      {
+        "value": 180,
+        "label": "3m"
+      },
+      {
+        "value": 240,
+        "label": "4m"
+      },
+      {
+        "value": 300,
+        "label": "5m"
+      },
+      {
+        "value": 360,
+        "label": "6m"
+      },
+      {
+        "value": 420,
+        "label": "7m"
+      },
+      {
+        "value": 480,
+        "label": "8m"
+      },
+      {
+        "value": 540,
+        "label": "9m"
+      },
+      {
+        "value": 600,
+        "label": "10m"
+      }
+    ]
   },
   "OnroadUploads": {
     "title": "Onroad Uploads",
@@ -1060,7 +1251,8 @@
     "description": "",
     "min": 0.1,
     "max": 5.0,
-    "step": 0.1
+    "step": 0.1,
+    "unit": "m/s²"
   },
   "ToyotaEnforceStockLongitudinal": {
     "title": "Toyota: Enforce Factory Longitudinal Control",
