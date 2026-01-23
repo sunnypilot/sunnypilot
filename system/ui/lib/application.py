@@ -31,7 +31,7 @@ MOUSE_THREAD_RATE = 140  # touch controller runs at 140Hz
 MAX_TOUCH_SLOTS = 2
 TOUCH_HISTORY_TIMEOUT = 3.0  # Seconds before touch points fade out
 
-BIG_UI = os.getenv("BIG", "0") == "1"
+BIG_UI = os.getenv("BIG", "0") == "1" or (HARDWARE.get_device_type() in ('tici', 'tizi'))
 ENABLE_VSYNC = os.getenv("ENABLE_VSYNC", "0") == "1"
 SHOW_FPS = os.getenv("SHOW_FPS") == "1"
 SHOW_TOUCHES = os.getenv("SHOW_TOUCHES") == "1"
@@ -53,7 +53,9 @@ if platform.system() == "Darwin":
   """
 
 BURN_IN_MODE = "BURN_IN" in os.environ
-BURN_IN_VERTEX_SHADER = GL_VERSION + """
+BURN_IN_VERTEX_SHADER = (
+  GL_VERSION
+  + """
 in vec3 vertexPosition;
 in vec2 vertexTexCoord;
 uniform mat4 mvp;
@@ -63,7 +65,10 @@ void main() {
   gl_Position = mvp * vec4(vertexPosition, 1.0);
 }
 """
-BURN_IN_FRAGMENT_SHADER = GL_VERSION + """
+)
+BURN_IN_FRAGMENT_SHADER = (
+  GL_VERSION
+  + """
 in vec2 fragTexCoord;
 uniform sampler2D texture0;
 out vec4 fragColor;
@@ -79,31 +84,33 @@ void main() {
   fragColor = vec4(gradient, sampled.a);
 }
 """
+)
 
 DEFAULT_TEXT_SIZE = 60
 DEFAULT_TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
 
 # Qt draws fonts accounting for ascent/descent differently, so compensate to match old styles
 # The real scales for the fonts below range from 1.212 to 1.266
-FONT_SCALE = 1.242 if BIG_UI else 1.16
+# 字體比例
+FONT_SCALE = 1.6 if BIG_UI else 1.16
 
 ASSETS_DIR = files("openpilot.selfdrive").joinpath("assets")
 FONT_DIR = ASSETS_DIR.joinpath("fonts")
 
 
 class FontWeight(StrEnum):
-  LIGHT = "Inter-Light.fnt"
-  NORMAL = "Inter-Regular.fnt" if BIG_UI else "Inter-Medium.fnt"
-  MEDIUM = "Inter-Medium.fnt"
-  BOLD = "Inter-Bold.fnt"
-  SEMI_BOLD = "Inter-SemiBold.fnt"
-  UNIFONT = "unifont.fnt"
-  AUDIOWIDE = "Audiowide-Regular.fnt"
+  LIGHT = "NotoSansTC-Light.fnt"
+  NORMAL = "NotoSansTC-Regular.fnt" if BIG_UI else "NotoSansTC-Medium.fnt"
+  MEDIUM = "NotoSansTC-Medium.fnt"
+  BOLD = "NotoSansTC-Bold.fnt"
+  SEMI_BOLD = "NotoSansTC-SemiBold.fnt"
+  UNIFONT = "NotoSansTC-Regular.fnt"
+  AUDIOWIDE = "NotoSansTC-Regular.fnt"
 
   # Small UI fonts
-  DISPLAY_REGULAR = "Inter-Regular.fnt"
-  ROMAN = "Inter-Regular.fnt"
-  DISPLAY = "Inter-Bold.fnt"
+  DISPLAY_REGULAR = "NotoSansTC-Regular.fnt"
+  ROMAN = "NotoSansTC-Regular.fnt"
+  DISPLAY = "NotoSansTC-Bold.fnt"
 
 
 def font_fallback(font: rl.Font) -> rl.Font:
@@ -261,9 +268,11 @@ class GuiApplication(GuiApplicationExt):
 
   def init_window(self, title: str, fps: int = _DEFAULT_FPS):
     with self._startup_profile_context():
+
       def _close(sig, frame):
         self.close()
         sys.exit(0)
+
       signal.signal(signal.SIGINT, _close)
       atexit.register(self.close)
 
@@ -284,19 +293,29 @@ class GuiApplication(GuiApplicationExt):
       if RECORD:
         ffmpeg_args = [
           'ffmpeg',
-          '-v', 'warning',          # Reduce ffmpeg log spam
-          '-stats',                 # Show encoding progress
-          '-f', 'rawvideo',         # Input format
-          '-pix_fmt', 'rgba',       # Input pixel format
-          '-s', f'{self._width}x{self._height}',  # Input resolution
-          '-r', str(fps),           # Input frame rate
-          '-i', 'pipe:0',           # Input from stdin
-          '-vf', 'vflip,format=yuv420p',  # Flip vertically and convert rgba to yuv420p
-          '-c:v', 'libx264',        # Video codec
-          '-preset', 'ultrafast',   # Encoding speed
-          '-y',                     # Overwrite existing file
-          '-f', 'mp4',              # Output format
-          RECORD_OUTPUT,            # Output file path
+          '-v',
+          'warning',  # Reduce ffmpeg log spam
+          '-stats',  # Show encoding progress
+          '-f',
+          'rawvideo',  # Input format
+          '-pix_fmt',
+          'rgba',  # Input pixel format
+          '-s',
+          f'{self._width}x{self._height}',  # Input resolution
+          '-r',
+          str(fps),  # Input frame rate
+          '-i',
+          'pipe:0',  # Input from stdin
+          '-vf',
+          'vflip,format=yuv420p',  # Flip vertically and convert rgba to yuv420p
+          '-c:v',
+          'libx264',  # Video codec
+          '-preset',
+          'ultrafast',  # Encoding speed
+          '-y',  # Overwrite existing file
+          '-f',
+          'mp4',  # Output format
+          RECORD_OUTPUT,  # Output file path
         ]
         self._ffmpeg_proc = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE)
 
@@ -358,8 +377,7 @@ class GuiApplication(GuiApplicationExt):
   def set_should_render(self, should_render: bool):
     self._should_render = should_render
 
-  def texture(self, asset_path: str, width: int | None = None, height: int | None = None,
-              alpha_premultiply=False, keep_aspect_ratio=True):
+  def texture(self, asset_path: str, width: int | None = None, height: int | None = None, alpha_premultiply=False, keep_aspect_ratio=True):
     cache_key = f"{asset_path}_{width}_{height}_{alpha_premultiply}{keep_aspect_ratio}"
     if cache_key in self._textures:
       return self._textures[cache_key]
@@ -370,8 +388,9 @@ class GuiApplication(GuiApplicationExt):
     self._textures[cache_key] = texture_obj
     return texture_obj
 
-  def _load_image_from_path(self, image_path: str, width: int | None = None, height: int | None = None,
-                            alpha_premultiply: bool = False, keep_aspect_ratio: bool = True) -> rl.Image:
+  def _load_image_from_path(
+    self, image_path: str, width: int | None = None, height: int | None = None, alpha_premultiply: bool = False, keep_aspect_ratio: bool = True
+  ) -> rl.Image:
     """Load and resize an image, storing it for later automatic unloading."""
     image = rl.load_image(image_path)
 
@@ -462,6 +481,7 @@ class GuiApplication(GuiApplicationExt):
     try:
       if self._profile_render_frames > 0:
         import cProfile
+
         self._render_profiler = cProfile.Profile()
         self._render_profile_start_time = time.monotonic()
         self._render_profiler.enable()
@@ -719,11 +739,11 @@ class GuiApplication(GuiApplicationExt):
     green = "\033[92m"
     reset = "\033[0m"
     print(f"\n{green}Rendered {self._frame} frames in {elapsed_ms:.1f} ms{reset}")
-    print(f"{green}Average frame time: {avg_frame_time:.2f} ms ({1000/avg_frame_time:.1f} FPS){reset}")
+    print(f"{green}Average frame time: {avg_frame_time:.2f} ms ({1000 / avg_frame_time:.1f} FPS){reset}")
     sys.exit(0)
 
   def _calculate_auto_scale(self) -> float:
-     # Create temporary window to query monitor info
+    # Create temporary window to query monitor info
     rl.init_window(1, 1, "")
     w, h = rl.get_monitor_width(0), rl.get_monitor_height(0)
     rl.close_window()

@@ -40,7 +40,8 @@ class Multilang:
 
   def requires_unifont(self) -> bool:
     """Certain languages require unifont to render their glyphs."""
-    return self._language in UNIFONT_LANGUAGES
+    # return self._language in UNIFONT_LANGUAGES
+    return False
 
   def setup(self):
     try:
@@ -85,4 +86,4 @@ tr, trn = multilang.tr, multilang.trn
 
 # no-op marker for static strings translated later
 def tr_noop(s: str) -> str:
-  return tr(s) #暫時性的
+  return tr(s)
