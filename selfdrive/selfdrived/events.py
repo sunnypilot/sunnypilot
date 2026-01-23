@@ -303,6 +303,15 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Stock AEB: Risk of Collision"),
   },
 
+  EventName.stockLkas: {
+    ET.PERMANENT: Alert(
+      "TAKE CONTROL",
+      "Stock LKAS: Lane Departure Detected",
+      AlertStatus.critical, AlertSize.full,
+      Priority.HIGH, VisualAlert.fcw, AudibleAlert.none, 2.),
+    ET.NO_ENTRY: NoEntryAlert("Stock LKAS: Lane Departure Detected"),
+  },
+
   EventName.fcw: {
     ET.PERMANENT: Alert(
       "BRAKE!",
@@ -758,13 +767,13 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # - CAN data is received, but some message are not received at the right frequency
   # If you're not writing a new car port, this is usually cause by faulty wiring
   EventName.canError: {
-    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("CAN Error"),
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Unknown Vehicle Variant"),
     ET.PERMANENT: Alert(
-      "CAN Error: Check Connections",
+      "Unknown Vehicle Variant",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1., creation_delay=1.),
-    ET.NO_ENTRY: NoEntryAlert("CAN Error: Check Connections"),
+    ET.NO_ENTRY: NoEntryAlert("Unknown Vehicle Variant"),
   },
 
   EventName.canBusMissing: {

@@ -22,6 +22,7 @@ class DeveloperUiRenderer(Widget):
   DEV_UI_RIGHT = 1
   DEV_UI_BOTTOM = 2
   DEV_UI_BOTH = 3
+  BOTTOM_BAR_HEIGHT = 61
 
   def __init__(self):
     super().__init__()
@@ -42,6 +43,12 @@ class DeveloperUiRenderer(Widget):
     self.steering_torque_elem = SteeringTorqueEpsElement()
     self.bearing_elem = BearingDegElement()
     self.altitude_elem = AltitudeElement()
+
+  @staticmethod
+  def get_bottom_dev_ui_offset():
+    if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_BOTTOM, DeveloperUiRenderer.DEV_UI_BOTH):
+      return DeveloperUiRenderer.BOTTOM_BAR_HEIGHT
+    return 0
 
   def _update_state(self) -> None:
     self.dev_ui_mode = ui_state.developer_ui
@@ -78,9 +85,10 @@ class DeveloperUiRenderer(Widget):
     ]
     if controls_state.lateralControlState.which() == 'torqueState':
       elements.append(self.desired_lat_accel_elem.update(sm, ui_state.is_metric))
-      elements.append(self.actual_lat_accel_elem.update(sm, ui_state.is_metric))
     else:
       elements.append(self.desired_steer_elem.update(sm, ui_state.is_metric))
+
+    elements.append(self.actual_lat_accel_elem.update(sm, ui_state.is_metric))
 
     current_y = y
     for element in elements:
@@ -105,7 +113,7 @@ class DeveloperUiRenderer(Widget):
     if element.unit:
       units_height = measure_text_cached(self._font_bold, element.unit, unit_size, 0).x
 
-      units_x = x + container_width - 10
+      units_x = x + container_width
       units_y = y + (value_size / 2) + (units_height / 2)
 
       rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
@@ -143,22 +151,35 @@ class DeveloperUiRenderer(Widget):
     if sm.valid['gpsLocationExternal'] or sm.valid['gpsLocation']:
       elements.append(self.altitude_elem.update(sm, ui_state.is_metric))
 
-    current_x = int(rect.x + 90)
-    center_y = y + bar_height // 2
-    for element in elements:
-      current_x += self._draw_bottom_dev_ui_element(current_x, center_y, element)
+    if not elements:
+      return
 
-  def _draw_bottom_dev_ui_element(self, x: int, y: int, element: UiElement) -> int:
     font_size = 38
+    element_widths = []
+    for element in elements:
+      element.measure(self._font_bold, font_size)
+      element_widths.append(element.total_width)
 
-    label_text = f"{element.label} "
-    label_width = measure_text_cached(self._font_bold, label_text, font_size, 0).x
-    rl.draw_text_ex(self._font_bold, label_text, rl.Vector2(x, y - font_size // 2), font_size, 0, rl.WHITE)
+    total_element_width = sum(element_widths)
+    num_gaps = len(elements) + 1
+    available_width = rect.width
+    gap_width = (available_width - total_element_width) / num_gaps
 
-    value_width = measure_text_cached(self._font_bold, element.value, font_size, 0).x
-    rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(x + label_width + 10, y - font_size // 2), font_size, 0, element.color)
+    center_y = y + bar_height // 2
+    current_x = rect.x + gap_width
+
+    for i, element in enumerate(elements):
+      element_center_x = int(current_x + element_widths[i] / 2)
+      self._draw_bottom_dev_ui_element(element_center_x, center_y, element)
+      current_x += element_widths[i] + gap_width
+
+  def _draw_bottom_dev_ui_element(self, center_x: int, y: int, element: UiElement) -> None:
+    font_size = 38
+    start_x = center_x - element.total_width / 2
+
+    rl.draw_text_ex(self._font_bold, element.label_text, rl.Vector2(start_x, y - font_size // 2), font_size, 0, rl.WHITE)
+    rl.draw_text_ex(self._font_bold, element.val_text, rl.Vector2(start_x + element.label_width, y - font_size // 2), font_size, 0, element.color)
 
     if element.unit:
-      rl.draw_text_ex(self._font_bold, element.unit, rl.Vector2(x + label_width + value_width + 20, y - font_size // 2), font_size, 0, rl.WHITE)
-
-    return 400
+      rl.draw_text_ex(self._font_bold, element.unit_text, rl.Vector2(start_x + element.label_width + element.val_width, y - font_size // 2),
+                      font_size, 0, rl.WHITE)

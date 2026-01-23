@@ -121,9 +121,18 @@
     "title": "Camera Debug Exp Time",
     "description": ""
   },
+  "CameraOffset": {
+    "title": "Adjust Camera Offset",
+    "description": "Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)",
+    "min": -0.35,
+    "max": 0.35,
+    "step": 0.01,
+    "unit": "meters"
+  },
   "CarBatteryCapacity": {
     "title": "Car Battery Capacity",
-    "description": ""
+    "description": "Battery Size",
+    "unit": "kWh"
   },
   "CarList": {
     "title": "Supported Car List",
@@ -165,6 +174,10 @@
     "title": "Chevron Info",
     "description": ""
   },
+  "CompletedSunnylinkConsentVersion": {
+    "title": "Completed sunnylink Consent Version",
+    "description": ""
+  },
   "CompletedTrainingVersion": {
     "title": "Completed Training Version",
     "description": ""
@@ -182,7 +195,7 @@
     "description": ""
   },
   "CustomAccIncrementsEnabled": {
-    "title": "Custom ACC Increments Enabled",
+    "title": "Custom ACC Increments",
     "description": ""
   },
   "CustomAccLongPressIncrement": {
@@ -200,8 +213,8 @@
     "step": 1
   },
   "CustomTorqueParams": {
-    "title": "Custom Torque Params",
-    "description": ""
+    "title": "Enable Custom Torque Tuning",
+    "description": "Enables custom tuning for Torque lateral control"
   },
   "DevUIInfo": {
     "title": "Developer UI Info",
@@ -275,7 +288,7 @@
   },
   "EnforceTorqueControl": {
     "title": "Enforce Torque Control",
-    "description": ""
+    "description": "Enable this to enforce sunnypilot to steer with Torque lateral control."
   },
   "ExperimentalMode": {
     "title": "Experimental Mode",
@@ -349,6 +362,10 @@
     "title": "Has Accepted Terms",
     "description": ""
   },
+  "HasAcceptedTermsSP": {
+    "title": "Has Accepted sunnypilot Terms",
+    "description": ""
+  },
   "HideVEgoUI": {
     "title": "Hide vEgo UI",
     "description": ""
@@ -381,7 +398,61 @@
   },
   "InteractivityTimeout": {
     "title": "Interactivity Timeout",
-    "description": ""
+    "description": "Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if user is not interacting with the screen.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 10,
+        "label": "10 s"
+      },
+      {
+        "value": 20,
+        "label": "20 s"
+      },
+      {
+        "value": 30,
+        "label": "30 s"
+      },
+      {
+        "value": 40,
+        "label": "40 s"
+      },
+      {
+        "value": 50,
+        "label": "50 s"
+      },
+      {
+        "value": 60,
+        "label": "1 m"
+      },
+      {
+        "value": 70,
+        "label": "1 m"
+      },
+      {
+        "value": 80,
+        "label": "1 m"
+      },
+      {
+        "value": 90,
+        "label": "1 m"
+      },
+      {
+        "value": 100,
+        "label": "1 m"
+      },
+      {
+        "value": 110,
+        "label": "1 m"
+      },
+      {
+        "value": 120,
+        "label": "2 m"
+      }
+    ]
   },
   "IsDevelopmentBranch": {
     "title": "Is Development Branch",
@@ -436,12 +507,15 @@
     "description": ""
   },
   "LagdToggle": {
-    "title": "LaGD Toggle",
-    "description": ""
+    "title": "Live Learning Steer Delay",
+    "description": "Allow device to learn and adapt car's steering response time"
   },
   "LagdToggleDelay": {
-    "title": "LaGD Toggle Delay",
-    "description": ""
+    "title": "Manual Software Delay",
+    "description": "Software delay to use when Live Learning Steer Delay is toggled off",
+    "min": 0.05,
+    "max": 0.5,
+    "step": 0.01
   },
   "LagdValueCache": {
     "title": "LaGD Value Cache",
@@ -449,11 +523,11 @@
   },
   "LaneTurnDesire": {
     "title": "Lane Turn Desire",
-    "description": ""
+    "description": "Force model to plan an intent to turn based on blinker"
   },
   "LaneTurnValue": {
-    "title": "Lane Turn Value",
-    "description": "",
+    "title": "Lane Turn Speed",
+    "description": "Maximum speed for lane turn desire",
     "min": 0,
     "max": 20,
     "step": 1
@@ -531,12 +605,12 @@
     "description": ""
   },
   "LiveTorqueParamsRelaxedToggle": {
-    "title": "Live Torque Params Relaxed Toggle",
-    "description": ""
+    "title": "Less Restrict Settings for Self-Tune (Beta)",
+    "description": "Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values."
   },
   "LiveTorqueParamsToggle": {
-    "title": "Live Torque Params Toggle",
-    "description": ""
+    "title": "Self-Tune",
+    "description": "Enables self-tune for Torque lateral control"
   },
   "LocationFilterInitialState": {
     "title": "Location Filter Initial State",
@@ -612,7 +686,8 @@
   },
   "MaxTimeOffroad": {
     "title": "Max Time Offroad",
-    "description": ""
+    "description": "",
+    "unit": "minutes"
   },
   "ModelManager_ActiveBundle": {
     "title": "Model Manager Active Bundle",
@@ -689,7 +764,7 @@
     "description": ""
   },
   "OffroadMode": {
-    "title": "Offroad Mode",
+    "title": "Force Offroad Mode",
     "description": ""
   },
   "Offroad_CarUnrecognized": {
@@ -753,22 +828,156 @@
     "description": ""
   },
   "OnroadScreenOffBrightness": {
-    "title": "Onroad Screen Off Brightness",
+    "title": "Onroad Brightness",
     "description": "",
-    "min": 0,
-    "max": 100,
-    "step": 5
+    "options": [
+      {
+        "value": 0,
+        "label": "Auto (Default)"
+      },
+      {
+        "value": 1,
+        "label": "Auto (Dark)"
+      },
+      {
+        "value": 2,
+        "label": "5 %"
+      },
+      {
+        "value": 3,
+        "label": "10 %"
+      },
+      {
+        "value": 4,
+        "label": "15 %"
+      },
+      {
+        "value": 5,
+        "label": "20 %"
+      },
+      {
+        "value": 6,
+        "label": "25 %"
+      },
+      {
+        "value": 7,
+        "label": "30 %"
+      },
+      {
+        "value": 8,
+        "label": "35 %"
+      },
+      {
+        "value": 9,
+        "label": "40 %"
+      },
+      {
+        "value": 10,
+        "label": "45 %"
+      },
+      {
+        "value": 11,
+        "label": "50 %"
+      },
+      {
+        "value": 12,
+        "label": "55 %"
+      },
+      {
+        "value": 13,
+        "label": "60 %"
+      },
+      {
+        "value": 14,
+        "label": "65 %"
+      },
+      {
+        "value": 15,
+        "label": "70 %"
+      },
+      {
+        "value": 16,
+        "label": "75 %"
+      },
+      {
+        "value": 17,
+        "label": "80 %"
+      },
+      {
+        "value": 18,
+        "label": "85 %"
+      },
+      {
+        "value": 19,
+        "label": "90 %"
+      },
+      {
+        "value": 20,
+        "label": "95 %"
+      },
+      {
+        "value": 21,
+        "label": "100 %"
+      }
+    ]
   },
   "OnroadScreenOffControl": {
-    "title": "Onroad Screen Off Control",
-    "description": ""
+    "title": "Onroad Brightness",
+    "description": "Adjusts the screen brightness while it's in onroad state."
   },
   "OnroadScreenOffTimer": {
-    "title": "Onroad Screen Off Timer",
+    "title": "Onroad Brightness Delay",
     "description": "",
-    "min": 0,
-    "max": 60,
-    "step": 1
+    "options": [
+      {
+        "value": 15,
+        "label": "15s"
+      },
+      {
+        "value": 30,
+        "label": "30s"
+      },
+      {
+        "value": 60,
+        "label": "1m"
+      },
+      {
+        "value": 120,
+        "label": "2m"
+      },
+      {
+        "value": 180,
+        "label": "3m"
+      },
+      {
+        "value": 240,
+        "label": "4m"
+      },
+      {
+        "value": 300,
+        "label": "5m"
+      },
+      {
+        "value": 360,
+        "label": "6m"
+      },
+      {
+        "value": 420,
+        "label": "7m"
+      },
+      {
+        "value": 480,
+        "label": "8m"
+      },
+      {
+        "value": 540,
+        "label": "9m"
+      },
+      {
+        "value": 600,
+        "label": "10m"
+      }
+    ]
   },
   "OnroadUploads": {
     "title": "Onroad Uploads",
@@ -826,6 +1035,13 @@
     "title": "Panda Som Reset Triggered",
     "description": ""
   },
+  "PlanplusControl": {
+    "title": "Plan Plus Controls",
+    "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",
+    "min": 0.0,
+    "max": 2.0,
+    "step": 0.1
+  },
   "PrimeType": {
     "title": "Prime Type",
     "description": ""
@@ -863,7 +1079,7 @@
     "description": ""
   },
   "RoadNameToggle": {
-    "title": "Road Name Toggle",
+    "title": "Display Road Name",
     "description": ""
   },
   "RouteCount": {
@@ -876,7 +1092,7 @@
   },
   "ShowAdvancedControls": {
     "title": "Show Advanced Controls",
-    "description": ""
+    "description": "Enable to show advanced controls on device"
   },
   "ShowDebugInfo": {
     "title": "UI Debug Mode",
@@ -887,11 +1103,11 @@
     "description": ""
   },
   "SmartCruiseControlMap": {
-    "title": "Smart Cruise Control Map",
+    "title": "Smart Cruise Control - Map",
     "description": ""
   },
   "SmartCruiseControlVision": {
-    "title": "Smart Cruise Control Vision",
+    "title": "Smart Cruise Control - Vision",
     "description": ""
   },
   "SnoozeUpdate": {
@@ -899,7 +1115,7 @@
     "description": ""
   },
   "SpeedLimitMode": {
-    "title": "Speed Limit Mode",
+    "title": "Speed Limit Assist Mode",
     "description": "",
     "options": [
       {
@@ -939,7 +1155,7 @@
     ]
   },
   "SpeedLimitPolicy": {
-    "title": "Speed Limit Policy",
+    "title": "Speed Limit Source",
     "description": "",
     "options": [
       {
@@ -965,7 +1181,7 @@
     ]
   },
   "SpeedLimitValueOffset": {
-    "title": "Speed Limit Value Offset",
+    "title": "Speed Limit Offset Value",
     "description": "",
     "min": -30,
     "max": 30,
@@ -1020,22 +1236,23 @@
     "description": ""
   },
   "TorqueParamsOverrideEnabled": {
-    "title": "Torque Params Override Enabled",
+    "title": "Manual Real-Time Tuning",
     "description": ""
   },
   "TorqueParamsOverrideFriction": {
-    "title": "Torque Params Override Friction",
+    "title": "Manual Tune - Friction",
     "description": "",
     "min": 0.0,
     "max": 1.0,
     "step": 0.01
   },
   "TorqueParamsOverrideLatAccelFactor": {
-    "title": "Torque Params Override Lat Accel Factor",
+    "title": "Manual Tune - Lateral Acceleration Factor",
     "description": "",
     "min": 0.1,
     "max": 5.0,
-    "step": 0.1
+    "step": 0.1,
+    "unit": "m/s²"
   },
   "ToyotaEnforceStockLongitudinal": {
     "title": "Toyota: Enforce Factory Longitudinal Control",

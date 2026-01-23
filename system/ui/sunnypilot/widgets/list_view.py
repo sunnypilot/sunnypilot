@@ -55,7 +55,7 @@ class ButtonSP(Button):
 
 
 class SimpleButtonActionSP(ItemAction):
-  def __init__(self, button_text: str | Callable[[], str], callback: Callable = None,
+  def __init__(self, button_text: str | Callable[[], str], callback: Callable | None = None,
                enabled: bool | Callable[[], bool] = True, button_width: int = style.SIMPLE_BUTTON_WIDTH):
     super().__init__(width=button_width, enabled=enabled)
     self.button_action = ButtonSP(button_text, click_callback=callback, button_style=ButtonStyle.NORMAL,
@@ -99,8 +99,8 @@ class ButtonActionSP(ButtonAction):
 
 
 class DualButtonActionSP(DualButtonAction):
-  def __init__(self, left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
-               right_callback: Callable = None, enabled: bool | Callable[[], bool] = True, border_radius: int = 15):
+  def __init__(self, left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable | None = None,
+               right_callback: Callable | None = None, enabled: bool | Callable[[], bool] = True, border_radius: int = 15):
     DualButtonAction.__init__(self, left_text, right_text, left_callback, right_callback, enabled)
     self.left_button._border_radius = self.right_button._border_radius = border_radius
 
@@ -126,7 +126,7 @@ class DualButtonActionSP(DualButtonAction):
 
 
 class MultipleButtonActionSP(MultipleButtonAction):
-  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable = None,
+  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None,
                param: str | None = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param_key = param
@@ -326,7 +326,7 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
 
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
-                            selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable = None,
+                            selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable | None = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action, inline=inline)
@@ -351,8 +351,8 @@ def button_item_sp(title: str | Callable[[], str], button_text: str | Callable[[
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
 
 
-def dual_button_item_sp(left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable = None,
-                        right_callback: Callable = None, description: str | Callable[[], str] | None = None,
+def dual_button_item_sp(left_text: str | Callable[[], str], right_text: str | Callable[[], str], left_callback: Callable | None = None,
+                        right_callback: Callable | None = None, description: str | Callable[[], str] | None = None,
                         enabled: bool | Callable[[], bool] = True, border_radius: int = 15) -> ListItemSP:
   action = DualButtonActionSP(left_text, right_text, left_callback, right_callback, enabled, border_radius)
   return ListItemSP(title="", description=description, action_item=action)

@@ -42,10 +42,14 @@ METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 params = Params()
 
-# Parameters that should never be remotely modified for security reasons
+# Parameters that should never be remotely modified
 BLOCKED_PARAMS = {
+  "CompletedSunnylinkConsentVersion",
+  "CompletedTrainingVersion",
   "GithubUsername",  # Could grant SSH access
   "GithubSshKeys",   # Direct SSH key injection
+  "HasAcceptedTerms",
+  "HasAcceptedTermsSP",
 }
 
 
@@ -277,7 +281,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
 
-def main(exit_event: threading.Event = None):
+def main(exit_event: threading.Event | None = None):
   try:
     set_core_affinity([0, 1, 2, 3])
   except Exception:
