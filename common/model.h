@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Dark Souls 2 (Default)"
+#define DEFAULT_MODEL "WMI (Default)"
