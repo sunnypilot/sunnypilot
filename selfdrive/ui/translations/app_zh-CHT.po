@@ -226,6 +226,7 @@ msgstr "連線中..."
 
 #: system/ui/widgets/confirm_dialog.py:23 system/ui/widgets/option_dialog.py:35
 #: system/ui/widgets/keyboard.py:81 system/ui/widgets/network.py:318
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:73
 #, python-format
 msgid "Cancel"
 msgstr "取消"
@@ -875,6 +876,7 @@ msgid "Reset"
 msgstr "重設"
 
 #: selfdrive/ui/layouts/settings/device.py:51
+#: selfdrive/ui/sunnypilot/layouts/settings/models.py:179
 #, python-format
 msgid "Reset Calibration"
 msgstr "重設校正"
@@ -891,6 +893,7 @@ msgid "Review the rules, features, and limitations of sunnypilot"
 msgstr "檢視 sunnypilot 的規則、功能與限制"
 
 #: selfdrive/ui/layouts/settings/software.py:61
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:54
 #, python-format
 msgid "SELECT"
 msgstr "選取"
@@ -2279,3 +2282,138 @@ msgstr "關閉更新"
 #, python-format
 msgid "System reboot required for changes to take effect. Reboot now?"
 msgstr "系統需要重新啟動才能使變更生效。立即重啟？"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:52
+#, python-format
+msgid "Current Model"
+msgstr "當前模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:58
+#, python-format
+msgid "Driving Model"
+msgstr "鴐駛員模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:59
+#, python-format
+msgid "Vision Model"
+msgstr "視覺模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:60
+#, python-format
+msgid "Policy Model"
+msgstr "策略模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:62
+#, python-format
+msgid "Refresh Model List"
+msgstr "刷新模型列表"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:62
+#, python-format
+msgid "REFRESH"
+msgstr "刷新"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:64
+#, python-format
+msgid "Fetching Latest Models"
+msgstr "正在獲取最新模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:67
+#, python-format
+msgid "Clear Model Cache"
+msgstr "清除模型快取"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:69
+#, python-format
+msgid "CLEAR"
+msgstr "清除"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:73
+#, python-format
+msgid "Cancel Download"
+msgstr "取消下載"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:75
+#, python-format
+msgid "Adjust Lane Turn Speed"
+msgstr "調整車道轉彎速度"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:76
+#, python-format
+msgid "Set the maximum speed for lane turn desires. Default is 19 mph."
+msgstr "設定車道轉彎的最大速度。預設值為 19 英里/小時。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:81
+#, python-format
+msgid "Use Lane Turn Desires"
+msgstr "使用變換車道功能"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:82
+#, python-format
+msgid "If you're driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong turn direction."
+msgstr "如果您以 20 英里/小時（32 公里/小時）或以下的速度行駛，並且打開了轉向燈，車輛將規劃在最近的可行駛路徑上向該方向轉彎。這可以避免車輛規劃錯誤轉彎方向的情況（例如在紅燈處）。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:87
+#, python-format
+msgid "Adjust Software Delay"
+msgstr "調整軟體延遲"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:88
+#, python-format
+msgid "Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"
+msgstr "當「即時學習轉向延遲」功能關閉時，調整軟體延遲。預設軟體延遲值為 0.2。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:91
+#, python-format
+msgid "Live Learning Steer Delay"
+msgstr "即時學習轉向延遲"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:98
+#, python-format
+msgid "Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."
+msgstr "啟用此選項可讓車輛學習並調整轉向反應時間。停用此選項則使用固定的轉向回應時間。保持啟用狀態可提供原廠 OpenPilot 體驗。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:101
+#, python-format
+msgid "Live Steer Delay:"
+msgstr "即時轉向延遲："
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-format
+msgid "Actuator Delay:"
+msgstr "執行器延遲："
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-format
+msgid "Software Delay:"
+msgstr "軟體延遲："
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:105
+#, python-format
+msgid "Total Delay:"
+msgstr "總延遲："
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:125
+#, python-format
+msgid "This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"
+msgstr "這將刪除快取中除當前使用中模型之外的所有已下載模型。您確定嗎？"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:126
+#, python-format
+msgid "Clear Cache:"
+msgstr "清除快取"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:178
+#, python-format
+msgid "Model download has started in the background. We suggest resetting calibration. Would you like to do that now?"
+msgstr "模型下載已在背景開始。我們建議您重置校正。您現在要重置嗎？"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:220
+#, python-format
+msgid "Select a Model"
+msgstr "選擇模型"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/models.py:245
+#, python-format
+msgid "Only available when vehicle is off, or always offroad mode is on"
+msgstr "僅當車輛熄火或始終開啟 offroad 模式時可用"
