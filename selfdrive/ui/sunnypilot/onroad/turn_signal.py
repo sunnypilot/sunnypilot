@@ -90,7 +90,7 @@ class TurnSignalWidget(Widget):
 
 
 class TurnSignalController:
-  def __init__(self, config: TurnSignalConfig = None):
+  def __init__(self, config: TurnSignalConfig | None = None):
     self._config = config or TurnSignalConfig()
     self._left_signal = TurnSignalWidget(direction=-1)
     self._right_signal = TurnSignalWidget(direction=1)
