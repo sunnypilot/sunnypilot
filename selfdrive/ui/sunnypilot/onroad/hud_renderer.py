@@ -24,7 +24,7 @@ class HudRendererSP(HudRenderer):
 
   def _update_state(self) -> None:
     super()._update_state()
-    self.road_name_renderer.update_state()
+    self.road_name_renderer.update()
     self.turn_signal_controller.update()
 
   def _render(self, rect: rl.Rectangle) -> None:

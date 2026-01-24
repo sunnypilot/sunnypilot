@@ -19,7 +19,7 @@ class RoadNameRenderer(Widget):
     self.is_metric = False
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
 
-  def update_state(self):
+  def update(self):
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
