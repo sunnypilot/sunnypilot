@@ -108,7 +108,6 @@ jobs:
   build_mac:
     name: build macOS
     runs-on: ${{ ((github.repository == 'commaai/openpilot') && ((github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))) && 'namespace-profile-macos-8x14' || 'macos-latest' }}
-    if: false  # There'll be one day that this works. That day is not today.
     steps:
     - uses: actions/checkout@v4
       with:
