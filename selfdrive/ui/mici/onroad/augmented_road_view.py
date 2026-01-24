@@ -19,6 +19,10 @@ from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCamera
 from openpilot.common.transformations.orientation import rot_from_euler
 from enum import IntEnum
 
+if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.mici.onroad.hud_renderer import HudRendererSP as HudRenderer
+  from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
+
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.LiveCalibrationData.Status.calibrated
 ROAD_CAM = VisionStreamType.VISION_STREAM_ROAD
@@ -350,6 +354,14 @@ class AugmentedRoadView(CameraView):
     self._model_renderer.set_transform(video_transform @ calib_transform)
 
     return self._cached_matrix
+
+  def show_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.RESUME)
+
+  def hide_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.PAUSE)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-Import('env', 'envCython', 'arch', 'cereal', 'messaging', 'common', 'visionipc', 'transformations')
+Import('env', 'envCython', 'arch', 'cereal', 'messaging', 'common', 'visionipc')
 lenv = env.Clone()
 lenvCython = envCython.Clone()
 
