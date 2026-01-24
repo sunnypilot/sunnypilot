@@ -1082,6 +1082,10 @@
     "title": "Display Road Name",
     "description": ""
   },
+  "RocketFuel": {
+    "title": "Display Rocket Fuel Bar",
+    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration."
+  },
   "RouteCount": {
     "title": "Route Count",
     "description": ""

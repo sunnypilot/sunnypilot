@@ -8,18 +8,18 @@
 #include <string>
 
 #include "cereal/messaging/messaging.h"
-#include "common/transformations/coordinates.hpp"
-#include "common/transformations/orientation.hpp"
 #include "common/params.h"
 #include "common/swaglog.h"
 #include "common/timing.h"
 #include "common/util.h"
 
+#include "sunnypilot/common/transformations/coordinates.hpp"
+#include "sunnypilot/common/transformations/orientation.hpp"
 #include "sunnypilot/system/sensord/sensors/constants.h"
-#define VISION_DECIMATION 2
-#define SENSOR_DECIMATION 10
 #include "sunnypilot/selfdrive/locationd/models/live_kf.h"
 
+#define VISION_DECIMATION 2
+#define SENSOR_DECIMATION 10
 #define POSENET_STD_HIST_HALF 20
 
 enum LocalizerGnssSource {
