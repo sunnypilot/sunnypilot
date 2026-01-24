@@ -121,8 +121,21 @@ class TurnSignalController:
 
     else:
       self._last_icon_side = None
-      self._left_signal.deactivate()
-      self._right_signal.deactivate()
+      CS = sm['carState']
+
+      if CS.leftBlindspot:
+        self._left_signal.activate('blind_spot')
+      elif CS.leftBlinker:
+        self._left_signal.activate('signal')
+      else:
+        self._left_signal.deactivate()
+
+      if CS.rightBlindspot:
+        self._right_signal.activate('blind_spot')
+      elif CS.rightBlinker:
+        self._right_signal.activate('signal')
+      else:
+        self._right_signal.deactivate()
 
   def render(self):
     if self._left_signal._active:
