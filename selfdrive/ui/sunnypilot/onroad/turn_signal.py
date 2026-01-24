@@ -1,12 +1,20 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import pyray as rl
 import time
 from dataclasses import dataclass
+
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
 from openpilot.common.filter_simple import FirstOrderFilter
 
 TURN_SIGNAL_BLINK_PERIOD = 1 / (80 / 60)
+
 
 @dataclass(frozen=True)
 class TurnSignalConfig:
