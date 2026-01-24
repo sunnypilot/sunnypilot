@@ -16,6 +16,7 @@ from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.list_view import ButtonAction, ListItem, MultipleButtonAction, ToggleAction, button_item, text_item
 
 if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp as button_item
   from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP as ListItem
   from openpilot.system.ui.sunnypilot.widgets.list_view import ToggleActionSP as ToggleAction
   from openpilot.system.ui.sunnypilot.widgets.list_view import MultipleButtonActionSP as MultipleButtonAction
@@ -27,8 +28,8 @@ try:
   from openpilot.selfdrive.ui.lib.prime_state import PrimeType
 except Exception:
   Params = None
-  ui_state = None  # type: ignore
-  PrimeType = None  # type: ignore
+  ui_state = None
+  PrimeType = None
 
 NM_DEVICE_STATE_NEED_AUTH = 60
 MIN_PASSWORD_LENGTH = 8

@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "The Cool People (Default)"
+#define DEFAULT_MODEL "WMI (Default)"

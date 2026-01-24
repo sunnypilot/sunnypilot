@@ -18,7 +18,7 @@ from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.test.helpers import with_processes
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.updated.updated import parse_release_notes
-from openpilot.system.version import terms_version, training_version
+from openpilot.system.version import terms_version, training_version, terms_version_sp, sunnylink_consent_version
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -105,7 +105,7 @@ def setup_settings_software_branch_switcher(click, pm: PubMaster, scroll=None):
 
 def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 850)
 
 
@@ -115,7 +115,7 @@ def setup_settings_developer(click, pm: PubMaster, scroll=None):
   Params().put("CarParamsPersistent", CP.to_bytes())
 
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 950)
 
 
@@ -171,37 +171,37 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
 
 def setup_settings_cruise(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  click(278, 1017)
-  scroll(-140, 278, 950)
+  scroll(-4, 278, 950)
+  click(278, 860)
 
 
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 330)
 
 
 def setup_settings_display(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 420)
 
 
 def setup_settings_osm(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 520)
 
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 630)
 
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings(click, pm)
-  scroll(-1000, 278, 950)
+  scroll(-20, 278, 950)
   click(278, 750)
 
 
@@ -342,9 +342,14 @@ class TestUI:
     time.sleep(0.01)
     pyautogui.mouseUp(self.ui.left + x, self.ui.top + y, *args, **kwargs)
 
-  def scroll(self, clicks, x, y, *args, **kwargs):
-    pyautogui.scroll(clicks, self.ui.left + x, self.ui.top + y, *args, **kwargs)
-    time.sleep(UI_DELAY)
+  def scroll(self, clicks: int, x, y, *args, **kwargs):
+    if clicks == 0:
+      return
+    click = -1 if clicks < 0 else 1  # -1 = down, 1 = up
+    for _ in range(abs(clicks)):
+      pyautogui.scroll(click, self.ui.left + x, self.ui.top + y, *args, **kwargs)  # scroll for individual clicks since we need to delay between clicks
+      time.sleep(0.01)  # small delay between scroll clicks to work properly
+    time.sleep(2)  # wait for scroll to fully settle
 
   @with_processes(["ui"])
   def test_ui(self, name, setup_case):
@@ -364,6 +369,7 @@ def create_screenshots():
     with OpenpilotPrefix():
       params = Params()
       params.put("DongleId", "123456789012345")
+      params.put("SunnylinkDongleId", "123456789012345")
 
       # Set branch name
       params.put("UpdaterCurrentDescription", VERSION)
@@ -372,6 +378,8 @@ def create_screenshots():
       # Set terms and training version (to skip onboarding)
       params.put("HasAcceptedTerms", terms_version)
       params.put("CompletedTrainingVersion", training_version)
+      params.put("HasAcceptedTermsSP", terms_version_sp)
+      params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
 
       if name == "homescreen_paired":
         params.put("PrimeType", 0)  # NONE
