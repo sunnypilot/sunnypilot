@@ -2,7 +2,6 @@ import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.onroad.exp_button import ExpButton
-from openpilot.selfdrive.ui.sunnypilot.onroad.blind_spot_ui import BlindSpotRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -24,8 +23,6 @@ class UIConfig:
   set_speed_width_imperial: int = 172
   set_speed_height: int = 204
   wheel_icon_size: int = 144
-  blind_spot_margin_x: int = 60
-  blind_spot_y_offset: int = 440
 
 
 @dataclass(frozen=True)
@@ -74,7 +71,6 @@ class HudRenderer(Widget):
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
 
     self._exp_button: ExpButton = ExpButton(UI_CONFIG.button_size, UI_CONFIG.wheel_icon_size)
-    self._blind_spot_renderer: BlindSpotRenderer = BlindSpotRenderer(UI_CONFIG.blind_spot_margin_x, UI_CONFIG.blind_spot_y_offset)
 
   def _update_state(self) -> None:
     """Update HUD state based on car state and controls state."""
@@ -124,8 +120,6 @@ class HudRenderer(Widget):
     button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
     button_y = rect.y + UI_CONFIG.border_size
     self._exp_button.render(rl.Rectangle(button_x, button_y, UI_CONFIG.button_size, UI_CONFIG.button_size))
-
-    self._blind_spot_renderer.render(rect)
 
   def user_interacting(self) -> bool:
     return self._exp_button.is_pressed
