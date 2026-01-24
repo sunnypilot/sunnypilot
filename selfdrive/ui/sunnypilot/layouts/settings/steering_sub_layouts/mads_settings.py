@@ -81,7 +81,8 @@ class MadsSettingsLayout(Widget):
   def show_event(self):
     self._scroller.show_event()
 
-  def _mads_limited_settings(self) -> bool:
+  @staticmethod
+  def _mads_limited_settings() -> bool:
     brand = ""
     if ui_state.is_offroad():
       bundle = ui_state.params.get("CarPlatformBundle")
