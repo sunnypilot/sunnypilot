@@ -10,6 +10,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.rocket_fuel import RocketFuel
+from openpilot.selfdrive.ui.sunnypilot.onroad.speed_limit_ui import SpeedLimitRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.turn_signal import TurnSignalController
 
 
@@ -18,16 +19,18 @@ class HudRendererSP(HudRenderer):
     super().__init__()
     self.developer_ui = DeveloperUiRenderer()
     self.rocket_fuel = RocketFuel()
+    self.speed_limit_renderer = SpeedLimitRenderer()
     self.turn_signal_controller = TurnSignalController()
 
   def _update_state(self) -> None:
     super()._update_state()
+    self.speed_limit_renderer.update()
     self.turn_signal_controller.update()
 
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
     self.developer_ui.render(rect)
-
+    self.speed_limit_renderer.render(rect)
     self.turn_signal_controller.render()
 
     if ui_state.rocket_fuel:

@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from enum import IntEnum
 from dataclasses import dataclass
 import math
@@ -72,7 +78,7 @@ class SpeedLimitRenderer(Widget):
   def speed_conv(self):
     return CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
 
-  def _update_state(self):
+  def update(self):
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
