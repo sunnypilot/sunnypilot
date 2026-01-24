@@ -5,6 +5,7 @@
 
 #include "common/swaglog.h"
 #include "common/util.h"
+#include "system/hardware/hw.h"
 #include "third_party/raylib/include/raylib.h"
 
 int freshClone();
@@ -35,8 +36,44 @@ extern const uint8_t str_continue[] asm("_binary_selfdrive_ui_installer_continue
 extern const uint8_t str_continue_end[] asm("_binary_selfdrive_ui_installer_continue_openpilot_sh_end");
 extern const uint8_t inter_ttf[] asm("_binary_selfdrive_ui_installer_inter_ascii_ttf_start");
 extern const uint8_t inter_ttf_end[] asm("_binary_selfdrive_ui_installer_inter_ascii_ttf_end");
+extern const uint8_t inter_light_ttf[] asm("_binary_selfdrive_assets_fonts_Inter_Light_ttf_start");
+extern const uint8_t inter_light_ttf_end[] asm("_binary_selfdrive_assets_fonts_Inter_Light_ttf_end");
+extern const uint8_t inter_bold_ttf[] asm("_binary_selfdrive_assets_fonts_Inter_Bold_ttf_start");
+extern const uint8_t inter_bold_ttf_end[] asm("_binary_selfdrive_assets_fonts_Inter_Bold_ttf_end");
 
-Font font;
+Font font_inter;
+Font font_roman;
+Font font_display;
+
+const bool tici_device = Hardware::get_device_type() == cereal::InitData::DeviceType::TICI ||
+                         Hardware::get_device_type() == cereal::InitData::DeviceType::TIZI;
+
+std::vector<std::string> tici_prebuilt_branches = {"release3", "release-tizi", "release3-staging", "nightly", "nightly-dev"};
+std::string migrated_branch;
+
+void branchMigration() {
+  migrated_branch = BRANCH_STR;
+  cereal::InitData::DeviceType device_type = Hardware::get_device_type();
+  if (device_type == cereal::InitData::DeviceType::TICI) {
+    if (std::find(tici_prebuilt_branches.begin(), tici_prebuilt_branches.end(), BRANCH_STR) != tici_prebuilt_branches.end()) {
+      migrated_branch = "release-tici";
+    } else if (BRANCH_STR == "master") {
+      migrated_branch = "master-tici";
+    }
+  } else if (device_type == cereal::InitData::DeviceType::TIZI) {
+    if (BRANCH_STR == "release3") {
+      migrated_branch = "release-tizi";
+    } else if (BRANCH_STR == "release3-staging") {
+      migrated_branch = "release-tizi-staging";
+    }
+  } else if (device_type == cereal::InitData::DeviceType::MICI) {
+    if (BRANCH_STR == "release3") {
+      migrated_branch = "release-mici";
+    } else if (BRANCH_STR == "release3-staging") {
+      migrated_branch = "release-mici-staging";
+    }
+  }
+}
 
 void run(const char* cmd) {
   int err = std::system(cmd);
@@ -46,9 +83,13 @@ void run(const char* cmd) {
 void finishInstall() {
   BeginDrawing();
     ClearBackground(BLACK);
-    const char *m = "Finishing install...";
-    int text_width = MeasureText(m, FONT_SIZE);
-    DrawTextEx(font, m, (Vector2){(float)(GetScreenWidth() - text_width)/2 + FONT_SIZE, (float)(GetScreenHeight() - FONT_SIZE)/2}, FONT_SIZE, 0, WHITE);
+    if (tici_device) {
+      const char *m = "Finishing install...";
+      int text_width = MeasureText(m, FONT_SIZE);
+      DrawTextEx(font_display, m, (Vector2){(float)(GetScreenWidth() - text_width)/2 + FONT_SIZE, (float)(GetScreenHeight() - FONT_SIZE)/2}, FONT_SIZE, 0, WHITE);
+    } else {
+      DrawTextEx(font_display, "finishing setup", (Vector2){8, 10}, 82, 0, WHITE);
+    }
   EndDrawing();
   util::sleep_for(60 * 1000);
 }
@@ -56,13 +97,21 @@ void finishInstall() {
 void renderProgress(int progress) {
   BeginDrawing();
     ClearBackground(BLACK);
-    DrawTextEx(font, "Installing...", (Vector2){150, 290}, 110, 0, WHITE);
-    Rectangle bar = {150, 570, (float)GetScreenWidth() - 300, 72};
-    DrawRectangleRec(bar, (Color){41, 41, 41, 255});
-    progress = std::clamp(progress, 0, 100);
-    bar.width *= progress / 100.0f;
-    DrawRectangleRec(bar, (Color){70, 91, 234, 255});
-    DrawTextEx(font, (std::to_string(progress) + "%").c_str(), (Vector2){150, 670}, 85, 0, WHITE);
+    if (tici_device) {
+      DrawTextEx(font_inter, "Installing...", (Vector2){150, 290}, 110, 0, WHITE);
+      Rectangle bar = {150, 570, (float)GetScreenWidth() - 300, 72};
+      DrawRectangleRec(bar, (Color){41, 41, 41, 255});
+      progress = std::clamp(progress, 0, 100);
+      bar.width *= progress / 100.0f;
+      DrawRectangleRec(bar, (Color){70, 91, 234, 255});
+      DrawTextEx(font_inter, (std::to_string(progress) + "%").c_str(), (Vector2){150, 670}, 85, 0, WHITE);
+    } else {
+      DrawTextEx(font_display, "installing", (Vector2){8, 10}, 82, 0, WHITE);
+      const std::string percent_str = std::to_string(progress) + "%";
+      DrawTextEx(font_roman, percent_str.c_str(), (Vector2){6, (float)(GetScreenHeight() - 128 + 18)}, 128, 0,
+                 (Color){255, 255, 255, (unsigned char)(255 * 0.9 * 0.35)});
+    }
+
   EndDrawing();
 }
 
@@ -87,7 +136,7 @@ int doInstall() {
 int freshClone() {
   LOGD("Doing fresh clone");
   std::string cmd = util::string_format("git clone --progress %s -b %s --depth=1 --recurse-submodules %s 2>&1",
-                                        GIT_URL.c_str(), BRANCH_STR.c_str(), TMP_INSTALL_PATH);
+                                        GIT_URL.c_str(), migrated_branch.c_str(), TMP_INSTALL_PATH);
   return executeGitCommand(cmd);
 }
 
@@ -95,11 +144,11 @@ int cachedFetch(const std::string &cache) {
   LOGD("Fetching with cache: %s", cache.c_str());
 
   run(util::string_format("cp -rp %s %s", cache.c_str(), TMP_INSTALL_PATH).c_str());
-  run(util::string_format("cd %s && git remote set-branches --add origin %s", TMP_INSTALL_PATH, BRANCH_STR.c_str()).c_str());
+  run(util::string_format("cd %s && git remote set-branches --add origin %s", TMP_INSTALL_PATH, migrated_branch.c_str()).c_str());
 
   renderProgress(10);
 
-  return executeGitCommand(util::string_format("cd %s && git fetch --progress origin %s 2>&1", TMP_INSTALL_PATH, BRANCH_STR.c_str()));
+  return executeGitCommand(util::string_format("cd %s && git fetch --progress origin %s 2>&1", TMP_INSTALL_PATH, migrated_branch.c_str()));
 }
 
 int executeGitCommand(const std::string &cmd) {
@@ -142,8 +191,8 @@ void cloneFinished(int exitCode) {
   // ensure correct branch is checked out
   int err = chdir(TMP_INSTALL_PATH);
   assert(err == 0);
-  run(("git checkout " + BRANCH_STR).c_str());
-  run(("git reset --hard origin/" + BRANCH_STR).c_str());
+  run(("git checkout " + migrated_branch).c_str());
+  run(("git reset --hard origin/" + migrated_branch).c_str());
   run("git submodule update --init");
 
   // move into place
@@ -189,9 +238,20 @@ void cloneFinished(int exitCode) {
 }
 
 int main(int argc, char *argv[]) {
-  InitWindow(2160, 1080, "Installer");
-  font = LoadFontFromMemory(".ttf", inter_ttf, inter_ttf_end - inter_ttf, FONT_SIZE, NULL, 0);
-  SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
+  if (tici_device) {
+    InitWindow(2160, 1080, "Installer");
+  } else {
+    InitWindow(536, 240, "Installer");
+  }
+
+  font_inter = LoadFontFromMemory(".ttf", inter_ttf, inter_ttf_end - inter_ttf, FONT_SIZE, NULL, 0);
+  font_roman = LoadFontFromMemory(".ttf", inter_light_ttf, inter_light_ttf_end - inter_light_ttf, FONT_SIZE, NULL, 0);
+  font_display = LoadFontFromMemory(".ttf", inter_bold_ttf, inter_bold_ttf_end - inter_bold_ttf, FONT_SIZE, NULL, 0);
+  SetTextureFilter(font_inter.texture, TEXTURE_FILTER_BILINEAR);
+  SetTextureFilter(font_roman.texture, TEXTURE_FILTER_BILINEAR);
+  SetTextureFilter(font_display.texture, TEXTURE_FILTER_BILINEAR);
+
+  branchMigration();
 
   if (util::file_exists(CONTINUE_PATH)) {
     finishInstall();
@@ -202,6 +262,8 @@ int main(int argc, char *argv[]) {
   }
 
   CloseWindow();
-  UnloadFont(font);
+  UnloadFont(font_inter);
+  UnloadFont(font_roman);
+  UnloadFont(font_display);
   return 0;
 }

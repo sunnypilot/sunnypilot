@@ -1,0 +1,105 @@
+name: 'Post to Discourse'
+description: 'Posts a message to a Discourse topic (existing or new)'
+
+inputs:
+  discourse-url:
+    description: 'Discourse instance URL (e.g., https://discourse.example.com)'
+    required: true
+  api-key:
+    description: 'Discourse API key'
+    required: true
+  api-username:
+    description: 'Discourse API username'
+    required: true
+  topic-id:
+    description: 'Discourse topic ID to post to (use this OR category-id + title)'
+    required: false
+  category-id:
+    description: 'Category ID for new topic (required if topic-id not provided)'
+    required: false
+  title:
+    description: 'Title for new topic (required if topic-id not provided)'
+    required: false
+  message:
+    description: 'Message content (markdown supported)'
+    required: true
+
+outputs:
+  post-number:
+    description: 'The post number in the topic'
+    value: ${{ steps.post.outputs.post_number }}
+  post-url:
+    description: 'Direct URL to the post'
+    value: ${{ steps.post.outputs.post_url }}
+  topic-id:
+    description: 'The topic ID (useful when creating a new topic)'
+    value: ${{ steps.post.outputs.topic_id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Post to Discourse
+      id: post
+      shell: bash
+      run: |
+        # Validate inputs
+        if [ -z "${{ inputs.topic-id }}" ] && ([ -z "${{ inputs.category-id }}" ] || [ -z "${{ inputs.title }}" ]); then
+          echo "❌ Error: Must provide either topic-id OR both category-id and title"
+          exit 1
+        fi
+        
+        if [ -n "${{ inputs.topic-id }}" ] && ([ -n "${{ inputs.category-id }}" ] || [ -n "${{ inputs.title }}" ]); then
+          echo "⚠️  Warning: Both topic-id and category-id/title provided. Will post to existing topic."
+        fi
+        
+        # Determine if creating new topic or posting to existing
+        if [ -n "${{ inputs.topic-id }}" ]; then
+          echo "📝 Posting to existing topic ID: ${{ inputs.topic-id }}"
+        
+          # Create JSON payload for posting to existing topic
+          PAYLOAD=$(jq -n \
+            --arg content '${{ inputs.message }}' \
+            --arg topic_id "${{ inputs.topic-id }}" \
+            '{topic_id: $topic_id, raw: $content}')
+        else
+          echo "✨ Creating new topic: ${{ inputs.title }}"
+        
+          # Create JSON payload for new topic
+          PAYLOAD=$(jq -n \
+            --arg content '${{ inputs.message }}' \
+            --arg title "${{ inputs.title }}" \
+            --arg category "${{ inputs.category-id }}" \
+            '{title: $title, category: ($category | tonumber), raw: $content}')
+        fi
+        
+        # Post to Discourse
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -X POST "${{ inputs.discourse-url }}/posts.json" \
+          -H "Content-Type: application/json" \
+          -H "Api-Key: ${{ inputs.api-key }}" \
+          -H "Api-Username: ${{ inputs.api-username }}" \
+          -d "$PAYLOAD")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          echo "✅ Successfully posted to Discourse!"
+        
+          POST_NUMBER=$(echo "$BODY" | jq -r '.post_number // "unknown"')
+          TOPIC_ID=$(echo "$BODY" | jq -r '.topic_id // "${{ inputs.topic-id }}"')
+          POST_URL="${{ inputs.discourse-url }}/t/${TOPIC_ID}/${POST_NUMBER}"
+        
+          echo "post_number=${POST_NUMBER}" >> $GITHUB_OUTPUT
+          echo "post_url=${POST_URL}" >> $GITHUB_OUTPUT
+          echo "topic_id=${TOPIC_ID}" >> $GITHUB_OUTPUT
+        
+          echo "Topic ID: ${TOPIC_ID}"
+          echo "Post number: ${POST_NUMBER}"
+          echo "URL: ${POST_URL}"
+        else
+          echo "❌ Failed to post to Discourse"
+          echo "HTTP Code: ${HTTP_CODE}"
+          echo "Response: ${BODY}"
+          exit 1
+        fi

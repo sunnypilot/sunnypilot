@@ -14,6 +14,8 @@
 #include "common/version.h"
 #include "system/hardware/hw.h"
 
+#include "sunnypilot/common/version.h"
+
 namespace CommaApi2 {
 
 // Base64 URL-safe character set (uses '-' and '_' instead of '+' and '/')
@@ -141,7 +143,7 @@ std::string httpGet(const std::string &url, long *response_code) {
 
   // Handle headers
   struct curl_slist *headers = nullptr;
-  headers = curl_slist_append(headers, "User-Agent: openpilot-" COMMA_VERSION);
+  headers = curl_slist_append(headers, "User-Agent: openpilot-" SUNNYPILOT_VERSION);
   if (!token.empty()) {
     headers = curl_slist_append(headers, ("Authorization: JWT " + token).c_str());
   }

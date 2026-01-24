@@ -3,7 +3,6 @@ name: Build dev
 env:
   DEFAULT_SOURCE_BRANCH: "master"
   DEFAULT_TARGET_BRANCH: "master-dev"
-  PR_LABEL: "dev"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
@@ -43,22 +42,23 @@ jobs:
     if: (
       (github.event_name == 'workflow_dispatch')
       || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
+      || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == vars.PREBUILT_PR_LABEL || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, vars.PREBUILT_PR_LABEL))))
       )
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all branches
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
           (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev'))))
+          || (contains(github.event_name, 'pull_request') && ((github.event.action == 'labeled' && (github.event.label.name == vars.PREBUILT_PR_LABEL || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, vars.PREBUILT_PR_LABEL))))
           )
         with:
-          workflow: selfdrive_tests.yaml # The workflow file to monitor
+          workflow: tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
@@ -119,7 +119,7 @@ jobs:
           # Use GitHub API to get PRs with specific label, ordered by creation date
           PR_LIST=$(gh api graphql -f query='
             query($search_query:String!) {
-              search(query: $search_query, type:ISSUE, first:100) {
+              search(query: $search_query, type:ISSUE, first:40) {
                 nodes {
                   ... on PullRequest {
                     number
@@ -149,7 +149,7 @@ jobs:
                   }
                 }
               }
-            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${PR_LABEL},${PR_LABEL}-c3 draft:false sort:created-asc")
+            }' -F search_query="repo:${{ github.repository }} is:pr is:open label:${{ vars.PREBUILT_PR_LABEL }},${{ vars.PREBUILT_PR_LABEL }}-c3 draft:false sort:created-asc")
 
           PR_LIST=${PR_LIST//\'/}
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
@@ -174,10 +174,37 @@ jobs:
           echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
           echo '    locksverify = false' >> .lfsconfig
 
-      - name: Push changes if there are diffs
-        id: push-changes  # Add an id so we can reference this step
+      - name: Restore workflows from source
         run: |
           TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+          SOURCE_BRANCH="${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
+
+          # Ensure we are on the target branch
+          git checkout $TARGET_BRANCH
+
+          echo "Restoring .github/workflows from $SOURCE_BRANCH"
+          git checkout origin/$SOURCE_BRANCH -- .github/workflows
+
+          if ! git diff --cached --quiet; then
+            echo "Workflows differ. Committing restoration."
+            git commit -m "chore: restore .github/workflows from $SOURCE_BRANCH"
+          else
+            echo "Workflows match $SOURCE_BRANCH."
+          fi
+
+      - uses: actions/create-github-app-token@v2
+        id: ci-token
+        with:
+          app-id: ${{ secrets.CI_GITHUB_ACTIONS_TOKEN_APP_ID }}
+          private-key: ${{ secrets.CI_GITHUB_ACTIONS_TOKEN_APP_PRIVATE_KEY }}
+
+      - name: Push changes if there are diffs
+        id: push-changes
+        run: |
+          TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+
+          # Use the App Token to set the remote URL with authentication
+          git remote set-url origin "https://x-access-token:${{ steps.ci-token.outputs.token }}@github.com/${{ github.repository }}.git"
 
           # Fetch the latest from remote
           git fetch origin $TARGET_BRANCH
@@ -189,7 +216,7 @@ jobs:
             exit 0
           fi
 
-          # If we get here, there are diffs, so push
+          # Push with the authenticated origin
           if ! git push origin $TARGET_BRANCH --force; then
             echo "Failed to push changes to $TARGET_BRANCH"
             exit 1
@@ -202,13 +229,13 @@ jobs:
         if: steps.push-changes.outputs.has_changes == 'true'
         run: |
           echo "Triggering selfdrive tests..."
-          gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+          gh workflow run tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
 
           echo "Sleeping for 120s to give plenty of time for the action to start and then we wait"
           sleep 120
 
           echo "Getting latest run ID..."
-          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+          RUN_ID=$(gh run list --workflow=tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
 
           echo "Watching run ID: $RUN_ID"
           gh run watch "$RUN_ID"

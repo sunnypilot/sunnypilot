@@ -22,7 +22,7 @@ shopt -s huponexit # kill all child processes when the shell exits
 
 export CI=1
 export PYTHONWARNINGS=error
-export LOGPRINT=debug
+#export LOGPRINT=debug # this has gotten too spammy...
 export TEST_DIR=${env.TEST_DIR}
 export SOURCE_DIR=${env.SOURCE_DIR}
 export GIT_BRANCH=${env.GIT_BRANCH}
@@ -167,7 +167,7 @@ node {
   env.GIT_COMMIT = checkout(scm).GIT_COMMIT
 
   def excludeBranches = ['__nightly', 'devel', 'devel-staging', 'release3', 'release3-staging',
-                         'release-tici', 'testing-closet*', 'hotfix-*']
+                         'release-tici', 'release-tizi', 'release-tizi-staging', 'testing-closet*', 'hotfix-*']
   def excludeRegex = excludeBranches.join('|').replaceAll('\\*', '.*')
 
   if (env.BRANCH_NAME != 'master' && !env.BRANCH_NAME.contains('__jenkins_loop_')) {
@@ -178,8 +178,8 @@ node {
 
   try {
     if (env.BRANCH_NAME == 'devel-staging') {
-      deviceStage("build release3-staging", "tizi-needs-can", [], [
-        step("build release3-staging", "RELEASE_BRANCH=release3-staging $SOURCE_DIR/release/build_release.sh"),
+      deviceStage("build release-tizi-staging", "tizi-needs-can", [], [
+        step("build release-tizi-staging", "RELEASE_BRANCH=release-tizi-staging $SOURCE_DIR/release/build_release.sh"),
       ])
     }
 

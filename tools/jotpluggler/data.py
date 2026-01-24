@@ -5,10 +5,11 @@ import bisect
 from collections import defaultdict
 from tqdm import tqdm
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.test.process_replay.migration import migrate_all
 from openpilot.tools.lib.logreader import _LogFileReader, LogReader
 
 
-def flatten_dict(d: dict, sep: str = "/", prefix: str = None) -> dict:
+def flatten_dict(d: dict, sep: str = "/", prefix: str | None = None) -> dict:
   result = {}
   stack: list[tuple] = [(d, prefix)]
 
@@ -199,7 +200,8 @@ def msgs_to_time_series(msgs):
 def _process_segment(segment_identifier: str):
   try:
     lr = _LogFileReader(segment_identifier, sort_by_time=True)
-    return msgs_to_time_series(lr)
+    migrated_msgs = migrate_all(lr)
+    return msgs_to_time_series(migrated_msgs)
   except Exception as e:
     cloudlog.warning(f"Warning: Failed to process segment {segment_identifier}: {e}")
     return {}, 0.0, 0.0
@@ -311,6 +313,12 @@ class DataManager:
       if not lr.logreader_identifiers:
         cloudlog.warning(f"Warning: No log segments found for route: {route}")
         return
+
+      total_segments = len(lr.logreader_identifiers)
+      with self._lock:
+        observers = self._observers.copy()
+      for callback in observers:
+        callback({'metadata_loaded': True, 'total_segments': total_segments})
 
       num_processes = max(1, multiprocessing.cpu_count() // 2)
       with multiprocessing.Pool(processes=num_processes) as pool, tqdm(total=len(lr.logreader_identifiers), desc="Processing Segments") as pbar:

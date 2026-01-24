@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import math
-import threading
-import time
 from numbers import Number
 
 from cereal import car, log
 import cereal.messaging as messaging
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
-from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
+from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
@@ -19,10 +17,9 @@ from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
+from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
-from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
@@ -32,7 +29,7 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls(ControlsExt, ModelStateBase):
+class Controls(ControlsExt):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
@@ -41,11 +38,10 @@ class Controls(ControlsExt, ModelStateBase):
 
     # Initialize sunnypilot controlsd extension and base model state
     ControlsExt.__init__(self, self.CP, self.params)
-    ModelStateBase.__init__(self)
 
     self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
-    self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
+    self.sm = messaging.SubMaster(['liveDelay', 'liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
                                    'driverMonitoringState', 'onroadEvents', 'driverAssistance', 'liveDelay'] + self.sm_services_ext,
                                   poll='selfdriveState')
@@ -62,11 +58,11 @@ class Controls(ControlsExt, ModelStateBase):
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
-      self.LaC = LatControlAngle(self.CP, self.CP_SP, self.CI)
+      self.LaC = LatControlAngle(self.CP, self.CP_SP, self.CI, DT_CTRL)
     elif self.CP.lateralTuning.which() == 'pid':
-      self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
+      self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI, DT_CTRL)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
+      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI, DT_CTRL)
 
   def update(self):
     self.sm.update(15)
@@ -99,7 +95,6 @@ class Controls(ControlsExt, ModelStateBase):
 
       self.LaC.extension.update_model_v2(self.sm['modelV2'])
 
-      self.lat_delay = get_lat_delay(self.params, self.sm["liveDelay"].lateralDelay)
       self.LaC.extension.update_lateral_lag(self.lat_delay)
 
     long_plan = self.sm['longitudinalPlan']
@@ -133,18 +128,19 @@ class Controls(ControlsExt, ModelStateBase):
       self.LoC.reset()
 
     # accel PID loop
-    pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
+    pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, self.CP_SP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
     new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
+    lat_delay = self.sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
 
     actuators.curvature = self.desired_curvature
     steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                        self.steer_limited_by_safety, self.desired_curvature,
-                                                       self.calibrated_pose, curvature_limited)  # TODO what if not available
+                                                       self.calibrated_pose, curvature_limited, lat_delay)
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
     # Ensure no NaNs/Infs
@@ -230,27 +226,15 @@ class Controls(ControlsExt, ModelStateBase):
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
-  def params_thread(self, evt):
-    while not evt.is_set():
-      self.get_params_sp()
-
-      time.sleep(0.1)
-
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    e = threading.Event()
-    t = threading.Thread(target=self.params_thread, args=(e,))
-    try:
-      t.start()
-      while True:
-        self.update()
-        CC, lac_log = self.state_control()
-        self.publish(CC, lac_log)
-        self.run_ext(self.sm, self.pm)
-        rk.monitor_time()
-    finally:
-      e.set()
-      t.join()
+    while True:
+      self.update()
+      CC, lac_log = self.state_control()
+      self.publish(CC, lac_log)
+      self.get_params_sp(self.sm)
+      self.run_ext(self.sm, self.pm)
+      rk.monitor_time()
 
 
 def main():
