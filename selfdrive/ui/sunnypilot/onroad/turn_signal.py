@@ -34,7 +34,7 @@ class TurnSignalWidget(Widget):
     self._turn_signal_alpha_filter = FirstOrderFilter(0.0, 0.3, 1 / gui_app.target_fps)
 
     texture_path = f'icons_mici/onroad/turn_signal_{direction}.png'
-    self._texture = gui_app.texture(texture_path, 100, 91)
+    self._texture = gui_app.texture(texture_path, 120, 109)
 
   def _render(self, _):
     if not self._active:
