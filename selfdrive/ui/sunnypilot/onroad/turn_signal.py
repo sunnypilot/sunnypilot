@@ -24,7 +24,6 @@ class TurnSignalConfig:
   size: int = 150
 
 
-
 class TurnSignalWidget(Widget):
   def __init__(self, direction: IconSide):
     super().__init__()
