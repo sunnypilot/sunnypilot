@@ -34,7 +34,6 @@ class RocketFuel:
     wp = 28.0
 
     # Draw
-    rect_w = rect.width
     rect_h = rect.height
 
     if self.vc_accel > 0:
