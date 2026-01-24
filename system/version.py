@@ -13,7 +13,7 @@ from openpilot.common.git import get_commit, get_origin, get_branch, get_short_b
 RELEASE_SP_BRANCHES = ['release-c3', 'release', 'release-tizi', 'release-tici', 'release-tizi-staging', 'release-tici-staging']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
 MASTER_SP_BRANCHES = ['master']
-RELEASE_BRANCHES = ['release-tizi-staging', 'release-tici', 'release-tizi', 'nightly']
+RELEASE_BRANCHES = ['release-tizi-staging', 'release-mici-staging', 'release-tizi', 'release-mici', 'nightly']
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel-staging', 'nightly-dev'] + RELEASE_SP_BRANCHES + TESTED_SP_BRANCHES
 
 SP_BRANCH_MIGRATIONS = {
@@ -30,6 +30,9 @@ BUILD_METADATA_FILENAME = "build.json"
 
 training_version: str = "0.2.0"
 terms_version: str = "2"
+terms_version_sp: str = "1.0"
+sunnylink_consent_version: str = "1.0"
+sunnylink_consent_declined: str = "-1"
 
 
 def get_version(path: str = BASEDIR) -> str:
