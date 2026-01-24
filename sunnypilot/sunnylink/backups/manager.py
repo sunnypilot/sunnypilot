@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import base64
 import json
+import requests
 import time
 from enum import Enum
 from typing import Any
@@ -46,6 +47,7 @@ class BackupManagerSP:
     self.operation: OperationType | None = None
 
     self.last_error = ""
+    self._session = requests.Session()  # reuse session to reduce SSL handshake overhead
 
   def _report_status(self) -> None:
     """Reports current backup manager state through the messaging system."""
@@ -120,7 +122,8 @@ class BackupManagerSP:
         f"backup/{self.device_id}",
         method='PUT',
         access_token=self.api.get_token(),
-        json=payload
+        json=payload,
+        session=self._session
       )
 
       if result:
@@ -150,7 +153,7 @@ class BackupManagerSP:
 
       # Get backup data from API for the specified version
       endpoint = f"backup/{self.device_id}" + f"/{version or ''}" + "?api-version=1"
-      backup_data = self.api.api_get(endpoint, access_token=self.api.get_token())
+      backup_data = self.api.api_get(endpoint, access_token=self.api.get_token(), session=self._session)
       if not backup_data:
         raise Exception(f"No backup found for device {self.device_id}")
 

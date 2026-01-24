@@ -4,8 +4,8 @@
 #include <cmath>
 #include <eigen3/Eigen/Dense>
 
-#include "common/transformations/orientation.hpp"
-#include "common/transformations/coordinates.hpp"
+#include "sunnypilot/common/transformations/orientation.hpp"
+#include "sunnypilot/common/transformations/coordinates.hpp"
 
 Eigen::Quaterniond ensure_unique(const Eigen::Quaterniond &quat) {
   if (quat.w() > 0){
@@ -141,4 +141,3 @@ Eigen::Vector3d ned_euler_from_ecef(const ECEF &ecef_init, const Eigen::Vector3d
 
   return {phi, theta, psi};
 }
-
