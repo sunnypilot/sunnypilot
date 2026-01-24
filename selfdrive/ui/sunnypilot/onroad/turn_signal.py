@@ -60,11 +60,11 @@ class TurnSignalWidget(Widget):
       color = rl.Color(255, 255, 255, icon_alpha)
       rl.draw_texture(self._texture, pos_x, pos_y, color)
 
-  def activate(self, type: str = 'signal'):
-    if not self._active or self._type != type:
+  def activate(self, _type: str = 'signal'):
+    if not self._active or self._type != _type:
       self._turn_signal_timer = 0.0
     self._active = True
-    self._type = type
+    self._type = _type
 
   def deactivate(self):
     self._active = False
