@@ -1,4 +1,11 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import pyray as rl
+
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -12,7 +19,7 @@ class RoadNameRenderer(Widget):
     self.is_metric = False
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
 
-  def _update_state(self):
+  def update_state(self):
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
