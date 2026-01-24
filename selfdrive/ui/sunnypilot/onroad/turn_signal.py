@@ -29,24 +29,30 @@ class TurnSignalWidget(Widget):
     super().__init__()
     self._direction = direction
     self._active = False
+    self._type = 'signal'
 
     self._turn_signal_timer = 0.0
     self._turn_signal_alpha_filter = FirstOrderFilter(0.0, 0.3, 1 / gui_app.target_fps)
 
-    texture_path = f'icons_mici/onroad/turn_signal_{direction}.png'
-    self._texture = gui_app.texture(texture_path, 120, 109)
+    self._signal_texture = gui_app.texture(f'icons_mici/onroad/turn_signal_{direction}.png', 120, 109)
+    self._blind_spot_texture = gui_app.texture(f'icons_mici/onroad/blind_spot_{direction}.png', 120, 109)
+    self._texture = self._signal_texture
 
   def _render(self, _):
     if not self._active:
       return
 
-    if time.monotonic() - self._turn_signal_timer > TURN_SIGNAL_BLINK_PERIOD:
-      self._turn_signal_timer = time.monotonic()
-      self._turn_signal_alpha_filter.x = 255 * 2
+    if self._type == 'signal':
+      if time.monotonic() - self._turn_signal_timer > TURN_SIGNAL_BLINK_PERIOD:
+        self._turn_signal_timer = time.monotonic()
+        self._turn_signal_alpha_filter.x = 255 * 2
+      else:
+        self._turn_signal_alpha_filter.update(255 * 0.2)
+      icon_alpha = int(min(self._turn_signal_alpha_filter.x, 255))
     else:
-      self._turn_signal_alpha_filter.update(255 * 0.2)
+      icon_alpha = 255
 
-    icon_alpha = int(min(self._turn_signal_alpha_filter.x, 255))
+    self._texture = self._blind_spot_texture if self._type == 'blind_spot' else self._signal_texture
 
     if self._texture:
       pos_x = int(self._rect.x + (self._rect.width - self._texture.width) / 2)
@@ -54,10 +60,11 @@ class TurnSignalWidget(Widget):
       color = rl.Color(255, 255, 255, icon_alpha)
       rl.draw_texture(self._texture, pos_x, pos_y, color)
 
-  def activate(self):
-    if not self._active:
+  def activate(self, _type: str = 'signal'):
+    if not self._active or self._type != _type:
       self._turn_signal_timer = 0.0
     self._active = True
+    self._type = _type
 
   def deactivate(self):
     self._active = False
@@ -79,36 +86,66 @@ class TurnSignalController:
 
     if event_name == 'preLaneChangeLeft':
       self._last_icon_side = IconSide.left
-      self._left_signal.activate()
+      self._left_signal.activate('signal')
       self._right_signal.deactivate()
 
     elif event_name == 'preLaneChangeRight':
       self._last_icon_side = IconSide.right
-      self._right_signal.activate()
+      self._right_signal.activate('signal')
       self._left_signal.deactivate()
 
     elif event_name == 'laneChange':
       if self._last_icon_side == IconSide.left:
-        self._left_signal.activate()
+        self._left_signal.activate('signal')
         self._right_signal.deactivate()
       elif self._last_icon_side == IconSide.right:
-        self._right_signal.activate()
+        self._right_signal.activate('signal')
+        self._left_signal.deactivate()
+
+    elif event_name == 'laneChangeBlocked':
+      CS = sm['carState']
+      if CS.leftBlinker:
+        icon_side = IconSide.left
+      elif CS.rightBlinker:
+        icon_side = IconSide.right
+      else:
+        icon_side = self._last_icon_side
+
+      if icon_side == IconSide.left:
+        self._left_signal.activate('blind_spot')
+        self._right_signal.deactivate()
+      elif icon_side == IconSide.right:
+        self._right_signal.activate('blind_spot')
         self._left_signal.deactivate()
 
     else:
       self._last_icon_side = None
-      self._left_signal.deactivate()
-      self._right_signal.deactivate()
+      CS = sm['carState']
+
+      if CS.leftBlindspot:
+        self._left_signal.activate('blind_spot')
+      elif CS.leftBlinker:
+        self._left_signal.activate('signal')
+      else:
+        self._left_signal.deactivate()
+
+      if CS.rightBlindspot:
+        self._right_signal.activate('blind_spot')
+      elif CS.rightBlinker:
+        self._right_signal.activate('signal')
+      else:
+        self._right_signal.deactivate()
 
   def render(self):
-    if self._last_icon_side == IconSide.left:
+    if self._left_signal._active:
       self._left_signal.render(rl.Rectangle(
         self._config.left_x,
         self._config.left_y,
         self._config.size,
         self._config.size
       ))
-    elif self._last_icon_side == IconSide.right:
+
+    if self._right_signal._active:
       self._right_signal.render(rl.Rectangle(
         self._config.right_x,
         self._config.right_y,
