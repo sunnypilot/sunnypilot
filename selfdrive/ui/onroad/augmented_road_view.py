@@ -14,6 +14,12 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCameraConfig, view_frame_from_device_frame
 from openpilot.common.transformations.orientation import rot_from_euler
 
+if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.onroad.augmented_road_view import BORDER_COLORS_SP
+  from openpilot.selfdrive.ui.sunnypilot.onroad.driver_state import DriverStateRendererSP as DriverStateRenderer
+  from openpilot.selfdrive.ui.sunnypilot.onroad.hud_renderer import HudRendererSP as HudRenderer
+  from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
+
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.LiveCalibrationData.Status.calibrated
 ROAD_CAM = VisionStreamType.VISION_STREAM_ROAD
@@ -24,6 +30,7 @@ BORDER_COLORS = {
   UIStatus.DISENGAGED: rl.Color(0x12, 0x28, 0x39, 0xFF),  # Blue for disengaged state
   UIStatus.OVERRIDE: rl.Color(0x89, 0x92, 0x8D, 0xFF),  # Gray for override state
   UIStatus.ENGAGED: rl.Color(0x16, 0x7F, 0x40, 0xFF),  # Green for engaged state
+  **BORDER_COLORS_SP,
 }
 
 WIDE_CAM_MAX_SPEED = 10.0  # m/s (22 mph)
@@ -216,6 +223,14 @@ class AugmentedRoadView(CameraView):
     self.model_renderer.set_transform(video_transform @ calib_transform)
 
     return self._cached_matrix
+
+  def show_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.RESUME)
+
+  def hide_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.PAUSE)
 
 
 if __name__ == "__main__":

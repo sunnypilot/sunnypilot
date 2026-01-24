@@ -78,7 +78,7 @@ class TreeItemWidget(Button):
 class TreeOptionDialog(MultiOptionDialog):
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
                get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None, search_title=None, search_subtitle=None):
-    super().__init__(title, [], "", option_font_weight)
+    super().__init__(title, [], current_ref, option_font_weight)
     self.folders = folders
     self.selection_ref = current_ref
     self.fav_param = fav_param
@@ -99,6 +99,24 @@ class TreeOptionDialog(MultiOptionDialog):
     self.search_title = search_title or tr("Enter search query")
     self.search_subtitle = search_subtitle
     self.search_dialog = None
+    self._search_pressed = False
+
+    self.selection_node = None
+    # Try to match by ref, by display text, or fall back to "Default" when no ref is set
+    for folder in self.folders:
+      for node in folder.nodes:
+        display = self.display_func(node)
+        if (
+          node.ref == current_ref or
+          display == current_ref or
+          (not current_ref and node.ref == "Default")
+        ):
+          self.selection = display
+          self.current = display
+          self.selection_node = node
+          break
+      if self.selection_node is not None:
+        break
 
     self._build_visible_items()
 
@@ -141,6 +159,17 @@ class TreeOptionDialog(MultiOptionDialog):
 
   def _build_visible_items(self, reset_scroll=True):
     self.visible_items = []
+
+    # Pinned selected item at the very top (if any)
+    if getattr(self, "selection_node", None) is not None:
+      node = self.selection_node
+      display = self.display_func(node)
+      self.selection = self.current = display
+      favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
+      self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 0,
+                                               lambda node_ref=node: self._select_node(node_ref),
+                                               favorite_cb, node.ref in self.favorites, is_expanded=True))
+
     for folder in self.folders:
       nodes = [node for node in folder.nodes if not self.query or search_from_list(self.query, [search_func(node) for search_func in self.search_funcs])]
       if not nodes and self.query:
@@ -151,10 +180,15 @@ class TreeOptionDialog(MultiOptionDialog):
                                                  lambda folder_ref=folder: self._toggle_folder(folder_ref)))
       if expanded:
         for node in nodes:
+          # Skip duplicate root-level item for the selected node
+          if self.selection_node is not None and node.ref == self.selection_node.ref and not folder.folder:
+            continue
+
           favorite_cb = (lambda node_ref=node: self._toggle_favorite(node_ref)) if self.fav_param and node.ref != "Default" else None
           self.visible_items.append(TreeItemWidget(self.display_func(node), node.ref, False, 1 if folder.folder else 0,
                                                    lambda node_ref=node: self._select_node(node_ref),
                                                    favorite_cb, node.ref in self.favorites, is_expanded=expanded))
+
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
     self.scroller._items = self.visible_items
@@ -183,9 +217,10 @@ class TreeOptionDialog(MultiOptionDialog):
     input_rect = rl.Rectangle(self._search_rect.x + inset, self._search_rect.y + inset,
                               self._search_rect.width - inset * 2, self._search_rect.height - inset * 2)
 
-    # Transparent fill + border
-    rl.draw_rectangle_rounded(input_rect, roundness, 10, rl.Color(0, 0, 0, 0))
-    rl.draw_rectangle_rounded_lines_ex(input_rect, roundness, 10, 3, rl.Color(150, 150, 150, 200))
+    # Transparent fill (unpressed), white fill (pressed), border
+    fill_color = style.TREE_DIALOG_SEARCH_BUTTON_PRESSED if self._search_pressed else style.TREE_DIALOG_TRANSPARENT
+    rl.draw_rectangle_rounded(input_rect, roundness, 10, fill_color)
+    rl.draw_rectangle_rounded_lines_ex(input_rect, roundness, 10, 3, style.TREE_DIALOG_SEARCH_BUTTON_BORDER)
 
     # Magnifying glass icon
     icon_color = rl.Color(180, 180, 180, 240)
@@ -233,8 +268,21 @@ class TreeOptionDialog(MultiOptionDialog):
 
     return self._result
 
-  def _handle_mouse_release(self, mouse_pos):
+  def _handle_mouse_press(self, mouse_pos):
     if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+      self._search_pressed = True
+      return True
+    return super()._handle_mouse_press(mouse_pos)
+
+  def _handle_mouse_release(self, mouse_pos):
+    clicked_search = False
+    if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+      clicked_search = self._search_pressed
+
+    self._search_pressed = False
+
+    if clicked_search:
       self._on_search_clicked()
       return True
+
     return super()._handle_mouse_release(mouse_pos)
