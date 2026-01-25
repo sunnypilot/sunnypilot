@@ -32,7 +32,7 @@ class HudRendererSP(HudRenderer):
     self.developer_ui.render(rect)
 
     self.road_name_renderer.render(rect)
-    self.turn_signal_controller.render()
+    self.turn_signal_controller.render(rect)
 
     if ui_state.rocket_fuel:
       self.rocket_fuel.render(rect, ui_state.sm)
