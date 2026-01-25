@@ -17,7 +17,7 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 MAX_ACCEL_PROFILES = {
   AccelPersonality.eco:      [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
   AccelPersonality.normal:   [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
-  AccelPersonality.sport:    [2.00, 1.99, 1.95, 1.45, 1.10, 0.78, 0.48, 0.190, 0.11, 0.09],
+  AccelPersonality.sport:    [2.00, 1.99, 1.95, 1.45, 1.10, 0.82, 0.53, 0.240, 0.13, 0.09],
   #AccelPersonality.eco:      [1.30, 1.25, 1.15, 0.69, 0.60, 0.49, 0.28, 0.107, 0.08, 0.06],
   #AccelPersonality.normal:   [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
   #AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
@@ -33,7 +33,7 @@ MIN_ACCEL_PROFILES = {
 MIN_ACCEL_BREAKPOINTS =    [3,     4.5,   7.,    9.,     25]
 
 
-DECEL_SMOOTH_ALPHA = 0.20  # Very aggressive smoothing for decel (lower = smoother)
+DECEL_SMOOTH_ALPHA = 0.40  # Very aggressive smoothing for decel (lower = smoother)
 ACCEL_SMOOTH_ALPHA = 0.90  # Less aggressive for accel (higher = more responsive)
 
 # Asymmetric rate limiting
