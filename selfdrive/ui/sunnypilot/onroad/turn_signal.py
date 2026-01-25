@@ -138,15 +138,18 @@ class TurnSignalController:
 
   def render(self, rect: rl.Rectangle):
     x = rect.x + rect.width / 2
-    y = rect.y + self._config.left_y
+
     left_x = x - self._config.left_x - self._config.size
+    left_y = rect.y + self._config.left_y
+
     right_x = x + self._config.right_x
+    right_y = rect.y + self._config.right_y
 
     if self._left_signal._active:
-      self._left_signal.render(rl.Rectangle(left_x, y, self._config.size, self._config.size))
+      self._left_signal.render(rl.Rectangle(left_x, left_y, self._config.size, self._config.size))
 
     if self._right_signal._active:
-      self._right_signal.render(rl.Rectangle(right_x, y, self._config.size, self._config.size))
+      self._right_signal.render(rl.Rectangle(right_x, right_y, self._config.size, self._config.size))
 
   @property
   def config(self) -> TurnSignalConfig:
