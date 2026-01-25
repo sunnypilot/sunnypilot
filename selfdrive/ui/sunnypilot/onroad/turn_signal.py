@@ -17,10 +17,10 @@ from openpilot.common.filter_simple import FirstOrderFilter
 
 @dataclass(frozen=True)
 class TurnSignalConfig:
-  left_x: int = 870
-  left_y: int = 220
-  right_x: int = 1140
-  right_y: int = 220
+  left_x: int = 80
+  left_y: int = 190
+  right_x: int = 80
+  right_y: int = 190
   size: int = 150
 
 
@@ -136,22 +136,20 @@ class TurnSignalController:
       else:
         self._right_signal.deactivate()
 
-  def render(self):
+  def render(self, rect: rl.Rectangle):
+    x = rect.x + rect.width / 2
+
+    left_x = x - self._config.left_x - self._config.size
+    left_y = rect.y + self._config.left_y
+
+    right_x = x + self._config.right_x
+    right_y = rect.y + self._config.right_y
+
     if self._left_signal._active:
-      self._left_signal.render(rl.Rectangle(
-        self._config.left_x,
-        self._config.left_y,
-        self._config.size,
-        self._config.size
-      ))
+      self._left_signal.render(rl.Rectangle(left_x, left_y, self._config.size, self._config.size))
 
     if self._right_signal._active:
-      self._right_signal.render(rl.Rectangle(
-        self._config.right_x,
-        self._config.right_y,
-        self._config.size,
-        self._config.size
-      ))
+      self._right_signal.render(rl.Rectangle(right_x, right_y, self._config.size, self._config.size))
 
   @property
   def config(self) -> TurnSignalConfig:
