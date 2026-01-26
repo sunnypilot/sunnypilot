@@ -24,6 +24,8 @@ SP_BRANCH_MIGRATIONS = {
   ("tizi", "staging-c3-new"): "staging",
   ("tizi", "dev-c3-new"): "dev",
   ("tizi", "master-dev-c3-new"): "master-dev",
+  ("tici", "hkg-angle-steering-2025"): "hkg-angle-steering-2025-tici",
+  ("tici", "hkg-angle-steering-2025-prebuilt"): "hkg-angle-steering-2025-tici-prebuilt"
 }
 
 BUILD_METADATA_FILENAME = "build.json"

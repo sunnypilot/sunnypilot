@@ -21,5 +21,12 @@
         </clean>
       </configuration>
     </target>
+    <target id="f2590b2b-9b93-49f9-8510-da3f3724a2ae" name="replay" defaultType="TOOL">
+      <configuration id="d475264f-6f4c-4092-9b4e-6773309f38b7" name="replay" toolchainName="Default">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_uv build tools replay" />
+        </build>
+      </configuration>
+    </target>
   </component>
 </project>
