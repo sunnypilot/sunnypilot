@@ -51,7 +51,6 @@ class SpeedLimitRenderer(Widget):
     self.speed_limit_final_last = 0.0
     self.speed_limit_source = SpeedLimitSource.none
     self.speed_limit_assist_state = AssistState.disabled
-    self.speed_limit_assist_active = False
 
     self.speed_limit_ahead = 0.0
     self.speed_limit_ahead_dist = 0.0
@@ -94,7 +93,6 @@ class SpeedLimitRenderer(Widget):
       self.speed_limit_final_last = resolver.speedLimitFinalLast * self.speed_conv
       self.speed_limit_source = resolver.source
       self.speed_limit_assist_state = assist.state
-      self.speed_limit_assist_active = assist.active
 
     if sm.updated["liveMapDataSP"]:
       lmd = sm["liveMapDataSP"]
