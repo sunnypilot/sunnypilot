@@ -9,7 +9,6 @@ from enum import Enum
 from cereal import messaging, log, custom
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
-from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.system.ui.lib.application import gui_app
 
@@ -37,7 +36,6 @@ class UIStateSP:
     self.update_params()
 
     self.onroad_brightness_timer: int = 0
-    self.speed_limit_mode: SpeedLimitMode = SpeedLimitMode.off
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
     self.reset_onroad_sleep_timer()
 
