@@ -127,13 +127,11 @@ class SpeedLimitRenderer(Widget):
       self.assist_frame += 1
       pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / gui_app.target_fps)
       alpha = self._sign_alpha_filter.update(pulse_value)
-      show_sign = True
     else:
       self.assist_frame = 0
       alpha = self._sign_alpha_filter.update(1.0)
-      show_sign = ui_state.speed_limit_mode != SpeedLimitMode.off
 
-    if show_sign:
+    if ui_state.speed_limit_mode != SpeedLimitMode.off:
       self._draw_sign_main(sign_rect, alpha)
       if self.speed_limit_assist_state == AssistState.preActive:
         self._draw_pre_active_arrow(sign_rect)
