@@ -20,6 +20,7 @@ from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_I
 from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata
 from openpilot.system.hardware.hw import Paths
+from openpilot.system.hardware import PC
 
 
 def manager_init() -> None:
@@ -38,6 +39,12 @@ def manager_init() -> None:
   # device boot mode
   if params.get("DeviceBootMode") == 1:  # start in Always Offroad mode
     params.put_bool("OffroadMode", True)
+
+  # quick boot
+  if params.get_bool("QuickBootToggle") and not PC:
+    prebuilt_path = "/data/openpilot/prebuilt"
+    if not os.path.exists(prebuilt_path):
+      open(prebuilt_path, 'x').close()
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
