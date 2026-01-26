@@ -1,0 +1,4 @@
+SConscript(['common/transformations/SConscript'])
+SConscript(['modeld/SConscript'])
+SConscript(['modeld_v2/SConscript'])
+SConscript(['selfdrive/locationd/SConscript'])
