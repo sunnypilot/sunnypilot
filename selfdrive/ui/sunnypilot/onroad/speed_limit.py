@@ -135,9 +135,10 @@ class SpeedLimitRenderer(Widget):
 
     if show_sign:
       self._draw_sign_main(sign_rect, alpha)
-      self._draw_ahead_info(sign_rect)
       if self.speed_limit_assist_state == AssistState.preActive:
         self._draw_pre_active_arrow(sign_rect)
+      else:
+        self._draw_ahead_info(sign_rect)
 
   def _draw_sign_main(self, rect, alpha=1.0):
     speed_limit_warning_enabled = ui_state.speed_limit_mode >= SpeedLimitMode.warning
