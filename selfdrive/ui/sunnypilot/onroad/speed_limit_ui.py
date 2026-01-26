@@ -11,6 +11,7 @@ import pyray as rl
 
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -20,7 +21,6 @@ from openpilot.system.ui.widgets import Widget
 METER_TO_FOOT = 3.28084
 METER_TO_MILE = 0.000621371
 AHEAD_THRESHOLD = 5
-UI_FREQ = 20
 
 
 @dataclass(frozen=True)
@@ -63,12 +63,11 @@ class SpeedLimitRenderer(Widget):
     self.assist_frame = 0
     self.speed = 0.0
     self.set_speed = 0.0
-    self.is_metric = False
 
     self.font_bold = gui_app.font(FontWeight.BOLD)
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
     self.font_norm = gui_app.font(FontWeight.NORMAL)
-    self._sign_alpha_filter = FirstOrderFilter(1.0, 0.5, 1 / UI_FREQ)
+    self._sign_alpha_filter = FirstOrderFilter(1.0, 0.5, 1 / gui_app.target_fps)
 
     arrow_size = 90
     self._arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
@@ -76,33 +75,32 @@ class SpeedLimitRenderer(Widget):
 
   @property
   def speed_conv(self):
-    return CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
+    return CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
 
   def update(self):
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
 
-    self.is_metric = ui_state.is_metric
-    conv = self.speed_conv
-
     if sm.updated["longitudinalPlanSP"]:
-      lp = sm["longitudinalPlanSP"]
-      res, assist = lp.speedLimit.resolver, lp.speedLimit.assist
-      self.speed_limit = res.speedLimit * conv
-      self.speed_limit_last = res.speedLimitLast * conv
-      self.speed_limit_offset = res.speedLimitOffset * conv
-      self.speed_limit_valid = res.speedLimitValid
-      self.speed_limit_last_valid = res.speedLimitLastValid
-      self.speed_limit_final_last = res.speedLimitFinalLast * conv
-      self.speed_limit_source = res.source
+      lp_sp = sm["longitudinalPlanSP"]
+      resolver = lp_sp.speedLimit.resolver
+      assist = lp_sp.speedLimit.assist
+
+      self.speed_limit = resolver.speedLimit * self.speed_conv
+      self.speed_limit_last = resolver.speedLimitLast * self.speed_conv
+      self.speed_limit_offset = resolver.speedLimitOffset * self.speed_conv
+      self.speed_limit_valid = resolver.speedLimitValid
+      self.speed_limit_last_valid = resolver.speedLimitLastValid
+      self.speed_limit_final_last = resolver.speedLimitFinalLast * self.speed_conv
+      self.speed_limit_source = resolver.source
       self.speed_limit_assist_state = assist.state
       self.speed_limit_assist_active = assist.active
 
     if sm.updated["liveMapDataSP"]:
       lmd = sm["liveMapDataSP"]
       self.speed_limit_ahead_valid = lmd.speedLimitAheadValid
-      self.speed_limit_ahead = lmd.speedLimitAhead * conv
+      self.speed_limit_ahead = lmd.speedLimitAhead * self.speed_conv
       self.speed_limit_ahead_dist = lmd.speedLimitAheadDistance
 
       if self.speed_limit_ahead_dist < self.speed_limit_ahead_dist_prev and self.speed_limit_ahead_frame < AHEAD_THRESHOLD:
@@ -113,22 +111,25 @@ class SpeedLimitRenderer(Widget):
       self.speed_limit_ahead_dist_prev = self.speed_limit_ahead_dist
 
     cs = sm["carState"]
-    self.set_speed = cs.cruiseState.speed * conv
+    self.set_speed = cs.cruiseState.speed * self.speed_conv
     v_ego = cs.vEgoCluster if cs.vEgoCluster != 0.0 else cs.vEgo
-    self.speed = max(0.0, v_ego * conv)
+    self.speed = max(0.0, v_ego * self.speed_conv)
 
-  def _draw_text_centered(self, font, text, size, pos_center, color):
+  @staticmethod
+  def _draw_text_centered(font, text, size, pos_center, color):
     sz = measure_text_cached(font, text, size)
     rl.draw_text_ex(font, text, rl.Vector2(pos_center.x - sz.x / 2, pos_center.y - sz.y / 2), size, 0, color)
 
   def _render(self, rect: rl.Rectangle):
-    w, h = (200, 204) if self.is_metric else (172, 204)
-    x, y = rect.x + (298 if self.is_metric else 290), rect.y + 50
-    sign_rect = rl.Rectangle(x, y, w, h)
+    width = UI_CONFIG.set_speed_width_metric if ui_state.is_metric else UI_CONFIG.set_speed_width_imperial
+    x = rect.x + 60 + width + 30 - 6
+    y = rect.y + 45 - 6
+
+    sign_rect = rl.Rectangle(x, y, width, UI_CONFIG.set_speed_height + 6 * 2)
 
     if self.speed_limit_assist_state == 1:
       self.assist_frame += 1
-      pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / UI_FREQ)
+      pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / gui_app.target_fps)
       alpha = self._sign_alpha_filter.update(pulse_value)
       show_sign = True
     else:
@@ -159,7 +160,7 @@ class SpeedLimitRenderer(Widget):
     elif not self.speed_limit_valid:
       txt_color = Colors.GREY
 
-    if self.is_metric:
+    if ui_state.is_metric:
       self._render_vienna(rect, limit_str, sub_text, txt_color, has_limit, alpha)
     else:
       self._render_mutcd(rect, limit_str, sub_text, txt_color, has_limit, alpha)
@@ -168,7 +169,7 @@ class SpeedLimitRenderer(Widget):
     set_speed_rounded = round(self.set_speed)
     limit_rounded = round(self.speed_limit_final_last)
 
-    bounce_frequency = 2.0 * math.pi / (UI_FREQ * 2.5)
+    bounce_frequency = 2.0 * math.pi / (gui_app.target_fps * 2.5)
     bounce_offset = int(20 * math.sin(self.assist_frame * bounce_frequency))
 
     sign_margin = 12
@@ -184,7 +185,7 @@ class SpeedLimitRenderer(Widget):
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)
-    radius = rect.width / 2
+    radius = (rect.width + 18) / 2
 
     white = rl.Color(255, 255, 255, int(255 * alpha))
     red = rl.Color(255, 0, 0, int(255 * alpha))
@@ -198,14 +199,14 @@ class SpeedLimitRenderer(Widget):
     dark_grey = rl.Color(77, 77, 77, int(255 * alpha))
 
     rl.draw_circle_v(center, radius, white)
-    rl.draw_ring(center, radius * 0.88, radius, 0, 360, 36, red)
+    rl.draw_ring(center, radius * 0.80, radius, 0, 360, 36, red)
 
     f_size = 70 if len(val) >= 3 else 85
     self._draw_text_centered(self.font_bold, val, f_size, center, text_color)
 
     if sub and has_limit:
       s_radius = radius * 0.4
-      s_center = rl.Vector2(rect.x + rect.width - s_radius / 1.25, rect.y + s_radius / 2)
+      s_center = rl.Vector2(rect.x + rect.width - s_radius / 2, rect.y + s_radius / 2)
 
       rl.draw_circle_v(s_center, s_radius, black)
       rl.draw_ring(s_center, s_radius - 3, s_radius, 0, 360, 36, dark_grey)
@@ -223,21 +224,21 @@ class SpeedLimitRenderer(Widget):
     else:
       text_color = rl.Color(color[0], color[1], color[2], int(255 * alpha))
 
-    rl.draw_rectangle_rounded(rect, 0.16, 12, white)
+    rl.draw_rectangle_rounded(rect, 0.35, 10, white)
     inner = rl.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20)
-    rl.draw_rectangle_rounded_lines_ex(inner, 0.1, 12, 4, black)
+    rl.draw_rectangle_rounded_lines_ex(inner, 0.35, 10, 4, black)
 
     self._draw_text_centered(self.font_demi, "SPEED", 40, rl.Vector2(rect.x + rect.width / 2, rect.y + 40), black)
     self._draw_text_centered(self.font_demi, "LIMIT", 40, rl.Vector2(rect.x + rect.width / 2, rect.y + 80), black)
-    self._draw_text_centered(self.font_bold, val, 90, rl.Vector2(rect.x + rect.width / 2, rect.y + 135), text_color)
+    self._draw_text_centered(self.font_bold, val, 90, rl.Vector2(rect.x + rect.width / 2, rect.y + 150), text_color)
 
     if sub and has_limit:
       box_sz = rect.width * 0.3
       overlap = box_sz * 0.2
       s_rect = rl.Rectangle(rect.x + rect.width - box_sz / 1.5 + overlap, rect.y - box_sz / 1.25 + overlap, box_sz, box_sz)
 
-      rl.draw_rectangle_rounded(s_rect, 0.2, 8, black)
-      rl.draw_rectangle_rounded_lines_ex(s_rect, 0.2, 8, 6, dark_grey)
+      rl.draw_rectangle_rounded(s_rect, 0.35, 10, black)
+      rl.draw_rectangle_rounded_lines_ex(s_rect, 0.35, 10, 6, dark_grey)
 
       f_scale = 0.6 if len(sub) < 3 else 0.475
       self._draw_text_centered(self.font_bold, sub, int(box_sz * f_scale), rl.Vector2(s_rect.x + box_sz / 2, s_rect.y + box_sz / 2), white)
@@ -250,21 +251,36 @@ class SpeedLimitRenderer(Widget):
       return
 
     rect = rl.Rectangle(sign_rect.x + (sign_rect.width - 170) / 2, sign_rect.y + sign_rect.height + 10, 170, 160)
-    rl.draw_rectangle_rounded(rect, 0.1, 10, Colors.SUB_BG)
-    rl.draw_rectangle_rounded_lines_ex(rect, 0.1, 10, 3, Colors.MUTCD_LINES)
+    rl.draw_rectangle_rounded(rect, 0.35, 10, Colors.SUB_BG)
+    rl.draw_rectangle_rounded_lines_ex(rect, 0.35, 10, 3, Colors.MUTCD_LINES)
 
     mid_x = rect.x + rect.width / 2
-    self._draw_text_centered(self.font_demi, "AHEAD", 40, rl.Vector2(mid_x, rect.y + 24), Colors.GREY)
-    self._draw_text_centered(self.font_bold, str(round(self.speed_limit_ahead)), 70, rl.Vector2(mid_x, rect.y + 75), Colors.WHITE)
-    self._draw_text_centered(self.font_norm, self._format_dist(self.speed_limit_ahead_dist), 40, rl.Vector2(mid_x, rect.y + 130), Colors.GREY)
+    self._draw_text_centered(self.font_demi, "AHEAD", 40, rl.Vector2(mid_x, rect.y + 28), Colors.GREY)
+    self._draw_text_centered(self.font_bold, str(round(self.speed_limit_ahead)), 70, rl.Vector2(mid_x, rect.y + 82), Colors.WHITE)
+    self._draw_text_centered(self.font_norm, self._format_dist(self.speed_limit_ahead_dist), 36, rl.Vector2(mid_x, rect.y + 134), Colors.GREY)
 
-  def _format_dist(self, d):
-    if self.is_metric:
+  @staticmethod
+  def _format_dist(d):
+    # metric
+    if ui_state.is_metric:
       if d < 50:
         return tr("Near")
-      return f"{d / 1000:.1f} km" if d >= 1000 else f"{round(d, -1 if d < 200 else -2)} m"
 
+      if d >= 1000:
+        return f"{d / 1000:.1f} km"
+
+      d_rounded = round(d, -1) if d < 200 else round(d, -2)
+      return f"{int(d_rounded)} m"
+
+    # imperial
     d_ft = d * METER_TO_FOOT
     if d_ft < 100:
       return tr("Near")
-    return f"{d * METER_TO_MILE:.1f} mi" if d_ft >= 900 else f"{round(d_ft, -1 if d_ft < 500 else -2)} ft"
+
+    if d_ft >= 900:
+      return f"{d * METER_TO_MILE:.1f} mi"
+
+    if d_ft < 500:
+      return f"{int(round(d_ft / 50) * 50)} ft"
+
+    return f"{int(round(d_ft / 100) * 100)} ft"
