@@ -9,10 +9,12 @@ from dataclasses import dataclass
 import math
 import pyray as rl
 
+from cereal import custom
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -21,6 +23,8 @@ from openpilot.system.ui.widgets import Widget
 METER_TO_FOOT = 3.28084
 METER_TO_MILE = 0.000621371
 AHEAD_THRESHOLD = 5
+
+AssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 
 
 @dataclass(frozen=True)
@@ -34,12 +38,6 @@ class Colors:
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
 
 
-class SpeedLimitMode(IntEnum):
-  OFF = 0
-  WARNING = 1
-  ASSIST = 2
-
-
 class SpeedLimitRenderer(Widget):
   def __init__(self):
     super().__init__()
@@ -51,7 +49,7 @@ class SpeedLimitRenderer(Widget):
     self.speed_limit_last_valid = False
     self.speed_limit_final_last = 0.0
     self.speed_limit_source = 0
-    self.speed_limit_assist_state = 0
+    self.speed_limit_assist_state = AssistState.disabled
     self.speed_limit_assist_active = False
 
     self.speed_limit_ahead = 0.0
@@ -127,7 +125,7 @@ class SpeedLimitRenderer(Widget):
 
     sign_rect = rl.Rectangle(x, y, width, UI_CONFIG.set_speed_height + 6 * 2)
 
-    if self.speed_limit_assist_state == 1:
+    if self.speed_limit_assist_state == AssistState.preActive:
       self.assist_frame += 1
       pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / gui_app.target_fps)
       alpha = self._sign_alpha_filter.update(pulse_value)
@@ -135,16 +133,17 @@ class SpeedLimitRenderer(Widget):
     else:
       self.assist_frame = 0
       alpha = self._sign_alpha_filter.update(1.0)
-      show_sign = self.speed_limit_assist_active or self.speed_limit_valid or self.speed_limit_last_valid
+      show_sign = ui_state.speed_limit_mode != SpeedLimitMode.OFF
 
     if show_sign:
       self._draw_sign_main(sign_rect, alpha)
-      if self.speed_limit_assist_state == 1:
+      if self.speed_limit_assist_state == AssistState.preActive:
         self._draw_pre_active_arrow(sign_rect)
       else:
         self._draw_ahead_info(sign_rect)
 
   def _draw_sign_main(self, rect, alpha=1.0):
+    speed_limit_warning_enabled = ui_state.speed_limit_mode >= SpeedLimitMode.WARNING
     has_limit = self.speed_limit_valid or self.speed_limit_last_valid
     is_overspeed = has_limit and round(self.speed_limit_final_last) < round(self.speed)
 
@@ -155,7 +154,7 @@ class SpeedLimitRenderer(Widget):
       sub_text = f"{sign}{round(abs(self.speed_limit_offset))}"
 
     txt_color = Colors.BLACK
-    if is_overspeed:
+    if speed_limit_warning_enabled and is_overspeed:
       txt_color = Colors.RED
     elif not self.speed_limit_valid:
       txt_color = Colors.GREY
