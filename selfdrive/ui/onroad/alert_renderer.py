@@ -48,7 +48,7 @@ class Alert:
 
 # Pre-defined alert instances
 ALERT_STARTUP_PENDING = Alert(
-  text1=tr("sunnypilot Unavailable"),
+  text1=tr("openpilot Unavailable"),
   text2=tr("Waiting to start"),
   size=AlertSize.mid,
   status=AlertStatus.normal,
@@ -106,13 +106,14 @@ class AlertRenderer(Widget):
     # No alert if size is none
     if ss.alertSize == 0:
       return None
-
+    text1=tr(ss.alertText1.replace('openpilot', 'sunnypilot'))
+    text2=tr(ss.alertText2.replace('openpilot', 'sunnypilot'))
     # Don't get old alert
     if recv_frame < ui_state.started_frame:
       return None
 
     # Return current alert
-    return Alert(text1=ss.alertText1, text2=ss.alertText2, size=ss.alertSize.raw, status=ss.alertStatus.raw)
+    return Alert(text1, text2, size=ss.alertSize.raw, status=ss.alertStatus.raw)
 
   def _render(self, rect: rl.Rectangle):
     alert = self.get_alert(ui_state.sm)
