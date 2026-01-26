@@ -122,10 +122,12 @@ class UIStateSP:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.developer_ui = self.params.get("DevUIInfo")
+    self.rocket_fuel = self.params.get_bool("RocketFuel")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
 
     # Onroad Screen Brightness
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
