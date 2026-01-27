@@ -127,6 +127,7 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
+    self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
     self.hide_camera = self.params.get("HideCamera")
     self.radar_tracks = self.params.get_bool("RadarTracks")
 
