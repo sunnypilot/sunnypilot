@@ -206,6 +206,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SunnylinkEnabled", {PERSISTENT, BOOL, "1"}},
     {"SunnylinkTempFault", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL, "0"}},
 
+    // WebDAV uploader params
+    {"WebDAVEnabled", {PERSISTENT | BACKUP, BOOL}},
+    {"WebDAVEndpoint", {PERSISTENT | BACKUP | DONT_LOG, STRING}},
+    {"WebDAVFolder", {PERSISTENT | BACKUP, STRING}},
+    {"WebDAVUsername", {PERSISTENT | BACKUP | DONT_LOG, STRING}},
+    {"WebDAVPassword", {PERSISTENT | DONT_LOG, STRING}},
+
     // Backup Manager params
     {"BackupManager_CreateBackup", {PERSISTENT, BOOL}},
     {"BackupManager_RestoreVersion", {PERSISTENT, STRING}},

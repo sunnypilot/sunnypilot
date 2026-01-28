@@ -12,6 +12,7 @@ from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH
 
 from openpilot.sunnypilot.models.helpers import get_active_model_runner
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, use_sunnylink_uploader
+from openpilot.sunnypilot.webdav.utils import use_webdav_uploader
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
@@ -79,6 +80,10 @@ def sunnylink_need_register_shim(started, params, CP: car.CarParams) -> bool:
 def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for use_sunnylink_uploader to match the process manager signature."""
   return use_sunnylink_uploader(params)
+
+def use_webdav_uploader_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for use_webdav_uploader to match the process manager signature."""
+  return use_webdav_uploader(params)
 
 def is_snpe_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is SNPE."""
@@ -189,6 +194,9 @@ if os.path.exists("./github_runner.sh"):
 
 if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
+
+if os.path.exists("../../sunnypilot/webdav/uploader.py"):
+  procs += [PythonProcess("webdav_uploader", "sunnypilot.webdav.uploader", use_webdav_uploader_shim)]
 
 if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

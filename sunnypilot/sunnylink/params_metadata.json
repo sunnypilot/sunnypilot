@@ -1329,5 +1329,25 @@
   "Version": {
     "title": "openpilot Version",
     "description": ""
+  },
+  "WebDAVEnabled": {
+    "title": "WebDAV Uploader",
+    "description": "Enable uploading drive data to a custom WebDAV server"
+  },
+  "WebDAVEndpoint": {
+    "title": "WebDAV Endpoint URL",
+    "description": "The URL of the WebDAV server to upload drive data to (e.g., https://webdav.example.com/dav/)"
+  },
+  "WebDAVFolder": {
+    "title": "WebDAV Remote Folder",
+    "description": "The folder path on the WebDAV server where drive data will be uploaded (e.g., sunnypilot/drives)"
+  },
+  "WebDAVUsername": {
+    "title": "WebDAV Username",
+    "description": "Username for WebDAV authentication"
+  },
+  "WebDAVPassword": {
+    "title": "WebDAV Password",
+    "description": "Password for WebDAV authentication"
   }
 }
