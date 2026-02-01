@@ -10,6 +10,7 @@ from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.chrysler.values import CAR as CHRYSLER_CAR
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
@@ -166,7 +167,16 @@ class Controls(ControlsExt):
       CC.angularVelocity = self.calibrated_pose.angular_velocity.xyz.tolist()
 
     CC.cruiseControl.override = CC.enabled and not CC.longActive and (self.CP.openpilotLongitudinalControl or not self.CP_SP.pcmCruiseSpeed)
-    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
+    # FIX: Don't cancel cruise when MADS is in lateral-only mode with stock ACC
+    # Scoped to Pacifica Hybrid 2019-25 (tested platform) - maintainers can expand if needed
+    ss_sp = self.sm["selfdriveStateSP"]
+    mads_available = ss_sp.mads.available if hasattr(ss_sp, "mads") else False
+    mads_active = ss_sp.mads.active if mads_available else False
+    is_pacifica_hybrid = self.CP.carFingerprint == CHRYSLER_CAR.CHRYSLER_PACIFICA_2019_HYBRID
+    mads_lateral_only = mads_available and mads_active and not CC.enabled and is_pacifica_hybrid
+
+    cancel_requested = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
+    CC.cruiseControl.cancel = cancel_requested and not mads_lateral_only
     CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
 
     hudControl = CC.hudControl
