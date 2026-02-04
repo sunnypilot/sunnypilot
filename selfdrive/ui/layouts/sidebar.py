@@ -14,7 +14,7 @@ if gui_app.sunnypilot_ui():
     """Sidebar with SidebarSP inheritance for sunnylink support"""
     def __init__(self):
       SidebarSP.__init__(self)
-      SidebarBP.__init__(self, inherit_sidebar_sp=SidebarSP)
+      SidebarBP.__init__(self)
       
     def _update_state(self):
       """Update state including sunnylink"""
