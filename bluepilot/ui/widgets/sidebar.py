@@ -73,7 +73,9 @@ class SidebarBP(Widget):
     # Status values
     self._panda_status = ("VEHICLE", "ONLINE", BPColors.GOOD)
     self._connect_status = ("CONNECT", "OFFLINE", BPColors.WARNING)
-    self._sunnylink_status = ("SUNNYLINK", "DISABLED", BPColors.DISABLED)
+    # Only initialize _sunnylink_status if it doesn't already exist (from SidebarSP)
+    if not hasattr(self, '_sunnylink_status'):
+      self._sunnylink_status = ("SUNNYLINK", "DISABLED", BPColors.DISABLED)
 
     # Recording state
     self._recording_audio = False
@@ -309,7 +311,12 @@ class SidebarBP(Widget):
       pass
 
   def _update_sunnylink_status(self):
-    """Update SunnyLink status"""
+    """Update SunnyLink status - only if not using SidebarSP's MetricData"""
+    # If _sunnylink_status is a MetricData object (from SidebarSP), skip this update
+    # SidebarSP will handle it via its own _update_sunnylink_status method
+    if hasattr(self._sunnylink_status, 'update'):
+      return
+    
     try:
       sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
       last_ping_str = self.params.get("LastSunnylinkPingTime") or "0"
@@ -381,10 +388,17 @@ class SidebarBP(Widget):
       self._connect_status[0], self._connect_status[1], "", "", self._connect_status[2]
     ))
 
-    # SunnyLink card
-    self._sunnylink_card.set_data(MetricData(
-      self._sunnylink_status[0], self._sunnylink_status[1], "", "", self._sunnylink_status[2]
-    ))
+    # SunnyLink card - handle both tuple and MetricData formats
+    if hasattr(self._sunnylink_status, 'update'):
+      # It's a MetricData object from SidebarSP
+      self._sunnylink_card.set_data(MetricData(
+        self._sunnylink_status.label, self._sunnylink_status.value, "", "", self._sunnylink_status.color
+      ))
+    else:
+      # It's a tuple from SidebarBP
+      self._sunnylink_card.set_data(MetricData(
+        self._sunnylink_status[0], self._sunnylink_status[1], "", "", self._sunnylink_status[2]
+      ))
 
   def _update_layout_rects(self):
     """Calculate all layout rectangles"""
