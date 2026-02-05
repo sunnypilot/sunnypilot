@@ -4,7 +4,7 @@ import numpy as np
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH, SliceDict
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
-from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
+from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad, OffPolicyTinygrad
 from openpilot.system.hardware import TICI
 from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
@@ -12,7 +12,7 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from tinygrad.tensor import Tensor
 
 
-class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad):
+class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad, OffPolicyTinygrad):
   """
   A ModelRunner implementation for executing Tinygrad models.
 
@@ -27,6 +27,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     SupercomboTinygrad.__init__(self)
     PolicyTinygrad.__init__(self)
     VisionTinygrad.__init__(self)
+    OffPolicyTinygrad.__init__(self)
     self._constants = ModelConstants
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
@@ -106,13 +107,20 @@ class TinygradSplitRunner(ModelRunner):
     self.is_20hz_3d = True
     self.vision_runner = TinygradRunner(ModelType.vision)
     self.policy_runner = TinygradRunner(ModelType.policy)
+    self.off_policy_runner = TinygradRunner(ModelType.offPolicy) if self.models.get(ModelType.offPolicy) else None
     self._constants = SplitModelConstants
 
   def _run_model(self) -> NumpyDict:
     """Runs both vision and policy models and merges their parsed outputs."""
     policy_output = self.policy_runner.run_model()
     vision_output = self.vision_runner.run_model()
-    return {**policy_output, **vision_output} # Combine results
+    outputs = {**policy_output, **vision_output}
+
+    if self.off_policy_runner:
+      off_policy_output = self.off_policy_runner.run_model()
+      outputs.update(off_policy_output)
+
+    return outputs
 
   @property
   def vision_input_names(self) -> list[str]:
@@ -122,12 +130,18 @@ class TinygradSplitRunner(ModelRunner):
   @property
   def input_shapes(self) -> ShapeDict:
     """Returns the combined input shapes from both vision and policy models."""
-    return {**self.policy_runner.input_shapes, **self.vision_runner.input_shapes}
+    shapes = {**self.policy_runner.input_shapes, **self.vision_runner.input_shapes}
+    if self.off_policy_runner:
+      shapes.update(self.off_policy_runner.input_shapes)
+    return shapes
 
   @property
   def output_slices(self) -> SliceDict:
     """Returns the combined output slices from both vision and policy models."""
-    return {**self.policy_runner.output_slices, **self.vision_runner.output_slices}
+    slices = {**self.policy_runner.output_slices, **self.vision_runner.output_slices}
+    if self.off_policy_runner:
+      slices.update(self.off_policy_runner.output_slices)
+    return slices
 
   def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
     """Prepares inputs for both vision and policy models."""
@@ -135,5 +149,11 @@ class TinygradSplitRunner(ModelRunner):
     self.policy_runner.prepare_policy_inputs(numpy_inputs)
     # Vision inputs depend on imgs_cl and frames
     self.vision_runner.prepare_vision_inputs(imgs_cl, frames)
+    inputs = {**self.policy_runner.inputs, **self.vision_runner.inputs}
+
+    if self.off_policy_runner:
+      self.off_policy_runner.prepare_policy_inputs(numpy_inputs)
+      inputs.update(self.off_policy_runner.inputs)
+
     # Return combined inputs (though they are stored within respective runners)
-    return {**self.policy_runner.inputs, **self.vision_runner.inputs}
+    return inputs
