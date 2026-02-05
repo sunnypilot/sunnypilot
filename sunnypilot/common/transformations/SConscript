@@ -1,0 +1,4 @@
+Import('env')
+
+transformations = env.Library('transformations', ['orientation.cc', 'coordinates.cc'])
+Export('transformations')

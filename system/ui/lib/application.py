@@ -1,6 +1,7 @@
 import atexit
 import cffi
 import os
+import queue
 import time
 import signal
 import sys
@@ -42,6 +43,9 @@ PROFILE_RENDER = int(os.getenv("PROFILE_RENDER", "0"))
 PROFILE_STATS = int(os.getenv("PROFILE_STATS", "100"))  # Number of functions to show in profile output
 RECORD = os.getenv("RECORD") == "1"
 RECORD_OUTPUT = str(Path(os.getenv("RECORD_OUTPUT", "output")).with_suffix(".mp4"))
+RECORD_BITRATE = os.getenv("RECORD_BITRATE", "")  # Target bitrate e.g. "2000k"
+RECORD_SPEED = int(os.getenv("RECORD_SPEED", "1"))  # Speed multiplier
+OFFSCREEN = os.getenv("OFFSCREEN") == "1"  # Disable FPS limiting for fast offline rendering
 
 GL_VERSION = """
 #version 300 es
@@ -187,7 +191,8 @@ class MouseState:
         time.monotonic(),
       )
       # Only add changes
-      if self._prev_mouse_event[slot] is None or ev[:-1] != self._prev_mouse_event[slot][:-1]:
+      prev = self._prev_mouse_event[slot]
+      if prev is None or ev[:-1] != prev[:-1]:
         with self._lock:
           self._events.append(ev)
         self._prev_mouse_event[slot] = ev
@@ -195,6 +200,8 @@ class MouseState:
 
 class GuiApplication(GuiApplicationExt):
   def __init__(self, width: int | None = None, height: int | None = None):
+    self._set_log_callback()
+
     self._fonts: dict[FontWeight, rl.Font] = {}
     self._width = width if width is not None else GuiApplication._default_width()
     self._height = height if height is not None else GuiApplication._default_height()
@@ -213,12 +220,14 @@ class GuiApplication(GuiApplicationExt):
     self._render_texture: rl.RenderTexture | None = None
     self._burn_in_shader: rl.Shader | None = None
     self._ffmpeg_proc: subprocess.Popen | None = None
+    self._ffmpeg_queue: queue.Queue | None = None
+    self._ffmpeg_thread: threading.Thread | None = None
+    self._ffmpeg_stop_event: threading.Event | None = None
     self._textures: dict[str, rl.Texture] = {}
     self._target_fps: int = _DEFAULT_FPS
     self._last_fps_log_time: float = time.monotonic()
     self._frame = 0
     self._window_close_requested = False
-    self._trace_log_callback = None
     self._modal_overlay = ModalOverlay()
     self._modal_overlay_shown = False
     self._modal_overlay_tick: Callable[[], None] | None = None
@@ -265,9 +274,6 @@ class GuiApplication(GuiApplicationExt):
       signal.signal(signal.SIGINT, _close)
       atexit.register(self.close)
 
-      self._set_log_callback()
-      rl.set_trace_log_level(rl.TraceLogLevel.LOG_WARNING)
-
       flags = rl.ConfigFlags.FLAG_MSAA_4X_HINT
       if ENABLE_VSYNC:
         flags |= rl.ConfigFlags.FLAG_VSYNC_HINT
@@ -283,25 +289,36 @@ class GuiApplication(GuiApplicationExt):
         rl.set_texture_filter(self._render_texture.texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
 
       if RECORD:
+        output_fps = fps * RECORD_SPEED
         ffmpeg_args = [
           'ffmpeg',
           '-v', 'warning',          # Reduce ffmpeg log spam
-          '-stats',                 # Show encoding progress
+          '-nostats',               # Suppress encoding progress
           '-f', 'rawvideo',         # Input format
           '-pix_fmt', 'rgba',       # Input pixel format
           '-s', f'{self._width}x{self._height}',  # Input resolution
           '-r', str(fps),           # Input frame rate
           '-i', 'pipe:0',           # Input from stdin
-          '-vf', 'vflip,format=yuv420p',  # Flip vertically and convert rgba to yuv420p
-          '-c:v', 'libx264',        # Video codec
-          '-preset', 'ultrafast',   # Encoding speed
+          '-vf', 'vflip,format=yuv420p',  # Flip vertically and convert to yuv420p
+          '-r', str(output_fps),    # Output frame rate (for speed multiplier)
+          '-c:v', 'libx264',
+          '-preset', 'ultrafast',
+        ]
+        if RECORD_BITRATE:
+          ffmpeg_args += ['-b:v', RECORD_BITRATE, '-maxrate', RECORD_BITRATE, '-bufsize', RECORD_BITRATE]
+        ffmpeg_args += [
           '-y',                     # Overwrite existing file
           '-f', 'mp4',              # Output format
           RECORD_OUTPUT,            # Output file path
         ]
         self._ffmpeg_proc = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE)
+        self._ffmpeg_queue = queue.Queue(maxsize=60)  # Buffer up to 60 frames
+        self._ffmpeg_stop_event = threading.Event()
+        self._ffmpeg_thread = threading.Thread(target=self._ffmpeg_writer_thread, daemon=True)
+        self._ffmpeg_thread.start()
 
-      rl.set_target_fps(fps)
+      # OFFSCREEN disables FPS limiting for fast offline rendering (e.g. clips)
+      rl.set_target_fps(0 if OFFSCREEN else fps)
 
       self._target_fps = fps
       self._set_styles()
@@ -342,6 +359,21 @@ class GuiApplication(GuiApplicationExt):
     reset = "\033[0m"
     print(f"{green}UI window ready in {elapsed_ms:.1f} ms{reset}")
     sys.exit(0)
+
+  def _ffmpeg_writer_thread(self):
+    """Background thread that writes frames to ffmpeg."""
+    while True:
+      try:
+        data = self._ffmpeg_queue.get(timeout=1.0)
+        if data is None:  # Sentinel to stop
+          break
+        self._ffmpeg_proc.stdin.write(data)
+      except queue.Empty:
+        if self._ffmpeg_stop_event.is_set():
+          break
+        continue
+      except Exception:
+        break
 
   def set_modal_overlay(self, overlay, callback: Callable | None = None):
     if self._modal_overlay.overlay is not None:
@@ -415,11 +447,17 @@ class GuiApplication(GuiApplicationExt):
     return texture
 
   def close_ffmpeg(self):
+    if self._ffmpeg_thread is not None:
+      # Signal thread to stop, send sentinel, then wait for it to drain
+      self._ffmpeg_stop_event.set()
+      self._ffmpeg_queue.put(None)
+      self._ffmpeg_thread.join(timeout=30)
+
     if self._ffmpeg_proc is not None:
       self._ffmpeg_proc.stdin.flush()
       self._ffmpeg_proc.stdin.close()
       try:
-        self._ffmpeg_proc.wait(timeout=5)
+        self._ffmpeg_proc.wait(timeout=30)
       except subprocess.TimeoutExpired:
         self._ffmpeg_proc.terminate()
         self._ffmpeg_proc.wait()
@@ -534,8 +572,7 @@ class GuiApplication(GuiApplicationExt):
           image = rl.load_image_from_texture(self._render_texture.texture)
           data_size = image.width * image.height * 4
           data = bytes(rl.ffi.buffer(image.data, data_size))
-          self._ffmpeg_proc.stdin.write(data)
-          self._ffmpeg_proc.stdin.flush()
+          self._ffmpeg_queue.put(data)  # Async write via background thread
           rl.unload_image(image)
 
         self._monitor_fps()
@@ -647,6 +684,9 @@ class GuiApplication(GuiApplicationExt):
         cloudlog.debug(f"raylib: {text_str}")
       else:
         cloudlog.error(f"raylib: Unknown level {log_level}: {text_str}")
+
+    # ensure we get all the logs forwarded to us
+    rl.set_trace_log_level(rl.TraceLogLevel.LOG_DEBUG)
 
     # Store callback reference
     self._trace_log_callback = trace_log_callback

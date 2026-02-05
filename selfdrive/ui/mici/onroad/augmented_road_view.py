@@ -19,6 +19,10 @@ from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCamera
 from openpilot.common.transformations.orientation import rot_from_euler
 from enum import IntEnum
 
+if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.mici.onroad.hud_renderer import HudRendererSP as HudRenderer
+  from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
+
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.LiveCalibrationData.Status.calibrated
 ROAD_CAM = VisionStreamType.VISION_STREAM_ROAD
@@ -46,6 +50,8 @@ class BookmarkIcon(Widget):
     super().__init__()
     self._bookmark_callback = bookmark_callback
     self._icon = gui_app.texture("icons_mici/onroad/bookmark.png", 180, 180)
+    self._icon_fill = gui_app.texture("icons_mici/onroad/bookmark_fill.png", 180, 180)
+    self._active_icon = self._icon
     self._offset_filter = BounceFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
     # State
@@ -84,6 +90,7 @@ class BookmarkIcon(Widget):
 
       if self._offset_filter.x < 1e-3:
         self._interacting = False
+        self._active_icon = self._icon
 
   def _handle_mouse_event(self, mouse_event: MouseEvent):
     if not ui_state.started:
@@ -96,6 +103,7 @@ class BookmarkIcon(Widget):
       self._is_swiping = True
       self._is_swiping_left = False
       self._state = BookmarkState.DRAGGING
+      self._active_icon = self._icon
 
     elif mouse_event.left_down and self._is_swiping:
       self._swipe_current_x = mouse_event.pos.x
@@ -112,6 +120,7 @@ class BookmarkIcon(Widget):
         if swipe_distance > self.PEEK_THRESHOLD:
           self._state = BookmarkState.TRIGGERED
           self._triggered_time = rl.get_time()
+          self._active_icon = self._icon_fill
           self._bookmark_callback()
         else:
           # Otherwise, transition back to hidden
@@ -125,8 +134,8 @@ class BookmarkIcon(Widget):
     """Render the bookmark icon."""
     if self._offset_filter.x > 0:
       icon_x = self.rect.x + self.rect.width - round(self._offset_filter.x)
-      icon_y = self.rect.y + (self.rect.height - self._icon.height) / 2  # Vertically centered
-      rl.draw_texture(self._icon, int(icon_x), int(icon_y), rl.WHITE)
+      icon_y = self.rect.y + (self.rect.height - self._active_icon.height) / 2  # Vertically centered
+      rl.draw_texture(self._active_icon, int(icon_x), int(icon_y), rl.WHITE)
 
 
 class AugmentedRoadView(CameraView):
@@ -350,6 +359,14 @@ class AugmentedRoadView(CameraView):
     self._model_renderer.set_transform(video_transform @ calib_transform)
 
     return self._cached_matrix
+
+  def show_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.RESUME)
+
+  def hide_event(self):
+    if gui_app.sunnypilot_ui():
+      ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.PAUSE)
 
 
 if __name__ == "__main__":
