@@ -1,3 +1,7 @@
+Version 0.10.4 (2026-02-17)
+========================
+* Lexus LS 2018 support thanks to Hacheoy!
+
 Version 0.10.3 (2025-12-17)
 ========================
 * New driving model #36249

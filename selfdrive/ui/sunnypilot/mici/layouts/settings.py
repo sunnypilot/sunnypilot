@@ -12,7 +12,7 @@ from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLa
 
 ICON_SIZE = 70
 
-OP.PanelType = IntEnum(  # type: ignore
+OP.PanelType = IntEnum(
   "PanelType",
   [es.name for es in OP.PanelType] + [
     "SUNNYLINK",

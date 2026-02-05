@@ -4,17 +4,17 @@ import pyray as rl
 from typing import Union
 from collections.abc import Callable
 from typing import cast
-from openpilot.selfdrive.ui.mici.widgets.side_button import SideButton
 from openpilot.system.ui.widgets import Widget, NavWidget, DialogResult
 from openpilot.system.ui.widgets.label import UnifiedLabel, gui_label
 from openpilot.system.ui.widgets.mici_keyboard import MiciKeyboard
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wrap_text import wrap_text
-from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
+from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos, MouseEvent
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.widgets.slider import RedBigSlider, BigSlider
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
+from openpilot.selfdrive.ui.mici.widgets.side_button import SideButton
 
 DEBUG = False
 
@@ -132,12 +132,13 @@ class BigConfirmationDialogV2(BigDialogBase):
 class BigInputDialog(BigDialogBase):
   BACK_TOUCH_AREA_PERCENTAGE = 0.2
   BACKSPACE_RATE = 25  # hz
+  TEXT_INPUT_SIZE = 35
 
   def __init__(self,
                hint: str,
                default_text: str = "",
                minimum_length: int = 1,
-               confirm_callback: Callable[[str], None] = None):
+               confirm_callback: Callable[[str], None] | None = None):
     super().__init__(None, None)
     self._hint_label = UnifiedLabel(hint, font_size=35, text_color=rl.Color(255, 255, 255, int(255 * 0.35)),
                                     font_weight=FontWeight.MEDIUM)
@@ -147,10 +148,10 @@ class BigInputDialog(BigDialogBase):
 
     self._backspace_held_time: float | None = None
 
-    self._backspace_img = gui_app.texture("icons_mici/settings/keyboard/backspace.png", 44, 44)
+    self._backspace_img = gui_app.texture("icons_mici/settings/keyboard/backspace.png", 42, 36)
     self._backspace_img_alpha = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
 
-    self._enter_img = gui_app.texture("icons_mici/settings/keyboard/confirm.png", 44, 44)
+    self._enter_img = gui_app.texture("icons_mici/settings/keyboard/confirm.png", 42, 36)
     self._enter_img_alpha = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
 
     # rects for top buttons
@@ -179,53 +180,44 @@ class BigInputDialog(BigDialogBase):
       self._backspace_held_time = None
 
   def _render(self, _):
-    text_input_size = 35
-
     # draw current text so far below everything. text floats left but always stays in view
     text = self._keyboard.text()
     candidate_char = self._keyboard.get_candidate_character()
-    text_size = measure_text_cached(gui_app.font(FontWeight.ROMAN), text + candidate_char or self._hint_label.text, text_input_size)
-    text_x = PADDING * 2 + self._enter_img.width
+    text_size = measure_text_cached(gui_app.font(FontWeight.ROMAN), text + candidate_char or self._hint_label.text, self.TEXT_INPUT_SIZE)
 
-    # text needs to move left if we're at the end where right button is
-    text_rect = rl.Rectangle(text_x,
-                             int(self._rect.y + PADDING),
-                             # clip width to right button when in view
-                             int(self._rect.width - text_x - PADDING * 2 - self._enter_img.width + 5),  # TODO: why 5?
-                             int(text_size.y))
-
-    # draw rounded background for text input
     bg_block_margin = 5
-    text_field_rect = rl.Rectangle(text_rect.x - bg_block_margin, text_rect.y - bg_block_margin,
-                                   text_rect.width + bg_block_margin * 2, text_input_size + bg_block_margin * 2)
+    text_x = PADDING * 2 + self._enter_img.width + bg_block_margin
+    text_field_rect = rl.Rectangle(text_x, int(self._rect.y + PADDING) - bg_block_margin,
+                                   int(self._rect.width - text_x - PADDING * 2 - self._enter_img.width) - bg_block_margin * 2,
+                                   int(text_size.y))
 
     # draw text input
     # push text left with a gradient on left side if too long
-    if text_size.x > text_rect.width:
-      text_x -= text_size.x - text_rect.width
+    if text_size.x > text_field_rect.width:
+      text_x -= text_size.x - text_field_rect.width
 
-    rl.begin_scissor_mode(int(text_rect.x), int(text_rect.y), int(text_rect.width), int(text_rect.height))
-    rl.draw_text_ex(gui_app.font(FontWeight.ROMAN), text, rl.Vector2(text_x, text_rect.y), text_input_size, 0, rl.WHITE)
+    rl.begin_scissor_mode(int(text_field_rect.x), int(text_field_rect.y), int(text_field_rect.width), int(text_field_rect.height))
+    rl.draw_text_ex(gui_app.font(FontWeight.ROMAN), text, rl.Vector2(text_x, text_field_rect.y), self.TEXT_INPUT_SIZE, 0, rl.WHITE)
 
     # draw grayed out character user is hovering over
     if candidate_char:
-      candidate_char_size = measure_text_cached(gui_app.font(FontWeight.ROMAN), candidate_char, text_input_size)
+      candidate_char_size = measure_text_cached(gui_app.font(FontWeight.ROMAN), candidate_char, self.TEXT_INPUT_SIZE)
       rl.draw_text_ex(gui_app.font(FontWeight.ROMAN), candidate_char,
-                      rl.Vector2(min(text_x + text_size.x, text_rect.x + text_rect.width) - candidate_char_size.x, text_rect.y),
-                      text_input_size, 0, rl.Color(255, 255, 255, 128))
+                      rl.Vector2(min(text_x + text_size.x, text_field_rect.x + text_field_rect.width) - candidate_char_size.x, text_field_rect.y),
+                      self.TEXT_INPUT_SIZE, 0, rl.Color(255, 255, 255, 128))
 
     rl.end_scissor_mode()
 
     # draw gradient on left side to indicate more text
-    if text_size.x > text_rect.width:
-      rl.draw_rectangle_gradient_h(int(text_rect.x), int(text_rect.y), 80, int(text_rect.height),
+    if text_size.x > text_field_rect.width:
+      rl.draw_rectangle_gradient_h(int(text_field_rect.x), int(text_field_rect.y), 80, int(text_field_rect.height),
                                    rl.BLACK, rl.BLANK)
 
     # draw cursor
     if text:
       blink_alpha = (math.sin(rl.get_time() * 6) + 1) / 2
-      cursor_x = min(text_x + text_size.x + 3, text_rect.x + text_rect.width)
-      rl.draw_rectangle_rounded(rl.Rectangle(int(cursor_x), int(text_rect.y), 4, int(text_size.y)),
+      cursor_x = min(text_x + text_size.x + 3, text_field_rect.x + text_field_rect.width)
+      rl.draw_rectangle_rounded(rl.Rectangle(int(cursor_x), int(text_field_rect.y), 4, int(text_size.y)),
                                 1, 4, rl.Color(255, 255, 255, int(255 * blink_alpha)))
 
     # draw backspace icon with nice fade
@@ -255,7 +247,6 @@ class BigInputDialog(BigDialogBase):
     # draw debugging rect bounds
     if DEBUG:
       rl.draw_rectangle_lines_ex(text_field_rect, 1, rl.Color(100, 100, 100, 255))
-      rl.draw_rectangle_lines_ex(text_rect, 1, rl.Color(0, 255, 0, 255))
       rl.draw_rectangle_lines_ex(self._top_right_button_rect, 1, rl.Color(0, 255, 0, 255))
       rl.draw_rectangle_lines_ex(self._top_left_button_rect, 1, rl.Color(0, 255, 0, 255))
 
@@ -317,39 +308,36 @@ class BigMultiOptionDialog(BigDialogBase):
   BACK_TOUCH_AREA_PERCENTAGE = 0.1
 
   def __init__(self, options: list[str], default: str | None,
-               right_btn: str | None = 'check', right_btn_callback: Callable[[], None] = None):
+               right_btn: str | None = 'check', right_btn_callback: Callable[[], None] | None = None):
     super().__init__(right_btn, right_btn_callback=right_btn_callback)
     self._options = options
     if default is not None:
       assert default in options
 
-    self._default_option: str = default or (options[0] if len(options) > 0 else "")
-    self._selected_option: str = self._default_option
+    self._default_option: str | None = default
+    self._selected_option: str = self._default_option or (options[0] if len(options) > 0 else "")
     self._last_selected_option: str = self._selected_option
+
+    # Widget doesn't differentiate between click and drag
+    self._can_click = True
 
     self._scroller = Scroller([], horizontal=False, pad_start=100, pad_end=100, spacing=0, snap_items=True)
     if self._right_btn is not None:
       self._scroller.set_enabled(lambda: not cast(Widget, self._right_btn).is_pressed)
 
     for option in options:
-      self.add_button(BigDialogOptionButton(option))
-
-  def add_button(self, button: BigDialogOptionButton):
-    def click_callback(_btn=button):
-      self._on_option_selected(_btn.option)
-
-    button.set_click_callback(click_callback)
-    self._scroller.add_widget(button)
+      self._scroller.add_widget(BigDialogOptionButton(option))
 
   def show_event(self):
     super().show_event()
     self._scroller.show_event()
-    self._on_option_selected(self._default_option)
+    if self._default_option is not None:
+      self._on_option_selected(self._default_option)
 
   def get_selected_option(self) -> str:
     return self._selected_option
 
-  def _on_option_selected(self, option: str, smooth_scroll: bool = True):
+  def _on_option_selected(self, option: str):
     y_pos = 0.0
     for btn in self._scroller._items:
       btn = cast(BigDialogOptionButton, btn)
@@ -365,10 +353,34 @@ class BigMultiOptionDialog(BigDialogBase):
         y_pos = rect_center_y - (btn.rect.y + height / 2)
         break
 
-    self._scroller.scroll_to(-y_pos, smooth=smooth_scroll)
+    self._scroller.scroll_to(-y_pos)
 
   def _selected_option_changed(self):
     pass
+
+  def _handle_mouse_press(self, mouse_pos: MousePos):
+    super()._handle_mouse_press(mouse_pos)
+    self._can_click = True
+
+  def _handle_mouse_event(self, mouse_event: MouseEvent) -> None:
+    super()._handle_mouse_event(mouse_event)
+
+    # # TODO: add generic _handle_mouse_click handler to Widget
+    if not self._scroller.scroll_panel.is_touch_valid():
+      self._can_click = False
+
+  def _handle_mouse_release(self, mouse_pos: MousePos):
+    super()._handle_mouse_release(mouse_pos)
+
+    if not self._can_click:
+      return
+
+    # select current option
+    for btn in self._scroller._items:
+      btn = cast(BigDialogOptionButton, btn)
+      if btn.option == self._selected_option:
+        self._on_option_selected(btn.option)
+        break
 
   def _update_state(self):
     super()._update_state()
