@@ -58,7 +58,7 @@ class E2eAlertsRenderer:
       return
 
     e2e_alert_size = 250
-    dev_ui_width_adjustment = 180 if ui_state.developer_ui != DeveloperUiRenderer.DEV_UI_NONE else 100
+    dev_ui_width_adjustment = 180 if ui_state.developer_ui != DeveloperUiRenderer.DEV_UI_OFF else 100
 
     x = rect.x + rect.width - e2e_alert_size - dev_ui_width_adjustment - (UI_BORDER_SIZE * 3)
     y = rect.y + rect.height / 2 + 20
@@ -87,9 +87,7 @@ class E2eAlertsRenderer:
     text_size = 48
     spacing = 0
 
-    # FONT_SCALE logic to match application.py's patching
-    big_ui = gui_app.big_ui()
-    font_scale = 1.242 if big_ui else 1.16
+    font_scale = 1.242
 
     lines = self._alert_text.split('\n')
 
