@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
@@ -23,6 +24,7 @@ class HudRendererSP(HudRenderer):
     self.rocket_fuel = RocketFuel()
     self.speed_limit_renderer = SpeedLimitRenderer()
     self.turn_signal_controller = TurnSignalController()
+    self._torque_bar = TorqueBar(scale=3.0, always=True)
 
   def _update_state(self) -> None:
     super()._update_state()
@@ -32,6 +34,10 @@ class HudRendererSP(HudRenderer):
 
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
+
+    if ui_state.torque_bar and ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
+      self._torque_bar.render(rect)
+
     self.developer_ui.render(rect)
     self.road_name_renderer.render(rect)
     self.speed_limit_renderer.render(rect)
