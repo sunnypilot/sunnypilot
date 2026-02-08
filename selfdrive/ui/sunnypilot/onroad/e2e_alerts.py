@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from cereal import log
 from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
@@ -26,19 +27,16 @@ class E2eAlertsRenderer:
     self._allow_e2e_alerts = False
 
   def update(self) -> None:
-    lp_sp = ui_state.sm['longitudinalPlanSP']
+    sm = ui_state.sm
+    lp_sp = sm['longitudinalPlanSP']
     self._green_light_alert = lp_sp.e2eAlerts.greenLightAlert
     self._lead_depart_alert = lp_sp.e2eAlerts.leadDepartAlert
 
-    # Check if alerts are allowed (simplified logic from C++)
-    # allow_e2e_alerts = sm["selfdriveState"].getSelfdriveState().getAlertSize() == cereal::SelfdriveState::AlertSize::NONE &&
-    #                    sm.rcv_frame("driverStateV2") > s.scene.started_frame && !reversing;
-    # For now, we'll assume they are allowed if we are receiving updates, mirroring checks can be added later if needed.
-    self._allow_e2e_alerts = True
+    self._allow_e2e_alerts = sm['selfdriveState'].alertSize == log.SelfdriveState.AlertSize.none and \
+                             sm.recv_frame['driverStateV2'] > ui_state.started_frame
 
     if self._green_light_alert or self._lead_depart_alert:
       self._e2e_alert_display_timer = 3 * gui_app.target_fps
-      # reset onroad sleep timer logic would go here if available in Python UI state management
 
     if self._e2e_alert_display_timer > 0:
       self._e2e_alert_frame += 1
