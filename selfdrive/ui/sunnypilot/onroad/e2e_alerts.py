@@ -58,7 +58,7 @@ class E2eAlertsRenderer:
       return
 
     e2e_alert_size = 250
-    dev_ui_width_adjustment = 180 if ui_state.developer_ui != DeveloperUiRenderer.DEV_UI_OFF else 100
+    dev_ui_width_adjustment = 180 if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_RIGHT, DeveloperUiRenderer.DEV_UI_BOTH) else 100
 
     x = rect.x + rect.width - e2e_alert_size - dev_ui_width_adjustment - (UI_BORDER_SIZE * 3)
     y = rect.y + rect.height / 2 + 20
