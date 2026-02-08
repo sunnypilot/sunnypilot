@@ -105,8 +105,8 @@ class SmartCruiseControlRenderer(Widget):
 
   def _render(self, rect: rl.Rectangle):
     x_offset = -260
-    y1_offset = -80
-    y2_offset = -140
+    y1_offset = -40
+    y2_offset = -100
 
     orders = [y1_offset, y2_offset]
     y_scc_v = 0
