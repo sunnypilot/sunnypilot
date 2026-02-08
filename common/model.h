@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "WMI (Default)"
+#define DEFAULT_MODEL "CD210 (Default)"
