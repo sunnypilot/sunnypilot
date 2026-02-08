@@ -36,7 +36,10 @@ class HudRendererSP(HudRenderer):
     super()._render(rect)
 
     if ui_state.torque_bar and ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
-      self._torque_bar.render(rect)
+      torque_rect = rect
+      if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_BOTTOM, DeveloperUiRenderer.DEV_UI_BOTH):
+        torque_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height - DeveloperUiRenderer.BOTTOM_BAR_HEIGHT)
+      self._torque_bar.render(torque_rect)
 
     self.developer_ui.render(rect)
     self.road_name_renderer.render(rect)
