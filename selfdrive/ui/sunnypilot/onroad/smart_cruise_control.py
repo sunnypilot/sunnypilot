@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from openpilot.selfdrive.ui.onroad.hud_renderer import COLORS
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -71,7 +72,7 @@ class SmartCruiseControlRenderer(Widget):
     rl.clear_background(rl.Color(0, 0, 0, 0))
 
     if self.long_override:
-      box_color = rl.Color(145, 155, 149, 241)
+      box_color = COLORS.OVERRIDE
     else:
       box_color = rl.Color(0, 255, 0, 255)
 
