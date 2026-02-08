@@ -1240,8 +1240,8 @@
     "description": ""
   },
   "TorqueBar": {
-    "title": "Torque Bar",
-    "description": ""
+    "title": "Steering Arc",
+    "description": "[TIZI/TICI only] Display steering arc on the driving screen when lateral control is enabled."
   },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",

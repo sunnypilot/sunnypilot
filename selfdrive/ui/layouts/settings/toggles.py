@@ -17,7 +17,6 @@ PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
 
 # Description constants
 DESCRIPTIONS = {
-  "TorqueBar": tr_noop("Enables torque bar on all devices"),
   "OpenpilotEnabledToggle": tr_noop(
     "Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. " +
     "Your attention is required at all times to use this feature."
@@ -47,12 +46,6 @@ class TogglesLayout(Widget):
 
     # param, title, desc, icon, needs_restart
     self._toggle_defs = {
-      "TorqueBar": (
-        lambda: tr("Enable Torque Bar"),
-        DESCRIPTIONS["TorqueBar"],
-        "chffr_wheel.png",
-        True,
-      ),
       "OpenpilotEnabledToggle": (
         lambda: tr("Enable sunnypilot"),
         DESCRIPTIONS["OpenpilotEnabledToggle"],
