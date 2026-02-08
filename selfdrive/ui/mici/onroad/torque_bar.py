@@ -209,13 +209,13 @@ class TorqueBar(Widget):
     cy = rect.y + rect.height + torque_line_radius - torque_line_offset
 
     # draw bg torque indicator line
-    bg_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, torque_start_angle, torque_end_angle)
+    bg_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, torque_start_angle, torque_end_angle, cap_radius=7 * self._scale)
     draw_polygon(rect, bg_pts, color=torque_line_bg_color)
 
     # draw torque indicator line
     a0s = top_angle
     a1s = a0s + torque_bg_angle_span / 2 * self._torque_filter.x
-    sl_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, a0s, a1s)
+    sl_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, a0s, a1s, cap_radius=7 * self._scale)
 
     # draw beautiful gradient from center to 65% of the bg torque bar width
     start_grad_pt = cx / rect.width
