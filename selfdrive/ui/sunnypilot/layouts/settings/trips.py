@@ -62,15 +62,8 @@ class TripsLayout(Widget):
   def _fetch_drive_stats(self):
     try:
       dongle_id = self._params.get("DongleId")
-      if not dongle_id:
+      if not dongle_id or dongle_id == UNREGISTERED_DONGLE_ID:
         return
-
-      if isinstance(dongle_id, bytes):
-        dongle_id = dongle_id.decode('utf-8')
-
-      if dongle_id == UNREGISTERED_DONGLE_ID:
-        return
-
       identity_token = get_token(dongle_id)
       response = api_get(f"v1.1/devices/{dongle_id}/stats", access_token=identity_token, session=self._session)
       if response.status_code == 200:
