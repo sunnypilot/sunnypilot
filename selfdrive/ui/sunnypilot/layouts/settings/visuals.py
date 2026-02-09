@@ -69,7 +69,7 @@ class VisualsLayout(Widget):
       ),
       "TrueVEgoUI": (
         lambda: tr("Speedometer: Always Display True Speed"),
-        tr("Always display the true vehicle current speed from wheel speed sensors."),
+        tr("For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."),
         None,
       ),
       "HideVEgoUI": (
