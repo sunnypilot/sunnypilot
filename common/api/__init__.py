@@ -18,8 +18,8 @@ class Api:
     return self.service.get_token(payload_extra, expiry_hours)
 
 
-def api_get(endpoint, method='GET', timeout=None, access_token=None, session=None, **params):
-  return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, session, **params)
+def api_get(endpoint, method='GET', timeout=None, access_token=None, session=None, json=None, **params):
+  return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, session, json, **params)
 
 
 def get_key_pair() -> tuple[str, str, str] | tuple[None, None, None]:
