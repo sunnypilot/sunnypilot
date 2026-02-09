@@ -87,7 +87,7 @@ class TripsLayout(Widget):
 
     # Title
     title_font = gui_app.font(FontWeight.BOLD)
-    rl.draw_text_ex(title_font, title, rl.Vector2(x + 30, y + 30), 40 * FONT_SCALE, 0, rl.Color(200, 200, 200, 255))
+    rl.draw_text_ex(title_font, title, rl.Vector2(x + 40, y + 30), 40 * FONT_SCALE, 0, rl.Color(200, 200, 200, 255))
 
     # Internal content area
     # Center the content block (Icon + Value + Unit) vertically
