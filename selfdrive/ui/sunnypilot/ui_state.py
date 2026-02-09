@@ -125,9 +125,11 @@ class UIStateSP:
     self.rocket_fuel = self.params.get_bool("RocketFuel")
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.chevron_metrics = self.params.get("ChevronInfo")
+    self.torque_bar = self.params.get_bool("TorqueBar")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
+    self.standstill_timer = self.params.get_bool("StandstillTimer")
 
     # Onroad Screen Brightness
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
