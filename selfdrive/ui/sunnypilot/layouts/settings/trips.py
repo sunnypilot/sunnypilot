@@ -5,6 +5,7 @@ import time
 import pyray as rl
 
 from openpilot.common.api import api_get
+from openpilot.common.constants import CV
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.api_helpers import get_token
@@ -13,8 +14,6 @@ from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
-
-MILE_TO_KM = 1.60934
 
 
 class TripsLayout(Widget):
@@ -106,7 +105,7 @@ class TripsLayout(Widget):
 
     routes = int(data.get("routes", 0))
     distance = data.get("distance", 0)
-    distance_str = str(int(distance * MILE_TO_KM)) if is_metric else str(int(distance))
+    distance_str = str(int(distance * CV.MPH_TO_KPH)) if is_metric else str(int(distance))
     hours = int(data.get("minutes", 0) / 60)
 
     dist_unit = tr("KM") if is_metric else tr("Miles")
