@@ -10,7 +10,8 @@ from cereal import log
 from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
-from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 
 class E2eAlertsRenderer:
@@ -85,18 +86,16 @@ class E2eAlertsRenderer:
     text_size = 48
     spacing = 0
 
-    font_scale = 1.242
-
     lines = self._alert_text.split('\n')
 
     # Position text at bottom of alert circle
     bottom_y = (alert_rect.y + alert_rect.height) - (alert_rect.height / 7)
 
     # Draw lines upwards from bottom
-    current_y = bottom_y - (len(lines) * text_size * font_scale)
+    current_y = bottom_y - (len(lines) * text_size * FONT_SCALE)
 
     for line in lines:
-      measure = rl.measure_text_ex(font, line, text_size * font_scale, spacing)
+      measure = measure_text_cached(font, line, text_size, spacing)
       line_x = center.x - measure.x / 2
       rl.draw_text_ex(font, line, rl.Vector2(line_x, current_y), text_size, spacing, txt_color)
-      current_y += text_size * font_scale
+      current_y += text_size * FONT_SCALE
