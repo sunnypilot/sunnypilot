@@ -339,8 +339,8 @@
     "description": ""
   },
   "GreenLightAlert": {
-    "title": "Green Light Alert",
-    "description": ""
+    "title": "Green Traffic Light Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "GsmApn": {
     "title": "GSM APN",
@@ -585,8 +585,8 @@
     "description": ""
   },
   "LeadDepartAlert": {
-    "title": "Lead Depart Alert",
-    "description": ""
+    "title": "Lead Departure Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "LiveDelay": {
     "title": "Live Delay",
@@ -1080,7 +1080,7 @@
   },
   "RoadNameToggle": {
     "title": "Display Road Name",
-    "description": "[TIZI/TICI only] Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name.</br>"
+    "description": "[TIZI/TICI only] Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name."
   },
   "RocketFuel": {
     "title": "Display Rocket Fuel Bar",
