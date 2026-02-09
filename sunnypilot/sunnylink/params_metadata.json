@@ -1080,7 +1080,7 @@
   },
   "RoadNameToggle": {
     "title": "Display Road Name",
-    "description": ""
+    "description": "[TIZI/TICI only] Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name.</br>"
   },
   "RocketFuel": {
     "title": "Display Rocket Fuel Bar",

@@ -31,7 +31,7 @@ class RoadNameRenderer(Widget):
       self.road_name = lmd.roadName
 
   def _render(self, rect: rl.Rectangle):
-    if not self.road_name:
+    if not self.road_name or not ui_state.road_name_toggle:
       return
 
     text = self.road_name

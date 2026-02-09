@@ -133,6 +133,7 @@ class UIStateSP:
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
     self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
     self.blindspot = self.params.get_bool("Blindspot")
+    self.road_name_toggle = self.params.get_bool("RoadNameToggle")
 
     # Onroad Screen Brightness
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
