@@ -192,6 +192,9 @@ class ListItemSP(ListItem):
     self._right_value_font = gui_app.font(FontWeight.NORMAL)
     self._right_value_color: rl.Color = style.ITEM_TEXT_VALUE_COLOR
 
+  def set_title(self, title: str | Callable[[], str] = ""):
+    self._title = title
+
   def set_right_value(self, value: str | Callable[[], str], color: rl.Color = style.ITEM_TEXT_VALUE_COLOR):
     self._right_value_source = value
     self._right_value_color = color
@@ -201,6 +204,13 @@ class ListItemSP(ListItem):
     if self._right_value_source is None:
       return ""
     return str(_resolve_value(self._right_value_source, ""))
+
+  def _update_state(self):
+    prev_desc = self._prev_description
+    super()._update_state()
+    if self.description_visible and self._prev_description != prev_desc:
+      content_width = int(self._rect.width - style.ITEM_PADDING * 2)
+      self._rect.height = self.get_item_height(self._font, content_width)
 
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)

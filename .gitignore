@@ -99,6 +99,10 @@ Pipfile
 .history
 .ionide
 
+.claude/
+PLAN.md
+TASK.md
+
 ### JetBrains ###
 !.idea/customTargets.xml
 !.idea/tools/*
