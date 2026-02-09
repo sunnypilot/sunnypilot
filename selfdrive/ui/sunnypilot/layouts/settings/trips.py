@@ -1,3 +1,4 @@
+import os
 import requests
 import threading
 import time
@@ -25,6 +26,10 @@ class TripsLayout(Widget):
     self._params = Params()
     self._session = requests.Session()
     self._stats = self._get_stats()
+
+    self._icon_distance = gui_app.texture("icons/road.png", 80, 80, keep_aspect_ratio=True)
+    self._icon_drives = gui_app.texture("icons_mici/wheel.png", 80, 80, keep_aspect_ratio=True)
+    self._icon_hours = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/clock.png", 80, 80, keep_aspect_ratio=True)
 
     self._running = True
     self._update_thread = threading.Thread(target=self._update_loop, daemon=True)
@@ -77,23 +82,26 @@ class TripsLayout(Widget):
         self._fetch_drive_stats()
       time.sleep(self.UPDATE_INTERVAL)
 
-  def _render_stat_group(self, x, y, width, title, data, is_metric):
+  def _render_stat_group(self, x, y, width, height, title, data, is_metric):
+    # Card Background
+    rl.draw_rectangle_rounded(rl.Rectangle(x, y, width, height), 0.05, 10, rl.Color(30, 30, 30, 255))
+
     # Title
     title_font = gui_app.font(FontWeight.BOLD)
-    rl.draw_text_ex(title_font, title, rl.Vector2(x, y), 51 * FONT_SCALE, 0, rl.WHITE)
-    y += 80 * FONT_SCALE
+    rl.draw_text_ex(title_font, title, rl.Vector2(x + 30, y + 30), 40 * FONT_SCALE, 0, rl.Color(200, 200, 200, 255))
 
-    # Stats: Routes, Distance, Hours
-    # Replicating grid layout manually
-    # Col 1: Routes, Col 2: Distance, Col 3: Hours
-
+    # Internal content area
+    # Center the content block (Icon + Value + Unit) vertically
+    # Total content height is approx 200px (Icon + Value + Unit height + gaps)
+    # Icon top is -10 from content_y, so content_y is roughly 10px below top of icon
+    content_y = y + (height / 2) - (80 * FONT_SCALE)
     col_width = width / 3
 
     # Values
     number_font = gui_app.font(FontWeight.BOLD)
     unit_font = gui_app.font(FontWeight.LIGHT)
-    number_size = 78 * FONT_SCALE
-    unit_size = 51 * FONT_SCALE
+    number_size = 68 * FONT_SCALE
+    unit_size = 36 * FONT_SCALE
     color_unit = rl.Color(160, 160, 160, 255)
 
     routes = int(data.get("routes", 0))
@@ -101,35 +109,50 @@ class TripsLayout(Widget):
     distance_str = str(int(distance * MILE_TO_KM)) if is_metric else str(int(distance))
     hours = int(data.get("minutes", 0) / 60)
 
-    # Row 1: Numbers
-    rl.draw_text_ex(number_font, str(routes), rl.Vector2(x, y), number_size, 0, rl.WHITE)
-    rl.draw_text_ex(number_font, distance_str, rl.Vector2(x + col_width, y), number_size, 0, rl.WHITE)
-    rl.draw_text_ex(number_font, str(hours), rl.Vector2(x + col_width * 2, y), number_size, 0, rl.WHITE)
-
-    y += 85 * FONT_SCALE
-
-    # Row 2: Units
     dist_unit = tr("KM") if is_metric else tr("Miles")
 
-    rl.draw_text_ex(unit_font, tr("Drives"), rl.Vector2(x, y), unit_size, 0, color_unit)
-    rl.draw_text_ex(unit_font, dist_unit, rl.Vector2(x + col_width, y), unit_size, 0, color_unit)
-    rl.draw_text_ex(unit_font, tr("Hours"), rl.Vector2(x + col_width * 2, y), unit_size, 0, color_unit)
+    def draw_col(col_idx, icon, value, unit):
+      col_x = x + (col_width * col_idx)
+      center_x = col_x + (col_width / 2)
 
-    y += 80 * FONT_SCALE
-    return y
+      # Icon
+      icon_x = int(center_x - (icon.width / 2))
+      icon_y = int(content_y - 10)
+      rl.draw_texture(icon, icon_x, icon_y, rl.WHITE)
+
+      # Value
+      val_size = rl.measure_text_ex(number_font, value, number_size, 0)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 2, content_y + 80 * FONT_SCALE), number_size, 0, rl.WHITE)
+
+      # Unit
+      unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
+      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 2, content_y + 150 * FONT_SCALE), unit_size, 0, color_unit)
+
+    draw_col(0, self._icon_drives, str(routes), tr("Drives"))
+    draw_col(1, self._icon_distance, distance_str, dist_unit)
+    draw_col(2, self._icon_hours, str(hours), tr("Hours"))
+
+    return y + height
 
   def _render(self, rect: rl.Rectangle):
     x = rect.x + 50
     y = rect.y + 50
     w = rect.width - 100
 
+    # Calculate available height for cards
+    # Top margin 50, Bottom margin 50 (implied, equal to top), Spacing 50
+    # Available height = rect.height - 100 (top+bottom margins) - 50 (spacing)
+    spacing = 50 * FONT_SCALE
+    available_h = max(100, rect.height - 100 - spacing)
+    card_height = available_h / 2
+
     is_metric = self._params.get_bool("IsMetric")
 
     all_time = self._stats.get("all", {})
     week = self._stats.get("week", {})
 
-    y = self._render_stat_group(x, y, w, tr("ALL TIME"), all_time, is_metric)
-    y += 100 * FONT_SCALE # Spacing
-    y = self._render_stat_group(x, y, w, tr("PAST WEEK"), week, is_metric)
+    y = self._render_stat_group(x, y, w, card_height, tr("ALL TIME"), all_time, is_metric)
+    y += spacing
+    y = self._render_stat_group(x, y, w, card_height, tr("PAST WEEK"), week, is_metric)
 
     return -1
