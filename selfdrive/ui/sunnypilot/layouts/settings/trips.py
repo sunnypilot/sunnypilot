@@ -53,11 +53,10 @@ class TripsLayout(Widget):
     stats = self._params.get(self.PARAM_KEY)
     if not stats:
       return {}
-    if isinstance(stats, dict):
-      return stats
     try:
       return json.loads(stats)
     except Exception:
+      cloudlog.exception(f"Failed to decode drive stats: {stats}")
       return {}
 
   def _fetch_drive_stats(self):
