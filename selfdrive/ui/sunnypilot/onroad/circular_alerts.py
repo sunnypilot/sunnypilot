@@ -89,7 +89,12 @@ class CircularAlertsRenderer:
 
     # Pulse logic
     is_pulsing = (self._e2e_alert_frame % gui_app.target_fps) < (gui_app.target_fps / 2.5)
-    frame_color = rl.Color(255, 255, 255, 75) if is_pulsing else rl.Color(0, 255, 0, 75)
+
+    # Standstill Timer (STOPPED) should be static white
+    if self._e2e_alert_display_timer == 0 and self._standstill_timer and self._is_standstill:
+      frame_color = rl.Color(255, 255, 255, 75)
+    else:
+      frame_color = rl.Color(255, 255, 255, 75) if is_pulsing else rl.Color(0, 255, 0, 75)
 
     # Draw Circle
     rl.draw_circle_v(center, e2e_alert_size, rl.Color(0, 0, 0, 190))
@@ -121,12 +126,14 @@ class CircularAlertsRenderer:
       alert_alt_text = "STOPPED"
       top_text_size = 80
       measure_top = measure_text_cached(font, alert_alt_text, top_text_size, spacing)
-      top_y = alert_rect.y + alert_rect.height / 3.5 - measure_top.y / 2
+      top_y = alert_rect.y + alert_rect.height / 3.5
       rl.draw_text_ex(font, alert_alt_text, rl.Vector2(center.x - measure_top.x / 2, top_y), top_text_size, spacing, rl.Color(255, 175, 3, 240))
 
       # Timer
-      start_y = center.y - (measure_text_cached(font, self._alert_text, 100, spacing).y / 2) if lines else current_y
-      rl.draw_text_ex(font, self._alert_text, rl.Vector2(center.x - measure_text_cached(font, self._alert_text, 100, spacing).x / 2, start_y + 5), 100, spacing, rl.WHITE)
+      timer_text_size = 100
+      measure_timer = measure_text_cached(font, self._alert_text, timer_text_size, spacing)
+      timer_y = (alert_rect.y + alert_rect.height) - (alert_rect.height / 5) - measure_timer.y
+      rl.draw_text_ex(font, self._alert_text, rl.Vector2(center.x - measure_timer.x / 2, timer_y), timer_text_size, spacing, rl.WHITE)
     else:
       for line in lines:
         measure = measure_text_cached(font, line, text_size, spacing)
