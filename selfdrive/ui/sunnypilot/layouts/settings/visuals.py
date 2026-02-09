@@ -138,3 +138,6 @@ class VisualsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
+    if not ui_state.has_longitudinal_control:
+      self._chevron_info.set_description(tr(CHEVRON_INFO_DESCRIPTION["disabled"]))
+      self._chevron_info.show_description(True)
