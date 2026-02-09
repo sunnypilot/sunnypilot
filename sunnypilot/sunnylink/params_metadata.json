@@ -367,8 +367,8 @@
     "description": ""
   },
   "HideVEgoUI": {
-    "title": "Hide vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
+    "description": "When enabled, the speedometer on the onroad screen is not displayed."
   },
   "HyundaiLongitudinalTuning": {
     "title": "Hyundai Longitudinal Tuning",
@@ -1103,8 +1103,8 @@
     "description": ""
   },
   "ShowTurnSignals": {
-    "title": "Show Turn Signals",
-    "description": ""
+    "title": "[TIZI/TICI only] Display Turn Signals",
+    "description": "When enabled, visual turn indicators are drawn on the HUD."
   },
   "SmartCruiseControlMap": {
     "title": "Smart Cruise Control - Map",
@@ -1271,8 +1271,8 @@
     "description": ""
   },
   "TrueVEgoUI": {
-    "title": "True vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Always Display True Speed",
+    "description": "For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."
   },
   "UbloxAvailable": {
     "title": "Ublox Available",
