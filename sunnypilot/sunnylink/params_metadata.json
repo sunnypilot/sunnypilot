@@ -1197,7 +1197,7 @@
   },
   "StandstillTimer": {
     "title": "Standstill Timer",
-    "description": ""
+    "description": "[TIZI/TICI only] Show a timer on the HUD when the car is at a standstill."
   },
   "SubaruStopAndGo": {
     "title": "Subaru Stop and Go",
