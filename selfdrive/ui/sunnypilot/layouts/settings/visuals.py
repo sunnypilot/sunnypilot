@@ -34,6 +34,11 @@ class VisualsLayout(Widget):
            "blind spot as long as your car has BSM supported."),
         None,
       ),
+      "TorqueBar": (
+        lambda: tr("Steering Arc"),
+        tr("Display steering arc on the driving screen when lateral control is enabled."),
+        None,
+      ),
       "RainbowMode": (
         lambda: tr("Enable Tesla Rainbow Mode"),
         tr("A beautiful rainbow effect on the path the model wants to take. " +
