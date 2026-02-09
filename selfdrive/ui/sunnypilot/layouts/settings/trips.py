@@ -32,9 +32,9 @@ class TripsLayout(Widget):
     self._session = requests.Session()
     self._stats = self._get_stats()
 
-    self._icon_distance = gui_app.texture("icons/road.png", 80, 80, keep_aspect_ratio=True)
-    self._icon_drives = gui_app.texture("icons_mici/wheel.png", 80, 80, keep_aspect_ratio=True)
-    self._icon_hours = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/clock.png", 80, 80, keep_aspect_ratio=True)
+    self._icon_distance = gui_app.texture("icons/road.png", 125, 125, keep_aspect_ratio=True)
+    self._icon_drives = gui_app.texture("icons_mici/wheel.png", 100, 100, keep_aspect_ratio=True)
+    self._icon_hours = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/clock.png", 100, 100, keep_aspect_ratio=True)
 
     self._running = True
     self._update_thread = threading.Thread(target=self._update_loop, daemon=True)
@@ -92,18 +92,18 @@ class TripsLayout(Widget):
 
     # Title
     title_font = gui_app.font(FontWeight.BOLD)
-    rl.draw_text_ex(title_font, title, rl.Vector2(x + 40, y + 30), 40 * FONT_SCALE, 0, rl.Color(200, 200, 200, 255))
+    rl.draw_text_ex(title_font, title, rl.Vector2(x + 40, y + 30), 50 * FONT_SCALE, 0, rl.Color(200, 200, 200, 255))
 
     # Internal content area
     # Center the content block (Icon + Value + Unit) vertically
-    content_y = y + (height / 2) - (80 * FONT_SCALE)
+    content_y = y + (height / 2) - (140 * FONT_SCALE)
     col_width = width / 3
 
     # Values
     number_font = gui_app.font(FontWeight.BOLD)
     unit_font = gui_app.font(FontWeight.LIGHT)
-    number_size = 68 * FONT_SCALE
-    unit_size = 36 * FONT_SCALE
+    number_size = 92 * FONT_SCALE
+    unit_size = 55 * FONT_SCALE
     color_unit = rl.Color(160, 160, 160, 255)
 
     routes = int(data.get("routes", 0))
@@ -119,16 +119,16 @@ class TripsLayout(Widget):
 
       # Icon
       icon_x = int(center_x - (icon.width / 2))
-      icon_y = int(content_y + 10)
+      icon_y = int(content_y + 60)
       rl.draw_texture(icon, icon_x, icon_y, rl.WHITE)
 
       # Value
       val_size = rl.measure_text_ex(number_font, value, number_size, 0)
-      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 90 * FONT_SCALE), number_size, 0, rl.WHITE)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 140 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
       unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
-      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.65, content_y + 180 * FONT_SCALE), unit_size, 0, color_unit)
+      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.65, content_y + 250 * FONT_SCALE), unit_size, 0, color_unit)
 
     draw_col(0, self._icon_drives, str(routes), tr("Drives"))
     draw_col(1, self._icon_distance, distance_str, dist_unit)
@@ -137,12 +137,12 @@ class TripsLayout(Widget):
     return y + height
 
   def _render(self, rect: rl.Rectangle):
-    x = rect.x + 50
-    y = rect.y + 50
-    w = rect.width - 100
+    x = rect.x
+    y = rect.y
+    w = rect.width
 
-    spacing = 50 * FONT_SCALE
-    available_h = max(100, rect.height - 100 - spacing)
+    spacing = 30
+    available_h = rect.height - 30
     card_height = available_h / 2
 
     is_metric = self._params.get_bool("IsMetric")
