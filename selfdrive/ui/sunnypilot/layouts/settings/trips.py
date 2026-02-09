@@ -42,6 +42,8 @@ class TripsLayout(Widget):
     stats = self._params.get(self.PARAM_KEY)
     if not stats:
       return {}
+    if isinstance(stats, dict):
+      return stats
     try:
       import json
       return json.loads(stats)
@@ -65,8 +67,7 @@ class TripsLayout(Widget):
       if response.status_code == 200:
         data = response.json()
         self._stats = data
-        import json
-        self._params.put(self.PARAM_KEY, json.dumps(data))
+        self._params.put(self.PARAM_KEY, data)
     except Exception as e:
       cloudlog.error(f"Failed to fetch drive stats: {e}")
 
@@ -76,7 +77,7 @@ class TripsLayout(Widget):
         self._fetch_drive_stats()
       time.sleep(self.UPDATE_INTERVAL)
 
-  def _render_stat_group(self, x, y, title, data, is_metric):
+  def _render_stat_group(self, x, y, width, title, data, is_metric):
     # Title
     title_font = gui_app.font(FontWeight.BOLD)
     rl.draw_text_ex(title_font, title, rl.Vector2(x, y), 51 * FONT_SCALE, 0, rl.WHITE)
@@ -86,7 +87,7 @@ class TripsLayout(Widget):
     # Replicating grid layout manually
     # Col 1: Routes, Col 2: Distance, Col 3: Hours
 
-    col_width = 300 * FONT_SCALE
+    col_width = width / 3
 
     # Values
     number_font = gui_app.font(FontWeight.BOLD)
@@ -120,14 +121,15 @@ class TripsLayout(Widget):
   def _render(self, rect: rl.Rectangle):
     x = rect.x + 50
     y = rect.y + 50
+    w = rect.width - 100
 
     is_metric = self._params.get_bool("IsMetric")
 
     all_time = self._stats.get("all", {})
     week = self._stats.get("week", {})
 
-    y = self._render_stat_group(x, y, tr("ALL TIME"), all_time, is_metric)
+    y = self._render_stat_group(x, y, w, tr("ALL TIME"), all_time, is_metric)
     y += 100 * FONT_SCALE # Spacing
-    y = self._render_stat_group(x, y, tr("PAST WEEK"), week, is_metric)
+    y = self._render_stat_group(x, y, w, tr("PAST WEEK"), week, is_metric)
 
     return -1
