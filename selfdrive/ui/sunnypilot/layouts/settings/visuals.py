@@ -104,7 +104,7 @@ class VisualsLayout(Widget):
     self._dev_ui_info = multiple_button_item_sp(
       title=lambda: tr("Developer UI"),
       description=lambda: tr("Display real-time parameters and metrics from various sources."),
-      buttons=[lambda: tr("Off"), lambda: tr("Right"), lambda: tr("Right & Bottom")],
+      buttons=[lambda: tr("Off"), lambda: tr("Bottom"), lambda: tr("Right"), lambda: tr("Right & Bottom")],
       param="DevUIInfo",
       button_width=350,
       inline=False
