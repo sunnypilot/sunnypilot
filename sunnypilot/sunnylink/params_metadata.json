@@ -91,7 +91,7 @@
   },
   "BlindSpot": {
     "title": "Blind Spot Detection",
-    "description": ""
+    "description": "[TIZI/TICI only] Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."
   },
   "BlinkerMinLateralControlSpeed": {
     "title": "Blinker Min Lateral Control Speed",
