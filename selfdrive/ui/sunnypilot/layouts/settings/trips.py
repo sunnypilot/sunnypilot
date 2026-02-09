@@ -124,11 +124,11 @@ class TripsLayout(Widget):
 
       # Value
       val_size = rl.measure_text_ex(number_font, value, number_size, 0)
-      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.6, content_y + 90 * FONT_SCALE), number_size, 0, rl.WHITE)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 90 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
       unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
-      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.6, content_y + 180 * FONT_SCALE), unit_size, 0, color_unit)
+      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.65, content_y + 180 * FONT_SCALE), unit_size, 0, color_unit)
 
     draw_col(0, self._icon_drives, str(routes), tr("Drives"))
     draw_col(1, self._icon_distance, distance_str, dist_unit)
