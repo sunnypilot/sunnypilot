@@ -32,9 +32,9 @@ class TripsLayout(Widget):
     self._session = requests.Session()
     self._stats = self._get_stats()
 
-    self._icon_distance = gui_app.texture("icons/road.png", 125, 125, keep_aspect_ratio=True)
-    self._icon_drives = gui_app.texture("icons_mici/wheel.png", 100, 100, keep_aspect_ratio=True)
-    self._icon_hours = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/clock.png", 100, 100, keep_aspect_ratio=True)
+    self._icon_distance = gui_app.texture("icons/road.png", 100, 100, keep_aspect_ratio=True)
+    self._icon_drives = gui_app.texture("icons_mici/wheel.png", 80, 80, keep_aspect_ratio=True)
+    self._icon_hours = gui_app.texture("../../sunnypilot/selfdrive/assets/icons/clock.png", 80, 80, keep_aspect_ratio=True)
 
     self._running = True
     self._update_thread = threading.Thread(target=self._update_loop, daemon=True)
@@ -124,7 +124,7 @@ class TripsLayout(Widget):
 
       # Value
       val_size = rl.measure_text_ex(number_font, value, number_size, 0)
-      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 145 * FONT_SCALE), number_size, 0, rl.WHITE)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 150 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
       unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
