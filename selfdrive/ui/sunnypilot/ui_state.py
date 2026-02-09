@@ -130,6 +130,8 @@ class UIStateSP:
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
     self.standstill_timer = self.params.get_bool("StandstillTimer")
+    self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
+    self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
 
     # Onroad Screen Brightness
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
