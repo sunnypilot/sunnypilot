@@ -32,26 +32,7 @@ else
     brew up
 fi
 
-brew bundle --file=- <<-EOS
-brew "git-lfs"
-brew "zlib"
-brew "capnp"
-brew "coreutils"
-brew "eigen"
-brew "ffmpeg"
-brew "glfw"
-brew "libarchive"
-brew "libusb"
-brew "libtool"
-brew "llvm"
-brew "openssl@3.0"
-brew "qt@5"
-brew "zeromq"
-cask "gcc-arm-embedded"
-brew "portaudio"
-brew "gcc@13"
-cask "font-noto-color-emoji"
-EOS
+brew bundle --file=$DIR/Brewfile
 
 echo "[ ] finished brew install t=$SECONDS"
 

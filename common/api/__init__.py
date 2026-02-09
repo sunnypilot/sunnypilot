@@ -14,9 +14,13 @@ class Api:
   def post(self, *args, **kwargs):
     return self.service.post(*args, **kwargs)
 
-  def get_token(self, expiry_hours=1):
-    return self.service.get_token(expiry_hours)
+  def get_token(self, payload_extra=None, expiry_hours=1):
+    return self.service.get_token(payload_extra, expiry_hours)
 
 
-def api_get(endpoint, method='GET', timeout=None, access_token=None, **params):
-  return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, **params)
+def api_get(endpoint, method='GET', timeout=None, access_token=None, session=None, **params):
+  return CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, session, **params)
+
+
+def get_key_pair() -> tuple[str, str, str] | tuple[None, None, None]:
+  return CommaConnectApi(None).get_key_pair()

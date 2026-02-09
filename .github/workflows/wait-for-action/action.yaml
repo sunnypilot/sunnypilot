@@ -4,7 +4,7 @@ inputs:
   workflow:
     description: 'The workflow file name to monitor'
     required: true
-    default: 'selfdrive_tests.yaml'
+    default: 'tests.yaml'
   branch:
     description: 'The branch to monitor (defaults to current branch)'
     required: false

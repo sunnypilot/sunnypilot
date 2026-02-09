@@ -6,7 +6,7 @@ from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 
 from cereal import log, messaging
-from sunnypilot.sunnylink.utils import register_sunnylink
+from openpilot.sunnypilot.sunnylink.utils import register_sunnylink
 
 NetworkType = log.DeviceState.NetworkType
 

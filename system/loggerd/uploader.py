@@ -12,7 +12,7 @@ from collections.abc import Iterator
 from cereal import log
 import cereal.messaging as messaging
 from openpilot.common.api import Api
-from openpilot.common.file_helpers import get_upload_stream
+from openpilot.common.utils import get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware.hw import Paths
@@ -29,7 +29,7 @@ MAX_UPLOAD_SIZES = {
   "qcam": 5*1e6,
 }
 
-allow_sleep = bool(os.getenv("UPLOADER_SLEEP", "1"))
+allow_sleep = bool(int(os.getenv("UPLOADER_SLEEP", "1")))
 force_wifi = os.getenv("FORCEWIFI") is not None
 fake_upload = os.getenv("FAKEUPLOAD") is not None
 
@@ -226,7 +226,7 @@ class Uploader:
     return self.upload(name, key, fn, network_type, metered)
 
 
-def main(exit_event: threading.Event = None) -> None:
+def main(exit_event: threading.Event | None = None) -> None:
   if exit_event is None:
     exit_event = threading.Event()
 

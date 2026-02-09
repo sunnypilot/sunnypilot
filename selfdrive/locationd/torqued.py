@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import numpy as np
 from collections import deque, defaultdict
 
@@ -34,7 +35,7 @@ MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 1  # bump this to invalidate old parameter caches
-ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
+ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda', 'volkswagen']
 
 
 def slope2rot(slope):
@@ -250,6 +251,8 @@ class TorqueEstimator(ParameterEstimator, TorqueEstimatorExt):
 def main(demo=False):
   config_realtime_process([0, 1, 2, 3], 5)
 
+  DEBUG = bool(int(os.getenv("DEBUG", "0")))
+
   pm = messaging.PubMaster(['liveTorqueParameters'])
   sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose', 'liveDelay'], poll='livePose')
 
@@ -268,7 +271,7 @@ def main(demo=False):
 
     # 4Hz driven by livePose
     if sm.frame % 5 == 0:
-      pm.send('liveTorqueParameters', estimator.get_msg(valid=sm.all_checks()))
+      pm.send('liveTorqueParameters', estimator.get_msg(valid=sm.all_checks(), with_points=DEBUG))
 
     # Cache points every 60 seconds while onroad
     if sm.frame % 240 == 0:

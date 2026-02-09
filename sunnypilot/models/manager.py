@@ -16,8 +16,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 
 from cereal import messaging, custom
-from sunnypilot.models.fetcher import ModelFetcher
-from sunnypilot.models.helpers import verify_file, get_active_bundle
+from openpilot.sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.helpers import verify_file, get_active_bundle
 
 
 class ModelManagerSP:
@@ -62,6 +62,9 @@ class ModelManagerSP:
           async for chunk in response.content.iter_chunked(self._chunk_size):  # type: bytes
             f.write(chunk)
             bytes_downloaded += len(chunk)
+
+            if not self.params.get("ModelManager_DownloadIndex"):
+              raise Exception("Download cancelled")
 
             if total_size > 0:
               progress = (bytes_downloaded / total_size) * 100
@@ -176,6 +179,7 @@ class ModelManagerSP:
               cloudlog.exception(e)
             finally:
               self.params.remove("ModelManager_DownloadIndex")
+              self.selected_bundle = None
 
         if self.params.get("ModelManager_ClearCache"):
             self.clear_model_cache()

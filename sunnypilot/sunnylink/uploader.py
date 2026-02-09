@@ -11,8 +11,8 @@ from collections.abc import Iterator
 
 from cereal import log
 import cereal.messaging as messaging
-from sunnypilot.sunnylink.api import SunnylinkApi
-from openpilot.common.file_helpers import get_upload_stream
+from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
+from openpilot.common.utils import get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware.hw import Paths
@@ -235,7 +235,7 @@ class Uploader:
     return self.upload(name, key, fn, network_type, metered)
 
 
-def main(exit_event: threading.Event = None) -> None:
+def main(exit_event: threading.Event | None = None) -> None:
   if exit_event is None:
     exit_event = threading.Event()
 
