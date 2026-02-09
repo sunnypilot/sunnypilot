@@ -74,11 +74,11 @@ class SteeringLayout(Widget):
     )
     self._blinker_reengage_delay = option_item_sp(
       param="BlinkerLateralReengageDelay",
-      title=lambda: tr("Seconds to Keep Lateral Control Paused After Blinker"),
+      title=lambda: tr("Post-Blinker Delay"),
       min_value=0,
       max_value=10,
       value_change_step=1,
-      description=lambda: tr("Number of seconds to keep lateral control paused after the blinker turns off."),
+      description=lambda: tr("Delay before lateral control resumes after the turn signal ends."),
       label_callback=lambda delay: f'{delay} {"s"}'
     )
     self._torque_control_toggle = toggle_item_sp(
