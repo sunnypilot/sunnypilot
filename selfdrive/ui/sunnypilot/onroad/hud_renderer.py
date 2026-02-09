@@ -59,6 +59,4 @@ class HudRendererSP(HudRenderer):
     self.smart_cruise_control_renderer.render(rect)
     self.turn_signal_controller.render(rect)
     self.circular_alerts_renderer.render(rect)
-
-    if ui_state.rocket_fuel:
-      self.rocket_fuel.render(rect, ui_state.sm)
+    self.rocket_fuel.render(rect, ui_state.sm)

@@ -1083,8 +1083,8 @@
     "description": "Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name."
   },
   "RocketFuel": {
-    "title": "Display Rocket Fuel Bar",
-    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration."
+    "title": "[TIZI/TICI only] Real-time Acceleration Bar",
+    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."
   },
   "RouteCount": {
     "title": "Route Count",

@@ -82,6 +82,11 @@ class VisualsLayout(Widget):
         tr("When enabled, visual turn indicators are drawn on the HUD."),
         None,
       ),
+      "RocketFuel": (
+        lambda: tr("Real-time Acceleration Bar"),
+        tr("Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."),
+        None,
+      ),
     }
     self._toggles = {}
     for param, (title, desc, callback) in self._toggle_defs.items():
