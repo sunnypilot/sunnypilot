@@ -1,4 +1,10 @@
-import os
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+import json
 import requests
 import threading
 import time
@@ -49,7 +55,6 @@ class TripsLayout(Widget):
     if isinstance(stats, dict):
       return stats
     try:
-      import json
       return json.loads(stats)
     except Exception:
       return {}
@@ -91,8 +96,6 @@ class TripsLayout(Widget):
 
     # Internal content area
     # Center the content block (Icon + Value + Unit) vertically
-    # Total content height is approx 200px (Icon + Value + Unit height + gaps)
-    # Icon top is -10 from content_y, so content_y is roughly 10px below top of icon
     content_y = y + (height / 2) - (80 * FONT_SCALE)
     col_width = width / 3
 
@@ -116,16 +119,16 @@ class TripsLayout(Widget):
 
       # Icon
       icon_x = int(center_x - (icon.width / 2))
-      icon_y = int(content_y - 10)
+      icon_y = int(content_y + 10)
       rl.draw_texture(icon, icon_x, icon_y, rl.WHITE)
 
       # Value
       val_size = rl.measure_text_ex(number_font, value, number_size, 0)
-      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 2, content_y + 80 * FONT_SCALE), number_size, 0, rl.WHITE)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.6, content_y + 90 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
       unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
-      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 2, content_y + 150 * FONT_SCALE), unit_size, 0, color_unit)
+      rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.6, content_y + 180 * FONT_SCALE), unit_size, 0, color_unit)
 
     draw_col(0, self._icon_drives, str(routes), tr("Drives"))
     draw_col(1, self._icon_distance, distance_str, dist_unit)
@@ -138,9 +141,6 @@ class TripsLayout(Widget):
     y = rect.y + 50
     w = rect.width - 100
 
-    # Calculate available height for cards
-    # Top margin 50, Bottom margin 50 (implied, equal to top), Spacing 50
-    # Available height = rect.height - 100 (top+bottom margins) - 50 (spacing)
     spacing = 50 * FONT_SCALE
     available_h = max(100, rect.height - 100 - spacing)
     card_height = available_h / 2
