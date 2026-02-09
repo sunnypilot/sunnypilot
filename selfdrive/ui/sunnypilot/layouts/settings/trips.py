@@ -124,7 +124,7 @@ class TripsLayout(Widget):
 
       # Value
       val_size = rl.measure_text_ex(number_font, value, number_size, 0)
-      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 150 * FONT_SCALE), number_size, 0, rl.WHITE)
+      rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 145 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
       unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
