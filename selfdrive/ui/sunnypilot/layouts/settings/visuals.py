@@ -89,7 +89,8 @@ class VisualsLayout(Widget):
       ),
       "RocketFuel": (
         lambda: tr("Real-time Acceleration Bar"),
-        tr("Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."),
+        tr("Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. " +
+           "This displays what the car is currently doing, not what the planner is requesting."),
         None,
       ),
     }
