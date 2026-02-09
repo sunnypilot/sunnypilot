@@ -121,7 +121,7 @@ class UIStateSP:
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
-    self.blindspot = self.params.get_bool("Blindspot")
+    self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.developer_ui = self.params.get("DevUIInfo")
