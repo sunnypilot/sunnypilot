@@ -19,6 +19,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 
@@ -102,8 +103,10 @@ class TripsLayout(Widget):
     # Values
     number_font = gui_app.font(FontWeight.BOLD)
     unit_font = gui_app.font(FontWeight.LIGHT)
-    number_size = 92 * FONT_SCALE
-    unit_size = 55 * FONT_SCALE
+    number_base_size = 92
+    unit_base_size = 55
+    number_size = number_base_size * FONT_SCALE
+    unit_size = unit_base_size * FONT_SCALE
     color_unit = rl.Color(160, 160, 160, 255)
 
     routes = int(data.get("routes", 0))
@@ -123,11 +126,11 @@ class TripsLayout(Widget):
       rl.draw_texture(icon, icon_x, icon_y, rl.WHITE)
 
       # Value
-      val_size = rl.measure_text_ex(number_font, value, number_size, 0)
+      val_size = measure_text_cached(number_font, value, number_base_size)
       rl.draw_text_ex(number_font, value, rl.Vector2(center_x - val_size.x / 1.65, content_y + 145 * FONT_SCALE), number_size, 0, rl.WHITE)
 
       # Unit
-      unit_size_vec = rl.measure_text_ex(unit_font, unit, unit_size, 0)
+      unit_size_vec = measure_text_cached(unit_font, unit, unit_base_size)
       rl.draw_text_ex(unit_font, unit, rl.Vector2(center_x - unit_size_vec.x / 1.65, content_y + 255 * FONT_SCALE), unit_size, 0, color_unit)
 
     draw_col(0, self._icon_drives, str(routes), tr("Drives"))
