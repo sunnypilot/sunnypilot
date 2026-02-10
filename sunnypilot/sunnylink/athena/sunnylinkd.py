@@ -12,7 +12,6 @@ import errno
 import gzip
 import json
 import os
-import ssl
 import threading
 import time
 
