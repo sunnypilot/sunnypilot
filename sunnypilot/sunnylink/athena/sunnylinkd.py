@@ -274,9 +274,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
 
   cloudlog.debug("athena.startLocalProxy.starting")
-  ws = create_connection(
-    remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True
-  )
+  ws = create_connection(remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True)
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
