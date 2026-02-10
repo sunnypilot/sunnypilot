@@ -19,8 +19,8 @@ from openpilot.system.ui.widgets import Widget
 
 class DeveloperUiRenderer(Widget):
   DEV_UI_OFF = 0
-  DEV_UI_RIGHT = 1
-  DEV_UI_BOTTOM = 2
+  DEV_UI_BOTTOM = 1
+  DEV_UI_RIGHT = 2
   DEV_UI_BOTH = 3
   BOTTOM_BAR_HEIGHT = 61
 
@@ -62,10 +62,10 @@ class DeveloperUiRenderer(Widget):
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
 
-    if self.dev_ui_mode == self.DEV_UI_RIGHT:
-      self._draw_right_dev_ui(rect)
-    elif self.dev_ui_mode == self.DEV_UI_BOTTOM:
+    if self.dev_ui_mode == self.DEV_UI_BOTTOM:
       self._draw_bottom_dev_ui(rect)
+    elif self.dev_ui_mode == self.DEV_UI_RIGHT:
+      self._draw_right_dev_ui(rect)
     elif self.dev_ui_mode == self.DEV_UI_BOTH:
       self._draw_right_dev_ui(rect)
       self._draw_bottom_dev_ui(rect)
