@@ -12,6 +12,7 @@ import errno
 import gzip
 import json
 import os
+import ssl
 import threading
 import time
 
@@ -273,7 +274,9 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
 
   cloudlog.debug("athena.startLocalProxy.starting")
-  ws = create_connection(remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True)
+  ws = create_connection(
+    remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True, sslopt={"cert_reqs": ssl.CERT_NONE}
+  )
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
@@ -307,7 +310,8 @@ def main(exit_event: threading.Event | None = None):
         ws_uri,
         header={"Authorization": f"Bearer {sunnylink_api.get_token()}"},
         enable_multithread=True,
-        timeout=30.0,
+        sslopt={"cert_reqs": ssl.CERT_NONE if "localhost" in ws_uri else ssl.CERT_REQUIRED},
+        timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
       )
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
                      duration=time.monotonic() - conn_start)
