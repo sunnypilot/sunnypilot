@@ -26,6 +26,7 @@ class OnroadTimerStatus(Enum):
 
 class UIStateSP:
   def __init__(self):
+    self.CP_SP: custom.CarParamsSP | None = None
     self.params = Params()
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
