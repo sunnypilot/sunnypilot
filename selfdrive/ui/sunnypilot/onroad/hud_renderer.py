@@ -36,12 +36,15 @@ class HudRendererSP(HudRenderer):
     self.speed_renderer = SpeedRenderer()
     self._torque_bar = TorqueBar(scale=3.0, always=True)
 
+    self.pcm_cruise_speed: bool = True
     self.show_icbm_status: bool = False
     self.icbm_active_counter: int = 0
     self.speed_cluster: float = 0.0
     self.speed_conv: float = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
 
   def _update_state(self) -> None:
+    if ui_state.CP_SP is not None:
+      self.pcm_cruise_speed = ui_state.CP_SP.pcmCruiseSpeed
     self.speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     self.speed_cluster = ui_state.sm['carState'].cruiseState.speedCluster * self.speed_conv
 
@@ -54,7 +57,7 @@ class HudRendererSP(HudRenderer):
     self.speed_renderer.update()
 
   def _get_icbm_status(self):
-    if not ui_state.CP_SP.pcmCruiseSpeed and ui_state.sm['carControl'].enabled:
+    if not self.pcm_cruise_speed and ui_state.sm['carControl'].enabled:
       if round(self.set_speed) != round(self.speed_cluster):
         self.icbm_active_counter = 3 * gui_app.target_fps  # 3 seconds usually
       elif self.icbm_active_counter > 0:
