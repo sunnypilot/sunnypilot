@@ -18,9 +18,9 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.circular_alerts import CircularAle
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_renderer import SpeedRenderer
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer, UI_CONFIG, FONT_SIZES, COLORS, CRUISE_DISABLED_CHAR
-from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
-from system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 
 class HudRendererSP(HudRenderer):
