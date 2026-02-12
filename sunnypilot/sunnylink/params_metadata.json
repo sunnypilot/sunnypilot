@@ -90,8 +90,8 @@
     "description": ""
   },
   "BlindSpot": {
-    "title": "Blind Spot Detection",
-    "description": ""
+    "title": "[TIZI/TICI only] Blind Spot Detection",
+    "description": "Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."
   },
   "BlinkerMinLateralControlSpeed": {
     "title": "Blinker Min Lateral Control Speed",
@@ -339,8 +339,8 @@
     "description": ""
   },
   "GreenLightAlert": {
-    "title": "Green Light Alert",
-    "description": ""
+    "title": "Green Traffic Light Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "GsmApn": {
     "title": "GSM APN",
@@ -367,8 +367,8 @@
     "description": ""
   },
   "HideVEgoUI": {
-    "title": "Hide vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
+    "description": "When enabled, the speedometer on the onroad screen is not displayed."
   },
   "HyundaiLongitudinalTuning": {
     "title": "Hyundai Longitudinal Tuning",
@@ -585,8 +585,8 @@
     "description": ""
   },
   "LeadDepartAlert": {
-    "title": "Lead Depart Alert",
-    "description": ""
+    "title": "Lead Departure Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "LiveDelay": {
     "title": "Live Delay",
@@ -1079,12 +1079,12 @@
     "description": ""
   },
   "RoadNameToggle": {
-    "title": "Display Road Name",
-    "description": ""
+    "title": "[TIZI/TICI only] Display Road Name",
+    "description": "Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name."
   },
   "RocketFuel": {
-    "title": "Display Rocket Fuel Bar",
-    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration."
+    "title": "[TIZI/TICI only] Real-time Acceleration Bar",
+    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."
   },
   "RouteCount": {
     "title": "Route Count",
@@ -1103,8 +1103,8 @@
     "description": ""
   },
   "ShowTurnSignals": {
-    "title": "Show Turn Signals",
-    "description": ""
+    "title": "[TIZI/TICI only] Display Turn Signals",
+    "description": "When enabled, visual turn indicators are drawn on the HUD."
   },
   "SmartCruiseControlMap": {
     "title": "Smart Cruise Control - Map",
@@ -1196,8 +1196,8 @@
     "description": ""
   },
   "StandstillTimer": {
-    "title": "Standstill Timer",
-    "description": ""
+    "title": "[TIZI/TICI only] Standstill Timer",
+    "description": "Show a timer on the HUD when the car is at a standstill."
   },
   "SubaruStopAndGo": {
     "title": "Subaru Stop and Go",
@@ -1239,6 +1239,10 @@
     "title": "Tesla Coop Steering",
     "description": ""
   },
+  "TorqueBar": {
+    "title": "[TIZI/TICI only] Steering Arc",
+    "description": "Display steering arc on the driving screen when lateral control is enabled."
+  },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",
     "description": ""
@@ -1267,8 +1271,8 @@
     "description": ""
   },
   "TrueVEgoUI": {
-    "title": "True vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Always Display True Speed",
+    "description": "For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."
   },
   "UbloxAvailable": {
     "title": "Ublox Available",
