@@ -108,15 +108,16 @@ class CruiseLayout(Widget):
   def show_event(self):
     self._set_current_panel(PanelType.CRUISE)
     self._scroller.show_event()
+    self._update_settings()
 
   def _set_current_panel(self, panel: PanelType):
     self._current_panel = panel
 
-  def _update_state(self):
-    super()._update_state()
+  def _update_settings(self):
+    ui_state.update_params()
 
     if ui_state.CP is not None and ui_state.CP_SP is not None:
-      has_icbm = ui_state.CP_SP.intelligentCruiseButtonManagementAvailable and ui_state.params.get_bool("IntelligentCruiseButtonManagement")
+      has_icbm = ui_state.has_icbm
       has_long = ui_state.has_longitudinal_control
 
       if ui_state.CP_SP.intelligentCruiseButtonManagementAvailable and not has_long:
