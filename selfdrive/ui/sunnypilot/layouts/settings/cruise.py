@@ -14,9 +14,11 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, opt
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
 
+
 class PanelType(IntEnum):
   CRUISE = 0
   SLA = 1
+
 
 ICBM_DESC = tr_noop("When enabled, sunnypilot will attempt to manage the built-in cruise control buttons " +
                     "by emulating button presses for limited longitudinal control.")
@@ -28,6 +30,7 @@ ACC_ENABLED_DESCRIPTION = tr_noop("Enable custom Short & Long press increments f
 ACC_NOLONG_DESCRIPTION = tr_noop("This feature can only be used with sunnypilot longitudinal control enabled.")
 ACC_PCMCRUISE_DISABLED_DESCRIPTION = tr_noop("This feature is not supported on this platform due to vehicle limitations.")
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
+
 
 class CruiseLayout(Widget):
   def __init__(self):
@@ -85,14 +88,14 @@ class CruiseLayout(Widget):
       param="DynamicExperimentalControl")
 
     items = [
-      self.sla_settings_button,
       self.icbm_toggle,
+      self.dec_toggle,
       self.scc_v_toggle,
       self.scc_m_toggle,
       self.custom_acc_toggle,
       self.custom_acc_short_increment,
       self.custom_acc_long_increment,
-      self.dec_toggle
+      self.sla_settings_button,
     ]
     return items
 
