@@ -61,7 +61,8 @@ class CruiseLayout(Widget):
     self.custom_acc_toggle = toggle_item_sp(
       title=tr("Custom ACC Speed Increments"),
       description="",
-      param="CustomAccIncrementsEnabled")
+      param="CustomAccIncrementsEnabled",
+      callback=self._on_custom_acc_toggle)
 
     self.custom_acc_short_increment = option_item_sp(
       title=tr("Short Press Increment"),
@@ -172,7 +173,10 @@ class CruiseLayout(Widget):
         self.custom_acc_toggle.show_description(True)
         self.custom_acc_toggle.action_item.set_state(False)
 
-    self.custom_acc_short_increment.set_visible(self.custom_acc_toggle.action_item.get_state())
-    self.custom_acc_long_increment.set_visible(self.custom_acc_toggle.action_item.get_state())
+    self._on_custom_acc_toggle(self.custom_acc_toggle.action_item.get_state())
+
+  def _on_custom_acc_toggle(self, state):
+    self.custom_acc_short_increment.set_visible(state)
+    self.custom_acc_long_increment.set_visible(state)
     self.custom_acc_short_increment.action_item.set_enabled(self.custom_acc_toggle.action_item.enabled)
     self.custom_acc_long_increment.action_item.set_enabled(self.custom_acc_toggle.action_item.enabled)
