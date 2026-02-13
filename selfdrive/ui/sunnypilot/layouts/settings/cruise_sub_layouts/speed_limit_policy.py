@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from collections.abc import Callable
 
 import pyray as rl
-from openpilot.common.params import Params
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
 from openpilot.system.ui.widgets.network import NavButton
@@ -29,7 +29,6 @@ SPEED_LIMIT_POLICY_DESCRIPTIONS = [
 class SpeedLimitPolicyLayout(Widget):
   def __init__(self, back_btn_callback: Callable):
     super().__init__()
-    self._params = Params()
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(back_btn_callback)
 
@@ -50,8 +49,9 @@ class SpeedLimitPolicyLayout(Widget):
     ]
     return items
 
-  def _get_policy_description(self):
-    return get_highlighted_description(self._params, "SpeedLimitPolicy", SPEED_LIMIT_POLICY_DESCRIPTIONS)
+  @staticmethod
+  def _get_policy_description():
+    return get_highlighted_description(ui_state.params, "SpeedLimitPolicy", SPEED_LIMIT_POLICY_DESCRIPTIONS)
 
   def _render(self, rect):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)

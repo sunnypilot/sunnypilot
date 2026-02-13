@@ -9,17 +9,16 @@ from enum import IntEnum
 
 import pyray as rl
 from openpilot.common.params import Params
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.speed_limit_policy import SpeedLimitPolicyLayout
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import OffsetType as SpeedLimitOffsetType
-from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.speed_limit_policy import SpeedLimitPolicyLayout
-from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp, option_item_sp, simple_button_item_sp, \
-                                                             LineSeparatorSP
+from openpilot.system.ui.sunnypilot.widgets import get_highlighted_description
+from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp, option_item_sp, simple_button_item_sp, LineSeparatorSP
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.sunnypilot.widgets import get_highlighted_description
 
 SPEED_LIMIT_MODE_BUTTONS = [tr("Off"), tr("Info"), tr("Warning"), tr("Assist")]
 SPEED_LIMIT_OFFSET_TYPE_BUTTONS = [tr("None"), tr("Fixed"), tr("%")]
@@ -46,7 +45,6 @@ class PanelType(IntEnum):
 class SpeedLimitSettingsLayout(Widget):
   def __init__(self, back_btn_callback: Callable):
     super().__init__()
-    self._params = Params()
     self._current_panel = PanelType.SETTINGS
 
     self._back_button = NavButton(tr("Back"))
@@ -104,15 +102,18 @@ class SpeedLimitSettingsLayout(Widget):
     if panel == PanelType.POLICY:
       self._policy_layout.show_event()
 
-  def _get_mode_description(self):
-    return get_highlighted_description(self._params, "SpeedLimitMode", SPEED_LIMIT_MODE_DESCRIPTIONS)
+  @staticmethod
+  def _get_mode_description():
+    return get_highlighted_description(ui_state.params, "SpeedLimitMode", SPEED_LIMIT_MODE_DESCRIPTIONS)
 
-  def _get_offset_description(self):
-    return get_highlighted_description(self._params, "SpeedLimitOffsetType", SPEED_LIMIT_OFFSET_DESCRIPTIONS)
+  @staticmethod
+  def _get_offset_description():
+    return get_highlighted_description(ui_state.params, "SpeedLimitOffsetType", SPEED_LIMIT_OFFSET_DESCRIPTIONS)
 
-  def _get_offset_label(self, value):
-    offset_type = int(self._params.get("SpeedLimitOffsetType", return_default=True))
-    unit = "km/h" if ui_state.is_metric else "mph"
+  @staticmethod
+  def _get_offset_label(value):
+    offset_type = int(ui_state.params.get("SpeedLimitOffsetType", return_default=True))
+    unit = tr("km/h") if ui_state.is_metric else tr("mph")
 
     if offset_type == int(SpeedLimitOffsetType.percentage):
       return f"{value}%"
@@ -140,11 +141,11 @@ class SpeedLimitSettingsLayout(Widget):
     else:
       sla_available = False
 
-    speed_limit_mode_param = self._params.get("SpeedLimitMode", return_default=True)
+    speed_limit_mode_param = ui_state.params.get("SpeedLimitMode", return_default=True)
     if not sla_available and speed_limit_mode_param == int(SpeedLimitMode.assist):
-      self._params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
+      ui_state.params.put("SpeedLimitMode", int(SpeedLimitMode.warning))
 
-    offset_type = self._params.get("SpeedLimitOffsetType", return_default=True)
+    offset_type = ui_state.params.get("SpeedLimitOffsetType", return_default=True)
     self._speed_limit_value_offset.set_visible(offset_type != int(SpeedLimitOffsetType.off))
 
   def _render(self, rect):
@@ -161,7 +162,6 @@ class SpeedLimitSettingsLayout(Widget):
   def show_event(self):
     self._current_panel = PanelType.SETTINGS
     self._scroller.show_event()
-
     self._speed_limit_mode.show_description(True)
 
   def hide_event(self):
