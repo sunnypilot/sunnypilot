@@ -142,13 +142,10 @@ class UIStateSP:
 
 
 class DeviceSP:
-  def __init__(self):
-    from openpilot.selfdrive.ui.ui_state import ui_state
-    self._ui_state = ui_state
-
-  def _set_awake(self, on: bool):
-    if self._ui_state.boot_offroad_mode == 1 and not on:
-      self._ui_state.params.put_bool("OffroadMode", True)
+  @staticmethod
+  def _set_awake(on: bool, _ui_state):
+    if _ui_state.boot_offroad_mode == 1 and not on:
+      _ui_state.params.put_bool("OffroadMode", True)
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
