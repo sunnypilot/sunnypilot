@@ -36,7 +36,7 @@ class ControlsExt(ModelStateBase):
 
   def initialize_lateral_control(self, lac, CI, dt):
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
-    torque_versions = self.params.get("TorqueControlTuneVersion")
+    torque_versions = self.params.get("TorqueControlTuneVersions")
     if not enforce_torque_control:
       return lac
 
