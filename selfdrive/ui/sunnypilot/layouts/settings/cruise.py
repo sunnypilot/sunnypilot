@@ -34,6 +34,7 @@ ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibil
 class CruiseLayout(Widget):
   def __init__(self):
     super().__init__()
+    self._current_panel = PanelType.CRUISE
     self._speed_limit_layout = SpeedLimitSettingsLayout(lambda: self._set_current_panel(PanelType.CRUISE))
 
     items = self._initialize_items()
