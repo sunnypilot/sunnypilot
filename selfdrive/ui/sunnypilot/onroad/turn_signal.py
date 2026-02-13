@@ -78,66 +78,24 @@ class TurnSignalController:
     self._right_signal = TurnSignalWidget(direction=IconSide.right)
     self._last_icon_side = None
 
-  def update(self):
-    sm = ui_state.sm
-    ss = sm['selfdriveState']
-
-    event_name = ss.alertType.split('/')[0] if ss.alertType else ''
-
-    if event_name == 'preLaneChangeLeft':
-      self._last_icon_side = IconSide.left
-      self._left_signal.activate('signal')
-      self._right_signal.deactivate()
-
-    elif event_name == 'preLaneChangeRight':
-      self._last_icon_side = IconSide.right
-      self._right_signal.activate('signal')
-      self._left_signal.deactivate()
-
-    elif event_name == 'laneChange':
-      if self._last_icon_side == IconSide.left:
-        self._left_signal.activate('signal')
-        self._right_signal.deactivate()
-      elif self._last_icon_side == IconSide.right:
-        self._right_signal.activate('signal')
-        self._left_signal.deactivate()
-
-    elif event_name == 'laneChangeBlocked':
-      CS = sm['carState']
-      if CS.leftBlinker:
-        icon_side = IconSide.left
-      elif CS.rightBlinker:
-        icon_side = IconSide.right
-      else:
-        icon_side = self._last_icon_side
-
-      if icon_side == IconSide.left:
-        self._left_signal.activate('blind_spot')
-        self._right_signal.deactivate()
-      elif icon_side == IconSide.right:
-        self._right_signal.activate('blind_spot')
-        self._left_signal.deactivate()
-
+  @staticmethod
+  def _update_signal(signal, blindspot, blinker):
+    if ui_state.blindspot and blindspot:
+      signal.activate('blind_spot')
+    elif ui_state.turn_signals and blinker:
+      signal.activate('signal')
     else:
-      self._last_icon_side = None
-      CS = sm['carState']
+      signal.deactivate()
 
-      if CS.leftBlindspot:
-        self._left_signal.activate('blind_spot')
-      elif CS.leftBlinker:
-        self._left_signal.activate('signal')
-      else:
-        self._left_signal.deactivate()
+  def update(self):
+    self._last_icon_side = None
+    CS = ui_state.sm['carState']
 
-      if CS.rightBlindspot:
-        self._right_signal.activate('blind_spot')
-      elif CS.rightBlinker:
-        self._right_signal.activate('signal')
-      else:
-        self._right_signal.deactivate()
+    self._update_signal(self._left_signal, CS.leftBlindspot, CS.leftBlinker)
+    self._update_signal(self._right_signal, CS.rightBlindspot, CS.rightBlinker)
 
   def render(self, rect: rl.Rectangle):
-    if not ui_state.turn_signals:
+    if not ui_state.turn_signals and not ui_state.blindspot:
       return
 
     x = rect.x + rect.width / 2
