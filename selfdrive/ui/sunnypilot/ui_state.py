@@ -39,6 +39,9 @@ class UIStateSP:
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
     self.reset_onroad_sleep_timer()
+    self.CP_SP: custom.CarParamsSP | None = None
+    self.has_icbm: bool = False
+    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -121,6 +124,7 @@ class UIStateSP:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
+      self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
