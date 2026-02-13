@@ -212,6 +212,12 @@ class ListItemSP(ListItem):
       content_width = int(self._rect.width - style.ITEM_PADDING * 2)
       self._rect.height = self.get_item_height(self._font, content_width)
 
+  def set_parent_rect(self, parent_rect: rl.Rectangle) -> None:
+    super().set_parent_rect(parent_rect)
+    if self.description_visible:
+      content_width = int(self._rect.width - style.ITEM_PADDING * 2)
+      self._rect.height = self.get_item_height(self._font, content_width)
+
   def get_item_height(self, font: rl.Font, max_width: int) -> float:
     height = super().get_item_height(font, max_width)
 
