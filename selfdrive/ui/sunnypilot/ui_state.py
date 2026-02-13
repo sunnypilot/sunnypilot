@@ -39,6 +39,9 @@ class UIStateSP:
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
     self.reset_onroad_sleep_timer()
+    self.CP_SP: custom.CarParamsSP | None = None
+    self.has_icbm: bool = False
+    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -121,6 +124,7 @@ class UIStateSP:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
+      self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
@@ -138,15 +142,14 @@ class UIStateSP:
     self.torque_bar = self.params.get_bool("TorqueBar")
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
+    self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
 
 
 class DeviceSP:
-  def __init__(self):
-    self._params = Params()
-
-  def _set_awake(self, on: bool):
-    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
-      self._params.put_bool("OffroadMode", True)
+  @staticmethod
+  def _set_awake(on: bool, _ui_state):
+    if _ui_state.boot_offroad_mode == 1 and not on:
+      _ui_state.params.put_bool("OffroadMode", True)
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:

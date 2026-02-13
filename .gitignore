@@ -100,6 +100,7 @@ Pipfile
 .ionide
 
 .claude/
+.context/
 PLAN.md
 TASK.md
 
