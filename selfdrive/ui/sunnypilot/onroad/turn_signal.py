@@ -72,11 +72,10 @@ class TurnSignalWidget(Widget):
 
 
 class TurnSignalController:
-  def __init__(self, config: TurnSignalConfig | None = None):
-    self._config = config or TurnSignalConfig()
+  def __init__(self):
+    self._config = TurnSignalConfig()
     self._left_signal = TurnSignalWidget(direction=IconSide.left)
     self._right_signal = TurnSignalWidget(direction=IconSide.right)
-    self._last_icon_side = None
 
   @staticmethod
   def _update_signal(signal, blindspot, blinker):
@@ -88,7 +87,6 @@ class TurnSignalController:
       signal.deactivate()
 
   def update(self):
-    self._last_icon_side = None
     CS = ui_state.sm['carState']
 
     self._update_signal(self._left_signal, CS.leftBlindspot, CS.leftBlinker)
