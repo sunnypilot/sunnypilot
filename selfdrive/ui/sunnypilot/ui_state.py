@@ -41,6 +41,7 @@ class UIStateSP:
     self.reset_onroad_sleep_timer()
     self.CP_SP: custom.CarParamsSP | None = None
     self.has_icbm: bool = False
+    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
 
   def update(self) -> None:
     if self.sunnylink_enabled:
