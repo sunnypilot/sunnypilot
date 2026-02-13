@@ -8,7 +8,6 @@ from collections.abc import Callable
 from enum import IntEnum
 
 import pyray as rl
-from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.speed_limit_policy import SpeedLimitPolicyLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
