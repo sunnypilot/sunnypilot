@@ -122,9 +122,9 @@ class MadsSettingsLayout(Widget):
       self._unified_engagement_toggle.action_item.set_state(True)
       self._unified_engagement_toggle.set_description("<b>" + DEFAULT_TO_ON + "</b><br>" + MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
 
-      self._steering_mode.action_item.set_enabled(False)
       self._steering_mode.set_description(STATUS_DISENGAGE_ONLY)
       self._steering_mode.action_item.set_selected_button(2)
+      self._steering_mode.action_item.set_enabled_buttons({2})
     else:
       self._main_cruise_toggle.action_item.set_enabled(True)
       self._main_cruise_toggle.set_description(MADS_MAIN_CRUISE_BASE_DESC)
@@ -133,3 +133,4 @@ class MadsSettingsLayout(Widget):
       self._unified_engagement_toggle.set_description(MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
 
       self._steering_mode.action_item.set_enabled(True)
+      self._steering_mode.action_item.set_enabled_buttons(None)

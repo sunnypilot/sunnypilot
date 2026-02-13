@@ -134,6 +134,10 @@ class MultipleButtonActionSP(MultipleButtonAction):
     if self.param_key:
       self.selected_button = int(self.params.get(self.param_key, return_default=True))
     self._anim_x: float | None = None
+    self.enabled_buttons: set[int] | None = None
+
+  def set_enabled_buttons(self, indices: set[int] | None):
+    self.enabled_buttons = indices
 
   def _render(self, rect: rl.Rectangle):
 
@@ -171,10 +175,31 @@ class MultipleButtonActionSP(MultipleButtonAction):
       text_x = button_x + (self.button_width - text_size.x) / 2
       text_y = button_y + (style.BUTTON_HEIGHT - text_size.y) / 2
 
-      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, text_color)
+      # Check individual button enabled state
+      is_button_enabled = self.enabled and (self.enabled_buttons is None or i in self.enabled_buttons)
+      current_text_color = text_color if is_button_enabled else style.MBC_DISABLED
+
+      rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, current_text_color)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
-    MultipleButtonAction._handle_mouse_release(self, mouse_pos)
+    # Override parent method to check individual button enabled state
+    if not self.enabled:
+      return
+
+    button_y = self._rect.y + (self._rect.height - style.BUTTON_HEIGHT) / 2
+    for i, _ in enumerate(self.buttons):
+      button_x = self._rect.x + i * self.button_width
+      button_rect = rl.Rectangle(button_x, button_y, self.button_width, style.BUTTON_HEIGHT)
+
+      if rl.check_collision_point_rec(mouse_pos, button_rect):
+        # Check if this specific button is enabled
+        if self.enabled_buttons is not None and i not in self.enabled_buttons:
+          return
+
+        self.selected_button = i
+        if self.callback:
+          self.callback(i)
+
     if self.param_key:
       self.params.put(self.param_key, self.selected_button)
 
