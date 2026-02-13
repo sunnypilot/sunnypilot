@@ -93,6 +93,10 @@
     "title": "[TIZI/TICI only] Blind Spot Detection",
     "description": "Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."
   },
+  "BlinkerLateralReengageDelay": {
+    "title": "Post-Blinker Delay",
+    "description": "Delay before lateral control resumes after the turn signal ends."
+  },
   "BlinkerMinLateralControlSpeed": {
     "title": "Blinker Min Lateral Control Speed",
     "description": ""
