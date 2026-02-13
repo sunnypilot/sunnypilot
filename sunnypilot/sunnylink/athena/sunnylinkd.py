@@ -29,6 +29,7 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
 
 import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import update_car_list_param
+from openpilot.sunnypilot.selfdrive.controls.lib.sync_torque_versions_param import update_torque_versions_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
 
@@ -296,6 +297,7 @@ def main(exit_event: threading.Event | None = None):
   UploadQueueCache.initialize(upload_queue)
 
   update_car_list_param()
+  update_torque_versions_param()
 
   ws_uri = f"{SUNNYLINK_ATHENA_HOST}"
   conn_start = None

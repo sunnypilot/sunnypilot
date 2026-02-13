@@ -1247,6 +1247,14 @@
     "title": "[TIZI/TICI only] Steering Arc",
     "description": "Display steering arc on the driving screen when lateral control is enabled."
   },
+  "TorqueControlTune": {
+    "title": "Torque Control Tune Version",
+    "description": "Select the version of Torque Control Tune to use."
+  },
+  "TorqueControlTuneVersions": {
+    "title": "Torque Control Tune Version List",
+    "description": "List of the versions of Torque Control Tune available to."
+  },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",
     "description": ""
@@ -1264,7 +1272,7 @@
     "min": 0.1,
     "max": 5.0,
     "step": 0.1,
-    "unit": "m/s²"
+    "unit": "m/s\u00b2"
   },
   "ToyotaEnforceStockLongitudinal": {
     "title": "Toyota: Enforce Factory Longitudinal Control",
