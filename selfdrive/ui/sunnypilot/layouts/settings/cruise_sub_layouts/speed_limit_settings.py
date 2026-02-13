@@ -146,7 +146,11 @@ class SpeedLimitSettingsLayout(Widget):
       sla_available = False
 
     if not sla_available:
-      self._speed_limit_mode.action_item.set_enabled_buttons({0, 1, 2})
+      self._speed_limit_mode.action_item.set_enabled_buttons({
+        int(SpeedLimitMode.off),
+        int(SpeedLimitMode.information),
+        int(SpeedLimitMode.warning),
+      })
     else:
       self._speed_limit_mode.action_item.set_enabled_buttons(None)
 
