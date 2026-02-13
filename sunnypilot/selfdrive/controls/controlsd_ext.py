@@ -35,7 +35,7 @@ class ControlsExt(ModelStateBase):
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
-    if self.params.get("TorqueControlTuneVersion") == 0.0:
+    if self.params.get("TorqueControlTuneVersion") == 0.0:  # v0
       return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
 
     return lac
