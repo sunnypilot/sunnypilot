@@ -31,6 +31,9 @@ class BlindSpotIndicators:
     return self._blind_spot_left_alpha_filter.x > 0.01 or self._blind_spot_right_alpha_filter.x > 0.01
 
   def render(self, rect: rl.Rectangle) -> None:
+    if not ui_state.blindspot:
+      return
+
     BLIND_SPOT_MARGIN_X = 20  # Distance from edge of screen
     BLIND_SPOT_Y_OFFSET = 100  # Distance from top of screen
 

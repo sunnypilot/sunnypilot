@@ -72,6 +72,15 @@ class SteeringLayout(Widget):
       description="",
       label_callback=lambda speed: f'{speed} {"km/h" if ui_state.is_metric else "mph"}',
     )
+    self._blinker_reengage_delay = option_item_sp(
+      param="BlinkerLateralReengageDelay",
+      title=lambda: tr("Post-Blinker Delay"),
+      min_value=0,
+      max_value=10,
+      value_change_step=1,
+      description=lambda: tr("Delay before lateral control resumes after the turn signal ends."),
+      label_callback=lambda delay: f'{delay} {"s"}'
+    )
     self._torque_control_toggle = toggle_item_sp(
       param="EnforceTorqueControl",
       title=lambda: tr("Enforce Torque Lateral Control"),
@@ -96,6 +105,7 @@ class SteeringLayout(Widget):
       LineSeparatorSP(40),
       self._blinker_control_toggle,
       self._blinker_control_options,
+      self._blinker_reengage_delay,
       LineSeparatorSP(40),
       self._torque_control_toggle,
       self._torque_customization_button,
@@ -128,6 +138,7 @@ class SteeringLayout(Widget):
     self._mads_toggle.action_item.set_enabled(ui_state.is_offroad())
     self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad() and self._mads_toggle.action_item.get_state())
     self._blinker_control_options.set_visible(self._blinker_control_toggle.action_item.get_state())
+    self._blinker_reengage_delay.set_visible(self._blinker_control_toggle.action_item.get_state())
 
     enforce_torque_enabled = self._torque_control_toggle.action_item.get_state()
     nnlc_enabled = self._nnlc_toggle.action_item.get_state()

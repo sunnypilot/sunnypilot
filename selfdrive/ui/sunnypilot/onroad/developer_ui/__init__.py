@@ -10,7 +10,7 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
   UiElement, RelDistElement, RelSpeedElement, SteeringAngleElement,
   DesiredLateralAccelElement, ActualLateralAccelElement, DesiredSteeringAngleElement,
   AEgoElement, LeadSpeedElement, FrictionCoefficientElement, LatAccelFactorElement,
-  SteeringTorqueEpsElement, BearingDegElement, AltitudeElement
+  SteeringTorqueEpsElement, BearingDegElement, AltitudeElement, DesiredSteeringPIDElement
 )
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -19,8 +19,8 @@ from openpilot.system.ui.widgets import Widget
 
 class DeveloperUiRenderer(Widget):
   DEV_UI_OFF = 0
-  DEV_UI_RIGHT = 1
-  DEV_UI_BOTTOM = 2
+  DEV_UI_BOTTOM = 1
+  DEV_UI_RIGHT = 2
   DEV_UI_BOTH = 3
   BOTTOM_BAR_HEIGHT = 61
 
@@ -36,6 +36,7 @@ class DeveloperUiRenderer(Widget):
     self.desired_lat_accel_elem = DesiredLateralAccelElement()
     self.actual_lat_accel_elem = ActualLateralAccelElement()
     self.desired_steer_elem = DesiredSteeringAngleElement()
+    self.desired_pid_steer_elem = DesiredSteeringPIDElement()
     self.a_ego_elem = AEgoElement()
     self.lead_speed_elem = LeadSpeedElement()
     self.friction_elem = FrictionCoefficientElement()
@@ -61,10 +62,10 @@ class DeveloperUiRenderer(Widget):
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
 
-    if self.dev_ui_mode == self.DEV_UI_RIGHT:
-      self._draw_right_dev_ui(rect)
-    elif self.dev_ui_mode == self.DEV_UI_BOTTOM:
+    if self.dev_ui_mode == self.DEV_UI_BOTTOM:
       self._draw_bottom_dev_ui(rect)
+    elif self.dev_ui_mode == self.DEV_UI_RIGHT:
+      self._draw_right_dev_ui(rect)
     elif self.dev_ui_mode == self.DEV_UI_BOTH:
       self._draw_right_dev_ui(rect)
       self._draw_bottom_dev_ui(rect)
@@ -85,8 +86,10 @@ class DeveloperUiRenderer(Widget):
     ]
     if controls_state.lateralControlState.which() == 'torqueState':
       elements.append(self.desired_lat_accel_elem.update(sm, ui_state.is_metric))
-    else:
+    elif controls_state.lateralControlState.which() == 'angleState':
       elements.append(self.desired_steer_elem.update(sm, ui_state.is_metric))
+    elif controls_state.lateralControlState.which() == 'pidState':
+      elements.append(self.desired_pid_steer_elem.update(sm, ui_state.is_metric))
 
     elements.append(self.actual_lat_accel_elem.update(sm, ui_state.is_metric))
 

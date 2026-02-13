@@ -137,6 +137,9 @@ class TurnSignalController:
         self._right_signal.deactivate()
 
   def render(self, rect: rl.Rectangle):
+    if not ui_state.turn_signals:
+      return
+
     x = rect.x + rect.width / 2
 
     left_x = x - self._config.left_x - self._config.size

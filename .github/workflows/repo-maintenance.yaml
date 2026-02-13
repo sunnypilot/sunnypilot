@@ -21,7 +21,7 @@ jobs:
         run: |
           ${{ env.RUN }} "python3 selfdrive/ui/update_translations.py --vanish"
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
         with:
           author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           commit-message: "Update translations"
@@ -48,6 +48,12 @@ jobs:
         python3 -m ensurepip --upgrade
         pip3 install uv
         uv lock --upgrade
+    - name: uv pip tree
+      id: pip_tree
+      run: |
+        echo 'PIP_TREE<<EOF' >> $GITHUB_OUTPUT
+        uv pip tree >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
     - name: bump submodules
       run: |
         git config --global --add safe.directory '*'
@@ -61,7 +67,7 @@ jobs:
         python selfdrive/car/docs.py
         git add docs/CARS.md
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+      uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
       with:
         author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
         token: ${{ github.repository == 'commaai/openpilot' && secrets.ACTIONS_CREATE_PR_PAT || secrets.GITHUB_TOKEN }}
@@ -70,5 +76,10 @@ jobs:
         branch: auto-package-updates
         base: master
         delete-branch: true
-        body: 'Automatic PR from repo-maintenance -> package_updates'
+        body: |
+          Automatic PR from repo-maintenance -> package_updates
+
+          ```
+          ${{ steps.pip_tree.outputs.PIP_TREE }}
+          ```
         labels: bot

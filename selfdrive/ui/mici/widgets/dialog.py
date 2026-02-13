@@ -14,7 +14,6 @@ from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.widgets.slider import RedBigSlider, BigSlider
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
-from openpilot.selfdrive.ui.mici.widgets.side_button import SideButton
 
 DEBUG = False
 
@@ -22,32 +21,17 @@ PADDING = 20
 
 
 class BigDialogBase(NavWidget, abc.ABC):
-  def __init__(self, right_btn: str | None = None, right_btn_callback: Callable | None = None):
+  def __init__(self):
     super().__init__()
     self._ret = DialogResult.NO_ACTION
     self.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
     self.set_back_callback(lambda: setattr(self, '_ret', DialogResult.CANCEL))
-
-    self._right_btn = None
-    if right_btn:
-      def right_btn_callback_wrapper():
-        gui_app.set_modal_overlay(None)
-        if right_btn_callback:
-          right_btn_callback()
-
-      self._right_btn = SideButton(right_btn)
-      self._right_btn.set_click_callback(right_btn_callback_wrapper)
-      # move to right side
-      self._right_btn._rect.x = self._rect.x + self._rect.width - self._right_btn._rect.width
 
   def _render(self, _) -> DialogResult:
     """
     Allows `gui_app.set_modal_overlay(BigDialog(...))`.
     The overlay runner keeps calling until result != NO_ACTION.
     """
-    if self._right_btn:
-      self._right_btn.set_position(self._right_btn._rect.x, self._rect.y)
-      self._right_btn.render()
 
     return self._ret
 
@@ -55,10 +39,8 @@ class BigDialogBase(NavWidget, abc.ABC):
 class BigDialog(BigDialogBase):
   def __init__(self,
                title: str,
-               description: str,
-               right_btn: str | None = None,
-               right_btn_callback: Callable | None = None):
-    super().__init__(right_btn, right_btn_callback)
+               description: str):
+    super().__init__()
     self._title = title
     self._description = description
 
@@ -70,8 +52,6 @@ class BigDialog(BigDialogBase):
     # TODO: coming up with these numbers manually is a pain and not scalable
     # TODO: no clue what any of these numbers mean. VBox and HBox would remove all of this shite
     max_width = self._rect.width - PADDING * 2
-    if self._right_btn:
-      max_width -= self._right_btn._rect.width
 
     title_wrapped = '\n'.join(wrap_text(gui_app.font(FontWeight.BOLD), self._title, 50, int(max_width)))
     title_size = measure_text_cached(gui_app.font(FontWeight.BOLD), title_wrapped, 50)
@@ -139,7 +119,7 @@ class BigInputDialog(BigDialogBase):
                default_text: str = "",
                minimum_length: int = 1,
                confirm_callback: Callable[[str], None] | None = None):
-    super().__init__(None, None)
+    super().__init__()
     self._hint_label = UnifiedLabel(hint, font_size=35, text_color=rl.Color(255, 255, 255, int(255 * 0.35)),
                                     font_weight=FontWeight.MEDIUM)
     self._keyboard = MiciKeyboard()
@@ -151,7 +131,8 @@ class BigInputDialog(BigDialogBase):
     self._backspace_img = gui_app.texture("icons_mici/settings/keyboard/backspace.png", 42, 36)
     self._backspace_img_alpha = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
 
-    self._enter_img = gui_app.texture("icons_mici/settings/keyboard/confirm.png", 42, 36)
+    self._enter_img = gui_app.texture("icons_mici/settings/keyboard/enter.png", 76, 62)
+    self._enter_disabled_img = gui_app.texture("icons_mici/settings/keyboard/enter_disabled.png", 76, 62)
     self._enter_img_alpha = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
 
     # rects for top buttons
@@ -186,9 +167,9 @@ class BigInputDialog(BigDialogBase):
     text_size = measure_text_cached(gui_app.font(FontWeight.ROMAN), text + candidate_char or self._hint_label.text, self.TEXT_INPUT_SIZE)
 
     bg_block_margin = 5
-    text_x = PADDING * 2 + self._enter_img.width + bg_block_margin
+    text_x = PADDING / 2 + self._enter_img.width + PADDING
     text_field_rect = rl.Rectangle(text_x, int(self._rect.y + PADDING) - bg_block_margin,
-                                   int(self._rect.width - text_x - PADDING * 2 - self._enter_img.width) - bg_block_margin * 2,
+                                   int(self._rect.width - text_x * 2),
                                    int(text_size.y))
 
     # draw text input
@@ -224,7 +205,7 @@ class BigInputDialog(BigDialogBase):
     self._backspace_img_alpha.update(255 * bool(text))
     if self._backspace_img_alpha.x > 1:
       color = rl.Color(255, 255, 255, int(self._backspace_img_alpha.x))
-      rl.draw_texture(self._backspace_img, int(self._rect.width - self._enter_img.width - 15), int(text_field_rect.y), color)
+      rl.draw_texture(self._backspace_img, int(self._rect.width - self._backspace_img.width - 27), int(self._rect.y + 14), color)
 
     if not text and self._hint_label.text and not candidate_char:
       # draw description if no text entered yet and not drawing candidate char
@@ -236,10 +217,12 @@ class BigInputDialog(BigDialogBase):
     self._top_right_button_rect = rl.Rectangle(text_field_rect.x + text_field_rect.width, self._rect.y,
                                                self._rect.width - (text_field_rect.x + text_field_rect.width), self._top_left_button_rect.height)
 
-    self._enter_img_alpha.update(255 if (len(text) >= self._minimum_length) else 255 * 0.35)
-    if self._enter_img_alpha.x > 1:
-      color = rl.Color(255, 255, 255, int(self._enter_img_alpha.x))
-      rl.draw_texture(self._enter_img, int(self._rect.x + 15), int(text_field_rect.y), color)
+    # draw enter button
+    self._enter_img_alpha.update(255 if len(text) >= self._minimum_length else 0)
+    color = rl.Color(255, 255, 255, int(self._enter_img_alpha.x))
+    rl.draw_texture(self._enter_img, int(self._rect.x + PADDING / 2), int(self._rect.y), color)
+    color = rl.Color(255, 255, 255, 255 - int(self._enter_img_alpha.x))
+    rl.draw_texture(self._enter_disabled_img, int(self._rect.x + PADDING / 2), int(self._rect.y), color)
 
     # keyboard goes over everything
     self._keyboard.render(self._rect)
@@ -307,9 +290,8 @@ class BigDialogOptionButton(Widget):
 class BigMultiOptionDialog(BigDialogBase):
   BACK_TOUCH_AREA_PERCENTAGE = 0.1
 
-  def __init__(self, options: list[str], default: str | None,
-               right_btn: str | None = 'check', right_btn_callback: Callable[[], None] | None = None):
-    super().__init__(right_btn, right_btn_callback=right_btn_callback)
+  def __init__(self, options: list[str], default: str | None):
+    super().__init__()
     self._options = options
     if default is not None:
       assert default in options
@@ -322,8 +304,6 @@ class BigMultiOptionDialog(BigDialogBase):
     self._can_click = True
 
     self._scroller = Scroller([], horizontal=False, pad_start=100, pad_end=100, spacing=0, snap_items=True)
-    if self._right_btn is not None:
-      self._scroller.set_enabled(lambda: not cast(Widget, self._right_btn).is_pressed)
 
     for option in options:
       self._scroller.add_widget(BigDialogOptionButton(option))
