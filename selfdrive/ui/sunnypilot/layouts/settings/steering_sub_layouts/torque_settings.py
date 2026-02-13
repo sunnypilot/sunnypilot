@@ -9,7 +9,7 @@ import pyray as rl
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, multiple_button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets import Widget
@@ -35,13 +35,6 @@ class TorqueSettingsLayout(Widget):
       title=lambda: tr("Less Restrict Settings for Self-Tune (Beta)"),
       description=lambda: tr("Less strict settings when using Self-Tune. This allows torqued to be more " +
                              "forgiving when learning values."),
-    )
-    self._torque_control_tune_version = multiple_button_item_sp(
-      title=lambda: tr("Torque Lateral Control Tune Version"),
-      description="",
-      buttons=[lambda: tr("v0"), lambda: tr("v1")],
-      param="TorqueControlTuneVersion",
-      button_width=350,
     )
     self._custom_tune_toggle = toggle_item_sp(
       param="CustomTorqueParams",
@@ -82,7 +75,6 @@ class TorqueSettingsLayout(Widget):
     items = [
       self._self_tune_toggle,
       self._relaxed_tune_toggle,
-      self._torque_control_tune_version,
       self._custom_tune_toggle,
       self._torque_prams_override_toggle,
       self._torque_lat_accel_factor,
@@ -97,7 +89,6 @@ class TorqueSettingsLayout(Widget):
       self._relaxed_tune_toggle.action_item.set_state(False)
     self._self_tune_toggle.action_item.set_enabled(ui_state.is_offroad())
     self._relaxed_tune_toggle.action_item.set_enabled(ui_state.is_offroad() and self._self_tune_toggle.action_item.get_state())
-    self._torque_control_tune_version.action_item.set_enabled(ui_state.is_offroad())
     self._custom_tune_toggle.action_item.set_enabled(ui_state.is_offroad())
     custom_tune_enabled = self._custom_tune_toggle.action_item.get_state()
     self._torque_prams_override_toggle.set_visible(custom_tune_enabled)
