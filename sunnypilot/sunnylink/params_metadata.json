@@ -1253,7 +1253,17 @@
   },
   "TorqueControlTuneVersions": {
     "title": "Torque Control Tune Version List",
-    "description": "List of the versions of Torque Control Tune available to."
+    "description": "List of the versions of Torque Control Tune available to.",
+    "options": [
+      {
+        "value": 1.0,
+        "label": "v1.0"
+      },
+      {
+        "value": 0.0,
+        "label": "v0.0"
+      }
+    ]
   },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",
