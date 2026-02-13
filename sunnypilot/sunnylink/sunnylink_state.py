@@ -166,6 +166,7 @@ class SunnylinkState:
 
   def _worker_thread(self) -> None:
     while self._running:
+      self._sm.update()
       if self.is_connected():
         self._fetch_roles()
         self._fetch_users()
