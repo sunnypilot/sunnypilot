@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from enum import IntEnum
 
 from openpilot.common.params import Params
-from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.sla_settings import SLASettingsLayout
+from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.speed_limit_settings import SpeedLimitSettingsLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, simple_button_item_sp
@@ -35,7 +35,7 @@ ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibil
 class CruiseLayout(Widget):
   def __init__(self):
     super().__init__()
-    self._sla_layout = SLASettingsLayout(lambda: self._set_current_panel(PanelType.CRUISE))
+    self._speed_limit_layout = SpeedLimitSettingsLayout(lambda: self._set_current_panel(PanelType.CRUISE))
 
     self._params = Params()
     items = self._initialize_items()
@@ -102,20 +102,23 @@ class CruiseLayout(Widget):
 
   def _render(self, rect):
     if self._current_panel == PanelType.SLA:
-      self._sla_layout.render(rect)
+      self._speed_limit_layout.render(rect)
     else:
       self._scroller.render(rect)
 
   def show_event(self):
     self._set_current_panel(PanelType.CRUISE)
     self._scroller.show_event()
-    self._update_settings()
+    self.icbm_toggle.show_description(True)
+    self.custom_acc_toggle.show_description(True)
 
   def _set_current_panel(self, panel: PanelType):
     self._current_panel = panel
+    if panel == PanelType.SLA:
+      self._speed_limit_layout.show_event()
 
-  def _update_settings(self):
-    ui_state.update_params()
+  def _update_state(self):
+    super()._update_state()
 
     if ui_state.CP is not None and ui_state.CP_SP is not None:
       has_icbm = ui_state.has_icbm
@@ -131,12 +134,14 @@ class CruiseLayout(Widget):
         long_desc = ICMB_UNAVAILABLE
         if has_long:
           if ui_state.CP.alphaLongitudinalAvailable:
-            long_desc +=  " " + ICMB_UNAVAILABLE_LONG_AVAILABLE
+            long_desc += " " + ICMB_UNAVAILABLE_LONG_AVAILABLE
           else:
-            long_desc +=  " " + ICMB_UNAVAILABLE_LONG_UNAVAILABLE
+            long_desc += " " + ICMB_UNAVAILABLE_LONG_UNAVAILABLE
 
-        self.icbm_toggle.set_description("<b>" + tr(long_desc) + "</b>\n\n" + tr(ICBM_DESC))
-        self.icbm_toggle.show_description(True)
+        new_desc = "<b>" + tr(long_desc) + "</b>\n\n" + tr(ICBM_DESC)
+        if self.icbm_toggle.description != new_desc:
+          self.icbm_toggle.set_description(new_desc)
+          self.icbm_toggle.show_description(True)
 
       if has_long or has_icbm:
         self.custom_acc_toggle.action_item.set_enabled(((has_long and not ui_state.CP.pcmCruise) or has_icbm) and ui_state.is_offroad())
@@ -158,20 +163,27 @@ class CruiseLayout(Widget):
       self.icbm_toggle.action_item.set_enabled(False)
       self.icbm_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
 
+    show_custom_acc_desc = False
+
     if ui_state.is_offroad():
-      self.custom_acc_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
-      self.custom_acc_toggle.show_description(True)
+      new_custom_acc_desc = tr(ONROAD_ONLY_DESCRIPTION)
+      show_custom_acc_desc = True
     else:
       if has_long or has_icbm:
         if has_long and ui_state.CP.pcmCruise:
-          self.custom_acc_toggle.set_description(tr(ACC_PCMCRUISE_DISABLED_DESCRIPTION))
-          self.custom_acc_toggle.show_description(True)
+          new_custom_acc_desc = tr(ACC_PCMCRUISE_DISABLED_DESCRIPTION)
+          show_custom_acc_desc = True
         else:
-          self.custom_acc_toggle.set_description(tr(ACC_ENABLED_DESCRIPTION))
+          new_custom_acc_desc = tr(ACC_ENABLED_DESCRIPTION)
       else:
-        self.custom_acc_toggle.set_description(tr(ACC_NOLONG_DESCRIPTION))
-        self.custom_acc_toggle.show_description(True)
+        new_custom_acc_desc = tr(ACC_NOLONG_DESCRIPTION)
+        show_custom_acc_desc = True
         self.custom_acc_toggle.action_item.set_state(False)
+
+    if self.custom_acc_toggle.description != new_custom_acc_desc:
+      self.custom_acc_toggle.set_description(new_custom_acc_desc)
+      if show_custom_acc_desc:
+        self.custom_acc_toggle.show_description(True)
 
     self._on_custom_acc_toggle(self.custom_acc_toggle.action_item.get_state())
 
