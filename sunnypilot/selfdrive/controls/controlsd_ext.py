@@ -35,10 +35,15 @@ class ControlsExt(ModelStateBase):
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
-    if self.params.get("TorqueControlTuneVersion") == 0.0:  # v0
-      return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
+    enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
+    torque_versions = self.params.get("TorqueControlTuneVersion")
+    if not enforce_torque_control:
+      return lac
 
-    return lac
+    if torque_versions == 0.0:  # v0
+      return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
+    else:
+      return lac
 
   def get_params_sp(self, sm: messaging.SubMaster) -> None:
     if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
