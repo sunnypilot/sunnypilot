@@ -168,7 +168,10 @@ class SunnylinkState:
 
   def _worker_thread(self) -> None:
     while self._running:
-      if self._panel_open:
+      with self._lock:
+        panel_open = self._panel_open
+
+      if panel_open:
         self._sm.update()
         if self.is_connected():
           self._fetch_roles()
@@ -225,7 +228,8 @@ class SunnylinkState:
       return style.ITEM_TEXT_VALUE_COLOR
 
   def set_settings_open(self, _open: bool) -> None:
-    self._panel_open = _open
+    with self._lock:
+      self._panel_open = _open
 
   def __del__(self):
     self.stop()
