@@ -299,7 +299,7 @@ class Device(DeviceSP):
 
   def _set_awake(self, on: bool):
     if on != self._awake:
-      DeviceSP._set_awake(self, on)
+      DeviceSP._set_awake(on, ui_state)
       self._awake = on
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)

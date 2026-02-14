@@ -6,12 +6,17 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from openpilot.selfdrive.ui.ui_state import ui_state
+
 
 class RocketFuel:
   def __init__(self):
     self.vc_accel = 0.0
 
   def render(self, rect: rl.Rectangle, sm) -> None:
+    if not ui_state.rocket_fuel:
+      return
+
     vc_accel0 = sm['carState'].aEgo
 
     # Smooth the acceleration

@@ -34,12 +34,12 @@ class LoadingAnimation(Widget):
 class WifiIcon(Widget):
   def __init__(self):
     super().__init__()
-    self.set_rect(rl.Rectangle(0, 0, 89, 64))
+    self.set_rect(rl.Rectangle(0, 0, 86, 64))
 
-    self._wifi_low_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_low.png", 89, 64)
-    self._wifi_medium_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_medium.png", 89, 64)
-    self._wifi_full_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_full.png", 89, 64)
-    self._lock_txt = gui_app.texture("icons_mici/settings/network/new/lock.png", 23, 32)
+    self._wifi_low_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_low.png", 86, 64)
+    self._wifi_medium_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_medium.png", 86, 64)
+    self._wifi_full_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_full.png", 86, 64)
+    self._lock_txt = gui_app.texture("icons_mici/settings/network/new/lock.png", 22, 32)
 
     self._network: Network | None = None
     self._scale = 1.0
@@ -50,12 +50,16 @@ class WifiIcon(Widget):
   def set_scale(self, scale: float):
     self._scale = scale
 
+  @staticmethod
+  def get_strength_icon_idx(strength: int) -> int:
+    return round(strength / 100 * 2)
+
   def _render(self, _):
     if self._network is None:
       return
 
     # Determine which wifi strength icon to use
-    strength = round(self._network.strength / 100 * 2)
+    strength = self.get_strength_icon_idx(self._network.strength)
     if strength == 2:
       strength_icon = self._wifi_full_txt
     elif strength == 1:
@@ -169,7 +173,7 @@ class ForgetButton(Widget):
 
     self._bg_txt = gui_app.texture("icons_mici/settings/network/new/forget_button.png", 100, 100)
     self._bg_pressed_txt = gui_app.texture("icons_mici/settings/network/new/forget_button_pressed.png", 100, 100)
-    self._trash_txt = gui_app.texture("icons_mici/settings/network/new/trash.png", 32, 36)
+    self._trash_txt = gui_app.texture("icons_mici/settings/network/new/trash.png", 35, 42)
     self.set_rect(rl.Rectangle(0, 0, 100 + self.HORIZONTAL_MARGIN * 2, 100))
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
@@ -314,7 +318,7 @@ class WifiUIMici(BigMultiOptionDialog):
   INACTIVITY_TIMEOUT = 1
 
   def __init__(self, wifi_manager: WifiManager, back_callback: Callable):
-    super().__init__([], None, None, right_btn_callback=None)
+    super().__init__([], None)
 
     # Set up back navigation
     self.set_back_callback(back_callback)

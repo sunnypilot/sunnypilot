@@ -146,9 +146,11 @@ def arc_bar_pts(cx: float, cy: float,
 
 
 class TorqueBar(Widget):
-  def __init__(self, demo: bool = False):
+  def __init__(self, demo: bool = False, scale: float = 1.0, always: bool = False):
     super().__init__()
     self._demo = demo
+    self._scale = scale
+    self._always = always
     self._torque_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
     self._torque_line_alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
@@ -180,8 +182,8 @@ class TorqueBar(Widget):
 
   def _render(self, rect: rl.Rectangle) -> None:
     # adjust y pos with torque
-    torque_line_offset = np.interp(abs(self._torque_filter.x), [0.5, 1], [22, 26])
-    torque_line_height = np.interp(abs(self._torque_filter.x), [0.5, 1], [14, 56])
+    torque_line_offset = np.interp(abs(self._torque_filter.x), [0.5, 1], [22 * self._scale, 26 * self._scale])
+    torque_line_height = np.interp(abs(self._torque_filter.x), [0.5, 1], [14 * self._scale, 56 * self._scale])
 
     # animate alpha and angle span
     if not self._demo:
@@ -195,7 +197,7 @@ class TorqueBar(Widget):
       torque_line_bg_color = rl.Color(255, 255, 255, int(255 * 0.15 * self._torque_line_alpha_filter.x))
 
     # draw curved line polygon torque bar
-    torque_line_radius = 1200
+    torque_line_radius = 1200 * self._scale
     top_angle = -90
     torque_bg_angle_span = self._torque_line_alpha_filter.x * TORQUE_ANGLE_SPAN
     torque_start_angle = top_angle - torque_bg_angle_span / 2
@@ -207,13 +209,13 @@ class TorqueBar(Widget):
     cy = rect.y + rect.height + torque_line_radius - torque_line_offset
 
     # draw bg torque indicator line
-    bg_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, torque_start_angle, torque_end_angle)
+    bg_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, torque_start_angle, torque_end_angle, cap_radius=7 * self._scale)
     draw_polygon(rect, bg_pts, color=torque_line_bg_color)
 
     # draw torque indicator line
     a0s = top_angle
     a1s = a0s + torque_bg_angle_span / 2 * self._torque_filter.x
-    sl_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, a0s, a1s)
+    sl_pts = arc_bar_pts(cx, cy, mid_r, torque_line_height, a0s, a1s, cap_radius=7 * self._scale)
 
     # draw beautiful gradient from center to 65% of the bg torque bar width
     start_grad_pt = cx / rect.width
@@ -252,5 +254,5 @@ class TorqueBar(Widget):
     # draw center torque bar dot
     if abs(self._torque_filter.x) < 0.5:
       dot_y = self._rect.y + self._rect.height - torque_line_offset - torque_line_height / 2
-      rl.draw_circle(int(cx), int(dot_y), 10 // 2,
+      rl.draw_circle(int(cx), int(dot_y), (10 // 2 * self._scale),
                      rl.Color(182, 182, 182, int(255 * 0.9 * self._torque_line_alpha_filter.x)))

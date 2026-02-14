@@ -68,8 +68,10 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
     metadata_file = metadata_file.rename(output_path / f"{base}_{short_name.lower()}_metadata.pkl")
 
   # Build the metadata structure
+  model_type = "offPolicy" if "off_policy" in base else base.split("_")[-1]
+
   model_metadata = {
-    "type": base.split("_")[-1] if "dmonitoring" not in base else "dmonitoring",
+    "type": model_type,
     "artifact": {
       "file_name": tinygrad_file.name,
       "download_uri": {

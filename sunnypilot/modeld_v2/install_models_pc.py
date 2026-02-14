@@ -44,7 +44,7 @@ def generate_metadata_pkl(model_path, output_path):
 
 def install_models(model_dir):
   model_dir = Path(model_dir)
-  models = ["driving_policy", "driving_vision"]
+  models = ["driving_off_policy", "driving_policy", "driving_vision"]
   found_models = []
 
   for model in models:
