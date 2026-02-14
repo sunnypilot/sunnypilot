@@ -355,5 +355,10 @@ class SunnylinkLayout(Widget):
 
   def show_event(self):
     super().show_event()
+    ui_state.sunnylink_state.set_settings_open(True)
     self._scroller.show_event()
     self._sunnylink_description.set_visible(False)
+
+  def hide_event(self):
+    super().hide_event()
+    ui_state.sunnylink_state.set_settings_open(False)
