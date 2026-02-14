@@ -224,8 +224,8 @@ class SunnylinkState:
     else:
       return style.ITEM_TEXT_VALUE_COLOR
 
-  def set_settings_open(self, open: bool) -> None:
-    self._panel_open = open
+  def set_settings_open(self, _open: bool) -> None:
+    self._panel_open = _open
 
   def __del__(self):
     self.stop()
