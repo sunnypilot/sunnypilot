@@ -1,4 +1,3 @@
-import os
 from abc import abstractmethod, ABC
 
 import numpy as np
@@ -9,15 +8,6 @@ from openpilot.system.hardware.hw import Paths
 import pickle
 
 CUSTOM_MODEL_PATH = Paths.model_root()
-
-
-# Set QCOM environment variable for TICI devices, potentially enabling hardware acceleration
-USBGPU = "USBGPU" in os.environ
-if USBGPU:
-  os.environ['DEV'] = 'AMD'
-  os.environ['AMD_IFACE'] = 'USB'
-else:
-  os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
 
 
 class ModelData:
