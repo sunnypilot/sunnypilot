@@ -121,11 +121,16 @@ class HudRenderer(Widget):
     self._txt_wheel: rl.Texture = gui_app.texture('icons_mici/wheel.png', 50, 50)
     self._txt_wheel_critical: rl.Texture = gui_app.texture('icons_mici/wheel_critical.png', 50, 50)
     self._txt_exclamation_point: rl.Texture = gui_app.texture('icons_mici/exclamation_point.png', 44, 44)
+    self._txt_blind_spot_left: rl.Texture = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 108, 128)
+    self._txt_blind_spot_right: rl.Texture = gui_app.texture('icons_mici/onroad/blind_spot_right.png', 108, 128)
 
     self._wheel_alpha_filter = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
     self._wheel_y_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
 
     self._set_speed_alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+
+    self._blind_spot_left_alpha_filter = FirstOrderFilter(0, 0.15, 1 / gui_app.target_fps)
+    self._blind_spot_right_alpha_filter = FirstOrderFilter(0, 0.15, 1 / gui_app.target_fps)
 
   def set_wheel_critical_icon(self, critical: bool):
     """Set the wheel icon to critical or normal state."""
@@ -179,6 +184,56 @@ class HudRenderer(Widget):
       self._draw_set_speed(rect)
 
     self._draw_steering_wheel(rect)
+
+    self._draw_blind_spot_indicators(rect)
+
+  def _draw_blind_spot_indicators(self, rect: rl.Rectangle) -> None:
+    sm = ui_state.sm
+    car_state = sm['carState']
+
+    try:
+      left_detected = car_state.leftBlindspot
+    except AttributeError:
+      left_detected = False
+
+    try:
+      right_detected = car_state.rightBlindspot
+    except AttributeError:
+      right_detected = False
+
+    self._blind_spot_left_alpha_filter.update(1.0 if left_detected else 0.0)
+    self._blind_spot_right_alpha_filter.update(1.0 if right_detected else 0.0)
+
+    BLIND_SPOT_MARGIN_X = 20  # Distance from edge of screen
+    BLIND_SPOT_Y_OFFSET = 100  # Distance from top of screen
+
+    if self._blind_spot_left_alpha_filter.x > 0.01:
+      pos_x = int(rect.x + BLIND_SPOT_MARGIN_X)
+      pos_y = int(rect.y + BLIND_SPOT_Y_OFFSET)
+      alpha = int(255 * self._blind_spot_left_alpha_filter.x)
+      color = rl.Color(255, 255, 255, alpha)
+      rl.draw_texture(self._txt_blind_spot_left, pos_x, pos_y, color)
+
+    if self._blind_spot_right_alpha_filter.x > 0.01:
+      pos_x = int(rect.x + rect.width - BLIND_SPOT_MARGIN_X - self._txt_blind_spot_right.width)
+      pos_y = int(rect.y + BLIND_SPOT_Y_OFFSET)
+      alpha = int(255 * self._blind_spot_right_alpha_filter.x)
+      color = rl.Color(255, 255, 255, alpha)
+      rl.draw_texture(self._txt_blind_spot_right, pos_x, pos_y, color)
+
+  def _has_blind_spot_detected(self) -> bool:
+    car_state = ui_state.sm['carState']
+    try:
+      left_detected = car_state.leftBlindspot
+    except AttributeError:
+      left_detected = False
+
+    try:
+      right_detected = car_state.rightBlindspot
+    except AttributeError:
+      right_detected = False
+
+    return left_detected or right_detected
 
   def _draw_steering_wheel(self, rect: rl.Rectangle) -> None:
     wheel_txt = self._txt_wheel_critical if self._show_wheel_critical else self._txt_wheel
