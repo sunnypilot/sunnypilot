@@ -1249,12 +1249,12 @@
   },
   "TorqueControlTune": {
     "title": "Torque Control Tune Version",
-    "description": "Select the version of Torque Control Tune to use."
-  },
-  "TorqueControlTuneVersions": {
-    "title": "Torque Control Tune Version List",
-    "description": "List of the versions of Torque Control Tune available to.",
+    "description": "Select the version of Torque Control Tune to use.",
     "options": [
+      {
+        "value": "",
+        "label": "Default"
+      },
       {
         "value": 1.0,
         "label": "v1.0"
