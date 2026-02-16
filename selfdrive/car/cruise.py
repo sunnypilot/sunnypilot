@@ -49,8 +49,6 @@ class VCruiseHelper(VCruiseHelperSP):
     self.get_minimum_set_speed(is_metric)
 
     _enabled = self.update_enabled_state(CS, enabled)
-    if not self.CP.pcmCruise or not self.CP_SP.pcmCruiseSpeed:
-      self.update_button_timers(CS, enabled)
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed and _enabled):
@@ -70,6 +68,9 @@ class VCruiseHelper(VCruiseHelperSP):
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
+
+    if not self.CP.pcmCruise or not self.CP_SP.pcmCruiseSpeed:
+      self.update_button_timers(CS, enabled)
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
