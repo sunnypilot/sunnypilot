@@ -14,6 +14,7 @@ from openpilot.common.params import Params
 METADATA_PATH = os.path.join(os.path.dirname(__file__), "../params_metadata.json")
 TORQUE_VERSIONS_JSON = os.path.join(BASEDIR, "sunnypilot", "selfdrive", "controls", "lib", "latcontrol_torque_versions.json")
 
+
 def main():
   params = Params()
   all_keys = params.all_keys()
