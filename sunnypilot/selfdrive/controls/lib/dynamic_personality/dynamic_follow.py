@@ -12,18 +12,19 @@ from openpilot.common.params import Params
 
 LongPersonality = log.LongitudinalPersonality
 
-# Follow distance profiles mapped to LongPersonality
+FOLLOW_BREAKPOINTS =          [0.,   3.,   6.,   10.,  15.,  20.,  27.,  35.,  40.]
+
 FOLLOW_PROFILES = {
-  LongPersonality.relaxed: [1.70, 1.70, 1.75, 1.75, 1.80, 1.80, 1.80],
-  LongPersonality.standard: [1.40, 1.40, 1.45, 1.45, 1.50, 1.50, 1.50],
-  LongPersonality.aggressive: [1.05, 1.05, 1.15, 1.15, 1.20, 1.20, 1.20],
+  LongPersonality.relaxed:    [1.70, 1.72, 1.74, 1.76, 1.78, 1.82, 1.88, 1.95, 2.00],
+  LongPersonality.standard:   [1.38, 1.40, 1.42, 1.44, 1.46, 1.48, 1.50, 1.53, 1.55],
+  LongPersonality.aggressive: [1.05, 1.06, 1.08, 1.10, 1.12, 1.14, 1.17, 1.19, 1.20],
 }
 
-FOLLOW_BREAKPOINTS = [0.0, 3.0, 6.0, 30.0, 40.0, 50.0, 60.0]
-
-SMOOTHING_BASE = 0.55  # Base smoothing factor (higher = smoother)
-SMOOTHING_RANGE = 0.20  # Additional smoothing at high speeds
-SMOOTHING_SPEED_THRESHOLD = 36.0  # m/s (~80 mph) for max smoothing
+SMOOTHING_BASE            = 0.80
+SMOOTHING_RANGE           = 0.10
+SMOOTHING_SPEED_THRESHOLD = 36.0
+SMOOTHING_ERROR_SCALE     = 0.05
+SMOOTHING_MAX             = 0.97
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
 
@@ -31,16 +32,18 @@ class FollowDistanceController:
   def __init__(self):
     self.params = Params()
     self.frame = 0
-    self.current_multiplier = None
+    self.current_multiplier = 1.45
     self.first_run = True
     self.personality_change_cooldown = 0
     self.personality_cooldown_frames = int(PERSONALITY_CHANGE_COOLDOWN_S / DT_MDL)
     self._personality = self.params.get('LongitudinalPersonality') or LongPersonality.standard
     self._enabled = self.params.get_bool('DynamicFollow')
 
-  def _get_smoothing_factor(self, v_ego: float) -> float:
+  def _get_smoothing_factor(self, v_ego: float, target: float) -> float:
     speed_factor = np.clip(v_ego / SMOOTHING_SPEED_THRESHOLD, 0.3, 1.0)
-    return SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
+    base = SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
+    error = abs(target - self.current_multiplier) if self.current_multiplier is not None else 0
+    return min(SMOOTHING_MAX, base + error * SMOOTHING_ERROR_SCALE)
 
   def is_enabled(self) -> bool:
     return self._enabled
@@ -82,18 +85,20 @@ class FollowDistanceController:
     if self.first_run:
       self.current_multiplier = target
       self.first_run = False
-      return self.current_multiplier
+      return float(self.current_multiplier)
 
-    # exponential smoothing with speedadaptive factor
-    alpha = self._get_smoothing_factor(v_ego)
+    if self.personality_change_cooldown > 0:
+      return float(self.current_multiplier)
+
+    alpha = self._get_smoothing_factor(v_ego, target)
     self.current_multiplier = alpha * self.current_multiplier + (1.0 - alpha) * target
-    return self.current_multiplier
+    return float(self.current_multiplier)
 
   def reset(self):
     self._personality = LongPersonality.standard
     self.params.put('LongitudinalPersonality', LongPersonality.standard)
     self.frame = 0
-    self.current_multiplier = None
+    self.current_multiplier = 1.45
     self.first_run = True
     self.personality_change_cooldown = 0
 
@@ -101,6 +106,6 @@ class FollowDistanceController:
     self.frame += 1
     if self.personality_change_cooldown > 0:
       self.personality_change_cooldown -= 1
-    if self.frame % int(1.0 / DT_MDL) == 0:
+    if self.frame % max(1, int(1.0 / DT_MDL)) == 0:
       self._personality = self.params.get('LongitudinalPersonality') or LongPersonality.standard
       self._enabled = self.params.get_bool('DynamicFollow')

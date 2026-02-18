@@ -15,27 +15,30 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco: [1.30, 1.25, 1.15, 0.69, 0.58, 0.52, 0.28, 0.107, 0.08, 0.06],
-  AccelPersonality.normal: [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
-  AccelPersonality.sport: [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
+  AccelPersonality.eco:       [1.85, 1.65, 1.40, 0.98, 0.68, 0.56, 0.34, 0.09, 0.07],
+  AccelPersonality.normal:    [2.00, 2.00, 1.70, 1.18, 0.85, 0.68, 0.40, 0.12, 0.08],
+  AccelPersonality.sport:     [2.00, 2.00, 2.00, 1.60, 1.20, 0.95, 0.56, 0.16, 0.10],
 }
-MAX_ACCEL_BREAKPOINTS = [0.0, 3.0, 5.0, 8.0, 12.0, 18.0, 24.0, 32.0, 42.0, 55.0]
+MAX_ACCEL_BREAKPOINTS =       [0.0,  3.0,  5.0,  8.0,  12.0, 18.0, 24.0, 32.0, 42.0]
 
-# Braking Profiles
+# Decel profiles
+MIN_ACCEL_BREAKPOINTS =       [0.0,   1.0,   2.0,   4.0,   7.0,   11.0,  16.0,  22.0,  25.0]
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco: [-0.003, -0.4, -0.6, -0.5, -1.2, -1.2],
-  AccelPersonality.normal: [-0.004, -0.5, -0.7, -0.6, -1.2, -1.3],
-  AccelPersonality.sport: [-0.50, -0.6, -0.8, -0.7, -1.3, -1.4],
+  AccelPersonality.eco:       [-0.001,-0.001,-0.08, -0.18, -0.25, -0.30, -0.35, -0.40, -0.44],
+  AccelPersonality.normal:    [-0.001,-0.001,-0.10, -0.21, -0.29, -0.35, -0.41, -0.47, -0.51],
+  AccelPersonality.sport:     [-0.002,-0.002,-0.13, -0.25, -0.34, -0.41, -0.47, -0.53, -0.58],
 }
-MIN_ACCEL_BREAKPOINTS = [3, 5.0, 7.0, 9.0, 14.0, 25]
 
+ACCEL_ALPHA_BASE = 0.75
+ACCEL_ALPHA_MAX  = 0.92
+ACCEL_ALPHA_SCALE = 0.9
+DECEL_ALPHA_BASE  = 0.78
+DECEL_ALPHA_MIN   = 0.60
+DECEL_ALPHA_SCALE = -0.4
+MAX_DECEL_INCREASE_RATE = 0.07   # m/s³
+MAX_DECEL_DECREASE_RATE = 0.50   # m/s³
 
-DECEL_SMOOTH_ALPHA = 0.20  # Very aggressive smoothing for decel (lower = smoother)
-ACCEL_SMOOTH_ALPHA = 0.75  # Less aggressive for accel (higher = more responsive)
-
-# Asymmetric rate limiting
-MAX_DECEL_INCREASE_RATE = 1.3  # When braking harder (m/s² per second)
-MAX_DECEL_DECREASE_RATE = 1.0  # When releasing brake (m/s² per second)
+_MIN_MAX_GAP = 0.05  # m/s²
 
 
 class AccelPersonalityController:
@@ -50,7 +53,7 @@ class AccelPersonalityController:
 
   def update(self, sm=None):
     self.frame += 1
-    if self.frame % int(1.0 / DT_MDL) == 0:
+    if self.frame % max(1, int(1.0 / DT_MDL)) == 0:
       self._accel_personality = self.params.get('AccelPersonality') or AccelPersonality.normal
       self._enabled = self.params.get_bool('AccelPersonalityEnabled')
 
@@ -68,43 +71,42 @@ class AccelPersonalityController:
 
   def cycle_accel_personality(self) -> int:
     current = self._accel_personality
-    next_personality = ACCEL_PERSONALITY_OPTIONS[(ACCEL_PERSONALITY_OPTIONS.index(current) + 1) % len(ACCEL_PERSONALITY_OPTIONS)]
+    idx = ACCEL_PERSONALITY_OPTIONS.index(current) if current in ACCEL_PERSONALITY_OPTIONS else 0
+    next_personality = ACCEL_PERSONALITY_OPTIONS[(idx + 1) % len(ACCEL_PERSONALITY_OPTIONS)]
     self.set_accel_personality(next_personality)
     return int(next_personality)
 
+  @staticmethod
+  def _adaptive_alpha(current: float, target: float, base: float, limit: float, scale: float) -> float:
+    error = abs(target - current)
+    raw = base + error * scale
+    lo, hi = (base, limit) if limit >= base else (limit, base)
+    return float(np.clip(raw, lo, hi))
+
   def get_accel_limits(self, v_ego: float) -> tuple[float, float]:
     v_ego = max(0.0, v_ego)
-    target_max = np.interp(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.accel_personality])
-    target_min = np.interp(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self.accel_personality])
+    target_max = float(np.interp(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.accel_personality]))
+    target_min = float(np.interp(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self.accel_personality]))
 
     if self.first_run:
-      self.last_max_accel, self.last_min_accel = target_max, target_min
+      self.last_max_accel = target_max
+      self.last_min_accel = target_min
       self.first_run = False
       return float(target_min), float(target_max)
 
-    # Smoothing
-    self.last_max_accel = ACCEL_SMOOTH_ALPHA * target_max + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel
-    smoothed_decel = DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel
+    # Adaptive accel smoothing
+    accel_alpha = self._adaptive_alpha(self.last_max_accel, target_max, ACCEL_ALPHA_BASE, ACCEL_ALPHA_MAX, ACCEL_ALPHA_SCALE)
+    self.last_max_accel = accel_alpha * self.last_max_accel + (1.0 - accel_alpha) * target_max
 
-    # Rate Limiting (Asymmetric)
+    # Adaptive decel smoothing
+    decel_alpha = self._adaptive_alpha(self.last_min_accel, target_min, DECEL_ALPHA_BASE, DECEL_ALPHA_MIN, DECEL_ALPHA_SCALE)
+    smoothed_decel = decel_alpha * self.last_min_accel + (1.0 - decel_alpha) * target_min
+
     raw_change = smoothed_decel - self.last_min_accel
+    limit_per_step = (MAX_DECEL_INCREASE_RATE if raw_change < 0 else MAX_DECEL_DECREASE_RATE) * DT_MDL
+    self.last_min_accel += float(np.clip(raw_change, -limit_per_step, limit_per_step))
 
-    if raw_change < 0:
-      limit = MAX_DECEL_INCREASE_RATE * DT_MDL
-      decel_change = np.clip(raw_change, -limit, limit)
-    else:
-      limit = MAX_DECEL_DECREASE_RATE * DT_MDL
-      decel_change = np.clip(raw_change, -limit, limit)
-
-    self.last_min_accel += decel_change
-
-    # Dynamic Safety Corridor: Ensure min is always strictly less than max.
-    # We maintain a gap of at least 0.1, or 5% of the current max acceleration.
-    # This scaling gap prevents solver crashes at high acceleration values.
-    gap = max(0.1, abs(self.last_max_accel) * 0.05)
-
-    if self.last_min_accel > self.last_max_accel - gap:
-      self.last_min_accel = self.last_max_accel - gap
+    self.last_min_accel = min(self.last_min_accel, self.last_max_accel - _MIN_MAX_GAP)
 
     return float(self.last_min_accel), float(self.last_max_accel)
 
@@ -118,17 +120,17 @@ class AccelPersonalityController:
     return self._enabled
 
   def set_enabled(self, enabled: bool):
-    self._enabled = enabled
-    self.params.put_bool('AccelPersonalityEnabled', enabled)
+    self._enabled = bool(enabled)
+    self.params.put_bool('AccelPersonalityEnabled', self._enabled)
 
   def toggle_enabled(self) -> bool:
-    current = self._enabled
-    self.set_enabled(not current)
-    return not current
+    self.set_enabled(not self._enabled)
+    return self._enabled
 
-  def reset(self):
-    self._accel_personality = AccelPersonality.normal
-    self.params.put('AccelPersonality', AccelPersonality.normal)
+  def reset(self, personality: int = None):
+    new_personality = personality if personality in ACCEL_PERSONALITY_OPTIONS else AccelPersonality.normal
+    self._accel_personality = new_personality
+    self.params.put('AccelPersonality', new_personality)
     self.frame = 0
     self.last_max_accel = 2.0
     self.last_min_accel = -0.01
