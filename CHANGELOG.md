@@ -83,6 +83,7 @@ sunnypilot Version 2026.001.000 (2026-03-xx)
   * Toyota: do not disable radar when smartDSU or CAN Filter detected by @sunnyhaibin
   * Honda: add missing `GasInterceptor` messages to Taiwan Odyssey DBC by @mvl-boston
   * GM: remove `CHEVROLET_EQUINOX_NON_ACC_3RD_GEN` from `dashcamOnly` by @sunnyhaibin
+  * GM: remove `CHEVROLET_BOLT_NON_ACC_2ND_GEN` from `dashcamOnly` by @sunnyhaibin
 * New Contributors (sunnypilot/sunnypilot)
   * @TheSecurityDev made their first contribution in "ui: fix sidebar scroll in UI screenshots"
   * @zikeji made their first contribution in "sunnylink: block remote modification of SSH key parameters"
