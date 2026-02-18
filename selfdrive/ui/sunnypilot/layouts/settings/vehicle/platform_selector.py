@@ -131,7 +131,7 @@ class PlatformSelector(Button):
       self._platform = bundle.get("name", "")
       self.set_text(self._platform)
       self.color = style.BLUE
-    elif ui_state.CP and ui_state.CP.carFingerprint != "MOCK":
+    elif ui_state.CP is not None and ui_state.CP.carFingerprint != "MOCK":
       self._platform = ui_state.CP.carFingerprint
       self.set_text(self._platform)
       self.color = style.GREEN
