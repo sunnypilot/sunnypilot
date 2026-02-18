@@ -17,6 +17,10 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolve
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelPersonalityController
+from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_personality.dynamic_follow import FollowDistanceController
+from opendbc.car.interfaces import ACCEL_MIN
+
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
@@ -26,6 +30,8 @@ class LongitudinalPlannerSP:
     self.events_sp = EventsSP()
     self.resolver = SpeedLimitResolver()
     self.dec = DynamicExperimentalController(CP, mpc)
+    self.accel_controller = AccelPersonalityController()
+    self.dynamic_follow = FollowDistanceController()
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP, CP_SP)
@@ -42,6 +48,21 @@ class LongitudinalPlannerSP:
       return experimental_mode
 
     return experimental_mode and self.dec.mode() == "blended"
+
+  def get_accel_clip(self, v_ego: float) -> list[float] | None:
+    if self.accel_controller.is_enabled():
+      return [ACCEL_MIN, self.accel_controller.get_max_accel(v_ego)]
+    return None
+
+  def get_cruise_min_accel(self, v_ego: float) -> float | None:
+    if self.accel_controller.is_enabled():
+      return self.accel_controller.get_min_accel(v_ego)
+    return None
+
+  def get_t_follow(self, v_ego: float) -> float | None:
+    if self.dynamic_follow.is_enabled():
+      return self.dynamic_follow.get_follow_distance_multiplier(v_ego)
+    return None
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
@@ -77,6 +98,21 @@ class LongitudinalPlannerSP:
     self.events_sp.clear()
     self.dec.update(sm)
     self.e2e_alerts_helper.update(sm, self.events_sp)
+    self.accel_controller.update(sm)
+    self.dynamic_follow.update()
+
+    # DEBUG
+    if self.accel_controller.frame % 20 == 0:
+      v_ego = sm['carState'].vEgo if sm.valid.get('carState', False) else 0.0
+      accel_clip = self.get_accel_clip(v_ego)
+      cruise_min = self.get_cruise_min_accel(v_ego)
+      t_follow = self.get_t_follow(v_ego)
+      print(
+        f"[SP-DEBUG] AccelPersonality: enabled={self.accel_controller.is_enabled()}, "
+        f"personality={self.accel_controller.get_accel_personality()}, "
+        f"accel_clip={accel_clip}, cruise_min={cruise_min}"
+      )
+      print(f"[SP-DEBUG] DynamicFollow: enabled={self.dynamic_follow.is_enabled()}, t_follow={t_follow}")
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -94,6 +130,8 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+
+    longitudinalPlanSP.accelPersonality = int(self.accel_controller.get_accel_personality())
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl
