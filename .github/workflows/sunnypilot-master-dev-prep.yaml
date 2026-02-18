@@ -241,5 +241,3 @@ jobs:
           gh run watch "$RUN_ID"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
