@@ -1,0 +1,1359 @@
+{
+  "AccessToken": {
+    "title": "AccessTokenIsNice",
+    "description": ""
+  },
+  "AdbEnabled": {
+    "title": "Enable ADB",
+    "description": ""
+  },
+  "AlphaLongitudinalEnabled": {
+    "title": "Alpha Longitudinal",
+    "description": ""
+  },
+  "AlwaysOnDM": {
+    "title": "Always-on Driver Monitor",
+    "description": ""
+  },
+  "ApiCache_Device": {
+    "title": "Api Cache  Device",
+    "description": ""
+  },
+  "ApiCache_DriveStats": {
+    "title": "Api Cache  Drive Stats",
+    "description": ""
+  },
+  "ApiCache_FirehoseStats": {
+    "title": "Firehose Mode Stats",
+    "description": ""
+  },
+  "AssistNowToken": {
+    "title": "Assist Now Token",
+    "description": ""
+  },
+  "AthenadPid": {
+    "title": "Athenad Pid",
+    "description": ""
+  },
+  "AthenadRecentlyViewedRoutes": {
+    "title": "Athenad Recently Viewed Routes",
+    "description": ""
+  },
+  "AthenadUploadQueue": {
+    "title": "Athenad Upload Queue",
+    "description": ""
+  },
+  "AutoLaneChangeBsmDelay": {
+    "title": "Auto Lane Change BSM Delay",
+    "description": ""
+  },
+  "AutoLaneChangeTimer": {
+    "title": "Auto Lane Change Timer",
+    "description": "",
+    "options": [
+      {
+        "value": -1,
+        "label": "Off"
+      },
+      {
+        "value": 0,
+        "label": "Nudge"
+      },
+      {
+        "value": 1,
+        "label": "Nudgeless"
+      },
+      {
+        "value": 2,
+        "label": "0.5s"
+      },
+      {
+        "value": 3,
+        "label": "1s"
+      },
+      {
+        "value": 4,
+        "label": "2s"
+      },
+      {
+        "value": 5,
+        "label": "3s"
+      }
+    ]
+  },
+  "BackupManager_CreateBackup": {
+    "title": "Create Backup",
+    "description": ""
+  },
+  "BackupManager_RestoreVersion": {
+    "title": "Restore Version",
+    "description": ""
+  },
+  "BlindSpot": {
+    "title": "[TIZI/TICI only] Blind Spot Detection",
+    "description": "Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."
+  },
+  "BlinkerLateralReengageDelay": {
+    "title": "Post-Blinker Delay",
+    "description": "Delay before lateral control resumes after the turn signal ends."
+  },
+  "BlinkerMinLateralControlSpeed": {
+    "title": "Blinker Min Lateral Control Speed",
+    "description": ""
+  },
+  "BlinkerPauseLateralControl": {
+    "title": "Blinker Pause Lateral Control",
+    "description": ""
+  },
+  "BootCount": {
+    "title": "Boot Count",
+    "description": ""
+  },
+  "Brightness": {
+    "title": "Screen Brightness",
+    "description": ""
+  },
+  "CalibrationParams": {
+    "title": "Calibration Params",
+    "description": ""
+  },
+  "CameraDebugExpGain": {
+    "title": "Camera Debug Exp Gain",
+    "description": ""
+  },
+  "CameraDebugExpTime": {
+    "title": "Camera Debug Exp Time",
+    "description": ""
+  },
+  "CameraOffset": {
+    "title": "Adjust Camera Offset",
+    "description": "Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)",
+    "min": -0.35,
+    "max": 0.35,
+    "step": 0.01,
+    "unit": "meters"
+  },
+  "CarBatteryCapacity": {
+    "title": "Car Battery Capacity",
+    "description": "Battery Size",
+    "unit": "kWh"
+  },
+  "CarList": {
+    "title": "Supported Car List",
+    "description": "All supported platform in sunnypilot"
+  },
+  "CarParams": {
+    "title": "Car Params",
+    "description": ""
+  },
+  "CarParamsCache": {
+    "title": "Car Params Cache",
+    "description": ""
+  },
+  "CarParamsPersistent": {
+    "title": "Car Params Persistent",
+    "description": ""
+  },
+  "CarParamsPrevRoute": {
+    "title": "Car Params Prev Route",
+    "description": ""
+  },
+  "CarParamsSP": {
+    "title": "Car Params Sp",
+    "description": ""
+  },
+  "CarParamsSPCache": {
+    "title": "Car Params Sp Cache",
+    "description": ""
+  },
+  "CarParamsSPPersistent": {
+    "title": "Car Params Sp Persistent",
+    "description": ""
+  },
+  "CarPlatformBundle": {
+    "title": "Car Platform Bundle",
+    "description": ""
+  },
+  "ChevronInfo": {
+    "title": "Chevron Info",
+    "description": ""
+  },
+  "CompletedSunnylinkConsentVersion": {
+    "title": "Completed sunnylink Consent Version",
+    "description": ""
+  },
+  "CompletedTrainingVersion": {
+    "title": "Completed Training Version",
+    "description": ""
+  },
+  "ControlsReady": {
+    "title": "Controls Ready",
+    "description": ""
+  },
+  "CurrentBootlog": {
+    "title": "Current Bootlog",
+    "description": ""
+  },
+  "CurrentRoute": {
+    "title": "Current Route",
+    "description": ""
+  },
+  "CustomAccIncrementsEnabled": {
+    "title": "Custom ACC Increments",
+    "description": ""
+  },
+  "CustomAccLongPressIncrement": {
+    "title": "Custom ACC Long Press Increment",
+    "description": "",
+    "min": 1,
+    "max": 10,
+    "step": 1
+  },
+  "CustomAccShortPressIncrement": {
+    "title": "Custom ACC Short Press Increment",
+    "description": "",
+    "min": 1,
+    "max": 10,
+    "step": 1
+  },
+  "CustomTorqueParams": {
+    "title": "Enable Custom Torque Tuning",
+    "description": "Enables custom tuning for Torque lateral control"
+  },
+  "DevUIInfo": {
+    "title": "Developer UI Info",
+    "description": ""
+  },
+  "DeviceBootMode": {
+    "title": "Device Boot Mode",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Standard"
+      },
+      {
+        "value": 1,
+        "label": "Always Offroad"
+      }
+    ]
+  },
+  "DisableLogging": {
+    "title": "Disable Logging",
+    "description": ""
+  },
+  "DisablePowerDown": {
+    "title": "Disable Power Down",
+    "description": ""
+  },
+  "DisableUpdates": {
+    "title": "Disable Updates",
+    "description": ""
+  },
+  "DisengageOnAccelerator": {
+    "title": "Disengage On Accelerator",
+    "description": ""
+  },
+  "DoReboot": {
+    "title": "Reboot",
+    "description": ""
+  },
+  "DoShutdown": {
+    "title": "Power Off",
+    "description": ""
+  },
+  "DoUninstall": {
+    "title": "Uninstall sunnypilot",
+    "description": ""
+  },
+  "DongleId": {
+    "title": "Device ID",
+    "description": ""
+  },
+  "DriverTooDistracted": {
+    "title": "Driver Too Distracted",
+    "description": ""
+  },
+  "DynamicExperimentalControl": {
+    "title": "Dynamic Experimental Control",
+    "description": ""
+  },
+  "EnableCopyparty": {
+    "title": "copyparty Service",
+    "description": ""
+  },
+  "EnableGithubRunner": {
+    "title": "GitHub Runner Service",
+    "description": ""
+  },
+  "EnableSunnylinkUploader": {
+    "title": "Enable sunnylink Uploader",
+    "description": ""
+  },
+  "EnforceTorqueControl": {
+    "title": "Enforce Torque Control",
+    "description": "Enable this to enforce sunnypilot to steer with Torque lateral control."
+  },
+  "ExperimentalMode": {
+    "title": "Experimental Mode",
+    "description": ""
+  },
+  "ExperimentalModeConfirmed": {
+    "title": "Experimental Mode Confirmed",
+    "description": ""
+  },
+  "FirmwareQueryDone": {
+    "title": "Firmware Query Done",
+    "description": ""
+  },
+  "ForcePowerDown": {
+    "title": "Force Power Down",
+    "description": ""
+  },
+  "GitBranch": {
+    "title": "Git Branch",
+    "description": ""
+  },
+  "GitCommit": {
+    "title": "Git Commit",
+    "description": ""
+  },
+  "GitCommitDate": {
+    "title": "Git Commit Date",
+    "description": ""
+  },
+  "GitDiff": {
+    "title": "Git Diff",
+    "description": ""
+  },
+  "GitRemote": {
+    "title": "Git Remote",
+    "description": ""
+  },
+  "GithubRunnerSufficientVoltage": {
+    "title": "Github Runner Sufficient Voltage",
+    "description": ""
+  },
+  "GithubSshKeys": {
+    "title": "Github Ssh Keys",
+    "description": ""
+  },
+  "GithubUsername": {
+    "title": "GitHub Username",
+    "description": ""
+  },
+  "GreenLightAlert": {
+    "title": "Green Traffic Light Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
+  },
+  "GsmApn": {
+    "title": "GSM APN",
+    "description": ""
+  },
+  "GsmMetered": {
+    "title": "Gsm Metered",
+    "description": ""
+  },
+  "GsmRoaming": {
+    "title": "GSM Roaming",
+    "description": ""
+  },
+  "HardwareSerial": {
+    "title": "Serial Number",
+    "description": ""
+  },
+  "HasAcceptedTerms": {
+    "title": "Has Accepted Terms",
+    "description": ""
+  },
+  "HasAcceptedTermsSP": {
+    "title": "Has Accepted sunnypilot Terms",
+    "description": ""
+  },
+  "HideVEgoUI": {
+    "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
+    "description": "When enabled, the speedometer on the onroad screen is not displayed."
+  },
+  "HyundaiLongitudinalTuning": {
+    "title": "Hyundai Longitudinal Tuning",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Dynamic"
+      },
+      {
+        "value": 2,
+        "label": "Predictive"
+      }
+    ]
+  },
+  "InstallDate": {
+    "title": "Install Date",
+    "description": ""
+  },
+  "IntelligentCruiseButtonManagement": {
+    "title": "Intelligent Cruise Button Management",
+    "description": ""
+  },
+  "InteractivityTimeout": {
+    "title": "Interactivity Timeout",
+    "description": "Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if user is not interacting with the screen.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 10,
+        "label": "10 s"
+      },
+      {
+        "value": 20,
+        "label": "20 s"
+      },
+      {
+        "value": 30,
+        "label": "30 s"
+      },
+      {
+        "value": 40,
+        "label": "40 s"
+      },
+      {
+        "value": 50,
+        "label": "50 s"
+      },
+      {
+        "value": 60,
+        "label": "1 m"
+      },
+      {
+        "value": 70,
+        "label": "1 m"
+      },
+      {
+        "value": 80,
+        "label": "1 m"
+      },
+      {
+        "value": 90,
+        "label": "1 m"
+      },
+      {
+        "value": 100,
+        "label": "1 m"
+      },
+      {
+        "value": 110,
+        "label": "1 m"
+      },
+      {
+        "value": 120,
+        "label": "2 m"
+      }
+    ]
+  },
+  "IsDevelopmentBranch": {
+    "title": "Is Development Branch",
+    "description": ""
+  },
+  "IsDriverViewEnabled": {
+    "title": "Is Driver View Enabled",
+    "description": ""
+  },
+  "IsEngaged": {
+    "title": "Is Engaged",
+    "description": ""
+  },
+  "IsLdwEnabled": {
+    "title": "Lane Departure Warnings",
+    "description": ""
+  },
+  "IsMetric": {
+    "title": "Use Metric Units",
+    "description": ""
+  },
+  "IsOffroad": {
+    "title": "Is Offroad",
+    "description": ""
+  },
+  "IsOnroad": {
+    "title": "Is Onroad",
+    "description": ""
+  },
+  "IsReleaseBranch": {
+    "title": "Is Release Branch",
+    "description": ""
+  },
+  "IsReleaseSpBranch": {
+    "title": "Is Release Sp Branch",
+    "description": ""
+  },
+  "IsRhdDetected": {
+    "title": "Is Rhd Detected",
+    "description": ""
+  },
+  "IsTakingSnapshot": {
+    "title": "Is Taking Snapshot",
+    "description": ""
+  },
+  "IsTestedBranch": {
+    "title": "Is Tested Branch",
+    "description": ""
+  },
+  "JoystickDebugMode": {
+    "title": "Joystick Debug Mode",
+    "description": ""
+  },
+  "LagdToggle": {
+    "title": "Live Learning Steer Delay",
+    "description": "Allow device to learn and adapt car's steering response time"
+  },
+  "LagdToggleDelay": {
+    "title": "Manual Software Delay",
+    "description": "Software delay to use when Live Learning Steer Delay is toggled off",
+    "min": 0.05,
+    "max": 0.5,
+    "step": 0.01
+  },
+  "LagdValueCache": {
+    "title": "LaGD Value Cache",
+    "description": ""
+  },
+  "LaneTurnDesire": {
+    "title": "Lane Turn Desire",
+    "description": "Force model to plan an intent to turn based on blinker"
+  },
+  "LaneTurnValue": {
+    "title": "Lane Turn Speed",
+    "description": "Maximum speed for lane turn desire",
+    "min": 0,
+    "max": 20,
+    "step": 1
+  },
+  "LanguageSetting": {
+    "title": "Language",
+    "description": ""
+  },
+  "LastAgnosPowerMonitorShutdown": {
+    "title": "Last AGNOS Power Monitor Shutdown",
+    "description": ""
+  },
+  "LastAthenaPingTime": {
+    "title": "Last Athena Ping Time",
+    "description": ""
+  },
+  "LastGPSPosition": {
+    "title": "Last Gps Position",
+    "description": ""
+  },
+  "LastGPSPositionLLK": {
+    "title": "Last GPS Position LLK",
+    "description": ""
+  },
+  "LastManagerExitReason": {
+    "title": "Last Manager Exit Reason",
+    "description": ""
+  },
+  "LastOffroadStatusPacket": {
+    "title": "Last Offroad Status Packet",
+    "description": ""
+  },
+  "LastPowerDropDetected": {
+    "title": "Last Power Drop Detected",
+    "description": ""
+  },
+  "LastSunnylinkPingTime": {
+    "title": "Last sunnylink Ping Time",
+    "description": ""
+  },
+  "LastUpdateException": {
+    "title": "Last Update Exception",
+    "description": ""
+  },
+  "LastUpdateRouteCount": {
+    "title": "Last Update Route Count",
+    "description": ""
+  },
+  "LastUpdateTime": {
+    "title": "Last Update Time",
+    "description": ""
+  },
+  "LastUpdateUptimeOnroad": {
+    "title": "Last Update Uptime Onroad",
+    "description": ""
+  },
+  "LeadDepartAlert": {
+    "title": "Lead Departure Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
+  },
+  "LiveDelay": {
+    "title": "Live Delay",
+    "description": ""
+  },
+  "LiveParameters": {
+    "title": "Live Parameters",
+    "description": ""
+  },
+  "LiveParametersV2": {
+    "title": "Live Parameters V2",
+    "description": ""
+  },
+  "LiveTorqueParameters": {
+    "title": "Live Torque Parameters",
+    "description": ""
+  },
+  "LiveTorqueParamsRelaxedToggle": {
+    "title": "Less Restrict Settings for Self-Tune (Beta)",
+    "description": "Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values."
+  },
+  "LiveTorqueParamsToggle": {
+    "title": "Self-Tune",
+    "description": "Enables self-tune for Torque lateral control"
+  },
+  "LocationFilterInitialState": {
+    "title": "Location Filter Initial State",
+    "description": ""
+  },
+  "LongitudinalManeuverMode": {
+    "title": "Longitudinal Maneuver Mode",
+    "description": ""
+  },
+  "LongitudinalPersonality": {
+    "title": "Driving Personality",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Aggressive"
+      },
+      {
+        "value": 1,
+        "label": "Standard"
+      },
+      {
+        "value": 2,
+        "label": "Relaxed"
+      }
+    ]
+  },
+  "Mads": {
+    "title": "MADS Enabled",
+    "description": ""
+  },
+  "MadsMainCruiseAllowed": {
+    "title": "MADS Main Cruise Allowed",
+    "description": ""
+  },
+  "MadsSteeringMode": {
+    "title": "MADS Steering Mode",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Remain Active"
+      },
+      {
+        "value": 1,
+        "label": "Pause"
+      },
+      {
+        "value": 2,
+        "label": "Disengage"
+      }
+    ]
+  },
+  "MadsUnifiedEngagementMode": {
+    "title": "MADS Unified Engagement Mode",
+    "description": ""
+  },
+  "MapAdvisorySpeedLimit": {
+    "title": "Map Advisory Speed Limit",
+    "description": ""
+  },
+  "MapSpeedLimit": {
+    "title": "Map Speed Limit",
+    "description": ""
+  },
+  "MapTargetVelocities": {
+    "title": "Map Target Velocities",
+    "description": ""
+  },
+  "MapdVersion": {
+    "title": "Mapd Version",
+    "description": ""
+  },
+  "MaxTimeOffroad": {
+    "title": "Max Time Offroad",
+    "description": "",
+    "unit": "minutes"
+  },
+  "ModelManager_ActiveBundle": {
+    "title": "Model Manager Active Bundle",
+    "description": ""
+  },
+  "ModelManager_ClearCache": {
+    "title": "Model Manager Clear Cache",
+    "description": ""
+  },
+  "ModelManager_DownloadIndex": {
+    "title": "Model Manager Download Index",
+    "description": ""
+  },
+  "ModelManager_Favs": {
+    "title": "Model Manager Favorites",
+    "description": ""
+  },
+  "ModelManager_LastSyncTime": {
+    "title": "Model Manager Last Sync Time",
+    "description": ""
+  },
+  "ModelManager_ModelsCache": {
+    "title": "Model Manager Models Cache",
+    "description": ""
+  },
+  "ModelRunnerTypeCache": {
+    "title": "Model Runner Type Cache",
+    "description": ""
+  },
+  "NetworkMetered": {
+    "title": "Network Usage",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 1,
+        "label": "Metered"
+      },
+      {
+        "value": 2,
+        "label": "Unmetered"
+      }
+    ]
+  },
+  "NeuralNetworkLateralControl": {
+    "title": "Neural Network Lateral Control",
+    "description": ""
+  },
+  "NextMapSpeedLimit": {
+    "title": "Next Map Speed Limit",
+    "description": ""
+  },
+  "OSMDownloadBounds": {
+    "title": "OSM Download Bounds",
+    "description": ""
+  },
+  "OSMDownloadLocations": {
+    "title": "OSM Download Locations",
+    "description": ""
+  },
+  "OSMDownloadProgress": {
+    "title": "OSM Download Progress",
+    "description": ""
+  },
+  "ObdMultiplexingChanged": {
+    "title": "Obd Multiplexing Changed",
+    "description": ""
+  },
+  "ObdMultiplexingEnabled": {
+    "title": "Obd Multiplexing Enabled",
+    "description": ""
+  },
+  "OffroadMode": {
+    "title": "Force Offroad Mode",
+    "description": ""
+  },
+  "Offroad_CarUnrecognized": {
+    "title": "Offroad Car Unrecognized",
+    "description": ""
+  },
+  "Offroad_ConnectivityNeeded": {
+    "title": "Offroad Connectivity Needed",
+    "description": ""
+  },
+  "Offroad_ConnectivityNeededPrompt": {
+    "title": "Offroad Connectivity Needed Prompt",
+    "description": ""
+  },
+  "Offroad_DriverMonitoringUncertain": {
+    "title": "Offroad Driver Monitoring Uncertain",
+    "description": ""
+  },
+  "Offroad_ExcessiveActuation": {
+    "title": "Offroad Excessive Actuation",
+    "description": ""
+  },
+  "Offroad_IsTakingSnapshot": {
+    "title": "Offroad Is Taking Snapshot",
+    "description": ""
+  },
+  "Offroad_NeosUpdate": {
+    "title": "Offroad Neos Update",
+    "description": ""
+  },
+  "Offroad_NoFirmware": {
+    "title": "Offroad No Firmware",
+    "description": ""
+  },
+  "Offroad_OSMUpdateRequired": {
+    "title": "Offroad OSM Update Required",
+    "description": ""
+  },
+  "Offroad_Recalibration": {
+    "title": "Offroad Recalibration",
+    "description": ""
+  },
+  "Offroad_TemperatureTooHigh": {
+    "title": "Offroad Temperature Too High",
+    "description": ""
+  },
+  "Offroad_TiciSupport": {
+    "title": "Offroad Tici Support",
+    "description": ""
+  },
+  "Offroad_UnregisteredHardware": {
+    "title": "Offroad Unregistered Hardware",
+    "description": ""
+  },
+  "Offroad_UpdateFailed": {
+    "title": "Offroad Update Failed",
+    "description": ""
+  },
+  "OnroadCycleRequested": {
+    "title": "Onroad Cycle Requested",
+    "description": ""
+  },
+  "OnroadScreenOffBrightness": {
+    "title": "Onroad Brightness",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Auto (Default)"
+      },
+      {
+        "value": 1,
+        "label": "Auto (Dark)"
+      },
+      {
+        "value": 2,
+        "label": "5 %"
+      },
+      {
+        "value": 3,
+        "label": "10 %"
+      },
+      {
+        "value": 4,
+        "label": "15 %"
+      },
+      {
+        "value": 5,
+        "label": "20 %"
+      },
+      {
+        "value": 6,
+        "label": "25 %"
+      },
+      {
+        "value": 7,
+        "label": "30 %"
+      },
+      {
+        "value": 8,
+        "label": "35 %"
+      },
+      {
+        "value": 9,
+        "label": "40 %"
+      },
+      {
+        "value": 10,
+        "label": "45 %"
+      },
+      {
+        "value": 11,
+        "label": "50 %"
+      },
+      {
+        "value": 12,
+        "label": "55 %"
+      },
+      {
+        "value": 13,
+        "label": "60 %"
+      },
+      {
+        "value": 14,
+        "label": "65 %"
+      },
+      {
+        "value": 15,
+        "label": "70 %"
+      },
+      {
+        "value": 16,
+        "label": "75 %"
+      },
+      {
+        "value": 17,
+        "label": "80 %"
+      },
+      {
+        "value": 18,
+        "label": "85 %"
+      },
+      {
+        "value": 19,
+        "label": "90 %"
+      },
+      {
+        "value": 20,
+        "label": "95 %"
+      },
+      {
+        "value": 21,
+        "label": "100 %"
+      }
+    ]
+  },
+  "OnroadScreenOffControl": {
+    "title": "Onroad Brightness",
+    "description": "Adjusts the screen brightness while it's in onroad state."
+  },
+  "OnroadScreenOffTimer": {
+    "title": "Onroad Brightness Delay",
+    "description": "",
+    "options": [
+      {
+        "value": 15,
+        "label": "15s"
+      },
+      {
+        "value": 30,
+        "label": "30s"
+      },
+      {
+        "value": 60,
+        "label": "1m"
+      },
+      {
+        "value": 120,
+        "label": "2m"
+      },
+      {
+        "value": 180,
+        "label": "3m"
+      },
+      {
+        "value": 240,
+        "label": "4m"
+      },
+      {
+        "value": 300,
+        "label": "5m"
+      },
+      {
+        "value": 360,
+        "label": "6m"
+      },
+      {
+        "value": 420,
+        "label": "7m"
+      },
+      {
+        "value": 480,
+        "label": "8m"
+      },
+      {
+        "value": 540,
+        "label": "9m"
+      },
+      {
+        "value": 600,
+        "label": "10m"
+      }
+    ]
+  },
+  "OnroadUploads": {
+    "title": "Onroad Uploads",
+    "description": ""
+  },
+  "OpenpilotEnabledToggle": {
+    "title": "Enable sunnypilot",
+    "description": ""
+  },
+  "OsmDbUpdatesCheck": {
+    "title": "OSM DB Updates Check",
+    "description": ""
+  },
+  "OsmDownloadedDate": {
+    "title": "OSM Downloaded Date",
+    "description": ""
+  },
+  "OsmLocal": {
+    "title": "OSM Local",
+    "description": ""
+  },
+  "OsmLocationName": {
+    "title": "OSM Location Name",
+    "description": ""
+  },
+  "OsmLocationTitle": {
+    "title": "OSM Location Title",
+    "description": ""
+  },
+  "OsmLocationUrl": {
+    "title": "OSM Location URL",
+    "description": ""
+  },
+  "OsmStateName": {
+    "title": "OSM State Name",
+    "description": ""
+  },
+  "OsmStateTitle": {
+    "title": "OSM State Title",
+    "description": ""
+  },
+  "OsmWayTest": {
+    "title": "OSM Way Test",
+    "description": ""
+  },
+  "PandaHeartbeatLost": {
+    "title": "Panda Heartbeat Lost",
+    "description": ""
+  },
+  "PandaSignatures": {
+    "title": "Panda Signatures",
+    "description": ""
+  },
+  "PandaSomResetTriggered": {
+    "title": "Panda Som Reset Triggered",
+    "description": ""
+  },
+  "PlanplusControl": {
+    "title": "Plan Plus Controls",
+    "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",
+    "min": 0.0,
+    "max": 2.0,
+    "step": 0.1
+  },
+  "PrimeType": {
+    "title": "Prime Type",
+    "description": ""
+  },
+  "QuickBootToggle": {
+    "title": "Quick Boot",
+    "description": ""
+  },
+  "QuietMode": {
+    "title": "Quiet Mode",
+    "description": ""
+  },
+  "RainbowMode": {
+    "title": "Rainbow Mode",
+    "description": ""
+  },
+  "RecordAudio": {
+    "title": "Record & Upload Mic Audio",
+    "description": ""
+  },
+  "RecordAudioFeedback": {
+    "title": "Record Audio Feedback",
+    "description": ""
+  },
+  "RecordFront": {
+    "title": "Record & Upload Driver Camera",
+    "description": ""
+  },
+  "RecordFrontLock": {
+    "title": "Record Front Lock",
+    "description": ""
+  },
+  "RoadName": {
+    "title": "Road Name",
+    "description": ""
+  },
+  "RoadNameToggle": {
+    "title": "[TIZI/TICI only] Display Road Name",
+    "description": "Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name."
+  },
+  "RocketFuel": {
+    "title": "[TIZI/TICI only] Real-time Acceleration Bar",
+    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."
+  },
+  "RouteCount": {
+    "title": "Route Count",
+    "description": ""
+  },
+  "SecOCKey": {
+    "title": "Sec Oc Key",
+    "description": ""
+  },
+  "ShowAdvancedControls": {
+    "title": "Show Advanced Controls",
+    "description": "Enable to show advanced controls on device"
+  },
+  "ShowDebugInfo": {
+    "title": "UI Debug Mode",
+    "description": ""
+  },
+  "ShowTurnSignals": {
+    "title": "[TIZI/TICI only] Display Turn Signals",
+    "description": "When enabled, visual turn indicators are drawn on the HUD."
+  },
+  "SmartCruiseControlMap": {
+    "title": "Smart Cruise Control - Map",
+    "description": ""
+  },
+  "SmartCruiseControlVision": {
+    "title": "Smart Cruise Control - Vision",
+    "description": ""
+  },
+  "SnoozeUpdate": {
+    "title": "Snooze Update",
+    "description": ""
+  },
+  "SpeedLimitMode": {
+    "title": "Speed Limit Assist Mode",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Information"
+      },
+      {
+        "value": 2,
+        "label": "Warning"
+      },
+      {
+        "value": 3,
+        "label": "Assist"
+      }
+    ]
+  },
+  "SpeedLimitOffsetType": {
+    "title": "Speed Limit Offset Type",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Fixed"
+      },
+      {
+        "value": 2,
+        "label": "Percentage"
+      }
+    ]
+  },
+  "SpeedLimitPolicy": {
+    "title": "Speed Limit Source",
+    "description": "",
+    "options": [
+      {
+        "value": 0,
+        "label": "Car State Only"
+      },
+      {
+        "value": 1,
+        "label": "Map Data Only"
+      },
+      {
+        "value": 2,
+        "label": "Car State Priority"
+      },
+      {
+        "value": 3,
+        "label": "Map Data Priority"
+      },
+      {
+        "value": 4,
+        "label": "Combined"
+      }
+    ]
+  },
+  "SpeedLimitValueOffset": {
+    "title": "Speed Limit Offset Value",
+    "description": "",
+    "min": -30,
+    "max": 30,
+    "step": 1
+  },
+  "SshEnabled": {
+    "title": "Enable SSH",
+    "description": ""
+  },
+  "StandstillTimer": {
+    "title": "[TIZI/TICI only] Standstill Timer",
+    "description": "Show a timer on the HUD when the car is at a standstill."
+  },
+  "SubaruStopAndGo": {
+    "title": "Subaru Stop and Go",
+    "description": ""
+  },
+  "SubaruStopAndGoManualParkingBrake": {
+    "title": "Subaru Stop and Go Manual Parking Brake",
+    "description": ""
+  },
+  "SunnylinkCache_Roles": {
+    "title": "sunnylink Cache  Roles",
+    "description": ""
+  },
+  "SunnylinkCache_Users": {
+    "title": "sunnylink Cache  Users",
+    "description": ""
+  },
+  "SunnylinkDongleId": {
+    "title": "sunnylink Dongle ID",
+    "description": ""
+  },
+  "SunnylinkEnabled": {
+    "title": "sunnylink Enabled",
+    "description": ""
+  },
+  "SunnylinkTempFault": {
+    "title": "sunnylink Temp Fault",
+    "description": ""
+  },
+  "SunnylinkdPid": {
+    "title": "Sunnylinkd Pid",
+    "description": ""
+  },
+  "TermsVersion": {
+    "title": "Terms Version",
+    "description": ""
+  },
+  "TeslaCoopSteering": {
+    "title": "Tesla Coop Steering",
+    "description": ""
+  },
+  "TorqueBar": {
+    "title": "[TIZI/TICI only] Steering Arc",
+    "description": "Display steering arc on the driving screen when lateral control is enabled."
+  },
+  "TorqueControlTune": {
+    "title": "Torque Control Tune Version",
+    "description": "Select the version of Torque Control Tune to use.",
+    "options": [
+      {
+        "value": "",
+        "label": "Default"
+      },
+      {
+        "value": 1.0,
+        "label": "v1.0"
+      },
+      {
+        "value": 0.0,
+        "label": "v0.0"
+      }
+    ]
+  },
+  "TorqueParamsOverrideEnabled": {
+    "title": "Manual Real-Time Tuning",
+    "description": ""
+  },
+  "TorqueParamsOverrideFriction": {
+    "title": "Manual Tune - Friction",
+    "description": "",
+    "min": 0.0,
+    "max": 1.0,
+    "step": 0.01
+  },
+  "TorqueParamsOverrideLatAccelFactor": {
+    "title": "Manual Tune - Lateral Acceleration Factor",
+    "description": "",
+    "min": 0.1,
+    "max": 5.0,
+    "step": 0.1,
+    "unit": "m/s²"
+  },
+  "ToyotaEnforceStockLongitudinal": {
+    "title": "Toyota: Enforce Factory Longitudinal Control",
+    "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used."
+  },
+  "TrainingVersion": {
+    "title": "Training Version",
+    "description": ""
+  },
+  "TrueVEgoUI": {
+    "title": "[TIZI/TICI only] Speedometer: Always Display True Speed",
+    "description": "For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."
+  },
+  "UbloxAvailable": {
+    "title": "Ublox Available",
+    "description": ""
+  },
+  "UpdateAvailable": {
+    "title": "Update Available",
+    "description": ""
+  },
+  "UpdateFailedCount": {
+    "title": "Update Failed Count",
+    "description": ""
+  },
+  "UpdaterAvailableBranches": {
+    "title": "Updater Available Branches",
+    "description": ""
+  },
+  "UpdaterCurrentDescription": {
+    "title": "Updater Current Description",
+    "description": ""
+  },
+  "UpdaterCurrentReleaseNotes": {
+    "title": "Updater Current Release Notes",
+    "description": ""
+  },
+  "UpdaterFetchAvailable": {
+    "title": "Updater Fetch Available",
+    "description": ""
+  },
+  "UpdaterLastFetchTime": {
+    "title": "Updater Last Fetch Time",
+    "description": ""
+  },
+  "UpdaterNewDescription": {
+    "title": "Updater New Description",
+    "description": ""
+  },
+  "UpdaterNewReleaseNotes": {
+    "title": "Updater New Release Notes",
+    "description": ""
+  },
+  "UpdaterState": {
+    "title": "Updater State",
+    "description": ""
+  },
+  "UpdaterTargetBranch": {
+    "title": "Updater Target Branch",
+    "description": ""
+  },
+  "UptimeOffroad": {
+    "title": "Uptime Offroad",
+    "description": ""
+  },
+  "UptimeOnroad": {
+    "title": "Uptime Onroad",
+    "description": ""
+  },
+  "Version": {
+    "title": "openpilot Version",
+    "description": ""
+  }
+}
