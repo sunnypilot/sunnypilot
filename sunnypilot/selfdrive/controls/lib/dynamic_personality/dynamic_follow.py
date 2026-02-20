@@ -18,12 +18,13 @@ FOLLOW_PROFILES = {
   LongPersonality.standard:   [1.40, 1.40, 1.45, 1.45, 1.45, 1.45, 1.45],
   LongPersonality.aggressive: [1.10, 1.10, 1.10, 1.15, 1.15, 1.15, 1.15],
 }
+FOLLOW_BREAKPOINTS =          [0.0,  3.0,  16.0, 24.0, 40.0, 50.0, 60.0]
 
-FOLLOW_BREAKPOINTS =          [0.,   3.,    16.,  16.1,  40.,  50.,  60.]
-
-SMOOTHING_BASE = 0.55  # Base smoothing factor (higher = smoother)
-SMOOTHING_RANGE = 0.20  # Additional smoothing at high speeds
+SMOOTHING_BASE = 0.60  # higher = smoother
+SMOOTHING_RANGE = 0.15 # smoothing at high speeds
 SMOOTHING_SPEED_THRESHOLD = 36.0  # m/s (~80 mph) for max smoothing
+SMOOTHING_ERROR_SCALE = 1.5  # How fast smoothing increases with error
+SMOOTHING_MAX = 0.92
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
 
@@ -31,16 +32,18 @@ class FollowDistanceController:
   def __init__(self):
     self.params = Params()
     self.frame = 0
-    self.current_multiplier = None
+    self.current_multiplier = 1.45
     self.first_run = True
     self.personality_change_cooldown = 0
     self.personality_cooldown_frames = int(PERSONALITY_CHANGE_COOLDOWN_S / DT_MDL)
     self._personality = self.params.get('LongitudinalPersonality') or LongPersonality.standard
     self._enabled = self.params.get_bool('DynamicFollow')
 
-  def _get_smoothing_factor(self, v_ego: float) -> float:
+  def _get_smoothing_factor(self, v_ego: float, target: float) -> float:
     speed_factor = np.clip(v_ego / SMOOTHING_SPEED_THRESHOLD, 0.3, 1.0)
-    return SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
+    base = SMOOTHING_BASE + (SMOOTHING_RANGE * speed_factor)
+    error = abs(target - self.current_multiplier) if self.current_multiplier is not None else 0
+    return min(SMOOTHING_MAX, base + error * SMOOTHING_ERROR_SCALE)
 
   def is_enabled(self) -> bool:
     return self._enabled
@@ -84,16 +87,15 @@ class FollowDistanceController:
       self.first_run = False
       return self.current_multiplier
 
-    # exponential smoothing with speedadaptive factor
-    alpha = self._get_smoothing_factor(v_ego)
+    alpha = self._get_smoothing_factor(v_ego, target)
     self.current_multiplier = alpha * self.current_multiplier + (1.0 - alpha) * target
-    return self.current_multiplier
+    return float(self.current_multiplier)
 
   def reset(self):
     self._personality = LongPersonality.standard
     self.params.put('LongitudinalPersonality', LongPersonality.standard)
     self.frame = 0
-    self.current_multiplier = None
+    self.current_multiplier = 1.45
     self.first_run = True
     self.personality_change_cooldown = 0
 

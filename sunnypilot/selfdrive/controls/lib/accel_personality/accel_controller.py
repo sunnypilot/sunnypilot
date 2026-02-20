@@ -15,30 +15,29 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
-  AccelPersonality.normal:   [2.00, 1.95, 1.60, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
-  AccelPersonality.sport:    [2.00, 1.99, 1.65, 1.38, 1.10, 0.82, 0.53, 0.240, 0.13, 0.09],
-  #AccelPersonality.eco:      [1.30, 1.25, 1.15, 0.69, 0.60, 0.49, 0.28, 0.107, 0.08, 0.06],
-  #AccelPersonality.normal:   [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.120, 0.09, 0.07],
-  #AccelPersonality.sport:    [2.00, 1.95, 1.80, 1.06, 0.81, 0.69, 0.42, 0.160, 0.10, 0.08],
+  AccelPersonality.eco:      [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.12, 0.09, 0.07],
+  AccelPersonality.normal:   [2.00, 1.95, 1.60, 1.06, 0.81, 0.69, 0.42, 0.16, 0.10, 0.08],
+  AccelPersonality.sport:    [2.00, 1.99, 1.65, 1.38, 1.10, 0.82, 0.53, 0.24, 0.13, 0.09],
 }
-MAX_ACCEL_BREAKPOINTS =      [0.,   3.,   5.,   8.,   12.,  18.,  24.,  32.,  42.,  55.]
+MAX_ACCEL_BREAKPOINTS =       [0.0, 3.0, 5.0, 8.0, 12.0, 18.0, 24.0, 32.0, 42.0, 55.0]
 
-# Braking Profiles
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.002, -0.002, -0.019, -0.46, -1.2, -1.2],
-  AccelPersonality.normal: [-0.003, -0.003, -0.017, -0.48, -1.2, -1.3],
-  AccelPersonality.sport:  [-0.004, -0.004, -0.015, -0.50, -1.3, -1.4],
+  AccelPersonality.eco:    [-0.002, -0.002, -0.012, -0.32, -0.9, -1.1],
+  AccelPersonality.normal: [-0.003, -0.003, -0.011, -0.35, -1.0, -1.2],
+  AccelPersonality.sport:  [-0.004, -0.004, -0.009, -0.38, -1.1, -1.3],
 }
-MIN_ACCEL_BREAKPOINTS =    [0.,     1.,     6,      12.,    14.,  25]
+MIN_ACCEL_BREAKPOINTS =    [0.0,     1.0,     6.0,   12.0, 14.0,  25.0]
 
+ACCEL_ALPHA_BASE = 0.30   # responsive for small corrections
+ACCEL_ALPHA_MAX = 0.85    # smooth for big transitions
+ACCEL_ALPHA_SCALE = 0.8   # How fast alpha grows with error
 
-DECEL_SMOOTH_ALPHA = 0.20  # Very aggressive smoothing for decel (lower = smoother)
-ACCEL_SMOOTH_ALPHA = 0.70  # Less aggressive for accel (higher = more responsive)
+DECEL_ALPHA_BASE = 0.50   # smooth even for small changes
+DECEL_ALPHA_MAX = 0.95    # very smooth for big braking
+DECEL_ALPHA_SCALE = 1.2   # Decel scales faster to prevent jerk
 
-# Asymmetric rate limiting
-MAX_DECEL_INCREASE_RATE = 1.3  # When braking harder (m/s² per second)
-MAX_DECEL_DECREASE_RATE = 1.0  # When releasing brake (m/s² per second)
+MAX_DECEL_INCREASE_RATE = 0.6  # When braking harder (m/s² per second)
+MAX_DECEL_DECREASE_RATE = 0.8  # When releasing brake (m/s² per second)
 
 
 class AccelPersonalityController:
@@ -75,6 +74,11 @@ class AccelPersonalityController:
     self.set_accel_personality(next_personality)
     return int(next_personality)
 
+  @staticmethod
+  def _adaptive_alpha(current: float, target: float, base: float, max_alpha: float, scale: float) -> float:
+    error = abs(target - current)
+    return min(max_alpha, base + error * scale)
+
   def get_accel_limits(self, v_ego: float) -> tuple[float, float]:
     v_ego = max(0.0, v_ego)
     target_max = np.interp(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.accel_personality])
@@ -85,29 +89,20 @@ class AccelPersonalityController:
       self.first_run = False
       return float(target_min), float(target_max)
 
-    # Smoothing
-    self.last_max_accel = ACCEL_SMOOTH_ALPHA * target_max + (1 - ACCEL_SMOOTH_ALPHA) * self.last_max_accel
-    smoothed_decel = DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel
+    # Adaptive accel smoothing
+    accel_alpha = self._adaptive_alpha(self.last_max_accel, target_max, ACCEL_ALPHA_BASE, ACCEL_ALPHA_MAX, ACCEL_ALPHA_SCALE)
+    self.last_max_accel = accel_alpha * self.last_max_accel + (1 - accel_alpha) * target_max
 
-    # Rate Limiting (Asymmetric)
+    # Adaptive decel smoothing
+    decel_alpha = self._adaptive_alpha(self.last_min_accel, target_min, DECEL_ALPHA_BASE, DECEL_ALPHA_MAX, DECEL_ALPHA_SCALE)
+    smoothed_decel = decel_alpha * self.last_min_accel + (1 - decel_alpha) * target_min
+
     raw_change = smoothed_decel - self.last_min_accel
+    limit = (MAX_DECEL_INCREASE_RATE if raw_change < 0 else MAX_DECEL_DECREASE_RATE) * DT_MDL
+    self.last_min_accel += np.clip(raw_change, -limit, limit)
 
-    if raw_change < 0:
-      limit = MAX_DECEL_INCREASE_RATE * DT_MDL
-      decel_change = np.clip(raw_change, -limit, limit)
-    else:
-      limit = MAX_DECEL_DECREASE_RATE * DT_MDL
-      decel_change = np.clip(raw_change, -limit, limit)
-
-    self.last_min_accel += decel_change
-
-    # Dynamic Safety Corridor: Ensure min is always strictly less than max.
-    # We maintain a gap of at least 0.1, or 5% of the current max acceleration.
-    # This scaling gap prevents solver crashes at high acceleration values.
     gap = max(0.1, abs(self.last_max_accel) * 0.05)
-
-    if self.last_min_accel > self.last_max_accel - gap:
-      self.last_min_accel = self.last_max_accel - gap
+    self.last_min_accel = min(self.last_min_accel, self.last_max_accel - gap)
 
     return float(self.last_min_accel), float(self.last_max_accel)
 
