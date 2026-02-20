@@ -99,7 +99,7 @@ class ModelsLayout(Widget):
               "Keeping this on provides the stock openpilot experience.")
     if lagd_toggle:
       desc += f"<br>{tr('Live Steer Delay:')} {ui_state.sm['liveDelay'].lateralDelay:.3f} s"
-    elif ui_state.CP:
+    elif ui_state.CP is not None:
       sw = float(ui_state.params.get("LagdToggleDelay", "0.2"))
       cp = ui_state.CP.steerActuatorDelay
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"

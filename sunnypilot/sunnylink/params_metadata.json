@@ -1247,6 +1247,24 @@
     "title": "[TIZI/TICI only] Steering Arc",
     "description": "Display steering arc on the driving screen when lateral control is enabled."
   },
+  "TorqueControlTune": {
+    "title": "Torque Control Tune Version",
+    "description": "Select the version of Torque Control Tune to use.",
+    "options": [
+      {
+        "value": "",
+        "label": "Default"
+      },
+      {
+        "value": 1.0,
+        "label": "v1.0"
+      },
+      {
+        "value": 0.0,
+        "label": "v0.0"
+      }
+    ]
+  },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",
     "description": ""

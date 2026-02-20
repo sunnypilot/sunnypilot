@@ -356,13 +356,12 @@ wheels = [
 
 [[package]]
 name = "dearpygui"
-version = "2.1.1"
+version = "2.2"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/41/2146e8d03d28b5a66d5282beb26ffd9ab68a729a29d31e2fe91809271bf5/dearpygui-2.1.1-cp312-cp312-macosx_10_6_x86_64.whl", hash = "sha256:238aea7b4be7376f564dae8edd563b280ec1483a03786022969938507691e017", size = 2101529, upload-time = "2025-11-14T14:47:39.646Z" },
-    { url = "https://files.pythonhosted.org/packages/b0/c5/fcc37ef834fe225241aa4f18d77aaa2903134f283077978d65a901c624c6/dearpygui-2.1.1-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:c27ca6ecd4913555b717f3bb341c0b6a27d6c9fdc9932f0b3c31ae2ef893ae35", size = 1895555, upload-time = "2025-11-14T14:47:48.149Z" },
-    { url = "https://files.pythonhosted.org/packages/74/66/19f454ba02d5f03a847cc1dfee4a849cd2307d97add5ba26fecdca318adb/dearpygui-2.1.1-cp312-cp312-manylinux1_x86_64.whl", hash = "sha256:8c071e9c165d89217bdcdaf769c6069252fcaee50bf369489add524107932273", size = 2641509, upload-time = "2025-11-14T14:47:54.581Z" },
-    { url = "https://files.pythonhosted.org/packages/5e/58/d01538556103d544a5a5b4cbcb00646ff92d8a97f0a6283a56bede4307c8/dearpygui-2.1.1-cp312-cp312-win_amd64.whl", hash = "sha256:9f2291313d2035f8a4108e13f60d8c1a0e7c19af7554a7739a3fd15b3d5af8f7", size = 1808971, upload-time = "2025-11-14T14:47:28.15Z" },
+    { url = "https://files.pythonhosted.org/packages/17/c8/b4afdac89c7bf458513366af3143f7383d7b09721637989c95788d93e24c/dearpygui-2.2-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:34ceae1ca1b65444e49012d6851312e44f08713da1b8cc0150cf41f1c207af9c", size = 1931443, upload-time = "2026-02-17T14:21:54.394Z" },
+    { url = "https://files.pythonhosted.org/packages/43/93/a2d083b2e0edb095be815662cc41e40cf9ea7b65d6323e47bb30df7eb284/dearpygui-2.2-cp312-cp312-manylinux1_x86_64.whl", hash = "sha256:e1fae9ae59fec0e41773df64c80311a6ba67696219dde5506a2a4c013e8bcdfa", size = 2592645, upload-time = "2026-02-17T14:22:02.869Z" },
+    { url = "https://files.pythonhosted.org/packages/80/ba/eae13acaad479f522db853e8b1ccd695a7bc8da2b9685c1d70a3b318df89/dearpygui-2.2-cp312-cp312-win_amd64.whl", hash = "sha256:7d399543b5a26ab6426ef3bbd776e55520b491b3e169647bde5e6b2de3701b35", size = 1830531, upload-time = "2026-02-17T14:21:43.386Z" },
 ]
 
 [[package]]
@@ -415,11 +414,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "3.24.2"
+version = "3.24.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/02/a8/dae62680be63cbb3ff87cfa2f51cf766269514ea5488479d42fec5aa6f3a/filelock-3.24.2.tar.gz", hash = "sha256:c22803117490f156e59fafce621f0550a7a853e2bbf4f87f112b11d469b6c81b", size = 37601, upload-time = "2026-02-16T02:50:45.614Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/92/a8e2479937ff39185d20dd6a851c1a63e55849e447a55e798cc2e1f49c65/filelock-3.24.3.tar.gz", hash = "sha256:011a5644dc937c22699943ebbfc46e969cdde3e171470a6e40b9533e5a72affa", size = 37935, upload-time = "2026-02-19T00:48:20.543Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/04/a94ebfb4eaaa08db56725a40de2887e95de4e8641b9e902c311bfa00aa39/filelock-3.24.2-py3-none-any.whl", hash = "sha256:667d7dc0b7d1e1064dd5f8f8e80bdac157a6482e8d2e02cd16fd3b6b33bd6556", size = 24152, upload-time = "2026-02-16T02:50:44Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/0f/5d0c71a1aefeb08efff26272149e07ab922b64f46c63363756224bd6872e/filelock-3.24.3-py3-none-any.whl", hash = "sha256:426e9a4660391f7f8a810d71b0555bce9008b0a1cc342ab1f6947d37639e002d", size = 24331, upload-time = "2026-02-19T00:48:18.465Z" },
 ]
 
 [[package]]
@@ -4089,15 +4088,15 @@ wheels = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.52.0"
+version = "2.53.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/59/eb/1b497650eb564701f9a7b8a95c51b2abe9347ed2c0b290ba78f027ebe4ea/sentry_sdk-2.52.0.tar.gz", hash = "sha256:fa0bec872cfec0302970b2996825723d67390cdd5f0229fb9efed93bd5384899", size = 410273, upload-time = "2026-02-04T15:03:54.706Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/06/66c8b705179bc54087845f28fd1b72f83751b6e9a195628e2e9af9926505/sentry_sdk-2.53.0.tar.gz", hash = "sha256:6520ef2c4acd823f28efc55e43eb6ce2e6d9f954a95a3aa96b6fd14871e92b77", size = 412369, upload-time = "2026-02-16T11:11:14.743Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/63/2c6daf59d86b1c30600bff679d039f57fd1932af82c43c0bde1cbc55e8d4/sentry_sdk-2.52.0-py2.py3-none-any.whl", hash = "sha256:931c8f86169fc6f2752cb5c4e6480f0d516112e78750c312e081ababecbaf2ed", size = 435547, upload-time = "2026-02-04T15:03:51.567Z" },
+    { url = "https://files.pythonhosted.org/packages/47/d4/2fdf854bc3b9c7f55219678f812600a20a138af2dd847d99004994eada8f/sentry_sdk-2.53.0-py2.py3-none-any.whl", hash = "sha256:46e1ed8d84355ae54406c924f6b290c3d61f4048625989a723fd622aab838899", size = 437908, upload-time = "2026-02-16T11:11:13.227Z" },
 ]
 
 [[package]]

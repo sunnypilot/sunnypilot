@@ -22,6 +22,8 @@ from openpilot.system.ui.widgets import Widget
 METER_TO_FOOT = 3.28084
 METER_TO_MILE = 0.000621371
 AHEAD_THRESHOLD = 5
+SET_SPEED_NA = 255
+KM_TO_MILE = 0.621371
 
 AssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
@@ -58,8 +60,11 @@ class SpeedLimitRenderer(Widget):
     self.speed_limit_ahead_frame = 0
 
     self.assist_frame = 0
-    self.speed = 0.0
-    self.set_speed = 0.0
+    self.is_cruise_set: bool = False
+    self.is_cruise_available: bool = True
+    self.set_speed: float = SET_SPEED_NA
+    self.speed: float = 0.0
+    self.v_ego_cluster_seen: bool = False
 
     self.font_bold = gui_app.font(FontWeight.BOLD)
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
@@ -77,6 +82,8 @@ class SpeedLimitRenderer(Widget):
   def update(self):
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
+      self.set_speed = SET_SPEED_NA
+      self.speed = 0.0
       return
 
     if sm.updated["longitudinalPlanSP"]:
@@ -106,9 +113,21 @@ class SpeedLimitRenderer(Widget):
 
       self.speed_limit_ahead_dist_prev = self.speed_limit_ahead_dist
 
-    cs = sm["carState"]
-    self.set_speed = cs.cruiseState.speed * self.speed_conv
-    v_ego = cs.vEgoCluster if cs.vEgoCluster != 0.0 else cs.vEgo
+    controls_state = sm['controlsState']
+    car_state = sm["carState"]
+
+    v_cruise_cluster = car_state.vCruiseCluster
+    self.set_speed = (
+      controls_state.vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+    )
+    self.is_cruise_set = 0 < self.set_speed < SET_SPEED_NA
+    self.is_cruise_available = self.set_speed != -1
+
+    if self.is_cruise_set and not ui_state.is_metric:
+      self.set_speed *= KM_TO_MILE
+
+    self.v_ego_cluster_seen = self.v_ego_cluster_seen or car_state.vEgoCluster != 0.0
+    v_ego = car_state.vEgoCluster if self.v_ego_cluster_seen else car_state.vEgo
     self.speed = max(0.0, v_ego * self.speed_conv)
 
   @staticmethod
