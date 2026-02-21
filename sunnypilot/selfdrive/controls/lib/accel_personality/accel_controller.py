@@ -15,29 +15,29 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:      [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.12, 0.09, 0.07],
-  AccelPersonality.normal:   [2.00, 1.95, 1.60, 1.06, 0.81, 0.69, 0.42, 0.16, 0.10, 0.08],
-  AccelPersonality.sport:    [2.00, 1.99, 1.65, 1.38, 1.10, 0.82, 0.53, 0.24, 0.13, 0.09],
+  AccelPersonality.eco:       [1.85, 1.80, 1.55, 0.94, 0.72, 0.58, 0.34, 0.12, 0.09, 0.07],
+  AccelPersonality.normal:    [2.00, 1.95, 1.60, 1.06, 0.81, 0.69, 0.42, 0.16, 0.10, 0.08],
+  AccelPersonality.sport:     [2.00, 1.99, 1.65, 1.38, 1.10, 0.82, 0.53, 0.24, 0.13, 0.09],
 }
 MAX_ACCEL_BREAKPOINTS =       [0.0, 3.0, 5.0, 8.0, 12.0, 18.0, 24.0, 32.0, 42.0, 55.0]
 
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:    [-0.002, -0.002, -0.012, -0.32, -0.9, -1.1],
-  AccelPersonality.normal: [-0.003, -0.003, -0.011, -0.35, -1.0, -1.2],
-  AccelPersonality.sport:  [-0.004, -0.004, -0.009, -0.38, -1.1, -1.3],
+  AccelPersonality.eco:       [-0.002, -0.002, -0.012, -0.35, -0.65, -1.10, -1.20],
+  AccelPersonality.normal:    [-0.003, -0.003, -0.015, -0.40, -0.70, -1.10, -1.30],
+  AccelPersonality.sport:     [-0.004, -0.004, -0.018, -0.45, -0.75, -1.20, -1.40],
 }
-MIN_ACCEL_BREAKPOINTS =    [0.0,     1.0,     6.0,   12.0, 14.0,  25.0]
+MIN_ACCEL_BREAKPOINTS =       [0.0, 1.0, 4.0, 8.0, 12.0, 18.0, 25.0]
 
 ACCEL_ALPHA_BASE = 0.30   # responsive for small corrections
 ACCEL_ALPHA_MAX = 0.85    # smooth for big transitions
 ACCEL_ALPHA_SCALE = 0.8   # How fast alpha grows with error
 
-DECEL_ALPHA_BASE = 0.50   # smooth even for small changes
-DECEL_ALPHA_MAX = 0.95    # very smooth for big braking
-DECEL_ALPHA_SCALE = 1.2   # Decel scales faster to prevent jerk
+DECEL_ALPHA_BASE = 0.85   # smooth even for small changes
+DECEL_ALPHA_MIN = 0.15    # very smooth for big braking
+DECEL_ALPHA_SCALE = -1.0  # Decel scales faster to prevent jerk
 
-MAX_DECEL_INCREASE_RATE = 0.6  # When braking harder (m/s² per second)
-MAX_DECEL_DECREASE_RATE = 0.8  # When releasing brake (m/s² per second)
+MAX_DECEL_INCREASE_RATE = 1.2  # When braking harder (m/s² per second)
+MAX_DECEL_DECREASE_RATE = 0.6  # When releasing brake (m/s² per second)
 
 
 class AccelPersonalityController:
@@ -75,9 +75,11 @@ class AccelPersonalityController:
     return int(next_personality)
 
   @staticmethod
-  def _adaptive_alpha(current: float, target: float, base: float, max_alpha: float, scale: float) -> float:
+  def _adaptive_alpha(current: float, target: float, base: float, limit: float, scale: float) -> float:
     error = abs(target - current)
-    return min(max_alpha, base + error * scale)
+    if scale < 0:
+      return max(limit, base + error * scale)
+    return min(limit, base + error * scale)
 
   def get_accel_limits(self, v_ego: float) -> tuple[float, float]:
     v_ego = max(0.0, v_ego)
@@ -94,7 +96,7 @@ class AccelPersonalityController:
     self.last_max_accel = accel_alpha * self.last_max_accel + (1 - accel_alpha) * target_max
 
     # Adaptive decel smoothing
-    decel_alpha = self._adaptive_alpha(self.last_min_accel, target_min, DECEL_ALPHA_BASE, DECEL_ALPHA_MAX, DECEL_ALPHA_SCALE)
+    decel_alpha = self._adaptive_alpha(self.last_min_accel, target_min, DECEL_ALPHA_BASE, DECEL_ALPHA_MIN, DECEL_ALPHA_SCALE)
     smoothed_decel = decel_alpha * self.last_min_accel + (1 - decel_alpha) * target_min
 
     raw_change = smoothed_decel - self.last_min_accel
