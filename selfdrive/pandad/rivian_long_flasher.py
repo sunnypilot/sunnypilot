@@ -81,3 +81,7 @@ def flash_rivian_long(pandas: list[Panda]) -> None:
         _flash_panda(panda)
       except Exception:
         cloudlog.exception(f"Failed to flash F4 panda {panda.get_usb_serial()}")
+
+
+if __name__ == '__main__':
+    flash_rivian_long([Panda(s) for s in Panda.list()])
