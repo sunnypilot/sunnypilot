@@ -75,7 +75,8 @@ def flash_rivian_long(pandas: list[Panda]) -> None:
     return
 
   for panda in pandas:
-    if panda.get_type() in Panda.F4_DEVICES and not panda.is_internal():
+    # only flash external black pandas (HW_TYPE_BLACK = 0x03)
+    if panda.get_type() == b'\x03' and not panda.is_internal():
       try:
         _flash_panda(panda)
       except Exception:
