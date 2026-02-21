@@ -11,6 +11,7 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.pandad.rivian_long_flasher import flash_rivian_long
 
 
 def get_expected_signature() -> bytes:
@@ -128,6 +129,9 @@ def main() -> None:
       pandas: list[Panda] = []
       for serial in panda_serials:
         pandas.append(flash_panda(serial))
+
+      # flash Rivian longitudinal upgrade panda
+      flash_rivian_long(pandas)
 
       # Ensure internal panda is present if expected
       internal_pandas = [panda for panda in pandas if panda.is_internal()]
