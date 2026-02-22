@@ -374,6 +374,10 @@
     "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
     "description": "When enabled, the speedometer on the onroad screen is not displayed."
   },
+  "HondaEnforceStockLongitudinal": {
+    "title": "Honda Nidec: Enforce Factory Longitudinal Control",
+    "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Honda Nidec longitudinal control will be used."
+  },
   "HyundaiLongitudinalTuning": {
     "title": "Hyundai Longitudinal Tuning",
     "description": "",
