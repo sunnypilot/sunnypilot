@@ -25,7 +25,6 @@ class SmartCruiseControlRenderer(Widget):
     self.long_override = False
 
     self.font = gui_app.font(FontWeight.BOLD)
-    self.scc_tex = rl.load_render_texture(256, 128)
 
   def update(self):
     sm = ui_state.sm
@@ -65,44 +64,24 @@ class SmartCruiseControlRenderer(Widget):
     sz = measure_text_cached(self.font, text, font_size)
     box_height = int(sz.y + padding_v * 2)
 
-    texture_width = 256
-    texture_height = 128
-
-    rl.begin_texture_mode(self.scc_tex)
-    rl.clear_background(rl.Color(0, 0, 0, 0))
-
     if self.long_override:
       box_color = COLORS.OVERRIDE
     else:
       box_color = rl.Color(0, 255, 0, 255)
 
-    # Center box in texture
-    box_x = (texture_width - box_width) // 2
-    box_y = (texture_height - box_height) // 2
+    screen_y = rect_height / 4 + y_offset
 
+    box_x = rect_center_x + x_offset - box_width / 2
+    box_y = screen_y - box_height / 2
+
+    # Draw rounded background box
     rl.draw_rectangle_rounded(rl.Rectangle(box_x, box_y, box_width, box_height), 0.2, 10, box_color)
 
-    # Draw text with custom blend mode to punch hole
-    rl.rl_set_blend_factors(rl.RL_ZERO, rl.RL_ONE_MINUS_SRC_ALPHA, 0x8006)
-    rl.rl_set_blend_mode(rl.BLEND_CUSTOM)
-
+    # Draw text centered in the box (black color for contrast against bright green/grey)
     text_pos_x = box_x + (box_width - sz.x) / 2
     text_pos_y = box_y + (box_height - sz.y) / 2
 
-    rl.draw_text_ex(self.font, text, rl.Vector2(text_pos_x, text_pos_y), font_size, 0, rl.WHITE)
-
-    rl.rl_set_blend_mode(rl.BLEND_ALPHA)  # Reset
-    rl.end_texture_mode()
-
-    screen_y = rect_height / 4 + y_offset
-
-    dest_x = rect_center_x + x_offset - texture_width / 2
-    dest_y = screen_y - texture_height / 2
-
-    src_rect = rl.Rectangle(0, 0, texture_width, -texture_height)
-    dst_rect = rl.Rectangle(dest_x, dest_y, texture_width, texture_height)
-
-    rl.draw_texture_pro(self.scc_tex.texture, src_rect, dst_rect, rl.Vector2(0, 0), 0, rl.WHITE)
+    rl.draw_text_ex(self.font, text, rl.Vector2(text_pos_x, text_pos_y), font_size, 0, rl.BLACK)
 
   def _render(self, rect: rl.Rectangle):
     x_offset = -260
