@@ -11,7 +11,6 @@ from openpilot.selfdrive.modeld.compile_warp import (
   CAMERA_CONFIGS, MEDMODEL_INPUT_SIZE, make_frame_prepare, make_update_both_imgs,
   warp_pkl_path,
 )
-from openpilot.selfdrive.modeld.external_pickle import load_external_pickle
 
 MODELS_DIR = Path(__file__).parent / 'models'
 MODEL_W, MODEL_H = MEDMODEL_INPUT_SIZE
@@ -96,15 +95,11 @@ class Warp:
       if v2_pkl.exists():
         with open(v2_pkl, 'rb') as f:
           self.jit_cache[key] = pickle.load(f)
-      elif Path(str(v2_pkl) + ".parts").exists():
-        self.jit_cache[key] = load_external_pickle(v2_pkl)
       elif self.buffer_length == UPSTREAM_BUFFER_LENGTH:
         upstream_pkl = warp_pkl_path(cam_w, cam_h)
         if upstream_pkl.exists():
           with open(upstream_pkl, 'rb') as f:
             self.jit_cache[key] = pickle.load(f)
-        elif Path(str(upstream_pkl) + ".parts").exists():
-          self.jit_cache[key] = load_external_pickle(upstream_pkl)
       if key not in self.jit_cache:
         frame_prepare = make_frame_prepare(cam_w, cam_h, MODEL_W, MODEL_H)
         update_both_imgs = make_update_both_imgs(frame_prepare, MODEL_W, MODEL_H)

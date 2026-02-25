@@ -3,41 +3,27 @@ import sys
 import shutil
 import pickle
 import codecs
-import onnx
 from pathlib import Path
 
 from openpilot.system.hardware.hw import Paths
-
-
-def get_name_and_shape(value_info):
-  shape = tuple([int(dim.dim_value) for dim in value_info.type.tensor_type.shape.dim])
-  return value_info.name, shape
-
-
-def get_metadata_value_by_name(model, name):
-  for prop in model.metadata_props:
-    if prop.key == name:
-      return prop.value
-  return None
+from sunnypilot.modeld_v2.get_model_metadata import MetadataOnnxPBParser, get_name_and_shape, get_metadata_value_by_name
 
 
 def generate_metadata_pkl(model_path, output_path):
   try:
-    model = onnx.load(str(model_path))
+    model = MetadataOnnxPBParser(model_path).parse()
     output_slices = get_metadata_value_by_name(model, 'output_slices')
-
-    if output_slices:
-      metadata = {
-        'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
-        'output_slices': pickle.loads(codecs.decode(output_slices.encode(), "base64")),
-        'input_shapes': dict([get_name_and_shape(x) for x in model.graph.input]),
-        'output_shapes': dict([get_name_and_shape(x) for x in model.graph.output])
-      }
-      with open(output_path, 'wb') as f:
-        pickle.dump(metadata, f)
-      return True
-    else:
+    if not output_slices:
       return False
+    metadata = {
+      'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
+      'output_slices': pickle.loads(codecs.decode(output_slices.encode(), "base64")),
+      'input_shapes': dict(get_name_and_shape(x) for x in model["graph"]["input"]),
+      'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
+    }
+    with open(output_path, 'wb') as f:
+      pickle.dump(metadata, f)
+    return True
   except Exception:
     return False
 
