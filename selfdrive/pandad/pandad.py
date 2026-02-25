@@ -31,12 +31,6 @@ def flash_panda(panda_serial: str) -> Panda:
     HARDWARE.recover_internal_panda()
     raise
 
-  # skip flashing if the detected panda is not supported
-  supported_panda = check_panda_support(panda)
-  if not supported_panda:
-    cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {panda.get_type()}), skipping flash...")
-    return panda
-
   fw_signature = get_expected_signature()
   internal_panda = panda.is_internal()
 
@@ -67,14 +61,6 @@ def flash_panda(panda_serial: str) -> Panda:
     raise AssertionError
 
   return panda
-
-
-def check_panda_support(panda) -> bool:
-  hw_type = panda.get_type()
-  if hw_type in Panda.SUPPORTED_DEVICES:
-    return True
-
-  return False
 
 
 def main() -> None:
@@ -153,12 +139,6 @@ def main() -> None:
       params.put("PandaSignatures", b','.join(p.get_signature() for p in pandas))
 
       for panda in pandas:
-        # skip health check if the detected panda is not supported
-        supported_panda = check_panda_support(panda)
-        if not supported_panda:
-          cloudlog.warning(f"Panda {panda.get_usb_serial()} is not supported (hw_type: {panda.get_type()}), skipping health check...")
-          continue
-
         # check health for lost heartbeat
         health = panda.health()
         if health["heartbeat_lost"]:
