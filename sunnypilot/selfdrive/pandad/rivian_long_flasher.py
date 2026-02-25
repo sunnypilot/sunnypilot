@@ -22,14 +22,15 @@ def _is_rivian() -> bool:
   params = Params()
 
   # check fixed fingerprint
-  if "RIVIAN" in (params.get("CarPlatformBundle") or {}).get("platform", ""):
-    return True
+  if bundle := params.get("CarPlatformBundle"):
+    if bundle.get("brand") == "rivian":
+      return True
 
   # check cached fingerprint
-  car_params_raw = params.get("CarParamsPersistent")
-  if car_params_raw is not None:
-    CP = messaging.log_from_bytes(car_params_raw, car.CarParams)
-    if "RIVIAN" in CP.carFingerprint:
+  CP_bytes = params.get("CarParamsPersistent")
+  if CP_bytes is not None:
+    CP = messaging.log_from_bytes(CP_bytes, car.CarParams)
+    if CP.brand == "rivian":
       return True
 
   return False
