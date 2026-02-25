@@ -41,7 +41,7 @@ class ModelsLayout(Widget):
 
     self._initialize_items()
 
-    self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+    self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
     for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay")]:
       ctrl.action_item.set_value(int(float(ui_state.params.get(key, return_default=True)) * 100))
 
@@ -110,7 +110,7 @@ class ModelsLayout(Widget):
             self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
 
   @staticmethod
-  def _calculate_cache_size():
+  def calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
       cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
@@ -120,7 +120,7 @@ class ModelsLayout(Widget):
     def _callback(response):
       if response == DialogResult.CONFIRM:
         ui_state.params.put_bool("ModelManager_ClearCache", True)
-        self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+        self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
                                             tr("Clear Cache")), callback=_callback)
@@ -150,7 +150,7 @@ class ModelsLayout(Widget):
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
-      self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+      self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()
