@@ -11,7 +11,8 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.pandad.rivian_long_flasher import flash_rivian_long
+
+from openpilot.sunnypilot.selfdrive.pandad.rivian_long_flasher import flash_rivian_long
 
 
 def get_expected_signature() -> bytes:
