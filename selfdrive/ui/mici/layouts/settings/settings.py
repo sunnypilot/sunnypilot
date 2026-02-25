@@ -14,6 +14,9 @@ from openpilot.selfdrive.ui.mici.layouts.settings.firehose import FirehoseLayout
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.widgets import Widget, NavWidget
 
+if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings_layouts.device import DeviceLayoutMiciSP as DeviceLayoutMici
+
 
 class PanelType(IntEnum):
   TOGGLES = 0
