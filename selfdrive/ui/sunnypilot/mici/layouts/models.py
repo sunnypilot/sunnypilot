@@ -10,7 +10,7 @@ from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import NavWidget, Widget
+from openpilot.system.ui.widgets.nav_widget import NavWidget, Widget
 from openpilot.system.ui.widgets.scroller import Scroller
 
 
