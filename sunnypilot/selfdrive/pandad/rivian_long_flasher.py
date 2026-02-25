@@ -13,8 +13,7 @@ from panda import Panda
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
-FW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "rivian_long_fw.bin.signed")
+FW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rivian_long_fw.bin.signed")
 SECTOR_SIZES = [0x4000] * 4 + [0x10000] + [0x20000] * 11
 
 
