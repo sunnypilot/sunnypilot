@@ -76,9 +76,11 @@ def _flash_panda(panda: Panda) -> None:
 
 def flash_rivian_long(pandas: list[Panda]) -> None:
   if not os.path.isfile(FW_PATH):
+    cloudlog.error(f"Rivian longitudinal upgrade firmware not found at {FW_PATH}")
     return
 
   if not _is_rivian():
+    cloudlog.info("Not a Rivian, skipping longitudinal upgrade...")
     return
 
   for panda in pandas:
