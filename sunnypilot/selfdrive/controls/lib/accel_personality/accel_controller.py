@@ -22,9 +22,9 @@ MAX_ACCEL_PROFILES = {
 MAX_ACCEL_BREAKPOINTS =       [0.0, 3.0, 5.0, 8.0, 12.0, 18.0, 24.0, 32.0, 42.0, 55.0]
 
 MIN_ACCEL_PROFILES = {
-  AccelPersonality.eco:       [-0.01, -0.02, -0.10, -0.25, -0.40, -0.50, -0.60, -0.70],
-  AccelPersonality.normal:    [-0.02, -0.03, -0.15, -0.35, -0.50, -0.60, -0.70, -0.80],
-  AccelPersonality.sport:     [-0.03, -0.05, -0.20, -0.45, -0.60, -0.70, -0.80, -0.95],
+  AccelPersonality.eco:       [-0.01, -0.015, -0.06, -0.18, -0.32, -0.45, -0.55, -0.68],
+  AccelPersonality.normal:    [-0.015, -0.02, -0.12, -0.28, -0.42, -0.55, -0.65, -0.78],
+  AccelPersonality.sport:     [-0.02, -0.04, -0.18, -0.38, -0.55, -0.68, -0.78, -0.92],
 }
 MIN_ACCEL_BREAKPOINTS =       [0.0,     1.0,   3.0,   6.0,  10.0,  16.0,  22.0,  30.0]
 
@@ -32,12 +32,12 @@ ACCEL_ALPHA_BASE = 0.30   # responsive for small corrections
 ACCEL_ALPHA_MAX = 0.85    # smooth for big transitions
 ACCEL_ALPHA_SCALE = 0.8   # How fast alpha grows with error
 
-DECEL_ALPHA_BASE = 0.85   # smooth even for small changes
-DECEL_ALPHA_MIN = 0.15    # responsive
-DECEL_ALPHA_SCALE = -1.0  # decel gets more responsive as error grows
+DECEL_ALPHA_BASE = 0.94   # smooth even for small changes
+DECEL_ALPHA_MIN = 0.40    # responsive
+DECEL_ALPHA_SCALE = -0.5  # decel gets more responsive as error grows
 
-MAX_DECEL_INCREASE_RATE = 0.5  # slow brake onset for coast feel (m/s² per second)
-MAX_DECEL_DECREASE_RATE = 0.8  # faster brake release (m/s² per second)
+MAX_DECEL_INCREASE_RATE = 0.35  # slow brake onset for coast feel (m/s² per second)
+MAX_DECEL_DECREASE_RATE = 0.60  # faster brake release (m/s² per second)
 
 
 class AccelPersonalityController:
@@ -103,7 +103,7 @@ class AccelPersonalityController:
     limit = (MAX_DECEL_INCREASE_RATE if raw_change < 0 else MAX_DECEL_DECREASE_RATE) * DT_MDL
     self.last_min_accel += np.clip(raw_change, -limit, limit)
 
-    gap = max(0.1, abs(self.last_max_accel) * 0.05)
+    gap = max(0.05, abs(self.last_max_accel) * 0.02)
     self.last_min_accel = min(self.last_min_accel, self.last_max_accel - gap)
 
     return float(self.last_min_accel), float(self.last_max_accel)
