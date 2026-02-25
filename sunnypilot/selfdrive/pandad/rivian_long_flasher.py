@@ -92,4 +92,4 @@ def flash_rivian_long(pandas: list[Panda]) -> None:
 
 
 if __name__ == '__main__':
-    flash_rivian_long([Panda(s) for s in Panda.list()])
+  flash_rivian_long([Panda(s) for s in Panda.list()])
