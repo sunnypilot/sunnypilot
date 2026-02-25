@@ -10,7 +10,7 @@ from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import NavWidget, Widget
+from openpilot.system.ui.widgets.nav_widget import NavWidget, Widget
 from openpilot.system.ui.widgets.scroller import Scroller
 
 
@@ -88,7 +88,7 @@ class ModelsLayoutMici(NavWidget):
     self._scroller._items = self.main_items
     self.set_back_callback(self.original_back_callback)
     if self.focused_widget and self.focused_widget in self.main_items:
-      x = self._scroller._pad_start
+      x = self._scroller._pad
       for item in self.main_items:
         if not item.is_visible:
           continue

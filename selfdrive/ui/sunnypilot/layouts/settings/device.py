@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
+from openpilot.selfdrive.ui.onroad.driver_camera_dialog import DriverCameraDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
@@ -81,7 +82,7 @@ class DeviceLayoutSP(DeviceLayout):
       left_text=lambda: tr("Quiet Mode"),
       right_text=lambda: tr("Driver Camera Preview"),
       left_callback=lambda: ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
-      right_callback=self._show_driver_camera
+      right_callback=lambda: gui_app.push_widget(DriverCameraDialog())
     )
     self._quiet_mode_and_dcam.action_item.right_button.set_button_style(ButtonStyle.NORMAL)
 
@@ -153,20 +154,20 @@ class DeviceLayoutSP(DeviceLayout):
 
     def _second_confirm(result: int):
       if result == DialogResult.CONFIRM:
-        gui_app.set_modal_overlay(ConfirmDialog(
+        gui_app.push_widget(ConfirmDialog(
           text=tr("The reset cannot be undone. You have been warned."),
-          confirm_text=tr("Confirm")
-        ), callback=_do_reset)
+          confirm_text=tr("Confirm"), callback=_do_reset
+        ))
 
-    gui_app.set_modal_overlay(ConfirmDialog(
+    gui_app.push_widget(ConfirmDialog(
       text=tr("Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back."),
-      confirm_text=tr("Reset")
-    ), callback=_second_confirm)
+      confirm_text=tr("Reset"), callback=_second_confirm
+    ))
 
   @staticmethod
   def _handle_always_offroad():
     if ui_state.engaged:
-      gui_app.set_modal_overlay(alert_dialog(tr("Disengage to Enter Always Offroad Mode")))
+      gui_app.push_widget(alert_dialog(tr("Disengage to Enter Always Offroad Mode")))
       return
 
     _offroad_mode_state = ui_state.params.get_bool("OffroadMode")
@@ -177,7 +178,7 @@ class DeviceLayoutSP(DeviceLayout):
       if result == DialogResult.CONFIRM and not ui_state.engaged:
         ui_state.params.put_bool("OffroadMode", not _offroad_mode_state)
 
-    gui_app.set_modal_overlay(ConfirmDialog(_offroad_mode_str, tr("Confirm")), callback=lambda result: _set_always_offroad(result))
+    gui_app.push_widget(ConfirmDialog(_offroad_mode_str, tr("Confirm"), callback=lambda result: _set_always_offroad(result)))
 
   @staticmethod
   def _update_max_time_offroad_label(value: int) -> str:

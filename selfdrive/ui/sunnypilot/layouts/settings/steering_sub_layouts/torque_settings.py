@@ -186,5 +186,6 @@ class TorqueSettingsLayout(Widget):
       folders,
       current_ref=current_label,
       option_font_weight=FontWeight.UNIFONT,
+      on_exit=handle_selection,
     )
-    gui_app.set_modal_overlay(self._torque_version_dialog, callback=handle_selection)
+    gui_app.push_widget(self._torque_version_dialog)

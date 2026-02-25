@@ -215,21 +215,23 @@ class SunnylinkLayout(Widget):
   def _handle_pair_btn(self, sponsor_pairing: bool = False):
     sunnylink_dongle_id = self._get_sunnylink_dongle_id()
     if sunnylink_dongle_id == UNREGISTERED_SUNNYLINK_DONGLE_ID:
-      gui_app.set_modal_overlay(alert_dialog(message=tr("sunnylink Dongle ID not found. ") +
+      gui_app.push_widget(alert_dialog(message=tr("sunnylink Dongle ID not found. ") +
                                                      tr("This may be due to weak internet connection or sunnylink registration issue. ") +
                                                      tr("Please reboot and try again.")))
     elif not self._sunnylink_pairing_dialog:
       self._sunnylink_pairing_dialog = SunnylinkPairingDialog(sponsor_pairing)
-      gui_app.set_modal_overlay(self._sunnylink_pairing_dialog, callback=lambda result: setattr(self, '_sunnylink_pairing_dialog', None))
+      gui_app.push_widget(self._sunnylink_pairing_dialog)
 
   def _handle_backup_btn(self):
-    backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup")
-    gui_app.set_modal_overlay(backup_dialog, callback=self._backup_handler)
+    backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup",
+                                  callback=self._backup_handler)
+    gui_app.push_widget(backup_dialog)
 
   def _handle_restore_btn(self):
     self._restore_btn.set_enabled(False)
-    restore_dialog = ConfirmDialog(text=tr("Are you sure you want to restore the last backed up sunnypilot settings?"), confirm_text="Restore")
-    gui_app.set_modal_overlay(restore_dialog, callback=self._restore_handler)
+    restore_dialog = ConfirmDialog(text=tr("Are you sure you want to restore the last backed up sunnypilot settings?"),
+                                   confirm_text="Restore", callback=self._restore_handler)
+    gui_app.push_widget(restore_dialog)
 
   def _backup_handler(self, dialog_result: int):
     if dialog_result == DialogResult.CONFIRM:
@@ -269,7 +271,7 @@ class SunnylinkLayout(Widget):
             (backup_status == custom.BackupManagerSP.Status.idle and backup_progress == 100.0)):
         self._backup_in_progress = False
         dialog = alert_dialog(tr("Settings backup completed."))
-        gui_app.set_modal_overlay(dialog)
+        gui_app.push_widget(dialog)
         self._backup_btn.set_enabled(not ui_state.is_onroad())
 
     elif self._restore_in_progress:
@@ -286,13 +288,13 @@ class SunnylinkLayout(Widget):
         self._restore_btn.set_enabled(not ui_state.is_onroad())
         self._restore_btn.set_text(tr("Restore Failed"))
         dialog = alert_dialog(tr("Unable to restore the settings, try again later."))
-        gui_app.set_modal_overlay(dialog)
+        gui_app.push_widget(dialog)
 
       elif (restore_status == custom.BackupManagerSP.Status.completed or
             (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
-        dialog = alert_dialog(tr("Settings restored. Confirm to restart the interface."))
-        gui_app.set_modal_overlay(dialog, callback=lambda: gui_app.request_close())
+        dialog = ConfirmDialog(tr("Settings restored. Confirm to restart the interface."), tr("OK"), cancel_text="", callback=lambda _: gui_app.request_close())
+        gui_app.push_widget(dialog)
 
     else:
       can_enable = self._sunnylink_enabled and not ui_state.is_onroad()
@@ -309,10 +311,10 @@ class SunnylinkLayout(Widget):
       def on_consent_done():
         enabled = ui_state.params.get_bool("SunnylinkEnabled")
         self._update_description(enabled)
-        gui_app.set_modal_overlay(None)
+        gui_app.pop_widget()
 
       sl_terms_dlg = SunnylinkConsentPage(done_callback=on_consent_done)
-      gui_app.set_modal_overlay(sl_terms_dlg)
+      gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
       self._update_description(state)
