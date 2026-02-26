@@ -112,6 +112,9 @@ class TinygradSplitRunner(ModelRunner):
       off_policy_output = self.off_policy_runner.run_model()
       outputs.update(off_policy_output)
 
+    if 'planplus' in outputs and 'plan' in outputs:
+      outputs['plan'] = outputs['plan'] + outputs['planplus']
+
     return outputs
 
   @property
