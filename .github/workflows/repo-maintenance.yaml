@@ -43,7 +43,6 @@ jobs:
       with:
         submodules: true
     - name: uv lock
-      if: github.repository == 'commaai/openpilot'
       run: |
         python3 -m ensurepip --upgrade
         pip3 install uv
@@ -57,6 +56,9 @@ jobs:
     - name: bump submodules
       run: |
         git config --global --add safe.directory '*'
+        git config submodule.msgq.update none
+        git config submodule.rednose_repo.update none
+        git config submodule.teleoprtc_repo.update none
         git config submodule.tinygrad.update none
         git submodule update --remote
         git add .

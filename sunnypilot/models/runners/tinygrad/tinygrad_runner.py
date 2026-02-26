@@ -51,7 +51,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     self.input_to_dtype = {}
     self.input_to_device = {}
     for idx, name in enumerate(self.model_run.captured.expected_names):
-      info = self.model_run.captured.expected_st_vars_dtype_device[idx]
+      info = self.model_run.captured.expected_input_info[idx]
       self.input_to_dtype[name] = info[2]  # dtype
       self.input_to_device[name] = info[3]  # device
 
@@ -84,7 +84,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
 
   def _run_model(self) -> NumpyDict:
     """Runs the Tinygrad model inference and parses the outputs."""
-    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy()
+    outputs = self.model_run(**self.inputs).numpy().flatten()
     return self._parse_outputs(outputs)
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
