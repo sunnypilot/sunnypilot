@@ -16,7 +16,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import NavWidget
+from openpilot.system.ui.widgets.nav_widget import NavWidget
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.version import sunnylink_consent_version, sunnylink_consent_declined
 
@@ -90,16 +90,16 @@ class SunnylinkLayoutMici(NavWidget):
     def sl_terms_accepted():
       ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
       ui_state.params.put_bool("SunnylinkEnabled", True)
-      gui_app.set_modal_overlay(None)
+      gui_app.pop_widget()
 
     def sl_terms_declined():
       ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_declined)
       ui_state.params.put_bool("SunnylinkEnabled", False)
-      gui_app.set_modal_overlay(None)
+      gui_app.pop_widget()
 
     if state and not sl_consent and not sl_enabled:
       sl_terms_dlg = SunnylinkConsentPage(on_accept=sl_terms_accepted, on_decline=sl_terms_declined)
-      gui_app.set_modal_overlay(sl_terms_dlg)
+      gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
 
@@ -113,7 +113,7 @@ class SunnylinkLayoutMici(NavWidget):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
     icon = "icons_mici/settings/device/update.png"
     dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=self._restore_handler if restore else self._backup_handler)
-    gui_app.set_modal_overlay(dlg)
+    gui_app.push_widget(dlg)
 
   def _backup_handler(self):
     self._backup_in_progress = True
@@ -152,7 +152,7 @@ class SunnylinkLayoutMici(NavWidget):
       elif (backup_status == custom.BackupManagerSP.Status.completed or
             (backup_status == custom.BackupManagerSP.Status.idle and backup_progress == 100.0)):
         self._backup_in_progress = False
-        gui_app.set_modal_overlay(BigDialog(title=tr("settings backed up"), description=""))
+        gui_app.push_widget(BigDialog(title=tr("settings backed up"), description=""))
         self._backup_btn.set_enabled(not ui_state.is_onroad())
 
     elif self._restore_in_progress:
@@ -170,12 +170,12 @@ class SunnylinkLayoutMici(NavWidget):
         self._restore_btn.set_enabled(not ui_state.is_onroad())
         self._restore_btn.set_text(tr("restore"))
         self._restore_btn.set_value(tr("failed"))
-        gui_app.set_modal_overlay(BigDialog(title=tr("unable to restore"), description="try again later."))
+        gui_app.push_widget(BigDialog(title=tr("unable to restore"), description="try again later."))
 
       elif (restore_status == custom.BackupManagerSP.Status.completed or
             (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
-        gui_app.set_modal_overlay(BigConfirmationDialogV2(
+        gui_app.push_widget(BigConfirmationDialogV2(
           title="slide to restart", icon="icons_mici/settings/device/reboot.png",
           confirm_callback=lambda: gui_app.request_close()))
 
@@ -208,4 +208,4 @@ class SunnylinkPairBigButton(BigButton):
     elif not self.sponsor_pairing:
       dlg = SunnylinkPairingDialog(sponsor_pairing=False)
     if dlg:
-      gui_app.set_modal_overlay(dlg)
+      gui_app.push_widget(dlg)

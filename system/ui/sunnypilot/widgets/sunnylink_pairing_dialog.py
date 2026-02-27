@@ -45,7 +45,7 @@ class SunnylinkPairingDialog(PairingDialog):
   def _update_state(self):
     is_paired = ui_state.sunnylink_state.is_paired()
     if not self._is_paired_prev and is_paired:
-      gui_app.set_modal_overlay(None)
+      gui_app.pop_widget()
 
   def _render(self, rect: rl.Rectangle) -> int:
     rl.clear_background(rl.Color(224, 224, 224, 255))
