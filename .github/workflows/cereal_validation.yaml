@@ -61,7 +61,7 @@ jobs:
           ref: "refs/heads/master"
       - uses: ./.github/workflows/setup-with-retry
       - name: Build openpilot
-        run: ${{ env.RUN }} "scons -j$(nproc) cereal"
+        run: scons -j$(nproc) cereal
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -70,4 +70,4 @@ jobs:
       - name: 'Run the validation'
         run: |
           chmod +x cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py
-          ${{ env.RUN }} "cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py -r -f cereal/messaging/tests/cereal_validations/schema_instances.bin"
+          '${{ env.RUN }} "'cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py -r -f cereal/messaging/tests/cereal_validations/schema_instances.bin'
