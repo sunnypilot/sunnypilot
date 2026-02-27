@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: true
-      - uses: ./.github/workflows/setup-with-retry
+      - run: ./tools/op.sh setup
       - name: Build openpilot
         run: scons -j$(nproc) cereal
       - name: Generate the log file
@@ -62,7 +62,7 @@ jobs:
           path: openpilot
           submodules: true
           ref: "refs/heads/master"
-      - uses: ./.github/workflows/setup-with-retry
+      - run: ./tools/op.sh setup
       - name: Build openpilot
         working-directory: openpilot
         run: scons -j$(nproc) cereal
