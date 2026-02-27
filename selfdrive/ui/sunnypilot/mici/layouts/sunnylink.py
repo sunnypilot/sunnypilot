@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 from collections.abc import Callable
 
-import pyray as rl
 from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
@@ -16,12 +15,11 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets.nav_widget import NavWidget
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller import NavScroller
 from openpilot.system.version import sunnylink_consent_version, sunnylink_consent_declined
 
 
-class SunnylinkLayoutMici(NavWidget):
+class SunnylinkLayoutMici(NavScroller):
   def __init__(self, back_callback: Callable):
     super().__init__()
     self.set_back_callback(back_callback)
@@ -41,14 +39,14 @@ class SunnylinkLayoutMici(NavWidget):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
-    self._scroller = Scroller([
+    self._scroller.add_widgets([
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
       self._backup_btn,
       self._restore_btn,
       self._sunnylink_uploader_toggle
-    ], snap_items=False)
+    ])
 
   def _update_state(self):
     super()._update_state()
@@ -76,11 +74,7 @@ class SunnylinkLayoutMici(NavWidget):
 
   def show_event(self):
     super().show_event()
-    self._scroller.show_event()
     ui_state.update_params()
-
-  def _render(self, rect: rl.Rectangle):
-    self._scroller.render(rect)
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
