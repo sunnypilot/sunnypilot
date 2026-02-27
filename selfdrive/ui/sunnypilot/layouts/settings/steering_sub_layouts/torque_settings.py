@@ -15,7 +15,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.lib.utils import NoElideButtonAction
-from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, toggle_item_sp, option_item_sp, button_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, toggle_item_sp, option_item_sp
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeFolder, TreeNode
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.widgets.network import NavButton
@@ -40,10 +40,10 @@ class TorqueSettingsLayout(Widget):
       self.cached_torque_versions = json.load(f)
 
   def _initialize_items(self):
-    self._torque_control_versions = button_item_sp(
-      title=lambda: tr("Torque Control Tune Version"),
-      button_text=lambda: tr("SELECT"),
-      description=tr("Select the version of Torque Control Tune to use."),
+    self._torque_control_versions = ListItemSP(
+      title=tr("Torque Control Tune Version"),
+      description="Select the version of Torque Control Tune to use.",
+      action_item=NoElideButtonAction(tr("SELECT")),
       callback=self._show_torque_version_dialog,
     )
     self._self_tune_toggle = toggle_item_sp(

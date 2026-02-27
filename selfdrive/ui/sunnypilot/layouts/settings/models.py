@@ -122,7 +122,8 @@ class ModelsLayout(Widget):
         ui_state.params.put_bool("ModelManager_ClearCache", True)
         self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
-    dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"), tr("Clear Cache"), callback=_callback)
+    dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
+                           tr("Clear Cache"), callback=_callback)
     gui_app.push_widget(dialog)
 
   def _handle_bundle_download_progress(self):
