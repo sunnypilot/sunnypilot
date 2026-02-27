@@ -93,7 +93,8 @@ def load_translations(path) -> tuple[dict[str, str], dict[str, list[str]]]:
         max_idx = max(msgstr_plurals.keys()) if msgstr_plurals else 0
         plurals[msgid] = [msgstr_plurals.get(i, '') for i in range(max_idx + 1)]
       else:
-        translations[msgid] = msgstr
+        if msgstr:
+          translations[msgid] = msgstr
     msgid = msgid_plural = msgstr = ""
     msgstr_plurals = {}
     field = None

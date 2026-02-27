@@ -88,7 +88,7 @@ class ModelsLayoutMici(NavWidget):
     self._scroller._items = self.main_items
     self.set_back_callback(self.original_back_callback)
     if self.focused_widget and self.focused_widget in self.main_items:
-      x = self._scroller._pad_start
+      x = self._scroller._pad
       for item in self.main_items:
         if not item.is_visible:
           continue
