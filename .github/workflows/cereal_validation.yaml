@@ -23,51 +23,45 @@ env:
   CI: 1
 
 jobs:
-  generate_cereal_artifact:
-    name: Generate cereal validation artifacts
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: ./.github/workflows/setup-with-retry
-      - name: Build openpilot
-        run: scons -j$(nproc) cereal
-      - name: Generate the log file
-        run: |
-          "cereal/messaging/tests/validate_sp_cereal_upstream.py -g -f schema_instances.bin" && \
-          ls -la
-          ls -la cereal/messaging/tests
-      - name: 'Prepare artifact'
-        run: |
-          mkdir -p "cereal/messaging/tests/cereal_validations"
-          cp cereal/messaging/tests/validate_sp_cereal_upstream.py "cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py"
-          cp schema_instances.bin "cereal/messaging/tests/cereal_validations/schema_instances.bin"
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cereal_validations
-          path: cereal/messaging/tests/cereal_validations
-
-  validate_cereal_with_upstream:
+  validate_cereal:
     name: Validate cereal with Upstream
     runs-on: ubuntu-24.04
-    needs: generate_cereal_artifact
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout sunnypilot
+        uses: actions/checkout@v6
+        with:
+          path: sunnypilot
+          submodules: true
+      - name: Checkout upstream openpilot
+        uses: actions/checkout@v6
         with:
           repository: 'commaai/openpilot'
+          path: openpilot
           submodules: true
           ref: "refs/heads/master"
-      - uses: ./.github/workflows/setup-with-retry
-      - name: Build openpilot
+
+      - name: Setup sunnypilot environment
+        working-directory: sunnypilot
+        uses: ./.github/workflows/setup-with-retry
+
+      - name: Build sunnypilot cereal
+        working-directory: sunnypilot
         run: scons -j$(nproc) cereal
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: cereal_validations
-          path: cereal/messaging/tests/cereal_validations
-      - name: 'Run the validation'
+
+      - name: Build upstream openpilot cereal
+        working-directory: openpilot
         run: |
-          chmod +x cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py
-          '${{ env.RUN }} "'cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py -r -f cereal/messaging/tests/cereal_validations/schema_instances.bin'
+          # Use sunnypilot's setup for openpilot build dependencies if needed
+          # or assume setup-with-retry handles it for the runner
+          scons -j$(nproc) cereal
+
+      - name: Generate and Validate
+        working-directory: sunnypilot
+        run: |
+          # Generate schema instances using sunnypilot's cereal
+          export PYTHONPATH=$GITHUB_WORKSPACE/sunnypilot
+          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -g -f schema_instances.bin
+
+          # Validate using upstream openpilot's cereal
+          export PYTHONPATH=$GITHUB_WORKSPACE/openpilot
+          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -r -f schema_instances.bin
