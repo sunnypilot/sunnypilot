@@ -53,8 +53,33 @@ def main():
 
   print(f"Updated {METADATA_PATH}")
 
+  # update onroad screen brightness params
+  update_onroad_brightness_param()
+
   # update torque versions param
   update_torque_versions_param()
+
+
+def update_onroad_brightness_param():
+  try:
+    with open(METADATA_PATH) as f:
+      params_metadata = json.load(f)
+    if "OnroadScreenOffBrightness" in params_metadata:
+      options = [
+        {"value": 0, "label": "Auto (Default)"},
+        {"value": 1, "label": "Auto (Dark)"},
+        {"value": 2, "label": "Screen Off"},
+      ]
+      for i in range(3, 23):
+        options.append({"value": i, "label": f"{(i - 2) * 5} %"})
+      params_metadata["OnroadScreenOffBrightness"]["options"] = options
+      with open(METADATA_PATH, 'w') as f:
+        json.dump(params_metadata, f, indent=2)
+        f.write('\n')
+      print(f"Updated OnroadScreenOffBrightness options in params_metadata.json with {len(options)} options.")
+  except Exception as e:
+    print(f"Failed to update OnroadScreenOffBrightness versions in params_metadata.json: {e}")
+
 
 def update_torque_versions_param():
   with open(TORQUE_VERSIONS_JSON) as f:
@@ -80,6 +105,7 @@ def update_torque_versions_param():
 
   except Exception as e:
     print(f"Failed to update TorqueControlTune versions in params_metadata.json: {e}")
+
 
 if __name__ == "__main__":
   main()
