@@ -12,7 +12,6 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Pr
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
 from openpilot.system.hardware import HARDWARE
 
-
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -23,6 +22,8 @@ EventNameSP = custom.OnroadEventSP.EventName
 
 # get event name from enum
 EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
+
+IS_MICI = HARDWARE.get_device_type() == 'mici'
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
@@ -38,30 +39,6 @@ def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
-  speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
-  speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
-  alert_1_str = ""
-  alert_size = AlertSize.none
-
-  if CP.openpilotLongitudinalControl and CP.pcmCruise:
-    # PCM long
-    cst_low, cst_high = PCM_LONG_REQUIRED_MAX_SET_SPEED[metric]
-    pcm_long_required_max = cst_low if speed_limit_final_last_conv < CONFIRM_SPEED_THRESHOLD[metric] else cst_high
-    pcm_long_required_max_set_speed_conv = round(pcm_long_required_max * speed_conv)
-    speed_unit = "km/h" if metric else "mph"
-
-    alert_1_str = f"Speed Limit Assist: set to {pcm_long_required_max_set_speed_conv} {speed_unit} to engage"
-    alert_size = AlertSize.small
-
-  return Alert(
-    alert_1_str,
-    "",
-    AlertStatus.normal, alert_size,
-    Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleLow, .1)
-
-
-def speed_limit_pre_active_mici_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
 
   controls_state = sm['controlsState']
   car_state = sm["carState"]
@@ -72,6 +49,7 @@ def speed_limit_pre_active_mici_alert(CP: car.CarParams, CS: car.CarState, sm: m
 
   speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
   speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
+  alert_1_str = ""
   alert_size = AlertSize.small
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
@@ -82,7 +60,7 @@ def speed_limit_pre_active_mici_alert(CP: car.CarParams, CS: car.CarState, sm: m
     speed_unit = "km/h" if metric else "mph"
 
     alert_1_str = f"Speed Limit Assist: set to {pcm_long_required_max_set_speed_conv} {speed_unit} to engage"
-  else:
+  elif IS_MICI:
     alert_1_str = ""
     if set_speed_conv < speed_limit_final_last_conv:
       alert_1_str = "Press + to confirm speed limit"
@@ -268,11 +246,3 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.MID, VisualAlert.none, AudibleAlert.prompt, 3.),
   },
 }
-
-
-if HARDWARE.get_device_type() == 'mici':
-  EVENTS_SP.update({
-    EventNameSP.speedLimitPreActive: {
-      ET.WARNING: speed_limit_pre_active_mici_alert,
-    },
-  })
