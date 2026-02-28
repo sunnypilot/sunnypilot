@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from dataclasses import dataclass
+from enum import StrEnum
 import math
 import pyray as rl
 
@@ -41,9 +42,40 @@ class Colors:
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
 
 
-class SpeedLimitRenderer(Widget):
+class IconSide(StrEnum):
+  left = 'left'
+  right = 'right'
+
+
+class SpeedLimitAlertRenderer:
   def __init__(self):
-    super().__init__()
+    arrow_size = 90
+    self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
+    self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
+
+  def speed_limit_pre_active_icon_helper_mici(self):
+    icon_side = IconSide.right
+    txt_icon = None
+    speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
+    v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
+    set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+    set_speed_conv = round(set_speed * speed_conv)
+
+    speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
+    speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
+
+    if set_speed_conv < speed_limit_final_last_conv:
+      txt_icon = self.arrow_up
+    elif set_speed_conv > speed_limit_final_last_conv:
+      txt_icon = self.arrow_down
+
+    return icon_side, txt_icon
+
+
+class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
+  def __init__(self):
+    Widget.__init__(self)
+    SpeedLimitAlertRenderer.__init__(self)
 
     self.speed_limit = 0.0
     self.speed_limit_last = 0.0
@@ -71,10 +103,6 @@ class SpeedLimitRenderer(Widget):
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
     self.font_norm = gui_app.font(FontWeight.NORMAL)
     self._sign_alpha_filter = FirstOrderFilter(1.0, 0.5, 1 / gui_app.target_fps)
-
-    arrow_size = 90
-    self._arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
-    self._arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
   @property
   def speed_conv(self):
@@ -192,11 +220,11 @@ class SpeedLimitRenderer(Widget):
     arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
 
     if set_speed_rounded < limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self._arrow_up.height) / 2 + bounce_offset
-      rl.draw_texture(self._arrow_up, int(arrow_x), int(arrow_y), rl.WHITE)
+      arrow_y = sign_rect.y + (sign_rect.height - self.arrow_up.height) / 2 + bounce_offset
+      rl.draw_texture(self.arrow_up, int(arrow_x), int(arrow_y), rl.WHITE)
     elif set_speed_rounded > limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self._arrow_down.height) / 2 - bounce_offset
-      rl.draw_texture(self._arrow_down, int(arrow_x), int(arrow_y), rl.WHITE)
+      arrow_y = sign_rect.y + (sign_rect.height - self.arrow_down.height) / 2 - bounce_offset
+      rl.draw_texture(self.arrow_down, int(arrow_x), int(arrow_y), rl.WHITE)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)
