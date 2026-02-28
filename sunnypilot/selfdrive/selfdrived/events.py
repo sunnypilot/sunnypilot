@@ -41,9 +41,8 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
 
   controls_state = sm['controlsState']
-  car_state = sm["carState"]
 
-  v_cruise_cluster = car_state.vCruiseCluster
+  v_cruise_cluster = CS.vCruiseCluster
   set_speed = controls_state.vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
   set_speed_conv = round(set_speed * speed_conv)
 
