@@ -46,10 +46,6 @@ class SpeedLimitAlertRenderer:
     self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
     self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
-    blank_image = rl.gen_image_color(90, 90, rl.Color(0, 0, 0, 0))
-    self.arrow_blank = rl.load_texture_from_image(blank_image)
-    rl.unload_image(blank_image)
-
     self._pre_active_alpha_filter = FirstOrderFilter(1.0, 0.05, 1 / gui_app.target_fps)
     self._pre_active_alert_frame = 0
 
