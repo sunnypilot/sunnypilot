@@ -15,6 +15,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
+from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -47,12 +48,14 @@ class IconSide(StrEnum):
 
 
 class SpeedLimitAlertRenderer:
-  def __init__(self):
-    arrow_size = 200
-    self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
-    self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
+  ARROW_SIZE = 90 if HARDWARE.get_device_type() == 'mici' else 200
+  FOF_X = 255.0 if HARDWARE.get_device_type() == 'mici' else 1.0
 
-    blank_image = rl.gen_image_color(200, 200, rl.Color(0, 0, 0, 0))
+  def __init__(self):
+    self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", self.ARROW_SIZE, self.ARROW_SIZE)
+    self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", self.ARROW_SIZE, self.ARROW_SIZE)
+
+    blank_image = rl.gen_image_color(self.ARROW_SIZE, self.ARROW_SIZE, rl.Color(0, 0, 0, 0))
     self.arrow_blank = rl.load_texture_from_image(blank_image)
     rl.unload_image(blank_image)
 
@@ -64,7 +67,7 @@ class SpeedLimitAlertRenderer:
     if assist_state == AssistState.preActive:
       self._pre_active_alert_frame += 1
       if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
-        self._pre_active_alpha_filter.x = 1.0
+        self._pre_active_alpha_filter.x = self.FOF_X
       else:
         self._pre_active_alpha_filter.update(0.0)
     else:
