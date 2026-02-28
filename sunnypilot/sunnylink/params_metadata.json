@@ -845,85 +845,93 @@
       },
       {
         "value": 2,
-        "label": "5 %"
+        "label": "Screen Off"
       },
       {
         "value": 3,
-        "label": "10 %"
+        "label": "5 %"
       },
       {
         "value": 4,
-        "label": "15 %"
+        "label": "10 %"
       },
       {
         "value": 5,
-        "label": "20 %"
+        "label": "15 %"
       },
       {
         "value": 6,
-        "label": "25 %"
+        "label": "20 %"
       },
       {
         "value": 7,
-        "label": "30 %"
+        "label": "25 %"
       },
       {
         "value": 8,
-        "label": "35 %"
+        "label": "30 %"
       },
       {
         "value": 9,
-        "label": "40 %"
+        "label": "35 %"
       },
       {
         "value": 10,
-        "label": "45 %"
+        "label": "40 %"
       },
       {
         "value": 11,
-        "label": "50 %"
+        "label": "45 %"
       },
       {
         "value": 12,
-        "label": "55 %"
+        "label": "50 %"
       },
       {
         "value": 13,
-        "label": "60 %"
+        "label": "55 %"
       },
       {
         "value": 14,
-        "label": "65 %"
+        "label": "60 %"
       },
       {
         "value": 15,
-        "label": "70 %"
+        "label": "65 %"
       },
       {
         "value": 16,
-        "label": "75 %"
+        "label": "70 %"
       },
       {
         "value": 17,
-        "label": "80 %"
+        "label": "75 %"
       },
       {
         "value": 18,
-        "label": "85 %"
+        "label": "80 %"
       },
       {
         "value": 19,
-        "label": "90 %"
+        "label": "85 %"
       },
       {
         "value": 20,
-        "label": "95 %"
+        "label": "90 %"
       },
       {
         "value": 21,
+        "label": "95 %"
+      },
+      {
+        "value": 22,
         "label": "100 %"
       }
     ]
+  },
+  "OnroadScreenOffBrightnessMigrated": {
+    "title": "Onroad Brightness Migration Version",
+    "description": "This param is to track whether OnroadScreenOffBrightness needs to be migrated."
   },
   "OnroadScreenOffControl": {
     "title": "Onroad Brightness",
