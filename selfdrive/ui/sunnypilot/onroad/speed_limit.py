@@ -53,16 +53,13 @@ class SpeedLimitAlertRenderer:
     assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
     if assist_state == AssistState.preActive:
       self._pre_active_alert_frame += 1
-    else:
-      self._pre_active_alert_frame = 0
-
-    if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
-      if assist_state == AssistState.preActive:
+      if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
         self._pre_active_alpha_filter.x = 1.0
       else:
-        self._pre_active_alpha_filter.update(1.0)
+        self._pre_active_alpha_filter.update(0.0)
     else:
-      self._pre_active_alpha_filter.update(0.0)
+      self._pre_active_alert_frame = 0
+      self._pre_active_alpha_filter.update(1.0)
 
 
 class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
