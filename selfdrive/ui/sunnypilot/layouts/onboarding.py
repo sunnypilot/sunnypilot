@@ -96,8 +96,6 @@ class SunnylinkConsentPage(Widget):
       self._primary_btn.set_text(step_data["primary_btn"])
       self._primary_btn.render(rl.Rectangle(self._rect.x + 45 * 2 + btn_width, btn_y, btn_width, 160))
 
-    return -1
-
 
 class SunnylinkOnboarding:
   def __init__(self):

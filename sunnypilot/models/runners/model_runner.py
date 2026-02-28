@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 
 import numpy as np
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.models.runners.constants import NumpyDict, ShapeDict, CLMemDict, FrameDict, Model, SliceDict, SEND_RAW_PRED
+from openpilot.sunnypilot.models.runners.constants import NumpyDict, ShapeDict, Model, SliceDict, SEND_RAW_PRED
 from openpilot.system.hardware.hw import Paths
 import pickle
 
@@ -133,13 +133,11 @@ class ModelRunner(ModularRunner):
     raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
 
   @abstractmethod
-  def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
+  def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
     """
     Abstract method to prepare inputs for model inference.
 
-    :param imgs_cl: Dictionary of OpenCL memory objects for image inputs.
     :param numpy_inputs: Dictionary of numpy arrays for non-image inputs.
-    :param frames: Dictionary of DrivingModelFrame objects for context.
     :return: Dictionary of prepared inputs ready for the model.
     """
     raise NotImplementedError
