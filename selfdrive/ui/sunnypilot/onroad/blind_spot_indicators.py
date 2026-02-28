@@ -28,7 +28,7 @@ class BlindSpotIndicators:
 
   @property
   def detected(self) -> bool:
-    return self._blind_spot_left_alpha_filter.x > 0.01 or self._blind_spot_right_alpha_filter.x > 0.01
+    return ui_state.blindspot and (self._blind_spot_left_alpha_filter.x > 0.01 or self._blind_spot_right_alpha_filter.x > 0.01)
 
   def render(self, rect: rl.Rectangle) -> None:
     if not ui_state.blindspot:
