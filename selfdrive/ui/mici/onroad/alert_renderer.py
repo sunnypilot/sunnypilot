@@ -49,6 +49,7 @@ class IconLayout(NamedTuple):
   side: IconSide
   margin_x: int
   margin_y: int
+  alpha: float = 255.0
 
 
 class AlertLayout(NamedTuple):
@@ -159,6 +160,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
   def _icon_helper(self, alert: Alert) -> AlertLayout:
     icon_side = None
     txt_icon = None
+    icon_alpha = 255.0
     icon_margin_x = 20
     icon_margin_y = 18
 
@@ -196,7 +198,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
       icon_margin_y = 0
 
     elif event_name == 'speedLimitPreActive':
-      icon_side, txt_icon = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper_mici(self)
+      icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper_mici(self)
 
     else:
       self._turn_signal_timer = 0.0
@@ -219,7 +221,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
       text_width,
       self._rect.height,
     )
-    icon_layout = IconLayout(txt_icon, icon_side, icon_margin_x, icon_margin_y) if txt_icon is not None and icon_side is not None else None
+    icon_layout = IconLayout(txt_icon, icon_side, icon_margin_x, icon_margin_y, icon_alpha) if txt_icon is not None and icon_side is not None else None
     return AlertLayout(text_rect, icon_layout)
 
   def _render(self, rect: rl.Rectangle) -> bool:
@@ -267,7 +269,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
       pos_x = int(self._rect.x + self._rect.width - alert_layout.icon.margin_x - alert_layout.icon.texture.width)
 
     if alert_layout.icon.texture not in (self._txt_turn_signal_left, self._txt_turn_signal_right):
-      icon_alpha = 255
+      icon_alpha = alert_layout.icon.alpha
     else:
       icon_alpha = int(min(self._turn_signal_alpha_filter.x, 255))
 

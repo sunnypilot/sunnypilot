@@ -57,6 +57,7 @@ class SpeedLimitAlertRenderer:
     self.arrow_blank = rl.load_texture_from_image(blank_image)
     rl.unload_image(blank_image)
 
+    self._arrow_alpha_filter = FirstOrderFilter(255.0, 0.05, 1 / gui_app.target_fps)
     self._pre_active_alert_frame = 0
 
   def update(self):
@@ -66,9 +67,17 @@ class SpeedLimitAlertRenderer:
     else:
       self._pre_active_alert_frame = 0
 
+    if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
+      self._arrow_alpha_filter.x = 255.0
+    else:
+      self._arrow_alpha_filter.update(0.0)
+
   def speed_limit_pre_active_icon_helper_mici(self):
     icon_side = IconSide.right
     txt_icon = self.arrow_blank
+    icon_margin_x = 10
+    icon_margin_y = 18
+
     speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
     set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
@@ -77,14 +86,14 @@ class SpeedLimitAlertRenderer:
     speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
     speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
 
-    pulse = (self._pre_active_alert_frame % gui_app.target_fps) >= (gui_app.target_fps / 2.5)
-    if pulse:
+    icon_alpha = max(0.0, min(self._arrow_alpha_filter.x, 255.0))
+    if icon_alpha > 0:
       if set_speed_conv < speed_limit_final_last_conv:
         txt_icon = self.arrow_up
       elif set_speed_conv > speed_limit_final_last_conv:
         txt_icon = self.arrow_down
 
-    return icon_side, txt_icon
+    return icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
 
 
 class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
