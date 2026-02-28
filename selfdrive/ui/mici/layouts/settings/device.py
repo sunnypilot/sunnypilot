@@ -7,7 +7,7 @@ from collections.abc import Callable
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.time_helpers import system_time_valid
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller import NavScroller
 from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigCircleButton
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
@@ -16,7 +16,8 @@ from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import DriverCamera
 from openpilot.selfdrive.ui.mici.layouts.onboarding import TrainingGuide
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import Widget, NavWidget
+from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.widgets.nav_widget import NavWidget
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets.label import MiciLabel
 from openpilot.system.ui.widgets.html_render import HtmlModal, HtmlRenderer
@@ -28,9 +29,10 @@ class MiciFccModal(NavWidget):
 
   def __init__(self, file_path: str | None = None, text: str | None = None):
     super().__init__()
-    self.set_back_callback(lambda: gui_app.set_modal_overlay(None))
+    self.set_back_callback(gui_app.pop_widget)
     self._content = HtmlRenderer(file_path=file_path, text=text)
     self._scroll_panel = GuiScrollPanel2(horizontal=False)
+    self._scroll_panel.set_enabled(lambda: self.enabled and not self._swiping_away)
     self._fcc_logo = gui_app.texture("icons_mici/settings/device/fcc_logo.png", 76, 64)
 
   def _render(self, rect: rl.Rectangle):
@@ -46,8 +48,6 @@ class MiciFccModal(NavWidget):
     self._content.render(scroll_content_rect)
 
     rl.draw_texture_ex(self._fcc_logo, fcc_pos, 0.0, 1.0, rl.WHITE)
-
-    return -1
 
 
 def _engaged_confirmation_callback(callback: Callable, action_text: str):
@@ -74,10 +74,10 @@ def _engaged_confirmation_callback(callback: Callable, action_text: str):
     dlg: BigConfirmationDialogV2 | BigDialog = BigConfirmationDialogV2(f"slide to\n{action_text.lower()}", icon, red=red,
                                                                        exit_on_confirm=action_text == "reset",
                                                                        confirm_callback=confirm_callback)
-    gui_app.set_modal_overlay(dlg)
+    gui_app.push_widget(dlg)
   else:
     dlg = BigDialog(f"Disengage to {action_text}", "")
-    gui_app.set_modal_overlay(dlg)
+    gui_app.push_widget(dlg)
 
 
 class DeviceInfoLayoutMici(Widget):
@@ -147,7 +147,7 @@ class PairBigButton(BigButton):
       dlg = BigDialog(tr("Device must be registered with the comma.ai backend to pair"), "")
     else:
       dlg = PairingDialog()
-    gui_app.set_modal_overlay(dlg)
+    gui_app.push_widget(dlg)
 
 
 UPDATER_TIMEOUT = 10.0  # seconds to wait for updater to respond
@@ -173,7 +173,7 @@ class UpdateOpenpilotBigButton(BigButton):
   def _handle_mouse_release(self, mouse_pos: MousePos):
     if not system_time_valid():
       dlg = BigDialog(tr("Please connect to Wi-Fi to update"), "")
-      gui_app.set_modal_overlay(dlg)
+      gui_app.push_widget(dlg)
       return
 
     self.set_enabled(False)
@@ -267,13 +267,11 @@ class UpdateOpenpilotBigButton(BigButton):
       self._waiting_for_updater_t = None
 
 
-class DeviceLayoutMici(NavWidget):
-  def __init__(self, back_callback: Callable):
+class DeviceLayoutMici(NavScroller):
+  def __init__(self):
     super().__init__()
 
     self._fcc_dialog: HtmlModal | None = None
-    self._driver_camera: DriverCameraDialog | None = None
-    self._training_guide: TrainingGuide | None = None
 
     def power_off_callback():
       ui_state.params.put_bool("DoShutdown", True)
@@ -309,29 +307,29 @@ class DeviceLayoutMici(NavWidget):
     regulatory_btn.set_click_callback(self._on_regulatory)
 
     driver_cam_btn = BigButton("driver\ncamera preview", "", "icons_mici/settings/device/cameras.png")
-    driver_cam_btn.set_click_callback(self._show_driver_camera)
+    driver_cam_btn.set_click_callback(lambda: gui_app.push_widget(DriverCameraDialog()))
     driver_cam_btn.set_enabled(lambda: ui_state.is_offroad())
 
     review_training_guide_btn = BigButton("review\ntraining guide", "", "icons_mici/settings/device/info.png")
-    review_training_guide_btn.set_click_callback(self._on_review_training_guide)
+    review_training_guide_btn.set_click_callback(lambda: gui_app.push_widget(TrainingGuide(completed_callback=gui_app.pop_widget)))
     review_training_guide_btn.set_enabled(lambda: ui_state.is_offroad())
 
-    self._scroller = Scroller([
+    self._scroller.add_widgets([
       DeviceInfoLayoutMici(),
       UpdateOpenpilotBigButton(),
       PairBigButton(),
       review_training_guide_btn,
       driver_cam_btn,
-      # lang_button,
       reset_calibration_btn,
       uninstall_openpilot_btn,
       regulatory_btn,
       reboot_btn,
       self._power_off_btn,
-    ], snap_items=False)
+    ])
 
     # Set up back navigation
-    self.set_back_callback(back_callback)
+    # TODO: can this somehow be generic in widgets/__init__.py or application.py?
+    self.set_back_callback(gui_app.pop_widget)
 
     # Hide power off button when onroad
     ui_state.add_offroad_transition_callback(self._offroad_transition)
@@ -339,27 +337,7 @@ class DeviceLayoutMici(NavWidget):
   def _on_regulatory(self):
     if not self._fcc_dialog:
       self._fcc_dialog = MiciFccModal(os.path.join(BASEDIR, "selfdrive/assets/offroad/mici_fcc.html"))
-    gui_app.set_modal_overlay(self._fcc_dialog)
+    gui_app.push_widget(self._fcc_dialog)
 
   def _offroad_transition(self):
     self._power_off_btn.set_visible(ui_state.is_offroad())
-
-  def _show_driver_camera(self):
-    if not self._driver_camera:
-      self._driver_camera = DriverCameraDialog()
-    gui_app.set_modal_overlay(self._driver_camera, callback=lambda result: setattr(self, '_driver_camera', None))
-
-  def _on_review_training_guide(self):
-    if not self._training_guide:
-      def completed_callback():
-        gui_app.set_modal_overlay(None)
-
-      self._training_guide = TrainingGuide(completed_callback=completed_callback)
-    gui_app.set_modal_overlay(self._training_guide, callback=lambda result: setattr(self, '_training_guide', None))
-
-  def show_event(self):
-    super().show_event()
-    self._scroller.show_event()
-
-  def _render(self, rect: rl.Rectangle):
-    self._scroller.render(rect)

@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import cereal.messaging as messaging
 from cereal import log, car, custom
 from openpilot.common.constants import CV
@@ -34,7 +40,6 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
   speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
   speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
   alert_1_str = ""
-  alert_2_str = ""
   alert_size = AlertSize.none
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
@@ -44,13 +49,12 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     pcm_long_required_max_set_speed_conv = round(pcm_long_required_max * speed_conv)
     speed_unit = "km/h" if metric else "mph"
 
-    alert_1_str = "Speed Limit Assist: Activation Required"
-    alert_2_str = f"Manually change set speed to {pcm_long_required_max_set_speed_conv} {speed_unit} to activate"
-    alert_size = AlertSize.mid
+    alert_1_str = f"Speed Limit Assist: set to {pcm_long_required_max_set_speed_conv} {speed_unit} to engage"
+    alert_size = AlertSize.small
 
   return Alert(
     alert_1_str,
-    alert_2_str,
+    "",
     AlertStatus.normal, alert_size,
     Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleLow, .1)
 
@@ -193,7 +197,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.speedLimitActive: {
     ET.WARNING: Alert(
-      "Automatically adjusting to the posted speed limit",
+      "Auto adjusting to speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
@@ -213,7 +217,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.speedLimitPending: {
     ET.WARNING: Alert(
-      "Automatically adjusting to the last speed limit",
+      "Auto adjusting to last speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),

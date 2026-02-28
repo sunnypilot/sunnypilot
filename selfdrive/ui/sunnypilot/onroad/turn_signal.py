@@ -34,8 +34,8 @@ class TurnSignalWidget(Widget):
     self._turn_signal_timer = 0.0
     self._turn_signal_alpha_filter = FirstOrderFilter(0.0, 0.3, 1 / gui_app.target_fps)
 
-    self._signal_texture = gui_app.texture(f'icons_mici/onroad/turn_signal_{direction}.png', 120, 109)
-    self._blind_spot_texture = gui_app.texture(f'icons_mici/onroad/blind_spot_{direction}.png', 120, 109)
+    self._signal_texture = gui_app.texture('icons_mici/onroad/turn_signal_left.png', 120, 109, flip_x=(direction == IconSide.right))
+    self._blind_spot_texture = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 120, 109, flip_x=(direction == IconSide.right))
     self._texture = self._signal_texture
 
   def _render(self, _):
