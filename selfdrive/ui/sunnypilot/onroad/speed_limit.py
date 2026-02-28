@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from dataclasses import dataclass
-from enum import StrEnum
 import pyray as rl
 
 from cereal import custom
@@ -15,7 +14,6 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
-from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -42,14 +40,9 @@ class Colors:
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
 
 
-class IconSide(StrEnum):
-  left = 'left'
-  right = 'right'
-
-
 class SpeedLimitAlertRenderer:
   def __init__(self):
-    arrow_size = 90 if HARDWARE.get_device_type() == "mici" else 200
+    arrow_size = 200
     self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
     self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
@@ -74,34 +67,6 @@ class SpeedLimitAlertRenderer:
         self._pre_active_alpha_filter.update(1.0)
     else:
       self._pre_active_alpha_filter.update(0.0)
-
-  def speed_limit_pre_active_icon_helper_mici(self):
-    icon_side = IconSide.right
-    txt_icon = self.arrow_blank
-    icon_margin_x = 10
-    icon_margin_y = 18
-
-    speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
-    v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
-    set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
-    set_speed_conv = round(set_speed * speed_conv)
-
-    speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
-    speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
-
-    assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
-    if assist_state == AssistState.preActive:
-      icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
-    else:
-      icon_alpha = 0.0
-
-    if icon_alpha > 0:
-      if set_speed_conv < speed_limit_final_last_conv:
-        txt_icon = self.arrow_up
-      elif set_speed_conv > speed_limit_final_last_conv:
-        txt_icon = self.arrow_down
-
-    return icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
 
 
 class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
