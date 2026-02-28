@@ -929,6 +929,10 @@
       }
     ]
   },
+  "OnroadScreenOffBrightnessMigrated": {
+    "title": "Onroad Brightness Migration Version",
+    "description": "This param is to track whether OnroadScreenOffBrightness needs to be migrated."
+  },
   "OnroadScreenOffControl": {
     "title": "Onroad Brightness",
     "description": "Adjusts the screen brightness while it's in onroad state."
