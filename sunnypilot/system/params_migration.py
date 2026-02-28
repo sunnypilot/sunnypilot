@@ -14,9 +14,13 @@ def run_migration(_params):
   if _params.get("OnroadScreenOffBrightnessMigrated") != ONROAD_BRIGHTNESS_MIGRATION_VERSION:
     try:
       val = _params.get("OnroadScreenOffBrightness")
-      new_val = 2 if val == 0 else (val // 5) + 2
-      _params.put("OnroadScreenOffBrightness", new_val)
-      _params.put("OnroadScreenOffBrightnessMigrated", ONROAD_BRIGHTNESS_MIGRATION_VERSION)
-      cloudlog.info(f"Successfully migrated OnroadScreenOffBrightness, setting OnroadScreenOffBrightnessMigrated to {ONROAD_BRIGHTNESS_MIGRATION_VERSION}")
+      if val >= 2:
+        new_val = val + 1
+        _params.put("OnroadScreenOffBrightness", new_val)
+        _params.put("OnroadScreenOffBrightnessMigrated", ONROAD_BRIGHTNESS_MIGRATION_VERSION)
+        log_str = f"Successfully migrated OnroadScreenOffBrightness from {val} to {new_val}."
+      else:
+        log_str = "Migration not required for OnroadScreenOffBrightness."
+      cloudlog.info(log_str + f" Setting OnroadScreenOffBrightnessMigrated to {ONROAD_BRIGHTNESS_MIGRATION_VERSION}")
     except Exception as e:
       cloudlog.exception(f"Error migrating OnroadScreenOffBrightness: {e}")
