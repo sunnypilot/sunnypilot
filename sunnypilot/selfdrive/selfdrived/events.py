@@ -272,21 +272,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
 if HARDWARE.get_device_type() == 'mici':
   EVENTS_SP.update({
-    EventNameSP.speedLimitActive: {
-      ET.WARNING: Alert(
-        "Auto adjusting to speed limit",
-        "",
-        AlertStatus.normal, AlertSize.small,
-        Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
-    },
     EventNameSP.speedLimitPreActive: {
       ET.WARNING: speed_limit_pre_active_mici_alert,
-    },
-    EventNameSP.speedLimitPending: {
-      ET.WARNING: Alert(
-        "Auto adjusting to last speed limit",
-        "",
-        AlertStatus.normal, AlertSize.small,
-        Priority.LOW, VisualAlert.none, AudibleAlertSP.promptSingleHigh, 5.),
     },
   })
