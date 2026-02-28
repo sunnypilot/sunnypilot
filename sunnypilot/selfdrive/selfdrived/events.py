@@ -59,12 +59,14 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     speed_unit = "km/h" if metric else "mph"
 
     alert_1_str = f"Speed Limit Assist: set to {pcm_long_required_max_set_speed_conv} {speed_unit} to engage"
-  elif IS_MICI:
-    alert_1_str = ""
-    if set_speed_conv < speed_limit_final_last_conv:
-      alert_1_str = "Press + to confirm speed limit"
-    elif set_speed_conv > speed_limit_final_last_conv:
-      alert_1_str = "Press - to confirm speed limit"
+  else:
+    if IS_MICI:
+      if set_speed_conv < speed_limit_final_last_conv:
+        alert_1_str = "Press + to confirm speed limit"
+      elif set_speed_conv > speed_limit_final_last_conv:
+        alert_1_str = "Press - to confirm speed limit"
+    else:
+      alert_size = AlertSize.none
 
   return Alert(
     alert_1_str,
