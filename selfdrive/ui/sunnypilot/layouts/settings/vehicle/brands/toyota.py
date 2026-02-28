@@ -59,6 +59,8 @@ class ToyotaSettings(BrandSettings):
           ui_state.params.put_bool("ToyotaEnforceStockLongitudinal", True)
           if ui_state.params.get_bool("AlphaLongitudinalEnabled"):
             ui_state.params.put_bool("AlphaLongitudinalEnabled", False)
+          ui_state.params.put_bool("ToyotaStopAndGoHack", False)
+          self.stop_and_go_hack.action_item.set_state(False)
           ui_state.params.put_bool("OnroadCycleRequested", True)
         else:
           self.enforce_stock_longitudinal.action_item.set_state(False)
@@ -93,8 +95,9 @@ class ToyotaSettings(BrandSettings):
   def update_settings(self):
     if ui_state.CP is not None:
       longitudinal = ui_state.CP.openpilotLongitudinalControl
+      enforce_stock = self.enforce_stock_longitudinal.action_item.get_state()
 
-      if longitudinal:
+      if longitudinal and not enforce_stock:
         self.stop_and_go_hack.action_item.set_enabled(not ui_state.engaged)
         new_desc = tr(DESCRIPTIONS["stop_and_go_hack"])
         show_desc = False
