@@ -53,9 +53,22 @@ class SpeedLimitAlertRenderer:
     self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
     self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
+    blank_image = rl.gen_image_color(90, 90, rl.Color(0, 0, 0, 0))
+    self.arrow_blank = rl.load_texture_from_image(blank_image)
+    rl.unload_image(blank_image)
+
+    self._pre_active_alert_frame = 0
+
+  def update(self):
+    assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
+    if assist_state == AssistState.preActive:
+      self._pre_active_alert_frame += 1
+    else:
+      self._pre_active_alert_frame = 0
+
   def speed_limit_pre_active_icon_helper_mici(self):
     icon_side = IconSide.right
-    txt_icon = None
+    txt_icon = self.arrow_blank
     speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
     set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
@@ -64,10 +77,12 @@ class SpeedLimitAlertRenderer:
     speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
     speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
 
-    if set_speed_conv < speed_limit_final_last_conv:
-      txt_icon = self.arrow_up
-    elif set_speed_conv > speed_limit_final_last_conv:
-      txt_icon = self.arrow_down
+    pulse = (self._pre_active_alert_frame % gui_app.target_fps) >= (gui_app.target_fps / 2.5)
+    if pulse:
+      if set_speed_conv < speed_limit_final_last_conv:
+        txt_icon = self.arrow_up
+      elif set_speed_conv > speed_limit_final_last_conv:
+        txt_icon = self.arrow_down
 
     return icon_side, txt_icon
 

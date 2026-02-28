@@ -242,6 +242,9 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
 
     self._draw_background(alert)
 
+    # update speed limit UI states
+    SpeedLimitAlertRenderer.update(self)
+
     alert_layout = self._icon_helper(alert)
     self._draw_text(alert, alert_layout)
     self._draw_icons(alert_layout)
