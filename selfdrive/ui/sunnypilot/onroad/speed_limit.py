@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 
 from dataclasses import dataclass
 from enum import StrEnum
-import math
 import pyray as rl
 
 from cereal import custom
@@ -49,28 +48,28 @@ class IconSide(StrEnum):
 
 class SpeedLimitAlertRenderer:
   def __init__(self):
-    arrow_size = 90
+    arrow_size = 200
     self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
     self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
-    blank_image = rl.gen_image_color(90, 90, rl.Color(0, 0, 0, 0))
+    blank_image = rl.gen_image_color(200, 200, rl.Color(0, 0, 0, 0))
     self.arrow_blank = rl.load_texture_from_image(blank_image)
     rl.unload_image(blank_image)
 
-    self._arrow_alpha_filter = FirstOrderFilter(255.0, 0.05, 1 / gui_app.target_fps)
+    self._pre_active_alpha_filter = FirstOrderFilter(1.0, 0.05, 1 / gui_app.target_fps)
     self._pre_active_alert_frame = 0
 
   def update(self):
     assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
     if assist_state == AssistState.preActive:
       self._pre_active_alert_frame += 1
+      if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
+        self._pre_active_alpha_filter.x = 1.0
+      else:
+        self._pre_active_alpha_filter.update(0.0)
     else:
       self._pre_active_alert_frame = 0
-
-    if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
-      self._arrow_alpha_filter.x = 255.0
-    else:
-      self._arrow_alpha_filter.update(0.0)
+      self._pre_active_alpha_filter.update(1.0)
 
   def speed_limit_pre_active_icon_helper_mici(self):
     icon_side = IconSide.right
@@ -86,7 +85,7 @@ class SpeedLimitAlertRenderer:
     speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
     speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
 
-    icon_alpha = max(0.0, min(self._arrow_alpha_filter.x, 255.0))
+    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x, 255.0))
     if icon_alpha > 0:
       if set_speed_conv < speed_limit_final_last_conv:
         txt_icon = self.arrow_up
@@ -116,7 +115,6 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     self.speed_limit_ahead_valid = False
     self.speed_limit_ahead_frame = 0
 
-    self.assist_frame = 0
     self.is_cruise_set: bool = False
     self.is_cruise_available: bool = True
     self.set_speed: float = SET_SPEED_NA
@@ -126,13 +124,13 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     self.font_bold = gui_app.font(FontWeight.BOLD)
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
     self.font_norm = gui_app.font(FontWeight.NORMAL)
-    self._sign_alpha_filter = FirstOrderFilter(1.0, 0.5, 1 / gui_app.target_fps)
 
   @property
   def speed_conv(self):
     return CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
 
   def update(self):
+    SpeedLimitAlertRenderer.update(self)
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       self.set_speed = SET_SPEED_NA
@@ -195,13 +193,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
 
     sign_rect = rl.Rectangle(x, y, width, UI_CONFIG.set_speed_height + 6 * 2)
 
-    if self.speed_limit_assist_state == AssistState.preActive:
-      self.assist_frame += 1
-      pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / gui_app.target_fps)
-      alpha = self._sign_alpha_filter.update(pulse_value)
-    else:
-      self.assist_frame = 0
-      alpha = self._sign_alpha_filter.update(1.0)
+    alpha = self._pre_active_alpha_filter.x
 
     if ui_state.speed_limit_mode != SpeedLimitMode.off:
       self._draw_sign_main(sign_rect, alpha)
@@ -236,19 +228,19 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     set_speed_rounded = round(self.set_speed)
     limit_rounded = round(self.speed_limit_final_last)
 
-    bounce_frequency = 2.0 * math.pi / (gui_app.target_fps * 2.5)
-    bounce_offset = int(20 * math.sin(self.assist_frame * bounce_frequency))
-
     sign_margin = 12
     arrow_spacing = int(sign_margin * 1.4)
     arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
 
-    if set_speed_rounded < limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self.arrow_up.height) / 2 + bounce_offset
-      rl.draw_texture(self.arrow_up, int(arrow_x), int(arrow_y), rl.WHITE)
-    elif set_speed_rounded > limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self.arrow_down.height) / 2 - bounce_offset
-      rl.draw_texture(self.arrow_down, int(arrow_x), int(arrow_y), rl.WHITE)
+    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
+    if icon_alpha > 0:
+      color = rl.Color(255, 255, 255, int(icon_alpha))
+      if set_speed_rounded < limit_rounded:
+        arrow_y = sign_rect.y + (sign_rect.height - self.arrow_up.height) / 2
+        rl.draw_texture(self.arrow_up, int(arrow_x), int(arrow_y), color)
+      elif set_speed_rounded > limit_rounded:
+        arrow_y = sign_rect.y + (sign_rect.height - self.arrow_down.height) / 2
+        rl.draw_texture(self.arrow_down, int(arrow_x), int(arrow_y), color)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)
