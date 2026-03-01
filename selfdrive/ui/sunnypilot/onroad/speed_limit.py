@@ -74,29 +74,29 @@ class SpeedLimitAlertRenderer:
       self._pre_active_alpha_filter.update(1.0)
 
   def speed_limit_pre_active_icon_helper(self):
-    icon_side = IconSide.right
+    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
     txt_icon = self.arrow_blank
     icon_margin_x = 10
     icon_margin_y = 18
 
-    speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
-    v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
-    set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
-    if not ui_state.is_metric:
-      set_speed *= KM_TO_MILE
-    set_speed = round(set_speed)
-
-    speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
-    speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
-
-    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
     if icon_alpha > 0:
-      if set_speed < speed_limit_final_last_conv:
+      speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
+      speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
+
+      v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
+      set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+      if not ui_state.is_metric:
+        set_speed *= KM_TO_MILE
+
+      set_speed_round = round(set_speed)
+      speed_limit_round = round(speed_limit_final_last * speed_conv)
+
+      if set_speed_round < speed_limit_round:
         txt_icon = self.arrow_up
-      elif set_speed > speed_limit_final_last_conv:
+      elif set_speed_round > speed_limit_round:
         txt_icon = self.arrow_down
 
-    return icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
+    return IconSide.right, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
 
 
 class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
