@@ -193,7 +193,6 @@ jobs:
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*.thneed' \
             --include='*.pkl' \
             --include='*.onnx' \
             --exclude='*' \
