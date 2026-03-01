@@ -10,7 +10,7 @@ from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
-from openpilot.system.hardware import HARDWARE
+
 
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -22,8 +22,6 @@ EventNameSP = custom.OnroadEventSP.EventName
 
 # get event name from enum
 EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
-
-IS_MICI = HARDWARE.get_device_type() == 'mici'
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
@@ -39,17 +37,10 @@ def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   speed_conv = CV.MS_TO_KPH if metric else CV.MS_TO_MPH
-
-  controls_state = sm['controlsState']
-
-  v_cruise_cluster = CS.vCruiseCluster
-  set_speed = controls_state.vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
-  set_speed_conv = round(set_speed * speed_conv)
-
   speed_limit_final_last = sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
   speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
   alert_1_str = ""
-  alert_size = AlertSize.small
+  alert_size = AlertSize.none
 
   if CP.openpilotLongitudinalControl and CP.pcmCruise:
     # PCM long
@@ -59,14 +50,7 @@ def speed_limit_pre_active_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     speed_unit = "km/h" if metric else "mph"
 
     alert_1_str = f"Speed Limit Assist: set to {pcm_long_required_max_set_speed_conv} {speed_unit} to engage"
-  else:
-    if IS_MICI:
-      if set_speed_conv < speed_limit_final_last_conv:
-        alert_1_str = "Press + to confirm speed limit"
-      elif set_speed_conv > speed_limit_final_last_conv:
-        alert_1_str = "Press - to confirm speed limit"
-    else:
-      alert_size = AlertSize.none
+    alert_size = AlertSize.small
 
   return Alert(
     alert_1_str,
