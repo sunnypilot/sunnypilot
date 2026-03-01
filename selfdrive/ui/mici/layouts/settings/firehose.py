@@ -1,3 +1,4 @@
+import requests
 import threading
 import time
 import pyray as rl
@@ -12,7 +13,8 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
 from openpilot.system.ui.lib.multilang import tr, trn, tr_noop
-from openpilot.system.ui.widgets import Widget, NavWidget
+from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.widgets.nav_widget import NavWidget
 
 TITLE = tr_noop("Firehose Mode")
 DESCRIPTION = tr_noop(
@@ -44,6 +46,7 @@ class FirehoseLayoutBase(Widget):
   def __init__(self):
     super().__init__()
     self._params = Params()
+    self._session = requests.Session()  # reuse session to reduce SSL handshake overhead
     self._segment_count = self._get_segment_count()
 
     self._scroll_panel = GuiScrollPanel2(horizontal=False)
@@ -130,9 +133,6 @@ class FirehoseLayoutBase(Widget):
       y = self._draw_wrapped_text(x, y, w, tr(answer), gui_app.font(FontWeight.ROMAN), 32, self.LIGHT_GRAY)
       y += 20
 
-    # return value not used by NavWidget
-    return -1
-
   def _draw_wrapped_text(self, x, y, width, text, font, font_size, color):
     wrapped = wrap_text(font, text, font_size, width)
     for line in wrapped:
@@ -203,7 +203,7 @@ class FirehoseLayoutBase(Widget):
       if not dongle_id or dongle_id == UNREGISTERED_DONGLE_ID:
         return
       identity_token = get_token(dongle_id)
-      response = api_get(f"v1/devices/{dongle_id}/firehose_stats", access_token=identity_token)
+      response = api_get(f"v1/devices/{dongle_id}/firehose_stats", access_token=identity_token, session=self._session)
       if response.status_code == 200:
         data = response.json()
         self._segment_count = data.get("firehose", 0)
@@ -221,6 +221,7 @@ class FirehoseLayoutBase(Widget):
 class FirehoseLayout(FirehoseLayoutBase, NavWidget):
   BACK_TOUCH_AREA_PERCENTAGE = 0.1
 
-  def __init__(self, back_callback):
+  def __init__(self):
     super().__init__()
-    self.set_back_callback(back_callback)
+    self.set_back_callback(gui_app.pop_widget)
+    self._scroll_panel.set_enabled(lambda: self.enabled and not self._swiping_away)

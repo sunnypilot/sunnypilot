@@ -200,3 +200,85 @@ def test_known_params_metadata():
   assert acc_long["min"] == 1
   assert acc_long["max"] == 10
   assert acc_long["step"] == 1
+
+
+def test_torque_control_tune_versions_in_sync():
+  """
+  Test that TorqueControlTune options in params_metadata.json match versions in latcontrol_torque_versions.json.
+
+  Why:
+  The TorqueControlTune dropdown in the UI should always reflect the available torque tune versions.
+  If versions are added/removed from latcontrol_torque_versions.json, the metadata must be updated accordingly.
+
+  Expected:
+  - TorqueControlTune should have a 'Default' option with empty string value
+  - All versions from latcontrol_torque_versions.json should be present in the options
+  - The version values and labels should match between both files
+  """
+  from openpilot.common.basedir import BASEDIR
+
+  versions_json_path = os.path.join(BASEDIR, "sunnypilot", "selfdrive", "controls", "lib", "latcontrol_torque_versions.json")
+  sync_script_path = "python3 sunnypilot/sunnylink/tools/sync_torque_versions.py"
+
+  # Load both files
+  with open(METADATA_PATH) as f:
+    metadata = json.load(f)
+
+  with open(versions_json_path) as f:
+    versions = json.load(f)
+
+  # Get TorqueControlTune metadata
+  torque_tune = metadata.get("TorqueControlTune")
+  if torque_tune is None:
+    pytest.fail(f"TorqueControlTune not found in params_metadata.json. Please run '{sync_script_path}' to sync.")
+
+  if "options" not in torque_tune:
+    pytest.fail(f"TorqueControlTune must have options. Please run '{sync_script_path}' to sync.")
+
+  options = torque_tune["options"]
+  if not isinstance(options, list):
+    pytest.fail(f"TorqueControlTune options must be a list. Please run '{sync_script_path}' to sync.")
+
+  if len(options) == 0:
+    pytest.fail(f"TorqueControlTune must have at least one option. Please run '{sync_script_path}' to sync.")
+
+  # Check that Default option exists
+  default_option = next((opt for opt in options if opt.get("value") == ""), None)
+  if default_option is None:
+    pytest.fail(f"TorqueControlTune must have a 'Default' option with empty string value. Please run '{sync_script_path}' to sync.")
+
+  if default_option.get("label") != "Default":
+    pytest.fail(f"Default option must have label 'Default'. Please run '{sync_script_path}' to sync.")
+
+  # Build expected options from versions.json
+  expected_version_keys = set(versions.keys())
+  actual_version_keys = set()
+
+  for option in options:
+    if option.get("value") == "":
+      continue  # Skip the default option
+
+    label = option.get("label")
+    value = option.get("value")
+
+    # Check that this option corresponds to a version
+    if label not in versions:
+      pytest.fail(f"Option label '{label}' not found in latcontrol_torque_versions.json. Please run '{sync_script_path}' to sync.")
+
+    # Check that the value matches the version number
+    expected_value = float(versions[label]["version"])
+    if value != expected_value:
+      pytest.fail(f"Option '{label}' has value {value}, expected {expected_value}. Please run '{sync_script_path}' to sync.")
+
+    actual_version_keys.add(label)
+
+  # Check that all versions are represented
+  missing_versions = expected_version_keys - actual_version_keys
+  if missing_versions:
+    pytest.fail(f"The following versions are missing from TorqueControlTune options: {missing_versions}. " +
+                f"Please run '{sync_script_path}' to sync.")
+
+  extra_versions = actual_version_keys - expected_version_keys
+  if extra_versions:
+    pytest.fail("The following versions in TorqueControlTune options are not in latcontrol_torque_versions.json: " +
+                f"{extra_versions}. Please run '{sync_script_path}' to sync.")

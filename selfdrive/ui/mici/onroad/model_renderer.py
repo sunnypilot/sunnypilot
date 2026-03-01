@@ -12,7 +12,7 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
-from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP, ModelRendererSP
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -51,9 +51,10 @@ class LeadVehicle:
   fill_alpha: int = 0
 
 
-class ModelRenderer(Widget):
+class ModelRenderer(Widget, ModelRendererSP):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    ModelRendererSP.__init__(self)
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
@@ -80,6 +81,9 @@ class ModelRenderer(Widget):
     self._transform_dirty = True
     self._clip_region = None
 
+    self._counter = -1
+    self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
+
     self._exp_gradient = Gradient(
       start=(0.0, 1.0),  # Bottom of path
       end=(0.0, 0.0),  # Top of path
@@ -98,6 +102,10 @@ class ModelRenderer(Widget):
 
   def _render(self, rect: rl.Rectangle):
     sm = ui_state.sm
+
+    if self._counter % 180 == 0:  # This runs at 60fps, so we query every 3 seconds
+      self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
+    self._counter += 1
 
     self._torque_filter.update(-ui_state.sm['carOutput'].actuatorsOutput.torque)
 
@@ -150,13 +158,13 @@ class ModelRenderer(Widget):
 
   def _update_raw_points(self, model):
     """Update raw 3D points from model data"""
-    self._path.raw_points = np.array([model.position.x, model.position.y, model.position.z], dtype=np.float32).T
+    self._path.raw_points = np.array([model.position.x, np.array(model.position.y) + self._camera_offset, model.position.z], dtype=np.float32).T
 
     for i, lane_line in enumerate(model.laneLines):
-      self._lane_lines[i].raw_points = np.array([lane_line.x, lane_line.y, lane_line.z], dtype=np.float32).T
+      self._lane_lines[i].raw_points = np.array([lane_line.x, np.array(lane_line.y) + self._camera_offset, lane_line.z], dtype=np.float32).T
 
     for i, road_edge in enumerate(model.roadEdges):
-      self._road_edges[i].raw_points = np.array([road_edge.x, road_edge.y, road_edge.z], dtype=np.float32).T
+      self._road_edges[i].raw_points = np.array([road_edge.x, np.array(road_edge.y) + self._camera_offset, road_edge.z], dtype=np.float32).T
 
     self._lane_line_probs = np.array(model.laneLineProbs, dtype=np.float32)
     self._road_edge_stds = np.array(model.roadEdgeStds, dtype=np.float32)
@@ -174,7 +182,7 @@ class ModelRenderer(Widget):
 
         # Get z-coordinate from path at the lead vehicle position
         z = self._path.raw_points[idx, 2] if idx < len(self._path.raw_points) else 0.0
-        point = self._map_to_screen(d_rel, -y_rel, z + self._path_offset_z)
+        point = self._map_to_screen(d_rel, -y_rel + self._camera_offset, z + self._path_offset_z)
         if point:
           self._lead_vehicles[i] = self._update_lead_vehicle(d_rel, v_rel, point, self._rect)
 
@@ -332,6 +340,10 @@ class ModelRenderer(Widget):
 
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
+
+    if ui_state.rainbow_path:
+      self.rainbow_path.draw_rainbow_path(self._rect, self._path)
+      return
 
     if self._experimental_mode:
       # Draw with acceleration coloring

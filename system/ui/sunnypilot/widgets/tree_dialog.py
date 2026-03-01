@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 import pyray as rl
 from openpilot.common.params import Params
-from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.button import Button, ButtonStyle, BUTTON_PRESSED_BACKGROUND_COLORS
@@ -76,6 +76,14 @@ class TreeItemWidget(Button):
 
 
 class TreeOptionDialog(MultiOptionDialog):
+  @property
+  def on_exit(self):
+    return self._callback
+
+  @on_exit.setter
+  def on_exit(self, value):
+    self._callback = value
+
   def __init__(self, title, folders, current_ref="", fav_param="", option_font_weight=FontWeight.MEDIUM, search_prompt=None,
                get_folders_fn=None, on_exit=None, display_func=None, search_funcs=None, search_title=None, search_subtitle=None):
     super().__init__(title, [], current_ref, option_font_weight)
@@ -124,7 +132,6 @@ class TreeOptionDialog(MultiOptionDialog):
     if result == DialogResult.CONFIRM:
       self.query = text
       self._build_visible_items()
-    gui_app.set_modal_overlay(self, callback=self.on_exit)
 
   def _on_search_clicked(self):
     self.search_dialog = InputDialogSP(
@@ -265,8 +272,6 @@ class TreeOptionDialog(MultiOptionDialog):
     select_rect = rl.Rectangle(dialog_content_rect.x + 100 + button_width, button_y_position, button_width, 160)
     self.select_button.set_enabled(self.selection != self.current)
     self.select_button.render(select_rect)
-
-    return self._result
 
   def _handle_mouse_press(self, mouse_pos):
     if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):

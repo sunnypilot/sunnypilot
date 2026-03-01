@@ -281,7 +281,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
 
-def main(exit_event: threading.Event = None):
+def main(exit_event: threading.Event | None = None):
   try:
     set_core_affinity([0, 1, 2, 3])
   except Exception:

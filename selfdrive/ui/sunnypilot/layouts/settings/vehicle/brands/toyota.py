@@ -48,8 +48,8 @@ class ToyotaSettings(BrandSettings):
       content = (f"<h1>{self.enforce_stock_longitudinal.title}</h1><br>" +
                  f"<p>{self.enforce_stock_longitudinal.description}</p>")
 
-      dlg = ConfirmDialog(content, tr("Enable"), rich=True)
-      gui_app.set_modal_overlay(dlg, callback=confirm_callback)
+      dlg = ConfirmDialog(content, tr("Enable"), rich=True, callback=confirm_callback)
+      gui_app.push_widget(dlg)
 
     else:
       ui_state.params.put_bool("ToyotaEnforceStockLongitudinal", False)
