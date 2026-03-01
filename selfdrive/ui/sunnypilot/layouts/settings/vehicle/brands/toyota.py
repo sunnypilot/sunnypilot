@@ -80,6 +80,7 @@ class ToyotaSettings(BrandSettings):
       def confirm_callback(result: int):
         if result == DialogResult.CONFIRM:
           ui_state.params.put_bool("ToyotaStopAndGoHack", True)
+          ui_state.params.put_bool("OnroadCycleRequested", True)
         else:
           self.stop_and_go_hack.action_item.set_state(False)
 
@@ -91,6 +92,7 @@ class ToyotaSettings(BrandSettings):
 
     else:
       ui_state.params.put_bool("ToyotaStopAndGoHack", False)
+      ui_state.params.put_bool("OnroadCycleRequested", True)
 
   def update_settings(self):
     if ui_state.CP is not None:
