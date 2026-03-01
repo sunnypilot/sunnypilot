@@ -12,7 +12,7 @@ import numpy as np
 
 from openpilot.common.params import Params
 from cereal import custom
-from openpilot.sunnypilot.modeld.constants import Meta, MetaTombRaider, MetaSimPose
+from openpilot.sunnypilot.models.constants import Meta, MetaTombRaider, MetaSimPose
 from openpilot.system.hardware.hw import Paths
 from pathlib import Path
 
