@@ -147,5 +147,3 @@ class TripsLayout(Widget):
     y = self._render_stat_group(x, y, w, card_height, tr("ALL TIME"), all_time, is_metric)
     y += spacing
     y = self._render_stat_group(x, y, w, card_height, tr("PAST WEEK"), week, is_metric)
-
-    return -1

@@ -26,12 +26,12 @@ from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, 
 
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.constants import Plan
-from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.sunnypilot.modeld_v2.warp import Warp
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
@@ -49,12 +49,12 @@ class FrameMeta:
 
 
 class ModelState(ModelStateBase):
-  frames: dict[str, DrivingModelFrame]
+  frames: dict[str, Warp]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   temporal_idxs: slice | np.ndarray
 
-  def __init__(self, context: CLContext):
+  def __init__(self):
     ModelStateBase.__init__(self)
     try:
       self.model_runner = get_model_runner()
@@ -73,17 +73,16 @@ class ModelState(ModelStateBase):
     self.PLANPLUS_CONTROL: float = 1.0
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
-    self.frames = {name: DrivingModelFrame(context, buffer_length) for name in self.model_runner.vision_input_names}
+    self.warp = Warp(buffer_length)
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
-
-    # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
     self.temporal_buffers = {}
     self.temporal_idxs_map = {}
 
     for key, shape in self.model_runner.input_shapes.items():
-      if key not in self.frames: # Managed by opencl
+      if key not in self.model_runner.vision_input_names: # Policy inputs
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+
         # Temporal input: shape is [batch, history, features]
         if len(shape) == 3 and shape[1] > 1:
           buffer_history_len = shape[1] * 4 if shape[1] < 99 else shape[1]  # Allow for higher history buffers in the future
@@ -129,10 +128,10 @@ class ModelState(ModelStateBase):
       if key in inputs and key not in [self.desire_key]:
         self.numpy_inputs[key][:] = inputs[key]
 
-    imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
-
-    # Prepare inputs using the model runner
-    self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
+    imgs_tensors = self.warp.process(bufs, transforms)
+    for name, tensor in imgs_tensors.items():
+      self.model_runner.inputs[name] = tensor
+    self.model_runner.prepare_inputs(self.numpy_inputs)
 
     if prepare_only:
       return None
@@ -147,12 +146,11 @@ class ModelState(ModelStateBase):
 
     if "desired_curvature" in outputs:
       input_name_prev = None
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
+      if "prev_desired_curv" in self.numpy_inputs.keys():
         input_name_prev = 'prev_desired_curv'
       if input_name_prev and input_name_prev in self.temporal_buffers:
         self.process_desired_curvature(outputs, input_name_prev)
+
     return outputs
 
   def process_desired_curvature(self, outputs, input_name_prev):
@@ -165,14 +163,12 @@ class ModelState(ModelStateBase):
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
     plan = model_output['plan'][0]
-    if 'planplus' in model_output:
-      recovery_power = self.PLANPLUS_CONTROL * (0.75 if v_ego > 20.0 else 1.0)
-      plan = plan + recovery_power * model_output['planplus'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
-    desired_curvature = get_curvature_from_output(model_output, plan, v_ego, lat_action_t, self.mlsim)
+    curvature_plan = plan + (self.PLANPLUS_CONTROL - 1.0) * model_output['planplus'][0] if 'planplus' in model_output and self.PLANPLUS_CONTROL != 1.0 else plan
+    desired_curvature = get_curvature_from_output(model_output, curvature_plan, v_ego, lat_action_t, self.mlsim)
     if self.generation is not None and self.generation >= 10: # smooth curvature for post FOF models
       if v_ego > self.MIN_LAT_CONTROL_SPEED:
         desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
@@ -190,10 +186,8 @@ def main(demo=False):
   setproctitle(PROCESS_NAME)
   config_realtime_process(7, 54)
 
-  cloudlog.warning("setting up CL context")
-  cl_context = CLContext()
-  cloudlog.warning("CL context ready; loading model")
-  model = ModelState(cl_context)
+  cloudlog.warning("loading model")
+  model = ModelState()
   cloudlog.warning("models loaded, modeld starting")
 
   # visionipc clients
@@ -206,8 +200,8 @@ def main(demo=False):
     time.sleep(.1)
 
   vipc_client_main_stream = VisionStreamType.VISION_STREAM_WIDE_ROAD if main_wide_camera else VisionStreamType.VISION_STREAM_ROAD
-  vipc_client_main = VisionIpcClient("camerad", vipc_client_main_stream, True, cl_context)
-  vipc_client_extra = VisionIpcClient("camerad", VisionStreamType.VISION_STREAM_WIDE_ROAD, False, cl_context)
+  vipc_client_main = VisionIpcClient("camerad", vipc_client_main_stream, True)
+  vipc_client_extra = VisionIpcClient("camerad", VisionStreamType.VISION_STREAM_WIDE_ROAD, False)
   cloudlog.warning(f"vision stream set up, main_wide_camera: {main_wide_camera}, use_extra_client: {use_extra_client}")
 
   while not vipc_client_main.connect(False):

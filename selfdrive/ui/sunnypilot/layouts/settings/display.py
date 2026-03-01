@@ -19,6 +19,7 @@ ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 15, 1: 30, **{i: (i - 1) * 60 for i in rang
 class OnroadBrightness(IntEnum):
   AUTO = 0
   AUTO_DARK = 1
+  SCREEN_OFF = 2
 
 
 class DisplayLayout(Widget):
@@ -35,7 +36,7 @@ class DisplayLayout(Widget):
       title=lambda: tr("Onroad Brightness"),
       description="",
       min_value=0,
-      max_value=21,
+      max_value=22,
       value_change_step=1,
       label_callback=lambda value: self.update_onroad_brightness(value),
       inline=True
@@ -79,7 +80,10 @@ class DisplayLayout(Widget):
     if val == OnroadBrightness.AUTO_DARK:
       return tr("Auto (Dark)")
 
-    return f"{(val - 1) * 5} %"
+    if val == OnroadBrightness.SCREEN_OFF:
+      return tr("Screen Off")
+
+    return f"{(val - 2) * 5} %"
 
   def _update_state(self):
     super()._update_state()

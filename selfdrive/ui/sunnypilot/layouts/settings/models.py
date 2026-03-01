@@ -61,7 +61,7 @@ class ModelsLayout(Widget):
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
-                                             gui_app.set_modal_overlay(alert_dialog(tr("Fetching Latest Models")))))
+                                             gui_app.push_widget(alert_dialog(tr("Fetching Latest Models")))))
 
     self.clear_cache_item = ListItemSP(
       title=tr("Clear Model Cache"),
@@ -122,8 +122,9 @@ class ModelsLayout(Widget):
         ui_state.params.put_bool("ModelManager_ClearCache", True)
         self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
 
-    gui_app.set_modal_overlay(ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
-                                            tr("Clear Cache")), callback=_callback)
+    dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
+                           tr("Clear Cache"), callback=_callback)
+    gui_app.push_widget(dialog)
 
   def _handle_bundle_download_progress(self):
     labels = {custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
@@ -176,7 +177,8 @@ class ModelsLayout(Widget):
         ui_state.params.remove("CalibrationParams")
         ui_state.params.remove("LiveTorqueParameters")
     msg = tr("Model download has started in the background. We suggest resetting calibration. Would you like to do that now?")
-    gui_app.set_modal_overlay(ConfirmDialog(msg, tr("Reset Calibration")), callback=_callback)
+    dialog = ConfirmDialog(msg, tr("Reset Calibration"), callback=_callback)
+    gui_app.push_widget(dialog)
 
   def _on_model_selected(self, result):
     if result != DialogResult.CONFIRM:
@@ -219,7 +221,7 @@ class ModelsLayout(Widget):
     active_ref = self.model_manager.activeBundle.ref if self.model_manager.activeBundle else "Default"
     self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, active_ref, "ModelManager_Favs",
                                          get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
-    gui_app.set_modal_overlay(self.model_dialog, callback=self._on_model_selected)
+    gui_app.push_widget(self.model_dialog)
 
   def _update_state(self):
     advanced_controls: bool = ui_state.params.get_bool("ShowAdvancedControls")
