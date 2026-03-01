@@ -11,7 +11,6 @@ import pyray as rl
 
 from cereal import custom
 from openpilot.common.constants import CV
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
@@ -19,6 +18,7 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.sunnypilot.lib.utils import AlertFadeAnimator
 from openpilot.system.ui.widgets import Widget
 
 METER_TO_FOOT = 3.28084
@@ -58,23 +58,14 @@ class SpeedLimitAlertRenderer:
     self.arrow_blank = rl.load_texture_from_image(blank_image)
     rl.unload_image(blank_image)
 
-    self._pre_active_alpha_filter = FirstOrderFilter(1.0, 0.05, 1 / gui_app.target_fps)
-    self._pre_active_alert_frame = 0
+    self._pre_active_fade = AlertFadeAnimator(gui_app.target_fps, duration_on=0.75, rc=0.05)
 
   def update(self):
     assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
-    if assist_state == AssistState.preActive:
-      self._pre_active_alert_frame += 1
-      if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
-        self._pre_active_alpha_filter.x = 1.0
-      else:
-        self._pre_active_alpha_filter.update(0.0)
-    else:
-      self._pre_active_alert_frame = 0
-      self._pre_active_alpha_filter.update(1.0)
+    self._pre_active_fade.update(assist_state == AssistState.preActive)
 
   def speed_limit_pre_active_icon_helper(self):
-    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
+    icon_alpha = max(0.0, min(self._pre_active_fade.alpha * 255.0, 255.0))
     txt_icon = self.arrow_blank
     icon_margin_x = 10
     icon_margin_y = 18
@@ -197,7 +188,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
 
     sign_rect = rl.Rectangle(x, y, width, UI_CONFIG.set_speed_height + 6 * 2)
 
-    alpha = self._pre_active_alpha_filter.x
+    alpha = self._pre_active_fade.alpha
 
     if ui_state.speed_limit_mode != SpeedLimitMode.off:
       self._draw_sign_main(sign_rect, alpha)
