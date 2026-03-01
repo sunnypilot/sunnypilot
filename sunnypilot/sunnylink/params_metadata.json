@@ -1296,6 +1296,10 @@
     "title": "Toyota: Enforce Factory Longitudinal Control",
     "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used."
   },
+  "ToyotaStopAndGoHack": {
+    "title": "Toyota: Stop and Go Hack (Alpha)",
+    "description": "sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models that are able to use longitudinal control. This is an alpha feature. Use at your own risk."
+  },
   "TrainingVersion": {
     "title": "Training Version",
     "description": ""

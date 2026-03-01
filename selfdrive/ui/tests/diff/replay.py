@@ -23,9 +23,16 @@ def setup_state():
   params.put("HasAcceptedTerms", terms_version)
   params.put("CompletedTrainingVersion", training_version)
   params.put("DongleId", "test123456789")
+  # Combined description for layouts that still use it (BIG home, settings/software)
   params.put("UpdaterCurrentDescription", "0.10.1 / test-branch / abc1234 / Nov 30")
   params.put("HasAcceptedTermsSP", terms_version_sp)
   params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
+
+  # Params for mici home
+  params.put("Version", "0.10.1")
+  params.put("GitBranch", "test-branch")
+  params.put("GitCommit", "abc12340ff9131237ba23a1d0fbd8edf9c80e87")
+  params.put("GitCommitDate", "'1732924800 2024-11-30 00:00:00 +0000'")
 
 
 def run_replay(variant: LayoutVariant) -> None:
