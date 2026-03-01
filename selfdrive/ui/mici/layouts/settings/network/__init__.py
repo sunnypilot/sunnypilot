@@ -148,9 +148,6 @@ class NetworkLayoutMici(NavScroller):
     metered = ui_state.params.get_bool("GsmMetered")
     self._wifi_manager.update_gsm_settings(roaming_enabled, ui_state.params.get("GsmApn") or "", metered)
 
-    # Set up back navigation
-    self.set_back_callback(gui_app.pop_widget)
-
   def _update_state(self):
     super()._update_state()
 
@@ -166,13 +163,13 @@ class NetworkLayoutMici(NavScroller):
     self._wifi_manager.set_active(True)
 
     # Process wifi callbacks while at any point in the nav stack
-    gui_app.set_nav_stack_tick(self._wifi_manager.process_callbacks)
+    gui_app.add_nav_stack_tick(self._wifi_manager.process_callbacks)
 
   def hide_event(self):
     super().hide_event()
     self._wifi_manager.set_active(False)
 
-    gui_app.set_nav_stack_tick(None)
+    gui_app.remove_nav_stack_tick(self._wifi_manager.process_callbacks)
 
   def _toggle_roaming(self, checked: bool):
     self._wifi_manager.update_gsm_settings(checked, ui_state.params.get("GsmApn") or "", ui_state.params.get_bool("GsmMetered"))
