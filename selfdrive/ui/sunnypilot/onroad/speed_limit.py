@@ -49,7 +49,6 @@ class IconSide(StrEnum):
 
 class SpeedLimitAlertRenderer:
   ARROW_SIZE = 90 if HARDWARE.get_device_type() == 'mici' else 200
-  FOF_X = 255.0 if HARDWARE.get_device_type() == 'mici' else 1.0
 
   def __init__(self):
     self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", self.ARROW_SIZE, self.ARROW_SIZE)
@@ -67,14 +66,14 @@ class SpeedLimitAlertRenderer:
     if assist_state == AssistState.preActive:
       self._pre_active_alert_frame += 1
       if (self._pre_active_alert_frame % gui_app.target_fps) < (gui_app.target_fps * 0.75):
-        self._pre_active_alpha_filter.x = self.FOF_X
+        self._pre_active_alpha_filter.x = 1.0
       else:
         self._pre_active_alpha_filter.update(0.0)
     else:
       self._pre_active_alert_frame = 0
       self._pre_active_alpha_filter.update(1.0)
 
-  def speed_limit_pre_active_icon_helper_mici(self):
+  def speed_limit_pre_active_icon_helper(self):
     icon_side = IconSide.right
     txt_icon = self.arrow_blank
     icon_margin_x = 10
@@ -83,16 +82,18 @@ class SpeedLimitAlertRenderer:
     speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
     set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
-    set_speed_conv = round(set_speed * speed_conv)
+    if not ui_state.is_metric:
+      set_speed *= KM_TO_MILE
+    set_speed = round(set_speed)
 
     speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
     speed_limit_final_last_conv = round(speed_limit_final_last * speed_conv)
 
-    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x, 255.0))
+    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
     if icon_alpha > 0:
-      if set_speed_conv < speed_limit_final_last_conv:
+      if set_speed < speed_limit_final_last_conv:
         txt_icon = self.arrow_up
-      elif set_speed_conv > speed_limit_final_last_conv:
+      elif set_speed > speed_limit_final_last_conv:
         txt_icon = self.arrow_down
 
     return icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
@@ -228,22 +229,14 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       self._render_mutcd(rect, limit_str, sub_text, txt_color, has_limit, alpha)
 
   def _draw_pre_active_arrow(self, sign_rect):
-    set_speed_rounded = round(self.set_speed)
-    limit_rounded = round(self.speed_limit_final_last)
-
-    sign_margin = 12
-    arrow_spacing = int(sign_margin * 1.4)
-    arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
-
-    icon_alpha = max(0.0, min(self._pre_active_alpha_filter.x * 255.0, 255.0))
-    if icon_alpha > 0:
+    _, txt_icon, icon_alpha, _, _ = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper(self)
+    if icon_alpha > 0 and txt_icon != self.arrow_blank:
+      sign_margin = 12
+      arrow_spacing = int(sign_margin * 1.4)
+      arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
+      arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
       color = rl.Color(255, 255, 255, int(icon_alpha))
-      if set_speed_rounded < limit_rounded:
-        arrow_y = sign_rect.y + (sign_rect.height - self.arrow_up.height) / 2
-        rl.draw_texture(self.arrow_up, int(arrow_x), int(arrow_y), color)
-      elif set_speed_rounded > limit_rounded:
-        arrow_y = sign_rect.y + (sign_rect.height - self.arrow_down.height) / 2
-        rl.draw_texture(self.arrow_down, int(arrow_x), int(arrow_y), color)
+      rl.draw_texture(txt_icon, int(arrow_x), int(arrow_y), color)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)

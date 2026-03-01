@@ -198,7 +198,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
       icon_margin_y = 0
 
     elif event_name == 'speedLimitPreActive':
-      icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper_mici(self)
+      icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper(self)
 
     else:
       self._turn_signal_timer = 0.0
