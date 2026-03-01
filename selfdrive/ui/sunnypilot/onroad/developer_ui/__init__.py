@@ -18,12 +18,10 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
-DEVELOPER_UI_BOTTOM_BAR_HEIGHT = 61
-
 
 def get_bottom_dev_ui_offset():
   if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
-    return DEVELOPER_UI_BOTTOM_BAR_HEIGHT
+    return 60
   return 0
 
 
