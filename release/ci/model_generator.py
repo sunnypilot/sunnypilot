@@ -1,10 +1,46 @@
 import os
+import pickle
 import sys
 import hashlib
 import json
 import re
 from pathlib import Path
 from datetime import datetime, UTC
+
+REQUIRED_OUTPUT_KEYS = frozenset({
+  "plan",
+  "lane_lines",
+  "road_edges",
+  "lead",
+  "desire_state",
+  "desire_pred",
+  "meta",
+  "lead_prob",
+  "lane_lines_prob",
+  "pose",
+  "wide_from_device_euler",
+  "road_transform",
+  "hidden_state",
+})
+OPTIONAL_OUTPUT_KEYS = frozenset({
+  "planplus",
+  "sim_pose",
+  "desired_curvature",
+})
+
+
+def validate_model_outputs(metadata_paths: list[Path]) -> None:
+  combined_keys: set[str] = set()
+  for path in metadata_paths:
+    with open(path, "rb") as f:
+      metadata = pickle.load(f)
+    combined_keys.update(metadata.get("output_slices", {}).keys())
+  missing = REQUIRED_OUTPUT_KEYS - combined_keys
+  if missing:
+    raise ValueError(f"Combined model metadata is missing required output keys: {sorted(missing)}")
+  detected_optional = sorted(OPTIONAL_OUTPUT_KEYS & combined_keys)
+  if detected_optional:
+    print(f"Optional output keys detected: {detected_optional}")
 
 
 def create_short_name(full_name):
@@ -124,8 +160,18 @@ if __name__ == "__main__":
   parser.add_argument("--output-dir", default="./output", help="Output directory for metadata")
   parser.add_argument("--custom-name", help="Custom display name for the model")
   parser.add_argument("--is-20hz", action="store_true", help="Whether this is a 20Hz model")
+  parser.add_argument("--validate-only", action="store_true")
   parser.add_argument("--upstream-branch", default="unknown", help="Upstream branch name")
   args = parser.parse_args()
+
+  if args.validate_only:
+    metadata_paths = glob.glob(os.path.join(args.model_dir, "*_metadata.pkl"))
+    if not metadata_paths:
+      print(f"No metadata files found in {args.model_dir}", file=sys.stderr)
+      sys.exit(1)
+    validate_model_outputs([Path(p) for p in metadata_paths])
+    print(f"Validated {len(metadata_paths)} metadata files successfully.")
+    sys.exit(0)
 
   # Find all ONNX files in the given directory
   model_paths = glob.glob(os.path.join(args.model_dir, "*.onnx"))
