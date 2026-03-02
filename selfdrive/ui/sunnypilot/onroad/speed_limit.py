@@ -4,19 +4,21 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+
 from dataclasses import dataclass
-import math
+from enum import StrEnum
 import pyray as rl
 
 from cereal import custom
 from openpilot.common.constants import CV
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.onroad.hud_renderer import UI_CONFIG
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
+from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.sunnypilot.lib.utils import AlertFadeAnimator
 from openpilot.system.ui.widgets import Widget
 
 METER_TO_FOOT = 3.28084
@@ -33,16 +35,65 @@ SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 class Colors:
   WHITE = rl.WHITE
   BLACK = rl.BLACK
-  RED = rl.RED
+  RED = rl.Color(235, 32, 32, 255)
   GREY = rl.Color(145, 155, 149, 255)
   DARK_GREY = rl.Color(77, 77, 77, 255)
   SUB_BG = rl.Color(0, 0, 0, 180)
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
 
 
-class SpeedLimitRenderer(Widget):
+class IconSide(StrEnum):
+  left = 'left'
+  right = 'right'
+
+
+class SpeedLimitAlertRenderer:
+  ARROW_SIZE = 90 if HARDWARE.get_device_type() == 'mici' else 200
+
   def __init__(self):
-    super().__init__()
+    self.arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", self.ARROW_SIZE, self.ARROW_SIZE)
+    self.arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", self.ARROW_SIZE, self.ARROW_SIZE)
+
+    blank_image = rl.gen_image_color(self.ARROW_SIZE, self.ARROW_SIZE, rl.Color(0, 0, 0, 0))
+    self.arrow_blank = rl.load_texture_from_image(blank_image)
+    rl.unload_image(blank_image)
+
+    self._pre_active_fade = AlertFadeAnimator(gui_app.target_fps, duration_on=0.75, rc=0.05)
+
+  def update(self):
+    assist_state = ui_state.sm['longitudinalPlanSP'].speedLimit.assist.state
+    self._pre_active_fade.update(assist_state == AssistState.preActive)
+
+  def speed_limit_pre_active_icon_helper(self):
+    icon_alpha = max(0.0, min(self._pre_active_fade.alpha * 255.0, 255.0))
+    txt_icon = self.arrow_blank
+    icon_margin_x = 10
+    icon_margin_y = 18
+
+    if icon_alpha > 0:
+      speed_conv = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
+      speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
+
+      v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
+      set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+      if not ui_state.is_metric:
+        set_speed *= KM_TO_MILE
+
+      set_speed_round = round(set_speed)
+      speed_limit_round = round(speed_limit_final_last * speed_conv)
+
+      if set_speed_round < speed_limit_round:
+        txt_icon = self.arrow_up
+      elif set_speed_round > speed_limit_round:
+        txt_icon = self.arrow_down
+
+    return IconSide.right, txt_icon, icon_alpha, icon_margin_x, icon_margin_y
+
+
+class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
+  def __init__(self):
+    Widget.__init__(self)
+    SpeedLimitAlertRenderer.__init__(self)
 
     self.speed_limit = 0.0
     self.speed_limit_last = 0.0
@@ -59,7 +110,6 @@ class SpeedLimitRenderer(Widget):
     self.speed_limit_ahead_valid = False
     self.speed_limit_ahead_frame = 0
 
-    self.assist_frame = 0
     self.is_cruise_set: bool = False
     self.is_cruise_available: bool = True
     self.set_speed: float = SET_SPEED_NA
@@ -69,17 +119,13 @@ class SpeedLimitRenderer(Widget):
     self.font_bold = gui_app.font(FontWeight.BOLD)
     self.font_demi = gui_app.font(FontWeight.SEMI_BOLD)
     self.font_norm = gui_app.font(FontWeight.NORMAL)
-    self._sign_alpha_filter = FirstOrderFilter(1.0, 0.5, 1 / gui_app.target_fps)
-
-    arrow_size = 90
-    self._arrow_up = gui_app.texture("../../sunnypilot/selfdrive/assets/img_plus_arrow_up.png", arrow_size, arrow_size)
-    self._arrow_down = gui_app.texture("../../sunnypilot/selfdrive/assets/img_minus_arrow_down.png", arrow_size, arrow_size)
 
   @property
   def speed_conv(self):
     return CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
 
   def update(self):
+    SpeedLimitAlertRenderer.update(self)
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       self.set_speed = SET_SPEED_NA
@@ -142,13 +188,7 @@ class SpeedLimitRenderer(Widget):
 
     sign_rect = rl.Rectangle(x, y, width, UI_CONFIG.set_speed_height + 6 * 2)
 
-    if self.speed_limit_assist_state == AssistState.preActive:
-      self.assist_frame += 1
-      pulse_value = 0.65 + 0.35 * math.sin(self.assist_frame * math.pi / gui_app.target_fps)
-      alpha = self._sign_alpha_filter.update(pulse_value)
-    else:
-      self.assist_frame = 0
-      alpha = self._sign_alpha_filter.update(1.0)
+    alpha = self._pre_active_fade.alpha
 
     if ui_state.speed_limit_mode != SpeedLimitMode.off:
       self._draw_sign_main(sign_rect, alpha)
@@ -180,43 +220,30 @@ class SpeedLimitRenderer(Widget):
       self._render_mutcd(rect, limit_str, sub_text, txt_color, has_limit, alpha)
 
   def _draw_pre_active_arrow(self, sign_rect):
-    set_speed_rounded = round(self.set_speed)
-    limit_rounded = round(self.speed_limit_final_last)
-
-    bounce_frequency = 2.0 * math.pi / (gui_app.target_fps * 2.5)
-    bounce_offset = int(20 * math.sin(self.assist_frame * bounce_frequency))
-
-    sign_margin = 12
-    arrow_spacing = int(sign_margin * 1.4)
-    arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
-
-    if set_speed_rounded < limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self._arrow_up.height) / 2 + bounce_offset
-      rl.draw_texture(self._arrow_up, int(arrow_x), int(arrow_y), rl.WHITE)
-    elif set_speed_rounded > limit_rounded:
-      arrow_y = sign_rect.y + (sign_rect.height - self._arrow_down.height) / 2 - bounce_offset
-      rl.draw_texture(self._arrow_down, int(arrow_x), int(arrow_y), rl.WHITE)
+    _, txt_icon, icon_alpha, _, _ = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper(self)
+    if icon_alpha > 0 and txt_icon != self.arrow_blank:
+      sign_margin = 12
+      arrow_spacing = int(sign_margin * 1.4)
+      arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
+      arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
+      color = rl.Color(255, 255, 255, int(icon_alpha))
+      rl.draw_texture(txt_icon, int(arrow_x), int(arrow_y), color)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)
     radius = (rect.width + 18) / 2
 
-    white = rl.Color(255, 255, 255, int(255 * alpha))
-    red = rl.Color(255, 0, 0, int(255 * alpha))
-
-    if hasattr(color, 'r'):
-      text_color = rl.Color(color.r, color.g, color.b, int(255 * alpha))
-    else:
-      text_color = rl.Color(color[0], color[1], color[2], int(255 * alpha))
-
-    black = rl.Color(0, 0, 0, int(255 * alpha))
-    dark_grey = rl.Color(77, 77, 77, int(255 * alpha))
+    white = rl.color_alpha(Colors.WHITE, alpha)
+    red = rl.color_alpha(Colors.RED, alpha)
+    black = rl.color_alpha(Colors.BLACK, alpha)
+    dark_grey = rl.color_alpha(Colors.DARK_GREY, alpha)
+    text_color = rl.color_alpha(color, alpha)
 
     rl.draw_circle_v(center, radius, white)
-    rl.draw_ring(center, radius * 0.80, radius, 0, 360, 36, red)
+    rl.draw_ring(center, radius * 0.75, radius, 0, 360, 36, red)
 
-    f_size = 70 if len(val) >= 3 else 85
-    self._draw_text_centered(self.font_bold, val, f_size, center, text_color)
+    font_size = 70 if len(val) >= 3 else 85
+    self._draw_text_centered(self.font_bold, val, font_size, center, text_color)
 
     if sub and has_limit:
       s_radius = radius * 0.4
@@ -225,22 +252,23 @@ class SpeedLimitRenderer(Widget):
       rl.draw_circle_v(s_center, s_radius, black)
       rl.draw_ring(s_center, s_radius - 3, s_radius, 0, 360, 36, dark_grey)
 
-      f_scale = 0.5 if len(sub) < 3 else 0.45
-      self._draw_text_centered(self.font_bold, sub, int(s_radius * 2 * f_scale), s_center, white)
+      font_scale = 0.5 if len(sub) < 3 else 0.45
+      self._draw_text_centered(self.font_bold, sub, int(s_radius * 2 * font_scale), s_center, white)
 
   def _render_mutcd(self, rect, val, sub, color, has_limit, alpha=1.0):
-    white = rl.Color(255, 255, 255, int(255 * alpha))
-    black = rl.Color(0, 0, 0, int(255 * alpha))
-    dark_grey = rl.Color(77, 77, 77, int(255 * alpha))
-
-    if hasattr(color, 'r'):
-      text_color = rl.Color(color.r, color.g, color.b, int(255 * alpha))
-    else:
-      text_color = rl.Color(color[0], color[1], color[2], int(255 * alpha))
+    white = rl.color_alpha(Colors.WHITE, alpha)
+    black = rl.color_alpha(Colors.BLACK, alpha)
+    dark_grey = rl.color_alpha(Colors.DARK_GREY, alpha)
+    text_color = rl.color_alpha(color, alpha)
 
     rl.draw_rectangle_rounded(rect, 0.35, 10, white)
+
     inner = rl.Rectangle(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20)
-    rl.draw_rectangle_rounded_lines_ex(inner, 0.35, 10, 4, black)
+    outer_radius = 0.35 * rect.width / 2.0
+    inner_radius = outer_radius - 10.0
+    inner_roundness = inner_radius / (inner.width / 2.0)
+
+    rl.draw_rectangle_rounded_lines_ex(inner, inner_roundness, 10, 4, black)
 
     self._draw_text_centered(self.font_demi, "SPEED", 40, rl.Vector2(rect.x + rect.width / 2, rect.y + 40), black)
     self._draw_text_centered(self.font_demi, "LIMIT", 40, rl.Vector2(rect.x + rect.width / 2, rect.y + 80), black)

@@ -53,7 +53,7 @@ class DummyModelRunner:
       self.is_20hz = False
 
   # Minimal prepare/run methods so ModelState can be run without actually running the model
-  def prepare_inputs(self, imgs_cl, numpy_inputs, frames):
+  def prepare_inputs(self, numpy_inputs):
     return None
 
   def run_model(self):
@@ -105,7 +105,7 @@ def get_expected_indices(shape, constants, mode, key=None):
 
 @pytest.mark.parametrize("shapes,mode", SHAPE_MODE_PARAMS, indirect=["shapes"])
 def test_buffer_shapes_and_indices(shapes, mode, apply_patches):
-  state = ModelState(None)
+  state = ModelState()
   constants = DummyModelRunner(shapes).constants
   for key in shapes:
     buf = state.temporal_buffers.get(key, None)
@@ -236,7 +236,7 @@ def dynamic_buffer_update(state, key, new_val, mode):
 @pytest.mark.parametrize("shapes,mode", SHAPE_MODE_PARAMS, indirect=["shapes"])
 @pytest.mark.parametrize("key", ["desire", "features_buffer", "prev_desired_curv"])
 def test_buffer_update_equivalence(shapes, mode, key, apply_patches):
-  state = ModelState(None)
+  state = ModelState()
   if key == "desire":
     desire_keys = [k for k in shapes.keys() if k.startswith('desire')]
     if desire_keys:
