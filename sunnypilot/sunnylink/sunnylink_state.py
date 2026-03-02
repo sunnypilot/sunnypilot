@@ -109,6 +109,8 @@ class SunnylinkState:
     self.sunnylink_dongle_id = self._params.get("SunnylinkDongleId")
     self._api = SunnylinkApi(self.sunnylink_dongle_id)
 
+    self._panel_open = False
+
     self._load_initial_state()
 
   def _load_initial_state(self) -> None:
@@ -166,9 +168,14 @@ class SunnylinkState:
 
   def _worker_thread(self) -> None:
     while self._running:
-      if self.is_connected():
-        self._fetch_roles()
-        self._fetch_users()
+      with self._lock:
+        panel_open = self._panel_open
+
+      if panel_open:
+        self._sm.update()
+        if self.is_connected():
+          self._fetch_roles()
+          self._fetch_users()
 
       for _ in range(int(self.FETCH_INTERVAL / self.SLEEP_INTERVAL)):
         if not self._running:
@@ -219,6 +226,10 @@ class SunnylinkState:
       return rl.Color(147, 112, 219, 255)
     else:
       return style.ITEM_TEXT_VALUE_COLOR
+
+  def set_settings_open(self, _open: bool) -> None:
+    with self._lock:
+      self._panel_open = _open
 
   def __del__(self):
     self.stop()

@@ -26,6 +26,7 @@ class OnroadTimerStatus(Enum):
 
 class UIStateSP:
   def __init__(self):
+    self.CP_SP: custom.CarParamsSP | None = None
     self.params = Params()
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
@@ -38,6 +39,9 @@ class UIStateSP:
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
     self.reset_onroad_sleep_timer()
+    self.CP_SP: custom.CarParamsSP | None = None
+    self.has_icbm: bool = False
+    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -120,28 +124,33 @@ class UIStateSP:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
-    self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
-    self.developer_ui = self.params.get("DevUIInfo")
-    self.rocket_fuel = self.params.get_bool("RocketFuel")
-    self.rainbow_path = self.params.get_bool("RainbowMode")
-    self.chevron_metrics = self.params.get("ChevronInfo")
+      self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.blindspot = self.params.get_bool("BlindSpot")
+    self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
-    self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
-    self.radar_tracks = self.params.get_bool("RadarTracks")
-
-    # Onroad Screen Brightness
+    self.developer_ui = self.params.get("DevUIInfo")
+    self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
+    self.rainbow_path = self.params.get_bool("RainbowMode")
+    self.road_name_toggle = self.params.get_bool("RoadNameToggle")
+    self.rocket_fuel = self.params.get_bool("RocketFuel")
+    self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
+    self.standstill_timer = self.params.get_bool("StandstillTimer")
+    self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
+    self.torque_bar = self.params.get_bool("TorqueBar")
+    self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
+    self.turn_signals = self.params.get_bool("ShowTurnSignals")
+    self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
+    self.radar_tracks = self.params.get_bool("RadarTracks")
 
 
 class DeviceSP:
-  def __init__(self):
-    self._params = Params()
-
-  def _set_awake(self, on: bool):
-    if on and self._params.get("DeviceBootMode", return_default=True) == 1:
-      self._params.put_bool("OffroadMode", True)
+  @staticmethod
+  def _set_awake(on: bool, _ui_state):
+    if _ui_state.boot_offroad_mode == 1 and not on:
+      _ui_state.params.put_bool("OffroadMode", True)
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
@@ -154,14 +163,16 @@ class DeviceSP:
       # For AUTO (Default) and Manual modes (while timer running), use standard brightness
       return cur_brightness
 
-    # 0: Auto (Default), 1: Auto (Dark)
+    # 0: Auto (Default), 1: Auto (Dark), 2: Screen Off
     if _ui_state.onroad_brightness == OnroadBrightness.AUTO:
       return cur_brightness
-    elif _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
+    if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
       return cur_brightness
+    if _ui_state.onroad_brightness == OnroadBrightness.SCREEN_OFF:
+      return 0.0
 
-    # 2-21: 5% - 100%
-    return float((_ui_state.onroad_brightness - 1) * 5)
+    # 3-22: 5% - 100%
+    return float((_ui_state.onroad_brightness - 2) * 5)
 
   @staticmethod
   def set_min_onroad_brightness(_ui_state, min_brightness: int) -> int:

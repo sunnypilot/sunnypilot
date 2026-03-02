@@ -1,18 +1,16 @@
 import pickle
 
 import numpy as np
-from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH, SliceDict
+from openpilot.sunnypilot.models.runners.constants import NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH, SliceDict
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
-from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
-from openpilot.system.hardware import TICI
+from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad, OffPolicyTinygrad
 from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
 from tinygrad.tensor import Tensor
 
 
-class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad):
+class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad, OffPolicyTinygrad):
   """
   A ModelRunner implementation for executing Tinygrad models.
 
@@ -27,6 +25,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     SupercomboTinygrad.__init__(self)
     PolicyTinygrad.__init__(self)
     VisionTinygrad.__init__(self)
+    OffPolicyTinygrad.__init__(self)
     self._constants = ModelConstants
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
@@ -50,40 +49,34 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     self.input_to_dtype = {}
     self.input_to_device = {}
     for idx, name in enumerate(self.model_run.captured.expected_names):
-      info = self.model_run.captured.expected_st_vars_dtype_device[idx]
+      info = self.model_run.captured.expected_input_info[idx]
       self.input_to_dtype[name] = info[2]  # dtype
       self.input_to_device[name] = info[3]  # device
+    self._policy_cached = False
 
   @property
   def vision_input_names(self) -> list[str]:
     """Returns the list of vision input names from the input shapes."""
     return [name for name in self.input_shapes.keys() if 'img' in name]
 
-  def prepare_vision_inputs(self, imgs_cl: CLMemDict, frames: FrameDict):
-    """Prepares vision (image) inputs as Tinygrad Tensors."""
-    for key in imgs_cl:
-      if TICI and key not in self.inputs:
-        # On TICI, directly use OpenCL memory address for efficiency via QCOM extensions
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      elif not TICI:
-        # On other platforms, copy data from CL buffer to a numpy array first
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
-        self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
   def prepare_policy_inputs(self, numpy_inputs: NumpyDict):
-    """Prepares non-image (policy) inputs as Tinygrad Tensors."""
-    for key, value in numpy_inputs.items():
-      self.inputs[key] = Tensor(value, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
+    if not self._policy_cached:
+      for key, value in numpy_inputs.items():
+        self.inputs[key] = Tensor(value, device='NPY').realize()
+      self._policy_cached = True
 
-  def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
+  def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
     """Prepares all vision and policy inputs for the model."""
-    self.prepare_vision_inputs(imgs_cl, frames)
     self.prepare_policy_inputs(numpy_inputs)
+    for key in self.vision_input_names:
+      if key in self.inputs:
+        self.inputs[key] = self.inputs[key].cast(self.input_to_dtype[key])
     return self.inputs
 
   def _run_model(self) -> NumpyDict:
     """Runs the Tinygrad model inference and parses the outputs."""
-    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy()
+    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy().flatten()
     return self._parse_outputs(outputs)
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
@@ -106,13 +99,23 @@ class TinygradSplitRunner(ModelRunner):
     self.is_20hz_3d = True
     self.vision_runner = TinygradRunner(ModelType.vision)
     self.policy_runner = TinygradRunner(ModelType.policy)
+    self.off_policy_runner = TinygradRunner(ModelType.offPolicy) if self.models.get(ModelType.offPolicy) else None
     self._constants = SplitModelConstants
 
   def _run_model(self) -> NumpyDict:
     """Runs both vision and policy models and merges their parsed outputs."""
     policy_output = self.policy_runner.run_model()
     vision_output = self.vision_runner.run_model()
-    return {**policy_output, **vision_output} # Combine results
+    outputs = {**policy_output, **vision_output}
+
+    if self.off_policy_runner:
+      off_policy_output = self.off_policy_runner.run_model()
+      outputs.update(off_policy_output)
+
+    if 'planplus' in outputs and 'plan' in outputs:
+      outputs['plan'] = outputs['plan'] + outputs['planplus']
+
+    return outputs
 
   @property
   def vision_input_names(self) -> list[str]:
@@ -122,18 +125,31 @@ class TinygradSplitRunner(ModelRunner):
   @property
   def input_shapes(self) -> ShapeDict:
     """Returns the combined input shapes from both vision and policy models."""
-    return {**self.policy_runner.input_shapes, **self.vision_runner.input_shapes}
+    shapes = {**self.policy_runner.input_shapes, **self.vision_runner.input_shapes}
+    if self.off_policy_runner:
+      shapes.update(self.off_policy_runner.input_shapes)
+    return shapes
 
   @property
   def output_slices(self) -> SliceDict:
     """Returns the combined output slices from both vision and policy models."""
-    return {**self.policy_runner.output_slices, **self.vision_runner.output_slices}
+    slices = {**self.policy_runner.output_slices, **self.vision_runner.output_slices}
+    if self.off_policy_runner:
+      slices.update(self.off_policy_runner.output_slices)
+    return slices
 
-  def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
+  def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
     """Prepares inputs for both vision and policy models."""
     # Policy inputs only depend on numpy_inputs
     self.policy_runner.prepare_policy_inputs(numpy_inputs)
-    # Vision inputs depend on imgs_cl and frames
-    self.vision_runner.prepare_vision_inputs(imgs_cl, frames)
-    # Return combined inputs (though they are stored within respective runners)
-    return {**self.policy_runner.inputs, **self.vision_runner.inputs}
+
+    for key in self.vision_input_names:
+      if key in self.inputs:
+        self.vision_runner.inputs[key] = self.inputs[key].cast(self.vision_runner.input_to_dtype[key])
+
+    inputs = {**self.policy_runner.inputs, **self.vision_runner.inputs}
+
+    if self.off_policy_runner:
+      self.off_policy_runner.prepare_policy_inputs(numpy_inputs)
+      inputs.update(self.off_policy_runner.inputs)
+    return inputs

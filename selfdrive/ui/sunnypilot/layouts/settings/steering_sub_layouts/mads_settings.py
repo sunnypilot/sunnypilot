@@ -9,6 +9,7 @@ import pyray as rl
 
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
@@ -90,12 +91,12 @@ class MadsSettingsLayout(Widget):
       if bundle:
         brand = bundle.get("brand", "")
     if not brand:
-      brand = ui_state.CP.brand if ui_state.CP else ""
+      brand = ui_state.CP.brand if ui_state.CP is not None else ""
 
     if brand == "rivian":
       return True
     elif brand == "tesla":
-      return not (ui_state.CP_SP and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
+      return not (ui_state.CP_SP is not None and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
     return False
 
   def _update_steering_mode_description(self, button_index: int):
@@ -112,7 +113,7 @@ class MadsSettingsLayout(Widget):
     if self._mads_limited_settings():
       ui_state.params.remove("MadsMainCruiseAllowed")
       ui_state.params.put_bool("MadsUnifiedEngagementMode", True)
-      ui_state.params.put("MadsSteeringMode", 2)
+      ui_state.params.put("MadsSteeringMode", MadsSteeringModeOnBrake.DISENGAGE)
 
       self._main_cruise_toggle.action_item.set_enabled(False)
       self._main_cruise_toggle.action_item.set_state(False)
@@ -122,9 +123,9 @@ class MadsSettingsLayout(Widget):
       self._unified_engagement_toggle.action_item.set_state(True)
       self._unified_engagement_toggle.set_description("<b>" + DEFAULT_TO_ON + "</b><br>" + MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
 
-      self._steering_mode.action_item.set_enabled(False)
       self._steering_mode.set_description(STATUS_DISENGAGE_ONLY)
-      self._steering_mode.action_item.set_selected_button(2)
+      self._steering_mode.action_item.set_selected_button(MadsSteeringModeOnBrake.DISENGAGE)
+      self._steering_mode.action_item.set_enabled_buttons({MadsSteeringModeOnBrake.DISENGAGE})
     else:
       self._main_cruise_toggle.action_item.set_enabled(True)
       self._main_cruise_toggle.set_description(MADS_MAIN_CRUISE_BASE_DESC)
@@ -133,3 +134,4 @@ class MadsSettingsLayout(Widget):
       self._unified_engagement_toggle.set_description(MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC)
 
       self._steering_mode.action_item.set_enabled(True)
+      self._steering_mode.action_item.set_enabled_buttons(None)
