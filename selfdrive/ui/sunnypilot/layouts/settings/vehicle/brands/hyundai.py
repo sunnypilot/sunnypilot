@@ -32,7 +32,7 @@ class HyundaiSettings(BrandSettings):
     if bundle:
       platform = bundle.get("platform")
       self.alpha_long_available = CAR[platform] not in (UNSUPPORTED_LONGITUDINAL_CAR | CANFD_UNSUPPORTED_LONGITUDINAL_CAR)
-    elif ui_state.CP:
+    elif ui_state.CP is not None:
       self.alpha_long_available = ui_state.CP.alphaLongitudinalAvailable
 
     tuning_param = int(ui_state.params.get("HyundaiLongitudinalTuning") or "0")

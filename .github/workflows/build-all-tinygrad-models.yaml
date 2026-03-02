@@ -140,7 +140,7 @@ jobs:
         run: |
           echo '${{ needs.setup.outputs.model_matrix }}' > matrix.json
           built=(); while IFS= read -r line; do built+=("$line"); done < <(
-            ls output | sed -E 's/^model-//' | sed -E 's/-[0-9]+$//' | sed -E 's/ \([^)]*\)//' | awk '{gsub(/^ +| +$/, ""); print}'
+            find output -maxdepth 1 -name 'model-*' -printf "%f\n" | sed -E 's/^model-//' | sed -E 's/-[0-9]+$//' | sed -E 's/ \([^)]*\)//' | awk '{gsub(/^ +| +$/, ""); print}'
           )
           jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
             'map(select(.display_name as $n | ($built | index($n | gsub("^ +| +$"; "")) | not)))' matrix.json > retry_matrix.json
@@ -168,6 +168,7 @@ jobs:
     if: ${{ !cancelled() && (needs.get_and_build.result != 'failure' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '')) }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       max-parallel: 1
       matrix:
         model: ${{ fromJson(needs.setup.outputs.model_matrix) }}

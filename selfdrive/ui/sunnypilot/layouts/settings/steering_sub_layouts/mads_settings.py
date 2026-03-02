@@ -91,12 +91,12 @@ class MadsSettingsLayout(Widget):
       if bundle:
         brand = bundle.get("brand", "")
     if not brand:
-      brand = ui_state.CP.brand if ui_state.CP else ""
+      brand = ui_state.CP.brand if ui_state.CP is not None else ""
 
     if brand == "rivian":
       return True
     elif brand == "tesla":
-      return not (ui_state.CP_SP and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
+      return not (ui_state.CP_SP is not None and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
     return False
 
   def _update_steering_mode_description(self, button_index: int):
