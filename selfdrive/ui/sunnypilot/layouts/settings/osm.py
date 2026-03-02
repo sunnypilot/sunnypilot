@@ -56,7 +56,7 @@ class OSMLayout(Widget):
     self.items = [self._mapd_version, self._delete_maps_btn, self._progress, self._update_btn, self._country_btn, self._state_btn]
 
   def _show_confirm(self, msg, confirm_text, func):
-    gui_app.set_modal_overlay(ConfirmDialog(msg, confirm_text), lambda res: func() if res == DialogResult.CONFIRM else None)
+    gui_app.push_widget(ConfirmDialog(msg, confirm_text, callback=lambda res: func() if res == DialogResult.CONFIRM else None))
 
   def calculate_size(self):
     total_size = 0
@@ -150,7 +150,7 @@ class OSMLayout(Widget):
 
     dialog = TreeOptionDialog(tr(f"Select {region_type}"), [TreeFolder(folder="", nodes=locations)], current_ref=current, search_prompt="Perform a search")
     dialog.on_exit = lambda res: self._handle_region_selection(region_type, locations, key, res, dialog.selection_ref)
-    gui_app.set_modal_overlay(dialog, callback=lambda res: self._handle_region_selection(region_type, locations, key, res, dialog.selection_ref))
+    gui_app.push_widget(dialog)
 
   def _update_labels(self):
     downloading = bool(self._mem_params.get("OSMDownloadLocations"))

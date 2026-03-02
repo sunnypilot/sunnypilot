@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from enum import IntEnum
+
 import pyray as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
@@ -17,18 +19,25 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 
-class DeveloperUiRenderer(Widget):
-  DEV_UI_OFF = 0
-  DEV_UI_BOTTOM = 1
-  DEV_UI_RIGHT = 2
-  DEV_UI_BOTH = 3
-  BOTTOM_BAR_HEIGHT = 61
+def get_bottom_dev_ui_offset():
+  if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
+    return 60
+  return 0
 
+
+class DeveloperUiState(IntEnum):
+  OFF = 0
+  BOTTOM = 1
+  RIGHT = 2
+  BOTH = 3
+
+
+class DeveloperUiRenderer(Widget):
   def __init__(self):
     super().__init__()
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
-    self.dev_ui_mode = self.DEV_UI_OFF
+    self.dev_ui_mode = DeveloperUiState.OFF
 
     self.rel_dist_elem = RelDistElement()
     self.rel_speed_elem = RelSpeedElement()
@@ -45,28 +54,22 @@ class DeveloperUiRenderer(Widget):
     self.bearing_elem = BearingDegElement()
     self.altitude_elem = AltitudeElement()
 
-  @staticmethod
-  def get_bottom_dev_ui_offset():
-    if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_BOTTOM, DeveloperUiRenderer.DEV_UI_BOTH):
-      return DeveloperUiRenderer.BOTTOM_BAR_HEIGHT
-    return 0
-
   def _update_state(self) -> None:
     self.dev_ui_mode = ui_state.developer_ui
 
   def _render(self, rect: rl.Rectangle) -> None:
-    if self.dev_ui_mode == self.DEV_UI_OFF:
+    if self.dev_ui_mode == DeveloperUiState.OFF:
       return
 
     sm = ui_state.sm
     if sm.recv_frame["carState"] < ui_state.started_frame:
       return
 
-    if self.dev_ui_mode == self.DEV_UI_BOTTOM:
+    if self.dev_ui_mode == DeveloperUiState.BOTTOM:
       self._draw_bottom_dev_ui(rect)
-    elif self.dev_ui_mode == self.DEV_UI_RIGHT:
+    elif self.dev_ui_mode == DeveloperUiState.RIGHT:
       self._draw_right_dev_ui(rect)
-    elif self.dev_ui_mode == self.DEV_UI_BOTH:
+    elif self.dev_ui_mode == DeveloperUiState.BOTH:
       self._draw_right_dev_ui(rect)
       self._draw_bottom_dev_ui(rect)
 
