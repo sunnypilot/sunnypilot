@@ -24,4 +24,5 @@ class HudRendererSP(HudRenderer):
     self.blind_spot_indicators.render(rect)
 
   def _has_blind_spot_detected(self) -> bool:
+
     return self.blind_spot_indicators.detected
