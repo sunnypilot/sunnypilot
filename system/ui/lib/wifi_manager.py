@@ -801,6 +801,11 @@ class WifiManager:
           time.sleep(5)
           cloudlog.warning("net.ipv4.ip_forward = 0")
           subprocess.run(["sudo", "sysctl", "net.ipv4.ip_forward=0"], check=False)
+        else:
+          nat_rule = ["POSTROUTING", "-t", "nat", "-s", "192.168.43.0/24", "-o", "wwan0", "-j", "MASQUERADE"]
+          rule_check = subprocess.run(["sudo", "iptables-legacy", "-C", *nat_rule], check=False)
+          if rule_check.returncode != 0:
+            subprocess.run(["sudo", "iptables-legacy", "-A", *nat_rule], check=False)
       else:
         self._deactivate_connection(self._tethering_ssid)
 
