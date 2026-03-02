@@ -22,10 +22,12 @@ NAV_BTN_HEIGHT = 110
 PANEL_MARGIN = 50
 
 # Colors
-SIDEBAR_COLOR = rl.BLACK
+SIDEBAR_COLOR = rl.Color(45, 45, 45, 255)  # Dark grey (matching main sidebar)
 PANEL_COLOR = rl.Color(41, 41, 41, 255)
-CLOSE_BTN_COLOR = rl.Color(41, 41, 41, 255)
-CLOSE_BTN_PRESSED = rl.Color(59, 59, 59, 255)
+NAV_BTN_COLOR = rl.Color(60, 60, 60, 255)  # Medium grey for navigation buttons
+NAV_BTN_PRESSED = rl.Color(75, 75, 75, 255)  # Slightly lighter when pressed
+CLOSE_BTN_COLOR = rl.Color(60, 60, 60, 255)  # Medium grey for close button
+CLOSE_BTN_PRESSED = rl.Color(75, 75, 75, 255)  # Slightly lighter when pressed
 TEXT_NORMAL = rl.Color(128, 128, 128, 255)
 TEXT_SELECTED = rl.WHITE
 
@@ -93,7 +95,7 @@ class SettingsLayout(Widget):
     pressed = (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT) and
                rl.check_collision_point_rec(rl.get_mouse_position(), close_btn_rect))
     close_color = CLOSE_BTN_PRESSED if pressed else CLOSE_BTN_COLOR
-    rl.draw_rectangle_rounded(close_btn_rect, 1.0, 20, close_color)
+    rl.draw_rectangle_rounded(close_btn_rect, 0.2, 10, close_color)  # Match button style
 
     icon_color = rl.Color(255, 255, 255, 255) if not pressed else rl.Color(220, 220, 220, 255)
     icon_dest = rl.Rectangle(
@@ -116,17 +118,32 @@ class SettingsLayout(Widget):
 
     # Navigation buttons
     y = rect.y + 300
+    mouse_pos = rl.get_mouse_position()
+    mouse_down = rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT)
+    
     for panel_type, panel_info in self._panels.items():
       button_rect = rl.Rectangle(rect.x + 50, y, rect.width - 150, NAV_BTN_HEIGHT)
 
-      # Button styling
+      # Button styling - draw rounded rectangle background
       is_selected = panel_type == self._current_panel
-      text_color = TEXT_SELECTED if is_selected else TEXT_NORMAL
+      is_pressed = mouse_down and rl.check_collision_point_rec(mouse_pos, button_rect)
+      
+      # Choose button background color
+      if is_pressed:
+        btn_bg_color = NAV_BTN_PRESSED
+      else:
+        btn_bg_color = NAV_BTN_COLOR
+      
+      # Draw rounded rectangle button background
+      rl.draw_rectangle_rounded(button_rect, 0.2, 10, btn_bg_color)
+      
       # Draw button text (right-aligned)
+      text_color = TEXT_SELECTED if is_selected else TEXT_NORMAL
       panel_name = tr(panel_info.name)
       text_size = measure_text_cached(self._font_medium, panel_name, 65)
       text_pos = rl.Vector2(
-        button_rect.x + button_rect.width - text_size.x, button_rect.y + (button_rect.height - text_size.y) / 2
+        button_rect.x + button_rect.width - text_size.x - 20,  # Add padding from right edge
+        button_rect.y + (button_rect.height - text_size.y) / 2
       )
       rl.draw_text_ex(self._font_medium, panel_name, text_pos, 65, 0, text_color)
 
