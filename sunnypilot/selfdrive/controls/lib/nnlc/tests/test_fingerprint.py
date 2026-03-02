@@ -1,11 +1,10 @@
-from parameterized import parameterized
-
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.honda.values import CAR as HONDA
 from opendbc.car.hyundai.values import CAR as HYUNDAI
 from opendbc.car.nissan.values import CAR as NISSAN
 from opendbc.car.toyota.values import CAR as TOYOTA
 from opendbc.car.tesla.values import CAR as TESLA
+from openpilot.common.parameterized import parameterized
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 

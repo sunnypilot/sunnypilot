@@ -10,6 +10,7 @@ from openpilot.selfdrive.ui.onroad.hud_renderer import COLORS
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.sunnypilot.lib.utils import AlertFadeAnimator
 from openpilot.system.ui.widgets import Widget
 
 
@@ -18,14 +19,14 @@ class SmartCruiseControlRenderer(Widget):
     super().__init__()
     self.vision_enabled = False
     self.vision_active = False
-    self.vision_frame = 0
     self.map_enabled = False
     self.map_active = False
-    self.map_frame = 0
     self.long_override = False
 
+    self._vision_fade = AlertFadeAnimator(gui_app.target_fps)
+    self._map_fade = AlertFadeAnimator(gui_app.target_fps)
+
     self.font = gui_app.font(FontWeight.BOLD)
-    self.scc_tex = rl.load_render_texture(256, 128)
 
   def update(self):
     sm = ui_state.sm
@@ -42,21 +43,10 @@ class SmartCruiseControlRenderer(Widget):
     if sm.updated["carControl"]:
       self.long_override = sm["carControl"].cruiseControl.override
 
-    if self.vision_active:
-      self.vision_frame += 1
-    else:
-      self.vision_frame = 0
+    self._vision_fade.update(self.vision_active)
+    self._map_fade.update(self.map_active)
 
-    if self.map_active:
-      self.map_frame += 1
-    else:
-      self.map_frame = 0
-
-  @staticmethod
-  def _pulse_element(frame):
-    return not (frame % gui_app.target_fps < (gui_app.target_fps / 2.5))
-
-  def _draw_icon(self, rect_center_x, rect_height, x_offset, y_offset, name):
+  def _draw_icon(self, rect_center_x, rect_height, x_offset, y_offset, name, alpha=1.0):
     text = name
     font_size = 36
     padding_v = 5
@@ -65,44 +55,28 @@ class SmartCruiseControlRenderer(Widget):
     sz = measure_text_cached(self.font, text, font_size)
     box_height = int(sz.y + padding_v * 2)
 
-    texture_width = 256
-    texture_height = 128
-
-    rl.begin_texture_mode(self.scc_tex)
-    rl.clear_background(rl.Color(0, 0, 0, 0))
-
     if self.long_override:
-      box_color = COLORS.OVERRIDE
+      color = COLORS.OVERRIDE
+      box_color = rl.Color(color.r, color.g, color.b, int(alpha * 255))
     else:
-      box_color = rl.Color(0, 255, 0, 255)
+      box_color = rl.Color(0, 255, 0, int(alpha * 255))
 
-    # Center box in texture
-    box_x = (texture_width - box_width) // 2
-    box_y = (texture_height - box_height) // 2
-
-    rl.draw_rectangle_rounded(rl.Rectangle(box_x, box_y, box_width, box_height), 0.2, 10, box_color)
-
-    # Draw text with custom blend mode to punch hole
-    rl.rl_set_blend_factors(rl.RL_ZERO, rl.RL_ONE_MINUS_SRC_ALPHA, 0x8006)
-    rl.rl_set_blend_mode(rl.BLEND_CUSTOM)
-
-    text_pos_x = box_x + (box_width - sz.x) / 2
-    text_pos_y = box_y + (box_height - sz.y) / 2
-
-    rl.draw_text_ex(self.font, text, rl.Vector2(text_pos_x, text_pos_y), font_size, 0, rl.WHITE)
-
-    rl.rl_set_blend_mode(rl.BLEND_ALPHA)  # Reset
-    rl.end_texture_mode()
+    text_color = rl.Color(0, 0, 0, int(alpha * 255))
 
     screen_y = rect_height / 4 + y_offset
 
-    dest_x = rect_center_x + x_offset - texture_width / 2
-    dest_y = screen_y - texture_height / 2
+    box_x = rect_center_x + x_offset - box_width / 2
+    box_y = screen_y - box_height / 2
 
-    src_rect = rl.Rectangle(0, 0, texture_width, -texture_height)
-    dst_rect = rl.Rectangle(dest_x, dest_y, texture_width, texture_height)
+    # Draw rounded background box
+    if alpha > 0.01:
+      rl.draw_rectangle_rounded(rl.Rectangle(box_x, box_y, box_width, box_height), 0.2, 10, box_color)
 
-    rl.draw_texture_pro(self.scc_tex.texture, src_rect, dst_rect, rl.Vector2(0, 0), 0, rl.WHITE)
+      # Draw text centered in the box (black color for contrast against bright green/grey)
+      text_pos_x = box_x + (box_width - sz.x) / 2
+      text_pos_y = box_y + (box_height - sz.y) / 2
+
+      rl.draw_text_ex(self.font, text, rl.Vector2(text_pos_x, text_pos_y), font_size, 0, text_color)
 
   def _render(self, rect: rl.Rectangle):
     x_offset = -260
@@ -122,10 +96,10 @@ class SmartCruiseControlRenderer(Widget):
       y_scc_m = orders[idx]
       idx += 1
 
-    scc_vision_pulse = self._pulse_element(self.vision_frame)
-    if (self.vision_enabled and not self.vision_active) or (self.vision_active and scc_vision_pulse):
-      self._draw_icon(rect.x + rect.width / 2, rect.height, x_offset, y_scc_v, "SCC-V")
+    if self.vision_enabled:
+      alpha = self._vision_fade.alpha if self.vision_active else 1.0
+      self._draw_icon(rect.x + rect.width / 2, rect.height, x_offset, y_scc_v, "SCC-V", alpha)
 
-    scc_map_pulse = self._pulse_element(self.map_frame)
-    if (self.map_enabled and not self.map_active) or (self.map_active and scc_map_pulse):
-      self._draw_icon(rect.x + rect.width / 2, rect.height, x_offset, y_scc_m, "SCC-M")
+    if self.map_enabled:
+      alpha = self._map_fade.alpha if self.map_active else 1.0
+      self._draw_icon(rect.x + rect.width / 2, rect.height, x_offset, y_scc_m, "SCC-M", alpha)

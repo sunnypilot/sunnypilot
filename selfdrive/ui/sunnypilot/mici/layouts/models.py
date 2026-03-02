@@ -10,11 +10,10 @@ from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import NavWidget, Widget
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller import NavScroller
 
 
-class ModelsLayoutMici(NavWidget):
+class ModelsLayoutMici(NavScroller):
   def __init__(self, back_callback: Callable):
     super().__init__()
     self.set_back_callback(back_callback)
@@ -27,8 +26,8 @@ class ModelsLayoutMici(NavWidget):
     self.cancel_download_btn = BigButton(tr("cancel download"), "", "")
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
 
-    self.main_items: list[Widget] = [self.current_model_btn, self.cancel_download_btn]
-    self._scroller = Scroller(self.main_items, snap_items=False)
+    self.main_items = [self.current_model_btn, self.cancel_download_btn]
+    self._scroller.add_widgets(self.main_items)
 
   @property
   def model_manager(self):
@@ -42,7 +41,7 @@ class ModelsLayoutMici(NavWidget):
       folders.setdefault(folder, []).append(bundle)
     return folders
 
-  def _show_selection_view(self, items: list[Widget], back_callback: Callable):
+  def _show_selection_view(self, items, back_callback: Callable):
     self._scroller._items = items
     for item in items:
       item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
@@ -88,7 +87,7 @@ class ModelsLayoutMici(NavWidget):
     self._scroller._items = self.main_items
     self.set_back_callback(self.original_back_callback)
     if self.focused_widget and self.focused_widget in self.main_items:
-      x = self._scroller._pad_start
+      x = self._scroller._pad
       for item in self.main_items:
         if not item.is_visible:
           continue
@@ -113,10 +112,3 @@ class ModelsLayoutMici(NavWidget):
       self.cancel_download_btn.set_visible(False)
     self.current_model_btn.set_enabled(ui_state.is_offroad())
     self.current_model_btn.set_text(tr("current model"))
-
-  def _render(self, rect):
-    self._scroller.render(rect)
-
-  def show_event(self):
-    super().show_event()
-    self._scroller.show_event()
