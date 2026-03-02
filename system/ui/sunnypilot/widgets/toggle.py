@@ -57,3 +57,8 @@ class ToggleSP(Toggle):
     knob_y = self._rect.y + style.TOGGLE_BG_HEIGHT / 2
 
     rl.draw_circle(int(knob_x), int(knob_y), KNOB_RADIUS, knob_color)
+
+    # Keep ToggleSP behavior compatible with base Toggle: report click once.
+    clicked = self._clicked
+    self._clicked = False
+    return clicked
