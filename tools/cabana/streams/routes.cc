@@ -74,7 +74,9 @@ RoutesDialog::RoutesDialog(QWidget *parent) : QDialog(parent) {
   QPointer<RoutesDialog> self = this;
   QtConcurrent::run([self]() {
     std::string result = PyDownloader::getDevices();
-    auto [success, error_code] = checkApiResponse(result);
+    auto response = checkApiResponse(result);
+    bool success = response.first;
+    int error_code = response.second;
     QMetaObject::invokeMethod(qApp, [self, r = QString::fromStdString(result), success, error_code]() {
       if (self) self->parseDeviceList(r, success, error_code);
     }, Qt::QueuedConnection);
@@ -117,7 +119,9 @@ void RoutesDialog::fetchRoutes() {
   QtConcurrent::run([self, did, start_ms, end_ms, preserved, request_id]() {
     std::string result = PyDownloader::getDeviceRoutes(did, start_ms, end_ms, preserved);
     if (!self || self->fetch_id_ != request_id) return;
-    auto [success, error_code] = checkApiResponse(result);
+    auto response = checkApiResponse(result);
+    bool success = response.first;
+    int error_code = response.second;
     QMetaObject::invokeMethod(qApp, [self, r = QString::fromStdString(result), success, error_code, request_id]() {
       if (self && self->fetch_id_ == request_id) self->parseRouteList(r, success, error_code);
     }, Qt::QueuedConnection);
