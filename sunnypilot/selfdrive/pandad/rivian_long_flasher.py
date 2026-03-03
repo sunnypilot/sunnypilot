@@ -74,22 +74,30 @@ def _flash_panda(panda: Panda) -> None:
   panda.reconnect()
 
 
-def flash_rivian_long(panda: Panda) -> None:
+def flash_rivian_long(panda_serials: list[str]) -> list[str]:
   if not os.path.isfile(FW_PATH):
     cloudlog.error(f"Rivian longitudinal upgrade firmware not found at {FW_PATH}")
-    return
+    return panda_serials
 
   if not _is_rivian():
     cloudlog.info("Not a Rivian, skipping longitudinal upgrade...")
-    return
+    return panda_serials
 
-  # only flash external black pandas (HW_TYPE_BLACK = 0x03)
-  if panda.get_type() == b'\x03' and not panda.is_internal():
-    try:
-      _flash_panda(panda)
-    except Exception:
-      cloudlog.exception(f"Failed to flash F4 panda {panda.get_usb_serial()}")
+  remaining_pandas = []
+  for serial in panda_serials:
+    panda = Panda(serial)
+    # only flash external black pandas (HW_TYPE_BLACK = 0x03)
+    if panda.get_type() == b'\x03' and not panda.is_internal():
+      try:
+        _flash_panda(panda)
+      except Exception:
+        cloudlog.exception(f"Failed to flash F4 panda {serial}")
+    else:
+      remaining_pandas.append(serial)
+    panda.close()
+
+  return remaining_pandas
 
 
 if __name__ == '__main__':
-  flash_rivian_long(Panda())
+  flash_rivian_long(Panda.list())

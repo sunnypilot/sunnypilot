@@ -124,14 +124,14 @@ def main() -> None:
         no_internal_panda_count += 1
         continue
 
+      # flash and filter out Rivian longitudinal before stock logic
+      panda_serials = flash_rivian_long(panda_serials)
+
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
 
       # Flash the first panda
       panda_serial = panda_serials[0]
       panda = flash_panda(panda_serial)
-
-      # flash Rivian longitudinal upgrade panda
-      flash_rivian_long(panda)
 
       # Ensure internal panda is present if expected
       if HARDWARE.has_internal_panda() and not panda.is_internal():
