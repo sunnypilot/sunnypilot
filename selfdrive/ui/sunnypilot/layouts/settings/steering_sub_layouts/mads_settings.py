@@ -7,9 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 from collections.abc import Callable
 import pyray as rl
 
-from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake
+from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, mads_limited_settings
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
@@ -85,19 +84,7 @@ class MadsSettingsLayout(Widget):
 
   @staticmethod
   def _mads_limited_settings() -> bool:
-    brand = ""
-    if ui_state.is_offroad():
-      bundle = ui_state.params.get("CarPlatformBundle")
-      if bundle:
-        brand = bundle.get("brand", "")
-    if not brand:
-      brand = ui_state.CP.brand if ui_state.CP is not None else ""
-
-    if brand == "rivian":
-      return True
-    elif brand == "tesla":
-      return not (ui_state.CP_SP is not None and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
-    return False
+    return mads_limited_settings(ui_state)
 
   def _update_steering_mode_description(self, button_index: int):
     base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.")
