@@ -94,6 +94,7 @@ class _Scroller(Widget):
 
     # when not pressed, snap to closest item to be center
     self._scroll_snap_filter = FirstOrderFilter(0.0, 0.05, 1 / gui_app.target_fps)
+    self._snap_ready = False  # skip snap on first layout after show (items have stale positions)
 
     self.scroll_panel = GuiScrollPanel2(self._horizontal, handle_out_of_bounds=not self._snap_items)
     self._scroll_enabled: bool | Callable[[], bool] = True
@@ -207,7 +208,11 @@ class _Scroller(Widget):
 
     if scroll_snap_idx is not None:
       snap_item = visible_items[scroll_snap_idx]
-      if self.is_pressed:
+      if not self._snap_ready:
+        # first layout after show — item positions are stale; skip snap correction
+        self._snap_ready = True
+        self._scroll_snap_filter.x = 0
+      elif self.is_pressed:
         # no snapping until released
         self._scroll_snap_filter.x = 0
       else:
@@ -411,6 +416,11 @@ class _Scroller(Widget):
     self._pending_move.clear()
     self._scrolling_to = None, False
     self._scrolling_to_filter.x = 0.0
+    self._scroll_snap_filter.x = 0.0
+    self._snap_ready = False
+    self.scroll_panel._state = ScrollState.STEADY
+    self.scroll_panel._velocity = 0.0
+    self.scroll_panel._velocity_buffer.clear()
 
   def hide_event(self):
     super().hide_event()
@@ -425,6 +435,15 @@ class Scroller(Widget):
     self._scroller = _Scroller([], **kwargs)
     # pass down enabled to child widget for nav stack
     self._scroller.set_enabled(lambda: self.enabled)
+
+  def add_widget(self, item: Widget) -> None:
+    self._scroller.add_widget(item)
+
+  def add_widgets(self, items: list[Widget]) -> None:
+    self._scroller.add_widgets(items)
+
+  def set_reset_scroll_at_show(self, scroll: bool) -> None:
+    self._scroller.set_reset_scroll_at_show(scroll)
 
   def show_event(self):
     super().show_event()
@@ -441,7 +460,8 @@ class Scroller(Widget):
 class NavScroller(NavWidget, Scroller):
   """Full screen Scroller that properly supports nav stack w/ animations"""
   def __init__(self, **kwargs):
-    super().__init__(**kwargs)
+    super().__init__()  # NavWidget doesn't accept kwargs; Scroller creates a default _scroller via MRO
+    self._scroller = _Scroller([], **kwargs)
     # pass down enabled to child widget for nav stack + disable while swiping away NavWidget
     self._scroller.set_enabled(lambda: self.enabled and not self.is_dismissing)
 
