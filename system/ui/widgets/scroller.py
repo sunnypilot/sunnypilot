@@ -445,6 +445,13 @@ class Scroller(Widget):
   def set_reset_scroll_at_show(self, scroll: bool) -> None:
     self._scroller.set_reset_scroll_at_show(scroll)
 
+  def set_scrolling_enabled(self, enabled) -> None:
+    self._scroller.set_scrolling_enabled(enabled)
+
+  @property
+  def scroll_panel(self):
+    return self._scroller.scroll_panel
+
   def show_event(self):
     super().show_event()
     self._scroller.show_event()

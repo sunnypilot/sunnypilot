@@ -217,7 +217,7 @@ class BigButton(Widget):
 
     - 'off' values are hidden
     - 'on' values show just the key
-    - Other values show 'key • value'
+    - Other values show 'key:value'
     """
     labels = []
     for key, val in entries:
@@ -457,8 +457,12 @@ class BigMultiParamToggle(BigMultiToggle):
     self._params = Params()
     self._load_value()
 
+  def _get_param_index(self) -> int:
+    idx = self._params.get(self._param, return_default=True) or 0
+    return max(0, min(int(idx), len(self._options) - 1))
+
   def _load_value(self):
-    self.set_value(self._options[self._params.get(self._param) or 0])
+    self.set_value(self._options[self._get_param_index()])
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
@@ -466,7 +470,7 @@ class BigMultiParamToggle(BigMultiToggle):
     self._params.put_nonblocking(self._param, new_idx)
 
   def refresh(self):
-    new_value = self._options[self._params.get(self._param) or 0]
+    new_value = self._options[self._get_param_index()]
     if new_value != self.value:
       self.set_value(new_value)
 
@@ -584,7 +588,7 @@ class BigParamOption(BigButton):
     view = NavScroller(scroll_indicator=False, pad=0)
     view.set_back_callback(lambda: self.refresh())
     view.add_widgets([picker])
-    view._scroller.set_scrolling_enabled(False)
+    view.set_scrolling_enabled(False)
     gui_app.push_widget(view)
 
   def create_picker_screen(self):

@@ -136,6 +136,7 @@ class NumberPickerScreen(Widget):
     self._float_param = float_param
     self._unit = unit
     self._item_width = item_width
+    assert step > 0, "step must be positive"
     self._params = Params()
     self._last_center_value: int | None = None
 
@@ -173,7 +174,7 @@ class NumberPickerScreen(Widget):
 
   @property
   def _scroll_panel(self):
-    return self._scroller._scroller.scroll_panel
+    return self._scroller.scroll_panel
 
   def _center_index(self) -> int:
     """Compute center item index from scroll offset (independent of layout timing)."""
@@ -220,6 +221,7 @@ class NumberPickerScreen(Widget):
 
   def hide_event(self):
     super().hide_event()
+    self._scroller.hide_event()
     self._commit_value()
 
   def _update_state(self):
