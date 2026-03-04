@@ -61,7 +61,7 @@ class VisualsLayoutMici(NavScroller):
 
     has_long = ui_state.has_longitudinal_control
     self._chevron_info.set_enabled(has_long)
-    if not has_long and self._prev_has_long is not False:
+    if not has_long and self._prev_has_long is True:
       ui_state.params.put("ChevronInfo", 0)
       self._chevron_info.refresh()
     self._prev_has_long = has_long
