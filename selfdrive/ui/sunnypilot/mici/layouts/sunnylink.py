@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
+from collections.abc import Callable
 
 from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
@@ -20,12 +20,12 @@ from openpilot.system.version import sunnylink_consent_version, sunnylink_consen
 
 
 class SunnylinkLayoutMici(NavScroller):
-  def __init__(self):
+  def __init__(self, back_callback: Callable):
     super().__init__()
+    self.set_back_callback(back_callback)
     self._restore_in_progress = False
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
-    self._prev_sunnylink_enabled = None
 
     self._sunnylink_toggle = BigToggle(text=tr("enable sunnylink"),
                                        initial_state=self._sunnylink_enabled,
@@ -51,14 +51,12 @@ class SunnylinkLayoutMici(NavScroller):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
-    if self._sunnylink_enabled != self._prev_sunnylink_enabled:
-      self._sunnylink_toggle.set_checked(self._sunnylink_enabled)
-      self._sunnylink_pair_button.set_visible(self._sunnylink_enabled)
-      self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
-      self._backup_btn.set_visible(self._sunnylink_enabled)
-      self._restore_btn.set_visible(self._sunnylink_enabled)
-      self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
-      self._prev_sunnylink_enabled = self._sunnylink_enabled
+    self._sunnylink_toggle.set_checked(self._sunnylink_enabled)
+    self._sunnylink_pair_button.set_visible(self._sunnylink_enabled)
+    self._sunnylink_sponsor_button.set_visible(self._sunnylink_enabled)
+    self._backup_btn.set_visible(self._sunnylink_enabled)
+    self._restore_btn.set_visible(self._sunnylink_enabled)
+    self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
     if ui_state.sunnylink_state.is_sponsor():
@@ -199,7 +197,9 @@ class SunnylinkPairBigButton(BigButton):
     dlg: BigDialog | SunnylinkPairingDialog | None = None
     if UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
       dlg = BigDialog(tr("sunnylink Dongle ID not found. Please reboot & try again."), "")
-    else:
-      dlg = SunnylinkPairingDialog(sponsor_pairing=self.sponsor_pairing)
+    elif self.sponsor_pairing:
+      dlg = SunnylinkPairingDialog(sponsor_pairing=True)
+    elif not self.sponsor_pairing:
+      dlg = SunnylinkPairingDialog(sponsor_pairing=False)
     if dlg:
       gui_app.push_widget(dlg)

@@ -14,8 +14,10 @@ from openpilot.system.ui.widgets.scroller import NavScroller
 
 
 class ModelsLayoutMici(NavScroller):
-  def __init__(self):
+  def __init__(self, back_callback: Callable):
     super().__init__()
+    self.set_back_callback(back_callback)
+    self.original_back_callback = back_callback
     self.focused_widget = None
 
     self.current_model_btn = BigButton(tr("current model"), "", "")
@@ -83,7 +85,7 @@ class ModelsLayoutMici(NavScroller):
 
   def _reset_main_view(self):
     self._scroller._items = self.main_items
-    self._back_callback = None
+    self.set_back_callback(self.original_back_callback)
     if self.focused_widget and self.focused_widget in self.main_items:
       x = self._scroller._pad
       for item in self.main_items:
@@ -109,3 +111,4 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_btn.set_value(manager.activeBundle.internalName.lower() if manager.activeBundle else tr("default model"))
       self.cancel_download_btn.set_visible(False)
     self.current_model_btn.set_enabled(ui_state.is_offroad())
+    self.current_model_btn.set_text(tr("current model"))

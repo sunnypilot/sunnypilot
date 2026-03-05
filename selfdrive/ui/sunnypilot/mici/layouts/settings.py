@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.mici.layouts.settings import settings as OP
-from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsBigButton
+from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.cruise import CruiseLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.display import DisplayLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.models import ModelsLayoutMici
@@ -15,39 +15,37 @@ from openpilot.selfdrive.ui.sunnypilot.mici.layouts.trips import TripsLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.visuals import VisualsLayoutMici
 from openpilot.system.ui.lib.application import gui_app
 
-ICON_SIZE = 70
-
 
 class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
 
-    sunnylink_panel = SunnylinkLayoutMici()
-    sunnylink_btn = SettingsBigButton("sunnylink", "", "icons_mici/settings/developer/ssh.png")
+    sunnylink_panel = SunnylinkLayoutMici(back_callback=gui_app.pop_widget)
+    sunnylink_btn = BigButton("sunnylink", "", "icons_mici/settings/developer/ssh.png")
     sunnylink_btn.set_click_callback(lambda: gui_app.push_widget(sunnylink_panel))
 
-    models_panel = ModelsLayoutMici()
-    models_btn = SettingsBigButton("models", "", "../../sunnypilot/selfdrive/assets/offroad/icon_models.png")
+    models_panel = ModelsLayoutMici(back_callback=gui_app.pop_widget)
+    models_btn = BigButton("models", "", "../../sunnypilot/selfdrive/assets/offroad/icon_models.png")
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
     cruise_panel = CruiseLayoutMici()
-    cruise_btn = SettingsBigButton("cruise", "", "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png")
+    cruise_btn = BigButton("cruise", "", "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png")
     cruise_btn.set_click_callback(lambda: gui_app.push_widget(cruise_panel))
 
     steering_panel = SteeringLayoutMici()
-    steering_btn = SettingsBigButton("steering", "", "../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png")
+    steering_btn = BigButton("steering", "", "../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png")
     steering_btn.set_click_callback(lambda: gui_app.push_widget(steering_panel))
 
     display_panel = DisplayLayoutMici()
-    display_btn = SettingsBigButton("display", "", "../../sunnypilot/selfdrive/assets/offroad/icon_display.png")
+    display_btn = BigButton("display", "", "../../sunnypilot/selfdrive/assets/offroad/icon_display.png")
     display_btn.set_click_callback(lambda: gui_app.push_widget(display_panel))
 
     visuals_panel = VisualsLayoutMici()
-    visuals_btn = SettingsBigButton("visuals", "", "../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png")
+    visuals_btn = BigButton("visuals", "", "../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png")
     visuals_btn.set_click_callback(lambda: gui_app.push_widget(visuals_panel))
 
     trips_panel = TripsLayoutMici()
-    trips_btn = SettingsBigButton("trips", "", "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png")
+    trips_btn = BigButton("trips", "", "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png")
     trips_btn.set_click_callback(lambda: gui_app.push_widget(trips_panel))
 
     items = self._scroller._items.copy()
