@@ -283,6 +283,9 @@ class BigButton(Widget):
     font_size = 26
     h_pad = 10
     gap = 8
+    alpha_mult = 1.0 if self.enabled else 0.3
+    badge_bg = rl.Color(BADGE_GREEN_BG.r, BADGE_GREEN_BG.g, BADGE_GREEN_BG.b, int(BADGE_GREEN_BG.a * alpha_mult))
+    badge_fg = rl.Color(BADGE_GREEN_FG.r, BADGE_GREEN_FG.g, BADGE_GREEN_FG.b, int(BADGE_GREEN_FG.a * alpha_mult))
 
     # Measure each badge
     assert self._badge_labels is not None
@@ -324,8 +327,8 @@ class BigButton(Widget):
       row_gap = gap if len(row) <= 1 else (avail_w - total_badge_w) / (len(row) - 1)
       cx = rect.x
       for label, badge_w, text_w in row:
-        rl.draw_rectangle_rounded(rl.Rectangle(cx, cy, badge_w, badge_h), 0.5, 6, BADGE_GREEN_BG)
-        rl.draw_text_ex(font, label, rl.Vector2(cx + (badge_w - text_w) / 2, cy + v_pad), font_size, 0, BADGE_GREEN_FG)
+        rl.draw_rectangle_rounded(rl.Rectangle(cx, cy, badge_w, badge_h), 0.5, 6, badge_bg)
+        rl.draw_text_ex(font, label, rl.Vector2(cx + (badge_w - text_w) / 2, cy + v_pad), font_size, 0, badge_fg)
         cx += badge_w + row_gap
       cy -= badge_h + gap
 
@@ -363,7 +366,7 @@ class BigButton(Widget):
 
   def _render(self, _):
     txt_bg, btn_x, btn_y, scale = self._handle_background()
-    bg_tint = CARD_ACTIVE_TINT if self._badge_labels else rl.WHITE
+    bg_tint = CARD_ACTIVE_TINT if self._badge_labels and self.enabled else rl.WHITE
 
     if self._scroll:
       # Scroll mode: draw content UNDER the card texture so the semi-transparent
