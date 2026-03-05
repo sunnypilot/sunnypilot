@@ -143,6 +143,7 @@ class UIStateSP:
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
+    self.confidence_visual = self.params.get("ConfidenceVisual", return_default=True)
 
 
 class DeviceSP:

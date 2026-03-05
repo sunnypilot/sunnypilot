@@ -8,6 +8,7 @@ import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.ui_state import UIStatus, ui_state
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.selfdrive.ui.mici.onroad.confidence_ball import ConfidenceBall
 
 BORDER_COLORS_SP = {
   UIStatus.LAT_ONLY: rl.Color(0x00, 0xC8, 0xC8, 0xFF),  # Cyan for lateral-only state
@@ -19,6 +20,7 @@ class AugmentedRoadViewSP:
   def __init__(self):
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
     self._fade_alpha_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
+    self._confidence_visual = ConfidenceBall(scale=1.5)
 
   def update_fade_out_bottom_overlay(self, _content_rect):
     # Fade out bottom of overlays for looks (only when engaged)
@@ -29,3 +31,9 @@ class AugmentedRoadViewSP:
                           rl.Rectangle(0, 0, self._fade_texture.width, self._fade_texture.height),
                           _content_rect, rl.Vector2(0, 0), 0.0,
                           rl.Color(255, 255, 255, int(255 * fade_alpha)))
+
+  def update_confidence_visual(self, _content_rect):
+    mode = ui_state.confidence_visual
+    if mode in (1, 2):
+        self._confidence_visual._visual = mode
+        self._confidence_visual.render(_content_rect)
