@@ -184,7 +184,10 @@ class BigButton(Widget):
     return int(self._rect.width - self.LABEL_HORIZONTAL_PADDING * 2 - icon_size)
 
   def _get_label_font_size(self):
-    return 42
+    if len(self.text) <= 18:
+      return 48
+    else:
+      return 42
 
   def _update_label_layout(self):
     self._label.set_font_size(self._get_label_font_size())
