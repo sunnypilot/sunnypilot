@@ -141,6 +141,7 @@ class BigButton(Widget):
 
     self._rotate_icon_t: float | None = None
     self._badge_labels: list[str] | None = None
+    self._active: bool | Callable[[], bool] = True
 
     self._label = UnifiedLabel(
       text,
@@ -234,6 +235,14 @@ class BigButton(Widget):
     self.value = ""
     self._update_label_layout()
 
+  @property
+  def active(self) -> bool:
+    return self._active() if callable(self._active) else self._active
+
+  def set_active(self, active: bool | Callable[[], bool]) -> None:
+    """Set whether the setting is logically in effect (controls badge dimming, not interactivity)."""
+    self._active = active
+
   def get_value(self) -> str:
     return self.value
 
@@ -283,7 +292,7 @@ class BigButton(Widget):
     font_size = 26
     h_pad = 10
     gap = 8
-    alpha_mult = 1.0 if self.enabled else 0.3
+    alpha_mult = 1.0 if self.active else 0.3
     badge_bg = rl.Color(BADGE_GREEN_BG.r, BADGE_GREEN_BG.g, BADGE_GREEN_BG.b, int(BADGE_GREEN_BG.a * alpha_mult))
     badge_fg = rl.Color(BADGE_GREEN_FG.r, BADGE_GREEN_FG.g, BADGE_GREEN_FG.b, int(BADGE_GREEN_FG.a * alpha_mult))
 
@@ -366,7 +375,7 @@ class BigButton(Widget):
 
   def _render(self, _):
     txt_bg, btn_x, btn_y, scale = self._handle_background()
-    bg_tint = CARD_ACTIVE_TINT if self._badge_labels and self.enabled else rl.WHITE
+    bg_tint = CARD_ACTIVE_TINT if self._badge_labels and self.active else rl.WHITE
 
     if self._scroll:
       # Scroll mode: draw content UNDER the card texture so the semi-transparent
@@ -429,7 +438,7 @@ class BigMultiToggle(BigToggle):
     self.set_value(self._options[0])
 
   def _width_hint(self) -> int:
-    return int(self._rect.width - self.LABEL_HORIZONTAL_PADDING - self._txt_enabled_toggle.width)
+    return int(self._rect.width - self.LABEL_HORIZONTAL_PADDING * 2 - self._txt_enabled_toggle.width)
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
