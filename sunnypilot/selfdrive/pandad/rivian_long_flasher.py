@@ -72,6 +72,7 @@ def _flash_panda(panda: Panda) -> None:
 
   _flash_static(panda._handle, code)
   panda.reconnect()
+  cloudlog.info(f"Successfully flashed xnor's Rivian Longitudinal Upgrade Kit: {panda.get_usb_serial()}")
 
 
 def flash_rivian_long(panda_serials: list[str]) -> None:
@@ -89,7 +90,6 @@ def flash_rivian_long(panda_serials: list[str]) -> None:
     if panda.get_type() == b'\x03' and not panda.is_internal():
       try:
         _flash_panda(panda)
-        cloudlog.info(f"Successfully flashed xnor's Rivian Longitudinal Upgrade Kit: {serial}")
       except Exception:
         cloudlog.exception(f"Failed to flash xnor's Rivian Longitudinal Upgrade Kit: {serial}")
     panda.close()
