@@ -93,6 +93,11 @@ class VisualsLayout(Widget):
            "This displays what the car is currently doing, not what the planner is requesting."),
         None,
       ),
+      "HideCamera": (
+        lambda: tr("Hide Camera"),
+        tr("Hide the camera live view from the driving screen."),
+        None,
+      ),
     }
     self._toggles = {}
     for param, (title, desc, callback) in self._toggle_defs.items():

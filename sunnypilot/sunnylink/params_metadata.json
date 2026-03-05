@@ -370,6 +370,10 @@
     "title": "Has Accepted sunnypilot Terms",
     "description": ""
   },
+  "HideCamera": {
+    "title": "Hide Camera",
+    "description": "Hide the camera live view from the driving screen."
+  },
   "HideVEgoUI": {
     "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
     "description": "When enabled, the speedometer on the onroad screen is not displayed."
