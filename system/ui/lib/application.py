@@ -436,6 +436,9 @@ class GuiApplication(GuiApplicationExt):
       return self._nav_stack[-1]
     return None
 
+  def widget_in_stack(self, widget: object) -> bool:
+    return widget in self._nav_stack
+
   def add_nav_stack_tick(self, tick_function: Callable[[], None]):
     if tick_function not in self._nav_stack_ticks:
       self._nav_stack_ticks.append(tick_function)
