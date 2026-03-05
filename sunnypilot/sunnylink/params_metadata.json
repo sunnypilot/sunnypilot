@@ -1102,6 +1102,14 @@
     "title": "Route Count",
     "description": ""
   },
+  "ScreenSaverEnabled": {
+    "title": "Enable Screen Saver",
+    "description": ""
+  },
+  "ScreenSaverTimeout": {
+    "title": "Screen Saver Timeout",
+    "description": ""
+  },
   "SecOCKey": {
     "title": "Sec Oc Key",
     "description": ""
