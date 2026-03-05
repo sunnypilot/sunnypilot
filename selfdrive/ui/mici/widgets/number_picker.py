@@ -1,6 +1,8 @@
+import numpy as np
 import pyray as rl
 from collections.abc import Callable
 
+from openpilot.common.filter_simple import BounceFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.scroll_panel2 import ScrollState
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -35,6 +37,11 @@ EDGE_ALPHA = 0.1
 class PickerItem(Widget):
   """A lightweight label widget for a single picker value."""
 
+  # Distance breakpoints and corresponding visual values for np.interp
+  _DIST_TIERS = [0, 1, 2, 3]
+  _FONT_SIZES = [CENTER_FONT_SIZE, ADJ_FONT_SIZE, FAR_FONT_SIZE, EDGE_FONT_SIZE]
+  _ALPHAS = [CENTER_ALPHA, ADJ_ALPHA, FAR_ALPHA, EDGE_ALPHA]
+
   def __init__(self, raw_value: int, display_label: str, on_tap: Callable[[int], None] | None = None,
                item_width: int = ITEM_WIDTH):
     super().__init__()
@@ -42,6 +49,7 @@ class PickerItem(Widget):
     self.display_label = display_label
     self._on_tap = on_tap
     self._item_width = item_width
+    self._font_size_filter = BounceFilter(EDGE_FONT_SIZE, 0.12, 1 / gui_app.target_fps)
     self.set_rect(rl.Rectangle(0, 0, item_width, ITEM_HEIGHT))
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
@@ -59,25 +67,13 @@ class PickerItem(Widget):
     item_center_x = self._rect.x + self._rect.width / 2
     dist = abs(item_center_x - parent_center_x) / self._item_width
 
-    # Interpolate font size and alpha based on distance
-    if dist < 0.5:
-      font_size = CENTER_FONT_SIZE
-      alpha = CENTER_ALPHA
-      font_weight = FontWeight.BOLD
-    elif dist < 1.5:
-      t = (dist - 0.5)
-      font_size = int(CENTER_FONT_SIZE + (ADJ_FONT_SIZE - CENTER_FONT_SIZE) * t)
-      alpha = CENTER_ALPHA + (ADJ_ALPHA - CENTER_ALPHA) * t
-      font_weight = FontWeight.ROMAN
-    elif dist < 2.5:
-      t = (dist - 1.5)
-      font_size = int(ADJ_FONT_SIZE + (FAR_FONT_SIZE - ADJ_FONT_SIZE) * t)
-      alpha = ADJ_ALPHA + (FAR_ALPHA - ADJ_ALPHA) * t
-      font_weight = FontWeight.ROMAN
-    else:
-      font_size = EDGE_FONT_SIZE
-      alpha = EDGE_ALPHA
-      font_weight = FontWeight.ROMAN
+    # Continuous interpolation of font size, alpha, and weight based on distance
+    target_font_size = int(np.interp(dist, self._DIST_TIERS, self._FONT_SIZES))
+    alpha = float(np.interp(dist, self._DIST_TIERS, self._ALPHAS))
+    font_weight = FontWeight.BOLD if dist < 0.5 else FontWeight.ROMAN
+
+    # Spring animation on font size for a subtle bounce when snapping to center
+    font_size = int(self._font_size_filter.update(target_font_size))
 
     font = gui_app.font(font_weight)
     color = rl.Color(255, 255, 255, int(255 * alpha))
