@@ -2,7 +2,6 @@ import numpy as np
 import pyray as rl
 from collections.abc import Callable
 
-from openpilot.common.filter_simple import BounceFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.scroll_panel2 import ScrollState
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -49,7 +48,6 @@ class PickerItem(Widget):
     self.display_label = display_label
     self._on_tap = on_tap
     self._item_width = item_width
-    self._font_size_filter = BounceFilter(EDGE_FONT_SIZE, 0.12, 1 / gui_app.target_fps)
     self.set_rect(rl.Rectangle(0, 0, item_width, ITEM_HEIGHT))
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
@@ -68,12 +66,9 @@ class PickerItem(Widget):
     dist = abs(item_center_x - parent_center_x) / self._item_width
 
     # Continuous interpolation of font size, alpha, and weight based on distance
-    target_font_size = int(np.interp(dist, self._DIST_TIERS, self._FONT_SIZES))
+    font_size = int(np.interp(dist, self._DIST_TIERS, self._FONT_SIZES))
     alpha = float(np.interp(dist, self._DIST_TIERS, self._ALPHAS))
     font_weight = FontWeight.BOLD if dist < 0.5 else FontWeight.ROMAN
-
-    # Spring animation on font size for a subtle bounce when snapping to center
-    font_size = int(self._font_size_filter.update(target_font_size))
 
     font = gui_app.font(font_weight)
     color = rl.Color(255, 255, 255, int(255 * alpha))
@@ -218,6 +213,10 @@ class NumberPickerScreen(Widget):
   def hide_event(self):
     super().hide_event()
     self._scroller.hide_event()
+    # Snap offset to nearest item boundary so _center_index() returns the
+    # correct item even if the snap animation hasn't fully converged yet.
+    offset = self._scroll_panel.get_offset()
+    self._scroll_panel.set_offset(round(offset / self._item_width) * self._item_width)
     self._commit_value()
 
   def _update_state(self):
