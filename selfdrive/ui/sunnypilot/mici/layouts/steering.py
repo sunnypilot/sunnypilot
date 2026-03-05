@@ -296,6 +296,7 @@ class SteeringLayoutMici(NavScroller):
     # Disable subcategory buttons when torque is off
     for item in self._tq_items_rest:
       item.set_enabled(enforce_torque)
+      item.set_active(enforce_torque)
 
     # Self-tune subcategory button summary
     self_tune_on = ui_state.params.get_bool("LiveTorqueParamsToggle")
