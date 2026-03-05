@@ -128,14 +128,14 @@ def main() -> None:
         time.sleep(1)
 
       panda_serials = Panda.list()
-      # flash and filter out Rivian longitudinal before stock logic
-      panda_serials = flash_rivian_long(panda_serials)
-
       if len(panda_serials) == 0:
         no_internal_panda_count += 1
         continue
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
+
+      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
+      flash_rivian_long(panda_serials)
 
       # skip flashing and health check if no supported panda is detected
       if not check_panda_support(panda_serials):
