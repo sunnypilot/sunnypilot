@@ -7,20 +7,12 @@ on:
 jobs:
   build___nightly:
     name: build __nightly
-    env:
-      ImageOS: ubuntu24
-    container:
-      image: ghcr.io/sunnypilot/sunnypilot-base:latest
     runs-on: ubuntu-latest
     if: github.repository == 'sunnypilot/sunnypilot'
     permissions:
       checks: read
       contents: write
     steps:
-    - name: Install wait-on-check-action dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libyaml-dev
     - name: Wait for green check mark
       if: ${{ github.event_name == 'schedule' }}
       uses: lewagon/wait-on-check-action@ccfb013c15c8afb7bf2b7c028fb74dc5a068cccc
@@ -29,14 +21,11 @@ jobs:
         wait-interval: 30
         running-workflow-name: 'build __nightly'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        check-regexp: ^((?!.*(build prebuilt).*).)*$
-    - uses: actions/checkout@v6
+        check-regexp: ^((?!.*(build prebuilt|create badges).*).)*$
+    - uses: actions/checkout@v4
       with:
         submodules: true
         fetch-depth: 0
-    - name: Pull LFS
-      run: |
-        git config --global --add safe.directory '*'
-        git lfs pull
+    - run: ./tools/op.sh setup
     - name: Push __nightly
       run: BRANCH=__nightly release/build_stripped.sh

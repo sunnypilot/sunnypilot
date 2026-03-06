@@ -8,7 +8,7 @@ import pyray as rl
 
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
-from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer
+from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer, DeveloperUiState, get_bottom_dev_ui_offset
 from openpilot.selfdrive.ui.sunnypilot.onroad.road_name import RoadNameRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.rocket_fuel import RocketFuel
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_limit import SpeedLimitRenderer
@@ -21,6 +21,8 @@ from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer, UI_CONFIG, F
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+
+SLA_ACTIVE_COLOR = rl.Color(0x91, 0x9b, 0x95, 0xff)
 
 
 class HudRendererSP(HudRenderer):
@@ -71,6 +73,8 @@ class HudRendererSP(HudRenderer):
     self.show_icbm_status = self.icbm_active_counter > 0
 
   def _draw_set_speed(self, rect: rl.Rectangle) -> None:
+    long_plan_sp = ui_state.sm['longitudinalPlanSP']
+    long_override = ui_state.sm['carControl'].cruiseControl.override
     self._get_icbm_status()
 
     set_speed_width = UI_CONFIG.set_speed_width_metric if ui_state.is_metric else UI_CONFIG.set_speed_width_imperial
@@ -85,12 +89,16 @@ class HudRendererSP(HudRenderer):
     set_speed_color = COLORS.DARK_GREY
     if self.is_cruise_set:
       set_speed_color = COLORS.WHITE
-      if ui_state.status == UIStatus.ENGAGED:
-        max_color = COLORS.ENGAGED
-      elif ui_state.status == UIStatus.DISENGAGED:
-        max_color = COLORS.DISENGAGED
-      elif ui_state.status == UIStatus.OVERRIDE:
-        max_color = COLORS.OVERRIDE
+      if long_plan_sp.speedLimit.assist.active:
+        set_speed_color = SLA_ACTIVE_COLOR if long_override else rl.Color(0, 0xff, 0, 0xff)
+        max_color = SLA_ACTIVE_COLOR if long_override else rl.Color(0x80, 0xd8, 0xa6, 0xff)
+      else:
+        if ui_state.status == UIStatus.ENGAGED:
+          max_color = COLORS.ENGAGED
+        elif ui_state.status == UIStatus.DISENGAGED:
+          max_color = COLORS.DISENGAGED
+        elif ui_state.status == UIStatus.OVERRIDE:
+          max_color = COLORS.OVERRIDE
 
     max_str_size = 60 if self.show_icbm_status else 40
     max_str_y = 15 if self.show_icbm_status else 27
@@ -123,10 +131,10 @@ class HudRendererSP(HudRenderer):
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
 
-    if ui_state.torque_bar and ui_state.sm['controlsState'].lateralControlState.which() != 'angleState':
+    if ui_state.torque_bar:
       torque_rect = rect
-      if ui_state.developer_ui in (DeveloperUiRenderer.DEV_UI_BOTTOM, DeveloperUiRenderer.DEV_UI_BOTH):
-        torque_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height - DeveloperUiRenderer.BOTTOM_BAR_HEIGHT)
+      if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
+        torque_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height - get_bottom_dev_ui_offset())
       self._torque_bar.render(torque_rect)
 
     self.developer_ui.render(rect)
