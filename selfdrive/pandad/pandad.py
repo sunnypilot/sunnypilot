@@ -68,21 +68,37 @@ def flash_panda(panda_serial: str) -> Panda:
   return panda
 
 
-def filter_supported_pandas(panda_serials: list[str]) -> list[str]:
-  supported = []
+def check_panda_support(panda_serials: list[str]) -> bool:
+  unsupported = []
   for serial in panda_serials:
     panda = Panda(serial)
     hw_type = panda.get_type()
-    is_internal = panda.is_internal()
     panda.close()
-    if hw_type not in Panda.SUPPORTED_DEVICES:
-      cloudlog.warning(f"Panda {serial} is not supported (hw_type: {hw_type}), skipping...")
-    elif not is_internal:
-      cloudlog.info(f"Panda {serial} is external (hw_type: {hw_type}), filtering out...")
-    else:
-      supported.append(serial)
+    if hw_type in Panda.SUPPORTED_DEVICES:
+      return True
 
-  return supported
+    unsupported.append((serial, hw_type))
+
+  for serial, hw_type in unsupported:
+    cloudlog.warning(f"Panda {serial} is not supported (hw_type: {hw_type}), skipping...")
+
+  return False
+
+
+def prioritize_internal_panda(panda_serials: list[str]) -> list[str]:
+  internal = []
+  rest = []
+  for serial in panda_serials:
+    panda = Panda(serial)
+    is_internal = panda.is_internal()
+    is_supported = panda.get_type() in Panda.SUPPORTED_DEVICES
+    panda.close()
+    if is_internal and is_supported:
+      internal.append(serial)
+    else:
+      rest.append(serial)
+
+  return internal + rest
 
 
 def main() -> None:
@@ -137,9 +153,11 @@ def main() -> None:
       # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
       flash_rivian_long(panda_serials)
 
-      # filter out unsupported pandas (e.g. Black Panda after Rivian flash)
-      panda_serials = filter_supported_pandas(panda_serials)
-      if not panda_serials:
+      # ensure internal supported panda is first (e.g. before external Black Panda)
+      panda_serials = prioritize_internal_panda(panda_serials)
+
+      # skip flashing and health check if no supported panda is detected
+      if not check_panda_support(panda_serials):
         continue
 
       # Flash the first panda
