@@ -135,14 +135,6 @@ def main() -> None:
           HARDWARE.reset_internal_panda()
         time.sleep(3)  # wait to come back up
 
-      # Flash all Pandas in DFU mode
-      dfu_serials = PandaDFU.list()
-      if len(dfu_serials) > 0:
-        for serial in dfu_serials:
-          cloudlog.info(f"Panda in DFU mode found, flashing recovery {serial}")
-          PandaDFU(serial).recover()
-        time.sleep(1)
-
       panda_serials = Panda.list()
       # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
       flash_rivian_long(panda_serials)
@@ -154,6 +146,15 @@ def main() -> None:
       if not check_panda_support(panda_serials):
         continue
 
+      # Flash all Pandas in DFU mode
+      dfu_serials = PandaDFU.list()
+      if len(dfu_serials) > 0:
+        for serial in dfu_serials:
+          cloudlog.info(f"Panda in DFU mode found, flashing recovery {serial}")
+          PandaDFU(serial).recover()
+        time.sleep(1)
+
+      panda_serials = Panda.list()
       if len(panda_serials) == 0:
         no_internal_panda_count += 1
         continue
