@@ -73,10 +73,11 @@ def filter_supported_pandas(panda_serials: list[str]) -> list[str]:
   for serial in panda_serials:
     panda = Panda(serial)
     hw_type = panda.get_type()
+    is_internal = panda.is_internal()
     panda.close()
     if hw_type not in Panda.SUPPORTED_DEVICES:
       cloudlog.warning(f"Panda {serial} is not supported (hw_type: {hw_type}), skipping...")
-    elif not panda.is_internal():
+    elif not is_internal:
       cloudlog.info(f"Panda {serial} is external (hw_type: {hw_type}), filtering out...")
     else:
       supported.append(serial)
