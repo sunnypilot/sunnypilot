@@ -135,6 +135,17 @@ def main() -> None:
           HARDWARE.reset_internal_panda()
         time.sleep(3)  # wait to come back up
 
+      panda_serials = Panda.list()
+      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
+      flash_rivian_long(panda_serials)
+
+      # ensure internal supported panda is first (e.g. before external Black Panda)
+      panda_serials = prioritize_internal_panda(panda_serials)
+
+      # skip flashing and health check if no supported panda is detected
+      if not check_panda_support(panda_serials):
+        continue
+
       # Flash all Pandas in DFU mode
       dfu_serials = PandaDFU.list()
       if len(dfu_serials) > 0:
@@ -149,16 +160,6 @@ def main() -> None:
         continue
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
-
-      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
-      flash_rivian_long(panda_serials)
-
-      # ensure internal supported panda is first (e.g. before external Black Panda)
-      panda_serials = prioritize_internal_panda(panda_serials)
-
-      # skip flashing and health check if no supported panda is detected
-      if not check_panda_support(panda_serials):
-        continue
 
       # Flash the first panda
       panda_serial = panda_serials[0]
