@@ -85,20 +85,16 @@ def check_panda_support(panda_serials: list[str]) -> bool:
   return False
 
 
-def prioritize_internal_panda(panda_serials: list[str]) -> list[str]:
-  internal = []
-  rest = []
+def find_internal_panda(panda_serials: list[str]) -> str | None:
   for serial in panda_serials:
     panda = Panda(serial)
     is_internal = panda.is_internal()
     is_supported = panda.get_type() in Panda.SUPPORTED_DEVICES
     panda.close()
     if is_internal and is_supported:
-      internal.append(serial)
-    else:
-      rest.append(serial)
+      return serial
 
-  return internal + rest
+  return None
 
 
 def main() -> None:
@@ -139,9 +135,6 @@ def main() -> None:
       # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
       flash_rivian_long(panda_serials)
 
-      # ensure internal supported panda is first (e.g. before external Black Panda)
-      panda_serials = prioritize_internal_panda(panda_serials)
-
       # skip flashing and health check if no supported panda is detected
       if not check_panda_support(panda_serials):
         continue
@@ -160,6 +153,13 @@ def main() -> None:
         continue
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
+
+      # find the internal supported panda (e.g. skip external Black Panda)
+      internal_serial = find_internal_panda(panda_serials)
+      if internal_serial is None:
+        no_internal_panda_count += 1
+        continue
+      panda_serials = [internal_serial]
 
       # Flash the first panda
       panda_serial = panda_serials[0]
