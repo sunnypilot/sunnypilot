@@ -9,8 +9,9 @@ from openpilot.common.swaglog import cloudlog
 ONROAD_BRIGHTNESS_MIGRATION_VERSION: str = "1.0"
 ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION: str = "1.0"
 
-# Valid seconds values for OnroadScreenOffTimer
-VALID_TIMER_VALUES = {3, 5, 7, 10, 15, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600}
+# index → seconds mapping for OnroadScreenOffTimer (SSoT)
+ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 3, 1: 5, 2: 7, 3: 10, 4: 15, 5: 30, **{i: (i - 5) * 60 for i in range(6, 16)}}
+VALID_TIMER_VALUES = set(ONROAD_BRIGHTNESS_TIMER_VALUES.values())
 
 
 def run_migration(_params):

@@ -10,6 +10,7 @@ import os
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
+from openpilot.sunnypilot.system.params_migration import ONROAD_BRIGHTNESS_TIMER_VALUES
 
 METADATA_PATH = os.path.join(os.path.dirname(__file__), "../params_metadata.json")
 TORQUE_VERSIONS_JSON = os.path.join(BASEDIR, "sunnypilot", "selfdrive", "controls", "lib", "latcontrol_torque_versions.json")
@@ -89,7 +90,6 @@ def update_onroad_brightness_timer_param():
     with open(METADATA_PATH) as f:
       params_metadata = json.load(f)
     if "OnroadScreenOffTimer" in params_metadata:
-      from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import ONROAD_BRIGHTNESS_TIMER_VALUES
       options = []
       for _index, seconds in sorted(ONROAD_BRIGHTNESS_TIMER_VALUES.items()):
         label = f"{seconds}s" if seconds < 60 else f"{seconds // 60}m"
