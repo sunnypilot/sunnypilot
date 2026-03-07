@@ -942,6 +942,22 @@
     "description": "",
     "options": [
       {
+        "value": 3,
+        "label": "3s"
+      },
+      {
+        "value": 5,
+        "label": "5s"
+      },
+      {
+        "value": 7,
+        "label": "7s"
+      },
+      {
+        "value": 10,
+        "label": "10s"
+      },
+      {
         "value": 15,
         "label": "15s"
       },

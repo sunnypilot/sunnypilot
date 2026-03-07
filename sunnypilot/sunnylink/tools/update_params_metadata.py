@@ -56,6 +56,9 @@ def main():
   # update onroad screen brightness params
   update_onroad_brightness_param()
 
+  # update onroad screen brightness timer params
+  update_onroad_brightness_timer_param()
+
   # update torque versions param
   update_torque_versions_param()
 
@@ -79,6 +82,25 @@ def update_onroad_brightness_param():
       print(f"Updated OnroadScreenOffBrightness options in params_metadata.json with {len(options)} options.")
   except Exception as e:
     print(f"Failed to update OnroadScreenOffBrightness versions in params_metadata.json: {e}")
+
+
+def update_onroad_brightness_timer_param():
+  try:
+    with open(METADATA_PATH) as f:
+      params_metadata = json.load(f)
+    if "OnroadScreenOffTimer" in params_metadata:
+      from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import ONROAD_BRIGHTNESS_TIMER_VALUES
+      options = []
+      for _index, seconds in sorted(ONROAD_BRIGHTNESS_TIMER_VALUES.items()):
+        label = f"{seconds}s" if seconds < 60 else f"{seconds // 60}m"
+        options.append({"value": seconds, "label": label})
+      params_metadata["OnroadScreenOffTimer"]["options"] = options
+      with open(METADATA_PATH, 'w') as f:
+        json.dump(params_metadata, f, indent=2)
+        f.write('\n')
+      print(f"Updated OnroadScreenOffTimer options in params_metadata.json with {len(options)} options.")
+  except Exception as e:
+    print(f"Failed to update OnroadScreenOffTimer options in params_metadata.json: {e}")
 
 
 def update_torque_versions_param():

@@ -13,7 +13,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.sunnypilot.widgets.list_view import option_item_sp, ToggleActionSP
 
-ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 15, 1: 30, **{i: (i - 1) * 60 for i in range(2, 12)}}
+ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 3, 1: 5, 2: 7, 3: 10, 4: 15, 5: 30, **{i: (i - 5) * 60 for i in range(6, 16)}}
 
 
 class OnroadBrightness(IntEnum):
@@ -46,7 +46,7 @@ class DisplayLayout(Widget):
       title=lambda: tr("Onroad Brightness Delay"),
       description="",
       min_value=0,
-      max_value=11,
+      max_value=15,
       value_change_step=1,
       value_map=ONROAD_BRIGHTNESS_TIMER_VALUES,
       label_callback=lambda value: f"{value} s" if value < 60 else f"{int(value/60)} m",
