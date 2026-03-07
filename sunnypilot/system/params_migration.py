@@ -18,7 +18,7 @@ def run_migration(_params):
   # migrate OnroadScreenOffBrightness
   if _params.get("OnroadScreenOffBrightnessMigrated") != ONROAD_BRIGHTNESS_MIGRATION_VERSION:
     try:
-      val = _params.get("OnroadScreenOffBrightness")
+      val = _params.get("OnroadScreenOffBrightness", return_default=True)
       if val >= 2:  # old: 5%, new: Screen Off
         new_val = val + 1
         _params.put("OnroadScreenOffBrightness", new_val)
@@ -34,7 +34,7 @@ def run_migration(_params):
   # migrate OnroadScreenOffTimer
   if _params.get("OnroadScreenOffTimerMigrated") != ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION:
     try:
-      val = _params.get("OnroadScreenOffTimer")
+      val = _params.get("OnroadScreenOffTimer", return_default=True)
       if val not in VALID_TIMER_VALUES:
         _params.put("OnroadScreenOffTimer", 15)
         log_str = f"Successfully migrated OnroadScreenOffTimer from {val} to 15 (default)."
