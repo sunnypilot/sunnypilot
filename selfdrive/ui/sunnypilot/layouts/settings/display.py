@@ -99,7 +99,7 @@ class DisplayLayout(Widget):
         _item.action_item.set_value(raw_value)
 
     brightness_val = self._params.get("OnroadScreenOffBrightness", return_default=True)
-    self._onroad_brightness_timer.action_item.set_enabled(brightness_val != OnroadBrightness.AUTO)
+    self._onroad_brightness_timer.action_item.set_enabled(brightness_val not in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK))
 
   def _render(self, rect):
     self._scroller.render(rect)
