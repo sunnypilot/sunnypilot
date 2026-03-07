@@ -92,7 +92,11 @@ class DisplayLayout(Widget):
       if isinstance(_item.action_item, ToggleActionSP) and _item.action_item.toggle.param_key is not None:
         _item.action_item.set_state(self._params.get_bool(_item.action_item.toggle.param_key))
       elif isinstance(_item.action_item, OptionControlSP) and _item.action_item.param_key is not None:
-        _item.action_item.set_value(self._params.get(_item.action_item.param_key, return_default=True))
+        raw_value = self._params.get(_item.action_item.param_key, return_default=True)
+        if _item.action_item.value_map:
+          reverse_map = {v: k for k, v in _item.action_item.value_map.items()}
+          raw_value = reverse_map.get(raw_value, _item.action_item.current_value)
+        _item.action_item.set_value(raw_value)
 
     brightness_val = self._params.get("OnroadScreenOffBrightness", return_default=True)
     self._onroad_brightness_timer.action_item.set_enabled(brightness_val not in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK))

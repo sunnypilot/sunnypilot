@@ -7,6 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.common.swaglog import cloudlog
 
 ONROAD_BRIGHTNESS_MIGRATION_VERSION: str = "1.0"
+ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION: str = "1.0"
+
+# Valid seconds values for OnroadScreenOffTimer
+VALID_TIMER_VALUES = {3, 5, 7, 10, 15, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600}
 
 
 def run_migration(_params):
@@ -25,3 +29,18 @@ def run_migration(_params):
       cloudlog.info(log_str + f" Setting OnroadScreenOffBrightnessMigrated to {ONROAD_BRIGHTNESS_MIGRATION_VERSION}")
     except Exception as e:
       cloudlog.exception(f"Error migrating OnroadScreenOffBrightness: {e}")
+
+  # migrate OnroadScreenOffTimer
+  if _params.get("OnroadScreenOffTimerMigrated") != ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION:
+    try:
+      val = _params.get("OnroadScreenOffTimer")
+      if val not in VALID_TIMER_VALUES:
+        _params.put("OnroadScreenOffTimer", 15)
+        log_str = f"Successfully migrated OnroadScreenOffTimer from {val} to 15 (default)."
+      else:
+        log_str = "Migration not required for OnroadScreenOffTimer."
+
+      _params.put("OnroadScreenOffTimerMigrated", ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION)
+      cloudlog.info(log_str + f" Setting OnroadScreenOffTimerMigrated to {ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION}")
+    except Exception as e:
+      cloudlog.exception(f"Error migrating OnroadScreenOffTimer: {e}")
