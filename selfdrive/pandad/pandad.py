@@ -69,8 +69,11 @@ def flash_panda(panda_serial: str) -> Panda:
 
 
 def check_panda_support(panda_serials: list[str]) -> bool:
+  spi_serials = set(Panda.spi_list())
   unsupported = []
   for serial in panda_serials:
+    if serial in spi_serials:
+      return True
     panda = Panda(serial)
     hw_type = panda.get_type()
     panda.close()
@@ -86,12 +89,9 @@ def check_panda_support(panda_serials: list[str]) -> bool:
 
 
 def find_internal_panda(panda_serials: list[str]) -> str | None:
+  spi_serials = set(Panda.spi_list())
   for serial in panda_serials:
-    panda = Panda(serial)
-    is_internal = panda.is_internal()
-    is_supported = panda.get_type() in Panda.SUPPORTED_DEVICES
-    panda.close()
-    if is_internal and is_supported:
+    if serial in spi_serials:
       return serial
 
   return None

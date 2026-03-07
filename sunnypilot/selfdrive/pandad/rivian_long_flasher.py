@@ -84,7 +84,11 @@ def flash_rivian_long(panda_serials: list[str]) -> None:
     cloudlog.info("Not a Rivian, skipping longitudinal upgrade...")
     return
 
+  # only check USB connected pandas, internal panda uses SPI and is never an external panda
+  usb_serials = set(Panda.usb_list())
   for serial in panda_serials:
+    if serial not in usb_serials:
+      continue
     panda = Panda(serial)
     # only flash external black pandas (HW_TYPE_BLACK = 0x03)
     if panda.get_type() == b'\x03' and not panda.is_internal():
