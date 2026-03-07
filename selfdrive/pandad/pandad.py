@@ -137,6 +137,7 @@ def main() -> None:
 
       # skip flashing and health check if no supported panda is detected
       if not check_panda_support(panda_serials):
+        no_internal_panda_count += 1
         continue
 
       # Flash all Pandas in DFU mode
