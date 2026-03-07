@@ -21,6 +21,26 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
+def mads_limited_settings(ui_state) -> bool:
+  """Check if MADS settings should be limited based on vehicle brand.
+
+  Uses CarPlatformBundle (offroad) or CP (onroad) to determine brand.
+  """
+  brand = ""
+  if ui_state.is_offroad():
+    bundle = ui_state.params.get("CarPlatformBundle")
+    if bundle:
+      brand = bundle.get("brand", "")
+  if not brand:
+    brand = ui_state.CP.brand if ui_state.CP is not None else ""
+
+  if brand == "rivian":
+    return True
+  elif brand == "tesla":
+    return not (ui_state.CP_SP is not None and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
+  return False
+
+
 def get_mads_limited_brands(CP: structs.CarParams, CP_SP: structs.CarParamsSP) -> bool:
   if CP.brand == 'rivian':
     return True
