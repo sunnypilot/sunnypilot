@@ -134,6 +134,9 @@ def main() -> None:
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
 
+      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
+      flash_rivian_long(panda_serials)
+
       # skip flashing and health check if no supported panda is detected
       if not check_panda_support(panda_serials):
         continue
@@ -141,9 +144,6 @@ def main() -> None:
       # Flash the first panda
       panda_serial = panda_serials[0]
       panda = flash_panda(panda_serial)
-
-      # flash Rivian longitudinal upgrade panda
-      flash_rivian_long(panda)
 
       # Ensure internal panda is present if expected
       if HARDWARE.has_internal_panda() and not panda.is_internal():
