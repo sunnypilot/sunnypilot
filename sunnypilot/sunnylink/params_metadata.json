@@ -216,6 +216,14 @@
     "max": 10,
     "step": 1
   },
+  "CustomShutdownVoltage": {
+    "title": "Minimum Battery Voltage",
+    "description": "Device will shutdown if the car battery reaches the set voltage. 11.7 disables the minimum battery voltage check.",
+    "min": 11.7,
+    "max": 12.8,
+    "step": 0.1,
+    "unit": "V"
+  },
   "CustomTorqueParams": {
     "title": "Enable Custom Torque Tuning",
     "description": "Enables custom tuning for Torque lateral control"
