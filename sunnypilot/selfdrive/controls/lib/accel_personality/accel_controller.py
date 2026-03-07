@@ -15,30 +15,30 @@ ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, Acce
 
 # Acceleration Profiles
 MAX_ACCEL_PROFILES = {
-  AccelPersonality.eco:       [1.85, 1.80, 1.54, 0.93, 0.71, 0.57, 0.33, 0.10, 0.08, 0.07],
-  AccelPersonality.normal:    [2.00, 1.95, 1.60, 1.06, 0.81, 0.69, 0.41, 0.11, 0.09, 0.08],
-  AccelPersonality.sport:     [2.00, 1.99, 1.65, 1.38, 1.10, 0.82, 0.52, 0.12, 0.10, 0.09],
+  AccelPersonality.eco:       [1.85, 1.80, 1.54, 0.96, 0.68, 0.57, 0.33, 0.09, 0.07],
+  AccelPersonality.normal:    [2.00, 1.95, 1.60, 1.06, 0.77, 0.63, 0.37, 0.11, 0.08],
+  AccelPersonality.sport:     [2.00, 2.00, 1.85, 1.48, 1.10, 0.88, 0.52, 0.14, 0.09],
 }
-MAX_ACCEL_BREAKPOINTS =       [0.0,  3.0,  5.0,  8.0,  12.0, 18.0, 24.0, 32.0, 42.0, 55.0]
+MAX_ACCEL_BREAKPOINTS =       [0.0,  3.0,  5.0,  8.0,  12.0, 18.0, 24.0, 32.0, 42.0]
 
 MIN_ACCEL_PROFILES = {
-  #AccelPersonality.eco:       [-0.3, -0.3],
-  #AccelPersonality.normal:    [-0.7, -0.7],
-  #AccelPersonality.sport:     [-1.2, -1.2],
-  AccelPersonality.eco:       [-0.0021, -0.6000, -0.0060, -0.0070, -0.16, -0.30, -0.76],
-  AccelPersonality.normal:    [-0.0022, -0.6100, -0.0061, -0.0071, -0.17, -0.31, -0.81],
-  AccelPersonality.sport:     [-0.7700, -0.6200, -0.0062, -0.0072, -0.18, -0.32, -0.86],
+  #AccelPersonality.eco:       [-0.0021, -0.2400, -0.0060, -0.0070, -0.16, -0.30, -0.76], #corolla only
+  #AccelPersonality.normal:    [-0.0022, -0.2600, -0.0061, -0.0071, -0.17, -0.32, -0.81], #corolla only
+  #AccelPersonality.sport:     [-0.7700, -0.2800, -0.0062, -0.0072, -0.18, -0.34, -0.86], #corolla only
+  AccelPersonality.eco:       [-0.0021, -0.1700, -0.0080, -0.0070, -0.32, -0.60, -1.00], #cross
+  AccelPersonality.normal:    [-0.0022, -0.1800, -0.0090, -0.0071, -0.34, -0.62, -1.10], #cross
+  AccelPersonality.sport:     [-0.0023, -0.1900, -0.0100, -0.0072, -0.36, -0.64, -1.20], #cross
 }
 #MIN_ACCEL_BREAKPOINTS =       [2.0,     40.0]
-MIN_ACCEL_BREAKPOINTS =       [2.0,     4.2,    5.5,     10.0,  16.0,  22.0,  40.0]
+MIN_ACCEL_BREAKPOINTS =       [2.0,     4.4,    5.5,     10.0,  16.0,  22.0,  40.0]
 
 ACCEL_ALPHA_BASE = 0.30   # responsive for small corrections
 ACCEL_ALPHA_MAX = 0.85    # smooth for big transitions
 ACCEL_ALPHA_SCALE = 0.8   # How fast alpha grows with error
 
-DECEL_ALPHA_BASE = 0.85   # smooth even for small changes
+DECEL_ALPHA_BASE = 0.35   # smooth even for small changes
 DECEL_ALPHA_MIN = 0.15    # responsive
-DECEL_ALPHA_SCALE = -1.0  # decel gets more responsive as error grows
+DECEL_ALPHA_SCALE = -1.5  # decel gets more responsive as error grows
 
 MAX_DECEL_INCREASE_RATE = 0.5  # slow brake onset for coast feel (m/s² per second)
 MAX_DECEL_DECREASE_RATE = 0.8  # faster brake release (m/s² per second)
