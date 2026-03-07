@@ -1,0 +1,59 @@
+import os
+import glob
+
+Import('env', 'arch')
+lenv = env.Clone()
+tinygrad_files = ["#"+x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**", recursive=True, root_dir=env.Dir("#").abspath) if 'pycache' not in x]
+
+# Get model metadata
+PC = not os.path.isfile('/TICI')
+if PC:
+  inputs = tinygrad_files + [File(Dir("#sunnypilot/modeld_v2").File("install_models_pc.py").abspath)]
+  outputs = []
+  model_dir = Dir("models").abspath
+  cmd = f'python3 {Dir("#sunnypilot/modeld_v2").abspath}/install_models_pc.py {model_dir}'
+
+  for model_name in ['supercombo', 'driving_vision', 'driving_off_policy', 'driving_policy']:
+    if File(f"models/{model_name}.onnx").exists():
+        inputs.append(File(f"models/{model_name}.onnx"))
+        inputs.append(File(f"models/{model_name}_tinygrad.pkl"))
+        outputs.append(File(f"models/{model_name}_metadata.pkl"))
+  if outputs:
+    lenv.Command(outputs, inputs, cmd)
+
+tg_flags = {
+  'larch64': 'DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0',
+  'Darwin': f'DEV=CPU THREADS=0 HOME={os.path.expanduser("~")}',
+}.get(arch, 'DEV=CPU CPU_LLVM=1 THREADS=0')
+
+image_flag = {
+  'larch64': 'IMAGE=2',
+}.get(arch, 'IMAGE=0')
+
+def tg_compile(flags, model_name):
+  pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + '"'
+  fn = File(f"models/{model_name}").abspath
+  out = fn + "_tinygrad.pkl"
+
+  return lenv.Command(
+    out,
+    [fn + ".onnx"] + tinygrad_files,
+    f'{pythonpath_string} {flags} {image_flag} python3 {Dir("#tinygrad_repo").abspath}/examples/openpilot/compile3.py {fn}.onnx {out}'
+  )
+
+# Compile models
+for model_name in ['supercombo', 'driving_vision', 'driving_off_policy', 'driving_policy']:
+  if File(f"models/{model_name}.onnx").exists():
+    tg_compile(tg_flags, model_name)
+
+script_files = [File("warp.py"), File(Dir("#selfdrive/modeld").File("compile_warp.py").abspath)]
+pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + ':' + env.Dir("#").abspath + '"'
+compile_warp_cmd = f'{pythonpath_string} {tg_flags} python3 -m sunnypilot.modeld_v2.warp'
+
+from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
+warp_targets = []
+for cam in [_ar_ox_fisheye, _os_fisheye]:
+  w, h = cam.width, cam.height
+  for bl in [2, 5]:
+    warp_targets.append(File(f"models/warp_{w}x{h}_b{bl}_tinygrad.pkl").abspath)
+lenv.Command(warp_targets, tinygrad_files + script_files, compile_warp_cmd)
