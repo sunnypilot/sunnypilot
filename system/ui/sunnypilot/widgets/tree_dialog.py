@@ -199,6 +199,8 @@ class TreeOptionDialog(MultiOptionDialog):
     self.option_buttons = self.visible_items
     self.options = [item.text for item in self.visible_items]
     self.scroller._items = self.visible_items
+    for item in self.visible_items:
+      item.set_touch_valid_callback(self.scroller.scroll_panel.is_touch_valid)
     if reset_scroll:
       self.scroller.scroll_panel.set_offset(0)
 
