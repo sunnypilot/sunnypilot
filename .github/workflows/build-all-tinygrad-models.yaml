@@ -34,10 +34,10 @@ jobs:
           echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
           echo "tinygrad_ref is $ref"
 
-      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+      - name: Checkout docs repo (sunnypilot-models, gh-pages)
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
@@ -202,7 +202,7 @@ jobs:
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
