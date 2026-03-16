@@ -142,7 +142,8 @@ class BigButtonSP(BigButton):
       self._draw_content(btn_y)
 
   def _update_state(self):
-    self._param_enabled = ui_state.params.get_bool(self._toggle_param)
+    if self._toggle_param:
+      self._param_enabled = ui_state.params.get_bool(self._toggle_param)
 
 
 class BigMultiParamToggleSP(BigMultiParamToggle):
