@@ -68,21 +68,20 @@ def flash_panda(panda_serial: str) -> Panda:
   return panda
 
 
-def check_panda_support(panda_serials: list[str]) -> bool:
-  unsupported = []
+def check_panda_support(panda_serials: list[str]) -> list[str]:
+  spi_serials = set(Panda.spi_list())
+  for serial in panda_serials:
+    if serial in spi_serials:
+      return [serial]
+
   for serial in panda_serials:
     panda = Panda(serial)
-    hw_type = panda.get_type()
+    is_internal = panda.is_internal()
     panda.close()
-    if hw_type in Panda.SUPPORTED_DEVICES:
-      return True
+    if is_internal:
+      return [serial]
 
-    unsupported.append((serial, hw_type))
-
-  for serial, hw_type in unsupported:
-    cloudlog.warning(f"Panda {serial} is not supported (hw_type: {hw_type}), skipping...")
-
-  return False
+  return []
 
 
 def main() -> None:
@@ -137,8 +136,9 @@ def main() -> None:
       # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
       flash_rivian_long(panda_serials)
 
-      # skip flashing and health check if no supported panda is detected
-      if not check_panda_support(panda_serials):
+      # find the internal supported panda (e.g. skip external Black Panda)
+      panda_serials = check_panda_support(panda_serials)
+      if len(panda_serials) == 0:
         continue
 
       # Flash the first panda
