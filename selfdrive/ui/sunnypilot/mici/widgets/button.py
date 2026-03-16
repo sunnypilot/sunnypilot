@@ -5,50 +5,35 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-# SP-specific mici widget extensions — keeps upstream button.py clean.
-#
-# Design notes:
-#   - Upstream BigParamControl is used directly for toggles (no SP subclass needed).
-#   - lambda-based set_enabled (e.g. `set_enabled(lambda: toggle._checked)`) is used so
-#     dependent widgets respond on the same frame as the toggle tap, since mouse events
-#     process during rendering after _update_state runs.
-
 from collections.abc import Callable
 
 import pyray as rl
 
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigMultiParamToggle
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
-
-try:
-  from openpilot.common.params import Params
-except ImportError:
-  Params = None
 
 BADGE_GREEN_FG = rl.Color(100, 180, 120, 220)
 CARD_ACTIVE_TINT = rl.Color(140, 230, 150, 255)
 
 
 def speed_unit():
-  from openpilot.selfdrive.ui.ui_state import ui_state
   return "km/h" if ui_state.is_metric else "mph"
 
 
 class BigButtonSP(BigButton):
   """BigButton + badge pills, active-state tinting, subtitle font size, and link_sub_panel."""
 
-  def __init__(self, text: str, value: str = "", icon="", icon_size: tuple[int, int] = (64, 64), scroll: bool = False):
+  def __init__(self, text: str, value: str = "", icon="", icon_size: tuple[int, int] = (64, 64), scroll: bool = False, toggle_param: str | None = None):
     self._badge_labels: list[str] | None = None
-    self._active: bool = True
+    self._toggle_param = toggle_param
+    self._param_enabled = False if toggle_param else True
     BigButton.__init__(self, text, value, icon, icon_size, scroll)
 
   def set_subtitle_font_size(self, size: int):
     self._sub_label.set_font_size(size)
-
-  def set_active(self, active: bool) -> None:
-    """Controls badge dimming, not interactivity."""
-    self._active = active
 
   def set_badges(self, entries: list[tuple[str, str]]):
     """Set badge pills from (key, value) pairs. 'off' hides, 'on' shows key, else shows value."""
@@ -77,16 +62,24 @@ class BigButtonSP(BigButton):
     """Render badge labels as outlined pill chips in a flow layout."""
     font = gui_app.font(FontWeight.BOLD)
     font_size, h_pad, gap = 28, 10, 8
-    alpha_mult = 1.0 if self._active else 0.3
-    border = rl.Color(BADGE_GREEN_FG.r, BADGE_GREEN_FG.g, BADGE_GREEN_FG.b, int(BADGE_GREEN_FG.a * 0.4 * alpha_mult))
-    text_color = rl.Color(130, 200, 145, int(230 * alpha_mult))
+    alpha_mult = 1.0 if self._enabled else 0.3
+    border = rl.Color(BADGE_GREEN_FG.r, BADGE_GREEN_FG.g, BADGE_GREEN_FG.b, int(BADGE_GREEN_FG.a * 0.4 * alpha_mult))\
+              if self._param_enabled else rl.Color(255, 255, 255, int(255 * 0.3 * alpha_mult))
+    text_color = rl.Color(130, 200, 145, int(230 * alpha_mult))\
+                  if self._param_enabled else rl.Color(255, 255, 255, int(255 * 0.3 * alpha_mult))
 
     specs = []
-    for label in self._badge_labels:
-      text_w = measure_text_cached(font, label, font_size).x
-      specs.append((label, text_w + h_pad * 2, text_w))
+    if self._param_enabled:
+      if self._badge_labels:
+        for label in self._badge_labels:
+          text_w = measure_text_cached(font, label, font_size).x
+          specs.append((label, text_w + h_pad * 2, text_w))
+    else:
+      disabled_txt = tr("disabled")
+      text_w = measure_text_cached(font, disabled_txt, font_size).x
+      specs.append((disabled_txt, text_w + h_pad * 2, text_w))
 
-    # Flow layout: wrap into rows
+    # Flow layout: wrap into rows with fixed gap between pills
     rows: list[list] = []
     current_row: list = []
     row_width = 0.0
@@ -102,22 +95,20 @@ class BigButtonSP(BigButton):
       rows.append(current_row)
 
     text_h = measure_text_cached(font, "Xg", font_size).y
-    max_h = (rect.height - gap * (len(rows) - 1)) / len(rows)
+    max_h = (rect.height - gap * (len(rows) - 1)) / len(rows) if len(rows) > 1 else rect.height
     badge_h = max(text_h, min(text_h + 10, max_h))
 
-    # Draw rows bottom-up
-    cy = rect.y + rect.height - badge_h
-    for row in reversed(rows):
-      total_badge_w = sum(bw for _, bw, _ in row)
-      row_gap = gap if len(row) <= 1 else (rect.width - total_badge_w) / (len(row) - 1)
+    # Draw rows top-to-bottom
+    cy = rect.y
+    for row in rows:
       cx = rect.x
       for label, badge_w, text_w in row:
         pill_rect = rl.Rectangle(cx, cy, badge_w, badge_h)
         rl.draw_rectangle_rounded_lines_ex(pill_rect, 0.5, 6, 2, border)
         ty = cy + (badge_h - text_h) / 2 - 2
         rl.draw_text_ex(font, label, rl.Vector2(cx + (badge_w - text_w) / 2, ty), font_size, 0, text_color)
-        cx += badge_w + row_gap
-      cy -= badge_h + gap
+        cx += badge_w + gap
+      cy += badge_h + gap
 
   def _draw_content(self, btn_y: float):
     # Upstream draws label + subtitle + icon. set_badges() clears self.value,
@@ -140,7 +131,7 @@ class BigButtonSP(BigButton):
 
   def _render(self, _):
     txt_bg, btn_x, btn_y, scale = self._handle_background()
-    bg_tint = CARD_ACTIVE_TINT if self._badge_labels and self._active else rl.WHITE
+    bg_tint = CARD_ACTIVE_TINT if self._param_enabled and self._enabled else rl.WHITE
     if self._scroll:
       scaled_rect = rl.Rectangle(btn_x, btn_y, self._rect.width * scale, self._rect.height * scale)
       rl.draw_rectangle_rounded(scaled_rect, 0.4, 7, rl.Color(0, 0, 0, int(255 * 0.5)))
@@ -149,6 +140,9 @@ class BigButtonSP(BigButton):
     else:
       rl.draw_texture_ex(txt_bg, (btn_x, btn_y), 0, scale, bg_tint)
       self._draw_content(btn_y)
+
+  def _update_state(self):
+    self._param_enabled = ui_state.params.get_bool(self._toggle_param)
 
 
 class BigMultiParamToggleSP(BigMultiParamToggle):
@@ -198,13 +192,12 @@ class BigParamOption(BigButton):
     self._picker_label_callback = picker_label_callback
     self._picker_unit = picker_unit
     self._picker_item_width = picker_item_width
-    self._params = Params()
     self._current = self._read_value()
     self._update_display()
     self.set_click_callback(self._open_picker)
 
   def _read_value(self) -> int:
-    val = self._params.get(self._param, return_default=True)
+    val = ui_state.params.get(self._param, return_default=True)
     try:
       return int(float(val)) if val is not None else self._min_value
     except (ValueError, TypeError):
