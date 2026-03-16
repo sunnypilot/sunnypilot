@@ -93,6 +93,7 @@ class BigButtonSP(BigButton):
     text_color = rl.Color(text_base.r, text_base.g, text_base.b, int(text_base.a * alpha_mult))
 
     specs = []
+    assert self._badge_labels is not None
     for label in self._badge_labels:
       text_w = measure_text_cached(font, label, font_size).x
       specs.append((label, text_w + h_pad * 2, text_w))
