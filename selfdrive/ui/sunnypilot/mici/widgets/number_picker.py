@@ -226,6 +226,7 @@ class NumberPickerScreen(Widget):
     for idx, item in enumerate(self._picker_items):
       if item.raw_value == raw_value:
         self._scroll_to_index(idx)
+        self._commit_value()
         break
 
   def _read_value(self) -> int:
