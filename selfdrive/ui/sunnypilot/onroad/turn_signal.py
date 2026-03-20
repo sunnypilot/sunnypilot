@@ -55,10 +55,10 @@ class TurnSignalWidget(Widget):
     self._texture = self._blind_spot_texture if self._type == 'blind_spot' else self._signal_texture
 
     if self._texture:
-      pos_x = int(self._rect.x + (self._rect.width - self._texture.width) / 2)
-      pos_y = int(self._rect.y + (self._rect.height - self._texture.height) / 2)
+      pos_x = self._rect.x + (self._rect.width - self._texture.width) / 2
+      pos_y = self._rect.y + (self._rect.height - self._texture.height) / 2
       color = rl.Color(255, 255, 255, icon_alpha)
-      rl.draw_texture(self._texture, pos_x, pos_y, color)
+      rl.draw_texture_ex(self._texture, rl.Vector2(pos_x, pos_y), 0.0, 1.0, color)
 
   def activate(self, _type: str = 'signal'):
     if not self._active or self._type != _type:

@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 from cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialogV2
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -32,9 +32,9 @@ class SunnylinkLayoutMici(NavScroller):
                                        toggle_callback=self._sunnylink_toggle_callback)
     self._sunnylink_sponsor_button = SunnylinkPairBigButton(sponsor_pairing=False)
     self._sunnylink_pair_button = SunnylinkPairBigButton(sponsor_pairing=True)
-    self._backup_btn = BigButton(tr("backup settings"), "", "")
+    self._backup_btn = BigButton(tr("backup settings"), "")
     self._backup_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=False))
-    self._restore_btn = BigButton(tr("restore settings"), "", "")
+    self._restore_btn = BigButton(tr("restore settings"), "")
     self._restore_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=True))
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
@@ -105,8 +105,8 @@ class SunnylinkLayoutMici(NavScroller):
 
   def _handle_backup_restore_btn(self, restore: bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
-    icon = "icons_mici/settings/device/update.png"
-    dlg = BigConfirmationDialogV2(lbl, icon, confirm_callback=self._restore_handler if restore else self._backup_handler)
+    icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
+    dlg = BigConfirmationDialog(lbl, icon, confirm_callback=self._restore_handler if restore else self._backup_handler)
     gui_app.push_widget(dlg)
 
   def _backup_handler(self):
@@ -169,8 +169,8 @@ class SunnylinkLayoutMici(NavScroller):
       elif (restore_status == custom.BackupManagerSP.Status.completed or
             (restore_status == custom.BackupManagerSP.Status.idle and restore_progress == 100.0)):
         self._restore_in_progress = False
-        gui_app.push_widget(BigConfirmationDialogV2(
-          title="slide to restart", icon="icons_mici/settings/device/reboot.png",
+        gui_app.push_widget(BigConfirmationDialog(
+          title="slide to restart", icon=gui_app.texture("icons_mici/settings/device/reboot.png", 64, 64),
           confirm_callback=lambda: gui_app.request_close()))
 
     else:
@@ -186,7 +186,7 @@ class SunnylinkLayoutMici(NavScroller):
 class SunnylinkPairBigButton(BigButton):
   def __init__(self, sponsor_pairing: bool = False):
     self.sponsor_pairing = sponsor_pairing
-    super().__init__("", "", "")
+    super().__init__("")
 
   def _update_state(self):
     super()._update_state()
