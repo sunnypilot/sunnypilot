@@ -289,7 +289,7 @@ class NumberPickerScreen(Widget):
     band_left = rect.x + (SCREEN_WIDTH - self._item_width) / 2 - 1
     band_right = band_left + self._item_width
     for x in (band_left, band_right):
-      rl.draw_texture(band_tex, int(x), int(rect.y + BAND_TOP), rl.WHITE)
+      rl.draw_texture_ex(band_tex, (x, rect.y + BAND_TOP), 0, 1.0, rl.WHITE)
 
     if unit_text:
       unit_font = gui_app.font(FontWeight.BOLD)
