@@ -1,7 +1,7 @@
 import base64
 import gzip
 import json
-from sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.system.version import is_prebuilt
 
@@ -109,18 +109,18 @@ def _convert_param_to_type(value: bytes, param_type: ParamKeyType) -> bytes | st
 
   # We convert to string anything that isn't bytes first. We later transform further.
   if param_type != ParamKeyType.BYTES:
-    value = value.decode('utf-8')  # type: ignore
+    value = value.decode('utf-8')
 
   if param_type == ParamKeyType.STRING:
     value = value
   elif param_type == ParamKeyType.BOOL:
-    value = value.lower() in ('true', '1', 'yes')  # type: ignore
+    value = value.lower() in ('true', '1', 'yes')
   elif param_type == ParamKeyType.INT:
-    value = int(value)  # type: ignore
+    value = int(value)
   elif param_type == ParamKeyType.FLOAT:
-    value = float(value)  # type: ignore
+    value = float(value)
   elif param_type == ParamKeyType.TIME:
-    value = str(value)  # type: ignore
+    value = str(value)
   elif param_type == ParamKeyType.JSON:
     value = json.loads(value)
 

@@ -1,8 +1,12 @@
 import io
 import re
+import functools
+from importlib.resources import as_file
 
 from PIL import Image, ImageDraw, ImageFont
 import pyray as rl
+
+from openpilot.system.ui.lib.application import FONT_DIR
 
 _cache: dict[str, rl.Texture] = {}
 
@@ -26,9 +30,14 @@ EMOJI_REGEX = re.compile(
 \u231a
 \ufe0f
 \u3030
-]+""",
+]+""".replace("\n", ""),
   flags=re.UNICODE
 )
+
+@functools.cache
+def _load_emoji_font() -> ImageFont.FreeTypeFont:
+  with as_file(FONT_DIR.joinpath("NotoColorEmoji.ttf")) as font_path:
+    return ImageFont.truetype(io.BytesIO(font_path.read_bytes()), 109)
 
 def find_emoji(text):
   return [(m.start(), m.end(), m.group()) for m in EMOJI_REGEX.finditer(text)]
@@ -37,11 +46,10 @@ def emoji_tex(emoji):
   if emoji not in _cache:
     img = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype("NotoColorEmoji", 109)
-    draw.text((0, 0), emoji, font=font, embedded_color=True)
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    l = buffer.tell()
-    buffer.seek(0)
-    _cache[emoji] = rl.load_texture_from_image(rl.load_image_from_memory(".png", buffer.getvalue(), l))
+    draw.text((0, 0), emoji, font=_load_emoji_font(), embedded_color=True)
+    with io.BytesIO() as buffer:
+      img.save(buffer, format="PNG")
+      l = buffer.tell()
+      buffer.seek(0)
+      _cache[emoji] = rl.load_texture_from_image(rl.load_image_from_memory(".png", buffer.getvalue(), l))
   return _cache[emoji]

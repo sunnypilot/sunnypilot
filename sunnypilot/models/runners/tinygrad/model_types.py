@@ -13,6 +13,22 @@ SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 CUSTOM_MODEL_PATH = Paths.model_root()
 
 
+class OffPolicyTinygrad(ModularRunner, ABC):
+  """
+  A TinygradRunner specialized for off-policy models.
+
+  Uses a SplitParser to handle outputs specific to the off-policy part of a split model setup.
+  """
+  def __init__(self):
+    self._off_policy_parser = SplitParser()
+    self.parser_method_dict[ModelType.offPolicy] = self._parse_off_policy_outputs
+
+  def _parse_off_policy_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    """Parses off-policy model outputs using SplitParser."""
+    result: NumpyDict = self._off_policy_parser.parse_policy_outputs(self._slice_outputs(model_outputs))
+    return result
+
+
 class PolicyTinygrad(ModularRunner, ABC):
   """
   A TinygradRunner specialized for policy-only models.

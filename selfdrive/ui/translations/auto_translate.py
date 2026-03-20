@@ -18,7 +18,7 @@ OPENAI_PROMPT = "You are a professional translator from English to {language} (I
                 "The following sentence or word is in the GUI of a software called openpilot, translate it accordingly."
 
 
-def get_language_files(languages: list[str] = None) -> dict[str, pathlib.Path]:
+def get_language_files(languages: list[str] | None = None) -> dict[str, pathlib.Path]:
   files = {}
 
   with open(TRANSLATIONS_LANGUAGES) as fp:
@@ -26,7 +26,7 @@ def get_language_files(languages: list[str] = None) -> dict[str, pathlib.Path]:
 
     for filename in language_dict.values():
       path = TRANSLATIONS_DIR / f"{filename}.ts"
-      language = path.stem.split("main_")[1]
+      language = path.stem
 
       if languages is None or language in languages:
         files[language] = path

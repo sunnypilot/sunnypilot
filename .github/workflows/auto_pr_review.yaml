@@ -12,12 +12,12 @@ jobs:
       issues: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: false
 
     # Label PRs
-    - uses: actions/labeler@v5.0.0
+    - uses: actions/labeler@v6
       with:
         dot: true
         configuration-path: .github/labeler.yaml
@@ -55,13 +55,13 @@ jobs:
               repo: context.repo.repo,
               issue_number: prNumber
             });
-            
+
             const hasDevC3Label = labels.some(label => label.name === process.env.PR_LABEL);
             const hasTrustLabel = labels.some(label => label.name === process.env.TRUST_FORK_PR_LABEL);
-            
+
             console.log(`PR #${prNumber} has ${process.env.PR_LABEL} label: ${hasDevC3Label}`);
             console.log(`PR #${prNumber} has ${process.env.TRUST_FORK_PR_LABEL} label: ${hasTrustLabel}`);
-            
+
             core.setOutput('has-dev', hasDevC3Label ? 'true' : 'false');
             core.setOutput('has-trust', hasTrustLabel ? 'true' : 'false');
 
@@ -81,7 +81,7 @@ jobs:
             });
 
             console.log(`Removed '${process.env.TRUST_FORK_PR_LABEL}' label from PR #${prNumber} as it received new commits`);
-            
+
             // Add a comment to the PR
             await github.rest.issues.createComment({
               owner: context.repo.owner,

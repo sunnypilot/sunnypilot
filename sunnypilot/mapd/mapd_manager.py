@@ -55,7 +55,7 @@ def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
       shutil.rmtree(file, ignore_errors=False)
 
 
-def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
+def request_refresh_osm_location_data(nations: list[str], states: list[str] | None = None) -> None:
   params.put("OsmDownloadedDate", str(datetime.now().timestamp()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
@@ -64,16 +64,11 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str] = No
     "states": states or []
   }
 
-  osm_download_locations_dump = json.dumps({
-    "nations": nations,
-    "states": states or []
-  })
-
-  print(f"Downloading maps for {osm_download_locations_dump}")
+  print(f"Downloading maps for {json.dumps(osm_download_locations)}")
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
-def filter_nations_and_states(nations: list[str], states: list[str] = None) -> tuple[list[str], list[str]]:
+def filter_nations_and_states(nations: list[str], states: list[str] | None = None) -> tuple[list[str], list[str]]:
   """Filters and prepares nation and state data for OSM map download.
 
   If the nation is 'US' and a specific state is provided, the nation 'US' is removed from the list.
@@ -103,8 +98,6 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None) -> t
 
 
 def update_osm_db() -> None:
-  # last_downloaded_date = params.get("OsmDownloadedDate", return_default=True)
-  # if params.get_bool("OsmDbUpdatesCheck") or time.monotonic() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
     cleanup_old_osm_data(get_files_for_cleanup())
     country = params.get("OsmLocationName", return_default=True)
