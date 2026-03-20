@@ -227,7 +227,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
       arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
       color = rl.Color(255, 255, 255, int(icon_alpha))
-      rl.draw_texture(txt_icon, int(arrow_x), int(arrow_y), color)
+      rl.draw_texture_ex(txt_icon, rl.Vector2(arrow_x, arrow_y), 0.0, 1.0, color)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)

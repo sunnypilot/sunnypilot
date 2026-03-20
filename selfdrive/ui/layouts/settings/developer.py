@@ -104,6 +104,7 @@ class DeveloperLayout(Widget):
     self._scroller.render(rect)
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
     self._update_toggles()
 

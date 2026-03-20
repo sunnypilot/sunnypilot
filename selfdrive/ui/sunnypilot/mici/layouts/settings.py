@@ -18,11 +18,11 @@ class SettingsLayoutSP(OP.SettingsLayout):
     OP.SettingsLayout.__init__(self)
 
     sunnylink_panel = SunnylinkLayoutMici(back_callback=gui_app.pop_widget)
-    sunnylink_btn = BigButton("sunnylink", "", "icons_mici/settings/developer/ssh.png")
+    sunnylink_btn = BigButton("sunnylink", "", gui_app.texture("icons_mici/settings/developer/ssh.png", ICON_SIZE, ICON_SIZE))
     sunnylink_btn.set_click_callback(lambda: gui_app.push_widget(sunnylink_panel))
 
     models_panel = ModelsLayoutMici(back_callback=gui_app.pop_widget)
-    models_btn = BigButton("models", "", "../../sunnypilot/selfdrive/assets/offroad/icon_models.png")
+    models_btn = BigButton("models", "", gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_models.png", ICON_SIZE, ICON_SIZE))
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
     items = self._scroller._items.copy()

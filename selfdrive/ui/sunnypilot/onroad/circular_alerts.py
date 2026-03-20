@@ -101,9 +101,9 @@ class CircularAlertsRenderer:
 
     # Draw Image
     if self._alert_img and self._e2e_alert_display_timer > 0:
-      img_x = int(center.x - self._alert_img.width / 2)
-      img_y = int(center.y - self._alert_img.height / 2)
-      rl.draw_texture(self._alert_img, img_x, img_y, rl.WHITE)
+      img_x = center.x - self._alert_img.width / 2
+      img_y = center.y - self._alert_img.height / 2
+      rl.draw_texture_ex(self._alert_img, rl.Vector2(img_x, img_y), 0.0, 1.0, rl.WHITE)
 
     # Draw Text
     txt_color = rl.Color(255, 255, 255, 255) if is_pulsing else rl.Color(0, 255, 0, 190)

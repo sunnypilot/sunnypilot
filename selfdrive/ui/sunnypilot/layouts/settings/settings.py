@@ -82,8 +82,7 @@ class NavButton(Widget):
 
     if self.panel_info.icon:
       icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
-      rl.draw_texture(icon_texture, int(content_x), int(rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2),
-                      rl.WHITE)
+      rl.draw_texture_ex(icon_texture, rl.Vector2(content_x, rect.y + (OP.NAV_BTN_HEIGHT - icon_texture.height) / 2), 0.0, 1.0, rl.WHITE)
       content_x += ICON_SIZE + 20
 
     # Draw button text (right-aligned)
