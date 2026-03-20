@@ -15,6 +15,7 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
 
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
 SNG_HACK_UNAVAILABLE = tr_noop("sunnypilot Longitudinal Control must be available and enabled for your vehicle to use this feature.")
+TSS2_SMOOTH_UNAVAILABLE = tr_noop("sunnypilot Longitudinal Control must be available and enabled for your vehicle to use this feature.")
 
 DESCRIPTIONS = {
   'enforce_stock_longitudinal': tr_noop(
@@ -23,7 +24,11 @@ DESCRIPTIONS = {
   'stop_and_go_hack': tr_noop(
     'sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. ' +
     'This feature is only applicable to certain models that are able to use longitudinal control. This is an alpha feature. Use at your own risk.'
-  )
+  ),
+  'tss2_smooth': tr_noop(
+    'Enable smoother longitudinal control for TSS2 vehicles. ' +
+    'Uses a custom speed-dependent integral gain curve and a lower stopping decel rate for gentler stops and smoother traffic driving.'
+  ),
 }
 
 
@@ -47,9 +52,18 @@ class ToyotaSettings(BrandSettings):
       enabled=lambda: not ui_state.engaged,
     )
 
+    self.tss2_smooth = toggle_item_sp(
+      lambda: tr("TSS2 Smooth Longitudinal (Alpha)"),
+      description=lambda: tr(DESCRIPTIONS["tss2_smooth"]),
+      initial_state=ui_state.params.get_bool("TSS2-Smooth"),
+      callback=self._on_enable_tss2_smooth,
+      enabled=lambda: not ui_state.engaged,
+    )
+
     self.items = [
       self.enforce_stock_longitudinal,
       self.stop_and_go_hack,
+      self.tss2_smooth,
     ]
 
   def _on_enable_enforce_stock_longitudinal(self, state: bool):
@@ -61,6 +75,8 @@ class ToyotaSettings(BrandSettings):
             ui_state.params.put_bool("AlphaLongitudinalEnabled", False)
           ui_state.params.put_bool("ToyotaStopAndGoHack", False)
           self.stop_and_go_hack.action_item.set_state(False)
+          ui_state.params.put_bool("TSS2-Smooth", False)
+          self.tss2_smooth.action_item.set_state(False)
           ui_state.params.put_bool("OnroadCycleRequested", True)
         else:
           self.enforce_stock_longitudinal.action_item.set_state(False)
@@ -73,6 +89,25 @@ class ToyotaSettings(BrandSettings):
 
     else:
       ui_state.params.put_bool("ToyotaEnforceStockLongitudinal", False)
+      ui_state.params.put_bool("OnroadCycleRequested", True)
+
+  def _on_enable_tss2_smooth(self, state: bool):
+    if state:
+      def confirm_callback(result: int):
+        if result == DialogResult.CONFIRM:
+          ui_state.params.put_bool("TSS2-Smooth", True)
+          ui_state.params.put_bool("OnroadCycleRequested", True)
+        else:
+          self.tss2_smooth.action_item.set_state(False)
+
+      content = (f"<h1>{self.tss2_smooth.title}</h1><br>" +
+                 f"<p>{self.tss2_smooth.description}</p>")
+
+      dlg = ConfirmDialog(content, tr("Enable"), rich=True, callback=confirm_callback)
+      gui_app.push_widget(dlg)
+
+    else:
+      ui_state.params.put_bool("TSS2-Smooth", False)
       ui_state.params.put_bool("OnroadCycleRequested", True)
 
   def _on_enable_stop_and_go_hack(self, state: bool):
@@ -113,9 +148,30 @@ class ToyotaSettings(BrandSettings):
         self.stop_and_go_hack.set_description(new_desc)
         if show_desc:
           self.stop_and_go_hack.show_description(True)
+
+      if longitudinal and not enforce_stock:
+        self.tss2_smooth.action_item.set_enabled(not ui_state.engaged)
+        new_desc = tr(DESCRIPTIONS["tss2_smooth"])
+        show_desc = False
+      else:
+        self.tss2_smooth.action_item.set_enabled(False)
+        self.tss2_smooth.action_item.set_state(False)
+        new_desc = "<b>" + tr(TSS2_SMOOTH_UNAVAILABLE) + "</b>\n\n" + tr(DESCRIPTIONS["tss2_smooth"])
+        show_desc = True
+
+      if self.tss2_smooth.description != new_desc:
+        self.tss2_smooth.set_description(new_desc)
+        if show_desc:
+          self.tss2_smooth.show_description(True)
     else:
       self.stop_and_go_hack.action_item.set_enabled(False)
       new_desc = "<b>" + tr(ONROAD_ONLY_DESCRIPTION) + "</b>\n\n" + tr(DESCRIPTIONS["stop_and_go_hack"])
       if self.stop_and_go_hack.description != new_desc:
         self.stop_and_go_hack.set_description(new_desc)
         self.stop_and_go_hack.show_description(True)
+
+      self.tss2_smooth.action_item.set_enabled(False)
+      new_desc = "<b>" + tr(ONROAD_ONLY_DESCRIPTION) + "</b>\n\n" + tr(DESCRIPTIONS["tss2_smooth"])
+      if self.tss2_smooth.description != new_desc:
+        self.tss2_smooth.set_description(new_desc)
+        self.tss2_smooth.show_description(True)
