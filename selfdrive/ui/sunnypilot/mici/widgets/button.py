@@ -35,12 +35,12 @@ class BigButtonSP(BigButton):
     set_value()     → plain text (upstream behavior)
   """
 
-  def __init__(self, text: str, value: str = "", icon="", icon_size: tuple[int, int] = (64, 64), scroll: bool = False):
+  def __init__(self, text: str, value: str = "", icon=None, scroll: bool = False):
     # Init before super: BigButton.__init__ calls _update_label_layout which reads these
     self._badge_labels: list[str] | None = None
     self._disabled: bool = False
     self._active: bool = True
-    BigButton.__init__(self, text, value, icon, icon_size, scroll)
+    BigButton.__init__(self, text, value, icon, scroll)
 
   def set_subtitle_font_size(self, size: int):
     self._sub_label.set_font_size(size)
@@ -144,9 +144,9 @@ class BigButtonSP(BigButton):
 
   def link_sub_panel(self, items):
     """Create a sub-panel NavScroller with the given items, linked to this button's click."""
-    from openpilot.selfdrive.ui.sunnypilot.mici.widgets.scroller import NavScroller
+    from openpilot.system.ui.widgets.scroller import NavScroller
     view = NavScroller()
-    view.add_widgets(items)
+    view._scroller.add_widgets(items)  # upstream NavScroller doesn't expose _Scroller API directly
     self.set_click_callback(lambda: gui_app.push_widget(view))
     return view
 
@@ -249,11 +249,13 @@ class BigParamOption(BigButton):
     )
 
   def _open_picker(self):
-    from openpilot.selfdrive.ui.sunnypilot.mici.widgets.scroller import NavScroller
+    from openpilot.system.ui.widgets.scroller import NavScroller
+    # NavScroller doesn't pass kwargs to _Scroller (NavWidget.__init__ rejects them),
+    # so we set scroll_indicator and pad directly on _scroller after construction
     view = NavScroller()
     view._scroller._show_scroll_indicator = False
     view._scroller._pad = 0
     view.set_back_callback(lambda: self.refresh())
-    view.add_widgets([self.create_picker_screen()])
-    view.set_scrolling_enabled(False)
+    view._scroller.add_widgets([self.create_picker_screen()])
+    view._scroller.set_scrolling_enabled(False)
     gui_app.push_widget(view)

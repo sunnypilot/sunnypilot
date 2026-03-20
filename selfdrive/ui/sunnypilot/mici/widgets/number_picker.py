@@ -189,7 +189,7 @@ class NumberPickerScreen(Widget):
 
     # Horizontal scroller with snap, centered padding
     pad = (SCREEN_WIDTH - item_width) // 2
-    self._scroller = _Scroller(
+    self._scroller = self._child(_Scroller(
       self._picker_items,
       horizontal=True,
       snap_items=True,
@@ -197,7 +197,7 @@ class NumberPickerScreen(Widget):
       pad=pad,
       spacing=0,
       edge_shadows=False,
-    )
+    ))
     self._scroller.set_reset_scroll_at_show(False)
 
     self.set_rect(rl.Rectangle(0, 0, SCREEN_WIDTH, TITLE_HEIGHT + CAROUSEL_HEIGHT))
@@ -208,7 +208,7 @@ class NumberPickerScreen(Widget):
 
   def _center_index(self) -> int:
     """Find which item is between the selection bars using actual layout positions."""
-    center_x = self._scroller._rect.x + self._scroller._rect.width / 2
+    center_x = self._scroller.rect.x + self._scroller.rect.width / 2
     closest_idx = 0
     closest_dist = float('inf')
     for idx, item in enumerate(self._picker_items):
@@ -238,8 +238,7 @@ class NumberPickerScreen(Widget):
       return self._min_value
 
   def show_event(self):
-    super().show_event()
-    self._scroller.show_event()
+    super().show_event()  # propagates to _scroller via _child()
     current = self._read_value()
     self._last_center_value = current
     for idx, item in enumerate(self._picker_items):
@@ -255,10 +254,6 @@ class NumberPickerScreen(Widget):
     if center.raw_value != self._last_center_value:
       self._last_center_value = center.raw_value
       self._params.put_nonblocking(self._param, float(center.raw_value) if self._float_param else center.raw_value)
-
-  def hide_event(self):
-    super().hide_event()
-    self._scroller.hide_event()
 
   def _update_state(self):
     super()._update_state()
