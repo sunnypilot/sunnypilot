@@ -22,7 +22,7 @@ METER_TO_MILE = 0.000621371
 
 
 @dataclass(frozen=True)
-class MapdPanelColors:
+class OnroadInfoPanelColors:
   white: rl.Color = rl.WHITE
   black: rl.Color = rl.BLACK
   red: rl.Color = rl.Color(255, 0, 0, 255)
@@ -34,10 +34,10 @@ class MapdPanelColors:
   card_bg: rl.Color = rl.Color(50, 50, 50, 200)
 
 
-COLORS = MapdPanelColors()
+COLORS = OnroadInfoPanelColors()
 
 
-class MapdInfoPanel(Widget):
+class OnroadInfoPanel(Widget):
   def __init__(self, bookmark_callback=None):
     super().__init__()
     self.speed_limit: float = 0.0
@@ -66,6 +66,9 @@ class MapdInfoPanel(Widget):
     self._alert_alpha_filter = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
 
     self._bookmark_icon = BookmarkIcon(bookmark_callback)
+
+  def is_swiping_left(self) -> bool:
+    return self._bookmark_icon.is_swiping_left()
 
   def _update_state(self) -> None:
     sm = ui_state.sm
@@ -103,7 +106,7 @@ class MapdInfoPanel(Widget):
     left_x = rect.x + margin
 
     if self.cruise_enabled:
-      unit = tr("SET")
+      unit = tr("MAX")
       display_speed = self.set_speed
     else:
       unit = tr("km/h") if ui_state.is_metric else tr("MPH")
