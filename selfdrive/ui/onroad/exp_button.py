@@ -11,7 +11,9 @@ class ExpButton(Widget):
     super().__init__()
     self._params = Params()
     self._experimental_mode: bool = False
+    self._dynamic_experimental_mode: bool = False
     self._engageable: bool = False
+    self._last_param_update: float = 0.0
 
     # State hold mechanism
     self._hold_duration = 2.0  # seconds
@@ -31,6 +33,10 @@ class ExpButton(Widget):
     selfdrive_state = ui_state.sm["selfdriveState"]
     self._experimental_mode = selfdrive_state.experimentalMode
     self._engageable = selfdrive_state.engageable or selfdrive_state.enabled
+    now = rl.get_time()
+    if now - self._last_param_update > 1.0:
+      self._dynamic_experimental_mode = self._params.get_bool("DynamicExperimentalControl")
+      self._last_param_update = now
 
   def _handle_mouse_release(self, _):
     super()._handle_mouse_release(_)
@@ -48,9 +54,19 @@ class ExpButton(Widget):
 
     self._white_color.a = 180 if self.is_pressed or not self._engageable else 255
 
-    texture = self._txt_exp if self._held_or_actual_mode() else self._txt_wheel
     rl.draw_circle(center_x, center_y, self._rect.width / 2, self._black_bg)
-    rl.draw_texture_ex(texture, rl.Vector2(center_x - texture.width / 2, center_y - texture.height / 2), 0.0, 1.0, self._white_color)
+
+    if self._dynamic_experimental_mode:
+      chill_src = rl.Rectangle(0, 0, self._txt_wheel.width / 2, self._txt_wheel.height)
+      chill_dst = rl.Rectangle(center_x - self._txt_wheel.width / 2, center_y - self._txt_wheel.height / 2, self._txt_wheel.width / 2, self._txt_wheel.height)
+      rl.draw_texture_pro(self._txt_wheel, chill_src, chill_dst, rl.Vector2(0, 0), 0.0, self._white_color)
+
+      exp_src = rl.Rectangle(self._txt_exp.width / 2, 0, self._txt_exp.width / 2, self._txt_exp.height)
+      exp_dst = rl.Rectangle(center_x, center_y - self._txt_exp.height / 2, self._txt_exp.width / 2, self._txt_exp.height)
+      rl.draw_texture_pro(self._txt_exp, exp_src, exp_dst, rl.Vector2(0, 0), 0.0, self._white_color)
+    else:
+      texture = self._txt_exp if self._held_or_actual_mode() else self._txt_wheel
+      rl.draw_texture_ex(texture, rl.Vector2(center_x - texture.width / 2, center_y - texture.height / 2), 0.0, 1.0, self._white_color)
 
   def _held_or_actual_mode(self):
     now = time.monotonic()

@@ -15,13 +15,24 @@ class ExperimentalModeButton(Widget):
 
     self.params = Params()
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
+    self.dynamic_experimental_mode = self.params.get_bool("DynamicExperimentalControl")
+    self._last_param_update = 0.0
 
     self.chill_pixmap = gui_app.texture("icons/couch.png", self.img_width, self.img_width)
     self.experimental_pixmap = gui_app.texture("icons/experimental_grey.png", self.img_width, self.img_width)
 
   def show_event(self):
     super().show_event()
+    self._refresh_params()
+
+  def _refresh_params(self):
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
+    self.dynamic_experimental_mode = self.params.get_bool("DynamicExperimentalControl")
+    self._last_param_update = rl.get_time()
+
+  def _update_state(self):
+    if rl.get_time() - self._last_param_update > 0.5:
+      self._refresh_params()
 
   def _get_gradient_colors(self):
     alpha = 0xCC if self.is_pressed else 0xFF
@@ -60,6 +71,15 @@ class ExperimentalModeButton(Widget):
     icon_rect = rl.Rectangle(icon_x, icon_y, self.img_width, self.img_width)
 
     # Draw current mode icon
-    current_icon = self.experimental_pixmap if self.experimental_mode else self.chill_pixmap
-    source_rect = rl.Rectangle(0, 0, current_icon.width, current_icon.height)
-    rl.draw_texture_pro(current_icon, source_rect, icon_rect, rl.Vector2(0, 0), 0, rl.WHITE)
+    if self.dynamic_experimental_mode:
+      chill_src = rl.Rectangle(0, 0, self.chill_pixmap.width / 2, self.chill_pixmap.height)
+      chill_dst = rl.Rectangle(icon_x, icon_y, self.img_width / 2, self.img_width)
+      rl.draw_texture_pro(self.chill_pixmap, chill_src, chill_dst, rl.Vector2(0, 0), 0, rl.WHITE)
+
+      exp_src = rl.Rectangle(self.experimental_pixmap.width / 2, 0, self.experimental_pixmap.width / 2, self.experimental_pixmap.height)
+      exp_dst = rl.Rectangle(icon_x + self.img_width / 2, icon_y, self.img_width / 2, self.img_width)
+      rl.draw_texture_pro(self.experimental_pixmap, exp_src, exp_dst, rl.Vector2(0, 0), 0, rl.WHITE)
+    else:
+      current_icon = self.experimental_pixmap if self.experimental_mode else self.chill_pixmap
+      source_rect = rl.Rectangle(0, 0, current_icon.width, current_icon.height)
+      rl.draw_texture_pro(current_icon, source_rect, icon_rect, rl.Vector2(0, 0), 0, rl.WHITE)

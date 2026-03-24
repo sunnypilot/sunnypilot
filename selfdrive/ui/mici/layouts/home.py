@@ -113,6 +113,29 @@ class NetworkIcon(Widget):
     rl.draw_texture_ex(draw_net_txt, rl.Vector2(draw_x, draw_y), 0.0, 1.0, rl.Color(255, 255, 255, int(255 * 0.9)))
 
 
+class DynamicExperimentalIconWidget(Widget):
+  def __init__(self):
+    super().__init__()
+    self.set_rect(rl.Rectangle(0, 0, 48, 48))
+    self._txt_chill = gui_app.texture("icons/couch.png", 48, 48)
+    self._txt_exp = gui_app.texture("icons_mici/experimental_mode.png", 48, 48)
+    self.dynamic_mode = False
+
+  def _render(self, _):
+    white_color = rl.Color(255, 255, 255, 255)
+    if self.dynamic_mode:
+      chill_src = rl.Rectangle(0, 0, self._txt_chill.width / 2, self._txt_chill.height)
+      chill_dst = rl.Rectangle(self._rect.x, self._rect.y, self._rect.width / 2, self._rect.height)
+      rl.draw_texture_pro(self._txt_chill, chill_src, chill_dst, rl.Vector2(0, 0), 0.0, white_color)
+
+      exp_src = rl.Rectangle(self._txt_exp.width / 2, 0, self._txt_exp.width / 2, self._txt_exp.height)
+      exp_dst = rl.Rectangle(self._rect.x + self._rect.width / 2, self._rect.y, self._rect.width / 2, self._rect.height)
+      rl.draw_texture_pro(self._txt_exp, exp_src, exp_dst, rl.Vector2(0, 0), 0.0, white_color)
+    else:
+      source_rect = rl.Rectangle(0, 0, self._txt_exp.width, self._txt_exp.height)
+      rl.draw_texture_pro(self._txt_exp, source_rect, self._rect, rl.Vector2(0, 0), 0.0, white_color)
+
+
 class MiciHomeLayout(Widget):
   def __init__(self):
     super().__init__()
@@ -121,14 +144,16 @@ class MiciHomeLayout(Widget):
     self._alert_count_callback: Callable[[], int] | None = None
 
     self._last_refresh = 0
+    self._last_param_refresh = 0
     self._mouse_down_t: None | float = None
     self._did_long_press = False
     self._is_pressed_prev = False
 
     self._version_text = None
     self._experimental_mode = False
+    self._dynamic_experimental_mode = False
 
-    self._experimental_icon = IconWidget("icons_mici/experimental_mode.png", (48, 48))
+    self._experimental_icon = DynamicExperimentalIconWidget()
     self._mic_icon = IconWidget("icons_mici/microphone.png", (32, 46))
 
     self._alerts_pill = AlertsPill()
@@ -154,6 +179,7 @@ class MiciHomeLayout(Widget):
 
   def _update_params(self):
     self._experimental_mode = ui_state.params.get_bool("ExperimentalMode")
+    self._dynamic_experimental_mode = ui_state.params.get_bool("DynamicExperimentalControl")
 
   def _update_state(self):
     if self.is_pressed and not self._is_pressed_prev:
@@ -176,7 +202,10 @@ class MiciHomeLayout(Widget):
       # Update version text
       self._version_text = self._get_version_text()
       self._last_refresh = rl.get_time()
+
+    if rl.get_time() - self._last_param_refresh > 1.0:
       self._update_params()
+      self._last_param_refresh = rl.get_time()
 
   def set_callbacks(self, on_settings: Callable | None = None, on_alerts: Callable | None = None,
                     alert_count_callback: Callable[[], int] | None = None):
@@ -245,7 +274,8 @@ class MiciHomeLayout(Widget):
         self._version_commit_label.render()
 
     # ***** Center-aligned bottom section icons *****
-    self._experimental_icon.set_visible(self._experimental_mode)
+    self._experimental_icon.dynamic_mode = self._dynamic_experimental_mode
+    self._experimental_icon.set_visible(self._experimental_mode or self._dynamic_experimental_mode)
     self._mic_icon.set_visible(ui_state.recording_audio)
 
     footer_rect = rl.Rectangle(self.rect.x + HOME_PADDING, self.rect.y + self.rect.height - 48, self.rect.width - HOME_PADDING, 48)
