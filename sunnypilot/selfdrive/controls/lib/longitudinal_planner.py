@@ -11,6 +11,7 @@ from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
+from openpilot.sunnypilot.selfdrive.controls.lib.ev_power_limiter.ev_power_limiter import EvPowerLimiter
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -18,6 +19,7 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
+EvPowerLimiterState = custom.LongitudinalPlanSP.EvPowerLimiter.EvPowerLimiterState
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 
@@ -29,6 +31,7 @@ class LongitudinalPlannerSP:
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP, CP_SP)
+    self.ev_power_limiter = EvPowerLimiter(CP, CP_SP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
@@ -62,11 +65,15 @@ class LongitudinalPlannerSP:
     self.sla.update(long_enabled, long_override, v_ego, a_ego, v_cruise_cluster, self.resolver.speed_limit,
                     self.resolver.speed_limit_final_last, has_speed_limit, self.resolver.distance, self.events_sp)
 
+    # EV Power Limiter
+    self.ev_power_limiter.update(sm, long_enabled, v_ego, a_ego)
+
     targets = {
       LongitudinalPlanSource.cruise: (v_cruise, a_ego),
       LongitudinalPlanSource.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
       LongitudinalPlanSource.sccMap: (self.scc.map.output_v_target, self.scc.map.output_a_target),
       LongitudinalPlanSource.speedLimitAssist: (self.sla.output_v_target, self.sla.output_a_target),
+      LongitudinalPlanSource.evPowerLimiter: (self.ev_power_limiter.output_v_target, self.ev_power_limiter.output_a_target),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])
@@ -137,5 +144,16 @@ class LongitudinalPlannerSP:
     e2eAlerts = longitudinalPlanSP.e2eAlerts
     e2eAlerts.greenLightAlert = self.e2e_alerts_helper.green_light_alert
     e2eAlerts.leadDepartAlert = self.e2e_alerts_helper.lead_depart_alert
+
+    # EV Power Limiter
+    evPowerLimiter = longitudinalPlanSP.evPowerLimiter
+    evPowerLimiter.state = self.ev_power_limiter.state
+    evPowerLimiter.enabled = self.ev_power_limiter.is_enabled
+    evPowerLimiter.active = self.ev_power_limiter.is_active
+    evPowerLimiter.vTarget = float(self.ev_power_limiter.output_v_target)
+    evPowerLimiter.aTarget = float(self.ev_power_limiter.output_a_target)
+    evPowerLimiter.estimatedPowerKw = float(self.ev_power_limiter.estimated_power_kw)
+    evPowerLimiter.maxAccel = float(self.ev_power_limiter.max_accel)
+    evPowerLimiter.powerLimitKw = float(self.ev_power_limiter.power_limit_kw)
 
     pm.send('longitudinalPlanSP', plan_sp_send)

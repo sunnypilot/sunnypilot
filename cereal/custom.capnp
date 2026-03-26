@@ -193,6 +193,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   aTarget @5 :Float32;
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
+  evPowerLimiter @8 :EvPowerLimiter;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -289,11 +290,29 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     sccVision @1;
     sccMap @2;
     speedLimitAssist @3;
+    evPowerLimiter @4;
   }
 
   struct E2eAlerts {
     greenLightAlert @0 :Bool;
     leadDepartAlert @1 :Bool;
+  }
+
+  struct EvPowerLimiter {
+    state @0 :EvPowerLimiterState;
+    enabled @1 :Bool;
+    active @2 :Bool;
+    vTarget @3 :Float32;
+    aTarget @4 :Float32;
+    estimatedPowerKw @5 :Float32;
+    maxAccel @6 :Float32;
+    powerLimitKw @7 :Float32;
+
+    enum EvPowerLimiterState {
+      disabled @0;
+      inactive @1;
+      active @2;
+    }
   }
 }
 
