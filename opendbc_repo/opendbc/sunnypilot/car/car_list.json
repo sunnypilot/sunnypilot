@@ -2254,6 +2254,17 @@
     ],
     "package": "Smart Cruise Control (SCC)"
   },
+  "Kia Optima Non-SCC 2019-20": {
+    "platform": "KIA_OPTIMA_G4_FL_NON_SCC",
+    "make": "Kia",
+    "brand": "hyundai",
+    "model": "Optima",
+    "year": [
+      "2019",
+      "2020"
+    ],
+    "package": "No Smart Cruise Control (Non-SCC)"
+  },
   "Kia Optima Hybrid 2019": {
     "platform": "KIA_OPTIMA_H_G4_FL",
     "make": "Kia",

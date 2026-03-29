@@ -123,4 +123,15 @@ FW_VERSIONS_EXT = {
       b'\xf1\x00BC3 LKA  AT EUR LHD 1.00 1.01 99211-Q0100 261'
     ],
   },
+  CAR.KIA_OPTIMA_G4_FL_NON_SCC: {
+    (Ecu.fwdCamera, 0x7C4, None): [
+      b'\xf1\x00JFA LKAS AT USA LHD 1.00 1.00 95895-D5100 h32',
+    ],
+    (Ecu.abs, 0x7D1, None): [
+      b"\xf1\x00JF ESC \t 11 \x18\x03' 58920-D5260",
+    ],
+    (Ecu.transmission, 0x7E1, None): [
+      b'\xf1\x006T6H0_C2\x00\x006T6B8051\x00\x00TJFSG24NH27\xa7\xc2\xb4',
+    ],
+  },
 }
