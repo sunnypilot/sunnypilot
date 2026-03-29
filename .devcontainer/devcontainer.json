@@ -1,0 +1,20 @@
+{
+    "name": "sunnypilot-tici-env",
+    "image": "ghcr.io/sunnypilot/sunnypilot-tici-base:latest",
+    "runArgs": [
+        "--gpus", "all",
+        "--privileged",
+        "--shm-size", "8g"
+    ],
+    "remoteUser": "batman", 
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/batman/openpilot,type=bind",
+    "workspaceFolder": "/home/batman/openpilot",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-vscode.cpptools"
+            ]
+        }
+    }
+}
