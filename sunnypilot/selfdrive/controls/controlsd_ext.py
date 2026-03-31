@@ -109,3 +109,11 @@ class ControlsExt(ModelStateBase):
   def run_ext(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     CC_SP = self.state_control_ext(sm)
     self.publish_ext(CC_SP, sm, pm)
+
+    # Speed-dependent torque: apply per-bin learned values to the lateral controller
+    if (self.CP.lateralTuning.which() == 'torque'
+        and sm.updated.get('liveTorqueParameters', False)
+        and sm.all_checks(['liveTorqueParameters'])):
+      tp = sm['liveTorqueParameters']
+      if tp.useParams and hasattr(self.LaC, 'extension'):
+        self.LaC.extension.update_speed_dep_torque(tp)
