@@ -89,7 +89,7 @@ class SelfdriveD(CruiseHelper):
     # TODO: de-couple selfdrived with card/conflate on carState without introducing controls mismatches
     self.car_state_sock = messaging.sub_sock('carState', timeout=20)
 
-    ignore = self.sensor_packets + self.gps_packets + ['alertDebug'] + ['modelDataV2SP']
+    ignore = self.sensor_packets + self.gps_packets + ['alertDebug', 'lateralManeuverPlan'] + ['modelDataV2SP']
     if SIMULATION:
       ignore += ['driverCameraState', 'managerState']
     if REPLAY:
@@ -99,7 +99,7 @@ class SelfdriveD(CruiseHelper):
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose', 'liveDelay',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
                                    'controlsState', 'carControl', 'driverAssistance', 'alertDebug', 'userBookmark', 'audioFeedback',
-                                   'modelDataV2SP', 'longitudinalPlanSP'] + \
+                                   'lateralManeuverPlan', 'modelDataV2SP', 'longitudinalPlanSP'] + \
                                    self.camera_packets + self.sensor_packets + self.gps_packets,
                                   ignore_alive=ignore, ignore_avg_freq=ignore,
                                   ignore_valid=ignore, frequency=int(1/DT_CTRL))
@@ -183,7 +183,10 @@ class SelfdriveD(CruiseHelper):
       self.events.add(EventName.joystickDebug)
       self.startup_event = None
 
-    if self.sm.recv_frame['alertDebug'] > 0:
+    if self.sm.recv_frame['lateralManeuverPlan'] > 0:
+      self.events.add(EventName.lateralManeuver)
+      self.startup_event = None
+    elif self.sm.recv_frame['alertDebug'] > 0:
       self.events.add(EventName.longitudinalManeuver)
       self.startup_event = None
 
