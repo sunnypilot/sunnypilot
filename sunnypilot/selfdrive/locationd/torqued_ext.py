@@ -181,6 +181,9 @@ class TorqueEstimatorExt:
           cache_ltp = evt.liveTorqueParameters
       from openpilot.selfdrive.locationd.torqued import MIN_FILTER_DECAY
       n_bins = len(self.speed_bin_bounds)
+      if not np.allclose(list(cache_ltp.speedBinCenters), self.speed_bin_centers, atol=0.01):
+        cloudlog.info("speed-dep: config changed, restarting learning")
+        return
       if (len(cache_ltp.speedBinLatAccelFactors) == n_bins and
           len(cache_ltp.speedBinFrictions) == n_bins):
         for i in range(n_bins):
