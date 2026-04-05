@@ -17,6 +17,8 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
 RELAXED_MIN_BUCKET_POINTS = np.array([1, 200, 300, 500, 500, 300, 200, 1])
 
+ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
+
 # Default speed bins — used when car has no speed_dependent.toml entry.
 DEFAULT_SPEED_BIN_BOUNDS = [(5, 8), (8, 12), (12, 18), (18, 24), (24, 29), (29, 35), (35, 40)]
 DEFAULT_SPEED_BIN_CENTERS = [6.5, 10.0, 15.0, 21.0, 26.5, 32.0, 37.5]
@@ -46,6 +48,7 @@ class TorqueEstimatorExt:
     self.frame = -1
 
     self.enforce_torque_control_toggle = self._params.get_bool("EnforceTorqueControl")  # only during init
+    self.use_params = self.CP.brand in ALLOWED_CARS and self.CP.lateralTuning.which() == 'torque'
     self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
     self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
     self.speed_binned = (self.CP.lateralTuning.which() == 'torque'
