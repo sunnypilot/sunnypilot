@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import numpy as np
 
-from cereal import car
+from cereal import car, log
 
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
@@ -72,19 +72,10 @@ class TorqueEstimatorExt:
         self.offline_latAccelFactor = float(self._params.get("TorqueParamsOverrideLatAccelFactor", return_default=True))
         self.offline_friction = float(self._params.get("TorqueParamsOverrideFriction", return_default=True))
 
-    # Eagerly init speed bins and restore cache so bins exist before the
-    # first cache write (frame 0). Without this, the first cache write emits
-    # empty bin arrays that overwrite the previous route's cached points.
+    # Init speed bins and restore cached values before first get_msg
     if self.speed_binned:
       self._post_reset()
-      try:
-        from cereal import log
-        cache = self._params.get("LiveTorqueParameters")
-        if cache:
-          with log.Event.from_bytes(cache) as evt:
-            self._restore_ext_cache(evt.liveTorqueParameters)
-      except Exception:
-        cloudlog.exception("speed-dep: failed to restore cache on init")
+      self._restore_ext_cache()
 
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
@@ -176,22 +167,32 @@ class TorqueEstimatorExt:
         self.speed_bin_points[i].add_point(steer, lateral_acc)
         break
 
-  def _restore_ext_cache(self, cache_ltp):
-    """Restores per-bin filter values and points from cache."""
+  def _restore_ext_cache(self, cache_ltp=None):
+    """Restores per-bin filter values and points from cache.
+    Reads from Params when cache_ltp is not provided."""
     if not self.speed_binned:
       return
-    from openpilot.selfdrive.locationd.torqued import MIN_FILTER_DECAY
-    n_bins = len(self.speed_bin_bounds)
-    if (len(cache_ltp.speedBinLatAccelFactors) == n_bins and
-        len(cache_ltp.speedBinFrictions) == n_bins):
-      for i in range(n_bins):
-        self.speed_bin_filtered[i]['latAccelFactor'].x = cache_ltp.speedBinLatAccelFactors[i]
-        self.speed_bin_filtered[i]['frictionCoefficient'].x = cache_ltp.speedBinFrictions[i]
-      if len(cache_ltp.speedBinPoints) == n_bins:
+    try:
+      if cache_ltp is None:
+        cache = self._params.get("LiveTorqueParameters")
+        if not cache:
+          return
+        with log.Event.from_bytes(cache) as evt:
+          cache_ltp = evt.liveTorqueParameters
+      from openpilot.selfdrive.locationd.torqued import MIN_FILTER_DECAY
+      n_bins = len(self.speed_bin_bounds)
+      if (len(cache_ltp.speedBinLatAccelFactors) == n_bins and
+          len(cache_ltp.speedBinFrictions) == n_bins):
         for i in range(n_bins):
-          self.speed_bin_points[i].load_points(cache_ltp.speedBinPoints[i])
-      self.speed_bin_decays = [getattr(self, 'decay', MIN_FILTER_DECAY)] * n_bins
-      cloudlog.info("restored speed-bin torque params from cache")
+          self.speed_bin_filtered[i]['latAccelFactor'].x = cache_ltp.speedBinLatAccelFactors[i]
+          self.speed_bin_filtered[i]['frictionCoefficient'].x = cache_ltp.speedBinFrictions[i]
+        if len(cache_ltp.speedBinPoints) == n_bins:
+          for i in range(n_bins):
+            self.speed_bin_points[i].load_points(cache_ltp.speedBinPoints[i])
+        self.speed_bin_decays = [getattr(self, 'decay', MIN_FILTER_DECAY)] * n_bins
+        cloudlog.info("restored speed-bin torque params from cache")
+    except Exception:
+      cloudlog.exception("speed-dep: failed to restore cache")
 
   def _estimate_params_speed_binned(self):
     """Run independent SVD fit per speed bin. Resets bin on NaN with valid data."""
