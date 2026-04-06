@@ -186,6 +186,24 @@
     "title": "Completed Training Version",
     "description": ""
   },
+  "ConfidenceVisual": {
+    "title": "Confidence Visual",
+    "description": "Display confidence ball or bar on the driving screen.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "Ball"
+      },
+      {
+        "value": 2,
+        "label": "Bar"
+      }
+    ]
+  },
   "ControlsReady": {
     "title": "Controls Ready",
     "description": ""
