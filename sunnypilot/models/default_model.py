@@ -8,14 +8,16 @@ from openpilot.sunnypilot import get_file_hash
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.h")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
 VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
-POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
+OFF_POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_off_policy.onnx")
+ON_POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_on_policy.onnx")
 
 
 def update_model_hash():
   vision_hash = get_file_hash(VISION_ONNX_PATH)
-  policy_hash = get_file_hash(POLICY_ONNX_PATH)
+  off_policy_hash = get_file_hash(OFF_POLICY_ONNX_PATH)
+  on_policy_hash = get_file_hash(ON_POLICY_ONNX_PATH)
 
-  combined_hash = hashlib.sha256((vision_hash + policy_hash).encode()).hexdigest()
+  combined_hash = hashlib.sha256((vision_hash + off_policy_hash + on_policy_hash).encode()).hexdigest()
 
   with open(MODEL_HASH_PATH, "w") as f:
     f.write(combined_hash)
