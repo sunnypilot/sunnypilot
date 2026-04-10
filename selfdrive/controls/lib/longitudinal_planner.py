@@ -13,6 +13,9 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import Longi
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_accel_from_plan
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
+from cereal import log
+
+TRAFFIC_MODE_MAX_SPEED = 40. * CV.KPH_TO_MS  # 40 km/h
 from openpilot.common.swaglog import cloudlog
 
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
@@ -136,9 +139,14 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if force_slow_decel:
       v_cruise = 0.0
 
-    self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
+    # Traffic mode only active below 40 km/h, fall back to aggressive above that
+    personality = sm['selfdriveState'].personality
+    if personality == log.LongitudinalPersonality.traffic and v_ego > TRAFFIC_MODE_MAX_SPEED:
+      personality = log.LongitudinalPersonality.aggressive
+
+    self.mpc.set_weights(prev_accel_constraint, personality=personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    self.mpc.update(sm['radarState'], v_cruise, personality=sm['selfdriveState'].personality)
+    self.mpc.update(sm['radarState'], v_cruise, personality=personality)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)

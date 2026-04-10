@@ -68,6 +68,10 @@ msgstr "Avancé"
 msgid "Aggressive"
 msgstr "Agressif"
 
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Traffic"
+msgstr "Trafic"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Agree"
 msgstr "Accepter"

@@ -634,14 +634,18 @@
     "options": [
       {
         "value": 0,
-        "label": "Aggressive"
+        "label": "Traffic"
       },
       {
         "value": 1,
-        "label": "Standard"
+        "label": "Aggressive"
       },
       {
         "value": 2,
+        "label": "Standard"
+      },
+      {
+        "value": 3,
         "label": "Relaxed"
       }
     ]

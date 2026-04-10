@@ -68,6 +68,10 @@ msgstr "進階"
 msgid "Aggressive"
 msgstr "積極"
 
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Traffic"
+msgstr "交通"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Agree"
 msgstr "同意"

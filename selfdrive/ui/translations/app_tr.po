@@ -68,6 +68,10 @@ msgstr "Gelişmiş"
 msgid "Aggressive"
 msgstr "Agresif"
 
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Traffic"
+msgstr "Trafik"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Agree"
 msgstr "Kabul et"

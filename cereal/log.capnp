@@ -138,9 +138,10 @@ struct OnroadEvent @0xc4fa6047f024e718 {
 }
 
 enum LongitudinalPersonality {
-  aggressive @0;
-  standard @1;
-  relaxed @2;
+  traffic @0;
+  aggressive @1;
+  standard @2;
+  relaxed @3;
 }
 
 struct InitData {

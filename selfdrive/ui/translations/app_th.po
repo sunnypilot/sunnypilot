@@ -68,6 +68,10 @@ msgstr "ขั้นสูง"
 msgid "Aggressive"
 msgstr "ก้าวร้าว"
 
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Traffic"
+msgstr "การจราจร"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Agree"
 msgstr "เห็นด้วย"

@@ -15,6 +15,10 @@ if gui_app.sunnypilot_ui():
 
 PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
 
+# Button order: [Traffic, Aggressive, Standard, Relaxed] maps to capnp values [0, 1, 2, 3]
+PERSONALITY_BUTTON_ORDER = [0, 1, 2, 3]
+PERSONALITY_TO_BUTTON = {v: i for i, v in enumerate(PERSONALITY_BUTTON_ORDER)}
+
 # Description constants
 DESCRIPTIONS = {
   "OpenpilotEnabledToggle": tr_noop(
@@ -24,6 +28,7 @@ DESCRIPTIONS = {
   "DisengageOnAccelerator": tr_noop("When enabled, pressing the accelerator pedal will disengage sunnypilot."),
   "LongitudinalPersonality": tr_noop(
     "Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. " +
+    "In traffic mode, sunnypilot will follow slightly closer than standard with moderate responsiveness, optimized for dense traffic. " +
     "In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with " +
     "your steering wheel distance button."
   ),
@@ -99,10 +104,10 @@ class TogglesLayout(Widget):
     self._long_personality_setting = multiple_button_item(
       lambda: tr("Driving Personality"),
       lambda: tr(DESCRIPTIONS["LongitudinalPersonality"]),
-      buttons=[lambda: tr("Aggressive"), lambda: tr("Standard"), lambda: tr("Relaxed")],
+      buttons=[lambda: tr("Traffic"), lambda: tr("Aggressive"), lambda: tr("Standard"), lambda: tr("Relaxed")],
       button_width=300,
       callback=self._set_longitudinal_personality,
-      selected_index=self._params.get("LongitudinalPersonality", return_default=True),
+      selected_index=PERSONALITY_TO_BUTTON.get(self._params.get("LongitudinalPersonality", return_default=True), 2),
       icon="speed_limit.png"
     )
 
@@ -148,7 +153,7 @@ class TogglesLayout(Widget):
     if ui_state.sm.updated["selfdriveState"]:
       personality = PERSONALITY_TO_INT[ui_state.sm["selfdriveState"].personality]
       if personality != ui_state.personality and ui_state.started:
-        self._long_personality_setting.action_item.set_selected_button(personality)
+        self._long_personality_setting.action_item.set_selected_button(PERSONALITY_TO_BUTTON.get(personality, 2))
       ui_state.personality = personality
 
   def show_event(self):
@@ -246,4 +251,4 @@ class TogglesLayout(Widget):
       self._params.put_bool("OnroadCycleRequested", True)
 
   def _set_longitudinal_personality(self, button_index: int):
-    self._params.put("LongitudinalPersonality", button_index)
+    self._params.put("LongitudinalPersonality", PERSONALITY_BUTTON_ORDER[button_index])
