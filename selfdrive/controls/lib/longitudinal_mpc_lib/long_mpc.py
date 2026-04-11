@@ -173,7 +173,7 @@ def gen_long_ocp():
   ocp.cost.yref = np.zeros((COST_DIM, ))
   ocp.cost.yref_e = np.zeros((COST_E_DIM, ))
 
-  desired_dist_comfort = get_safe_obstacle_distance(v_ego, lead_t_follow)
+  desired_dist_comfort = get_safe_obstacle_distance(v_ego, lead_t_follow, log.LongitudinalPersonality.standard)
 
   # The main cost in normal operation is how close you are to the "desired" distance
   # from an obstacle at every timestep. This obstacle can be a lead car
