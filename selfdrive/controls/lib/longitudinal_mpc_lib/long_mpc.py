@@ -36,7 +36,7 @@ X_EGO_OBSTACLE_COST = 3.
 X_EGO_COST = 0.
 V_EGO_COST = 0.
 A_EGO_COST = 0.
-J_EGO_COST = 5.
+J_EGO_COST = 10.
 A_CHANGE_COST = 200.
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
@@ -56,7 +56,7 @@ T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 6.0
 CRUISE_MIN_ACCEL = -1.2
-CRUISE_MAX_ACCEL = 1.6
+CRUISE_MAX_ACCEL = 1.0
 MIN_X_LEAD_FACTOR = 0.5
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
@@ -92,7 +92,7 @@ def get_stop_distance(personality=log.LongitudinalPersonality.standard):
   elif personality==log.LongitudinalPersonality.aggressive:
     return 4.5  # aggressive mode
   elif personality==log.LongitudinalPersonality.traffic:
-    return 3.0  # 50% shorter for traffic mode
+    return 1.0  # traffic mode
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
