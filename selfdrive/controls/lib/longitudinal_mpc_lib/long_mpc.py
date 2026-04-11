@@ -86,11 +86,11 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
 
 def get_stop_distance(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 8.4  # 40% longer for relaxed mode
+    return 8.5  # 40% longer for relaxed mode
   elif personality==log.LongitudinalPersonality.standard:
     return 6.0  # standard distance
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 7.2  # 20% longer for aggressive mode
+    return 4.5  # aggressive mode
   elif personality==log.LongitudinalPersonality.traffic:
     return 3.0  # 50% shorter for traffic mode
   else:
