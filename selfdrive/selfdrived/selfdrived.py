@@ -13,6 +13,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper, DT_CTRL
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.gps import get_gps_location_service
+from openpilot.common.constants import CV
 
 from openpilot.selfdrive.car.car_specific import CarSpecificEvents
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
@@ -48,6 +49,9 @@ SafetyModel = car.CarParams.SafetyModel
 TurnDirection = custom.ModelDataV2SP.TurnDirection
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
+
+# Speed threshold for traffic mode (40 km/h in m/s)
+TRAFFIC_MODE_MAX_SPEED = 40. * CV.KPH_TO_MS
 
 
 class SelfdriveD(CruiseHelper):
@@ -139,6 +143,9 @@ class SelfdriveD(CruiseHelper):
       max(log.LongitudinalPersonality.schema.enumerants.values()),
       self.params
     )
+    # Track effective personality (personality adjusted for speed constraints)
+    self.prev_effective_personality = self.personality
+    self.personality_switch_cooldown = 0  # Prevent multiple beeps during oscillation
     self.recalibrating_seen = False
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -458,6 +465,32 @@ class SelfdriveD(CruiseHelper):
           self.params.put_nonblocking('LongitudinalPersonality', self.personality)
           self.events.add(EventName.personalityChanged)
         self.experimental_mode_switched = False
+
+    # Detect speed-based personality switches and trigger beep
+    # Traffic mode is only active below 40 km/h, reverts to aggressive above
+    if self.initialized and CS.canValid and self.CP.openpilotLongitudinalControl:
+      # Calculate effective personality based on current speed
+      effective_personality = self.personality
+      if effective_personality == log.LongitudinalPersonality.traffic and CS.vEgo > TRAFFIC_MODE_MAX_SPEED:
+        effective_personality = log.LongitudinalPersonality.aggressive
+      
+      # Detect transitions between traffic and aggressive modes
+      self.personality_switch_cooldown = max(0, self.personality_switch_cooldown - 1)
+      if self.personality_switch_cooldown == 0:
+        prev_personality_name = LONGITUDINAL_PERSONALITY_MAP.get(self.prev_effective_personality, "unknown")
+        now_personality_name = LONGITUDINAL_PERSONALITY_MAP.get(effective_personality, "unknown")
+        
+        # Check for valid transitions (between traffic and aggressive)
+        traffic_id = log.LongitudinalPersonality.traffic
+        aggressive_id = log.LongitudinalPersonality.aggressive
+        
+        if (self.prev_effective_personality, effective_personality) in [(traffic_id, aggressive_id), (aggressive_id, traffic_id)]:
+          # Add personality changed event with beep
+          self.events.add(EventName.personalityChanged)
+          # Set cooldown to prevent repeated beeps (2 seconds at 100 Hz = 200 frames)
+          self.personality_switch_cooldown = 200
+      
+      self.prev_effective_personality = effective_personality
 
     self.icbm.run(CS, self.sm['carControl'], self.sm['longitudinalPlanSP'], self.is_metric)
 

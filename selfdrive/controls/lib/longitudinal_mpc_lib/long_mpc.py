@@ -74,21 +74,40 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.75
+    return 1.5
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.45
+    return 1.2
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.00
+    return 0.9
   elif personality==log.LongitudinalPersonality.traffic:
-    return 0.5
+    return 0.25
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
+def get_stop_distance(personality=log.LongitudinalPersonality.standard):
+  if personality==log.LongitudinalPersonality.relaxed:
+    return 8.4  # 40% longer for relaxed mode
+  elif personality==log.LongitudinalPersonality.standard:
+    return 6.0  # standard distance
+  elif personality==log.LongitudinalPersonality.aggressive:
+    return 7.2  # 20% longer for aggressive mode
+  elif personality==log.LongitudinalPersonality.traffic:
+    return 3.0  # 50% shorter for traffic mode
+  else:
+    raise NotImplementedError("Longitudinal personality not supported")
+
+# To treat a moving lead as an obstacle, we can calculate how much distance that lead would need to brake to a stop,
+# and then add that to the current distance.
+# This is a simplified model of the lead's future trajectory,
+# but it allows us to use the same MPC formulation for both stationary and moving leads.
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
-def get_safe_obstacle_distance(v_ego, t_follow):
-  return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + STOP_DISTANCE
+# This is the distance needed to brake to a stop from the current speed,
+# plus the distance traveled during the following time.
+def get_safe_obstacle_distance(v_ego, t_follow, personality=log.LongitudinalPersonality.standard):
+  stop_distance = get_stop_distance(personality)
+  return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
 def gen_long_model():
   model = AcadosModel()
@@ -337,7 +356,7 @@ class LongitudinalMpc:
     # TODO does this make sense when max_a is negative?
     v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 1.05)
     v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
-    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow)
+    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, personality)
 
     x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
     self.source = MPC_SOURCES[np.argmin(x_obstacles[0])]
