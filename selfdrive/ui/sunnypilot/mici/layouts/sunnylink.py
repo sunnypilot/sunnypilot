@@ -31,10 +31,13 @@ class SunnylinkInfo(Widget):
     header_color = rl.Color(255, 255, 255, int(255 * 0.9))
     subheader_color = rl.Color(255, 255, 255, int(255 * 0.9 * 0.65))
     max_width = int(self._rect.width - 20)
-    self.device_id_header = UnifiedLabel(tr("device id"), 48, max_width=max_width, text_color=header_color, font_weight=FontWeight.DISPLAY, shimmer=True)
-    self.device_id_text = UnifiedLabel(UNREGISTERED_SUNNYLINK_DONGLE_ID, 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN, scroll=True)
+    self.device_id_header = UnifiedLabel(tr("device id"), 48, max_width=max_width, text_color=header_color,
+                                         font_weight=FontWeight.DISPLAY, shimmer=True)
+    self.device_id_text = UnifiedLabel(UNREGISTERED_SUNNYLINK_DONGLE_ID, 32, max_width=max_width, text_color=subheader_color,
+                                       font_weight=FontWeight.ROMAN, scroll=True)
 
-    self.sponsor_header = UnifiedLabel(tr("sponsor tier"), 48, max_width=max_width, text_color=header_color, font_weight=FontWeight.DISPLAY, shimmer=True)
+    self.sponsor_header = UnifiedLabel(tr("sponsor tier"), 48, max_width=max_width, text_color=header_color,
+                                       font_weight=FontWeight.DISPLAY, shimmer=True)
     self.sponsor_text = UnifiedLabel("N/A", 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN)
 
   def _render(self, _):
