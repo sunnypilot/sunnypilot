@@ -225,7 +225,6 @@ class SunnylinkPairBigButton(BigButton):
   def __init__(self, sponsor_pairing: bool = False):
     self.sponsor_pairing = sponsor_pairing
     super().__init__("")
-    self._warn_icon = gui_app.texture("icons_mici/setup/warning.png", 32, 32)
 
   def _update_state(self):
     super()._update_state()
@@ -238,7 +237,7 @@ class SunnylinkPairBigButton(BigButton):
     dlg: BigDialog | SunnylinkPairingDialog | None = None
 
     if network_type == 0:
-      dlg = BigDialog(tr("no internet"), "please connect & try again", self._warn_icon)
+      dlg = BigDialog(tr("no internet"), "please connect to WiFi & try again")
     elif UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
       dlg = BigDialog(tr("sunnylink dongle id not found"), tr("please reboot & try again"))
     elif self.sponsor_pairing:
