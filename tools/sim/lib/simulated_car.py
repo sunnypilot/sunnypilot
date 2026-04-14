@@ -92,6 +92,8 @@ class SimulatedCar:
       'ignitionLine': simulator_state.ignition,
       'pandaType': "blackPanda",
       'controlsAllowed': True,
+      'controlsAllowedLateral': True,
+      'controlsAllowedLongitudinal': True,
       'safetyModel': 'hondaBosch',
       'alternativeExperience': self.sm["carParams"].alternativeExperience,
       'safetyParam': HondaSafetyFlags.RADARLESS.value | HondaSafetyFlags.BOSCH_LONG.value,
