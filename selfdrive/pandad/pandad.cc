@@ -21,8 +21,6 @@
 #define CUTOFF_IL 400
 #define SATURATE_IL 1000
 
-#define ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE 2048
-
 ExitHandler do_exit;
 
 bool check_connected(Panda *panda) {
@@ -34,15 +32,8 @@ bool check_connected(Panda *panda) {
 }
 
 bool process_mads_heartbeat(SubMaster *sm) {
-  const int &alt_exp = (*sm)["carParams"].getCarParams().getAlternativeExperience();
-  const bool disengage_lateral_on_brake = (alt_exp & ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE) != 0;
-
   const auto &mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
-  const bool heartbeat_type = disengage_lateral_on_brake ? mads.getActive() : mads.getEnabled();
-
-  const bool engaged = sm->allAliveAndValid({"selfdriveStateSP"}) && heartbeat_type;
-
-  return engaged;
+  return sm->allAliveAndValid({"selfdriveStateSP"}) && mads.getEnabled();
 }
 
 Panda *connect(std::string serial) {
@@ -152,6 +143,8 @@ void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::Panda
   ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);
   ps.setSbu2Voltage(health.sbu2_voltage_mV / 1000.0f);
   ps.setSoundOutputLevel(health.sound_output_level_pkt);
+  ps.setControlsAllowedLateral(health.controls_allowed_lateral_pkt);
+  ps.setControlsAllowedLongitudinal(health.controls_allowed_longitudinal_pkt);
 }
 
 void fill_panda_can_state(cereal::PandaState::PandaCanState::Builder &cs, const can_health_t &can_health) {
@@ -380,7 +373,7 @@ void pandad_run(Panda *panda) {
 
   Params params;
   RateKeeper rk("pandad", 100);
-  SubMaster sm({"selfdriveState", "selfdriveStateSP", "carParams"});
+  SubMaster sm({"selfdriveState", "selfdriveStateSP"});
   PubMaster pm({"can", "pandaStates", "peripheralState"});
   PandaSafety panda_safety(panda);
   bool engaged = false;
