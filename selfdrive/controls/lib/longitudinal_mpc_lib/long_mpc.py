@@ -8,6 +8,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.swaglog import cloudlog
 # WARNING: imports outside of constants will not trigger a rebuild
 from openpilot.selfdrive.modeld.constants import index_function, ModelConstants
+from openpilot.selfdrive.controls.radard import RADAR_TO_CAMERA
 
 LEAD_T_IDXS_MODEL = np.array(ModelConstants.LEAD_T_IDXS)  # [0, 2, 4, 6, 8, 10]s
 
@@ -288,16 +289,16 @@ class LongitudinalMpc:
   def process_lead(self, model_lead, model_v_ego):
     v_ego = self.x0[1]
     if model_lead.prob > 0.5:
-      # model.x[h] = current_dRel + lead's cumulative world travel — already lead's world
-      # position in ego's starting frame, matching baseline extrapolate_lead's output.
-      # model.v has ego-prior bias; strip model's ego estimate and rebuild with real ego
-      # (mirrors radard's get_RadarState_from_vision correction).
-      x_lead_traj = np.asarray(model_lead.x, dtype=np.float64)
-      v_lead_traj = v_ego + (np.asarray(model_lead.v, dtype=np.float64) - model_v_ego)
+      # model.x[h] = current_dRel + lead's cumulative world travel (ego-start frame),
+      # measured from the camera origin — subtract RADAR_TO_CAMERA so x matches what
+      # baseline MPC saw from radarState.dRel (also referenced from bumper/radar front).
+      # TEMP: derive v from dx/dt instead of trusting biased model.v — tests whether
+      # model.x carries real lead motion independent of the ego-prior shortcut in model.v.
+      x_lead_traj = np.asarray(model_lead.x, dtype=np.float64) - RADAR_TO_CAMERA
     else:
       # Fake a fast lead so MPC stays in the same mode.
-      v_lead_traj = np.full_like(LEAD_T_IDXS_MODEL, v_ego + 10.0)
       x_lead_traj = 50.0 + (v_ego + 10.0) * LEAD_T_IDXS_MODEL
+    v_lead_traj = np.gradient(x_lead_traj, LEAD_T_IDXS_MODEL)
 
     # MPC won't converge on immediate crashes; lift h=0 to the minimum braking distance.
     v_lead_0 = v_lead_traj[0]
