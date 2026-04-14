@@ -306,6 +306,10 @@
     "title": "Firmware Query Done",
     "description": ""
   },
+  "FlatConfidenceBall": {
+    "title": "Flat Confidence Ball",
+    "description": "Removes the gradient from the confidence ball and uses solid state colors for improved visibility"
+  },
   "ForcePowerDown": {
     "title": "Force Power Down",
     "description": ""
