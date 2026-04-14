@@ -153,6 +153,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
       navigation @1;
       vision @2;
       policy @3;
+      offPolicy @4;
+      onPolicy @5;
     }
   }
 

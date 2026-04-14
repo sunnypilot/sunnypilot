@@ -39,7 +39,7 @@ class KeyDerivation:
       else:
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
     elif "public" in key_plain.lower():
-      public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())  # type: ignore[assignment]
+      public_key = serialization.load_pem_public_key(key_pem, backend=default_backend())
       if not isinstance(public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)):
         raise ValueError("Invalid key format: Unable to determine if key is public or private.")
     else:

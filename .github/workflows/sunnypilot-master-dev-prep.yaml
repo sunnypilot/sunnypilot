@@ -241,10 +241,3 @@ jobs:
           gh run watch "$RUN_ID"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Trigger prebuilt workflow
-        if: success() && steps.push-changes.outputs.has_changes == 'true'
-        run: |
-          gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

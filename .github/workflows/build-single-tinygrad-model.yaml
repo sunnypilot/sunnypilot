@@ -119,7 +119,7 @@ jobs:
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}

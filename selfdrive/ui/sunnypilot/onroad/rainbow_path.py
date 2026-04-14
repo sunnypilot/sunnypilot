@@ -18,11 +18,12 @@ class RainbowPath:
   BASE_ALPHA = 0.8
   ALPHA_FADE = 0.3  # Alpha reduction from bottom to top
 
-  def __init__(self, num_segments: int = None, speed: float = None, saturation: float = None, lightness: float = None):
-    self.num_segments = num_segments if num_segments is not None else self.DEFAULT_NUM_SEGMENTS
-    self.speed = speed if speed is not None else self.DEFAULT_SPEED
-    self.saturation = saturation if saturation is not None else self.DEFAULT_SATURATION
-    self.lightness = lightness if lightness is not None else self.DEFAULT_LIGHTNESS
+  def __init__(self, num_segments: int = DEFAULT_NUM_SEGMENTS, speed: float = DEFAULT_SPEED,
+               saturation: float = DEFAULT_SATURATION, lightness: float = DEFAULT_LIGHTNESS):
+    self.num_segments = num_segments
+    self.speed = speed
+    self.saturation = saturation
+    self.lightness = lightness
 
   def set_speed(self, speed: float):
     self.speed = speed

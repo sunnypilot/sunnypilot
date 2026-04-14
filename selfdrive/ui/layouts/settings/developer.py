@@ -71,6 +71,13 @@ class DeveloperLayout(Widget):
       callback=self._on_long_maneuver_mode,
     )
 
+    self._lat_maneuver_toggle = toggle_item(
+      lambda: tr("Lateral Maneuver Mode"),
+      description="",
+      initial_state=self._params.get_bool("LateralManeuverMode"),
+      callback=self._on_lat_maneuver_mode,
+    )
+
     self._alpha_long_toggle = toggle_item(
       lambda: tr("sunnypilot Longitudinal Control (Alpha)"),
       description=lambda: tr(DESCRIPTIONS["alpha_longitudinal"]),
@@ -93,6 +100,7 @@ class DeveloperLayout(Widget):
       self._ssh_keys,
       self._joystick_toggle,
       self._long_maneuver_toggle,
+      self._lat_maneuver_toggle,
       self._alpha_long_toggle,
       self._ui_debug_toggle,
     ], line_separator=True, spacing=0)
@@ -104,6 +112,7 @@ class DeveloperLayout(Widget):
     self._scroller.render(rect)
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
     self._update_toggles()
 
@@ -112,7 +121,7 @@ class DeveloperLayout(Widget):
 
     # Hide non-release toggles on release builds
     # TODO: we can do an onroad cycle, but alpha long toggle requires a deinit function to re-enable radar and not fault
-    for item in (self._joystick_toggle, self._long_maneuver_toggle, self._alpha_long_toggle):
+    for item in (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle):
       item.set_visible(not self._is_release)
 
     # CP gating
@@ -129,8 +138,12 @@ class DeveloperLayout(Widget):
       if not long_man_enabled:
         self._long_maneuver_toggle.action_item.set_state(False)
         self._params.put_bool("LongitudinalManeuverMode", False)
+
+      lat_man_enabled = ui_state.is_offroad()
+      self._lat_maneuver_toggle.action_item.set_enabled(lat_man_enabled)
     else:
       self._long_maneuver_toggle.action_item.set_enabled(False)
+      self._lat_maneuver_toggle.action_item.set_enabled(False)
       self._alpha_long_toggle.set_visible(False)
 
     # TODO: make a param control list item so we don't need to manage internal state as much here
@@ -140,6 +153,7 @@ class DeveloperLayout(Widget):
       ("SshEnabled", self._ssh_toggle),
       ("JoystickDebugMode", self._joystick_toggle),
       ("LongitudinalManeuverMode", self._long_maneuver_toggle),
+      ("LateralManeuverMode", self._lat_maneuver_toggle),
       ("AlphaLongitudinalEnabled", self._alpha_long_toggle),
       ("ShowDebugInfo", self._ui_debug_toggle),
     ):
@@ -161,15 +175,27 @@ class DeveloperLayout(Widget):
     self._params.put_bool("JoystickDebugMode", state)
     self._params.put_bool("LongitudinalManeuverMode", False)
     self._long_maneuver_toggle.action_item.set_state(False)
+    self._params.put_bool("LateralManeuverMode", False)
+    self._lat_maneuver_toggle.action_item.set_state(False)
 
   def _on_long_maneuver_mode(self, state: bool):
     self._params.put_bool("LongitudinalManeuverMode", state)
     self._params.put_bool("JoystickDebugMode", False)
     self._joystick_toggle.action_item.set_state(False)
+    self._params.put_bool("LateralManeuverMode", False)
+    self._lat_maneuver_toggle.action_item.set_state(False)
+
+  def _on_lat_maneuver_mode(self, state: bool):
+    self._params.put_bool("LateralManeuverMode", state)
+    self._params.put_bool("ExperimentalMode", False)
+    self._params.put_bool("JoystickDebugMode", False)
+    self._joystick_toggle.action_item.set_state(False)
+    self._params.put_bool("LongitudinalManeuverMode", False)
+    self._long_maneuver_toggle.action_item.set_state(False)
 
   def _on_alpha_long_enabled(self, state: bool):
     if state:
-      def confirm_callback(result: int):
+      def confirm_callback(result: DialogResult):
         if result == DialogResult.CONFIRM:
           self._params.put_bool("AlphaLongitudinalEnabled", True)
           self._params.put_bool("OnroadCycleRequested", True)
@@ -181,8 +207,8 @@ class DeveloperLayout(Widget):
       content = (f"<h1>{self._alpha_long_toggle.title}</h1><br>" +
                  f"<p>{self._alpha_long_toggle.description}</p>")
 
-      dlg = ConfirmDialog(content, tr("Enable"), rich=True)
-      gui_app.set_modal_overlay(dlg, callback=confirm_callback)
+      dlg = ConfirmDialog(content, tr("Enable"), rich=True, callback=confirm_callback)
+      gui_app.push_widget(dlg)
 
     else:
       self._params.put_bool("AlphaLongitudinalEnabled", False)

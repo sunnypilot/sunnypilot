@@ -202,28 +202,66 @@ def getParamsAllKeysV1() -> dict[str, str]:
     with open(METADATA_PATH) as f:
       metadata = json.load(f)
   except Exception:
-    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.exception")
+    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.metadata.exception")
     metadata = {}
 
-  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+  try:
+    available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
-  params_dict: dict[str, list[dict[str, str | bool | int | object | dict | None]]] = {"params": []}
-  for key in available_keys:
-    value = get_param_as_byte(key, get_default=True)
+    params_dict: dict[str, list[dict[str, str | bool | int | object | dict | None]]] = {"params": []}
+    for key in available_keys:
+      value = get_param_as_byte(key, get_default=True)
 
-    param_entry = {
-      "key": key,
-      "type": int(params.get_type(key).value),
-      "default_value": base64.b64encode(value).decode('utf-8') if value else None,
-    }
+      param_entry = {
+        "key": key,
+        "type": int(params.get_type(key).value),
+        "default_value": base64.b64encode(value).decode('utf-8') if value else None,
+      }
 
-    if key in metadata:
-      meta_copy = metadata[key].copy()
-      param_entry["_extra"] = meta_copy
+      if key in metadata:
+        meta_copy = metadata[key].copy()
+        param_entry["_extra"] = meta_copy
 
-    params_dict["params"].append(param_entry)
+      params_dict["params"].append(param_entry)
+    return {"keys": json.dumps(params_dict.get("params", []))}
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.exception")
+    raise
 
-  return {"keys": json.dumps(params_dict.get("params", []))}
+
+@dispatcher.add_method
+def getParamsMetadata() -> str:
+  """Compressed equivalent of getParamsAllKeysV1 — same struct, gzipped + base64."""
+  try:
+    with open(METADATA_PATH) as f:
+      metadata = json.load(f)
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
+    metadata = {}
+
+  try:
+    available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+
+    params_list: list[dict] = []
+    for key in available_keys:
+      value = get_param_as_byte(key, get_default=True)
+
+      param_entry: dict = {
+        "key": key,
+        "type": int(params.get_type(key).value),
+        "default_value": base64.b64encode(value).decode('utf-8') if value else None,
+      }
+
+      if key in metadata:
+        param_entry["_extra"] = metadata[key]
+
+      params_list.append(param_entry)
+
+    raw = json.dumps(params_list, separators=(',', ':')).encode('utf-8')
+    return base64.b64encode(gzip.compress(raw)).decode('utf-8')
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
+    raise
 
 
 @dispatcher.add_method
@@ -281,7 +319,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
 
-def main(exit_event: threading.Event = None):
+def main(exit_event: threading.Event | None = None):
   try:
     set_core_affinity([0, 1, 2, 3])
   except Exception:

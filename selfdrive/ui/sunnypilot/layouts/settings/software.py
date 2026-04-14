@@ -47,8 +47,8 @@ class SoftwareLayoutSP(SoftwareLayout):
       self.disable_updates_toggle.action_item.set_state(ui_state.params.get_bool("DisableUpdates"))
 
   def _on_disable_updates_toggled(self, enabled):
-    dialog = ConfirmDialog(tr("System reboot required for changes to take effect. Reboot now?"), tr("Reboot"))
-    gui_app.set_modal_overlay(dialog, callback=self._handle_reboot)
+    dialog = ConfirmDialog(tr("System reboot required for changes to take effect. Reboot now?"), tr("Reboot"), callback=self._handle_reboot)
+    gui_app.push_widget(dialog)
 
   def _on_select_branch(self):
     current_git_branch = ui_state.params.get("GitBranch") or ""
@@ -84,7 +84,7 @@ class SoftwareLayoutSP(SoftwareLayout):
     self._branch_dialog = TreeOptionDialog(tr("Select a branch"), folders, current_target, "",
                                            on_exit=_on_branch_selected)
 
-    gui_app.set_modal_overlay(self._branch_dialog, callback=_on_branch_selected)
+    gui_app.push_widget(self._branch_dialog)
 
   def _update_state(self):
     super()._update_state()

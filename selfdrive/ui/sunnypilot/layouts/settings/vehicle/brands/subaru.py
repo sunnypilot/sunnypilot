@@ -39,7 +39,7 @@ class SubaruSettings(BrandSettings):
       platform = bundle.get("platform")
       config = CAR[platform].config
       self.has_stop_and_go = not (config.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
-    elif ui_state.CP:
+    elif ui_state.CP is not None:
       self.has_stop_and_go = not (ui_state.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
 
     disabled_msg = self.stop_and_go_disabled_msg()

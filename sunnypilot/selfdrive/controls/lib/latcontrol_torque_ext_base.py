@@ -14,11 +14,8 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 LAT_PLAN_MIN_IDX = 5
 LATERAL_LAG_MOD = 0.0  # seconds, modifies how far in the future we look ahead for the lateral plan
 
-# from selfdrive/controls/lib/latcontrol_torque.py
-KP = 0.8
-KI = 0.15
-INTERP_SPEEDS = [1, 1.5, 2.0, 3.0, 5, 7.5, 10, 15, 30]
-KP_INTERP = [250, 120, 65, 30, 11.5, 5.5, 3.5, 2.0, KP]
+KP = 1.0
+KI = 0.3
 
 
 def get_predicted_lateral_jerk(lat_accels, t_diffs):
@@ -61,9 +58,10 @@ class LatControlTorqueExtBase:
     self.lookahead_lateral_jerk: float = 0.0
 
     self.torque_from_lateral_accel_in_torque_space = CI.torque_from_lateral_accel_in_torque_space()
+    self.torque_params = lac_torque.torque_params
 
     self._ff = 0.0
-    self._pid = PIDController([INTERP_SPEEDS, KP_INTERP], KI)
+    self._pid = PIDController(KP, KI)
     self._pid_log = None
     self._setpoint = 0.0
     self._measurement = 0.0

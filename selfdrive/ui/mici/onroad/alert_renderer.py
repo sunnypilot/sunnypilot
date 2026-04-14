@@ -13,6 +13,8 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
+from openpilot.selfdrive.ui.sunnypilot.onroad.speed_limit import SpeedLimitAlertRenderer
+
 AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 
@@ -46,6 +48,7 @@ class IconLayout(NamedTuple):
   side: IconSide
   margin_x: int
   margin_y: int
+  alpha: float = 255.0
 
 
 class AlertLayout(NamedTuple):
@@ -86,9 +89,10 @@ ALERT_CRITICAL_REBOOT = Alert(
 )
 
 
-class AlertRenderer(Widget):
+class AlertRenderer(Widget, SpeedLimitAlertRenderer):
   def __init__(self):
-    super().__init__()
+    Widget.__init__(self)
+    SpeedLimitAlertRenderer.__init__(self)
 
     self._alert_text1_label = UnifiedLabel(text="", font_size=ALERT_FONT_BIG, font_weight=FontWeight.DISPLAY, line_height=0.86,
                                            letter_spacing=-0.02)
@@ -111,10 +115,10 @@ class AlertRenderer(Widget):
     self._load_icons()
 
   def _load_icons(self):
-    self._txt_turn_signal_left = gui_app.texture('icons_mici/onroad/turn_signal_left.png', 100, 91)
-    self._txt_turn_signal_right = gui_app.texture('icons_mici/onroad/turn_signal_right.png', 100, 91)
-    self._txt_blind_spot_left = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 108, 128)
-    self._txt_blind_spot_right = gui_app.texture('icons_mici/onroad/blind_spot_right.png', 108, 128)
+    self._txt_turn_signal_left = gui_app.texture('icons_mici/onroad/turn_signal_left.png', 104, 96)
+    self._txt_turn_signal_right = gui_app.texture('icons_mici/onroad/turn_signal_left.png', 104, 96, flip_x=True)
+    self._txt_blind_spot_left = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 134, 150)
+    self._txt_blind_spot_right = gui_app.texture('icons_mici/onroad/blind_spot_left.png', 134, 150, flip_x=True)
 
   def get_alert(self, sm: messaging.SubMaster) -> Alert | None:
     """Generate the current alert based on selfdrive state."""
@@ -155,6 +159,7 @@ class AlertRenderer(Widget):
   def _icon_helper(self, alert: Alert) -> AlertLayout:
     icon_side = None
     txt_icon = None
+    icon_alpha = 255.0
     icon_margin_x = 20
     icon_margin_y = 18
 
@@ -191,6 +196,9 @@ class AlertRenderer(Widget):
       icon_margin_x = 8
       icon_margin_y = 0
 
+    elif event_name == 'speedLimitPreActive':
+      icon_side, txt_icon, icon_alpha, icon_margin_x, icon_margin_y = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper(self)
+
     else:
       self._turn_signal_timer = 0.0
 
@@ -212,7 +220,7 @@ class AlertRenderer(Widget):
       text_width,
       self._rect.height,
     )
-    icon_layout = IconLayout(txt_icon, icon_side, icon_margin_x, icon_margin_y) if txt_icon is not None and icon_side is not None else None
+    icon_layout = IconLayout(txt_icon, icon_side, icon_margin_x, icon_margin_y, icon_alpha) if txt_icon is not None and icon_side is not None else None
     return AlertLayout(text_rect, icon_layout)
 
   def _render(self, rect: rl.Rectangle) -> bool:
@@ -221,6 +229,9 @@ class AlertRenderer(Widget):
     # Animate fade and slide in/out
     self._alert_y_filter.update(self._rect.y - 50 if alert is None else self._rect.y)
     self._alpha_filter.update(0 if alert is None else 1)
+
+    if gui_app.sunnypilot_ui():
+      ui_state.onroad_brightness_handle_alerts(ui_state, alert)
 
     if alert is None:
       # If still animating out, keep the previous alert
@@ -231,6 +242,9 @@ class AlertRenderer(Widget):
         return False
 
     self._draw_background(alert)
+
+    # update speed limit UI states
+    SpeedLimitAlertRenderer.update(self)
 
     alert_layout = self._icon_helper(alert)
     self._draw_text(alert, alert_layout)
@@ -254,12 +268,12 @@ class AlertRenderer(Widget):
       pos_x = int(self._rect.x + self._rect.width - alert_layout.icon.margin_x - alert_layout.icon.texture.width)
 
     if alert_layout.icon.texture not in (self._txt_turn_signal_left, self._txt_turn_signal_right):
-      icon_alpha = 255
+      icon_alpha = alert_layout.icon.alpha
     else:
       icon_alpha = int(min(self._turn_signal_alpha_filter.x, 255))
 
-    rl.draw_texture(alert_layout.icon.texture, pos_x, int(self._rect.y + alert_layout.icon.margin_y),
-                    rl.Color(255, 255, 255, int(icon_alpha * self._alpha_filter.x)))
+    rl.draw_texture_ex(alert_layout.icon.texture, rl.Vector2(pos_x, self._rect.y + alert_layout.icon.margin_y), 0.0, 1.0,
+                       rl.Color(255, 255, 255, int(icon_alpha * self._alpha_filter.x)))
 
   def _draw_background(self, alert: Alert) -> None:
     # draw top gradient for alert text at top

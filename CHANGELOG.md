@@ -1,5 +1,104 @@
-sunnypilot Version 2025.003.000 (20xx-xx-xx)
+sunnypilot Version 2026.001.000 (2026-03-xx)
 ========================
+* What's Changed (sunnypilot/sunnypilot)
+  * Complete rewrite of the user interface from Qt C++ to Raylib Python
+  * comma four support
+  * ui: sunnypilot toggle style by @nayan8teen
+  * ui: fix scroll panel mouse wheel behavior by @nayan8teen
+  * ui: sunnypilot panels by @nayan8teen
+  * sunnylink: centralize key pair handling in sunnylink registration by @devtekve
+  * ui: reimplement sunnypilot branding with Raylib by @sunnyhaibin
+  * ui: Platform Selector by @Discountchubbs
+  * ui: vehicle brand settings by @Discountchubbs
+  * ui: sunnylink client-side implementation by @nayan8teen
+  * ui: `NetworkUISP` by @Discountchubbs
+  * ui: add sunnypilot font by @nayan8teen
+  * ui: sunnypilot sponsor tier color mapping by @sunnyhaibin
+  * ui: sunnylink panel by @nayan8teen
+  * ui: Models panel by @Discountchubbs
+  * ui: software panel by @Discountchubbs
+  * modeld_v2: support planplus outputs by @Discountchubbs
+  * ui: OSM panel by @Discountchubbs
+  * ui: Developer panel extension by @Discountchubbs
+  * sunnylink: Vehicle Selector support by @sunnyhaibin
+  * [TIZI/TICI] ui: Developer Metrics by @rav4kumar
+  * [comma 4] ui: sunnylink panel by @nayan8teen
+  * ui: lateral-only and longitudinal-only UI statuses support by @royjr
+  * sunnylink: elliptic curve keys support and improve key path handling by @nayan8teen
+  * sunnylink: block remote modification of SSH key parameters by @zikeji
+  * [TIZI/TICI] ui: rainbow path by @rav4kumar
+  * [TIZI/TICI] ui: chevron metrics by @rav4kumar
+  * ui: include MADS enabled state to `engaged` check by @sunnyhaibin
+  * Toyota: Enforce Factory Longitudinal Control by @sunnyhaibin
+  * ui: fix malformed dongle ID display on the PC if dongleID is not set by @dzid26
+  * SL: Re enable and validate ingestion of swaglogs by @devtekve
+  * modeld_v2: planplus model tuning by @Discountchubbs
+  * ui: fix Always Offroad button visibility by @nayan8teen
+  * Reimplement sunnypilot Terms of Service & sunnylink Consent Screens by @sunnyhaibin
+  * [TIZI/TICI] ui: update dmoji position and Developer UI adjustments by @rav4kumar
+  * modeld: configurable camera offset by @Discountchubbs
+  * [TIZI/TICI] ui: sunnylink status on sidebar by @Copilot
+  * ui: Global Brightness Override by @nayan8teen
+  * ui: Customizable Interactive Timeout by @sunnyhaibin
+  * sunnylink: add units to param metadata by @nayan8teen
+  * ui: Customizable Onroad Brightness by @sunnyhaibin
+  * [TIZI/TICI] ui: Steering panel by @nayan8teen
+  * [TIZI/TICI] ui: Rocket Fuel by @rav4kumar
+  * [TIZI/TICI] ui: MICI style turn signals by @rav4kumar
+  * [TIZI/TICI] ui: MICI style blindspot indicators by @sunnyhaibin
+  * [MICI] ui: display blindspot indicators when available by @rav4kumar
+  * [TIZI/TICI] ui: Road Name by @rav4kumar
+  * [TIZI/TICI] ui: Blue "Exit Always Offroad" button by @dzid26
+  * [TIZI/TICI] ui: Speed Limit by @rav4kumar
+  * Reapply "latcontrol_torque: lower kp and lower friction threshold (commaai/openpilot#36619)" by @sunnyhaibin
+  * [TIZI/TICI] ui: steering arc by @royjr
+  * [TIZI/TICI] ui: Smart Cruise Control elements by @sunnyhaibin
+  * [TIZI/TICI] ui: Green Light and Lead Departure elements by @sunnyhaibin
+  * [TIZI/TICI] ui: standstill timer by @sunnyhaibin
+  * [MICI] ui: driving models selector by @Discountchubbs
+  * [TIZI/TICI] ui: Hide vEgo and True vEgo by @sunnyhaibin
+  * [TIZI/TICI] ui: Visuals panel by @nayan8teen
+  * Device: Retain QuickBoot state after op switch by @nayan8teen
+  * [TIZI/TICI] ui: Trips panel by @sunnyhaibin
+  * [TIZI/TICI] ui: dynamic ICBM status by @sunnyhaibin
+  * [TIZI/TICI] ui: Cruise panel by @sunnyhaibin
+  * ui: better wake mode support by @nayan8teen
+  * Pause Lateral Control with Blinker: Post-Blinker Delay by @CHaucke89
+  * SCC-V: Use p97 for predicted lateral accel by @yasu-oh
+  * Controls: Support for Torque Lateral Control v0 Tune by @sunnyhaibin
+* What's Changed (sunnypilot/opendbc)
+  * Honda: DBC for Accord 9th Generation by @mvl-boston
+  * FCA: update tire stiffness values for `RAM_HD` by @dparring
+  * Honda: Nidec hybrid baseline brake support by @mvl-boston
+  * Subaru Global Gen2: bump steering limits and update tuning by @sunnyhaibin
+  * Toyota: Enforce Stock Longitudinal Control by @rav4kumar
+  * Nissan: use MADS enabled status for LKAS HUD logic by @downquark7
+  * Reapply "Lateral: lower friction threshold (#2915)" (#378) by @sunnyhaibin
+  * HKG: add KIA_FORTE_2019_NON_SCC fingerprint by @royjr
+  * Nissan: Parse cruise control buttons by @downquark7
+  * Rivian: Add stalk down ACC behavior to match stock Rivian by @lukasloetkolben
+  * Tesla: remove `TESLA_MODEL_X` from `dashcamOnly` by @ssysm
+  * Hyundai Longitudinal: refactor tuning by @Discountchubbs
+  * Tesla: add fingerprint for Model 3 Performance HW4 by @sunnyhaibin
+  * Toyota: do not disable radar when smartDSU or CAN Filter detected by @sunnyhaibin
+  * Honda: add missing `GasInterceptor` messages to Taiwan Odyssey DBC by @mvl-boston
+  * GM: remove `CHEVROLET_EQUINOX_NON_ACC_3RD_GEN` from `dashcamOnly` by @sunnyhaibin
+  * GM: remove `CHEVROLET_BOLT_NON_ACC_2ND_GEN` from `dashcamOnly` by @sunnyhaibin
+* New Contributors (sunnypilot/sunnypilot)
+  * @TheSecurityDev made their first contribution in "ui: fix sidebar scroll in UI screenshots"
+  * @zikeji made their first contribution in "sunnylink: block remote modification of SSH key parameters"
+  * @Candy0707 made their first contribution in "[TIZI/TICI] ui: Fix misaligned turn signals and blindspot indicators with sidebar"
+  * @CHaucke89 made their first contribution in "Pause Lateral Control with Blinker: Post-Blinker Delay"
+  * @yasu-oh made their first contribution in "SCC-V: Use p97 for predicted lateral accel"
+* New Contributors (sunnypilot/opendbc)
+  * @AmyJeanes made their first contribution in "Tesla: Fix stock LKAS being blocked when MADS is enabled"
+  * @mvl-boston made their first contribution in "Honda: Update Clarity brake to renamed DBC message name"
+  * @dzid26 made their first contribution in "Tesla: Parse speed limit from CAN"
+  * @firestar5683 made their first contribution in "GM: Non-ACC platforms with steering only support"
+  * @downquark7 made their first contribution in "Nissan: use MADS enabled status for LKAS HUD logic"
+  * @royjr made their first contribution in "HKG: add KIA_FORTE_2019_NON_SCC fingerprint"
+  * @ssysm made their first contribution in "Tesla: remove `TESLA_MODEL_X` from `dashcamOnly`"
+* Full Changelog: https://github.com/sunnypilot/sunnypilot/compare/v2025.002.000...v2026.001.000
 
 sunnypilot Version 2025.002.000 (2025-11-06)
 ========================

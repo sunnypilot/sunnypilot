@@ -35,7 +35,7 @@ class VehicleLayout(Widget):
   def get_brand():
     if bundle := ui_state.params.get("CarPlatformBundle"):
       return bundle.get("brand", "")
-    elif ui_state.CP and ui_state.CP.carFingerprint != "MOCK":
+    elif ui_state.CP is not None and ui_state.CP.carFingerprint != "MOCK":
       return ui_state.CP.brand
     return ""
 

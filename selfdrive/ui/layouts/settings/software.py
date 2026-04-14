@@ -69,7 +69,6 @@ class SoftwareLayout(Widget):
 
     # Branch switcher
     self._branch_btn = button_item(lambda: tr("Target Branch"), lambda: tr("SELECT"), callback=self._on_select_branch)
-    self._branch_btn.set_visible(not ui_state.params.get_bool("IsTestedBranch"))
     self._branch_btn.action_item.set_value(ui_state.params.get("UpdaterTargetBranch") or "")
     self._branch_dialog: MultiOptionDialog | None = None
 
@@ -83,6 +82,7 @@ class SoftwareLayout(Widget):
     ], line_separator=True, spacing=0)
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
 
   def _render(self, rect):
@@ -168,12 +168,12 @@ class SoftwareLayout(Widget):
       os.system("pkill -SIGHUP -f system.updated.updated")
 
   def _on_uninstall(self):
-    def handle_uninstall_confirmation(result):
+    def handle_uninstall_confirmation(result: DialogResult):
       if result == DialogResult.CONFIRM:
         ui_state.params.put_bool("DoUninstall", True)
 
-    dialog = ConfirmDialog(tr("Are you sure you want to uninstall?"), tr("Uninstall"))
-    gui_app.set_modal_overlay(dialog, callback=handle_uninstall_confirmation)
+    dialog = ConfirmDialog(tr("Are you sure you want to uninstall?"), tr("Uninstall"), callback=handle_uninstall_confirmation)
+    gui_app.push_widget(dialog)
 
   def _on_install_update(self):
     # Trigger reboot to install update
@@ -192,9 +192,8 @@ class SoftwareLayout(Widget):
         branches.insert(0, b)
 
     current_target = ui_state.params.get("UpdaterTargetBranch") or ""
-    self._branch_dialog = MultiOptionDialog(tr("Select a branch"), branches, current_target)
 
-    def handle_selection(result):
+    def handle_selection(result: DialogResult):
       # Confirmed selection
       if result == DialogResult.CONFIRM and self._branch_dialog is not None and self._branch_dialog.selection:
         selection = self._branch_dialog.selection
@@ -203,4 +202,5 @@ class SoftwareLayout(Widget):
         os.system("pkill -SIGUSR1 -f system.updated.updated")
       self._branch_dialog = None
 
-    gui_app.set_modal_overlay(self._branch_dialog, callback=handle_selection)
+    self._branch_dialog = MultiOptionDialog(tr("Select a branch"), branches, current_target, callback=handle_selection)
+    gui_app.push_widget(self._branch_dialog)

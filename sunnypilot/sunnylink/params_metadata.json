@@ -90,8 +90,12 @@
     "description": ""
   },
   "BlindSpot": {
-    "title": "Blind Spot Detection",
-    "description": ""
+    "title": "[TIZI/TICI only] Blind Spot Detection",
+    "description": "Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."
+  },
+  "BlinkerLateralReengageDelay": {
+    "title": "Post-Blinker Delay",
+    "description": "Delay before lateral control resumes after the turn signal ends."
   },
   "BlinkerMinLateralControlSpeed": {
     "title": "Blinker Min Lateral Control Speed",
@@ -126,11 +130,13 @@
     "description": "Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)",
     "min": -0.35,
     "max": 0.35,
-    "step": 0.01
+    "step": 0.01,
+    "unit": "meters"
   },
   "CarBatteryCapacity": {
     "title": "Car Battery Capacity",
-    "description": ""
+    "description": "Battery Size",
+    "unit": "kWh"
   },
   "CarList": {
     "title": "Supported Car List",
@@ -337,8 +343,8 @@
     "description": ""
   },
   "GreenLightAlert": {
-    "title": "Green Light Alert",
-    "description": ""
+    "title": "Green Traffic Light Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "GsmApn": {
     "title": "GSM APN",
@@ -365,8 +371,8 @@
     "description": ""
   },
   "HideVEgoUI": {
-    "title": "Hide vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Hide from Onroad Screen",
+    "description": "When enabled, the speedometer on the onroad screen is not displayed."
   },
   "HyundaiLongitudinalTuning": {
     "title": "Hyundai Longitudinal Tuning",
@@ -396,7 +402,61 @@
   },
   "InteractivityTimeout": {
     "title": "Interactivity Timeout",
-    "description": ""
+    "description": "Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if user is not interacting with the screen.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Default"
+      },
+      {
+        "value": 10,
+        "label": "10 s"
+      },
+      {
+        "value": 20,
+        "label": "20 s"
+      },
+      {
+        "value": 30,
+        "label": "30 s"
+      },
+      {
+        "value": 40,
+        "label": "40 s"
+      },
+      {
+        "value": 50,
+        "label": "50 s"
+      },
+      {
+        "value": 60,
+        "label": "1 m"
+      },
+      {
+        "value": 70,
+        "label": "1 m"
+      },
+      {
+        "value": 80,
+        "label": "1 m"
+      },
+      {
+        "value": 90,
+        "label": "1 m"
+      },
+      {
+        "value": 100,
+        "label": "1 m"
+      },
+      {
+        "value": 110,
+        "label": "1 m"
+      },
+      {
+        "value": 120,
+        "label": "2 m"
+      }
+    ]
   },
   "IsDevelopmentBranch": {
     "title": "Is Development Branch",
@@ -528,9 +588,13 @@
     "title": "Last Update Uptime Onroad",
     "description": ""
   },
-  "LeadDepartAlert": {
-    "title": "Lead Depart Alert",
+  "LateralManeuverMode": {
+    "title": "Lateral Maneuver Mode",
     "description": ""
+  },
+  "LeadDepartAlert": {
+    "title": "Lead Departure Alert (Beta)",
+    "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
   },
   "LiveDelay": {
     "title": "Live Delay",
@@ -630,7 +694,8 @@
   },
   "MaxTimeOffroad": {
     "title": "Max Time Offroad",
-    "description": ""
+    "description": "",
+    "unit": "minutes"
   },
   "ModelManager_ActiveBundle": {
     "title": "Model Manager Active Bundle",
@@ -773,20 +838,182 @@
   "OnroadScreenOffBrightness": {
     "title": "Onroad Brightness",
     "description": "",
-    "min": 0,
-    "max": 100,
-    "step": 5
+    "options": [
+      {
+        "value": 0,
+        "label": "Auto (Default)"
+      },
+      {
+        "value": 1,
+        "label": "Auto (Dark)"
+      },
+      {
+        "value": 2,
+        "label": "Screen Off"
+      },
+      {
+        "value": 3,
+        "label": "5 %"
+      },
+      {
+        "value": 4,
+        "label": "10 %"
+      },
+      {
+        "value": 5,
+        "label": "15 %"
+      },
+      {
+        "value": 6,
+        "label": "20 %"
+      },
+      {
+        "value": 7,
+        "label": "25 %"
+      },
+      {
+        "value": 8,
+        "label": "30 %"
+      },
+      {
+        "value": 9,
+        "label": "35 %"
+      },
+      {
+        "value": 10,
+        "label": "40 %"
+      },
+      {
+        "value": 11,
+        "label": "45 %"
+      },
+      {
+        "value": 12,
+        "label": "50 %"
+      },
+      {
+        "value": 13,
+        "label": "55 %"
+      },
+      {
+        "value": 14,
+        "label": "60 %"
+      },
+      {
+        "value": 15,
+        "label": "65 %"
+      },
+      {
+        "value": 16,
+        "label": "70 %"
+      },
+      {
+        "value": 17,
+        "label": "75 %"
+      },
+      {
+        "value": 18,
+        "label": "80 %"
+      },
+      {
+        "value": 19,
+        "label": "85 %"
+      },
+      {
+        "value": 20,
+        "label": "90 %"
+      },
+      {
+        "value": 21,
+        "label": "95 %"
+      },
+      {
+        "value": 22,
+        "label": "100 %"
+      }
+    ]
+  },
+  "OnroadScreenOffBrightnessMigrated": {
+    "title": "Onroad Brightness Migration Version",
+    "description": "This param is to track whether OnroadScreenOffBrightness needs to be migrated."
   },
   "OnroadScreenOffControl": {
-    "title": "Onroad Screen: Reduced Brightness",
-    "description": "Turn off device screen or reduce brightness after driving starts"
+    "title": "Onroad Brightness",
+    "description": "Adjusts the screen brightness while it's in onroad state."
   },
   "OnroadScreenOffTimer": {
     "title": "Onroad Brightness Delay",
     "description": "",
-    "min": 0,
-    "max": 60,
-    "step": 1
+    "options": [
+      {
+        "value": 3,
+        "label": "3s"
+      },
+      {
+        "value": 5,
+        "label": "5s"
+      },
+      {
+        "value": 7,
+        "label": "7s"
+      },
+      {
+        "value": 10,
+        "label": "10s"
+      },
+      {
+        "value": 15,
+        "label": "15s"
+      },
+      {
+        "value": 30,
+        "label": "30s"
+      },
+      {
+        "value": 60,
+        "label": "1m"
+      },
+      {
+        "value": 120,
+        "label": "2m"
+      },
+      {
+        "value": 180,
+        "label": "3m"
+      },
+      {
+        "value": 240,
+        "label": "4m"
+      },
+      {
+        "value": 300,
+        "label": "5m"
+      },
+      {
+        "value": 360,
+        "label": "6m"
+      },
+      {
+        "value": 420,
+        "label": "7m"
+      },
+      {
+        "value": 480,
+        "label": "8m"
+      },
+      {
+        "value": 540,
+        "label": "9m"
+      },
+      {
+        "value": 600,
+        "label": "10m"
+      }
+    ]
+  },
+  "OnroadScreenOffTimerMigrated": {
+    "title": "Onroad Brightness Delay Migration Version",
+    "description": "This param is to track whether OnroadScreenOffTimer needs to be migrated."
   },
   "OnroadUploads": {
     "title": "Onroad Uploads",
@@ -888,8 +1115,12 @@
     "description": ""
   },
   "RoadNameToggle": {
-    "title": "Display Road Name",
-    "description": ""
+    "title": "[TIZI/TICI only] Display Road Name",
+    "description": "Displays the name of the road the car is traveling on. <br>The OpenStreetMap database of the location must be downloaded to fetch the road name."
+  },
+  "RocketFuel": {
+    "title": "[TIZI/TICI only] Real-time Acceleration Bar",
+    "description": "Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration. This displays what the car is currently doing, not what the planner is requesting."
   },
   "RouteCount": {
     "title": "Route Count",
@@ -908,8 +1139,8 @@
     "description": ""
   },
   "ShowTurnSignals": {
-    "title": "Show Turn Signals",
-    "description": ""
+    "title": "[TIZI/TICI only] Display Turn Signals",
+    "description": "When enabled, visual turn indicators are drawn on the HUD."
   },
   "SmartCruiseControlMap": {
     "title": "Smart Cruise Control - Map",
@@ -1001,8 +1232,8 @@
     "description": ""
   },
   "StandstillTimer": {
-    "title": "Standstill Timer",
-    "description": ""
+    "title": "[TIZI/TICI only] Standstill Timer",
+    "description": "Show a timer on the HUD when the car is at a standstill."
   },
   "SubaruStopAndGo": {
     "title": "Subaru Stop and Go",
@@ -1044,6 +1275,28 @@
     "title": "Tesla Coop Steering",
     "description": ""
   },
+  "TorqueBar": {
+    "title": "[TIZI/TICI only] Steering Arc",
+    "description": "Display steering arc on the driving screen when lateral control is enabled."
+  },
+  "TorqueControlTune": {
+    "title": "Torque Control Tune Version",
+    "description": "Select the version of Torque Control Tune to use.",
+    "options": [
+      {
+        "value": "",
+        "label": "Default"
+      },
+      {
+        "value": 1.0,
+        "label": "v1.0"
+      },
+      {
+        "value": 0.0,
+        "label": "v0.0"
+      }
+    ]
+  },
   "TorqueParamsOverrideEnabled": {
     "title": "Manual Real-Time Tuning",
     "description": ""
@@ -1060,19 +1313,24 @@
     "description": "",
     "min": 0.1,
     "max": 5.0,
-    "step": 0.1
+    "step": 0.1,
+    "unit": "m/s\u00b2"
   },
   "ToyotaEnforceStockLongitudinal": {
     "title": "Toyota: Enforce Factory Longitudinal Control",
     "description": "When enabled, sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used."
+  },
+  "ToyotaStopAndGoHack": {
+    "title": "Toyota: Stop and Go Hack (Alpha)",
+    "description": "sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models that are able to use longitudinal control. This is an alpha feature. Use at your own risk."
   },
   "TrainingVersion": {
     "title": "Training Version",
     "description": ""
   },
   "TrueVEgoUI": {
-    "title": "True vEgo UI",
-    "description": ""
+    "title": "[TIZI/TICI only] Speedometer: Always Display True Speed",
+    "description": "For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."
   },
   "UbloxAvailable": {
     "title": "Ublox Available",

@@ -44,7 +44,8 @@ class OptionControlSP(ItemAction):
           self.current_value = int(key)
           break
     else:
-      self.current_value = int(self.params.get(self.param_key, return_default=True))
+      value = self.params.get(self.param_key, return_default=True)
+      self.current_value = int(float(value) * 100.0) if self.use_float_scaling else int(value)
 
     # Initialize font and button styles
     self._font = gui_app.font(FontWeight.MEDIUM)
