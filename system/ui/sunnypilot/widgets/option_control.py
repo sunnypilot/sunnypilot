@@ -159,10 +159,10 @@ class OptionControlSP(ItemAction):
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     if self._minus_enabled and rl.check_collision_point_rec(mouse_pos, self.minus_btn_rect):
-      self.current_value -= self.value_change_step
-      self.current_value = max(self.min_value, self.current_value)
+      new_value = self.current_value - self.value_change_step
+      new_value = max(self.min_value, new_value)
+      self.set_value(new_value)
     elif self._plus_enabled and rl.check_collision_point_rec(mouse_pos, self.plus_btn_rect):
-      self.current_value += self.value_change_step
-      self.current_value = min(self.max_value, self.current_value)
-
-    self.set_value(self.current_value)
+      new_value = self.current_value + self.value_change_step
+      new_value = min(self.max_value, new_value)
+      self.set_value(new_value)
