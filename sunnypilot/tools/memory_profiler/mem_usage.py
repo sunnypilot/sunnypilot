@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import matplotlib.pyplot as plt
 import os
 import sys
@@ -7,6 +13,7 @@ import base64
 import io
 
 from openpilot.tools.lib.logreader import LogReader, ReadMode
+
 
 def extract_mem_cpu_data(lr):
   times, mems, cpus = [], [], []
@@ -26,13 +33,16 @@ def extract_mem_cpu_data(lr):
       cpus.append(avg_cpu)
   return times, mems, cpus
 
+
 def process_segment(lr):
   return [extract_mem_cpu_data(lr)]
+
 
 def calculate_r_squared(y_true, y_pred):
   ss_res = np.sum((y_true - y_pred) ** 2)
   ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
   return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+
 
 def plot_results(segments, segment_data, route_name):
   valid_data = [d for d in segment_data if d and d[0]]
@@ -78,22 +88,22 @@ def plot_results(segments, segment_data, route_name):
 
   warmup_sec = 60
   if len(combined_times) > 1 and combined_times[-1] > warmup_sec:
-      mask = np.array(combined_times) > warmup_sec
-      x_reg = np.array(combined_times)[mask]
+    mask = np.array(combined_times) > warmup_sec
+    x_reg = np.array(combined_times)[mask]
 
-      y_mem_reg = np.array(combined_mems)[mask]
-      slope_mem, intercept_mem = np.polyfit(x_reg, y_mem_reg, 1)
-      trend_mem = slope_mem * x_reg + intercept_mem
-      r2_mem = calculate_r_squared(y_mem_reg, trend_mem)
-      ax2.plot(x_reg, trend_mem, color="darkred", linestyle="--", linewidth=2.5,
-               label=f"Mem Trend (Slope: {slope_mem:.4f} %/s, R²: {r2_mem:.2f})")
+    y_mem_reg = np.array(combined_mems)[mask]
+    slope_mem, intercept_mem = np.polyfit(x_reg, y_mem_reg, 1)
+    trend_mem = slope_mem * x_reg + intercept_mem
+    r2_mem = calculate_r_squared(y_mem_reg, trend_mem)
+    ax2.plot(x_reg, trend_mem, color="darkred", linestyle="--", linewidth=2.5,
+             label=f"Mem Trend (Slope: {slope_mem:.4f} %/s, R²: {r2_mem:.2f})")
 
-      y_cpu_reg = np.array(combined_cpus)[mask]
-      slope_cpu, intercept_cpu = np.polyfit(x_reg, y_cpu_reg, 1)
-      trend_cpu = slope_cpu * x_reg + intercept_cpu
-      r2_cpu = calculate_r_squared(y_cpu_reg, trend_cpu)
-      ax2.plot(x_reg, trend_cpu, color="navy", linestyle="--", linewidth=2.5,
-               label=f"CPU Trend (Slope: {slope_cpu:.4f} %/s, R²: {r2_cpu:.2f})")
+    y_cpu_reg = np.array(combined_cpus)[mask]
+    slope_cpu, intercept_cpu = np.polyfit(x_reg, y_cpu_reg, 1)
+    trend_cpu = slope_cpu * x_reg + intercept_cpu
+    r2_cpu = calculate_r_squared(y_cpu_reg, trend_cpu)
+    ax2.plot(x_reg, trend_cpu, color="navy", linestyle="--", linewidth=2.5,
+             label=f"CPU Trend (Slope: {slope_cpu:.4f} %/s, R²: {r2_cpu:.2f})")
 
   ax2.set_xlabel("Time (s)")
   ax2.set_ylabel("Usage (%)")
@@ -132,6 +142,7 @@ def plot_results(segments, segment_data, route_name):
 
   print(f"Report saved to {save_path}")
 
+
 def main():
   parser = argparse.ArgumentParser(description='Extract memory usage from route logs.')
   parser.add_argument('route_or_segment_name', help='Route or segment name from comma connect')
@@ -147,6 +158,7 @@ def main():
   except Exception as e:
     print(f"Error: {e}")
     sys.exit(1)
+
 
 if __name__ == "__main__":
   main()
