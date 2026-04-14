@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "OP Model 7 (Default)"
+#define DEFAULT_MODEL "POP model (Default)"
