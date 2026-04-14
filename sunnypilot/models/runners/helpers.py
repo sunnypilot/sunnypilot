@@ -16,8 +16,9 @@ def get_model_runner() -> ModelRunner:
   bundle = get_active_bundle()
   if bundle and bundle.models:
     model_types = {m.type.raw for m in bundle.models}
-    # Check if the bundle uses separate vision and policy models
-    if ModelType.vision in model_types or ModelType.policy in model_types:
+    # Check if the bundle uses separate vision and policy models (legacy or new split format)
+    split_types = {ModelType.vision, ModelType.policy, ModelType.offPolicy, ModelType.onPolicy}
+    if model_types & split_types:
       return TinygradSplitRunner()
     # Otherwise, assume a single model (likely supercombo)
     if bundle.models:

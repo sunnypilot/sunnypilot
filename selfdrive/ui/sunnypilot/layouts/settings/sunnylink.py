@@ -41,7 +41,7 @@ class SunnylinkHeader(Widget):
     self._description = UnifiedLabel(
       text=tr("For secure backup, restore, and remote configuration"),
       font_size=40,
-      font_weight=FontWeight.LIGHT,
+      font_weight=FontWeight.NORMAL,
       text_color=rl.Color(0, 255, 0, 255),  # Green
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
@@ -53,7 +53,7 @@ class SunnylinkHeader(Widget):
       text=tr("Sponsorship isn't required for basic backup/restore") + "\n" +
            tr("Click the Sponsor button for more details"),
       font_size=35,
-      font_weight=FontWeight.LIGHT,
+      font_weight=FontWeight.NORMAL,
       text_color=rl.Color(255, 165, 0, 255),  # Orange
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
@@ -107,7 +107,7 @@ class SunnylinkDescriptionItem(Widget):
     self._description = UnifiedLabel(
       text="",
       font_size=40,
-      font_weight=FontWeight.LIGHT,
+      font_weight=FontWeight.NORMAL,
       text_color=rl.WHITE,
       alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
