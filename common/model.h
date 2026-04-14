@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "CD210 (Default)"
+#define DEFAULT_MODEL "POP model (Default)"

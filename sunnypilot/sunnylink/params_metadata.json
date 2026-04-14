@@ -588,6 +588,10 @@
     "title": "Last Update Uptime Onroad",
     "description": ""
   },
+  "LateralManeuverMode": {
+    "title": "Lateral Maneuver Mode",
+    "description": ""
+  },
   "LeadDepartAlert": {
     "title": "Lead Departure Alert (Beta)",
     "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
