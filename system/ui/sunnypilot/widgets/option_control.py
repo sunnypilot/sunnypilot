@@ -60,17 +60,19 @@ class OptionControlSP(ItemAction):
 
   def set_value(self, value: int):
     """Set the control to a specific value"""
-    if self.min_value <= value <= self.max_value:
-      self.current_value = value
-      if self.value_map:
-        self.params.put(self.param_key, self.value_map[value])
-      else:
-        if self.use_float_scaling:
-          self.params.put(self.param_key, value / 100.0)
-        else:
-          self.params.put(self.param_key, value)
-      if self.on_value_changed:
-        self.on_value_changed(value)
+    if not (self.min_value <= value <= self.max_value):
+      return
+    if value == self.current_value:
+      return
+    self.current_value = value
+    if self.value_map:
+      self.params.put(self.param_key, self.value_map[value])
+    elif self.use_float_scaling:
+      self.params.put(self.param_key, value / 100.0)
+    else:
+      self.params.put(self.param_key, value)
+    if self.on_value_changed:
+      self.on_value_changed(value)
 
   def get_displayed_value(self) -> str:
     """Get the displayed value, handling value mapping if present"""
