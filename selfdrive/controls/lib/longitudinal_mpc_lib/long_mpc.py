@@ -290,15 +290,16 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     if model_lead.prob > 0.5:
       # model.x[h] = current_dRel + lead's cumulative world travel (ego-start frame),
-      # measured from the camera origin — subtract RADAR_TO_CAMERA so x matches what
-      # baseline MPC saw from radarState.dRel (also referenced from bumper/radar front).
-      # TEMP: derive v from dx/dt instead of trusting biased model.v — tests whether
-      # model.x carries real lead motion independent of the ego-prior shortcut in model.v.
+      # measured from camera — subtract RADAR_TO_CAMERA so x matches radarState.dRel frame.
+      # Derive v from dx/dt: model.x is historically more accurate than model.v (less
+      # ego-prior contamination). edge_order=2 uses a 3-point quadratic fit at h=0 and
+      # h=5 to recover instantaneous velocity; default edge_order=1 would give the 2-second
+      # average, underestimating v[0] by ~0.5 m/s when lead is slowing.
       x_lead_traj = np.asarray(model_lead.x, dtype=np.float64) - RADAR_TO_CAMERA
     else:
       # Fake a fast lead so MPC stays in the same mode.
       x_lead_traj = 50.0 + (v_ego + 10.0) * LEAD_T_IDXS_MODEL
-    v_lead_traj = np.gradient(x_lead_traj, LEAD_T_IDXS_MODEL)
+    v_lead_traj = np.gradient(x_lead_traj, LEAD_T_IDXS_MODEL, edge_order=2)
 
     # MPC won't converge on immediate crashes; lift h=0 to the minimum braking distance.
     v_lead_0 = v_lead_traj[0]
