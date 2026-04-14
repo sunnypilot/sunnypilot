@@ -55,6 +55,7 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info = CurrentModelInfo()
     self._download_progress = "."
     self._download_frame = 0
+    self._was_downloading = False
 
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
@@ -140,6 +141,12 @@ class ModelsLayoutMici(NavScroller):
     self._scroller.scroll_panel.set_offset(0)
     self._scroller.scroll_to(0)
 
+  def hide_event(self):
+    super().hide_event()
+    if self._was_downloading:
+      device.set_override_interactive_timeout(None)
+      self._was_downloading = False
+
   def _update_state(self):
     super()._update_state()
 
@@ -153,6 +160,12 @@ class ModelsLayoutMici(NavScroller):
     should_update = self._download_frame % (gui_app.target_fps / 2) == 0
     if should_update:
       self._download_progress = self._download_progress + "." if len(self._download_progress) < 3 else ""
+
+    is_downloading = (manager.selectedBundle
+                      and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
+    if self._was_downloading and not is_downloading:
+      device.set_override_interactive_timeout(None)
+    self._was_downloading = is_downloading
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
     self.current_model_info.current_model_text.set_text(manager.activeBundle.displayName.lower() if manager.activeBundle.index > 0 else tr("default model"))
