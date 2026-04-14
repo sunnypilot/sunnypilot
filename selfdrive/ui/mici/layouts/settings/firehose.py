@@ -14,7 +14,7 @@ from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.scroll_panel2 import GuiScrollPanel2
 from openpilot.system.ui.lib.multilang import tr, trn, tr_noop
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.nav_widget import NavWidget
+from openpilot.system.ui.widgets.scroller import NavRawScrollPanel
 
 TITLE = tr_noop("Firehose Mode")
 DESCRIPTION = tr_noop(
@@ -81,12 +81,12 @@ class FirehoseLayoutBase(Widget):
   def _render(self, rect: rl.Rectangle):
     # compute total content height for scrolling
     content_height = self._measure_content_height(rect)
-    scroll_offset = round(self._scroll_panel.update(rect, content_height))
+    scroll_offset = self._scroll_panel.update(rect, content_height)
 
     # start drawing with offset
-    x = int(rect.x + 40)
-    y = int(rect.y + 40 + scroll_offset)
-    w = int(rect.width - 80)
+    x = rect.x + 40
+    y = rect.y + 40 + scroll_offset
+    w = rect.width - 80
 
     # Title
     title_text = tr(TITLE)
@@ -100,7 +100,7 @@ class FirehoseLayoutBase(Widget):
     y += 20
 
     # Separator
-    rl.draw_rectangle(x, y, w, 2, self.GRAY)
+    rl.draw_rectangle_rec(rl.Rectangle(x, y, w, 2), self.GRAY)
     y += 20
 
     # Status
@@ -116,7 +116,7 @@ class FirehoseLayoutBase(Widget):
       y += 20
 
     # Separator
-    rl.draw_rectangle(x, y, w, 2, self.GRAY)
+    rl.draw_rectangle_rec(rl.Rectangle(x, y, w, 2), self.GRAY)
     y += 20
 
     # Instructions intro
@@ -218,10 +218,5 @@ class FirehoseLayoutBase(Widget):
       time.sleep(self.UPDATE_INTERVAL)
 
 
-class FirehoseLayout(FirehoseLayoutBase, NavWidget):
-  BACK_TOUCH_AREA_PERCENTAGE = 0.1
-
-  def __init__(self):
-    super().__init__()
-    self.set_back_callback(gui_app.pop_widget)
-    self._scroll_panel.set_enabled(lambda: self.enabled and not self._swiping_away)
+class FirehoseLayout(NavRawScrollPanel, FirehoseLayoutBase):
+  pass

@@ -93,7 +93,7 @@ class TripsLayout(Widget):
 
     # Values
     number_font = gui_app.font(FontWeight.BOLD)
-    unit_font = gui_app.font(FontWeight.LIGHT)
+    unit_font = gui_app.font(FontWeight.NORMAL)
     number_base_size = 92
     unit_base_size = 55
     number_size = number_base_size * FONT_SCALE
@@ -112,9 +112,9 @@ class TripsLayout(Widget):
       center_x = col_x + (col_width / 2)
 
       # Icon
-      icon_x = int(center_x - (icon.width / 2))
-      icon_y = int(content_y + 60)
-      rl.draw_texture(icon, icon_x, icon_y, rl.WHITE)
+      icon_x = center_x - (icon.width / 2)
+      icon_y = content_y + 60
+      rl.draw_texture_ex(icon, rl.Vector2(icon_x, icon_y), 0.0, 1.0, rl.WHITE)
 
       # Value
       val_size = measure_text_cached(number_font, value, number_base_size)

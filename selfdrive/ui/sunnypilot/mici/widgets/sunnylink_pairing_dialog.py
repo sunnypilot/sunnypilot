@@ -13,7 +13,7 @@ from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYL
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.nav_widget import NavWidget
-from openpilot.system.ui.widgets.label import MiciLabel
+from openpilot.system.ui.widgets.label import UnifiedLabel
 
 
 class SunnylinkPairingDialog(PairingDialog):
@@ -23,8 +23,8 @@ class SunnylinkPairingDialog(PairingDialog):
     PairingDialog.__init__(self)
     self._sponsor_pairing = sponsor_pairing
     label_text = tr("pair with sunnylink") if sponsor_pairing else tr("become a sunnypilot sponsor")
-    self._pair_label = MiciLabel(label_text, 48, font_weight=FontWeight.BOLD,
-                                 color=rl.Color(255, 255, 255, int(255 * 0.9)), line_height=40, wrap_text=True)
+    self._pair_label = UnifiedLabel(label_text, font_size=48, font_weight=FontWeight.BOLD,
+                                    text_color=rl.Color(255, 255, 255, int(255 * 0.9)), line_height=0.8)
 
   def _get_pairing_url(self) -> str:
     qr_string = "https://github.com/sponsors/sunnyhaibin"
