@@ -8,18 +8,16 @@ from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.software import SoftwareLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
+from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wifi_manager import WifiManager
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.network import WifiManagerUI
-
-# Settings close button
-SETTINGS_CLOSE_TEXT = "×"
-SETTINGS_CLOSE_TEXT_Y_OFFSET = 8  # The '×' character isn't quite vertically centered in the font so we need to offset it a bit to fully center it
+from openpilot.system.ui.widgets.network import NetworkUI
 
 # Constants
 SIDEBAR_WIDTH = 500
 CLOSE_BTN_SIZE = 200
+CLOSE_ICON_SIZE = 70
 NAV_BTN_HEIGHT = 110
 PANEL_MARGIN = 50
 
@@ -58,15 +56,16 @@ class SettingsLayout(Widget):
     wifi_manager.set_active(False)
 
     self._panels = {
-      PanelType.DEVICE: PanelInfo("Device", DeviceLayout()),
-      PanelType.NETWORK: PanelInfo("Network", WifiManagerUI(wifi_manager)),
-      PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout()),
-      PanelType.SOFTWARE: PanelInfo("Software", SoftwareLayout()),
-      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayout()),
-      PanelType.DEVELOPER: PanelInfo("Developer", DeveloperLayout()),
+      PanelType.DEVICE: PanelInfo(tr_noop("Device"), DeviceLayout()),
+      PanelType.NETWORK: PanelInfo(tr_noop("Network"), NetworkUI(wifi_manager)),
+      PanelType.TOGGLES: PanelInfo(tr_noop("Toggles"), TogglesLayout()),
+      PanelType.SOFTWARE: PanelInfo(tr_noop("Software"), SoftwareLayout()),
+      PanelType.FIREHOSE: PanelInfo(tr_noop("Firehose"), FirehoseLayout()),
+      PanelType.DEVELOPER: PanelInfo(tr_noop("Developer"), DeveloperLayout()),
     }
 
     self._font_medium = gui_app.font(FontWeight.MEDIUM)
+    self._close_icon = gui_app.texture("icons/close2.png", CLOSE_ICON_SIZE, CLOSE_ICON_SIZE)
 
     # Callbacks
     self._close_callback: Callable | None = None
@@ -96,12 +95,21 @@ class SettingsLayout(Widget):
     close_color = CLOSE_BTN_PRESSED if pressed else CLOSE_BTN_COLOR
     rl.draw_rectangle_rounded(close_btn_rect, 1.0, 20, close_color)
 
-    close_text_size = measure_text_cached(self._font_medium, SETTINGS_CLOSE_TEXT, 140)
-    close_text_pos = rl.Vector2(
-      close_btn_rect.x + (close_btn_rect.width - close_text_size.x) / 2,
-      close_btn_rect.y + (close_btn_rect.height - close_text_size.y) / 2 - SETTINGS_CLOSE_TEXT_Y_OFFSET,
+    icon_color = rl.Color(255, 255, 255, 255) if not pressed else rl.Color(220, 220, 220, 255)
+    icon_dest = rl.Rectangle(
+      close_btn_rect.x + (close_btn_rect.width - self._close_icon.width) / 2,
+      close_btn_rect.y + (close_btn_rect.height - self._close_icon.height) / 2,
+      self._close_icon.width,
+      self._close_icon.height,
     )
-    rl.draw_text_ex(self._font_medium, SETTINGS_CLOSE_TEXT, close_text_pos, 140, 0, TEXT_SELECTED)
+    rl.draw_texture_pro(
+      self._close_icon,
+      rl.Rectangle(0, 0, self._close_icon.width, self._close_icon.height),
+      icon_dest,
+      rl.Vector2(0, 0),
+      0,
+      icon_color,
+    )
 
     # Store close button rect for click detection
     self._close_btn_rect = close_btn_rect
@@ -115,11 +123,12 @@ class SettingsLayout(Widget):
       is_selected = panel_type == self._current_panel
       text_color = TEXT_SELECTED if is_selected else TEXT_NORMAL
       # Draw button text (right-aligned)
-      text_size = measure_text_cached(self._font_medium, panel_info.name, 65)
+      panel_name = tr(panel_info.name)
+      text_size = measure_text_cached(self._font_medium, panel_name, 65)
       text_pos = rl.Vector2(
         button_rect.x + button_rect.width - text_size.x, button_rect.y + (button_rect.height - text_size.y) / 2
       )
-      rl.draw_text_ex(self._font_medium, panel_info.name, text_pos, 65, 0, text_color)
+      rl.draw_text_ex(self._font_medium, panel_name, text_pos, 65, 0, text_color)
 
       # Store button rect for click detection
       panel_info.button_rect = button_rect
@@ -136,20 +145,18 @@ class SettingsLayout(Widget):
     if panel.instance:
       panel.instance.render(content_rect)
 
-  def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
+  def _handle_mouse_release(self, mouse_pos: MousePos) -> None:
     # Check close button
     if rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
       if self._close_callback:
         self._close_callback()
-      return True
+      return
 
     # Check navigation buttons
     for panel_type, panel_info in self._panels.items():
       if rl.check_collision_point_rec(mouse_pos, panel_info.button_rect):
         self.set_current_panel(panel_type)
-        return True
-
-    return False
+        return
 
   def set_current_panel(self, panel_type: PanelType):
     if panel_type != self._current_panel:

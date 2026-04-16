@@ -7,7 +7,7 @@ import unittest # noqa: TID251
 from collections import defaultdict, Counter
 import hypothesis.strategies as st
 from hypothesis import Phase, given, settings
-from parameterized import parameterized_class
+from openpilot.common.parameterized import parameterized_class
 
 from opendbc.car import DT_CTRL, gen_empty_fingerprint, structs
 from opendbc.car.can_definitions import CanData
@@ -151,7 +151,7 @@ class TestCarModelBase(unittest.TestCase):
 
     cls.CarInterface = interfaces[cls.platform]
     cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, False, docs=False)
-    cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, alpha_long, docs=False)
+    cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, alpha_long, False, docs=False)
     assert cls.CP
     assert cls.CP_SP
     assert cls.CP.carFingerprint == cls.platform
@@ -189,7 +189,7 @@ class TestCarModelBase(unittest.TestCase):
       if tuning == 'pid':
         self.assertTrue(len(self.CP.lateralTuning.pid.kpV))
       elif tuning == 'torque':
-        self.assertTrue(self.CP.lateralTuning.torque.kf > 0)
+        self.assertTrue(self.CP.lateralTuning.torque.latAccelFactor > 0)
       else:
         raise Exception("unknown tuning")
 

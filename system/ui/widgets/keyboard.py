@@ -1,14 +1,16 @@
 from functools import partial
 import time
 from typing import Literal
+from collections.abc import Callable
 
 import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.inputbox import InputBox
-from openpilot.system.ui.widgets.label import Label, TextAlignment
+from openpilot.system.ui.widgets.label import Label
 
 KEY_FONT_SIZE = 96
 DOUBLE_CLICK_THRESHOLD = 0.5  # seconds
@@ -19,7 +21,7 @@ DELETE_REPEAT_INTERVAL = 0.07
 CONTENT_MARGIN = 50
 BACKSPACE_KEY = "<-"
 ENTER_KEY = "->"
-SPACE_KEY = "  "
+SPACE_KEY = " "
 SHIFT_INACTIVE_KEY = "SHIFT_OFF"
 SHIFT_ACTIVE_KEY = "SHIFT_ON"
 CAPS_LOCK_KEY = "CAPS"
@@ -44,40 +46,41 @@ KEYBOARD_LAYOUTS = {
   "numbers": [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
     ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
-    [SYMBOL_KEY, ".", ",", "?", "!", "`", BACKSPACE_KEY],
+    [SYMBOL_KEY, "_", ",", "?", "!", "`", BACKSPACE_KEY],
     [ABC_KEY, SPACE_KEY, ".", ENTER_KEY],
   ],
   "specials": [
     ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
     ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
-    [NUMERIC_KEY, ".", ",", "?", "!", "'", BACKSPACE_KEY],
+    [NUMERIC_KEY, "-", ",", "?", "!", "'", BACKSPACE_KEY],
     [ABC_KEY, SPACE_KEY, ".", ENTER_KEY],
   ],
 }
 
 
 class Keyboard(Widget):
-  def __init__(self, max_text_size: int = 255, min_text_size: int = 0, password_mode: bool = False, show_password_toggle: bool = False):
+  def __init__(self, max_text_size: int = 255, min_text_size: int = 0, password_mode: bool = False, show_password_toggle: bool = False,
+               callback: Callable[[DialogResult], None] | None = None):
     super().__init__()
     self._layout_name: Literal["lowercase", "uppercase", "numbers", "specials"] = "lowercase"
     self._caps_lock = False
     self._last_shift_press_time = 0
-    self._title = Label("", 90, FontWeight.BOLD, TextAlignment.LEFT)
-    self._sub_title = Label("", 55, FontWeight.NORMAL, TextAlignment.LEFT)
+    self._title = Label("", 90, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
+    self._sub_title = Label("", 55, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
 
     self._max_text_size = max_text_size
     self._min_text_size = min_text_size
     self._input_box = InputBox(max_text_size)
     self._password_mode = password_mode
     self._show_password_toggle = show_password_toggle
+    self._callback = callback
 
     # Backspace key repeat tracking
     self._backspace_pressed: bool = False
     self._backspace_press_time: float = 0.0
     self._backspace_last_repeat: float = 0.0
 
-    self._render_return_status = -1
-    self._cancel_button = Button("Cancel", self._cancel_button_callback)
+    self._cancel_button = Button(lambda: tr("Cancel"), self._cancel_button_callback)
 
     self._eye_button = Button("", self._eye_button_callback, button_style=ButtonStyle.TRANSPARENT)
 
@@ -98,11 +101,14 @@ class Keyboard(Widget):
           if key in self._key_icons:
             texture = self._key_icons[key]
             self._all_keys[key] = Button("", partial(self._key_callback, key), icon=texture,
-                                        button_style=ButtonStyle.PRIMARY if key == ENTER_KEY else ButtonStyle.KEYBOARD, multi_touch=True)
+                                         button_style=ButtonStyle.PRIMARY if key == ENTER_KEY else ButtonStyle.KEYBOARD, multi_touch=True)
           else:
             self._all_keys[key] = Button(key, partial(self._key_callback, key), button_style=ButtonStyle.KEYBOARD, font_size=85, multi_touch=True)
     self._all_keys[CAPS_LOCK_KEY] = Button("", partial(self._key_callback, CAPS_LOCK_KEY), icon=self._key_icons[CAPS_LOCK_KEY],
                                            button_style=ButtonStyle.KEYBOARD, multi_touch=True)
+
+  def set_text(self, text: str):
+    self._input_box.text = text
 
   @property
   def text(self):
@@ -118,16 +124,23 @@ class Keyboard(Widget):
     self._title.set_text(title)
     self._sub_title.set_text(sub_title)
 
+  def set_callback(self, callback: Callable[[DialogResult], None] | None):
+    self._callback = callback
+
   def _eye_button_callback(self):
     self._password_mode = not self._password_mode
 
   def _cancel_button_callback(self):
     self.clear()
-    self._render_return_status = 0
+    gui_app.pop_widget()
+    if self._callback:
+      self._callback(DialogResult.CANCEL)
 
   def _key_callback(self, k):
     if k == ENTER_KEY:
-      self._render_return_status = 1
+      gui_app.pop_widget()
+      if self._callback:
+        self._callback(DialogResult.CONFIRM)
     else:
       self.handle_key_press(k)
 
@@ -193,8 +206,6 @@ class Keyboard(Widget):
           self._all_keys[key].set_enabled(is_enabled)
           self._all_keys[key].render(key_rect)
 
-    return self._render_return_status
-
   def _render_input_area(self, input_rect: rl.Rectangle):
     if self._show_password_toggle:
       self._input_box.set_password_mode(self._password_mode)
@@ -243,21 +254,29 @@ class Keyboard(Widget):
       if not self._caps_lock and self._layout_name == "uppercase":
         self._layout_name = "lowercase"
 
-  def reset(self):
-    self._render_return_status = -1
+  def reset(self, min_text_size: int | None = None):
+    if min_text_size is not None:
+      self._min_text_size = min_text_size
+    self._last_shift_press_time = 0
+    self._backspace_pressed = False
+    self._backspace_press_time = 0.0
+    self._backspace_last_repeat = 0.0
     self.clear()
 
 
 if __name__ == "__main__":
-  gui_app.init_window("Keyboard")
-  keyboard = Keyboard(min_text_size=8, show_password_toggle=True)
-  for _ in gui_app.render():
-    keyboard.set_title("Keyboard Input", "Type your text below")
-    result = keyboard.render(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
-    if result == 1:
+  def callback(result: DialogResult):
+    if result == DialogResult.CONFIRM:
       print(f"You typed: {keyboard.text}")
-      gui_app.request_close()
-    elif result == 0:
+    elif result == DialogResult.CANCEL:
       print("Canceled")
-      gui_app.request_close()
+    gui_app.request_close()
+
+  gui_app.init_window("Keyboard")
+  keyboard = Keyboard(min_text_size=8, show_password_toggle=True, callback=callback)
+  keyboard.set_title("Keyboard Input", "Type your text below")
+
+  gui_app.push_widget(keyboard)
+  for _ in gui_app.render():
+    pass
   gui_app.close()

@@ -1,2 +1,2 @@
-*.cc
-translations_assets.qrc
+fonts/*.fnt
+fonts/*.png

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 # for aiortc and its dependencies
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -8,13 +9,10 @@ warnings.filterwarnings("ignore", category=RuntimeWarning) # TODO: remove this w
 from aiortc import RTCDataChannel
 from aiortc.mediastreams import VIDEO_CLOCK_RATE, VIDEO_TIME_BASE
 import capnp
-import pyaudio
 from cereal import messaging, log
 
 from openpilot.system.webrtc.webrtcd import CerealOutgoingMessageProxy, CerealIncomingMessageProxy
 from openpilot.system.webrtc.device.video import LiveStreamVideoStreamTrack
-from openpilot.system.webrtc.device.audio import AudioInputStreamTrack
-from openpilot.common.realtime import DT_DMON
 
 
 class TestStreamSession:
@@ -81,21 +79,9 @@ class TestStreamSession:
     for i in range(5):
       packet = self.loop.run_until_complete(track.recv())
       assert packet.time_base == VIDEO_TIME_BASE
-      assert packet.pts == int(i * DT_DMON * VIDEO_CLOCK_RATE)
+      if i == 0:
+        start_ns = time.monotonic_ns()
+        start_pts = packet.pts
+      assert abs(i + packet.pts - (start_pts + (((time.monotonic_ns() - start_ns) * VIDEO_CLOCK_RATE) // 1_000_000_000))) < 450 #5ms
       assert packet.size == 0
 
-  def test_input_audio_track(self, mocker):
-    packet_time, rate = 0.02, 16000
-    sample_count = int(packet_time * rate)
-    mocked_stream = mocker.MagicMock(spec=pyaudio.Stream)
-    mocked_stream.read.return_value = b"\x00" * 2 * sample_count
-
-    config = {"open.side_effect": lambda *args, **kwargs: mocked_stream}
-    mocker.patch("pyaudio.PyAudio", spec=True, **config)
-    track = AudioInputStreamTrack(audio_format=pyaudio.paInt16, packet_time=packet_time, rate=rate)
-
-    for i in range(5):
-      frame = self.loop.run_until_complete(track.recv())
-      assert frame.rate == rate
-      assert frame.samples == sample_count
-      assert frame.pts == i * sample_count

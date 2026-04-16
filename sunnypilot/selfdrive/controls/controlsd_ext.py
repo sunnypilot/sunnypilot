@@ -4,23 +4,28 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import cereal.messaging as messaging
 from cereal import log, custom
 
 from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.selfdrive.controls.lib.param_store import ParamStore
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
 
 
-class ControlsExt:
+class ControlsExt(ModelStateBase):
   def __init__(self, CP: structs.CarParams, params: Params):
+    ModelStateBase.__init__(self)
     self.CP = CP
     self.params = params
+    self._param_update_time: float = 0.0
     self.blinker_pause_lateral = BlinkerPauseLateral()
-    self.param_store = ParamStore(self.CP)
-    self.get_params_sp()
 
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
@@ -29,9 +34,25 @@ class ControlsExt:
     self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
 
-  def get_params_sp(self) -> None:
-    self.param_store.update(self.params)
-    self.blinker_pause_lateral.get_params()
+  def initialize_lateral_control(self, lac, CI, dt):
+    enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
+    torque_versions = self.params.get("TorqueControlTune")
+    if not enforce_torque_control:
+      return lac
+
+    if torque_versions == 0.0:  # v0
+      return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
+    else:
+      return lac
+
+  def get_params_sp(self, sm: messaging.SubMaster) -> None:
+    if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
+      self.blinker_pause_lateral.get_params()
+
+      if self.CP.lateralTuning.which() == 'torque':
+        self.lat_delay = get_lat_delay(self.params, sm["liveDelay"].lateralDelay)
+
+      self._param_update_time = time.monotonic()
 
   def get_lat_active(self, sm: messaging.SubMaster) -> bool:
     if self.blinker_pause_lateral.update(sm['carState']):
@@ -72,8 +93,6 @@ class ControlsExt:
 
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads
-
-    CC_SP.params = self.param_store.param_list
 
     CC_SP.intelligentCruiseButtonManagement = sm['selfdriveStateSP'].intelligentCruiseButtonManagement
 

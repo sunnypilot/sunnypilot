@@ -8,7 +8,11 @@ from abc import abstractmethod, ABC
 
 import cereal.messaging as messaging
 from openpilot.common.params import Params
+from openpilot.common.constants import CV
+from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.navd.helpers import coordinate_from_param
+
+MAX_SPEED_LIMIT = V_CRUISE_UNSET * CV.KPH_TO_MS
 
 
 class BaseMapData(ABC):
@@ -46,9 +50,9 @@ class BaseMapData(ABC):
     mapd_sp_send.valid = self.sm['liveLocationKalman'].gpsOK
     live_map_data = mapd_sp_send.liveMapDataSP
 
-    live_map_data.speedLimitValid = bool(speed_limit > 0)
+    live_map_data.speedLimitValid = bool(MAX_SPEED_LIMIT > speed_limit > 0)
     live_map_data.speedLimit = speed_limit
-    live_map_data.speedLimitAheadValid = bool(next_speed_limit > 0)
+    live_map_data.speedLimitAheadValid = bool(MAX_SPEED_LIMIT > next_speed_limit > 0)
     live_map_data.speedLimitAhead = next_speed_limit
     live_map_data.speedLimitAheadDistance = next_speed_limit_distance
     live_map_data.roadName = self.get_current_road_name()

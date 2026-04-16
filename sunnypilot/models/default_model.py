@@ -3,19 +3,12 @@ import os
 import hashlib
 
 from openpilot.common.basedir import BASEDIR
+from openpilot.sunnypilot import get_file_hash
 
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.h")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
 VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
 POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
-
-
-def get_file_hash(path: str) -> str:
-  sha256_hash = hashlib.sha256()
-  with open(path, "rb") as f:
-    for byte_block in iter(lambda: f.read(4096), b""):
-      sha256_hash.update(byte_block)
-  return sha256_hash.hexdigest()
 
 
 def update_model_hash():

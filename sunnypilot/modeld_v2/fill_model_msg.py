@@ -11,13 +11,12 @@ SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
 
-def get_curvature_from_output(output, vego, lat_action_t, mlsim):
+def get_curvature_from_output(output, plan, vego, lat_action_t, mlsim):
   if not mlsim:
     if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
       return float(desired_curv[0, 0])
 
-  plan_output = output['plan'][0]
-  return float(get_curvature_from_plan(plan_output[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan_output[:, Plan.ORIENTATION_RATE][:, 2],
+  return float(get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
                                        ModelConstants.T_IDXS, vego, lat_action_t))
 
 
@@ -101,7 +100,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyzt(modelV2.orientationRate, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.ORIENTATION_RATE].T)
 
   # temporal pose
-  temporal_pose = modelV2.temporalPoseDEPRECATED
+  temporal_pose = modelV2.deprecated.temporalPose
   if 'sim_pose' in net_output_data:
     temporal_pose.trans = net_output_data['sim_pose'][0,:ModelConstants.POSE_WIDTH//2].tolist()
     temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:ModelConstants.POSE_WIDTH//2].tolist()

@@ -10,11 +10,15 @@
 
 #include <QColor>
 #include <QDateTime>
+#include <QDir>
 #include <QFontDatabase>
 #include <QLocale>
 #include <QPixmapCache>
-
-#include "selfdrive/ui/qt/util.h"
+#include <QSurfaceFormat>
+#include <QFileInfo>
+#include <QPainterPath>
+#include <unordered_map>
+#include "common/util.h"
 
 // SegmentTree
 
@@ -161,13 +165,13 @@ UnixSignalHandler::~UnixSignalHandler() {
 }
 
 void UnixSignalHandler::signalHandler(int s) {
-  ::write(sig_fd[0], &s, sizeof(s));
+  (void)!::write(sig_fd[0], &s, sizeof(s));
 }
 
 void UnixSignalHandler::handleSigTerm() {
   sn->setEnabled(false);
   int tmp;
-  ::read(sig_fd[1], &tmp, sizeof(tmp));
+  (void)!::read(sig_fd[1], &tmp, sizeof(tmp));
 
   printf("\nexiting...\n");
   qApp->closeAllWindows();
@@ -273,6 +277,96 @@ QString signalToolTip(const cabana::Signal *sig) {
     Start Bit: %2 Size: %3<br />
     MSB: %4 LSB: %5<br />
     Little Endian: %6 Signed: %7</span>
-  )").arg(sig->name).arg(sig->start_bit).arg(sig->size).arg(sig->msb).arg(sig->lsb)
+  )").arg(QString::fromStdString(sig->name)).arg(sig->start_bit).arg(sig->size).arg(sig->msb).arg(sig->lsb)
      .arg(sig->is_little_endian ? "Y" : "N").arg(sig->is_signed ? "Y" : "N");
+}
+
+void setSurfaceFormat() {
+  QSurfaceFormat fmt;
+#ifdef __APPLE__
+  fmt.setVersion(3, 2);
+  fmt.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
+  fmt.setRenderableType(QSurfaceFormat::OpenGL);
+#else
+  fmt.setRenderableType(QSurfaceFormat::OpenGLES);
+#endif
+  fmt.setSamples(16);
+  fmt.setStencilBufferSize(1);
+  QSurfaceFormat::setDefaultFormat(fmt);
+}
+
+void sigTermHandler(int s) {
+  std::signal(s, SIG_DFL);
+  qApp->quit();
+}
+
+void initApp(int argc, char *argv[], bool disable_hidpi) {
+  // setup signal handlers to exit gracefully
+  std::signal(SIGINT, sigTermHandler);
+  std::signal(SIGTERM, sigTermHandler);
+
+  QString app_dir;
+#ifdef __APPLE__
+  // Get the devicePixelRatio, and scale accordingly to maintain 1:1 rendering
+  QApplication tmp(argc, argv);
+  app_dir = QCoreApplication::applicationDirPath();
+  if (disable_hidpi) {
+    qputenv("QT_SCALE_FACTOR", QString::number(1.0 / tmp.devicePixelRatio()).toLocal8Bit());
+  }
+#else
+  app_dir = QFileInfo(util::readlink("/proc/self/exe").c_str()).path();
+#endif
+
+  qputenv("QT_DBL_CLICK_DIST", QByteArray::number(150));
+  // ensure the current dir matches the exectuable's directory
+  QDir::setCurrent(app_dir);
+
+  setSurfaceFormat();
+}
+
+static std::unordered_map<std::string, std::string> load_bootstrap_icons() {
+  std::unordered_map<std::string, std::string> icons;
+
+  QFile f(":/bootstrap-icons.svg");
+  if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    std::string content = f.readAll().toStdString();
+    const std::string sym_open = "<symbol ";
+    const std::string sym_close = "</symbol>";
+    const std::string id_attr = "id=\"";
+
+    size_t pos = 0;
+    while ((pos = content.find(sym_open, pos)) != std::string::npos) {
+      size_t end = content.find(sym_close, pos);
+      if (end == std::string::npos) break;
+      end += sym_close.size();
+
+      // extract id
+      size_t id_start = content.find(id_attr, pos);
+      if (id_start != std::string::npos && id_start < end) {
+        id_start += id_attr.size();
+        size_t id_end = content.find('"', id_start);
+        if (id_end != std::string::npos && id_end < end) {
+          std::string id = content.substr(id_start, id_end - id_start);
+          std::string svg_str = content.substr(pos, end - pos);
+          // replace <symbol with <svg, </symbol> with </svg>
+          svg_str.replace(0, 7, "<svg");               // "<symbol" (7) -> "<svg" (4)
+          svg_str.replace(svg_str.size() - 9, 9, "</svg>");  // "</symbol>" (9) -> "</svg>" (6)
+          icons[id] = std::move(svg_str);
+        }
+      }
+      pos = end;
+    }
+  }
+  return icons;
+}
+
+QPixmap bootstrapPixmap(const QString &id) {
+  static auto icons = load_bootstrap_icons();
+
+  QPixmap pixmap;
+  auto it = icons.find(id.toStdString());
+  if (it != icons.end()) {
+    pixmap.loadFromData((const uchar *)it->second.data(), it->second.size(), "svg");
+  }
+  return pixmap;
 }

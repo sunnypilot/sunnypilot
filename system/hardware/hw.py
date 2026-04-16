@@ -56,6 +56,13 @@ class Paths:
       return "/data/stats/"
 
   @staticmethod
+  def stats_sp_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "stats")
+    else:
+      return "/data/stats_sp/"
+
+  @staticmethod
   def config_root() -> str:
     if PC:
       return Paths.comma_home()

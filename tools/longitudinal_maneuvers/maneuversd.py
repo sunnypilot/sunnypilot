@@ -27,23 +27,14 @@ class Maneuver:
 
   _active: bool = False
   _finished: bool = False
+  _run_completed: bool = False
   _action_index: int = 0
   _action_frames: int = 0
   _ready_cnt: int = 0
   _repeated: int = 0
 
-  def get_accel(self, v_ego: float, long_active: bool, standstill: bool, cruise_standstill: bool) -> float:
-    ready = abs(v_ego - self.initial_speed) < 0.3 and long_active and not cruise_standstill
-    if self.initial_speed < 0.01:
-      ready = ready and standstill
-    self._ready_cnt = (self._ready_cnt + 1) if ready else 0
-
-    if self._ready_cnt > (3. / DT_MDL):
-      self._active = True
-
-    if not self._active:
-      return min(max(self.initial_speed - v_ego, -2.), 2.)
-
+  def _step(self) -> float:
+    self._run_completed = False
     action = self.actions[self._action_index]
     action_accel = np.interp(self._action_frames * DT_MDL, action.time_bp, action.accel_bp)
 
@@ -58,14 +49,33 @@ class Maneuver:
       # repeat maneuver
       elif self._repeated < self.repeat:
         self._repeated += 1
-        self._action_index = 0
-        self._action_frames = 0
-        self._active = False
+        self._run_completed = True
+        self.reset()
       # finish maneuver
       else:
+        self._run_completed = True
         self._finished = True
 
     return float(action_accel)
+
+  def get_accel(self, v_ego: float, long_active: bool, standstill: bool, cruise_standstill: bool) -> float:
+    ready = abs(v_ego - self.initial_speed) < 0.3 and long_active and not cruise_standstill
+    if self.initial_speed < 0.01:
+      ready = ready and standstill
+    self._ready_cnt = (self._ready_cnt + 1) if ready else 0
+
+    if self._ready_cnt > (3. / DT_MDL):
+      self._active = True
+
+    if not self._active:
+      return min(max(self.initial_speed - v_ego, -2.), 2.)
+
+    return self._step()
+
+  def reset(self):
+    self._active = False
+    self._action_frames = 0
+    self._action_index = 0
 
   @property
   def finished(self):
@@ -132,7 +142,7 @@ def main():
   CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
 
   sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'selfdriveState', 'modelV2'], poll='modelV2')
-  pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'alertDebug'])
+  pm = messaging.PubMaster(['longitudinalPlan', 'longitudinalPlanSP', 'driverAssistance', 'alertDebug'])
 
   maneuvers = iter(MANEUVERS)
   maneuver = None
@@ -176,6 +186,10 @@ def main():
     longitudinalPlan.speeds = [0.2]  # triggers carControl.cruiseControl.resume in controlsd
 
     pm.send('longitudinalPlan', plan_send)
+
+    plan_sp_send = messaging.new_message('longitudinalPlanSP')
+    plan_sp_send.valid = True
+    pm.send('longitudinalPlanSP', plan_sp_send)
 
     assistance_send = messaging.new_message('driverAssistance')
     assistance_send.valid = True

@@ -12,7 +12,7 @@ from openpilot.common.constants import CV
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD, get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Policy, OffsetType
 
@@ -42,6 +42,12 @@ class SpeedLimitResolver:
     self.distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
     self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
+    self.policy = get_sanitize_int_param(
+      "SpeedLimitPolicy",
+      Policy.min().value,
+      Policy.max().value,
+      self.params
+    )
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.map_data_only: [SpeedLimitSource.map],
@@ -54,7 +60,12 @@ class SpeedLimitResolver:
       self._reset_limit_sources(source)
 
     self.is_metric = self.params.get_bool("IsMetric")
-    self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
+    self.offset_type = get_sanitize_int_param(
+      "SpeedLimitOffsetType",
+      OffsetType.min().value,
+      OffsetType.max().value,
+      self.params
+    )
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
     self.speed_limit = 0.
@@ -131,6 +142,7 @@ class SpeedLimitResolver:
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
+    # FIXME-SP: this is not working as expected
     if 0. < next_speed_limit < self.v_ego:
       adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
       adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2

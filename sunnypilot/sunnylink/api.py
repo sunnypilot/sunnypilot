@@ -2,10 +2,10 @@ import json
 import os
 import random
 import time
-from datetime import datetime, timedelta
-from pathlib import Path
-
 import jwt
+from typing import cast
+from datetime import datetime, timedelta, UTC
+
 from openpilot.common.api.base import BaseApi
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
@@ -24,20 +24,20 @@ class SunnylinkApi(BaseApi):
     self.spinner = None
     self.params = Params()
 
-  def api_get(self, endpoint, method='GET', timeout=10, access_token=None, json=None, **kwargs):
+  def api_get(self, endpoint, method='GET', timeout=10, access_token=None, session=None, json=None, **kwargs):
     if not self.params.get_bool("SunnylinkEnabled"):
       return None
 
-    return super().api_get(endpoint, method, timeout, access_token, json, **kwargs)
+    return super().api_get(endpoint, method, timeout, access_token, session, json, **kwargs)
 
   def resume_queued(self, timeout=10, **kwargs):
     sunnylinkId, commaId = self._resolve_dongle_ids()
     return self.api_get(f"ws/{sunnylinkId}/resume_queued", "POST", timeout, access_token=self.get_token(), **kwargs)
 
-  def get_token(self, expiry_hours=1):
+  def get_token(self, payload_extra=None, expiry_hours=1):
     # Add your additional data here
     additional_data = {}
-    return super()._get_token(expiry_hours, **additional_data)
+    return super()._get_token(payload_extra, expiry_hours, **additional_data)
 
   def _status_update(self, message):
     print(message)
@@ -81,23 +81,20 @@ class SunnylinkApi(BaseApi):
     if sunnylink_dongle_id not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
       return sunnylink_dongle_id
 
-    privkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa")
-    pubkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa.pub")
+    jwt_algo, private_key, public_key = BaseApi.get_key_pair()
 
     start_time = time.monotonic()
     successful_registration = False
-    if not pubkey_path.is_file():
+    if not public_key:
       sunnylink_dongle_id = UNREGISTERED_SUNNYLINK_DONGLE_ID
       self._status_update("Public key not found, setting dongle ID to unregistered.")
     else:
       Params().put("LastSunnylinkPingTime", 0)  # Reset the last ping time to 0 if we are trying to register
-      with pubkey_path.open() as f1, privkey_path.open() as f2:
-        public_key = f1.read()
-        private_key = f2.read()
 
       backoff = 1
       while True:
-        register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm='RS256')
+        register_token = jwt.encode({'register': True, 'exp': datetime.now(UTC).replace(tzinfo=None) + timedelta(hours=1)},
+                                    cast(str, private_key), algorithm=jwt_algo)
         try:
           if verbose or time.monotonic() - start_time < timeout / 2:
             self._status_update("Registering device to sunnylink...")
@@ -147,7 +144,7 @@ class SunnylinkApi(BaseApi):
     self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
     # Set the last ping time to the current time since we were just talking to the API
-    last_ping = int(time.monotonic() * 1e9) if successful_registration else start_time
+    last_ping = int((time.monotonic() if successful_registration else start_time) * 1e9)
     Params().put("LastSunnylinkPingTime", last_ping)
 
     # Disable sunnylink if registration was not successful
