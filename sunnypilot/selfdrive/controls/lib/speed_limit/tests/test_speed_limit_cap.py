@@ -245,14 +245,18 @@ class TestSpeedLimitCapMode:
 
     scenario.sla._target_cap = 25 * CV.MPH_TO_MS
 
-    # Manual override (long_override=True)
     scenario.sla.update(
       True, True, 25 * CV.MPH_TO_MS, 0,
       20 * CV.MPH_TO_MS, 25 * CV.MPH_TO_MS, 25 * CV.MPH_TO_MS,
       True, 0, scenario.events_sp
     )
 
-    # Should transition to disabled and set suspension timer
+    scenario.sla.update(
+      True, False, 25 * CV.MPH_TO_MS, 0,
+      20 * CV.MPH_TO_MS, 25 * CV.MPH_TO_MS, 25 * CV.MPH_TO_MS,
+      True, 0, scenario.events_sp
+    )
+
     assert scenario.sla.state == SpeedLimitAssistState.disabled
     assert scenario.sla._cap_suspended_timer > 0  # frame counter
 

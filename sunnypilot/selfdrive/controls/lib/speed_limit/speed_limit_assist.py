@@ -109,6 +109,8 @@ class SpeedLimitAssist:
     self._cap_audio_cue_fired = False
     self._cap_raise_accepted = False
     self._accel_pressed = False
+    self._was_cap_suspended = False
+    self._override_active_last = False
     self._min_cap_floor = get_min_cap_floor(self.params, self.is_metric)
     self._cap_upshift_accept = self.params.get("SpeedLimitUpshiftAccept", return_default=True)
     self._cap_audio_cue_enabled = bool(self.params.get("SpeedLimitCapAudioCue", return_default=True))
@@ -283,8 +285,14 @@ class SpeedLimitAssist:
     """Cap mode FSM for pcm_op_long cars. Returns (enabled, active)."""
     self._cap_change_timer = min(self._cap_change_timer + 1,
                                  int((SPEED_LIMIT_CHANGED_HOLD_PERIOD + 1) / DT_MDL))
-    self._cap_suspended_timer = max(0, self._cap_suspended_timer - 1)
     self._cap_upshift_release_timer = max(0, self._cap_upshift_release_timer - 1)
+
+    if self._override_active_last and not self.long_override and self._was_cap_suspended:
+      self._cap_suspended_timer = int(CAP_SUSPEND_GUARD_PERIOD / DT_MDL)
+    elif not self.long_override:
+      self._cap_suspended_timer = max(0, self._cap_suspended_timer - 1)
+
+    self._override_active_last = self.long_override
 
     self._cap_below_floor = self._has_speed_limit and self._speed_limit_final_last < self._min_cap_floor
 
@@ -293,10 +301,12 @@ class SpeedLimitAssist:
       if not self.long_enabled or not self.enabled:
         self._cap_raise_accepted = False
         self.state = SpeedLimitAssistState.disabled
+        self._was_cap_suspended = False
+        self._cap_suspended_timer = 0
       elif self.long_override:
         self._cap_raise_accepted = False
         self.state = SpeedLimitAssistState.disabled
-        self._cap_suspended_timer = int(CAP_SUSPEND_GUARD_PERIOD / DT_MDL)
+        self._was_cap_suspended = True
 
       else:
         # CAPPING
@@ -330,7 +340,8 @@ class SpeedLimitAssist:
         # PENDING
         elif self.state == SpeedLimitAssistState.pending:
           if self._has_speed_limit and not self._cap_below_floor:
-            self._target_cap = self._speed_limit_final_last
+            if not self._was_cap_suspended:
+              self._target_cap = self._speed_limit_final_last
             self._cap_change_timer = 0
             self._cap_audio_cue_fired = False
             self._cap_raise_accepted = False
@@ -338,9 +349,10 @@ class SpeedLimitAssist:
 
     # DISABLED
     elif self.state == SpeedLimitAssistState.disabled:
-      if self.long_enabled and self.enabled and self._cap_suspended_timer <= 0:
+      if self.long_enabled and self.enabled and self._cap_suspended_timer <= 0 and not self.long_override:
         if self._has_speed_limit and not self._cap_below_floor:
-          self._target_cap = self._speed_limit_final_last
+          if not self._was_cap_suspended:
+            self._target_cap = self._speed_limit_final_last
           self._cap_change_timer = 0
           self._cap_audio_cue_fired = False
           self.state = SpeedLimitAssistState.capping
@@ -348,9 +360,11 @@ class SpeedLimitAssist:
           self.state = SpeedLimitAssistState.pending
 
     if self.state == SpeedLimitAssistState.capping and self._state_prev != SpeedLimitAssistState.capping:
-      if self._cap_audio_cue_enabled:
+      # suppress audio cue on override-release re-entry
+      if self._cap_audio_cue_enabled and not self._was_cap_suspended:
         events_sp.add(EventNameSP.speedLimitCapActive)
         self._cap_audio_cue_fired = True
+      self._was_cap_suspended = False
 
     enabled = self.state in CAP_ENABLED_STATES
     active = self.state in CAP_ACTIVE_STATES
