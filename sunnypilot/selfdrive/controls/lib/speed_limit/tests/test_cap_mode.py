@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import pytest
 from cereal import car, custom
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist, \
@@ -327,3 +328,35 @@ class TestEdgeCCases:
 
     assert sla._cap_suspended_timer == 0
     assert sla.state == SpeedLimitAssistState.disabled
+
+
+class TestTargetCapPublished:
+  """Target cap published in cereal message."""
+
+  def test_target_cap_written_to_assist(self, mocker):
+    """_write_assist_fields writes sla._target_cap to assist.targetCap."""
+    from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
+
+    sla = make_sla_factory(mocker, pcm_op_long=True)
+    sla._target_cap = 22.35
+    sla.output_v_target = 10.0
+    sla.output_a_target = 0.0
+    sla.cap_delta = 0.0
+    sla.is_enabled = True
+    sla.is_active = False
+    sla.state = SpeedLimitAssistState.disabled
+
+    planner = mocker.MagicMock()
+    planner.sla = sla
+
+    msg = custom.LongitudinalPlanSP.new_message()
+    assist = msg.speedLimit.assist
+
+    LongitudinalPlannerSP._write_assist_fields(planner, assist)
+
+    assert assist.targetCap == pytest.approx(22.35)
+    assert assist.enabled is True
+    assert assist.active is False
+    assert assist.vTarget == pytest.approx(10.0)
+    assert assist.aTarget == pytest.approx(0.0)
+    assert assist.capDelta == pytest.approx(0.0)

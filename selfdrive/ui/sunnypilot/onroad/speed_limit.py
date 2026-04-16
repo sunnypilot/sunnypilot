@@ -40,6 +40,7 @@ class Colors:
   DARK_GREY = rl.Color(77, 77, 77, 255)
   SUB_BG = rl.Color(0, 0, 0, 180)
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
+  AMBER = rl.Color(255, 176, 0, 255)
 
 
 class IconSide(StrEnum):
@@ -111,6 +112,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     self.speed_limit_ahead_frame = 0
 
     self.cap_delta = 0.0
+    self.target_cap = 0.0
 
     self.is_cruise_set: bool = False
     self.is_cruise_available: bool = True
@@ -148,6 +150,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       self.speed_limit_source = resolver.source
       self.speed_limit_assist_state = assist.state
       self.cap_delta = assist.capDelta
+      self.target_cap = assist.targetCap * self.speed_conv
 
     if sm.updated["liveMapDataSP"]:
       lmd = sm["liveMapDataSP"]
@@ -235,29 +238,24 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       rl.draw_texture_ex(txt_icon, rl.Vector2(arrow_x, arrow_y), 0.0, 1.0, color)
 
   def _draw_cap_badge(self, sign_rect):
-    """Draw CAP badge to right of speed limit sign during capping."""
-    badge_size = 60
-    badge_x = sign_rect.x + sign_rect.width + 20
-    badge_y = sign_rect.y + (sign_rect.height - badge_size) / 2
+    """Draw CAP info panel below speed limit sign during capping."""
+    rect = rl.Rectangle(sign_rect.x + (sign_rect.width - 170) / 2, sign_rect.y + sign_rect.height + 10, 170, 160)
+    rl.draw_rectangle_rounded(rect, 0.35, 10, Colors.SUB_BG)
+    rl.draw_rectangle_rounded_lines_ex(rect, 0.35, 10, 3, Colors.MUTCD_LINES)
 
-    badge_rect = rl.Rectangle(badge_x, badge_y, badge_size, badge_size)
+    mid_x = rect.x + rect.width / 2
 
-    badge_bg = rl.Color(0, 0, 0, 220)
-    badge_text_color = rl.Color(255, 255, 255, 255)
+    label_color = Colors.AMBER if self.cap_delta > 0.5 else Colors.GREY
+    self._draw_text_centered(self.font_demi, "CAP", 40, rl.Vector2(mid_x, rect.y + 28), label_color)
 
-    rl.draw_rectangle_rounded(badge_rect, 0.25, 8, badge_bg)
+    cap_speed = round(self.target_cap)
+    self._draw_text_centered(self.font_bold, str(cap_speed), 70, rl.Vector2(mid_x, rect.y + 82), Colors.WHITE)
 
-    badge_center_y = badge_y + badge_size / 2
     if self.cap_delta > 0.5:
-      cap_label_y = badge_y + badge_size * 0.35
-      self._draw_text_centered(self.font_bold, "CAP", 28, rl.Vector2(badge_x + badge_size / 2, cap_label_y), badge_text_color)
-
       delta_display = round(self.cap_delta * self.speed_conv)
       delta_unit = 'km/h' if ui_state.is_metric else 'mph'
       delta_text = f'-{delta_display} {delta_unit}'
-      self._draw_text_centered(self.font_norm, delta_text, 12, rl.Vector2(badge_x + badge_size / 2, badge_y + badge_size * 0.68), badge_text_color)
-    else:
-      self._draw_text_centered(self.font_bold, "CAP", 36, rl.Vector2(badge_x + badge_size / 2, badge_center_y), badge_text_color)
+      self._draw_text_centered(self.font_norm, delta_text, 36, rl.Vector2(mid_x, rect.y + 134), Colors.GREY)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)

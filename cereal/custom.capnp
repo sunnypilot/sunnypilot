@@ -268,6 +268,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       vTarget @3 :Float32;
       aTarget @4 :Float32;
       capDelta @5 :Float32; # Difference between cluster set-speed and cap (m/s), positive = driver above cap
+      targetCap @6 :Float32; # Speed limit cap being enforced (m/s)
     }
 
     enum Source {
