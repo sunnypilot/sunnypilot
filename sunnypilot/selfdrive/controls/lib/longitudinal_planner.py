@@ -134,6 +134,7 @@ class LongitudinalPlannerSP:
     assist.aTarget = float(self.sla.output_a_target)
     assist.capDelta = float(self.sla.cap_delta)
     assist.targetCap = float(self.sla._target_cap)
+    assist.disableReason = self.sla.disable_reason
 
     # E2E Alerts
     e2eAlerts = longitudinalPlanSP.e2eAlerts

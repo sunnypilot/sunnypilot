@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from dataclasses import dataclass
 from enum import StrEnum
+import time
 import pyray as rl
 
 from cereal import custom
@@ -28,6 +29,7 @@ SET_SPEED_NA = 255
 KM_TO_MILE = 0.621371
 
 AssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
+AssistDisableReason = custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 
@@ -113,6 +115,8 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
 
     self.cap_delta = 0.0
     self.target_cap = 0.0
+    self.disable_reason = AssistDisableReason.none
+    self.disable_reason_timestamp = 0.0
 
     self.is_cruise_set: bool = False
     self.is_cruise_available: bool = True
@@ -151,6 +155,8 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       self.speed_limit_assist_state = assist.state
       self.cap_delta = assist.capDelta
       self.target_cap = assist.targetCap * self.speed_conv
+      self.disable_reason = assist.disableReason
+      self.disable_reason_timestamp = time.monotonic()
 
     if sm.updated["liveMapDataSP"]:
       lmd = sm["liveMapDataSP"]
@@ -200,8 +206,15 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       self._draw_sign_main(sign_rect, alpha)
       if self.speed_limit_assist_state == AssistState.preActive:
         self._draw_pre_active_arrow(sign_rect)
+      elif self.speed_limit_assist_state == AssistState.tempPaused:
+        self._draw_temp_paused_icon(sign_rect)
       elif self.speed_limit_assist_state == AssistState.capping:
         self._draw_cap_badge(sign_rect)
+        # Also draw ahead info if valid and different from cap (mutual exclusion fix)
+        if self.speed_limit_ahead_valid and round(self.speed_limit_ahead) != round(self.target_cap):
+          ahead_info_y = sign_rect.y + sign_rect.height + 10 + 160 + 10
+          ahead_rect = rl.Rectangle(sign_rect.x, ahead_info_y, sign_rect.width, 100)
+          self._draw_ahead_info(ahead_rect)
       else:
         self._draw_ahead_info(sign_rect)
 
@@ -236,6 +249,18 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
       color = rl.Color(255, 255, 255, int(icon_alpha))
       rl.draw_texture_ex(txt_icon, rl.Vector2(arrow_x, arrow_y), 0.0, 1.0, color)
+
+  def _draw_temp_paused_icon(self, sign_rect):
+    """Draw greyed preActive icon when tempPaused."""
+    # Reuse preActive icon with grey alpha
+    icon_alpha = 128  # 50% opacity for paused state
+    txt_icon = self.arrow_blank  # Use blank/greyed version
+    sign_margin = 12
+    arrow_spacing = int(sign_margin * 1.4)
+    arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
+    arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
+    color = rl.Color(145, 155, 149, icon_alpha)  # GREY color with alpha
+    rl.draw_texture_ex(txt_icon, rl.Vector2(arrow_x, arrow_y), 0.0, 1.0, color)
 
   def _draw_cap_badge(self, sign_rect):
     """Draw CAP info panel below speed limit sign during capping."""

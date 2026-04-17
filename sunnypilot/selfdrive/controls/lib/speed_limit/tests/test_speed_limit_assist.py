@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import pytest
 
-from cereal import custom
+from cereal import custom, car
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.rivian.values import CAR as RIVIAN
 from opendbc.car.tesla.values import CAR as TESLA
@@ -25,6 +25,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist 
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
+ButtonType = car.CarState.ButtonEvent.Type
 
 ALL_STATES = tuple(SpeedLimitAssistState.schema.enumerants.values())
 
@@ -153,6 +154,7 @@ class TestSpeedLimitAssist:
 
     different_cruise = SPEED_LIMITS['highway'] + 5
     self.sla.update(True, False, SPEED_LIMITS['city'], 0, different_cruise, SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    # In non-pcm mode, manual cruise change transitions to inactive (not tempPaused)
     assert self.sla.state == SpeedLimitAssistState.inactive
 
   # TODO-SP: test lower CST cases
@@ -236,3 +238,226 @@ class TestSpeedLimitAssist:
     import inspect
     inspect.signature(self.sla.update_state_machine_non_pcm_long)
     # Non-PCM method should have expected parameters (varies by impl, just verify it's present)
+
+
+class TestSpeedLimitAssistTempPaused:
+  """Tests for tempPaused state functionality (cap mode)."""
+
+  def setup_method(self, method):
+    self.params = Params()
+    self.reset_custom_params()
+    self.events_sp = EventsSP()
+    CI = self._setup_platform(DEFAULT_CAR)
+    self.sla = SpeedLimitAssist(CI.CP, CI.CP_SP)
+    self.sla.pre_active_timer = int(PRE_ACTIVE_GUARD_PERIOD[self.sla.pcm_op_long] / DT_MDL)
+    self.pcm_long_max_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric][1]  # use 80 MPH for now
+    self.speed_conv = CV.MS_TO_KPH if self.sla.is_metric else CV.MS_TO_MPH
+    # For temp paused tests, use pcm_op_long = True
+    self.sla.pcm_op_long = True
+    self.sla.enabled = True
+
+  def teardown_method(self, method):
+    self.reset_state()
+
+  def _setup_platform(self, car_name):
+    CarInterface = interfaces[car_name]
+    CP = CarInterface.get_non_essential_params(car_name)
+    CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
+    CI = CarInterface(CP, CP_SP)
+    CI.CP.openpilotLongitudinalControl = True  # always assume it's openpilot longitudinal
+    CI.CP.pcmCruise = False  # test non-PCM FSM path (preActive, pending, adapting, active)
+    sunnypilot_interfaces.setup_interfaces(CI, self.params)
+    return CI
+
+  def reset_custom_params(self):
+    self.params.put("IsReleaseSpBranch", True)
+    self.params.put("SpeedLimitMode", int(Mode.assist))
+    self.params.put_bool("IsMetric", False)
+    self.params.put("SpeedLimitOffsetType", 0)
+    self.params.put("SpeedLimitValueOffset", 0)
+
+  def reset_state(self):
+    self.sla.state = SpeedLimitAssistState.disabled
+    self.sla._state_prev = SpeedLimitAssistState.disabled
+    self.sla.frame = -1
+    self.sla.long_enabled = False
+    self.sla.long_enabled_prev = False
+    self.sla.long_engaged_timer = 0
+    self.sla.pre_active_timer = 0
+    self.sla._speed_limit = 0.
+    self.sla._speed_limit_final_last = 0.
+    self.sla.speed_limit_prev = 0.
+    self.sla.v_cruise_cluster = 0.
+    self.sla.v_cruise_cluster_prev = 0.
+    self.sla._distance = 0.
+    self.events_sp.clear()
+
+  def test_temp_paused_entry_capping_state(self):
+    """Test that tempPaused entry occurs during state machine when user paused."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla._user_paused = True
+    self.sla._user_paused_timer = 1000
+
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    assert self.sla._disable_reason == custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason.userTempPause
+
+  def test_temp_paused_exit_on_speed_limit_change(self):
+    """Test exiting tempPaused when speed limit changes."""
+    self.sla.state = SpeedLimitAssistState.tempPaused
+    self.sla._user_paused = True
+    self.sla._user_paused_timer = 1000
+    self.sla._speed_limit_final_last_at_pause = SPEED_LIMITS['city']
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+
+    # Change speed limit
+    new_limit = SPEED_LIMITS['highway']
+    self.sla.update(True, False, new_limit, 0, self.pcm_long_max_set_speed,
+                    new_limit, new_limit, True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.disabled
+    assert self.sla._user_paused == False
+
+  def test_temp_paused_exit_on_timer_expiry(self):
+    """Test exiting tempPaused when 5-minute timer expires."""
+    self.sla.state = SpeedLimitAssistState.tempPaused
+    self.sla._user_paused = True
+    self.sla._user_paused_timer = 1
+    self.sla._speed_limit_final_last_at_pause = SPEED_LIMITS['city']
+
+    # Trigger update with timer expiry
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.disabled
+    assert self.sla._user_paused_timer <= 0
+
+  def test_disable_reason_user_cancel(self):
+    """Test disable_reason set to userCancel on pause."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._user_paused = True
+    self.sla._user_paused_timer = 1000
+
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    assert self.sla._disable_reason == custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason.userTempPause
+
+  def test_disable_reason_long_override(self):
+    """Test disable_reason set to longOverride."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._target_cap = SPEED_LIMITS['city']
+
+    self.sla.update(True, True, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.disabled
+    assert self.sla._disable_reason == custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason.longOverride
+
+  def test_disable_reason_below_floor(self):
+    """Test disable_reason set to belowFloor."""
+    min_floor = self.sla._min_cap_floor
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._speed_limit_final_last = min_floor - 1
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+    self.sla.v_cruise_cluster = self.pcm_long_max_set_speed
+    self.sla.v_cruise_cluster_prev = self.pcm_long_max_set_speed
+    self.sla.prev_v_cruise_cluster_conv = round(self.pcm_long_max_set_speed * self.speed_conv)
+
+    self.sla.update(True, False, min_floor - 1, 0, self.pcm_long_max_set_speed,
+                    min_floor - 1, min_floor - 1, True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.pending
+    assert self.sla._disable_reason == custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason.belowFloor
+
+  def test_temp_paused_entry_cap_cluster_nudge_plus(self):
+    """Test tempPaused entry in capping state when cluster nudged above limit."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla._target_cap = SPEED_LIMITS['city']
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+    self.sla.v_cruise_cluster = SPEED_LIMITS['city']
+    self.sla.v_cruise_cluster_prev = SPEED_LIMITS['city']
+    self.sla.prev_v_cruise_cluster_conv = round(SPEED_LIMITS['city'] * self.speed_conv)
+
+    # Nudge cluster up (simulate user pressing accel)
+    nudged_cruise = SPEED_LIMITS['city'] + 1.0
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, nudged_cruise,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    assert self.sla._user_paused == True
+    assert self.sla._user_paused_timer > 0
+    assert self.sla._disable_reason == custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason.userTempPause
+
+  def test_temp_paused_entry_cap_cluster_nudge_minus(self):
+    """Test tempPaused entry in capping state when cluster nudged below limit."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla._target_cap = SPEED_LIMITS['city']
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+    self.sla.v_cruise_cluster = SPEED_LIMITS['city']
+    self.sla.v_cruise_cluster_prev = SPEED_LIMITS['city']
+    self.sla.prev_v_cruise_cluster_conv = round(SPEED_LIMITS['city'] * self.speed_conv)
+
+    # Nudge cluster down (simulate user pressing brake/decel)
+    nudged_cruise = SPEED_LIMITS['city'] - 1.0
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, nudged_cruise,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    assert self.sla._user_paused == True
+    assert self.sla._user_paused_timer > 0
+
+  def test_temp_paused_exit_cluster_returns_to_limit(self):
+    """Test exiting tempPaused when cluster returns within ±1 of limit."""
+    self.sla.state = SpeedLimitAssistState.tempPaused
+    self.sla._user_paused = True
+    self.sla._user_paused_timer = 1000
+    self.sla._speed_limit_final_last_at_pause = SPEED_LIMITS['city']
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+    self.sla.v_cruise_cluster_prev = SPEED_LIMITS['city'] + 5
+    self.sla.prev_v_cruise_cluster_conv = round((SPEED_LIMITS['city'] + 5) * self.speed_conv)
+
+    # Return cluster to within ±1 of limit
+    returned_cruise = SPEED_LIMITS['city'] + 0.5
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, returned_cruise,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.disabled
+    assert self.sla._user_paused == False
+
+  def test_temp_paused_sticky_double_nudge(self):
+    """Test that multiple nudges keep state in tempPaused."""
+    self.sla.state = SpeedLimitAssistState.capping
+    self.sla._has_speed_limit = True
+    self.sla._speed_limit_final_last = SPEED_LIMITS['city']
+    self.sla._target_cap = SPEED_LIMITS['city']
+    self.sla.long_enabled = True
+    self.sla.enabled = True
+    self.sla.v_cruise_cluster = SPEED_LIMITS['city']
+    self.sla.v_cruise_cluster_prev = SPEED_LIMITS['city']
+    self.sla.prev_v_cruise_cluster_conv = round(SPEED_LIMITS['city'] * self.speed_conv)
+
+    # First nudge
+    nudged_cruise_1 = SPEED_LIMITS['city'] + 2.0
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, nudged_cruise_1,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    assert self.sla._user_paused_timer > 0
+    saved_timer_1 = self.sla._user_paused_timer
+
+    # Second nudge while in tempPaused (shouldn't trigger another entry)
+    nudged_cruise_2 = SPEED_LIMITS['city'] + 3.0
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, nudged_cruise_2,
+                    SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.tempPaused
+    # Timer should have been decremented by one update call
+    assert self.sla._user_paused_timer == saved_timer_1 - 1

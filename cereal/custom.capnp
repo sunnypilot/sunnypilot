@@ -269,6 +269,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       aTarget @4 :Float32;
       capDelta @5 :Float32; # Difference between cluster set-speed and cap (m/s), positive = driver above cap
       targetCap @6 :Float32; # Speed limit cap being enforced (m/s)
+      disableReason @7 :AssistDisableReason;
     }
 
     enum Source {
@@ -285,6 +286,18 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       adapting @4; # Reducing speed to match new speed limit.
       active @5; # Cruising at speed limit.
       capping @6; # Silently capping speed based on limit.
+      tempPaused @7; # Temporarily paused by user.
+    }
+
+    enum AssistDisableReason {
+      none @0;
+      userCancel @1;
+      userTempPause @2;
+      longOverride @3;
+      belowFloor @4;
+      autoResume @5;
+      mapGap @6;
+      gateDisabled @7;
     }
   }
 

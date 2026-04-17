@@ -22,6 +22,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import comp
 ButtonType = car.CarState.ButtonEvent.Type
 EventNameSP = custom.OnroadEventSP.EventName
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
+AssistDisableReason = custom.LongitudinalPlanSP.SpeedLimit.AssistDisableReason
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 ACTIVE_STATES = (SpeedLimitAssistState.active, SpeedLimitAssistState.adapting)
@@ -38,6 +39,8 @@ PRE_ACTIVE_GUARD_PERIOD = {
 SPEED_LIMIT_CHANGED_HOLD_PERIOD = 1  # secs. Time to wait after speed limit change before switching to preActive.
 CAP_RAISE_HOLD_PERIOD = 0.2  # secs. Time to confirm limit raise before upshifting.
 CAP_SUSPEND_GUARD_PERIOD = 1.0  # secs. Time to hold cap disabled after long_override release.
+USER_PAUSE_TIMEOUT_TICKS = 6000  # 5 min / DT_MDL (0.05 s) = 6000 ticks
+RESUME_CLUSTER_DELTA_THRESHOLD = 1  # integer display-unit delta (kph or mph)
 
 LIMIT_MIN_ACC = -1.5  # m/s^2 Maximum deceleration allowed for limit controllers to provide.
 LIMIT_MAX_ACC = 1.0   # m/s^2 Maximum acceleration allowed for limit controllers to provide while active.
@@ -115,6 +118,12 @@ class SpeedLimitAssist:
     self._cap_upshift_accept = self.params.get("SpeedLimitUpshiftAccept", return_default=True)
     self._cap_audio_cue_enabled = bool(self.params.get("SpeedLimitCapAudioCue", return_default=True))
 
+    self._user_paused: bool = False
+    self._user_paused_timer: int = 0
+    self._disable_reason = AssistDisableReason.none
+    self._speed_limit_final_last_at_pause = 0.
+    self.tempPaused_count = 0  # diagnostic counter for tests
+
     # TODO-SP: SLA's own output_a_target for planner
     self.acceleration_solutions = {
       SpeedLimitAssistState.disabled: self.get_current_acceleration_as_target,
@@ -124,7 +133,24 @@ class SpeedLimitAssist:
       SpeedLimitAssistState.adapting: self.get_adapting_state_target_acceleration,
       SpeedLimitAssistState.active: self.get_active_state_target_acceleration,
       SpeedLimitAssistState.capping: self.get_current_acceleration_as_target,
+      SpeedLimitAssistState.tempPaused: self.get_current_acceleration_as_target,
     }
+
+  @property
+  def disable_reason(self):
+    return self._disable_reason
+
+  @property
+  def _gates_pass(self) -> bool:
+    return self.long_enabled and self.enabled
+
+  @property
+  def _cap_gates_pass(self) -> bool:
+    return self._gates_pass and not self.long_override and self._cap_suspended_timer <= 0
+
+  @property
+  def _cap_entry_ready(self) -> bool:
+    return self._has_speed_limit and not self._cap_below_floor
 
   @property
   def speed_limit_changed(self) -> bool:
@@ -281,11 +307,26 @@ class SpeedLimitAssist:
 
     return False
 
+  def _go_disabled(self, reason: 'AssistDisableReason') -> None:
+    """Transition to disabled state with given reason."""
+    self._cap_raise_accepted = False
+    self.state = SpeedLimitAssistState.disabled
+    self._disable_reason = reason
+
+  def _should_exit_temp_pause(self) -> bool:
+    """Check if conditions warrant exiting temp pause state."""
+    limit_changed = self._speed_limit_final_last != self._speed_limit_final_last_at_pause
+    timer_expired = self._user_paused_timer <= 0
+    cluster_realigned = abs(self.v_cruise_cluster_conv - self.speed_limit_final_last_conv) <= RESUME_CLUSTER_DELTA_THRESHOLD
+    return limit_changed or timer_expired or cluster_realigned
+
   def update_state_machine_cap(self, events_sp: EventsSP) -> tuple[bool, bool]:
     """Cap mode FSM for pcm_op_long cars. Returns (enabled, active)."""
+    # Bookkeeping: timers, override flags (unchanged)
     self._cap_change_timer = min(self._cap_change_timer + 1,
                                  int((SPEED_LIMIT_CHANGED_HOLD_PERIOD + 1) / DT_MDL))
     self._cap_upshift_release_timer = max(0, self._cap_upshift_release_timer - 1)
+    self._user_paused_timer = max(0, self._user_paused_timer - 1)
 
     if self._override_active_last and not self.long_override and self._was_cap_suspended:
       self._cap_suspended_timer = int(CAP_SUSPEND_GUARD_PERIOD / DT_MDL)
@@ -296,69 +337,85 @@ class SpeedLimitAssist:
 
     self._cap_below_floor = self._has_speed_limit and self._speed_limit_final_last < self._min_cap_floor
 
-    # CAPPING, PENDING, DISABLED
+    # Gate checks FIRST: apply to all non-disabled states (including tempPaused)
     if self.state != SpeedLimitAssistState.disabled:
-      if not self.long_enabled or not self.enabled:
-        self._cap_raise_accepted = False
-        self.state = SpeedLimitAssistState.disabled
+      if not self._gates_pass:
+        self._go_disabled(AssistDisableReason.gateDisabled)
         self._was_cap_suspended = False
         self._cap_suspended_timer = 0
       elif self.long_override:
-        self._cap_raise_accepted = False
-        self.state = SpeedLimitAssistState.disabled
+        self._go_disabled(AssistDisableReason.longOverride)
         self._was_cap_suspended = True
 
-      else:
-        # CAPPING
-        if self.state == SpeedLimitAssistState.capping:
-          if not self._has_speed_limit:
-            self._cap_raise_accepted = False
-            self.state = SpeedLimitAssistState.pending
-          elif self._cap_below_floor:
-            self._cap_raise_accepted = False
-            self.state = SpeedLimitAssistState.pending
-          elif self._speed_limit_final_last != self._target_cap and self._cap_limit_change_held():
-            old_cap = self._target_cap
-            self._target_cap = self._speed_limit_final_last
-            self._cap_change_timer = 0
-            self._cap_raise_accepted = False
-            if self._target_cap > old_cap:
-              if self._cap_upshift_accept == UpshiftAccept.NEVER_RAISE:
-                self._target_cap = old_cap
-              elif self._cap_upshift_accept == UpshiftAccept.ACCEL_PEDAL:
-                if not self._accel_pressed:
-                  self._cap_raise_accepted = True
-                else:
-                  self._target_cap = old_cap
+      # Sub-state dispatch (only if gates passed)
+      elif self.state == SpeedLimitAssistState.tempPaused:
+        # Exit conditions: speed limit changed, timer expired, or cluster delta returns
+        if self._should_exit_temp_pause():
+          self._user_paused = False
+          self._user_paused_timer = 0
+          self._go_disabled(AssistDisableReason.autoResume)
+
+      elif self.state == SpeedLimitAssistState.capping:
+        # Cluster delta entry: user nudged cruise control away from limit
+        if self.v_cruise_cluster_changed:
+          self._user_paused = True
+          self._user_paused_timer = USER_PAUSE_TIMEOUT_TICKS
+          self._speed_limit_final_last_at_pause = self._speed_limit_final_last
+          self.state = SpeedLimitAssistState.tempPaused
+          self._disable_reason = AssistDisableReason.userTempPause
+        elif not self._has_speed_limit:
+          self._cap_raise_accepted = False
+          self.state = SpeedLimitAssistState.pending
+          self._disable_reason = AssistDisableReason.mapGap
+        elif self._cap_below_floor:
+          self._cap_raise_accepted = False
+          self.state = SpeedLimitAssistState.pending
+          self._disable_reason = AssistDisableReason.belowFloor
+        elif self._speed_limit_final_last != self._target_cap and self._cap_limit_change_held():
+          old_cap = self._target_cap
+          self._target_cap = self._speed_limit_final_last
+          self._cap_change_timer = 0
+          self._cap_raise_accepted = False
+          if self._target_cap > old_cap:
+            if self._cap_upshift_accept == UpshiftAccept.NEVER_RAISE:
+              self._target_cap = old_cap
+            elif self._cap_upshift_accept == UpshiftAccept.ACCEL_PEDAL:
+              if not self._accel_pressed:
+                self._cap_raise_accepted = True
               else:
-                self._cap_upshift_release_edge()
+                self._target_cap = old_cap
             else:
               self._cap_upshift_release_edge()
           else:
             self._cap_upshift_release_edge()
+        else:
+          self._cap_upshift_release_edge()
 
-        # PENDING
-        elif self.state == SpeedLimitAssistState.pending:
-          if self._has_speed_limit and not self._cap_below_floor:
-            if not self._was_cap_suspended:
-              self._target_cap = self._speed_limit_final_last
-            self._cap_change_timer = 0
-            self._cap_audio_cue_fired = False
-            self._cap_raise_accepted = False
-            self.state = SpeedLimitAssistState.capping
-
-    # DISABLED
-    elif self.state == SpeedLimitAssistState.disabled:
-      if self.long_enabled and self.enabled and self._cap_suspended_timer <= 0 and not self.long_override:
-        if self._has_speed_limit and not self._cap_below_floor:
+      elif self.state == SpeedLimitAssistState.pending:
+        if self._cap_entry_ready:
           if not self._was_cap_suspended:
             self._target_cap = self._speed_limit_final_last
           self._cap_change_timer = 0
           self._cap_audio_cue_fired = False
+          self._cap_raise_accepted = False
+          self._disable_reason = AssistDisableReason.none
+          self.state = SpeedLimitAssistState.capping
+
+    else:
+      # Disabled-entry logic: if gates pass + cap_suspended_timer clear, enter capping/pending
+      if self._cap_gates_pass:
+        if self._cap_entry_ready:
+          if not self._was_cap_suspended:
+            self._target_cap = self._speed_limit_final_last
+          self._cap_change_timer = 0
+          self._cap_audio_cue_fired = False
+          self._disable_reason = AssistDisableReason.none
           self.state = SpeedLimitAssistState.capping
         else:
+          self._disable_reason = AssistDisableReason.mapGap if not self._has_speed_limit else AssistDisableReason.belowFloor
           self.state = SpeedLimitAssistState.pending
 
+    # Audio cue on capping entry
     if self.state == SpeedLimitAssistState.capping and self._state_prev != SpeedLimitAssistState.capping:
       # suppress audio cue on override-release re-entry
       if self._cap_audio_cue_enabled and not self._was_cap_suspended:

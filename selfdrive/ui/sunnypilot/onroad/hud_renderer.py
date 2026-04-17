@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from cereal import custom
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer, DeveloperUiState, get_bottom_dev_ui_offset
@@ -23,6 +24,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 SLA_ACTIVE_COLOR = rl.Color(0x91, 0x9b, 0x95, 0xff)
+AssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 
 
 class HudRendererSP(HudRenderer):
@@ -89,9 +91,14 @@ class HudRendererSP(HudRenderer):
     set_speed_color = COLORS.DARK_GREY
     if self.is_cruise_set:
       set_speed_color = COLORS.WHITE
-      if long_plan_sp.speedLimit.assist.active:
+      assist_state = long_plan_sp.speedLimit.assist.state
+      # Green for active/adapting/capping states, grey for tempPaused when override, else normal
+      if assist_state in (AssistState.active, AssistState.adapting, AssistState.capping):
         set_speed_color = SLA_ACTIVE_COLOR if long_override else rl.Color(0, 0xff, 0, 0xff)
         max_color = SLA_ACTIVE_COLOR if long_override else rl.Color(0x80, 0xd8, 0xa6, 0xff)
+      elif assist_state == AssistState.tempPaused and long_override:
+        set_speed_color = SLA_ACTIVE_COLOR
+        max_color = SLA_ACTIVE_COLOR
       else:
         if ui_state.status == UIStatus.ENGAGED:
           max_color = COLORS.ENGAGED
