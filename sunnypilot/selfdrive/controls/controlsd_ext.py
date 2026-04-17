@@ -36,7 +36,7 @@ class ControlsExt(ModelStateBase):
 
   def initialize_lateral_control(self, lac, CI, dt):
     # Only the torque controller has a v0 variant; angle/pid cars must keep their stock LaC
-    if self.CP.lateralTuning.which() != 'torque':
+    if self.CP.steerControlType == structs.CarParams.SteerControlType.angle or self.CP.lateralTuning.which() != 'torque':
       return lac
 
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
