@@ -1275,6 +1275,28 @@
     "title": "Tesla Coop Steering",
     "description": ""
   },
+  "TeslaMadsScreenButton": {
+    "title": "[Vehicle Bus only] Tesla MADS Button",
+    "description": "Use a multi-finger press on the infotainment display as a MADS button. This allows the use of full MADS functionality when enabled. Note: Setting this to Off may reset your MADS settings to default.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Off"
+      },
+      {
+        "value": 1,
+        "label": "3 Finger"
+      },
+      {
+        "value": 2,
+        "label": "4 Finger"
+      },
+      {
+        "value": 3,
+        "label": "5 Finger"
+      }
+    ]
+  },
   "TorqueBar": {
     "title": "[TIZI/TICI only] Steering Arc",
     "description": "Display steering arc on the driving screen when lateral control is enabled."

@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from collections.abc import Callable
 import pyray as rl
 
-from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
+from opendbc.sunnypilot.car.tesla.values import MadsScreenButtonType, TeslaFlagsSP
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake
 from openpilot.system.ui.lib.multilang import tr, tr_noop
@@ -96,7 +96,10 @@ class MadsSettingsLayout(Widget):
     if brand == "rivian":
       return True
     elif brand == "tesla":
-      return not (ui_state.CP_SP is not None and ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
+      if ui_state.CP_SP is None or not ui_state.CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS:
+        return True
+      screen_button = int(ui_state.params.get("TeslaMadsScreenButton", return_default=True))
+      return screen_button == MadsScreenButtonType.OFF
     return False
 
   def _update_steering_mode_description(self, button_index: int):
