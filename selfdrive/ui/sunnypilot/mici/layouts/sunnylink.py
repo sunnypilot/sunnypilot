@@ -116,6 +116,11 @@ class SunnylinkLayoutMici(NavScroller):
   def show_event(self):
     super().show_event()
     ui_state.update_params()
+    ui_state.sunnylink_state.set_settings_open(True)
+
+  def hide_event(self):
+    super().hide_event()
+    ui_state.sunnylink_state.set_settings_open(False)
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
@@ -240,7 +245,7 @@ class SunnylinkPairBigButton(BigButton):
     dlg: BigDialog | SunnylinkPairingDialog | None = None
 
     if network_type == 0:
-      dlg = BigDialog(tr("no internet"), "please connect to WiFi & try again")
+      dlg = BigDialog(tr("no internet"), tr("please connect to WiFi & try again"))
     elif UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
       dlg = BigDialog(tr("sunnylink dongle id not found"), tr("please reboot & try again"))
     elif self.sponsor_pairing:
