@@ -3,10 +3,10 @@
 
 Rules (per struct matched across sides by typeId):
   R1  shared ordinal must reference the same type.
-  R2  sp-only ordinal in a union -> FAIL (unknown discriminant upstream).
-  R3  sp-only ordinal on a regular field -> OK (additive struct evolution).
+  R2  sunnypilot-only ordinal in a union -> FAIL (unknown discriminant upstream).
+  R3  sunnypilot-only ordinal on a regular field -> OK (additive struct evolution).
   R4  upstream-only ordinal -> OK.
-  R5  sp-only struct referenced via an upstream-shared field -> FAIL.
+  R5  sunnypilot-only struct referenced via an upstream-shared field -> FAIL.
 """
 
 from __future__ import annotations
@@ -149,52 +149,52 @@ def index_fields_by_ordinal(struct: dict) -> dict[int, dict]:
   return indexed
 
 
-def compare(sp_dump: dict, up_dump: dict) -> list[str]:
+def compare(sunnypilot_dump: dict, upstream_dump: dict) -> list[str]:
   violations: list[str] = []
-  sp_structs: dict[str, dict] = sp_dump["structs"]
-  up_structs: dict[str, dict] = up_dump["structs"]
+  sunnypilot_structs: dict[str, dict] = sunnypilot_dump["structs"]
+  upstream_structs: dict[str, dict] = upstream_dump["structs"]
 
-  sp_struct_referenced_from_shared: set[str] = set()
+  sunnypilot_struct_referenced_from_shared: set[str] = set()
 
-  for type_id, sp_struct in sp_structs.items():
-    up_struct = up_structs.get(type_id)
-    if up_struct is None:
+  for type_id, sunnypilot_struct in sunnypilot_structs.items():
+    upstream_struct = upstream_structs.get(type_id)
+    if upstream_struct is None:
       continue
 
-    sp_fields = index_fields_by_ordinal(sp_struct)
-    up_fields = index_fields_by_ordinal(up_struct)
-    display = sp_struct["displayName"]
+    sunnypilot_fields = index_fields_by_ordinal(sunnypilot_struct)
+    upstream_fields = index_fields_by_ordinal(upstream_struct)
+    display = sunnypilot_struct["displayName"]
 
-    for ordinal, sp_field in sp_fields.items():
-      up_field = up_fields.get(ordinal)
-      if up_field is None:
-        if field_is_union_variant(sp_field):
+    for ordinal, sunnypilot_field in sunnypilot_fields.items():
+      upstream_field = upstream_fields.get(ordinal)
+      if upstream_field is None:
+        if field_is_union_variant(sunnypilot_field):
           violations.append(
-            f"[R2] {display} @{ordinal} ('{sp_field['name']}', {type_repr(sp_field['type'])}): "
+            f"[R2] {display} @{ordinal} ('{sunnypilot_field['name']}', {type_repr(sunnypilot_field['type'])}): "
             f"union variant not present upstream. upstream cannot parse this discriminant."
           )
         continue
 
-      if not types_equal(sp_field["type"], up_field["type"]):
+      if not types_equal(sunnypilot_field["type"], upstream_field["type"]):
         violations.append(
           f"[R1] {display} @{ordinal}: type mismatch. "
-          f"sp='{sp_field['name']}' {type_repr(sp_field['type'])} vs "
-          f"upstream='{up_field['name']}' {type_repr(up_field['type'])}."
+          f"sunnypilot='{sunnypilot_field['name']}' {type_repr(sunnypilot_field['type'])} vs "
+          f"upstream='{upstream_field['name']}' {type_repr(upstream_field['type'])}."
         )
         continue
 
-      cursor = sp_field["type"]
+      cursor = sunnypilot_field["type"]
       while cursor.get("kind") == "list":
         cursor = cursor["element"]
       if cursor.get("kind") in ("struct", "group", "interface") and cursor.get("typeId"):
-        sp_struct_referenced_from_shared.add(cursor["typeId"])
+        sunnypilot_struct_referenced_from_shared.add(cursor["typeId"])
 
-  for type_id, sp_struct in sp_structs.items():
-    if type_id in up_structs:
+  for type_id, sunnypilot_struct in sunnypilot_structs.items():
+    if type_id in upstream_structs:
       continue
-    if type_id in sp_struct_referenced_from_shared:
+    if type_id in sunnypilot_struct_referenced_from_shared:
       violations.append(
-        f"[R5] struct {sp_struct['displayName']} ({type_id}) exists only on sunnypilot "
+        f"[R5] struct {sunnypilot_struct['displayName']} ({type_id}) exists only on sunnypilot "
         f"but is referenced from an upstream-shared field. upstream cannot resolve this type."
       )
 
@@ -213,17 +213,15 @@ def run_read(peer_path: str) -> int:
     "root": hex_id(log.Event.schema.node.id),
     "structs": collect_schema(log.Event.schema),
   }
-  # peer_dump = sp artifact; local_dump = upstream-side build (this job runs in upstream checkout).
-  violations = compare(sp_dump=peer_dump, up_dump=local_dump)
+  violations = compare(sunnypilot_dump=peer_dump, upstream_dump=local_dump)
 
   if not violations:
-    print(
-      f"cereal compat OK: {len(peer_dump['structs'])} sp structs vs "
-      f"{len(local_dump['structs'])} upstream structs, no violations."
-    )
+    print("cereal compat OK: upstream openpilot can parse sunnypilot routes "
+          "(no leaked structs, no ordinal collisions).")
     return 0
 
-  print(f"cereal compat FAIL: {len(violations)} violation(s)")
+  print(f"cereal compat FAIL: upstream openpilot would misparse sunnypilot routes "
+        f"({len(violations)} violation(s)):")
   for v in violations:
     print(f"  {v}")
   return 1
