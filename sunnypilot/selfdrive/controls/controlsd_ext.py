@@ -38,7 +38,7 @@ class ControlsExt(ModelStateBase):
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
     torque_versions = self.params.get("TorqueControlTune")
     if not enforce_torque_control:
-      return lac
+      return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)  # FIXME-SP: revert when upstream fixes tuning issues with v1
 
     if torque_versions == 0.0:  # v0
       return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
