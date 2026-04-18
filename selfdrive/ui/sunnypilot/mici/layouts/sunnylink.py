@@ -116,6 +116,11 @@ class SunnylinkLayoutMici(NavScroller):
   def show_event(self):
     super().show_event()
     ui_state.update_params()
+    ui_state.sunnylink_state.set_settings_open(True)
+
+  def hide_event(self):
+    super().hide_event()
+    ui_state.sunnylink_state.set_settings_open(False)
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
