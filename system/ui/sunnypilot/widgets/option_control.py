@@ -60,17 +60,19 @@ class OptionControlSP(ItemAction):
 
   def set_value(self, value: int):
     """Set the control to a specific value"""
-    if self.min_value <= value <= self.max_value:
-      self.current_value = value
-      if self.value_map:
-        self.params.put(self.param_key, self.value_map[value])
-      else:
-        if self.use_float_scaling:
-          self.params.put(self.param_key, value / 100.0)
-        else:
-          self.params.put(self.param_key, value)
-      if self.on_value_changed:
-        self.on_value_changed(value)
+    if not (self.min_value <= value <= self.max_value):
+      return
+    if value == self.current_value:
+      return
+    self.current_value = value
+    if self.value_map:
+      self.params.put(self.param_key, self.value_map[value])
+    elif self.use_float_scaling:
+      self.params.put(self.param_key, value / 100.0)
+    else:
+      self.params.put(self.param_key, value)
+    if self.on_value_changed:
+      self.on_value_changed(value)
 
   def get_displayed_value(self) -> str:
     """Get the displayed value, handling value mapping if present"""
@@ -157,10 +159,10 @@ class OptionControlSP(ItemAction):
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     if self._minus_enabled and rl.check_collision_point_rec(mouse_pos, self.minus_btn_rect):
-      self.current_value -= self.value_change_step
-      self.current_value = max(self.min_value, self.current_value)
+      new_value = self.current_value - self.value_change_step
+      new_value = max(self.min_value, new_value)
+      self.set_value(new_value)
     elif self._plus_enabled and rl.check_collision_point_rec(mouse_pos, self.plus_btn_rect):
-      self.current_value += self.value_change_step
-      self.current_value = min(self.max_value, self.current_value)
-
-    self.set_value(self.current_value)
+      new_value = self.current_value + self.value_change_step
+      new_value = min(self.max_value, new_value)
+      self.set_value(new_value)
