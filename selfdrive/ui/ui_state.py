@@ -142,6 +142,11 @@ class UIState(UIStateSP):
     # Update started state
     self.started = self.sm["deviceState"].started and self.ignition
 
+    if self.started:
+      cs = self.sm["carState"]
+      if cs.gearShifter == car.CarState.GearShifter.park or cs.parkingBrake:
+        self.started = False
+
     # Update recording audio state
     self.recording_audio = self.params.get_bool("RecordAudio") and self.started
 
