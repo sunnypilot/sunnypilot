@@ -558,8 +558,8 @@ struct PandaState @0xa7649e2575e4591e {
 
   # these fields are not used by openpilot, but they're
   # reserved for forks building alternate experiences.
-  controlsAllowedRESERVED1 @38 :Bool;
-  controlsAllowedRESERVED2 @39 :Bool;
+  controlsAllowedLateral @38 :Bool;
+  controlsAllowedLongitudinal @39 :Bool;
 
   enum FaultStatus {
     none @0;
