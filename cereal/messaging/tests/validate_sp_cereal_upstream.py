@@ -1,222 +1,251 @@
 #!/usr/bin/env python3
+"""Schema-level cereal compat check between sunnypilot and upstream openpilot.
+
+Rules (per struct matched across sides by typeId):
+  R1  shared ordinal must reference the same type.
+  R2  sunnypilot-only ordinal in a union -> FAIL (unknown discriminant upstream).
+  R3  sunnypilot-only ordinal on a regular field -> OK (additive struct evolution).
+  R4  upstream-only ordinal -> OK.
+  R5  sunnypilot-only struct referenced via an upstream-shared field -> FAIL.
+"""
+
+from __future__ import annotations
+
 import argparse
+import json
 import sys
-from typing import Any, List, Tuple
+from typing import Any
 
-DEBUG = False
-
-
-def print_debug(string: str) -> None:
-  if DEBUG:
-    print(string)
+NO_DISCRIMINANT = 0xFFFF
 
 
-def create_schema_instance(struct: Any, prop: Tuple[str, Any]) -> Any:
-  """
-  Create a new instance of a schema type, handling different field types.
-
-  Args:
-      struct: The Cap'n Proto schema structure
-      prop: A tuple containing the field name and field metadata
-
-  Returns:
-      A new initialized schema instance
-  """
-  struct_instance = struct.new_message()
-  field_name, field_metadata = prop
-
-  try:
-    field_type = field_metadata.proto.slot.type.which()
-
-    # Initialize different types of fields
-    if field_type in ('list', 'text', 'data'):
-      struct_instance.init(field_name, 1)
-      print_debug(f"Initialized list/text/data field: {field_name}")
-    elif field_type in ('struct', 'object'):
-      struct_instance.init(field_name)
-      print_debug(f"Initialized struct/object field: {field_name}")
-
-    return struct_instance
-
-  except Exception as e:
-    print(f"Error creating instance for {field_name}: {e}")
-    return None
+def hex_id(value: int) -> str:
+  return f"0x{value:016x}"
 
 
-def get_schema_fields(schema_struct: Any) -> List[Tuple[str, Any]]:
-  """
-  Retrieve all fields from a given schema structure.
-
-  Args:
-      schema_struct: The Cap'n Proto schema structure
-
-  Returns:
-      A list of field names and their metadata
-  """
-  try:
-    # Get all fields from the schema
-    schema_fields = list(schema_struct.schema.fields.items())
-
-    print_debug("Discovered schema fields:")
-    for field_name, field_metadata in schema_fields:
-      print_debug(f"- {field_name}")
-
-    return schema_fields
-
-  except Exception as e:
-    print(f"Error retrieving schema fields: {e}")
-    return []
+def encode_type(type_node: Any) -> dict:
+  which = type_node.which()
+  if which == "struct":
+    return {"kind": "struct", "typeId": hex_id(type_node.struct.typeId)}
+  if which == "enum":
+    return {"kind": "enum", "typeId": hex_id(type_node.enum.typeId)}
+  if which == "interface":
+    return {"kind": "interface", "typeId": hex_id(type_node.interface.typeId)}
+  if which == "list":
+    return {"kind": "list", "element": encode_type(type_node.list.elementType)}
+  if which == "anyPointer":
+    return {"kind": "anyPointer"}
+  return {"kind": which}
 
 
-def generate_schema_instances(schema_struct: Any) -> List[Any]:
-  """
-  Generate instances for all fields in a given schema.
+def encode_field(name: str, field: Any) -> dict:
+  proto = field.proto
+  ordinal = proto.ordinal.explicit if proto.ordinal.which() == "explicit" else None
+  discriminant = proto.discriminantValue if proto.discriminantValue != NO_DISCRIMINANT else None
 
-  Args:
-      schema_struct: The Cap'n Proto schema structure
+  if proto.which() == "group":
+    type_desc = {"kind": "group", "typeId": hex_id(proto.group.typeId)}
+  else:
+    type_desc = encode_type(proto.slot.type)
 
-  Returns:
-      A list of schema instances
-  """
-  schema_fields = get_schema_fields(schema_struct)
-  instances = []
-
-  for field_prop in schema_fields:
-    try:
-      instance = create_schema_instance(schema_struct, field_prop)
-      if instance is not None:
-        instances.append(instance)
-    except Exception as e:
-      print(f"Skipping field due to error: {e}")
-
-  print(f"Generated {len(instances)} schema instances")
-  return instances
+  return {
+    "name": name,
+    "ordinal": ordinal,
+    "discriminant": discriminant,
+    "type": type_desc,
+  }
 
 
-def persist_instances(instances: List[Any], filename: str) -> None:
-  """
-  Write schema instances to a binary file.
-
-  Args:
-      instances: List of schema instances
-      filename: Output file path
-  """
-  try:
-    with open(filename, 'wb') as f:
-      for instance in instances:
-        f.write(instance.to_bytes())
-
-    print(f"Successfully wrote {len(instances)} instances to {filename}")
-
-  except Exception as e:
-    print(f"Error persisting instances: {e}")
-    sys.exit(1)
+def encode_struct(schema: Any) -> dict:
+  node = schema.node
+  return {
+    "typeId": hex_id(node.id),
+    "displayName": node.displayName,
+    "hasUnion": node.struct.discriminantCount > 0,
+    "fields": [encode_field(name, field) for name, field in schema.fields.items()],
+  }
 
 
-def read_instances(filename: str, schema_type: Any) -> List[Any]:
-  """
-  Read schema instances from a binary file.
-
-  Args:
-      filename: Input file path
-      schema_type: The schema type to use for reading
-
-  Returns:
-      A list of read schema instances
-  """
-  try:
-    with open(filename, 'rb') as f:
-      data = f.read()
-
-    instances = list(schema_type.read_multiple_bytes(data))
-
-    print(f"Read {len(instances)} instances from {filename}")
-    return instances
-
-  except Exception as e:
-    print(f"Error reading instances: {e}")
-    sys.exit(1)
+def _child_struct_schema(field: Any) -> Any:
+  proto = field.proto
+  if proto.which() == "group":
+    return field.schema
+  type_node = proto.slot.type
+  which = type_node.which()
+  if which == "struct":
+    return field.schema
+  if which == "list":
+    container = field.schema
+    element_type = type_node.list.elementType
+    while element_type.which() == "list":
+      container = container.elementType
+      element_type = element_type.list.elementType
+    if element_type.which() == "struct":
+      return container.elementType
+  return None
 
 
-def compare_schemas(original_instances: List[Any], read_instances: List[Any]) -> bool:
-  """
-  Compare original and read-back instances to detect potential breaking changes.
+def collect_schema(root: Any) -> dict[str, dict]:
+  structs: dict[str, dict] = {}
+  stack = [root]
+  while stack:
+    schema = stack.pop()
+    type_id = hex_id(schema.node.id)
+    if type_id in structs:
+      continue
+    structs[type_id] = encode_struct(schema)
+    for _name, field in schema.fields.items():
+      try:
+        child = _child_struct_schema(field)
+      except Exception:
+        child = None
+      if child is not None:
+        stack.append(child)
+  return structs
 
-  Args:
-      original_instances: List of originally generated instances
-      read_instances: List of instances read back from file
 
-  Returns:
-      Boolean indicating whether schemas appear compatible
-  """
-  if len(original_instances) != len(read_instances):
-    print("❌ Schema Compatibility Warning: Instance count mismatch")
+def dump_schema(path: str) -> None:
+  from cereal import log
+  payload = {
+    "root": hex_id(log.Event.schema.node.id),
+    "structs": collect_schema(log.Event.schema),
+  }
+  with open(path, "w", encoding="utf-8") as handle:
+    json.dump(payload, handle, indent=2, sort_keys=True)
+  print(f"wrote schema dump with {len(payload['structs'])} structs to {path}")
+
+
+def types_equal(a: dict, b: dict) -> bool:
+  if a.get("kind") != b.get("kind"):
     return False
-
-  compatible = True
-  for struct in read_instances:
-    try:
-      getattr(struct, struct.which())  # Attempting to access the field to validate readability
-    except Exception as e:
-      print(f"❌ Structural change detected: {struct.which()} is not readable.\nFull error: {e}")
-      compatible = False
-
-  return compatible
+  kind = a["kind"]
+  if kind in ("struct", "enum", "interface", "group"):
+    return a.get("typeId") == b.get("typeId")
+  if kind == "list":
+    return types_equal(a["element"], b["element"])
+  return True
 
 
-def main():
-  """
-  CLI entry point for schema compatibility testing.
-  """
-  # Setup argument parser
+def type_repr(t: dict) -> str:
+  kind = t.get("kind", "?")
+  if kind in ("struct", "enum", "interface", "group"):
+    return f"{kind}({t.get('typeId')})"
+  if kind == "list":
+    return f"list<{type_repr(t['element'])}>"
+  return kind
+
+
+def field_is_union_variant(field: dict) -> bool:
+  return field.get("discriminant") is not None
+
+
+def index_fields_by_ordinal(struct: dict) -> dict[int, dict]:
+  indexed: dict[int, dict] = {}
+  for field in struct["fields"]:
+    ordinal = field.get("ordinal")
+    if ordinal is None:
+      continue
+    indexed[ordinal] = field
+  return indexed
+
+
+def compare(sunnypilot_dump: dict, upstream_dump: dict) -> list[str]:
+  violations: list[str] = []
+  sunnypilot_structs: dict[str, dict] = sunnypilot_dump["structs"]
+  upstream_structs: dict[str, dict] = upstream_dump["structs"]
+
+  sunnypilot_struct_referenced_from_shared: set[str] = set()
+
+  for type_id, sunnypilot_struct in sunnypilot_structs.items():
+    upstream_struct = upstream_structs.get(type_id)
+    if upstream_struct is None:
+      continue
+
+    sunnypilot_fields = index_fields_by_ordinal(sunnypilot_struct)
+    upstream_fields = index_fields_by_ordinal(upstream_struct)
+    display = sunnypilot_struct["displayName"]
+
+    for ordinal, sunnypilot_field in sunnypilot_fields.items():
+      upstream_field = upstream_fields.get(ordinal)
+      if upstream_field is None:
+        if field_is_union_variant(sunnypilot_field):
+          violations.append(
+            f"[R2] {display} @{ordinal} ('{sunnypilot_field['name']}', {type_repr(sunnypilot_field['type'])}): "
+            f"union variant not present upstream. upstream cannot parse this discriminant."
+          )
+        continue
+
+      if not types_equal(sunnypilot_field["type"], upstream_field["type"]):
+        violations.append(
+          f"[R1] {display} @{ordinal}: type mismatch. "
+          f"sunnypilot='{sunnypilot_field['name']}' {type_repr(sunnypilot_field['type'])} vs "
+          f"upstream='{upstream_field['name']}' {type_repr(upstream_field['type'])}."
+        )
+        continue
+
+      cursor = sunnypilot_field["type"]
+      while cursor.get("kind") == "list":
+        cursor = cursor["element"]
+      if cursor.get("kind") in ("struct", "group", "interface") and cursor.get("typeId"):
+        sunnypilot_struct_referenced_from_shared.add(cursor["typeId"])
+
+  for type_id, sunnypilot_struct in sunnypilot_structs.items():
+    if type_id in upstream_structs:
+      continue
+    if type_id in sunnypilot_struct_referenced_from_shared:
+      violations.append(
+        f"[R5] struct {sunnypilot_struct['displayName']} ({type_id}) exists only on sunnypilot "
+        f"but is referenced from an upstream-shared field. upstream cannot resolve this type."
+      )
+
+  return violations
+
+
+def load_peer(path: str) -> dict:
+  with open(path, "r", encoding="utf-8") as handle:
+    return json.load(handle)
+
+
+def run_read(peer_path: str) -> int:
+  from cereal import log
+  peer_dump = load_peer(peer_path)
+  local_dump = {
+    "root": hex_id(log.Event.schema.node.id),
+    "structs": collect_schema(log.Event.schema),
+  }
+  violations = compare(sunnypilot_dump=peer_dump, upstream_dump=local_dump)
+
+  if not violations:
+    print("cereal compat OK: upstream openpilot can parse sunnypilot routes "
+          "(no leaked structs, no ordinal collisions).")
+    return 0
+
+  print(f"cereal compat FAIL: upstream openpilot would misparse sunnypilot routes "
+        f"({len(violations)} violation(s)):")
+  for v in violations:
+    print(f"  {v}")
+  return 1
+
+
+def main() -> int:
   parser = argparse.ArgumentParser(
-    description='Cap\'n Proto Schema Compatibility Testing Tool',
-    epilog='Test schema compatibility by generating and reading back instances.'
+    description="sunnypilot <-> upstream cereal compatibility validator (schema-level)."
   )
-
-  # Add mutually exclusive group for generation or reading mode
-  mode_group = parser.add_mutually_exclusive_group(required=True)
-  mode_group.add_argument('-g', '--generate', action='store_true',
-                          help='Generate schema instances')
-  mode_group.add_argument('-r', '--read', action='store_true',
-                          help='Read and validate schema instances')
-
-  # Common arguments
-  parser.add_argument('-f', '--file',
-                      default='schema_instances.bin',
-                      help='Output/input binary file (default: schema_instances.bin)')
-
-  # Parse arguments
+  mode = parser.add_mutually_exclusive_group(required=True)
+  mode.add_argument("-g", "--generate", action="store_true", help="dump local schema to JSON")
+  mode.add_argument("-r", "--read", action="store_true", help="load peer JSON and diff against local")
+  parser.add_argument("-f", "--file", default="schema.json", help="JSON file path (default: schema.json)")
   args = parser.parse_args()
 
-  # Import the schema dynamically 
   try:
-    from cereal import log
-    schema_type = log.Event
-  except ImportError:
-    print("Error: Unable to import schema. Ensure 'cereal' is installed.")
-    sys.exit(1)
-
-  # Execute based on mode
-  if args.generate:
-    print("🔧 Generating Schema Instances")
-    instances = generate_schema_instances(schema_type)
-    persist_instances(instances, args.file)
-    print("✅ Instance generation complete")
-
-  elif args.read:
-    print("🔍 Reading and Validating Schema Instances")
-    generated_instances = generate_schema_instances(schema_type)
-    read_back_instances = read_instances(args.file, schema_type)
-
-    # Compare schemas
-    if compare_schemas(generated_instances, read_back_instances):
-      print("✅ Schema Compatibility: No breaking changes detected")
-      sys.exit(0)
-    else:
-      print("❌ Potential Schema Breaking Changes Detected")
-      sys.exit(1)
+    if args.generate:
+      dump_schema(args.file)
+      return 0
+    return run_read(args.file)
+  except ImportError as exc:
+    print(f"error: cannot import cereal ({exc}). did scons build cereal?")
+    return 2
 
 
 if __name__ == "__main__":
-  main()
+  sys.exit(main())
