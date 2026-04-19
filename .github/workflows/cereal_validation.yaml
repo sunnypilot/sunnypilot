@@ -33,15 +33,15 @@ jobs:
       - run: ./tools/op.sh setup
       - name: Build openpilot
         run: scons -j$(nproc) cereal
-      - name: Generate the log file
+      - name: Dump sunnypilot schema
         run: |
           export PYTHONPATH=${{ github.workspace }}
-          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -g -f schema_instances.bin
+          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -g -f schema.json
       - name: 'Prepare artifact'
         run: |
           mkdir -p "cereal/messaging/tests/cereal_validations"
           cp cereal/messaging/tests/validate_sp_cereal_upstream.py "cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py"
-          cp schema_instances.bin "cereal/messaging/tests/cereal_validations/schema_instances.bin"
+          cp schema.json "cereal/messaging/tests/cereal_validations/schema.json"
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
@@ -71,8 +71,8 @@ jobs:
         with:
           name: cereal_validations
           path: openpilot/cereal/messaging/tests/cereal_validations
-      - name: 'Run the validation'
+      - name: 'Validate sunnypilot schema against upstream'
         run: |
           export PYTHONPATH=${{ github.workspace }}/openpilot
           chmod +x openpilot/cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py
-          python3 openpilot/cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py -r -f openpilot/cereal/messaging/tests/cereal_validations/schema_instances.bin
+          python3 openpilot/cereal/messaging/tests/cereal_validations/validate_sp_cereal_upstream.py -r -f openpilot/cereal/messaging/tests/cereal_validations/schema.json
