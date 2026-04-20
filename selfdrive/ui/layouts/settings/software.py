@@ -69,7 +69,6 @@ class SoftwareLayout(Widget):
 
     # Branch switcher
     self._branch_btn = button_item(lambda: tr("Target Branch"), lambda: tr("SELECT"), callback=self._on_select_branch)
-    self._branch_btn.set_visible(not ui_state.params.get_bool("IsTestedBranch"))
     self._branch_btn.action_item.set_value(ui_state.params.get("UpdaterTargetBranch") or "")
     self._branch_dialog: MultiOptionDialog | None = None
 
@@ -83,6 +82,7 @@ class SoftwareLayout(Widget):
     ], line_separator=True, spacing=0)
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
 
   def _render(self, rect):

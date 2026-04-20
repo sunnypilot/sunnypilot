@@ -32,8 +32,7 @@ def flash_panda(panda_serial: str) -> Panda:
     raise
 
   # skip flashing if the detected panda is not supported
-  supported_panda = check_panda_support(panda)
-  if not supported_panda:
+  if panda.get_type() not in Panda.SUPPORTED_DEVICES:
     cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {panda.get_type()}), skipping flash...")
     return panda
 
@@ -69,12 +68,20 @@ def flash_panda(panda_serial: str) -> Panda:
   return panda
 
 
-def check_panda_support(panda) -> bool:
-  hw_type = panda.get_type()
-  if hw_type in Panda.SUPPORTED_DEVICES:
-    return True
+def check_panda_support(panda_serials: list[str]) -> list[str]:
+  spi_serials = set(Panda.spi_list())
+  for serial in panda_serials:
+    if serial in spi_serials:
+      return [serial]
 
-  return False
+  for serial in panda_serials:
+    panda = Panda(serial)
+    is_internal = panda.is_internal()
+    panda.close()
+    if is_internal:
+      return [serial]
+
+  return []
 
 
 def main() -> None:
@@ -126,12 +133,17 @@ def main() -> None:
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
 
+      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
+      flash_rivian_long(panda_serials)
+
+      # find the internal supported panda (e.g. skip external Black Panda)
+      panda_serials = check_panda_support(panda_serials)
+      if len(panda_serials) == 0:
+        continue
+
       # Flash the first panda
       panda_serial = panda_serials[0]
       panda = flash_panda(panda_serial)
-
-      # flash Rivian longitudinal upgrade panda
-      flash_rivian_long(panda)
 
       # Ensure internal panda is present if expected
       if HARDWARE.has_internal_panda() and not panda.is_internal():
@@ -142,12 +154,6 @@ def main() -> None:
 
       # log panda fw version
       params.put("PandaSignatures", panda.get_signature())
-
-      # skip health check if the detected panda is not supported
-      supported_panda = check_panda_support(panda)
-      if not supported_panda:
-        cloudlog.warning(f"Panda {panda.get_usb_serial()} is not supported (hw_type: {panda.get_type()}), skipping health check...")
-        continue
 
       # check health for lost heartbeat
       health = panda.health()

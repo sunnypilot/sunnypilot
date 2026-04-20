@@ -95,7 +95,7 @@ class Key(Widget):
     self._size_filter.update(size)
 
   def _get_font_size(self) -> int:
-    return int(round(self._size_filter.x))
+    return round(self._size_filter.x)
 
 
 class SmallKey(Key):
@@ -146,8 +146,9 @@ class CapsState(IntEnum):
 
 
 class MiciKeyboard(Widget):
-  def __init__(self):
+  def __init__(self, auto_return_to_letters: str = ""):
     super().__init__()
+    self._auto_return_to_letters = auto_return_to_letters
 
     lower_chars = [
       "qwertyuiop",
@@ -303,6 +304,10 @@ class MiciKeyboard(Widget):
 
         # Reset caps state
         if self._caps_state == CapsState.UPPER:
+          self._set_uppercase(False)
+
+        # Switch back to letters after common URL delimiters
+        if self._closest_key[0].char in self._auto_return_to_letters and self._current_keys in (self._special_keys, self._super_special_keys):
           self._set_uppercase(False)
 
     # ensure minimum selected animation time

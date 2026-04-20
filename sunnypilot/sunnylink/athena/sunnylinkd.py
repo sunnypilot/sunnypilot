@@ -230,6 +230,41 @@ def getParamsAllKeysV1() -> dict[str, str]:
 
 
 @dispatcher.add_method
+def getParamsMetadata() -> str:
+  """Compressed equivalent of getParamsAllKeysV1 — same struct, gzipped + base64."""
+  try:
+    with open(METADATA_PATH) as f:
+      metadata = json.load(f)
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
+    metadata = {}
+
+  try:
+    available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+
+    params_list: list[dict] = []
+    for key in available_keys:
+      value = get_param_as_byte(key, get_default=True)
+
+      param_entry: dict = {
+        "key": key,
+        "type": int(params.get_type(key).value),
+        "default_value": base64.b64encode(value).decode('utf-8') if value else None,
+      }
+
+      if key in metadata:
+        param_entry["_extra"] = metadata[key]
+
+      params_list.append(param_entry)
+
+    raw = json.dumps(params_list, separators=(',', ':')).encode('utf-8')
+    return base64.b64encode(gzip.compress(raw)).decode('utf-8')
+  except Exception:
+    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
+    raise
+
+
+@dispatcher.add_method
 def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
   params = Params()
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]

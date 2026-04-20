@@ -72,9 +72,10 @@ def _flash_panda(panda: Panda) -> None:
 
   _flash_static(panda._handle, code)
   panda.reconnect()
+  cloudlog.info(f"Successfully flashed xnor's Rivian Longitudinal Upgrade Kit: {panda.get_usb_serial()}")
 
 
-def flash_rivian_long(panda: Panda) -> None:
+def flash_rivian_long(panda_serials: list[str]) -> None:
   if not os.path.isfile(FW_PATH):
     cloudlog.error(f"Rivian longitudinal upgrade firmware not found at {FW_PATH}")
     return
@@ -83,13 +84,22 @@ def flash_rivian_long(panda: Panda) -> None:
     cloudlog.info("Not a Rivian, skipping longitudinal upgrade...")
     return
 
-  # only flash external black pandas (HW_TYPE_BLACK = 0x03)
-  if panda.get_type() == b'\x03' and not panda.is_internal():
-    try:
-      _flash_panda(panda)
-    except Exception:
-      cloudlog.exception(f"Failed to flash F4 panda {panda.get_usb_serial()}")
+  # only check USB connected pandas, internal panda uses SPI and is never an external panda
+  usb_serials = set(Panda.usb_list())
+  for serial in panda_serials:
+    if serial not in usb_serials:
+      continue
+    panda = Panda(serial)
+    # only flash external black pandas (HW_TYPE_BLACK = 0x03)
+    if panda.get_type() == b'\x03' and not panda.is_internal():
+      try:
+        _flash_panda(panda)
+      except Exception:
+        cloudlog.exception(f"Failed to flash xnor's Rivian Longitudinal Upgrade Kit: {serial}")
+    panda.close()
+
+  return
 
 
 if __name__ == '__main__':
-  flash_rivian_long(Panda())
+  flash_rivian_long(Panda.list())
