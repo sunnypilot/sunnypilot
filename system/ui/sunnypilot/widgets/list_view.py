@@ -409,3 +409,19 @@ class LineSeparatorSP(LineSeparator):
     rl.draw_line(int(self._rect.x) + LINE_PADDING, line_y,
                  int(self._rect.x + self._rect.width) - LINE_PADDING, line_y,
                  LINE_COLOR)
+
+class ClickableListItemSP(ListItemSP):
+  """A ListItem that acts as a button across its entire row."""
+  def _handle_mouse_release(self, mouse_pos: MousePos):
+    if not self.is_visible or not self.enabled:
+      return
+
+    if self.action_item:
+      action_rect = self.get_right_item_rect(self._rect)
+      if rl.check_collision_point_rec(mouse_pos, action_rect):
+        return
+
+    if self.callback:
+      self.callback()
+    else:
+      self._set_description_visible(not self.description_visible)

@@ -5,7 +5,7 @@ import pyray as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.label import UnifiedLabel
+from openpilot.system.ui.widgets.label import UnifiedLabel, TextEffect
 from openpilot.common.filter_simple import FirstOrderFilter, BounceFilter
 
 
@@ -42,7 +42,7 @@ class SliderBase(Widget, abc.ABC):
 
     self._label = self._child(UnifiedLabel(title, font_size=36, font_weight=FontWeight.SEMI_BOLD, text_color=rl.WHITE,
                                            alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
-                                           alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE, line_height=0.9, shimmer=True))
+                                           alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE, line_height=0.9, effect=TextEffect.SHIMMER))
 
   @abc.abstractmethod
   def _load_assets(self):

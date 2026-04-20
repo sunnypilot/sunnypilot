@@ -1,5 +1,5 @@
 import math
-from enum import IntEnum
+from enum import IntEnum, auto
 from collections.abc import Callable
 from itertools import zip_longest
 from typing import Union
@@ -25,6 +25,12 @@ def _resolve_value(value, default=""):
 class ScrollState(IntEnum):
   STARTING = 0
   SCROLLING = 1
+
+
+class TextEffect(IntEnum):
+  NONE = 0
+  SHIMMER = 1
+  RAINBOW = 2
 
 
 # TODO: This should be a Widget class
@@ -263,7 +269,7 @@ class UnifiedLabel(Widget):
                scroll: bool = False,
                line_height: float = 1.0,
                letter_spacing: float = 0.0,
-               shimmer: bool = False):
+               effect: TextEffect = TextEffect.NONE):
     super().__init__()
     self._text = text
     self._font_size = font_size
@@ -281,8 +287,8 @@ class UnifiedLabel(Widget):
     self._letter_spacing = letter_spacing  # 0.1 = 10%
     self._spacing_pixels = font_size * letter_spacing
 
-    # Shimmer state
-    self._shimmer = shimmer
+    # Effect state
+    self._effect = effect
     self._shimmer_start_time = 0.0
 
     # Scroll state
@@ -372,6 +378,10 @@ class UnifiedLabel(Widget):
     """Update the vertical text alignment."""
     self._alignment_vertical = alignment_vertical
 
+  def set_effect(self, effect: TextEffect):
+    """Update the text effect."""
+    self._effect = effect
+
   def reset_scroll(self):
     """Reset scroll state to initial position."""
     self._scroll_offset = 0
@@ -380,7 +390,7 @@ class UnifiedLabel(Widget):
 
   def show_event(self):
     super().show_event()
-    if self._shimmer:
+    if self._effect == TextEffect.SHIMMER:
       self.reset_shimmer()
 
   def reset_shimmer(self, offset: float = 0.0):
@@ -670,8 +680,12 @@ class UnifiedLabel(Widget):
       line_x = self._rect.x + self._text_padding
     line_x += self._scroll_offset + x_offset
 
-    if self._shimmer:
+    line_x += self._scroll_offset + x_offset
+
+    if self._effect == TextEffect.SHIMMER:
       self._render_line_shimmer(line, line_x, current_y)
+    elif self._effect == TextEffect.RAINBOW:
+      self._render_line_rainbow(line, line_x, current_y)
     else:
       # Render line with emojis
       self._render_line_normal(line, emojis, line_x, current_y)
@@ -718,5 +732,16 @@ class UnifiedLabel(Widget):
       char_center_x = cursor_x + char_width / 2.0
       alpha = int(255 * self._shimmer_alpha(char_center_x, shimmer_left, max_width) * base_a)
       color = rl.Color(self._text_color.r, self._text_color.g, self._text_color.b, alpha)
+      rl.draw_text_ex(self._font, ch, rl.Vector2(cursor_x, current_y), self._font_size, 0, color)
+      cursor_x += char_width + self._spacing_pixels
+
+  def _render_line_rainbow(self, line, line_x, current_y):
+    t = rl.get_time()
+    hue_base = (t * 50) % 360
+    cursor_x = line_x
+    for i, ch in enumerate(line):
+      hue = (hue_base + (i * 15)) % 360
+      color = rl.color_from_hsv(hue, 0.8, 1.0)
+      char_width = measure_text_cached(self._font, ch, self._font_size, self._spacing_pixels).x
       rl.draw_text_ex(self._font, ch, rl.Vector2(cursor_x, current_y), self._font_size, 0, color)
       cursor_x += char_width + self._spacing_pixels

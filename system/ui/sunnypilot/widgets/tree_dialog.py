@@ -50,21 +50,21 @@ class TreeItemWidget(Button):
 
   def _render(self, rect):
     indent = 60 * self.indent_level
-    self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
+    draw_rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
     if self.is_pressed:
       color = BUTTON_PRESSED_BACKGROUND_COLORS[self._button_style]
     elif self.selected and self.ref != "search_bar":
       color = style.BUTTON_PRIMARY_COLOR
     else:
       color = style.BUTTON_DISABLED_BG_COLOR
-    roundness = self.border_radius / (min(self._rect.width, self._rect.height) / 2)
-    rl.draw_rectangle_rounded(self._rect, roundness, 10, color)
+    roundness = self.border_radius / (min(draw_rect.width, draw_rect.height) / 2)
+    rl.draw_rectangle_rounded(draw_rect, roundness, 10, color)
     text_offset = self.text_padding + 20 - 15 if self.is_expanded and not self.is_folder and self.indent_level > 0 else self.text_padding + 20
-    text_rect = rl.Rectangle(self._rect.x + text_offset, self._rect.y, self._rect.width - self.text_padding - 20 - 90, self._rect.height)
+    text_rect = rl.Rectangle(draw_rect.x + text_offset, draw_rect.y, draw_rect.width - self.text_padding - 20 - 90, draw_rect.height)
     self._label.render(text_rect)
 
     if not self.is_folder and self._favorite_callback:
-      draw_star(self._rect.x + self._rect.width - 90, self._rect.y + self._rect.height / 2, 40, self.is_favorite,
+      draw_star(draw_rect.x + draw_rect.width - 90, draw_rect.y + draw_rect.height / 2, 40, self.is_favorite,
                 style.ON_BG_COLOR if self.is_favorite else rl.GRAY)
 
   def _handle_mouse_release(self, mouse_pos):

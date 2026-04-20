@@ -14,7 +14,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
-from openpilot.system.ui.widgets.label import UnifiedLabel
+from openpilot.system.ui.widgets.label import UnifiedLabel, TextEffect
 from openpilot.system.ui.widgets.scroller import NavScroller
 
 class CurrentModelInfo(Widget):
@@ -152,8 +152,8 @@ class ModelsLayoutMici(NavScroller):
 
     self.select_model_btn.set_enabled(ui_state.is_offroad())
     self.cancel_download_btn.set_visible(False)
-    self.current_model_info.current_model_header._shimmer = False
-    self.current_model_info.info_header._shimmer = False
+    self.current_model_info.current_model_header.set_effect(TextEffect.NONE)
+    self.current_model_info.info_header.set_effect(TextEffect.NONE)
 
     manager = self.model_manager
     self._download_frame += 1
@@ -191,9 +191,9 @@ class ModelsLayoutMici(NavScroller):
           progress += 100.0
 
       self.current_model_info.current_model_header.set_text(tr("downloading"))
-      self.current_model_info.current_model_header._shimmer = True
+      self.current_model_info.current_model_header.set_effect(TextEffect.SHIMMER)
       self.current_model_info.current_model_text.set_text(f"{manager.selectedBundle.internalName.lower()}")
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
-      self.current_model_info.info_header._shimmer = True
+      self.current_model_info.info_header.set_effect(TextEffect.SHIMMER)
       self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")
 

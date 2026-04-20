@@ -126,7 +126,7 @@ class BigButton(Widget):
                                text_color=LABEL_COLOR, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, scroll=scroll,
                                line_height=0.9)
     self._sub_label = UnifiedLabel(value, font_size=COMPLICATION_SIZE, font_weight=FontWeight.ROMAN,
-                                   text_color=COMPLICATION_GREY, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM)
+                                   text_color=COMPLICATION_GREY, alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_BOTTOM, scroll=scroll)
     self._update_label_layout()
 
     self._load_images()
@@ -382,7 +382,14 @@ class BigMultiParamToggle(BigMultiToggle):
     self._load_value()
 
   def _load_value(self):
-    self.set_value(self._options[self._params.get(self._param) or 0])
+    val = self._params.get(self._param)
+    idx = 0
+    if val is not None:
+      try:
+        idx = int(val)
+      except ValueError:
+        pass
+    self.set_value(self._options[idx])
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)

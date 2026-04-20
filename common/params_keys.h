@@ -178,6 +178,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"QuickBootToggle", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"QuietMode", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"RainbowMode", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"OpenpilotTextEffect", {PERSISTENT | BACKUP, INT, "0"}},
     {"RocketFuel", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowTurnSignals", {PERSISTENT | BACKUP, BOOL, "0"}},
@@ -217,6 +218,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", {PERSISTENT | BACKUP, INT, "0"}},
+    {"JeepBrakeHold", {PERSISTENT | BACKUP, INT, "0"}},
     {"SubaruStopAndGo", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"SubaruStopAndGoManualParkingBrake", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TeslaCoopSteering", {PERSISTENT | BACKUP, BOOL, "0"}},
