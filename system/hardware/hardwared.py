@@ -135,6 +135,13 @@ def hw_state_thread(end_event, hw_queue):
 
         tx, rx = HARDWARE.get_modem_data_usage()
 
+        cell_strength = 0
+        try:
+          cell_strength = HARDWARE.get_network_strength(NetworkType.cell4G).raw
+        except Exception:
+          pass
+        Params().put_nonblocking("CellularStrength", str(cell_strength))
+
         hw_state = HardwareState(
           network_type=network_type,
           network_info=HARDWARE.get_network_info(),

@@ -1,7 +1,10 @@
 import pyray as rl
 from collections.abc import Callable
 from functools import partial
+import json
+import os
 
+from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
@@ -41,6 +44,11 @@ class EsimProfileConfigLayout(NavScroller):
     rename_btn.set_click_callback(self._on_rename_clicked)
     self._scroller.add_widget(rename_btn)
     
+    # 3. Carrier APN
+    apn_btn = BigButton(tr("Carrier APN"), tr("edit"), scroll=True)
+    apn_btn.set_click_callback(self._on_apn_clicked)
+    self._scroller.add_widget(apn_btn)
+    
     # 3. Delete Profile
     delete_btn = BigButton(tr("Delete Profile"), tr("delete"), scroll=True)
     delete_btn.set_click_callback(self._on_delete_clicked)
@@ -70,6 +78,25 @@ class EsimProfileConfigLayout(NavScroller):
     dlg = BigInputDialog(tr("enter nickname..."), self._profile.nickname or "", minimum_length=0, confirm_callback=update_nickname)
     gui_app.push_widget(dlg)
 
+  def _on_apn_clicked(self):
+    apn_map = Params().get("EsimApnMap")
+    if not isinstance(apn_map, dict):
+      apn_map = {}
+    current_apn = apn_map.get(self._profile.iccid, "")
+
+    def update_apn(new_apn: str):
+      new_apn = new_apn.strip()
+      apn_map[self._profile.iccid] = new_apn
+      Params().put("EsimApnMap", apn_map)
+      
+      # Burn the new connection and brutally stomp ModemManager to latch instantly
+      HARDWARE.configure_modem()
+      os.system("sudo systemctl restart ModemManager")
+      self._refresh_callback()
+
+    dlg = BigInputDialog(tr("enter Carrier APN (e.g. super)"), current_apn, minimum_length=0, confirm_callback=update_apn)
+    gui_app.push_widget(dlg)
+
   def _on_delete_clicked(self):
     def confirm_delete():
       try:
@@ -80,7 +107,8 @@ class EsimProfileConfigLayout(NavScroller):
         show_error_dialog(str(e))
 
     msg = f"{tr('Are you sure you want to delete profile')} {self._profile.iccid}?\n{tr('This cannot be undone.')}"
-    dlg = BigConfirmationDialog(msg, None, confirm_callback=confirm_delete)
+    icon = gui_app.texture("icons_mici/settings/network/new/trash.png", 54, 64)
+    dlg = BigConfirmationDialog(msg, icon, confirm_callback=confirm_delete, red=True)
     gui_app.push_widget(dlg)
 
 

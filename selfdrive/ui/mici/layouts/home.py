@@ -61,7 +61,7 @@ class AlertsPill(Widget):
                 alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
 
-class NetworkIcon(Widget):
+class WifiIcon(Widget):
   def __init__(self):
     super().__init__()
     self.set_rect(rl.Rectangle(0, 0, 54, 44))  # max size of all icons
@@ -73,12 +73,6 @@ class NetworkIcon(Widget):
     self._wifi_low_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_low.png", 50, 37)
     self._wifi_medium_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_medium.png", 50, 37)
     self._wifi_full_txt = gui_app.texture("icons_mici/settings/network/wifi_strength_full.png", 50, 37)
-
-    self._cell_none_txt = gui_app.texture("icons_mici/settings/network/cell_strength_none.png", 54, 36)
-    self._cell_low_txt = gui_app.texture("icons_mici/settings/network/cell_strength_low.png", 54, 36)
-    self._cell_medium_txt = gui_app.texture("icons_mici/settings/network/cell_strength_medium.png", 54, 36)
-    self._cell_high_txt = gui_app.texture("icons_mici/settings/network/cell_strength_high.png", 54, 36)
-    self._cell_full_txt = gui_app.texture("icons_mici/settings/network/cell_strength_full.png", 54, 36)
 
   def _update_state(self):
     device_state = ui_state.sm['deviceState']
@@ -94,12 +88,6 @@ class NetworkIcon(Widget):
                       3: self._wifi_medium_txt,
                       4: self._wifi_full_txt,
                       5: self._wifi_full_txt}.get(self._net_strength, self._wifi_low_txt)
-    elif self._net_type in (NetworkType.cell2G, NetworkType.cell3G, NetworkType.cell4G, NetworkType.cell5G):
-      draw_net_txt = {0: self._cell_none_txt,
-                      2: self._cell_low_txt,
-                      3: self._cell_medium_txt,
-                      4: self._cell_high_txt,
-                      5: self._cell_full_txt}.get(self._net_strength, self._cell_none_txt)
     else:
       draw_net_txt = self._wifi_slash_txt
 
@@ -109,6 +97,45 @@ class NetworkIcon(Widget):
     if draw_net_txt == self._wifi_slash_txt:
       # Offset by difference in height between slashless and slash icons to make center align match
       draw_y -= (self._wifi_slash_txt.height - self._wifi_none_txt.height) / 2
+
+    rl.draw_texture_ex(draw_net_txt, rl.Vector2(draw_x, draw_y), 0.0, 1.0, rl.Color(255, 255, 255, int(255 * 0.9)))
+
+
+class CellularIcon(Widget):
+  def __init__(self):
+    super().__init__()
+    self.set_rect(rl.Rectangle(0, 0, 54, 44))  # max size of all icons
+    self._net_strength = 0
+
+    self._cell_none_txt = gui_app.texture("icons_mici/settings/network/cell_strength_none.png", 54, 36)
+    self._cell_low_txt = gui_app.texture("icons_mici/settings/network/cell_strength_low.png", 54, 36)
+    self._cell_medium_txt = gui_app.texture("icons_mici/settings/network/cell_strength_medium.png", 54, 36)
+    self._cell_high_txt = gui_app.texture("icons_mici/settings/network/cell_strength_high.png", 54, 36)
+    self._cell_full_txt = gui_app.texture("icons_mici/settings/network/cell_strength_full.png", 54, 36)
+
+  def _update_state(self):
+    val = ui_state.params.get("CellularStrength")
+    raw_strength = int(val) if val else 0
+    self._net_strength = max(0, min(5, raw_strength + 1)) if raw_strength > 0 else 0
+    
+    net_state = ui_state.sm["deviceState"].networkInfo.state
+
+    # Fallback missing signal to full bars if we are explicitly CONNECTED!
+    if net_state == "CONNECTED" and self._net_strength == 0:
+      self._net_strength = 5
+
+    # Hide if there is no signal and we aren't connected
+    self.set_visible(self._net_strength > 0)
+
+  def _render(self, _):
+    draw_net_txt = {0: self._cell_none_txt,
+                    2: self._cell_low_txt,
+                    3: self._cell_medium_txt,
+                    4: self._cell_high_txt,
+                    5: self._cell_full_txt}.get(self._net_strength, self._cell_none_txt)
+
+    draw_x = self._rect.x + (self._rect.width - draw_net_txt.width) / 2
+    draw_y = self._rect.y + (self._rect.height - draw_net_txt.height) / 2
 
     rl.draw_texture_ex(draw_net_txt, rl.Vector2(draw_x, draw_y), 0.0, 1.0, rl.Color(255, 255, 255, int(255 * 0.9)))
 
@@ -139,9 +166,12 @@ class MiciHomeLayout(Widget):
 
     self._alerts_pill = AlertsPill()
 
+    self._cellular_icon = CellularIcon()
+
     self._status_bar_layout = HBoxLayout([
       IconWidget("icons_mici/settings.png", (48, 48), opacity=0.9),
-      NetworkIcon(),
+      WifiIcon(),
+      self._cellular_icon,
       self._experimental_icon,
       self._mic_icon,
     ], spacing=18)
@@ -165,6 +195,8 @@ class MiciHomeLayout(Widget):
     self._openpilot_label.set_effect(TextEffect(new_text_effect))
 
   def _update_state(self):
+    self._cellular_icon._update_state()
+    
     if self.is_pressed and not self._is_pressed_prev:
       self._mouse_down_t = time.monotonic()
     elif not self.is_pressed and self._is_pressed_prev:

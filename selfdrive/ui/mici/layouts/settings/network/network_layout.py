@@ -78,12 +78,13 @@ class NetworkLayoutMici(NavScroller):
     self._cellular_metered_btn = BigParamControl("cellular metered", "GsmMetered", toggle_callback=self._toggle_cellular_metered)
 
     # ******** eSIM management ********
-    self._esim_btn = BigButton("esim management", "manage")
+    self._esim_btn = BigButton("esim management", "not connected")
     self._esim_btn.set_click_callback(self._open_esim_management)
 
     # Main scroller ----------------------------------
     self._scroller.add_widgets([
       self._wifi_button,
+      self._esim_btn,
       self._network_metered_btn,
       self._tethering_toggle_btn,
       self._tethering_password_btn,
@@ -91,7 +92,6 @@ class NetworkLayoutMici(NavScroller):
       self._roaming_btn,
       self._apn_btn,
       self._cellular_metered_btn,
-      self._esim_btn,
       # */
     ])
 
@@ -112,6 +112,10 @@ class NetworkLayoutMici(NavScroller):
 
     # Hide on unsupported devices, show on tici/mici regardless of prime sub
     self._esim_btn.set_visible(HARDWARE.get_device_type() in ("tici", "pc", "mici"))
+    
+    # Show connected only if the modem actively establishes an IP overlay (data session)
+    net_state = ui_state.sm["deviceState"].networkInfo.state
+    self._esim_btn.set_value("connected" if net_state == "CONNECTED" else "not connected")
 
   def show_event(self):
     super().show_event()

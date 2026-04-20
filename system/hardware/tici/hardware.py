@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 import tempfile
+import json
 from enum import IntEnum
 from functools import cached_property, lru_cache
 from pathlib import Path
@@ -139,8 +140,11 @@ class Tici(HardwareBase):
   def get_network_type(self):
     try:
       primary_connection = self.nm.Get(NM, 'PrimaryConnection', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
-      primary_connection = self.bus.get_object(NM, primary_connection)
-      primary_type = primary_connection.Get(NM_CON_ACT, 'Type', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
+      if primary_connection == "/":
+        primary_type = ""
+      else:
+        primary_connection_obj = self.bus.get_object(NM, primary_connection)
+        primary_type = primary_connection_obj.Get(NM_CON_ACT, 'Type', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
 
       if primary_type == '802-3-ethernet':
         return NetworkType.ethernet
@@ -210,20 +214,33 @@ class Tici(HardwareBase):
     return str(self.get_modem().Get(MM_MODEM, 'EquipmentIdentifier', dbus_interface=DBUS_PROPS, timeout=TIMEOUT))
 
   def get_network_info(self):
-    if self.get_device_type() == "mici":
-      return None
     try:
       modem = self.get_modem()
+      state = modem.Get(MM_MODEM, 'State', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
+    except Exception:
+      return None
+
+    state_str = "" if state is None else MM_MODEM_STATE(state).name
+
+    if self.get_device_type() == "mici":
+      return({
+        'technology': "LTE",
+        'operator': "",
+        'band': "",
+        'channel': 0,
+        'extra': "",
+        'state': state_str,
+      })
+
+    try:
       info = modem.Command("AT+QNWINFO", math.ceil(TIMEOUT), dbus_interface=MM_MODEM, timeout=TIMEOUT)
       extra = modem.Command('AT+QENG="servingcell"', math.ceil(TIMEOUT), dbus_interface=MM_MODEM, timeout=TIMEOUT)
-      state = modem.Get(MM_MODEM, 'State', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
     except Exception:
       return None
 
     if info and info.startswith('+QNWINFO: '):
       info = info.replace('+QNWINFO: ', '').replace('"', '').split(',')
       extra = "" if extra is None else extra.replace('+QENG: "servingcell",', '').replace('"', '')
-      state = "" if state is None else MM_MODEM_STATE(state).name
 
       if len(info) != 4:
         return None
@@ -456,6 +473,8 @@ class Tici(HardwareBase):
       print(str(e))
 
   def configure_modem(self):
+    from openpilot.common.params import Params
+    
     sim_id = self.get_sim_info().get('sim_id', '')
 
     cmds = []
@@ -497,17 +516,41 @@ class Tici(HardwareBase):
         pass
 
     # eSIM prime
-    dest = "/etc/NetworkManager/system-connections/esim.nmconnection"
-    if self.get_sim_lpa().is_comma_profile(sim_id) and not os.path.exists(dest):
-      with open(Path(__file__).parent/'esim.nmconnection') as f, tempfile.NamedTemporaryFile(mode='w') as tf:
+    dest = f"/etc/NetworkManager/system-connections/esim_{sim_id}.nmconnection"
+    
+    is_comma = self.get_sim_lpa().is_comma_profile(sim_id)
+    
+    apn_map = Params().get("EsimApnMap")
+    if not isinstance(apn_map, dict):
+      apn_map = {}
+    custom_apn = apn_map.get(sim_id)
+    
+    if is_comma or custom_apn:
+      with open(Path(__file__).parent/'esim.nmconnection') as f:
         dat = f.read()
+        dat = dat.replace("id=esim", f"id=esim_{sim_id}")
         dat = dat.replace("sim-id=", f"sim-id={sim_id}")
-        tf.write(dat)
-        tf.flush()
+        
+        if custom_apn:
+          dat = dat.replace("apn=", f"apn={custom_apn}")
+          dat = dat.replace("auto-config=true", "auto-config=false")
+          
+      existing_dat = None
+      if os.path.exists(dest):
+        try:
+          existing_dat = sudo_read(dest).decode('utf8')
+        except Exception:
+          pass
 
-        # needs to be root
-        os.system(f"sudo cp {tf.name} {dest}")
-      os.system(f"sudo nmcli con load {dest}")
+      if dat != existing_dat:
+        with tempfile.NamedTemporaryFile(mode='w') as tf:
+          tf.write(dat)
+          tf.flush()
+
+          # needs to be root
+          os.system(f"sudo cp {tf.name} {dest}")
+          os.system(f"sudo chmod 600 {dest}")
+        os.system(f"sudo nmcli con load {dest}")
 
   def reboot_modem(self):
     modem = self.get_modem()
