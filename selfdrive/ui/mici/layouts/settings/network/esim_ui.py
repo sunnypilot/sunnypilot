@@ -33,9 +33,7 @@ class EsimProfileConfigLayout(NavScroller):
     self._scroller._items.clear()
     
     # 1. Enable Toggle
-    enable_toggle = BigToggle(tr("Enable Profile"), "")
-    enable_toggle.set_checked(self._profile.enabled)
-    enable_toggle.set_toggle_callback(self._on_enable_toggled)
+    enable_toggle = BigToggle(tr("Enable Profile"), "", initial_state=self._profile.enabled, toggle_callback=self._on_enable_toggled)
     self._scroller.add_widget(enable_toggle)
 
     # 2. Rename Nickname
@@ -52,6 +50,8 @@ class EsimProfileConfigLayout(NavScroller):
     try:
       if checked:
         self._lpa.switch_profile(self._profile.iccid)
+      else:
+        self._lpa.disable_profile(self._profile.iccid)
       self._refresh_callback()
     except Exception as e:
       show_error_dialog(str(e))

@@ -7,6 +7,7 @@ from openpilot.system.hardware import HARDWARE
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(prog='esim.py', description='manage eSIM profiles on your comma device', epilog='comma.ai')
   parser.add_argument('--switch', metavar='iccid', help='switch to profile')
+  parser.add_argument('--disable', metavar='iccid', help='disable profile')
   parser.add_argument('--delete', metavar='iccid', help='delete profile (warning: this cannot be undone)')
   parser.add_argument('--download', nargs=2, metavar=('qr', 'name'), help='download a profile using QR code (format: LPA:1$rsp.truphone.com$QRF-SPEEDTEST)')
   parser.add_argument('--cc', metavar='confirmation_code', help='confirmation code (if required by the profile provider)')
@@ -16,6 +17,8 @@ if __name__ == '__main__':
   lpa = HARDWARE.get_sim_lpa()
   if args.switch:
     lpa.switch_profile(args.switch)
+  elif args.disable:
+    lpa.disable_profile(args.disable)
   elif args.delete:
     confirm = input('are you sure you want to delete this profile? (y/N) ')
     if confirm == 'y':

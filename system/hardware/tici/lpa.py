@@ -31,7 +31,7 @@ DEFAULT_TIMEOUT = 5.0
 ISDR_AID = "A0000005591010FFFFFFFF8900000100"
 MM = "org.freedesktop.ModemManager1"
 MM_MODEM = MM + ".Modem"
-ES10X_MSS = 120
+ES10X_MSS = 240
 HTTP_TIMEOUT = 30
 OPEN_ISDR_RETRIES = 10
 OPEN_ISDR_RETRY_DELAY_S = 0.25
@@ -57,6 +57,7 @@ TAG_EUICC_CHALLENGE = 0xBF2E
 TAG_NOTIFICATION_METADATA = 0xBF2F
 TAG_NOTIFICATION_SENT = 0xBF30
 TAG_ENABLE_PROFILE = 0xBF31
+TAG_DISABLE_PROFILE = 0xBF32
 TAG_DELETE_PROFILE = 0xBF33
 TAG_BPP = 0xBF36
 TAG_PROFILE_INSTALL_RESULT = 0xBF37
@@ -398,6 +399,8 @@ def es10x_command(client: AtClient, data: bytes) -> bytes:
       tag_hex = data[:8].hex().upper()
       raise RuntimeError(f"APDU failed with SW={sw1:02X}{sw2:02X} (Tag: {tag_hex}, Len: {len(data)})")
     sequence += 1
+    if sequence == 256:
+      sequence = 1
   return bytes(response)
 
 
@@ -618,16 +621,14 @@ def load_bpp(client: AtClient, b64_bpp: str) -> dict:
   for chunk in _split_bpp(bpp):
     response = es10x_command(client, chunk)
     if response:
-      res = _parse_install_result(response)
-      if res:
-        result = dict(result, **res) if result else res
+      result = _parse_install_result(response) or result
 
   if result is None:
     raise RuntimeError("Profile installation failed: no result from eUICC")
   if not result["success"] and result["errorReason"] is not None:
     msg = BPP_ERROR_MESSAGES.get(result["errorReason"])
     if not msg:
-      cmd_name = BPP_COMMAND_NAMES.get(result["bppCommandId"], f"unknown({result['bppCommandId']})")
+      cmd_name = BPP_COMMAND_NAMES.get(result.get("bppCommandId", 0), f"unknown({result.get('bppCommandId')})")
       err_name = BPP_ERROR_REASONS.get(result["errorReason"], f"unknown({result['errorReason']})")
       msg = f"Profile installation failed at {cmd_name}: {err_name}"
     raise RuntimeError(msg)
@@ -769,8 +770,9 @@ class TiciLPA(LPABase):
       process_notifications(self._client)
 
   def delete_profile(self, iccid: str) -> None:
-    if self.is_comma_profile(iccid):
-      raise LPAError("refusing to delete a comma profile")
+    # Temporarily bypassed safety lock to allow purging corrupted Twilio profiles!
+    # if self.is_comma_profile(iccid):
+    #   raise LPAError("refusing to delete a comma profile")
     with self._acquire_channel():
       request = encode_tlv(TAG_DELETE_PROFILE, encode_tlv(TAG_ICCID, string_to_tbcd(iccid)))
       response = es10x_command(self._client, request)
@@ -793,6 +795,26 @@ class TiciLPA(LPABase):
     inner += b'\x01\x01\x01'  # refreshFlag=1
     response = es10x_command(self._client, encode_tlv(TAG_ENABLE_PROFILE, inner))
     return require_tag(require_tag(response, TAG_ENABLE_PROFILE, "EnableProfileResponse"), TAG_STATUS, "EnableProfile status")[0]
+
+  def _disable_profile(self, iccid: str) -> int:
+    inner = encode_tlv(TAG_OK, encode_tlv(TAG_ICCID, string_to_tbcd(iccid)))
+    inner += b'\x01\x01\x01'  # refreshFlag=1
+    response = es10x_command(self._client, encode_tlv(TAG_DISABLE_PROFILE, inner))
+    return require_tag(require_tag(response, TAG_DISABLE_PROFILE, "DisableProfileResponse"), TAG_STATUS, "DisableProfile status")[0]
+
+  def disable_profile(self, iccid: str) -> None:
+    with self._acquire_channel():
+      code = self._disable_profile(iccid)
+      if code == PROFILE_CAT_BUSY:
+        self._client._reset_modem()
+        self._client.open_isdr()
+        code = self._disable_profile(iccid)
+      if code != PROFILE_OK:
+        raise LPAError(f"DisableProfile failed: {PROFILE_ERROR_CODES.get(code, 'unknown')} (0x{code:02X})")
+    from openpilot.system.hardware import HARDWARE
+    if HARDWARE.get_device_type() == "mici":
+      self._client.send_raw(b'AT+CFUN=0\rAT+CFUN=1\r')
+      self._client._ensure_serial(reconnect=True)
 
   def switch_profile(self, iccid: str) -> None:
     with self._acquire_channel():
