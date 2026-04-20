@@ -54,8 +54,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
     panels = [
       (tr("sunnylink"), SunnylinkLayoutMici, gui_app.texture("icons_mici/settings/developer/ssh.png", 56, 64)),
       (tr("models"),    ModelsLayoutMici,    gui_app.texture(f"{SP_ICON}/icon_models.png", 64, 64)),
-      (tr("vehicle"),   VehicleLayoutMici,   gui_app.texture(f"{SP_ICON}/icon_software.png", 64, 64)),
-      (tr("cruise"),    CruiseLayoutMici,    gui_app.texture(f"{SP_ICON}/icon_vehicle.png", 64, 64)),
+      (tr("vehicle"),   VehicleLayoutMici,   gui_app.texture(f"{SP_ICON}/icon_vehicle.png", 64, 64)),
+      (tr("cruise"),    CruiseLayoutMici,    gui_app.texture("icons/speed_limit.png", 64, 64)),
       (tr("steering"),  SteeringLayoutMici,  gui_app.texture(f"{SP_ICON}/icon_lateral.png", 64, 64)),
       (tr("display"),   DisplayLayoutMici,   gui_app.texture(f"{SP_ICON}/icon_display.png", 64, 64)),
       (tr("visuals"),   VisualsLayoutMici,   gui_app.texture(f"{SP_ICON}/icon_visuals.png", 64, 64)),
