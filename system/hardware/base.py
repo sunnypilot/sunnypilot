@@ -80,7 +80,7 @@ class LPABase(ABC):
     pass
 
   @abstractmethod
-  def download_profile(self, qr: str, nickname: str | None = None) -> None:
+  def download_profile(self, qr: str, confirmation_code: str | None = None, nickname: str | None = None) -> None:
     pass
 
   @abstractmethod

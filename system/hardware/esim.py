@@ -9,6 +9,7 @@ if __name__ == '__main__':
   parser.add_argument('--switch', metavar='iccid', help='switch to profile')
   parser.add_argument('--delete', metavar='iccid', help='delete profile (warning: this cannot be undone)')
   parser.add_argument('--download', nargs=2, metavar=('qr', 'name'), help='download a profile using QR code (format: LPA:1$rsp.truphone.com$QRF-SPEEDTEST)')
+  parser.add_argument('--cc', metavar='confirmation_code', help='confirmation code (if required by the profile provider)')
   parser.add_argument('--nickname', nargs=2, metavar=('iccid', 'name'), help='update the nickname for a profile')
   args = parser.parse_args()
 
@@ -23,7 +24,7 @@ if __name__ == '__main__':
       print('cancelled')
       exit(0)
   elif args.download:
-    lpa.download_profile(args.download[0], args.download[1])
+    lpa.download_profile(args.download[0], args.cc, args.download[1])
   elif args.nickname:
     lpa.nickname_profile(args.nickname[0], args.nickname[1])
   else:

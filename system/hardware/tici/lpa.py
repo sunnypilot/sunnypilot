@@ -395,7 +395,8 @@ def es10x_command(client: AtClient, data: bytes) -> bytes:
         continue
       if (sw1 & 0xF0) == 0x90:
         break
-      raise RuntimeError(f"APDU failed with SW={sw1:02X}{sw2:02X}")
+      tag_hex = data[:8].hex().upper()
+      raise RuntimeError(f"APDU failed with SW={sw1:02X}{sw2:02X} (Tag: {tag_hex}, Len: {len(data)})")
     sequence += 1
   return bytes(response)
 
@@ -420,7 +421,13 @@ def decode_profiles(blob: bytes) -> list[dict]:
 
 
 def list_profiles(client: AtClient) -> list[dict]:
-  return decode_profiles(es10x_command(client, TAG_PROFILE_INFO_LIST.to_bytes(2, "big") + b"\x00"))
+  try:
+    response = es10x_command(client, TAG_PROFILE_INFO_LIST.to_bytes(2, "big") + b"\x00")
+    return decode_profiles(response)
+  except RuntimeError as e:
+    if "SW=6A88" in str(e):
+      return []
+    raise
 
 
 def set_profile_nickname(client: AtClient, iccid: str, nickname: str) -> None:
@@ -462,7 +469,13 @@ def es9p_request(smdp_address: str, endpoint: str, payload: dict, error_prefix: 
 # --- Notifications ---
 
 def list_notifications(client: AtClient) -> list[dict]:
-  response = es10x_command(client, encode_tlv(TAG_LIST_NOTIFICATION, b""))
+  try:
+    response = es10x_command(client, encode_tlv(TAG_LIST_NOTIFICATION, b""))
+  except RuntimeError as e:
+    if "SW=6A88" in str(e):
+      return []
+    raise
+    
   root = require_tag(response, TAG_LIST_NOTIFICATION, "ListNotificationResponse")
   metadata_list = find_tag(root, TAG_OK)
   if metadata_list is None:
@@ -605,7 +618,9 @@ def load_bpp(client: AtClient, b64_bpp: str) -> dict:
   for chunk in _split_bpp(bpp):
     response = es10x_command(client, chunk)
     if response:
-      result = _parse_install_result(response) or result
+      res = _parse_install_result(response)
+      if res:
+        result = dict(result, **res) if result else res
 
   if result is None:
     raise RuntimeError("Profile installation failed: no result from eUICC")
@@ -660,7 +675,7 @@ def _cancel_session_safe(client: AtClient, smdp: str, tx_id: str, session: reque
     pass
 
 
-def download_profile(client: AtClient, activation_code: str) -> str:
+def download_profile(client: AtClient, activation_code: str, confirmation_code: str | None = None) -> str:
   """Download and install an eSIM profile. Returns the ICCID of the installed profile."""
   if not system_time_valid():
     raise RuntimeError("System time is not set; TLS certificate validation requires a valid clock")
@@ -692,7 +707,7 @@ def download_profile(client: AtClient, activation_code: str) -> str:
     # step 4: prepare download
     b64_prep = prepare_download(client,
       _b64_field(cli, "smdpSigned2"), _b64_field(cli, "smdpSignature2"),
-      _b64_field(cli, "smdpCertificate"))
+      _b64_field(cli, "smdpCertificate"), cc=confirmation_code)
 
     # step 5: get and install bound profile package
     bpp = es9p_request(smdp, "getBoundProfilePackage", {
@@ -763,9 +778,9 @@ class TiciLPA(LPABase):
     if code != PROFILE_OK:
       raise LPAError(f"DeleteProfile failed: {PROFILE_ERROR_CODES.get(code, 'unknown')} (0x{code:02X})")
 
-  def download_profile(self, qr: str, nickname: str | None = None) -> None:
+  def download_profile(self, qr: str, confirmation_code: str | None = None, nickname: str | None = None) -> None:
     with self._acquire_channel():
-      iccid = download_profile(self._client, qr)
+      iccid = download_profile(self._client, qr, confirmation_code)
       if nickname and iccid:
         set_profile_nickname(self._client, iccid, nickname)
 

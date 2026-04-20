@@ -3,10 +3,12 @@ from openpilot.selfdrive.ui.mici.layouts.settings.network import WifiNetworkButt
 from openpilot.selfdrive.ui.mici.layouts.settings.network.wifi_ui import WifiUIMici
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigMultiToggle, BigParamControl, BigToggle
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigInputDialog
+from openpilot.selfdrive.ui.mici.layouts.settings.network.esim_ui import EsimManagementLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.lib.prime_state import PrimeType
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.wifi_manager import WifiManager, Network, MeteredType
+from openpilot.system.hardware import HARDWARE
 
 
 class NetworkLayoutMici(NavScroller):
@@ -75,6 +77,10 @@ class NetworkLayoutMici(NavScroller):
     # ******** Cellular metered toggle ********
     self._cellular_metered_btn = BigParamControl("cellular metered", "GsmMetered", toggle_callback=self._toggle_cellular_metered)
 
+    # ******** eSIM management ********
+    self._esim_btn = BigButton("esim management", "manage")
+    self._esim_btn.set_click_callback(self._open_esim_management)
+
     # Main scroller ----------------------------------
     self._scroller.add_widgets([
       self._wifi_button,
@@ -85,6 +91,7 @@ class NetworkLayoutMici(NavScroller):
       self._roaming_btn,
       self._apn_btn,
       self._cellular_metered_btn,
+      self._esim_btn,
       # */
     ])
 
@@ -103,6 +110,9 @@ class NetworkLayoutMici(NavScroller):
     self._apn_btn.set_visible(show_cell_settings)
     self._cellular_metered_btn.set_visible(show_cell_settings)
 
+    # Hide on unsupported devices, show on tici/mici regardless of prime sub
+    self._esim_btn.set_visible(HARDWARE.get_device_type() in ("tici", "pc", "mici"))
+
   def show_event(self):
     super().show_event()
     self._wifi_manager.set_active(True)
@@ -115,6 +125,11 @@ class NetworkLayoutMici(NavScroller):
     self._wifi_manager.set_active(False)
 
     gui_app.remove_nav_stack_tick(self._wifi_manager.process_callbacks)
+
+  def _open_esim_management(self):
+    def back_to_network():
+      gui_app.pop_widget()
+    gui_app.push_widget(EsimManagementLayoutMici(back_callback=back_to_network))
 
   def _toggle_roaming(self, checked: bool):
     self._wifi_manager.update_gsm_settings(checked, ui_state.params.get("GsmApn") or "", ui_state.params.get_bool("GsmMetered"))

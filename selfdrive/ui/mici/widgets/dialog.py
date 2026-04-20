@@ -24,9 +24,9 @@ class BigDialogBase(NavWidget, abc.ABC):
 
 
 class BigDialog(BigDialogBase):
-  def __init__(self, title: str, description: str, icon: Union[rl.Texture, None] = None):
+  def __init__(self, title: str, description: str, icon: Union[rl.Texture, None] = None, scroll: bool = False):
     super().__init__()
-    self._card = GreyBigButton(title, description, icon)
+    self._card = GreyBigButton(title, description, icon, scroll=scroll)
 
   def _render(self, _):
     self._card.render(rl.Rectangle(
