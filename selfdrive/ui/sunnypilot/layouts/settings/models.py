@@ -42,7 +42,7 @@ class ModelsLayout(Widget):
     self._initialize_items()
 
     self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
-    for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay")]:
+    for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay"), (self.camera_offset, "CameraOffset")]:
       ctrl.action_item.set_value(int(float(ui_state.params.get(key, return_default=True)) * 100))
 
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
@@ -92,9 +92,14 @@ class ModelsLayout(Widget):
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
+    self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
+                                                  tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
+                                                  1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
+                                                  lambda v: f"{v / 100:.2f} m")
+
     self.items = [self.current_model_item, self.cancel_download_item, self.supercombo_label, self.vision_label,
-                  self.policy_label, self.off_policy_label, self.on_policy_label, self.refresh_item, self.clear_cache_item, self.lane_turn_desire_toggle,
-                  self.lane_turn_value_control, self.lagd_toggle, self.delay_control]
+                  self.policy_label, self.off_policy_label, self.on_policy_label, self.refresh_item, self.clear_cache_item,
+                  self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
@@ -231,6 +236,7 @@ class ModelsLayout(Widget):
     advanced_controls: bool = ui_state.params.get_bool("ShowAdvancedControls")
     turn_desire: bool = ui_state.params.get_bool("LaneTurnDesire")
     live_delay: bool = ui_state.params.get_bool("LagdToggle")
+    camera_offset: bool = ui_state.params.get("ModelManager_ActiveBundle") is not None
 
     self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
@@ -239,6 +245,7 @@ class ModelsLayout(Widget):
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item.value_change_step != new_step:
       self.lane_turn_value_control.action_item.value_change_step = new_step
+    self.camera_offset.set_visible(camera_offset)
 
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
