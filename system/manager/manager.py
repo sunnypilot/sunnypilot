@@ -73,6 +73,7 @@ def manager_init() -> None:
   params.put("Version", build_metadata.openpilot.version)
   params.put("GitCommit", build_metadata.openpilot.git_commit)
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
+  params.put("GitCommitDescription", build_metadata.openpilot.git_commit_description)
   params.put("GitBranch", build_metadata.channel)
   params.put("GitRemote", build_metadata.openpilot.git_origin)
   params.put_bool("IsDevelopmentBranch", build_metadata.development_channel)

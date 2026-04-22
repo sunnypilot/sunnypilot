@@ -8,7 +8,7 @@ import subprocess
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.swaglog import cloudlog
-from openpilot.common.git import get_commit, get_origin, get_branch, get_short_branch, get_commit_date
+from openpilot.common.git import get_commit, get_origin, get_branch, get_short_branch, get_commit_date, get_commit_description
 
 RELEASE_SP_BRANCHES = ['release-c3', 'release', 'release-tizi', 'release-tici', 'release-tizi-staging', 'release-tici-staging']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new', 'staging']
@@ -88,6 +88,7 @@ class OpenpilotMetadata:
   git_commit: str
   git_origin: str
   git_commit_date: str
+  git_commit_description: str
   build_style: str
   is_dirty: bool  # whether there are local changes
 
@@ -174,6 +175,7 @@ def build_metadata_from_dict(build_metadata: dict) -> BuildMetadata:
   git_commit = openpilot_metadata.get("git_commit", "unknown")
   git_origin = openpilot_metadata.get("git_origin", "unknown")
   git_commit_date = openpilot_metadata.get("git_commit_date", "unknown")
+  git_commit_description = openpilot_metadata.get("git_commit_description", "unknown")
   build_style = openpilot_metadata.get("build_style", "unknown")
   return BuildMetadata(channel,
             OpenpilotMetadata(
@@ -182,6 +184,7 @@ def build_metadata_from_dict(build_metadata: dict) -> BuildMetadata:
               git_commit=git_commit,
               git_origin=git_origin,
               git_commit_date=git_commit_date,
+              git_commit_description=git_commit_description,
               build_style=build_style,
               is_dirty=False))
 
@@ -203,6 +206,7 @@ def get_build_metadata(path: str = BASEDIR) -> BuildMetadata:
                       git_commit=get_commit(path),
                       git_origin=get_origin(path),
                       git_commit_date=get_commit_date(path),
+                      git_commit_description=get_commit_description(path),
                       build_style="unknown",
                       is_dirty=is_dirty(path)))
 

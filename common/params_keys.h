@@ -46,6 +46,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"GitBranch", {PERSISTENT, STRING}},
     {"GitCommit", {PERSISTENT, STRING}},
     {"GitCommitDate", {PERSISTENT, STRING}},
+    {"GitCommitDescription", {PERSISTENT, STRING}},
     {"GitDiff", {PERSISTENT, STRING}},
     {"GithubSshKeys", {PERSISTENT | BACKUP, STRING}},
     {"GithubUsername", {PERSISTENT | BACKUP, STRING}},

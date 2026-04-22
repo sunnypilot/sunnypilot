@@ -14,6 +14,11 @@ def get_commit_date(cwd: str | None = None, commit: str = "HEAD") -> str:
 
 
 @cache
+def get_commit_description(cwd: str | None = None, commit: str = "HEAD") -> str:
+  return run_cmd_default(["git", "show", "-s", "--format=%s", commit], cwd=cwd)
+
+
+@cache
 def get_short_branch(cwd: str | None = None) -> str:
   return run_cmd_default(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
 
