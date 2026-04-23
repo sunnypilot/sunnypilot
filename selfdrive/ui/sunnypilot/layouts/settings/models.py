@@ -41,7 +41,7 @@ class ModelsLayout(Widget):
 
     self._initialize_items()
 
-    self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+    self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
     for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay")]:
       ctrl.action_item.set_value(int(float(ui_state.params.get(key, return_default=True)) * 100))
 
@@ -58,6 +58,8 @@ class ModelsLayout(Widget):
     self.supercombo_label = progress_item(tr("Driving Model"))
     self.vision_label = progress_item(tr("Vision Model"))
     self.policy_label = progress_item(tr("Policy Model"))
+    self.off_policy_label = progress_item(tr("Off-Policy Model"))
+    self.on_policy_label = progress_item(tr("On-Policy Model"))
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
@@ -91,7 +93,7 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.items = [self.current_model_item, self.cancel_download_item, self.supercombo_label, self.vision_label,
-                  self.policy_label, self.refresh_item, self.clear_cache_item, self.lane_turn_desire_toggle,
+                  self.policy_label, self.off_policy_label, self.on_policy_label, self.refresh_item, self.clear_cache_item, self.lane_turn_desire_toggle,
                   self.lane_turn_value_control, self.lagd_toggle, self.delay_control]
 
   def _update_lagd_description(self, lagd_toggle: bool):
@@ -110,7 +112,7 @@ class ModelsLayout(Widget):
             self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
 
   @staticmethod
-  def _calculate_cache_size():
+  def calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
       cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
@@ -120,7 +122,7 @@ class ModelsLayout(Widget):
     def _callback(response):
       if response == DialogResult.CONFIRM:
         ui_state.params.put_bool("ModelManager_ClearCache", True)
-        self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+        self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
                            tr("Clear Cache"), callback=_callback)
@@ -129,7 +131,9 @@ class ModelsLayout(Widget):
   def _handle_bundle_download_progress(self):
     labels = {custom.ModelManagerSP.Model.Type.supercombo: self.supercombo_label,
               custom.ModelManagerSP.Model.Type.vision: self.vision_label,
-              custom.ModelManagerSP.Model.Type.policy: self.policy_label}
+              custom.ModelManagerSP.Model.Type.policy: self.policy_label,
+              custom.ModelManagerSP.Model.Type.offPolicy: self.off_policy_label,
+              custom.ModelManagerSP.Model.Type.onPolicy: self.on_policy_label}
     for label in labels.values():
       label.set_visible(False)
     self.cancel_download_item.set_visible(False)
@@ -151,7 +155,7 @@ class ModelsLayout(Widget):
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
-      self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+      self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()

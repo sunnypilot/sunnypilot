@@ -152,6 +152,7 @@ class TogglesLayout(Widget):
       ui_state.personality = personality
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
     self._update_toggles()
 

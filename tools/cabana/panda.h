@@ -64,7 +64,7 @@ public:
   // Panda functionality
   cereal::PandaState::PandaType get_hw_type();
   void set_safety_model(cereal::CarParams::SafetyModel safety_model, uint16_t safety_param=0U);
-  void send_heartbeat(bool engaged);
+  void send_heartbeat(bool engaged, bool engaged_mads = false);
   void set_can_speed_kbps(uint16_t bus, uint16_t speed);
   void set_data_speed_kbps(uint16_t bus, uint16_t speed);
   bool can_receive(std::vector<can_frame>& out_vec);

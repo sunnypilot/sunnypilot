@@ -105,7 +105,7 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
 
-  @pytest.mark.parametrize("car_name", [RIVIAN.RIVIAN_R1_GEN1, TESLA.TESLA_MODEL_Y], indirect=True)
+  @pytest.mark.parametrize("car_name", [RIVIAN.RIVIAN_R1, TESLA.TESLA_MODEL_Y], indirect=True)
   def test_disallowed_brands(self, car_name):
     """
       Speed Limit Assist is disabled for the following brands and conditions:
