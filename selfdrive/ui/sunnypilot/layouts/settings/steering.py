@@ -120,20 +120,12 @@ class SteeringLayout(Widget):
   def _update_state(self):
     super()._update_state()
 
-    torque_allowed = True
+    torque_allowed = ui_state.CP is not None and ui_state.CP.steerControlType != car.CarParams.SteerControlType.angle
     if ui_state.CP is not None:
       mads_main_desc = self._mads_limited_desc if self._mads_settings_layout._mads_limited_settings() else self._mads_full_desc
       self._mads_toggle.set_description(f"<b>{mads_main_desc}</b><br><br>{self._mads_base_desc}")
-
-      if ui_state.CP.steerControlType == car.CarParams.SteerControlType.angle:
-        ui_state.params.remove("EnforceTorqueControl")
-        ui_state.params.remove("NeuralNetworkLateralControl")
-        torque_allowed = False
     else:
       self._mads_toggle.set_description(f"<b>{self._mads_check_compat_desc}</b><br><br>{self._mads_base_desc}")
-      ui_state.params.remove("EnforceTorqueControl")
-      ui_state.params.remove("NeuralNetworkLateralControl")
-      torque_allowed = False
 
     self._mads_toggle.action_item.set_enabled(ui_state.is_offroad())
     self._mads_settings_button.action_item.set_enabled(ui_state.is_offroad() and self._mads_toggle.action_item.get_state())

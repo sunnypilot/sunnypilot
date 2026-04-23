@@ -24,6 +24,10 @@ SP_BRANCH_MIGRATIONS = {
   ("tizi", "staging-c3-new"): "staging",
   ("tizi", "dev-c3-new"): "dev",
   ("tizi", "master-dev-c3-new"): "master-dev",
+  ("tizi", "release3"): "release-tizi",
+  ("tizi", "release3-staging"): "release-tizi-staging",
+  ("mici", "release3"): "release-mici",
+  ("mici", "release3-staging"): "release-mici-staging",
   ("tici", "hkg-angle-steering-2025"): "hkg-angle-steering-2025-tici",
   ("tici", "hkg-angle-steering-2025-prebuilt"): "hkg-angle-steering-2025-tici-prebuilt"
 }

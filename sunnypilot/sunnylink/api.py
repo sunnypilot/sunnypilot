@@ -12,6 +12,9 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.system.hardware.hw import Paths
 
 API_HOST = os.getenv('SUNNYLINK_API_HOST', 'https://stg.api.sunnypilot.ai')
+# Athena HTTP gateway (serves ws/settings/navigation paths). CloudFront proxy
+# from stg.api.sunnypilot.ai is being retired; clients must call athena direct.
+ATHENA_HOST = 'https://athena.sunnylink.ai'
 UNREGISTERED_SUNNYLINK_DONGLE_ID = "UnregisteredDevice"
 MAX_RETRIES = 6
 CRASH_LOG_DIR = Paths.crash_log_root()
@@ -32,7 +35,12 @@ class SunnylinkApi(BaseApi):
 
   def resume_queued(self, timeout=10, **kwargs):
     sunnylinkId, commaId = self._resolve_dongle_ids()
-    return self.api_get(f"ws/{sunnylinkId}/resume_queued", "POST", timeout, access_token=self.get_token(), **kwargs)
+    saved_host = self.api_host
+    self.api_host = ATHENA_HOST
+    try:
+      return self.api_get(f"ws/{sunnylinkId}/resume_queued", "POST", timeout, access_token=self.get_token(), **kwargs)
+    finally:
+      self.api_host = saved_host
 
   def get_token(self, payload_extra=None, expiry_hours=1):
     # Add your additional data here

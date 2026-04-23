@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sunnypilot.com/schemas/settings_ui.schema.json",
+  "title": "sunnypilot Settings UI Schema",
+  "description": "Defines the structure of the sunnypilot settings UI panels, items, rules, and vehicle-specific settings.",
+  "type": "object",
+  "required": ["schema_version", "panels", "vehicle_settings"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor support."
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Version of the settings UI schema format.",
+      "examples": ["1.0"]
+    },
+    "panels": {
+      "type": "array",
+      "description": "Top-level settings panels displayed in the UI.",
+      "items": {
+        "$ref": "#/$defs/Panel"
+      }
+    },
+    "vehicle_settings": {
+      "type": "object",
+      "description": "Brand-keyed vehicle-specific settings. Each key is a car brand (e.g. 'hyundai', 'toyota').",
+      "additionalProperties": {
+        "$ref": "#/$defs/VehicleBrandSettings"
+      }
+    }
+  },
+  "$defs": {
+    "Panel": {
+      "type": "object",
+      "description": "A top-level settings panel (tab) in the UI.",
+      "required": ["id", "label", "icon", "order"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this panel."
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label shown in the UI."
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon identifier for this panel."
+        },
+        "order": {
+          "type": "integer",
+          "description": "Sort order for panel display.",
+          "minimum": 0
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description shown below the panel label."
+        },
+        "remote_configurable": {
+          "type": "boolean",
+          "description": "Whether this panel's settings can be changed remotely via sunnylink.",
+          "default": false
+        },
+        "sections": {
+          "type": "array",
+          "description": "Grouped sections within this panel.",
+          "items": {
+            "$ref": "#/$defs/PanelSection"
+          }
+        },
+        "items": {
+          "type": "array",
+          "description": "Settings items directly in this panel (no section grouping).",
+          "items": {
+            "$ref": "#/$defs/SchemaItem"
+          }
+        },
+        "sub_panels": {
+          "type": "array",
+          "description": "Nested sub-panels triggered by a setting.",
+          "items": {
+            "$ref": "#/$defs/SubPanel"
+          }
+        }
+      }
+    },
+    "PanelSection": {
+      "type": "object",
+      "description": "A grouped section within a panel.",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this section."
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title for this section."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description shown below the section title."
+        },
+        "order": {
+          "type": "integer",
+          "description": "Sort order within the parent panel.",
+          "minimum": 0
+        },
+        "visibility": {
+          "type": "array",
+          "description": "Rules that determine whether this section is visible. All rules must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "enablement": {
+          "type": "array",
+          "description": "Rules that determine whether items in this section are enabled. All rules must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "attestation_required": {
+          "type": "boolean",
+          "description": "When true, the UI must show an attestation modal before any write to items in this section.",
+          "default": false
+        },
+        "items": {
+          "type": "array",
+          "description": "Settings items within this section.",
+          "items": {
+            "$ref": "#/$defs/SchemaItem"
+          }
+        },
+        "sub_panels": {
+          "type": "array",
+          "description": "Nested sub-panels within this section.",
+          "items": {
+            "$ref": "#/$defs/SubPanel"
+          }
+        }
+      }
+    },
+    "VehicleBrandSettings": {
+      "type": "object",
+      "description": "Brand-specific settings group inside vehicle_settings.",
+      "required": ["items"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Display title for this brand's settings group."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description shown below the brand title."
+        },
+        "items": {
+          "type": "array",
+          "description": "Settings items for this brand.",
+          "items": {
+            "$ref": "#/$defs/SchemaItem"
+          }
+        }
+      }
+    },
+    "SchemaItem": {
+      "type": "object",
+      "description": "A single settings item (toggle, option selector, button group, etc.).",
+      "required": ["key", "widget"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "The param key this item reads/writes."
+        },
+        "widget": {
+          "type": "string",
+          "description": "The UI widget type to render.",
+          "enum": ["toggle", "option", "multiple_button", "button", "info"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Override display title (defaults to metadata lookup by key)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Override description text."
+        },
+        "options": {
+          "type": "array",
+          "description": "Available options for 'option' or 'multiple_button' widgets.",
+          "items": {
+            "$ref": "#/$defs/SchemaOption"
+          }
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum value for numeric option widgets."
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum value for numeric option widgets."
+        },
+        "step": {
+          "type": "number",
+          "description": "Step increment for numeric option widgets."
+        },
+        "unit": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Static unit label (e.g. 'seconds', 'm/s²')."
+            },
+            {
+              "type": "object",
+              "description": "Dynamic unit that changes based on IsMetric param.",
+              "required": ["metric", "imperial"],
+              "additionalProperties": false,
+              "properties": {
+                "metric": {
+                  "type": "string",
+                  "description": "Unit label when IsMetric is true (e.g. 'km/h')."
+                },
+                "imperial": {
+                  "type": "string",
+                  "description": "Unit label when IsMetric is false (e.g. 'mph')."
+                }
+              }
+            }
+          ],
+          "description": "Unit label for numeric values. Use a string for static units or an object with metric/imperial variants for units that depend on the IsMetric param."
+        },
+        "value_map": {
+          "type": "object",
+          "description": "Maps stored values to display labels.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "visibility": {
+          "type": "array",
+          "description": "Rules that determine whether this item is visible. All rules must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "enablement": {
+          "type": "array",
+          "description": "Rules that determine whether this item is enabled/interactive. All rules must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        },
+        "sub_items": {
+          "type": "array",
+          "description": "Child items nested under this item (e.g. options revealed by a toggle).",
+          "items": {
+            "$ref": "#/$defs/SchemaItem"
+          }
+        },
+        "action": {
+          "type": "string",
+          "description": "Action identifier for button widgets."
+        },
+        "title_param_suffix": {
+          "type": "object",
+          "description": "Renders an extra suffix in the item title chosen by the value of another param.",
+          "required": ["param", "values"],
+          "additionalProperties": false,
+          "properties": {
+            "param": {
+              "type": "string",
+              "description": "Param key whose value selects the suffix label."
+            },
+            "values": {
+              "type": "object",
+              "description": "Map from stringified param value to suffix label.",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "needs_onroad_cycle": {
+          "type": "boolean",
+          "description": "When true, the device must cycle onroad/offroad for the new value to take effect.",
+          "default": false
+        },
+        "blocked": {
+          "type": "boolean",
+          "description": "When true, this item is treated as DEVICE_ONLY and the dashboard must not write it remotely.",
+          "default": false
+        },
+        "requires_attestation": {
+          "type": "boolean",
+          "description": "When true, writes to this item require an explicit per-write confirmation modal.",
+          "default": false
+        }
+      }
+    },
+    "SubPanel": {
+      "type": "object",
+      "description": "A nested panel that opens when triggered by a parent item.",
+      "required": ["id", "label", "trigger_key"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this sub-panel."
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label for the sub-panel header."
+        },
+        "trigger_key": {
+          "type": "string",
+          "description": "The param key that triggers opening this sub-panel."
+        },
+        "trigger_condition": {
+          "$ref": "#/$defs/Rule",
+          "description": "Optional rule that must evaluate to true for the sub-panel trigger to be active."
+        },
+        "items": {
+          "type": "array",
+          "description": "Settings items within this sub-panel.",
+          "items": {
+            "$ref": "#/$defs/SchemaItem"
+          }
+        }
+      }
+    },
+    "SchemaOption": {
+      "type": "object",
+      "description": "A selectable option for option/multiple_button widgets.",
+      "required": ["value", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "oneOf": [
+            { "type": "number" },
+            { "type": "string" }
+          ],
+          "description": "The stored value when this option is selected."
+        },
+        "label": {
+          "type": "string",
+          "description": "The display label for this option."
+        },
+        "enablement": {
+          "type": "array",
+          "description": "Rules that determine whether this option is selectable. All rules must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          }
+        }
+      }
+    },
+    "Rule": {
+      "description": "A visibility or enablement rule. Discriminated union on the 'type' field.",
+      "oneOf": [
+        { "$ref": "#/$defs/RuleOffroadOnly" },
+        { "$ref": "#/$defs/RuleNotEngaged" },
+        { "$ref": "#/$defs/RuleCapability" },
+        { "$ref": "#/$defs/RuleParam" },
+        { "$ref": "#/$defs/RuleParamCompare" },
+        { "$ref": "#/$defs/RuleNot" },
+        { "$ref": "#/$defs/RuleAny" },
+        { "$ref": "#/$defs/RuleAll" }
+      ]
+    },
+    "RuleOffroadOnly": {
+      "type": "object",
+      "description": "Rule that passes only when the device is offroad.",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "offroad_only"
+        }
+      }
+    },
+    "RuleNotEngaged": {
+      "type": "object",
+      "description": "Rule that passes when the vehicle is not engaged (matches Raylib `engaged = started AND (selfdriveState.enabled OR selfdriveStateSP.mads.enabled)`).",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "not_engaged"
+        }
+      }
+    },
+    "RuleCapability": {
+      "type": "object",
+      "description": "Rule that checks a vehicle capability field against an expected value.",
+      "required": ["type", "field", "equals"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "capability"
+        },
+        "field": {
+          "type": "string",
+          "description": "The capability field name to check."
+        },
+        "equals": {
+          "description": "The expected value to match against."
+        }
+      }
+    },
+    "RuleParam": {
+      "type": "object",
+      "description": "Rule that checks a param value against an expected value.",
+      "required": ["type", "key", "equals"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "param"
+        },
+        "key": {
+          "type": "string",
+          "description": "The param key to read."
+        },
+        "equals": {
+          "description": "The expected value to match against."
+        }
+      }
+    },
+    "RuleParamCompare": {
+      "type": "object",
+      "description": "Rule that compares a numeric param value using a comparison operator.",
+      "required": ["type", "key", "op", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "param_compare"
+        },
+        "key": {
+          "type": "string",
+          "description": "The param key to read."
+        },
+        "op": {
+          "type": "string",
+          "description": "Comparison operator.",
+          "enum": [">", "<", ">=", "<="]
+        },
+        "value": {
+          "type": "number",
+          "description": "The numeric value to compare against."
+        }
+      }
+    },
+    "RuleNot": {
+      "type": "object",
+      "description": "Rule that negates a single child condition.",
+      "required": ["type", "condition"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "not"
+        },
+        "condition": {
+          "$ref": "#/$defs/Rule",
+          "description": "The rule to negate."
+        }
+      }
+    },
+    "RuleAny": {
+      "type": "object",
+      "description": "Rule that passes if ANY of the child conditions pass (logical OR).",
+      "required": ["type", "conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "any"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Child rules; at least one must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "RuleAll": {
+      "type": "object",
+      "description": "Rule that passes only if ALL child conditions pass (logical AND).",
+      "required": ["type", "conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "all"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Child rules; all must pass.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}
