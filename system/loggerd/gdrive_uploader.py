@@ -290,6 +290,14 @@ class GDriveUploader:
     if folder_id:
       if isinstance(folder_id, bytes):
         folder_id = folder_id.decode('utf8').strip()
+      
+      # If the user typed a friendly name or nested path (like "/comma/abc/") rather than a 33-char ID
+      if 0 < len(folder_id) < 100 and ('/' in folder_id or len(folder_id) < 28):
+          path_parts = [p for p in folder_id.split('/') if p]
+          current_parent = None
+          for p in path_parts:
+              current_parent = self.get_or_create_folder(access_token, current_parent, p)
+          folder_id = current_parent
 
     # Get un-uploaded files
     files = self.list_files()
