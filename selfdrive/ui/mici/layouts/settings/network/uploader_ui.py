@@ -13,7 +13,7 @@ class DashcamUploaderLayoutMici(NavScroller):
 
     # Provider Toggle
     self._provider_toggle = BigMultiParamToggle(
-      "upload provider", 
+      "provider", 
       "DashcamUploaderProvider", 
       ["none", "google drive", "rsync"],
       select_callback=self._on_provider_changed
@@ -24,14 +24,14 @@ class DashcamUploaderLayoutMici(NavScroller):
 
     # Sync Connection Toggle
     self._sync_mode_toggle = BigMultiParamToggle(
-      "sync connection", 
+      "sync mode", 
       "DashcamUploaderSyncMode", 
       ["off", "wifi-only", "wifi+lte"]
     )
 
     # Video Mode Toggle
     self._video_mode_toggle = BigMultiParamToggle(
-      "video upload",
+      "video mode",
       "DashcamUploaderVideoMode",
       ["off", "low-res", "high-res"]
     )
