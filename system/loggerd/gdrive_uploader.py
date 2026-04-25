@@ -59,16 +59,21 @@ class GDriveUploader:
     except Exception:
       return False
       
-    sync_mode = self.params.get("DashcamUploaderSyncMode")
-    if sync_mode is None or sync_mode == b"0":
+    sync_raw = self.params.get("DashcamUploaderSyncMode")
+    try:
+      smode = int(sync_raw)
+    except Exception:
+      smode = 0
+      
+    if smode == 0:
       return False
 
     network_type = sm['deviceState'].networkType
     metered = sm['deviceState'].networkMetered
 
-    if sync_mode == b"1": # WiFi Only
+    if smode == 1: # WiFi Only
       return network_type == NetworkType.wifi and not metered
-    elif sync_mode == b"2": # WiFi + LTE
+    elif smode == 2: # WiFi + LTE
       return network_type != NetworkType.none
       
     return False
