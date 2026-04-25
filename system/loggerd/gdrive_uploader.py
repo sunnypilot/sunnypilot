@@ -94,27 +94,19 @@ class GDriveUploader:
     if not os.path.isdir(log_root):
       return files_to_upload
 
-    for route_dir in os.listdir(log_root):
-      route_path = os.path.join(log_root, route_dir)
-      if not os.path.isdir(route_path):
+    for d in os.listdir(log_root):
+      path = os.path.join(log_root, d)
+      if not os.path.isdir(path):
         continue
 
       try:
-        # Openpilot stores files in segments like <route_id>/0/, <route_id>/1/
-        for seg_dir in os.listdir(route_path):
-          seg_path = os.path.join(route_path, seg_dir)
-          if not os.path.isdir(seg_path):
-            continue
-            
-          names = os.listdir(seg_path)
-          for name in names:
-            if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
-              fn = os.path.join(seg_path, name)
-              # Unique name for uploading to flat folder: route--segment--filename
-              upload_name = f"{route_dir}--{seg_dir}--{name}"
-              is_uploaded = getxattr(fn, GD_UPLOAD_ATTR_NAME) == GD_UPLOAD_ATTR_VALUE
-              if not is_uploaded:
-                files_to_upload.append((upload_name, fn))
+        names = os.listdir(path)
+        for name in names:
+          if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
+            fn = os.path.join(path, name)
+            is_uploaded = getxattr(fn, GD_UPLOAD_ATTR_NAME) == GD_UPLOAD_ATTR_VALUE
+            if not is_uploaded:
+              files_to_upload.append((name, fn))
       except OSError:
         continue
 
