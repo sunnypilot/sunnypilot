@@ -200,4 +200,17 @@ if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   copyparty_args += ["-q"]
   procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
+def use_syncthing(started, params, CP: car.CarParams) -> bool:
+  return params.get("DashcamUploaderProvider") == b"1" and os.path.exists("/data/syncthing/syncthing")
+
+def use_gdrive(started, params, CP: car.CarParams) -> bool:
+  return params.get("DashcamUploaderProvider") == b"2"
+
+def use_rsync(started, params, CP: car.CarParams) -> bool:
+  return params.get("DashcamUploaderProvider") == b"3"
+
+procs += [NativeProcess("syncthing", ".", ["/data/syncthing/syncthing", "-no-browser", "-gui-address=0.0.0.0:8384"], and_(uploader_ready, use_syncthing))]
+procs += [PythonProcess("gdrive_uploader", "system.loggerd.gdrive_uploader", and_(uploader_ready, use_gdrive))]
+procs += [PythonProcess("rsync_uploader", "system.loggerd.rsync_uploader", and_(uploader_ready, use_rsync))]
+
 managed_processes = {p.name: p for p in procs}

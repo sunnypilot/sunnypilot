@@ -4,6 +4,7 @@ from openpilot.selfdrive.ui.mici.layouts.settings.network.wifi_ui import WifiUIM
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigMultiToggle, BigParamControl, BigToggle
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigInputDialog
 from openpilot.selfdrive.ui.mici.layouts.settings.network.esim_ui import EsimManagementLayoutMici
+from openpilot.selfdrive.ui.mici.layouts.settings.network.uploader_ui import DashcamUploaderLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.lib.prime_state import PrimeType
 from openpilot.system.ui.lib.application import gui_app
@@ -81,10 +82,15 @@ class NetworkLayoutMici(NavScroller):
     self._esim_btn = BigButton("esim management", "not connected")
     self._esim_btn.set_click_callback(self._open_esim_management)
 
+    # ******** Offline Uploads ********
+    self._uploader_btn = BigButton("offline uploads", "configure")
+    self._uploader_btn.set_click_callback(self._open_uploader_management)
+
     # Main scroller ----------------------------------
     self._scroller.add_widgets([
       self._wifi_button,
       self._esim_btn,
+      self._uploader_btn,
       self._network_metered_btn,
       self._tethering_toggle_btn,
       self._tethering_password_btn,
@@ -134,6 +140,11 @@ class NetworkLayoutMici(NavScroller):
     def back_to_network():
       gui_app.pop_widget()
     gui_app.push_widget(EsimManagementLayoutMici(back_callback=back_to_network))
+
+  def _open_uploader_management(self):
+    def back_to_network():
+      gui_app.pop_widget()
+    gui_app.push_widget(DashcamUploaderLayoutMici(back_callback=back_to_network))
 
   def _toggle_roaming(self, checked: bool):
     self._wifi_manager.update_gsm_settings(checked, ui_state.params.get("GsmApn") or "", ui_state.params.get_bool("GsmMetered"))
