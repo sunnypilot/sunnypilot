@@ -41,13 +41,17 @@ class RsyncUploader:
     return False
 
   def list_files(self):
-    video_mode = self.params.get("DashcamUploaderVideoMode") or b"0"
+    video_raw = self.params.get("DashcamUploaderVideoMode")
+    try:
+      vm = int(video_raw)
+    except Exception:
+      vm = 0
     upload_logs = self.params.get_bool("DashcamUploaderUploadLogs")
     
     target_exts = []
-    if video_mode == b"1":
+    if vm == 1:
       target_exts.extend(["qcamera.ts"])
-    elif video_mode == b"2":
+    elif vm == 2:
       target_exts.extend(["fcamera.hevc", "vcamera.hevc", "ecamera.hevc"])
 
     if upload_logs:
@@ -59,19 +63,26 @@ class RsyncUploader:
     if not os.path.isdir(log_root):
       return files_to_upload
 
-    for d in os.listdir(log_root):
-      path = os.path.join(log_root, d)
-      if not os.path.isdir(path):
+    for route_dir in os.listdir(log_root):
+      route_path = os.path.join(log_root, route_dir)
+      if not os.path.isdir(route_path):
         continue
 
       try:
-        names = os.listdir(path)
-        for name in names:
-          if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
-            fn = os.path.join(path, name)
-            is_uploaded = getxattr(fn, RSYNC_UPLOAD_ATTR_NAME) == RSYNC_UPLOAD_ATTR_VALUE
-            if not is_uploaded:
-              files_to_upload.append((name, fn))
+        # Openpilot stores files in segments like <route_id>/0/, <route_id>/1/
+        for seg_dir in os.listdir(route_path):
+          seg_path = os.path.join(route_path, seg_dir)
+          if not os.path.isdir(seg_path):
+            continue
+            
+          names = os.listdir(seg_path)
+          for name in names:
+            if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
+              fn = os.path.join(seg_path, name)
+              upload_name = f"{route_dir}--{seg_dir}--{name}"
+              is_uploaded = getxattr(fn, RSYNC_UPLOAD_ATTR_NAME) == RSYNC_UPLOAD_ATTR_VALUE
+              if not is_uploaded:
+                files_to_upload.append((upload_name, fn))
       except OSError:
         continue
 
