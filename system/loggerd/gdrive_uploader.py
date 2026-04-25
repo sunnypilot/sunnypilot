@@ -21,6 +21,7 @@ GD_UPLOAD_ATTR_VALUE = b'1'
 class GDriveUploader:
   def __init__(self):
     self.params = Params()
+    self._folder_cache = {}
 
   def get_token(self, auth_json_str):
     try:
@@ -111,13 +112,83 @@ class GDriveUploader:
         for name in names:
           if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
             fn = os.path.join(path, name)
+            
+            # Format: '2026-04-25--18-05-15--0'
+            parts = d.split('--')
+            upload_name = name
+            date_folder = None
+            if len(parts) >= 2:
+              date_folder = parts[0]
+              time_str = parts[1].replace('-', ':')
+              seg_str = parts[2] if len(parts) >= 3 else "0"
+              
+              # Map names
+              nmap = {
+                "fcamera.hevc": "front", "qcamera.ts": "front-lowres", 
+                "ecamera.hevc": "wide", "vcamera.hevc": "cabin",
+                "qlog.bz2": "qlog", "rlog.bz2": "rlog"
+              }
+              prefix = nmap.get(name, name.split('.')[0])
+              ext = name.split('.')[-1]
+              
+              upload_name = f"{prefix}-{time_str}-seg{seg_str}.{ext}"
+
             is_uploaded = getxattr(fn, GD_UPLOAD_ATTR_NAME) == GD_UPLOAD_ATTR_VALUE
             if not is_uploaded:
-              files_to_upload.append((name, fn))
+              files_to_upload.append((upload_name, fn, date_folder))
       except OSError:
         continue
 
     return files_to_upload
+
+  def get_or_create_folder(self, access_token, parent_id, folder_name):
+    # Check cache
+    cache_key = f"{parent_id}_{folder_name}"
+    if cache_key in self._folder_cache:
+      return self._folder_cache[cache_key]
+
+    # Search existing
+    q = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    if parent_id:
+      q += f" and '{parent_id}' in parents"
+
+    try:
+      resp = requests.get(
+        "https://www.googleapis.com/drive/v3/files",
+        headers={"Authorization": f"Bearer {access_token}"},
+        params={"q": q, "spaces": "drive", "fields": "files(id, name)"},
+        timeout=10
+      )
+      if resp.status_code == 200 and resp.json().get('files'):
+        f_id = resp.json()['files'][0]['id']
+        self._folder_cache[cache_key] = f_id
+        return f_id
+    except Exception:
+      pass
+
+    # Create new
+    try:
+      metadata = {
+        "name": folder_name,
+        "mimeType": "application/vnd.google-apps.folder"
+      }
+      if parent_id:
+        metadata["parents"] = [parent_id]
+        
+      resp = requests.post(
+        "https://www.googleapis.com/drive/v3/files",
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        json=metadata,
+        timeout=10
+      )
+      if resp.status_code == 200:
+        f_id = resp.json().get('id')
+        self._folder_cache[cache_key] = f_id
+        return f_id
+    except Exception:
+      pass
+      
+    return parent_id
 
   def upload_file(self, access_token, name, fn, folder_id):
     try:
@@ -225,8 +296,13 @@ class GDriveUploader:
 
     # Upload files (limit to e.g. 5 per cycle to prevent endless blocks)
     uploaded_any = False
-    for name, fn in files[:5]:
-      success = self.upload_file(access_token, name, fn, folder_id)
+    for upload_name, fn, date_folder in files[:5]:
+      # Create or get the specific date folder ID
+      target_folder_id = folder_id
+      if date_folder:
+         target_folder_id = self.get_or_create_folder(access_token, folder_id, date_folder)
+
+      success = self.upload_file(access_token, upload_name, fn, target_folder_id)
       if success:
         uploaded_any = True
       time.sleep(1) # Breath
