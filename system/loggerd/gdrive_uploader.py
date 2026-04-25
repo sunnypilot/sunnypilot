@@ -54,7 +54,7 @@ class GDriveUploader:
 
   def is_upload_allowed(self, sm):
     provider = self.params.get("DashcamUploaderProvider")
-    if provider != b"2":
+    if provider != b"1":
       return False
       
     sync_mode = self.params.get("DashcamUploaderSyncMode")

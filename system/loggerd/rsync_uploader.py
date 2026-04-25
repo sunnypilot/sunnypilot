@@ -23,7 +23,7 @@ class RsyncUploader:
 
   def is_upload_allowed(self, sm):
     provider = self.params.get("DashcamUploaderProvider")
-    if provider != b"3":
+    if provider != b"2":
       return False
       
     sync_mode = self.params.get("DashcamUploaderSyncMode")
