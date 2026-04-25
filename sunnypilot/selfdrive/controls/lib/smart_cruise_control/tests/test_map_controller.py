@@ -4,13 +4,17 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import json
+import math
 import platform
+
+import pytest
 
 from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
-from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.map_controller import SmartCruiseControlMap
+from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.map_controller import R, SmartCruiseControlMap
 
 MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
 
@@ -54,5 +58,18 @@ class TestSmartCruiseControlMap:
     for _ in range(int(10. / DT_MDL)):
       self.scc_m.update(True, False, 0., 0., 0.)
     assert self.scc_m.state == VisionState.enabled
+
+  def test_moderate_curve(self):
+    # Regression: `... / 2 * a` parsed as `(.../2)*a` instead of `.../(2*a)`,
+    # making max_d ~11x too small so the moderate-curve branch never tripped.
+    # v_ego=25, a_ego=0, tv=24: fixed max_d≈45m vs buggy ≈4m at a 40m waypoint.
+    waypoint_lon_deg = (40.0 / R) * (180.0 / math.pi)
+    self.mem_params.put("LastGPSPosition", json.dumps({"latitude": 0.0, "longitude": 0.0}))
+    self.mem_params.put("MapTargetVelocities",
+                        json.dumps([{"latitude": 0.0, "longitude": waypoint_lon_deg, "velocity": 24.0}]))
+
+    self.scc_m.update(True, False, 25.0, 0.0, 30.0)
+
+    assert self.scc_m.v_target == pytest.approx(24.0)
 
   # TODO-SP: mock data from modelV2 to test other states
