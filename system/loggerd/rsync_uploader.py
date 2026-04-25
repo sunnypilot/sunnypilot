@@ -81,24 +81,31 @@ class RsyncUploader:
           if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
             fn = os.path.join(path, name)
             
-            # Format: '2026-04-25--18-05-15--0'
+            import datetime
             parts = d.split('--')
             upload_name = name
-            if len(parts) >= 2:
-              date_folder = parts[0]
-              time_str = parts[1].replace('-', ':')
-              seg_str = parts[2] if len(parts) >= 3 else "0"
-              
-              nmap = {
-                "fcamera.hevc": "front", "qcamera.ts": "front-lowres", 
-                "ecamera.hevc": "wide", "vcamera.hevc": "cabin",
-                "qlog.bz2": "qlog", "rlog.bz2": "rlog"
-              }
-              prefix = nmap.get(name, name.split('.')[0])
-              ext = name.split('.')[-1]
-              
-              # Rsync can receive a relative path to target
-              upload_name = f"{date_folder}/{prefix}-{time_str}-seg{seg_str}.{ext}"
+            
+            # Universal fallback: Get exact recording time from folder timestamp
+            try:
+                mod_time = os.path.getmtime(path)
+                dt = datetime.datetime.fromtimestamp(mod_time)
+                date_folder = dt.strftime('%Y-%m-%d')
+                time_str = dt.strftime('%H:%M:%S')
+            except Exception:
+                date_folder = "UnknownFolder"
+                time_str = "00:00:00"
+
+            seg_str = parts[-1] if len(parts) >= 2 else "0"
+            
+            nmap = {
+              "fcamera.hevc": "front", "qcamera.ts": "front-lowres", 
+              "ecamera.hevc": "wide", "vcamera.hevc": "cabin",
+              "qlog.bz2": "qlog", "rlog.bz2": "rlog"
+            }
+            prefix = nmap.get(name, name.split('.')[0])
+            ext = name.split('.')[-1]
+            
+            upload_name = f"{date_folder}/{prefix}-{time_str}-seg{seg_str}.{ext}"
 
             is_uploaded = getxattr(fn, RSYNC_UPLOAD_ATTR_NAME) == RSYNC_UPLOAD_ATTR_VALUE
             if not is_uploaded:

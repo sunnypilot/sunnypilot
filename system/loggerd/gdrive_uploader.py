@@ -112,26 +112,34 @@ class GDriveUploader:
         for name in names:
           if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
             fn = os.path.join(path, name)
-            
-            # Format: '2026-04-25--18-05-15--0'
+            # Parse dynamic route structure or rely on filesystem dates for custom forks
+            import datetime
             parts = d.split('--')
             upload_name = name
             date_folder = None
-            if len(parts) >= 2:
-              date_folder = parts[0]
-              time_str = parts[1].replace('-', ':')
-              seg_str = parts[2] if len(parts) >= 3 else "0"
-              
-              # Map names
-              nmap = {
-                "fcamera.hevc": "front", "qcamera.ts": "front-lowres", 
-                "ecamera.hevc": "wide", "vcamera.hevc": "cabin",
-                "qlog.bz2": "qlog", "rlog.bz2": "rlog"
-              }
-              prefix = nmap.get(name, name.split('.')[0])
-              ext = name.split('.')[-1]
-              
-              upload_name = f"{prefix}-{time_str}-seg{seg_str}.{ext}"
+            
+            # Universal fallback: Get the exact recording time from the folder's timestamp
+            try:
+                mod_time = os.path.getmtime(path)
+                dt = datetime.datetime.fromtimestamp(mod_time)
+                date_folder = dt.strftime('%Y-%m-%d')
+                time_str = dt.strftime('%H:%M:%S')
+            except Exception:
+                date_folder = "Unknown Date"
+                time_str = "00:00:00"
+
+            seg_str = parts[-1] if len(parts) >= 2 else "0"
+            
+            # Map names
+            nmap = {
+              "fcamera.hevc": "front", "qcamera.ts": "front-lowres", 
+              "ecamera.hevc": "wide", "vcamera.hevc": "cabin",
+              "qlog.bz2": "qlog", "rlog.bz2": "rlog"
+            }
+            prefix = nmap.get(name, name.split('.')[0])
+            ext = name.split('.')[-1]
+            
+            upload_name = f"{prefix}-{time_str}-seg{seg_str}.{ext}"
 
             is_uploaded = getxattr(fn, GD_UPLOAD_ATTR_NAME) == GD_UPLOAD_ATTR_VALUE
             if not is_uploaded:
