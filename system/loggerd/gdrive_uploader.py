@@ -113,22 +113,27 @@ class GDriveUploader:
           if any(name.endswith(ext) for ext in target_exts) or any(name == ext for ext in target_exts):
             fn = os.path.join(path, name)
             # Parse dynamic route structure or rely on filesystem dates for custom forks
-            import datetime
+            # Openpilot native route format: "2024-05-24--13-42-05" 
+            # Sub-segment format: "2024-05-24--13-42-05--2"
             parts = d.split('--')
-            upload_name = name
-            date_folder = None
             
-            # Universal fallback: Get the exact recording time from the folder's timestamp
-            try:
-                mod_time = os.path.getmtime(path)
-                dt = datetime.datetime.fromtimestamp(mod_time)
-                date_folder = dt.strftime('%Y-%m-%d')
-                time_str = dt.strftime('%H:%M:%S')
-            except Exception:
-                date_folder = "Unknown Date"
-                time_str = "00:00:00"
+            # 1. Parse Openpilot Route Name (Exact Start Time)
+            if len(parts) >= 2:
+                # e.g. parts[0] is "2024-05-24", parts[1] is "13-42-05"
+                date_folder = parts[0]
+                time_str = f"T{parts[1]}" # "T13-42-05"
+            else:
+                # 2. Fallback: Directory modification time
+                try:
+                    mod_time = os.path.getmtime(path)
+                    dt = datetime.datetime.fromtimestamp(mod_time)
+                    date_folder = dt.strftime('%Y-%m-%d')
+                    time_str = dt.strftime('T%H-%M-%S') # Clean for windows
+                except Exception:
+                    date_folder = "Unknown Date"
+                    time_str = "T00-00-00"
 
-            seg_str = parts[-1] if len(parts) >= 2 else "0"
+            seg_str = parts[-1] if len(parts) >= 3 else "0"
             
             # Map names
             nmap = {
