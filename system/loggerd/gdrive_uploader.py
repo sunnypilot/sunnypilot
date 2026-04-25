@@ -286,6 +286,19 @@ class GDriveUploader:
     if isinstance(auth_json_str, bytes):
       auth_json_str = auth_json_str.decode('utf8')
 
+
+
+    # Get un-uploaded files
+    files = self.list_files()
+    if not files:
+      return False
+
+    # Get Token
+    access_token = self.get_token(auth_json_str)
+    if not access_token:
+      cloudlog.warning("GDrive Uploader has zero valid access tokens")
+      return False
+
     folder_id = self.params.get("DashcamUploaderGDFolder")
     if folder_id:
       if isinstance(folder_id, bytes):
@@ -298,17 +311,6 @@ class GDriveUploader:
           for p in path_parts:
               current_parent = self.get_or_create_folder(access_token, current_parent, p)
           folder_id = current_parent
-
-    # Get un-uploaded files
-    files = self.list_files()
-    if not files:
-      return False
-
-    # Get Token
-    access_token = self.get_token(auth_json_str)
-    if not access_token:
-      cloudlog.warning("GDrive Uploader has zero valid access tokens")
-      return False
 
     # Upload files (limit to e.g. 5 per cycle to prevent endless blocks)
     uploaded_any = False

@@ -1,5 +1,6 @@
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigMultiParamToggle, BigParamControl
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigInputDialog, BigConfirmationDialog
+import os
 from openpilot.system.ui.widgets.scroller import NavScroller
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.params import Params
@@ -52,6 +53,10 @@ class DashcamUploaderLayoutMici(NavScroller):
     self._rsync_key_btn = BigButton("rsync private key")
     self._rsync_key_btn.set_click_callback(self._edit_rsync_key)
 
+    # Reset Queue Button
+    self._reset_queue_btn = BigButton("reset upload queue")
+    self._reset_queue_btn.set_click_callback(self._confirm_reset_queue)
+
     self._scroller.add_widgets([
       self._provider_toggle,
       self._sync_mode_toggle,
@@ -61,7 +66,8 @@ class DashcamUploaderLayoutMici(NavScroller):
       self._gdrive_auth_btn,
       self._gdrive_folder_btn,
       self._rsync_target_btn,
-      self._rsync_key_btn
+      self._rsync_key_btn,
+      self._reset_queue_btn
     ])
 
     self._update_visibility()
@@ -83,6 +89,7 @@ class DashcamUploaderLayoutMici(NavScroller):
     self._video_mode_toggle.set_visible(idx > 0)
     self._upload_logs_toggle.set_visible(idx > 0)
     self._delete_synced_toggle.set_visible(idx > 0)
+    self._reset_queue_btn.set_visible(idx > 0)
     
     self._gdrive_auth_btn.set_visible(is_gd)
     self._gdrive_folder_btn.set_visible(is_gd)
@@ -129,4 +136,31 @@ class DashcamUploaderLayoutMici(NavScroller):
     def update(val: str):
       self._params.put("DashcamUploaderRsyncKey", val)
     dlg = BigInputDialog("paste base64 or raw private key...", current, minimum_length=0, confirm_callback=update)
+    gui_app.push_widget(dlg)
+
+  def _confirm_reset_queue(self):
+    def clear_flags():
+      count = 0
+      log_root = '/data/media/0/realdata/'
+      try:
+        if os.path.exists(log_root):
+          for root, dirs, files in os.walk(log_root):
+            for f in files:
+              path = os.path.join(root, f)
+              try:
+                if os.getxattr(path, 'user.gd_upload') == b'1':
+                  os.removexattr(path, 'user.gd_upload')
+                  count += 1
+              except Exception:
+                pass
+              try:
+                if os.getxattr(path, 'user.rsync_upload') == b'1':
+                  os.removexattr(path, 'user.rsync_upload')
+                  count += 1
+              except Exception:
+                pass
+      except Exception:
+        pass
+        
+    dlg = BigConfirmationDialog("reset upload queue", "", confirm_callback=clear_flags, red=True)
     gui_app.push_widget(dlg)
