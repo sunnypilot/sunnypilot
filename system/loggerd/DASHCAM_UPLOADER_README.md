@@ -53,6 +53,19 @@ Regardless, the script will systematically sort 100% of your drives natively usi
 ### 5. Managing the Queue / Resetting Uploads
 Because the daemon caches its progress, it will never upload the same video twice. If you accidentally delete a file on your Google Drive and need the Comma to push it back up, simply navigate to your Comma's screen, go to the Uploader settings, and press **Reset Upload Queue**. This instantly strips the hidden tags off your files unconditionally and places them right back at the front of the line!
 
+### 6. Troubleshooting & Manual Execution
+If nothing seems to be uploading and you suspect an authentication error, you can bypass the background process manager entirely and run the synchronizers directly in your terminal. This will immediately spit out any underlying server or token errors into your console for easy debugging:
+
+**Test Google Drive Uploader:**
+```bash
+cd /data/openpilot && python3 system/loggerd/gdrive_uploader.py
+```
+
+**Test Rsync Uploader:**
+```bash
+cd /data/openpilot && python3 system/loggerd/rsync_uploader.py
+```
+
 ---
 
 ## Bonus: Google Apps Auto-Delete CRON Script
