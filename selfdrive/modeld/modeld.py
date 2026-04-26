@@ -3,6 +3,10 @@ import os
 from openpilot.selfdrive.modeld.tinygrad_helpers import MODELS_DIR, set_tinygrad_backend_from_compiled_flags
 set_tinygrad_backend_from_compiled_flags()
 
+# FIXME-SP: remove once we bump tg
+from openpilot.system.hardware import TICI
+os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
+
 USBGPU = "USBGPU" in os.environ
 if USBGPU:
   os.environ['DEV'] = 'AMD'
