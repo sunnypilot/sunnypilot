@@ -33,12 +33,14 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
 
   full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
   big_full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
+  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  new_big_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
     img_inputs = [full_buffer,
-                  Tensor(np.random.randint(0, 256, yuv_size, dtype=np.uint8)).realize(),
+                  Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                   Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     big_img_inputs = [big_full_buffer,
-                      Tensor(np.random.randint(0, 256, yuv_size, dtype=np.uint8)).realize(),
+                      Tensor.from_blob(new_big_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                       Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     inputs = img_inputs + big_img_inputs
     Device.default.synchronize()
@@ -114,8 +116,8 @@ class Warp:
       self.full_buffers['img'], road_blob, self.transforms['img'],
       self.full_buffers['big_img'], wide_blob, self.transforms['big_img'],
     )
-    self.full_buffers['img'], out_road = res[0].realize(), res[1].realize()
-    self.full_buffers['big_img'], out_wide = res[2].realize(), res[3].realize()
+    out_road = res[0].realize()
+    out_wide = res[1].realize()
 
     return {road: out_road, wide: out_wide}
 
