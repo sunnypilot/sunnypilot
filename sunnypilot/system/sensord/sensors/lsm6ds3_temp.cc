@@ -28,8 +28,9 @@ bool LSM6DS3_Temp::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initTemperatureSensor();
   event.setSource(source);
-  event.setVersion(1);
-  event.setType(SENSOR_TYPE_AMBIENT_TEMPERATURE);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(1);
+  deprecated.setType(SENSOR_TYPE_AMBIENT_TEMPERATURE);
   event.setTimestamp(start_time);
   event.setTemperature(temp);
 

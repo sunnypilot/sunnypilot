@@ -219,9 +219,10 @@ bool LSM6DS3_Gyro::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initGyroscope();
   event.setSource(source);
-  event.setVersion(2);
-  event.setSensor(SENSOR_GYRO_UNCALIBRATED);
-  event.setType(SENSOR_TYPE_GYROSCOPE_UNCALIBRATED);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(2);
+  deprecated.setSensor(SENSOR_GYRO_UNCALIBRATED);
+  deprecated.setType(SENSOR_TYPE_GYROSCOPE_UNCALIBRATED);
   event.setTimestamp(ts);
 
   float xyz[] = {y, -x, z};

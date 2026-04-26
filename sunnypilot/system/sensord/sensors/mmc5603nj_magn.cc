@@ -91,9 +91,10 @@ bool MMC5603NJ_Magn::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initMagnetometer();
   event.setSource(cereal::SensorEventData::SensorSource::MMC5603NJ);
-  event.setVersion(1);
-  event.setSensor(SENSOR_MAGNETOMETER_UNCALIBRATED);
-  event.setType(SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(1);
+  deprecated.setSensor(SENSOR_MAGNETOMETER_UNCALIBRATED);
+  deprecated.setType(SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED);
   event.setTimestamp(start_time);
 
   float vals[] = {xyz[0], xyz[1], xyz[2], reset_xyz[0], reset_xyz[1], reset_xyz[2]};

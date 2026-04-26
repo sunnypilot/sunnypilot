@@ -229,9 +229,10 @@ bool BMX055_Magn::get_event(MessageBuilder &msg, uint64_t ts) {
 
     auto event = msg.initEvent().initMagnetometer();
     event.setSource(cereal::SensorEventData::SensorSource::BMX055);
-    event.setVersion(2);
-    event.setSensor(SENSOR_MAGNETOMETER_UNCALIBRATED);
-    event.setType(SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED);
+    auto deprecated = event.initDeprecated();
+    deprecated.setVersion(2);
+    deprecated.setSensor(SENSOR_MAGNETOMETER_UNCALIBRATED);
+    deprecated.setType(SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED);
     event.setTimestamp(start_time);
 
     // Move magnetometer into same reference frame as accel/gryo

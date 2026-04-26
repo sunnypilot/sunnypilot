@@ -71,9 +71,10 @@ bool BMX055_Accel::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initAccelerometer2();
   event.setSource(cereal::SensorEventData::SensorSource::BMX055);
-  event.setVersion(1);
-  event.setSensor(SENSOR_ACCELEROMETER);
-  event.setType(SENSOR_TYPE_ACCELEROMETER);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(1);
+  deprecated.setSensor(SENSOR_ACCELEROMETER);
+  deprecated.setType(SENSOR_TYPE_ACCELEROMETER);
   event.setTimestamp(start_time);
 
   float xyz[] = {x, y, z};

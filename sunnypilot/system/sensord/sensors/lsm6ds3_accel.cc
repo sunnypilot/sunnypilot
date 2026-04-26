@@ -236,9 +236,10 @@ bool LSM6DS3_Accel::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initAccelerometer();
   event.setSource(source);
-  event.setVersion(1);
-  event.setSensor(SENSOR_ACCELEROMETER);
-  event.setType(SENSOR_TYPE_ACCELEROMETER);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(1);
+  deprecated.setSensor(SENSOR_ACCELEROMETER);
+  deprecated.setType(SENSOR_TYPE_ACCELEROMETER);
   event.setTimestamp(ts);
 
   float xyz[] = {y, -x, z};
