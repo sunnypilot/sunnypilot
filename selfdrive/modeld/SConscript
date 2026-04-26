@@ -20,14 +20,14 @@ def estimate_pickle_max_size(onnx_size):
 # get fastest TG config
 available = set(Device.get_available_devices())
 # FIXME-SP: reset when we bump tg
-if False: # 'CUDA' in available:
+if False:  # 'CUDA' in available:
   tg_backend = 'CUDA'
   tg_flags = f'DEV={tg_backend}'
 elif 'QCOM' in available:
   tg_backend = 'QCOM'
   tg_flags = f'DEV={tg_backend} FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0'
 else:
-  tg_backend = 'CPU' if arch == 'Darwin' else 'CPU CPU_LLVM=1'
+  tg_backend = 'CPU' if arch == 'Darwin' else 'CPU CPU_LLVM=1'  # FIXME-SP: reset when we bump tg
   tg_flags = f'DEV={tg_backend} THREADS=0'
 
 def write_tg_compiled_flags(target, source, env):
