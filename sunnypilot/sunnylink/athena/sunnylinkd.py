@@ -69,7 +69,6 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
               threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
               threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
               threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
-              threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
               threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
               threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
               threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
@@ -150,37 +149,6 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
   cloudlog.debug("sunnylinkd.ws_ping.end_event is set, exiting ws_ping thread")
-
-
-def ws_queue(end_event: threading.Event) -> None:
-  sunnylink_dongle_id = params.get("SunnylinkDongleId")
-  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
-  resume_requested = False
-  tries = 0
-
-  while not end_event.is_set() and not resume_requested:
-    try:
-      if not resume_requested:
-        cloudlog.debug("sunnylinkd.ws_queue.resume_queued")
-        sunnylink_api.resume_queued(timeout=29)
-        resume_requested = True
-        tries = 0
-    except Exception as e:
-      if isinstance(e, (ConnectionError, TimeoutError)):
-        cloudlog.warning(f"sunnylinkd.ws_queue.resume_queued.{type(e).__name__}")
-      else:
-        cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
-
-      resume_requested = False
-      tries += 1
-      time.sleep(backoff(tries))
-
-  if end_event.is_set():
-    cloudlog.debug("end_event is set, exiting ws_queue thread")
-  elif resume_requested:
-    cloudlog.debug(f"Resume requested to server after {tries} tries")
-  else:
-    cloudlog.error(f"Reached end of ws_queue while end_event is not set and resume_requested is {resume_requested}")
 
 
 def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event: threading.Event) -> None:
