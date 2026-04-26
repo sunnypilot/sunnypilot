@@ -22,15 +22,19 @@ from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext import La
 # Additionally, there is friction in the steering wheel that needs
 # to be overcome to move it at all, this is compensated for too.
 
-KP = 0.8
-KI = 0.15
-
 INTERP_SPEEDS = [1, 1.5, 2.0, 3.0, 5, 7.5, 10, 15, 30]
-KP_INTERP = [250, 120, 65, 30, 11.5, 5.5, 3.5, 2.0, KP]
+KP_INTERP = [150.0, 100.0, 30.0, 6.0, 2.0, 1.5, 1.2, 0.8, 0.5]
+KI_INTERP = [0.06, 0.06, 0.06, 0.08, 0.08, 0.10, 0.12, 0.14, 0.16]
+JERK_INTERP = [0.25, 0.25, 0.25, 0.23, 0.20, 0.18, 0.16, 0.15, 0.15]
+MEAS_FILTER_TAU_INTERP = [0.07, 0.07, 0.07, 0.07, 0.07, 0.06, 0.06, 0.05, 0.01]
+INTEGRATOR_DECAY_INTERP = [0.990, 0.990, 0.990, 0.992, 0.993, 0.995, 0.996, 0.998, 0.999]
+INTEGRATOR_DECAY_FRAMES = 20
+STRAIGHT_DAMP_THRESHOLD_INTERP = [0.03, 0.03, 0.03, 0.03, 0.03, 0.05, 0.05, 0.2, 0.2]
+STRAIGHT_DAMP_MIN_INTERP = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+STRAIGHT_DAMP_TAU = 0.5
 
 LP_FILTER_CUTOFF_HZ = 1.2
-JERK_LOOKAHEAD_SECONDS = 0.19
-JERK_GAIN = 0.3
+JERK_LOOKAHEAD_SECONDS = 0.30
 LAT_ACCEL_REQUEST_BUFFER_SECONDS = 1.0
 VERSION = 1
 
@@ -40,13 +44,16 @@ class LatControlTorque(LatControl):
     self.torque_params = CP.lateralTuning.torque.as_builder()
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.lateral_accel_from_torque = CI.lateral_accel_from_torque()
-    self.pid = PIDController([INTERP_SPEEDS, KP_INTERP], KI, rate=1/self.dt)
+    self.pid = PIDController([INTERP_SPEEDS, KP_INTERP], [INTERP_SPEEDS, KI_INTERP], rate=1/self.dt)
     self.update_limits()
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
     self.lat_accel_request_buffer_len = int(LAT_ACCEL_REQUEST_BUFFER_SECONDS / self.dt)
     self.lat_accel_request_buffer = deque([0.] * self.lat_accel_request_buffer_len , maxlen=self.lat_accel_request_buffer_len)
     self.lookahead_frames = int(JERK_LOOKAHEAD_SECONDS / self.dt)
     self.jerk_filter = FirstOrderFilter(0.0, 1 / (2 * np.pi * LP_FILTER_CUTOFF_HZ), self.dt)
+    self.measurement_filter = FirstOrderFilter(0.0, 0.04, self.dt)
+    self.integrator_decay_counter = 0
+    self.straight_damp_filter = FirstOrderFilter(1.0, STRAIGHT_DAMP_TAU, self.dt)
 
     self.extension = LatControlTorqueExt(self, CP, CP_SP, CI)
 
@@ -68,7 +75,9 @@ class LatControlTorque(LatControl):
     pid_log = log.ControlsState.LateralTorqueState.new_message()
     pid_log.version = VERSION
     measured_curvature = -VM.calc_curvature(math.radians(CS.steeringAngleDeg - params.angleOffsetDeg), CS.vEgo, params.roll)
-    measurement = measured_curvature * CS.vEgo ** 2
+    meas_tau = float(np.interp(CS.vEgo, INTERP_SPEEDS, MEAS_FILTER_TAU_INTERP))
+    self.measurement_filter.update_alpha(meas_tau)
+    measurement = self.measurement_filter.update(measured_curvature * CS.vEgo ** 2)
     future_desired_lateral_accel = desired_curvature * CS.vEgo ** 2
     self.lat_accel_request_buffer.append(future_desired_lateral_accel)
 
@@ -79,7 +88,12 @@ class LatControlTorque(LatControl):
     delay_frames = int(np.clip(lat_delay / self.dt + 1, 1, self.lat_accel_request_buffer_len))
     expected_lateral_accel = self.lat_accel_request_buffer[-delay_frames]
     setpoint = expected_lateral_accel
-    error = setpoint - measurement
+    raw_error = setpoint - measurement
+    damp_min = float(np.interp(CS.vEgo, INTERP_SPEEDS, STRAIGHT_DAMP_MIN_INTERP))
+    damp_threshold = float(np.interp(CS.vEgo, INTERP_SPEEDS, STRAIGHT_DAMP_THRESHOLD_INTERP))
+    damp_target = max(damp_min, min(1.0, abs(setpoint) / damp_threshold))
+    damp_factor = self.straight_damp_filter.update(damp_target)
+    error = raw_error * damp_factor
 
     lookahead_idx = int(np.clip(-delay_frames + self.lookahead_frames, -self.lat_accel_request_buffer_len+1, -2))
     raw_lateral_jerk = (self.lat_accel_request_buffer[lookahead_idx+1] - self.lat_accel_request_buffer[lookahead_idx-1]) / (2 * self.dt)
@@ -88,7 +102,8 @@ class LatControlTorque(LatControl):
     ff = gravity_adjusted_future_lateral_accel
     # latAccelOffset corrects roll compensation bias from device roll misalignment relative to car roll
     ff -= self.torque_params.latAccelOffset
-    ff += get_friction(error + JERK_GAIN * desired_lateral_jerk, lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
+    jerk_gain = float(np.interp(CS.vEgo, INTERP_SPEEDS, JERK_INTERP))
+    ff += get_friction(error + jerk_gain * desired_lateral_jerk, lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
 
     if not active:
       output_torque = 0.0
@@ -99,6 +114,15 @@ class LatControlTorque(LatControl):
 
       freeze_integrator = steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
       output_lataccel = self.pid.update(pid_log.error, speed=CS.vEgo, feedforward=ff, freeze_integrator=freeze_integrator)
+
+      error_opposes_integrator = (self.pid.i > 0 and pid_log.error < 0) or (self.pid.i < 0 and pid_log.error > 0)
+      if error_opposes_integrator:
+        self.integrator_decay_counter = min(self.integrator_decay_counter + 1, INTEGRATOR_DECAY_FRAMES + 10)
+      else:
+        self.integrator_decay_counter = 0
+      if self.integrator_decay_counter >= INTEGRATOR_DECAY_FRAMES:
+        self.pid.i *= float(np.interp(CS.vEgo, INTERP_SPEEDS, INTEGRATOR_DECAY_INTERP))
+
       output_torque = self.torque_from_lateral_accel(output_lataccel, self.torque_params)
 
       # Lateral acceleration torque controller extension updates
