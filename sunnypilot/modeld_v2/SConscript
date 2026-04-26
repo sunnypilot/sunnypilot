@@ -22,7 +22,7 @@ if PC:
     lenv.Command(outputs, inputs, cmd)
 
 tg_flags = {
-  'larch64': 'DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0',
+  'larch64': 'DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1',
   'Darwin': f'DEV=CPU THREADS=0 HOME={os.path.expanduser("~")}',
 }.get(arch, 'DEV=CPU CPU_LLVM=1 THREADS=0')
 
@@ -46,9 +46,9 @@ for model_name in ['supercombo', 'driving_vision', 'driving_off_policy', 'drivin
   if File(f"models/{model_name}.onnx").exists():
     tg_compile(tg_flags, model_name)
 
-script_files = [File("warp.py"), File(Dir("#selfdrive/modeld").File("compile_warp.py").abspath)]
+script_files = [File("warp.py"), File(Dir("#selfdrive/modeld").File("compile_modeld.py").abspath)]
 pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + ':' + env.Dir("#").abspath + '"'
-compile_warp_cmd = f'{pythonpath_string} {tg_flags} python3 -m sunnypilot.modeld_v2.warp'
+compile_warp_cmd = f'{pythonpath_string} {tg_flags} {image_flag} python3 -m sunnypilot.modeld_v2.warp'
 
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
 warp_targets = []
