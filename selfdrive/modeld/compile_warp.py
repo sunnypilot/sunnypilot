@@ -136,12 +136,14 @@ def compile_modeld_warp(cam_w, cam_h):
 
   full_buffer = Tensor.zeros(IMG_BUFFER_SHAPE, dtype='uint8').contiguous().realize()
   big_full_buffer = Tensor.zeros(IMG_BUFFER_SHAPE, dtype='uint8').contiguous().realize()
+  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  new_big_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
     img_inputs = [full_buffer,
-                  Tensor(np.random.randint(0, 256, yuv_size, dtype=np.uint8)).realize(),
+                  Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                   Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     big_img_inputs = [big_full_buffer,
-                      Tensor(np.random.randint(0, 256, yuv_size, dtype=np.uint8)).realize(),
+                      Tensor.from_blob(new_big_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                       Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     inputs = img_inputs + big_img_inputs
     Device.default.synchronize()
@@ -171,8 +173,9 @@ def compile_dm_warp(cam_w, cam_h):
   warp_dm = make_warp_dm(cam_w, cam_h, dm_w, dm_h)
   warp_dm_jit = TinyJit(warp_dm, prune=True)
 
+  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
-    inputs = [Tensor(np.random.randint(0, 256, yuv_size, dtype=np.uint8)).realize(),
+    inputs = [Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
               Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     Device.default.synchronize()
     st = time.perf_counter()
