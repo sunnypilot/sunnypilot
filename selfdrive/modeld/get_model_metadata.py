@@ -7,10 +7,6 @@ from typing import Any
 
 from tinygrad.nn.onnx import OnnxPBParser
 
-def metadata_path_for(onnx_path) -> pathlib.Path:
-  p = pathlib.Path(onnx_path)
-  return p.parent / (p.stem + '_metadata.pkl')
-
 
 class MetadataOnnxPBParser(OnnxPBParser):
   def _parse_ModelProto(self) -> dict:
@@ -52,7 +48,7 @@ if __name__ == "__main__":
     'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
   }
 
-  metadata_path = metadata_path_for(model_path)
+  metadata_path = model_path.parent / (model_path.stem + '_metadata.pkl')
   with open(metadata_path, 'wb') as f:
     pickle.dump(metadata, f)
 
