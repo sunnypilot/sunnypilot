@@ -6,29 +6,61 @@ from tinygrad.tensor import Tensor
 from tinygrad.engine.jit import TinyJit
 from tinygrad.device import Device
 
+# https://github.com/tinygrad/tinygrad/issues/15682
+from tinygrad.uop.ops import UOp, Ops
+_orig = UOp.__reduce__
+UOp.__reduce__ = lambda self: (UOp.unique, ()) if self.op is Ops.UNIQUE else _orig(self)
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-from openpilot.selfdrive.modeld.compile_warp import (
-  CAMERA_CONFIGS, MEDMODEL_INPUT_SIZE, make_frame_prepare, make_update_both_imgs,
-  warp_pkl_path,
+from openpilot.selfdrive.modeld.compile_modeld import (
+  NV12Frame, make_frame_prepare,
 )
+from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
+
+CAMERA_CONFIGS = [
+  (_ar_ox_fisheye.width, _ar_ox_fisheye.height),  # tici: 1928x1208
+  (_os_fisheye.width, _os_fisheye.height),        # mici: 1344x760
+]
+from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE
 
 MODELS_DIR = Path(__file__).parent / 'models'
-MODEL_W, MODEL_H = MEDMODEL_INPUT_SIZE
+
 UPSTREAM_BUFFER_LENGTH = 5
+
+def warp_pkl_path(cam_w, cam_h):
+  return MODELS_DIR / f'warp_{cam_w}x{cam_h}_tinygrad.pkl'
+
+def make_update_img_input(frame_prepare, model_w, model_h):
+  def update_img_input_tinygrad(tensor, frame, M_inv):
+    M_inv = M_inv.to(Device.DEFAULT)
+    new_img = frame_prepare(frame, M_inv)
+    tensor.assign(tensor[6:].cat(new_img, dim=0).contiguous())
+    return Tensor.cat(tensor[:6], tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
+  return update_img_input_tinygrad
+
+def make_update_both_imgs(frame_prepare, model_w, model_h):
+  update_img = make_update_img_input(frame_prepare, model_w, model_h)
+
+  def update_both_imgs_tinygrad(calib_img_buffer, new_img, M_inv,
+                                calib_big_img_buffer, new_big_img, M_inv_big):
+    calib_img_pair = update_img(calib_img_buffer, new_img, M_inv)
+    calib_big_img_pair = update_img(calib_big_img_buffer, new_big_img, M_inv_big)
+    return calib_img_pair, calib_big_img_pair
+  return update_both_imgs_tinygrad
 
 
 def v2_warp_pkl_path(cam_w, cam_h, buffer_length):
   return MODELS_DIR / f'warp_{cam_w}x{cam_h}_b{buffer_length}_tinygrad.pkl'
 
 
-def compile_v2_warp(cam_w, cam_h, buffer_length):
+def compile_v2_warp(cam_w, cam_h, buffer_length, model_w=MEDMODEL_INPUT_SIZE[0], model_h=MEDMODEL_INPUT_SIZE[1]):
   _, _, _, yuv_size = get_nv12_info(cam_w, cam_h)
-  img_buffer_shape = (buffer_length * 6, MODEL_H // 2, MODEL_W // 2)
+  img_buffer_shape = (buffer_length * 6, model_h // 2, model_w // 2)
 
   print(f"Compiling v2 warp for {cam_w}x{cam_h} buffer_length={buffer_length}...")
 
-  frame_prepare = make_frame_prepare(cam_w, cam_h, MODEL_W, MODEL_H)
-  update_both_imgs = make_update_both_imgs(frame_prepare, MODEL_W, MODEL_H)
+  nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+  frame_prepare = make_frame_prepare(nv12, model_w, model_h)
+  update_both_imgs = make_update_both_imgs(frame_prepare, model_w, model_h)
   update_img_jit = TinyJit(update_both_imgs, prune=True)
 
   full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
@@ -62,9 +94,11 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
 
 
 class Warp:
-  def __init__(self, buffer_length=2):
+  def __init__(self, buffer_length=2, model_w=MEDMODEL_INPUT_SIZE[0], model_h=MEDMODEL_INPUT_SIZE[1]):
     self.buffer_length = buffer_length
-    self.img_buffer_shape = (buffer_length * 6, MODEL_H // 2, MODEL_W // 2)
+    self.model_w = model_w
+    self.model_h = model_h
+    self.img_buffer_shape = (buffer_length * 6, model_h // 2, model_w // 2)
 
     self.jit_cache = {}
     self.full_buffers = {k: Tensor.zeros(self.img_buffer_shape, dtype='uint8').contiguous().realize() for k in ['img', 'big_img']}
@@ -92,8 +126,9 @@ class Warp:
           with open(upstream_pkl, 'rb') as f:
             self.jit_cache[key] = pickle.load(f)
       if key not in self.jit_cache:
-        frame_prepare = make_frame_prepare(cam_w, cam_h, MODEL_W, MODEL_H)
-        update_both_imgs = make_update_both_imgs(frame_prepare, MODEL_W, MODEL_H)
+        nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+        frame_prepare = make_frame_prepare(nv12, self.model_w, self.model_h)
+        update_both_imgs = make_update_both_imgs(frame_prepare, self.model_w, self.model_h)
         self.jit_cache[key] = TinyJit(update_both_imgs, prune=True)
 
     if key not in self._nv12_cache:
