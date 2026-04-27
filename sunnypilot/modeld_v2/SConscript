@@ -56,7 +56,7 @@ for model_name in ['supercombo', 'driving_vision', 'driving_off_policy', 'drivin
   if File(f"models/{model_name}.onnx").exists():
     tg_compile(tg_flags, model_name)
 
-script_files = [File("warp.py"), File(Dir("#selfdrive/modeld").File("compile_modeld.py").abspath)]
+script_files = [File("warp.py")]
 pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#tinygrad_repo").abspath + ':' + env.Dir("#").abspath + '"'
 compile_warp_cmd = f'{pythonpath_string} {tg_flags} {mac_brew_string} {image_flag} python3 -m sunnypilot.modeld_v2.warp'
 
