@@ -100,8 +100,9 @@ def make_update_img_input(frame_prepare, model_w, model_h):
   def update_img_input_tinygrad(tensor, frame, M_inv):
     M_inv = M_inv.to(Device.DEFAULT)
     new_img = frame_prepare(frame, M_inv)
-    tensor.assign(tensor[6:].cat(new_img, dim=0).contiguous())
-    return Tensor.cat(tensor[:6], tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
+    updated_tensor = tensor[6:].cat(new_img, dim=0).contiguous()
+    tensor.assign(updated_tensor)
+    return updated_tensor, Tensor.cat(updated_tensor[:6], updated_tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
   return update_img_input_tinygrad
 
 def make_update_both_imgs(frame_prepare, model_w, model_h):
@@ -109,9 +110,9 @@ def make_update_both_imgs(frame_prepare, model_w, model_h):
 
   def update_both_imgs_tinygrad(calib_img_buffer, new_img, M_inv,
                                 calib_big_img_buffer, new_big_img, M_inv_big):
-    calib_img_pair = update_img(calib_img_buffer, new_img, M_inv)
-    calib_big_img_pair = update_img(calib_big_img_buffer, new_big_img, M_inv_big)
-    return calib_img_pair, calib_big_img_pair
+    r1, r2 = update_img(calib_img_buffer, new_img, M_inv)
+    w1, w2 = update_img(calib_big_img_buffer, new_big_img, M_inv_big)
+    return r1, r2, w1, w2
   return update_both_imgs_tinygrad
 
 
@@ -123,7 +124,7 @@ def compile_v2_warp(cam_w, cam_h, buffer_length, model_w=MEDMODEL_INPUT_SIZE[0],
   _, _, _, yuv_size = get_nv12_info(cam_w, cam_h)
   img_buffer_shape = (buffer_length * 6, model_h // 2, model_w // 2)
 
-  print(f"Compiling warp for {cam_w}x{cam_h} buffer_length={buffer_length}...")
+  print(f"Compiling v2 warp for {cam_w}x{cam_h} buffer_length={buffer_length}...")
 
   frame_prepare = make_frame_prepare(cam_w, cam_h, model_w, model_h)
   update_both_imgs = make_update_both_imgs(frame_prepare, model_w, model_h)
@@ -144,7 +145,8 @@ def compile_v2_warp(cam_w, cam_h, buffer_length, model_w=MEDMODEL_INPUT_SIZE[0],
     Device.default.synchronize()
 
     st = time.perf_counter()
-    _ = update_img_jit(*inputs)
+    out = update_img_jit(*inputs)
+    full_buffer, big_full_buffer = out[0].realize(), out[2].realize()
     mt = time.perf_counter()
     Device.default.synchronize()
     et = time.perf_counter()
@@ -155,9 +157,6 @@ def compile_v2_warp(cam_w, cam_h, buffer_length, model_w=MEDMODEL_INPUT_SIZE[0],
   with open(pkl_path, "wb") as f:
     pickle.dump(update_img_jit, f)
   print(f"  Saved to {pkl_path}")
-
-  jit = pickle.load(open(pkl_path, "rb"))
-  jit(*inputs)
 
 
 class Warp:
@@ -217,8 +216,8 @@ class Warp:
       self.full_buffers['img'], road_blob, self.transforms['img'],
       self.full_buffers['big_img'], wide_blob, self.transforms['big_img'],
     )
-    out_road = res[0].realize()
-    out_wide = res[1].realize()
+    self.full_buffers['img'], out_road = res[0].realize(), res[1].realize()
+    self.full_buffers['big_img'], out_wide = res[2].realize(), res[3].realize()
 
     return {road: out_road, wide: out_wide}
 
