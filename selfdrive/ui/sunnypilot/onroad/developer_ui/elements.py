@@ -8,8 +8,7 @@ import pyray as rl
 from dataclasses import dataclass
 
 from openpilot.common.constants import CV
-
-
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 
@@ -248,12 +247,12 @@ class FrictionCoefficientElement:
     self.unit = ""
 
   def update(self, sm, is_metric: bool) -> UiElement:
-    ltp = sm['liveTorqueParameters']
-    friction_coef = ltp.frictionCoefficientFiltered
-    live_valid = ltp.liveValid
+    if ui_state.enforce_torque_control and ui_state.custom_torque_params and ui_state.torque_override_enabled:
+      return UiElement(f"{ui_state.torque_override_friction:.3f}", "FRIC.", self.unit, rl.WHITE)
 
-    value = f"{friction_coef:.3f}"
-    color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
+    ltp = sm['liveTorqueParameters']
+    value = f"{ltp.frictionCoefficientFiltered:.3f}"
+    color = rl.Color(0, 255, 0, 255) if ltp.liveValid else rl.WHITE
     return UiElement(value, "FRIC.", self.unit, color)
 
 
@@ -262,12 +261,12 @@ class LatAccelFactorElement:
     self.unit = ""
 
   def update(self, sm, is_metric: bool) -> UiElement:
-    ltp = sm['liveTorqueParameters']
-    lat_accel_factor = ltp.latAccelFactorFiltered
-    live_valid = ltp.liveValid
+    if ui_state.enforce_torque_control and ui_state.custom_torque_params and ui_state.torque_override_enabled:
+      return UiElement(f"{ui_state.torque_override_lat_accel_factor:.3f}", "L.A.F.", self.unit, rl.WHITE)
 
-    value = f"{lat_accel_factor:.3f}"
-    color = rl.Color(0, 255, 0, 255) if live_valid else rl.WHITE
+    ltp = sm['liveTorqueParameters']
+    value = f"{ltp.latAccelFactorFiltered:.3f}"
+    color = rl.Color(0, 255, 0, 255) if ltp.liveValid else rl.WHITE
     return UiElement(value, "L.A.F.", self.unit, color)
 
 
