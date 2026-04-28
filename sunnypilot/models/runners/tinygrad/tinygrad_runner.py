@@ -77,7 +77,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
 
   def _run_model(self) -> NumpyDict:
     """Runs the Tinygrad model inference and parses the outputs."""
-    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy().flatten()
+    outputs = self.model_run(**self.inputs).numpy().flatten()
     return self._parse_outputs(outputs)
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:

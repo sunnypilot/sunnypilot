@@ -6,11 +6,12 @@ from tinygrad.tensor import Tensor
 from tinygrad.engine.jit import TinyJit
 from tinygrad.device import Device
 
+from typing import NamedTuple
 # https://github.com/tinygrad/tinygrad/issues/15682
 from tinygrad.uop.ops import UOp, Ops
 _orig = UOp.__reduce__
 UOp.__reduce__ = lambda self: (UOp.unique, ()) if self.op is Ops.UNIQUE else _orig(self)
-from typing import NamedTuple
+
 from tinygrad.helpers import Context
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
@@ -100,9 +101,8 @@ def make_update_img_input(frame_prepare, model_w, model_h):
   def update_img_input_tinygrad(tensor, frame, M_inv):
     M_inv = M_inv.to(Device.DEFAULT)
     new_img = frame_prepare(frame, M_inv)
-    updated_tensor = tensor[6:].cat(new_img, dim=0).contiguous()
-    tensor.assign(updated_tensor)
-    return updated_tensor, Tensor.cat(updated_tensor[:6], updated_tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
+    tensor.assign(tensor[6:].cat(new_img, dim=0).contiguous())
+    return tensor, Tensor.cat(tensor[:6], tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
   return update_img_input_tinygrad
 
 def make_update_both_imgs(frame_prepare, model_w, model_h):
@@ -145,8 +145,7 @@ def compile_v2_warp(cam_w, cam_h, buffer_length, model_w=MEDMODEL_INPUT_SIZE[0],
     Device.default.synchronize()
 
     st = time.perf_counter()
-    out = update_img_jit(*inputs)
-    full_buffer, big_full_buffer = out[0].realize(), out[2].realize()
+    update_img_jit(*inputs)
     mt = time.perf_counter()
     Device.default.synchronize()
     et = time.perf_counter()
@@ -207,7 +206,7 @@ class Warp:
     if wide_ptr not in self._blob_cache:
       self._blob_cache[wide_ptr] = Tensor.from_blob(wide_ptr, (yuv_size,), dtype='uint8')
     road_blob = self._blob_cache[road_ptr]
-    wide_blob = self._blob_cache[wide_ptr] if wide_ptr != road_ptr else Tensor.from_blob(wide_ptr, (yuv_size,), dtype='uint8')
+    wide_blob = self._blob_cache[wide_ptr]
     np.copyto(self.transforms_np['img'], transforms[road].reshape(3, 3))
     np.copyto(self.transforms_np['big_img'], transforms[wide].reshape(3, 3))
 
@@ -216,10 +215,7 @@ class Warp:
       self.full_buffers['img'], road_blob, self.transforms['img'],
       self.full_buffers['big_img'], wide_blob, self.transforms['big_img'],
     )
-    self.full_buffers['img'], out_road = res[0].realize(), res[1].realize()
-    self.full_buffers['big_img'], out_wide = res[2].realize(), res[3].realize()
-
-    return {road: out_road, wide: out_wide}
+    return {road: res[1].realize(), wide: res[3].realize()}
 
 
 if __name__ == "__main__":
