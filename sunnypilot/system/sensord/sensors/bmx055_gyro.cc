@@ -78,9 +78,10 @@ bool BMX055_Gyro::get_event(MessageBuilder &msg, uint64_t ts) {
 
   auto event = msg.initEvent().initGyroscope2();
   event.setSource(cereal::SensorEventData::SensorSource::BMX055);
-  event.setVersion(1);
-  event.setSensor(SENSOR_GYRO_UNCALIBRATED);
-  event.setType(SENSOR_TYPE_GYROSCOPE_UNCALIBRATED);
+  auto deprecated = event.initDeprecated();
+  deprecated.setVersion(1);
+  deprecated.setSensor(SENSOR_GYRO_UNCALIBRATED);
+  deprecated.setType(SENSOR_TYPE_GYROSCOPE_UNCALIBRATED);
   event.setTimestamp(start_time);
 
   float xyz[] = {x, y, z};

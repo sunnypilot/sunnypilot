@@ -34,7 +34,7 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
-    self.update_params()
+    self.update_params_()
 
     self.onroad_brightness_timer: int = 0
     self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
@@ -123,7 +123,7 @@ class UIStateSP:
 
     return "disengaged"
 
-  def update_params(self) -> None:
+  def update_params_(self) -> None:
     CP_SP_bytes = self.params.get("CarParamsSPPersistent")
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
