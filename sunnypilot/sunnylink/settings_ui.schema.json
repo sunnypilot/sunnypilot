@@ -189,7 +189,11 @@
         },
         "description": {
           "type": "string",
-          "description": "Override description text."
+          "description": "Override description text. Rendered inline below the title. May be empty when only `details` is used."
+        },
+        "details": {
+          "type": "string",
+          "description": "Extended help text shown in a popover/modal when the user taps an info ('i') button on the row. Independent of `description`: either, both, or neither may be present."
         },
         "options": {
           "type": "array",

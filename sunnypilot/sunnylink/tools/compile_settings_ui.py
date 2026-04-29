@@ -117,6 +117,7 @@ _ITEM_KEY_ORDER = [
   "blocked",
   "title",
   "description",
+  "details",
   "title_param_suffix",
   "min",
   "max",

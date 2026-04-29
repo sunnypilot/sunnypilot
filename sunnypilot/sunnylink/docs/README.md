@@ -129,7 +129,8 @@ The sections below describe the **compiled** `settings_ui.json` schema — i.e. 
 | `key` | Yes | Param key name (must exist in `params_keys.h`) |
 | `widget` | Yes | `toggle`, `option`, `multiple_button`, `button`, `info` |
 | `title` | Yes | Display name shown to the user |
-| `description` | No | Explanatory text below the title |
+| `description` | No | Inline explanatory text below the title. May be empty when only `details` is used. |
+| `details` | No | Extended help text shown in a modal when the user taps an "i" button on the row. Independent of `description`: either, both, or neither may be present. |
 | `options` | For selectors | Array of `{"value": 0, "label": "Off"}` objects (see per-option enablement below) |
 | `min`, `max`, `step` | For sliders | Numeric range constraints |
 | `unit` | No | Unit label. Static: `"seconds"`. Dynamic: `{"metric": "km/h", "imperial": "mph"}` (resolved by IsMetric) |
@@ -175,6 +176,37 @@ The sections below describe the **compiled** `settings_ui.json` schema — i.e. 
 | (no rule) | Param is always writable, no gating. | Rare. Prefer at least `offroad_only` unless the param is genuinely safe to flip mid-drive. |
 
 Default for new toggles: `enablement: [{$ref: "#/macros/offroad"}]`. Drop down to `not_engaged` only if you've confirmed mid-drive write is safe in the controls/UI code path.
+
+### Use `details` for safety notes / extended help
+
+Inline `description` is shown under the title. For longer caveats, safety notes, or
+"learn more" content that would clutter the row, use `details` — the frontend
+renders an info ("i") button that opens a modal with this content. Either field
+may be present alone, or both together.
+
+```yaml
+- key: AutoLaneChangeTimer
+  widget: option
+  title: Auto Lane Change by Blinker
+  description: |-
+    Set a timer to delay the auto lane change operation when the blinker is used.
+    No nudge on the steering wheel is required to auto lane change if a timer is set.
+    Default is Nudge.
+  details: |-
+    Please use caution when using this feature. Only use the blinker when traffic
+    and road conditions permit.
+  options: [...]
+```
+
+For an item that is intentionally minimal inline (no inline body, only the modal):
+
+```yaml
+- key: SomeAdvancedToggle
+  widget: toggle
+  title: Some Advanced Feature
+  details: |-
+    Long-form rationale, caveats, links, etc. — kept entirely behind the info button.
+```
 
 ### Add a new toggle
 
