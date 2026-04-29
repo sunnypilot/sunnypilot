@@ -1,16 +1,117 @@
 # sunnylink Settings UI Guide
 
-> Edit one JSON file, run the validator, commit. The sunnylink frontend updates automatically.
+> One YAML file per page. Edit, run the compiler, commit. The sunnylink frontend updates automatically.
 
 For detailed architecture, capability fields, parity analysis, and dialog mappings, see [REFERENCE.md](REFERENCE.md).
 
-## The File You Edit
+## What You Edit (and what's generated)
 
 | File | What | When to edit |
 |------|------|-------------|
-| `settings_ui.json` | Structure, widget types, display text, options, rules - everything | Adding/moving/removing/renaming a setting |
+| `settings_ui_src/pages/<page>.yaml` | One YAML per page (panel). Contains panel metadata + sections + items + sub_panels inline. | Adding/changing/removing a setting. |
+| `settings_ui_src/pages/vehicle.yaml` | Per-brand settings page (`kind: vehicle`). Each brand is a section. | Adding/changing a vehicle-specific setting. |
+| `settings_ui_src/_macros.yaml` | Named rule fragments referenced via `{$ref: "#/macros/<name>"}`. | Adding a reusable rule (e.g. a new platform gate). |
+| **`settings_ui.json`** | **Generated from src tree by `compile_settings_ui.py`. Do not edit by hand.** | Never. Compiler emits it; frontend reads it. |
 
-All metadata (titles, descriptions, options, min/max/step/unit) lives **inline on each item**. There is no separate metadata file.
+Pages today: `steering, cruise, display, visuals, toggles, device, software, developer, models, vehicle` (10).
+
+Run `python sunnypilot/sunnylink/tools/compile_settings_ui.py` after edits. Add `--check` in CI to fail on out-of-sync `settings_ui.json`.
+
+Display metadata (titles, descriptions, options, min/max/step/unit) lives **inline on each item**. There is no separate metadata file.
+
+## Page file shape
+
+A page YAML contains the whole panel: metadata at the top, then `sections`. Each section has its own `items` and (optionally) `sub_panels`. Sub-panels are nested inside the section they belong to. Items appear in the order written in the file.
+
+```yaml
+# yaml-language-server: $schema=../_schemas/page.schema.json
+id: steering
+label: Steering
+icon: steering_wheel
+order: 1
+remote_configurable: true
+description: Lateral control, lane changes, and steering behavior
+
+sections:
+  - id: mads
+    title: Modular Assistive Driving System (MADS)
+    items:
+      - key: Mads
+        widget: toggle
+        title: Enable Modular Assistive Driving System (MADS)
+        description: |
+          Enable the beloved MADS feature. Disable toggle to revert back
+          to stock sunnypilot engagement/disengagement.
+        enablement:
+          - {$ref: "#/macros/offroad"}
+
+    sub_panels:
+      - id: mads_settings
+        label: MADS Settings
+        trigger_key: Mads
+        trigger_condition: {type: param, key: Mads, equals: true}
+        items:
+          - key: MadsMainCruiseAllowed
+            widget: toggle
+            title: Toggle with Main Cruise
+            description: |
+              Note: For vehicles without LFA/LKAS button, disabling this will
+              prevent lateral control engagement.
+            enablement:
+              - {$ref: "#/macros/offroad"}
+              - {$ref: "#/macros/mads_full_platforms"}
+```
+
+The vehicle page has the same shape but declares `kind: vehicle`; each section's `id` becomes a brand key under `vehicle_settings` in the compiled JSON.
+
+## Macros (named rule fragments)
+
+`_macros.yaml` declares reusable rule lists. Reference them from any rules array via `{$ref: "#/macros/<name>"}`.
+
+```yaml
+macros:
+  offroad: [{type: offroad_only}]
+  longitudinal: [{type: capability, field: has_longitudinal_control, equals: true}]
+  mads_full_platforms:
+    - type: not
+      condition:
+        type: any
+        conditions:
+          - {type: capability, field: brand, equals: rivian}
+          - type: all
+            conditions:
+              - {type: capability, field: brand, equals: tesla}
+              - type: not
+                condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
+```
+
+In an item:
+
+```yaml
+enablement:
+  - {$ref: "#/macros/offroad"}
+  - {$ref: "#/macros/mads_full_platforms"}
+```
+
+The compiler splices a list-context `$ref` into its parent list. Macros may reference other macros up to depth 3; cycles are an error.
+
+## Compiler workflow
+
+```
+1. common/params_keys.h               — add/remove the C++ param key
+2. params_metadata.json               — automated via update_params_metadata.py
+3. settings_ui_src/pages/<page>.yaml  — add/edit/remove the item in the right section
+4. python sunnypilot/sunnylink/tools/compile_settings_ui.py
+5. python sunnypilot/sunnylink/tools/validate_settings_ui.py  (or: --check on the compiler)
+6. uv run python -m pytest sunnypilot/sunnylink/tests/   # run regression + compiler tests
+7. commit
+```
+
+CI runs `compile_settings_ui.py --check` to fail on hand-edited `settings_ui.json`.
+
+## Compiled output reference
+
+The sections below describe the **compiled** `settings_ui.json` schema — i.e. what the frontend consumes at runtime. JSON snippets show the wire shape; in the src tree you author YAML frontmatter that compiles to the same shape. Use these tables as a contract reference for which fields are valid, what each means, and which rule types exist.
 
 ## Quick Reference: Widget Types
 
@@ -44,12 +145,14 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
 | Rule | Example | Use for |
 |------|---------|---------|
 | `offroad_only` | `{"type": "offroad_only"}` | Grey out while driving |
+| `not_engaged` | `{"type": "not_engaged"}` | Grey out only while engaged (started + selfdrive/MADS active) |
 | `capability` | `{"type": "capability", "field": "has_longitudinal_control", "equals": true}` | Car-dependent visibility |
 | `param` | `{"type": "param", "key": "Mads", "equals": true}` | Show/enable based on another setting |
 | `param_compare` | `{"type": "param_compare", "key": "SpeedLimitMode", "op": ">", "value": 0}` | Numeric comparison |
 | `not` | `{"type": "not", "condition": {...}}` | Negate a rule |
 | `any` | `{"type": "any", "conditions": [...]}` | OR logic |
 | `all` | `{"type": "all", "conditions": [...]}` | AND logic (for nesting inside `any`/`not`) |
+| `$ref` | `{"$ref": "#/macros/offroad"}` | Reference a named rule fragment in `_macros.yaml` |
 
 **Visibility design**: Settings are always visible. When visibility rules fail, the setting is dimmed with an UNAVAILABLE badge, so users know it exists but is not applicable.
 
@@ -61,6 +164,18 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
 
 ## How To
 
+### Pick the right writability rule (offroad / not_engaged / param-based)
+
+| Use this | When | Why |
+|---|---|---|
+| `offroad_only` | Param can only be safely changed when the car is parked. Most user-facing toggles. | Strictest. Frontend shows "device is driving" badge and disables the row. |
+| `not_engaged` | Param can be changed while the car is started but only when sunnypilot/MADS is **not** actively driving. | Less strict than offroad. Matches Raylib `engaged = started AND (selfdriveState.enabled OR mads.enabled)`. Use for items the device must apply mid-drive (e.g. test maneuvers, longitudinal stock-vs-OP toggle). |
+| `param`-based | Behavior depends on another setting's value (parent toggle, mode selector, etc.). | Composes with `not`/`any`/`all` for arbitrary logic. |
+| `capability`-based | Behavior depends on the connected car or device (brand, longitudinal, hardware). | Resolved on the device from `CarParams` / hardware. See [`capabilities.py`](../capabilities.py) for the full field list. |
+| (no rule) | Param is always writable, no gating. | Rare. Prefer at least `offroad_only` unless the param is genuinely safe to flip mid-drive. |
+
+Default for new toggles: `enablement: [{$ref: "#/macros/offroad"}]`. Drop down to `not_engaged` only if you've confirmed mid-drive write is safe in the controls/UI code path.
+
 ### Add a new toggle
 
 1. Register in `common/params_keys.h`:
@@ -68,265 +183,356 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
    {"MyToggle", {PERSISTENT | BACKUP, BOOL}},
    ```
 
-2. Add to `settings_ui.json` in the right panel/section `items` array:
-   ```json
-   {
-     "key": "MyToggle",
-     "widget": "toggle",
-     "title": "My Feature",
-     "description": "What this feature does.",
-     "enablement": [{"type": "offroad_only"}]
-   }
+2. Open `settings_ui_src/pages/<page>.yaml`. Add the item to the right section:
+   ```yaml
+   - key: MyToggle
+     widget: toggle
+     title: My Feature
+     description: What this feature does.
+     enablement:
+       - {$ref: "#/macros/offroad"}
    ```
 
-   If the toggle requires an onroad cycle (system restart) to take effect:
-   ```json
-   {
-     "key": "MyToggle",
-     "widget": "toggle",
-     "title": "My Feature",
-     "description": "What this feature does.",
-     "needs_onroad_cycle": true,
-     "enablement": [{"type": "offroad_only"}]
-   }
-   ```
+   If changing the param requires an onroad cycle to take effect, add `needs_onroad_cycle: true`.
 
-3. Validate: `python sunnypilot/sunnylink/tools/validate_settings_ui.py`
+3. Compile + validate + test:
+   ```
+   python sunnypilot/sunnylink/tools/compile_settings_ui.py
+   python sunnypilot/sunnylink/tools/validate_settings_ui.py
+   uv run python -m pytest sunnypilot/sunnylink/tests/
+   ```
 
 ### Add a multi-button selector
 
-```json
-{
-  "key": "MySelector",
-  "widget": "multiple_button",
-  "title": "Mode",
-  "options": [
-    {"value": 0, "label": "Off"},
-    {"value": 1, "label": "On"},
-    {"value": 2, "label": "Auto"}
-  ]
-}
+```yaml
+- key: MySelector
+  widget: multiple_button
+  title: Mode
+  options:
+    - {value: 0, label: Off}
+    - {value: 1, label: On}
+    - {value: 2, label: Auto}
 ```
 
 ### Add a slider/range
 
-```json
-{
-  "key": "MyRange",
-  "widget": "option",
-  "title": "Follow Distance",
-  "description": "Time gap to lead vehicle.",
-  "min": 0.5,
-  "max": 3.0,
-  "step": 0.1,
-  "unit": "seconds"
-}
+```yaml
+- key: MyRange
+  widget: option
+  title: Follow Distance
+  description: Time gap to lead vehicle.
+  min: 0.5
+  max: 3.0
+  step: 0.1
+  unit: seconds
 ```
 
 ### Add a slider with metric/imperial unit
 
-For speed or distance values that change based on the user's `IsMetric` preference:
-
-```json
-{
-  "key": "MinSpeed",
-  "widget": "option",
-  "title": "Minimum Speed",
-  "min": 0,
-  "max": 100,
-  "step": 5,
-  "unit": {"metric": "km/h", "imperial": "mph"}
-}
+```yaml
+- key: MinSpeed
+  widget: option
+  title: Minimum Speed
+  min: 0
+  max: 100
+  step: 5
+  unit: {metric: km/h, imperial: mph}
 ```
 
-The frontend resolves the correct unit string based on the device's `IsMetric` param value. Static units (like `"seconds"`, `"m/s²"`) remain plain strings.
+Frontend resolves the unit string based on the device's `IsMetric` param. Static units (e.g. `seconds`, `m/s²`) stay plain strings.
 
 ### Add a title with dynamic suffix
 
-Use `title_param_suffix` to append a param value to the title:
-
-```json
-{
-  "key": "FollowDistance",
-  "widget": "option",
-  "title": "Follow Distance",
-  "title_param_suffix": {
-    "param": "IsMetric",
-    "values": {"0": "mph", "1": "km/h"}
-  },
-  "min": 0.5,
-  "max": 3.0,
-  "step": 0.1
-}
+```yaml
+- key: FollowDistance
+  widget: option
+  title: Follow Distance
+  title_param_suffix:
+    param: IsMetric
+    values: {'0': mph, '1': km/h}
+  min: 0.5
+  max: 3.0
+  step: 0.1
 ```
 
-The title will display as "Follow Distance: mph" or "Follow Distance: km/h" based on the `IsMetric` param value.
+Renders as "Follow Distance: mph" / "Follow Distance: km/h".
 
 ### Add a device-only (read-only) setting
 
-Use `blocked: true` for settings that cannot be modified remotely:
-
-```json
-{
-  "key": "OnroadCyclePendingRemote",
-  "widget": "info",
-  "title": "Pending Remote Cycle",
-  "blocked": true
-}
+```yaml
+- key: OnroadCyclePendingRemote
+  widget: info
+  title: Pending Remote Cycle
+  blocked: true
 ```
 
-The frontend will display this as read-only and prevent any changes.
+Frontend treats `blocked: true` items as read-only.
 
 ### Add a dropdown
 
-```json
-{
-  "key": "MyDropdown",
-  "widget": "option",
-  "title": "Recording Quality",
-  "options": [
-    {"value": 0, "label": "Low (720p)"},
-    {"value": 1, "label": "Medium (1080p)"},
-    {"value": 2, "label": "High (4K)"}
-  ]
-}
+```yaml
+- key: MyDropdown
+  widget: option
+  title: Recording Quality
+  options:
+    - {value: 0, label: Low (720p)}
+    - {value: 1, label: Medium (1080p)}
+    - {value: 2, label: High (4K)}
 ```
 
 ### Per-option enablement
 
-Individual options within `multiple_button` or `option` widgets can have their own enablement rules:
-
-```json
-{
-  "key": "MadsSteeringMode",
-  "widget": "multiple_button",
-  "title": "Steering Mode on Brake Pedal",
-  "options": [
-    {
-      "value": 0,
-      "label": "Remain Active",
-      "enablement": [{"type": "capability", "field": "brand", "equals": "tesla"}]
-    },
-    {
-      "value": 1,
-      "label": "Pause",
-      "enablement": [{"type": "offroad_only"}]
-    }
-  ]
-}
+```yaml
+- key: MadsSteeringMode
+  widget: multiple_button
+  title: Steering Mode on Brake Pedal
+  options:
+    - value: 0
+      label: Remain Active
+      enablement:
+        - {$ref: "#/macros/mads_full_platforms"}
+    - value: 1
+      label: Pause
+      enablement:
+        - {$ref: "#/macros/mads_full_platforms"}
+    - value: 2
+      label: Disengage
+  enablement:
+    - {$ref: "#/macros/offroad"}
 ```
 
-When an option's enablement fails, that option is grayed out (disabled) but still visible.
+When an option's enablement fails, that option is grayed out but still visible.
 
-### Show only when another setting is on
+### Show only when another setting is on (one parent)
 
-```json
-{
-  "key": "ChildSetting",
-  "widget": "toggle",
-  "title": "Child Feature",
-  "visibility": [{"type": "param", "key": "ParentToggle", "equals": true}]
-}
+```yaml
+- key: ChildSetting
+  widget: toggle
+  title: Child Feature
+  visibility:
+    - {type: param, key: ParentToggle, equals: true}
 ```
 
-Note: Due to the "dim instead of hide" design, this setting will be dimmed (not hidden) when the rule fails.
+(With the "dim instead of hide" design, this setting is dimmed, not hidden, when the rule fails.)
 
 ### Show only for certain cars
 
-```json
-{
-  "key": "LongFeature",
-  "widget": "toggle",
-  "title": "Longitudinal Feature",
-  "visibility": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}]
-}
+```yaml
+- key: LongFeature
+  widget: toggle
+  title: Longitudinal Feature
+  visibility:
+    - {$ref: "#/macros/longitudinal"}
 ```
+
+### Combining 2+ conditions
+
+The `enablement` array is implicit-AND: every entry must pass. Use `any` for OR, `all` for nested AND, `not` for negation. Wrap repeated combinations in a macro so future you doesn't re-derive the logic.
+
+**AND across two params** (writable only when both Mads is on AND ICBM is enabled):
+```yaml
+enablement:
+  - {type: param, key: Mads, equals: true}
+  - {type: param, key: IntelligentCruiseButtonManagement, equals: true}
+```
+
+**OR across two params** (writable when either is on):
+```yaml
+enablement:
+  - type: any
+    conditions:
+      - {type: param, key: ExperimentalMode, equals: true}
+      - {type: param, key: DynamicExperimentalControl, equals: true}
+```
+
+**Mixed: capability AND param** (only on longitudinal cars when ShowAdvancedControls is on):
+```yaml
+enablement:
+  - {$ref: "#/macros/longitudinal"}
+  - {$ref: "#/macros/advanced_only"}
+```
+
+**Three-way: offroad AND torque-allowed AND not-NNLC** (real example: `EnforceTorqueControl`):
+```yaml
+enablement:
+  - {$ref: "#/macros/offroad"}
+  - {type: capability, field: torque_allowed, equals: true}
+  - {type: param, key: NeuralNetworkLateralControl, equals: false}
+```
+
+**Negation across multiple platforms** (everything except Rivian + Tesla-no-bus):
+```yaml
+enablement:
+  - {$ref: "#/macros/offroad"}
+  - {$ref: "#/macros/mads_full_platforms"}   # macro encapsulates the not(any(rivian, all(tesla, not(bus)))) logic
+```
+
+If the same multi-condition block appears in 2+ items, **promote it to a macro** in `_macros.yaml`. Re-run `python sunnypilot/sunnylink/tools/apply_macros.py` to substitute existing inlined matches automatically.
 
 ### Mutual exclusion (only one can be on)
 
-```json
-{
-  "key": "FeatureAlpha",
-  "widget": "toggle",
-  "title": "Feature Alpha",
-  "enablement": [{"type": "param", "key": "FeatureBeta", "equals": false}]
-},
-{
-  "key": "FeatureBeta",
-  "widget": "toggle",
-  "title": "Feature Beta",
-  "enablement": [{"type": "param", "key": "FeatureAlpha", "equals": false}]
-}
+```yaml
+- key: FeatureAlpha
+  widget: toggle
+  title: Feature Alpha
+  enablement:
+    - {type: param, key: FeatureBeta, equals: false}
+
+- key: FeatureBeta
+  widget: toggle
+  title: Feature Beta
+  enablement:
+    - {type: param, key: FeatureAlpha, equals: false}
 ```
 
 ### Add a new section
 
-```json
-{
-  "id": "my_section",
-  "title": "My Section",
-  "description": "Optional subtitle",
-  "items": [...],
-  "enablement": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}]
-}
+In the page YAML, add an entry to the `sections` list:
+```yaml
+sections:
+  - id: my_section
+    title: My Section
+    description: Optional subtitle
+    enablement:
+      - {$ref: "#/macros/longitudinal"}
+    items:
+      - {key: ..., widget: toggle, title: ...}
 ```
 
-Sections can have visibility and enablement rules (optional). When section-level rules fail, all items within are dimmed.
-
-### Add section-level enablement
-
-Sections can be conditionally available or enabled via `visibility` or `enablement`:
-
-```json
-{
-  "id": "longitudinal_tuning",
-  "title": "Longitudinal Tuning",
-  "description": "Advanced control parameters",
-  "visibility": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}],
-  "items": [...]
-}
-```
+Sections support `visibility`, `enablement`, and `attestation_required`. When section-level rules fail, all items within are dimmed.
 
 ### Add a sub-panel (drill-down page)
 
-```json
-{
-  "id": "my_sub",
-  "label": "Advanced Settings",
-  "trigger_key": "ParentParam",
-  "trigger_condition": {"type": "param", "key": "ParentParam", "equals": true},
-  "items": [...]
-}
+Sub-panels nest inside the section they belong to:
+```yaml
+sections:
+  - id: parent_section
+    title: Parent
+    items: [...]
+    sub_panels:
+      - id: my_sub
+        label: Advanced Settings
+        trigger_key: ParentParam
+        trigger_condition: {type: param, key: ParentParam, equals: true}
+        items:
+          - {key: ..., widget: toggle, title: ...}
 ```
 
 ### Add vehicle-specific settings
 
-Add to `vehicle_settings` in `settings_ui.json`:
-```json
-"rivian": {
-  "title": "Rivian Settings",
-  "items": [
-    {
-      "key": "RivianFeature",
-      "widget": "toggle",
-      "title": "Rivian One Pedal",
-      "enablement": [{"type": "offroad_only"}]
-    }
-  ]
-}
+Edit `pages/vehicle.yaml`. Each section is a brand:
+```yaml
+id: vehicle
+kind: vehicle
+sections:
+  - id: rivian
+    title: Rivian Settings
+    description: ''
+    items:
+      - key: RivianFeature
+        widget: toggle
+        title: Rivian One Pedal
+        enablement:
+          - {$ref: "#/macros/offroad"}
 ```
 
-### Change display text
+`kind: vehicle` tells the compiler to emit this page as `vehicle_settings.<brand>` in the wire JSON.
 
-Edit the `title` or `description` on the item in `settings_ui.json`.
+### Add a feature with multiple toggles + a sub-panel + a new macro
 
-### Move a setting between panels
+Walking through a realistic feature add — say "Smart Wipers" with a master toggle, an intensity selector, and a sub-panel for advanced tuning, all gated to torque-steering Hyundais on offroad.
 
-Remove from source panel, add to target panel. Validator catches duplicates.
+1. **Param keys** — register all 4 in `common/params_keys.h`.
 
-### Reorder sections
+2. **Decide on a macro** — if "torque Hyundai" gating is reused, add to `_macros.yaml`:
+   ```yaml
+   torque_hyundai:
+     - {$ref: "#/macros/offroad"}
+     - {type: capability, field: brand, equals: hyundai}
+     - {type: capability, field: torque_allowed, equals: true}
+   ```
 
-Set `order` field on sections, or reorder the JSON array.
+3. **Edit the relevant page** — `pages/visuals.yaml` (or wherever the feature lives). Add a new section + sub_panel:
+   ```yaml
+   sections:
+     - id: smart_wipers
+       title: Smart Wipers
+       description: Camera-driven wiper control (Hyundai/Kia, torque only)
+       items:
+         - key: SmartWipersEnabled
+           widget: toggle
+           title: Enable Smart Wipers
+           enablement:
+             - {$ref: "#/macros/torque_hyundai"}
+         - key: SmartWipersIntensity
+           widget: multiple_button
+           title: Sensitivity
+           options:
+             - {value: 0, label: Low}
+             - {value: 1, label: Medium}
+             - {value: 2, label: High}
+           visibility:
+             - {type: param, key: SmartWipersEnabled, equals: true}
+           enablement:
+             - {$ref: "#/macros/torque_hyundai"}
+       sub_panels:
+         - id: smart_wipers_tuning
+           label: Smart Wipers Tuning
+           trigger_key: SmartWipersEnabled
+           trigger_condition: {type: param, key: SmartWipersEnabled, equals: true}
+           items:
+             - key: SmartWipersHysteresis
+               widget: option
+               title: Hysteresis (frames)
+               min: 1
+               max: 30
+               step: 1
+               enablement:
+                 - {$ref: "#/macros/offroad"}
+                 - {$ref: "#/macros/advanced_only"}
+   ```
+
+4. **Compile / validate / test**:
+   ```
+   python sunnypilot/sunnylink/tools/compile_settings_ui.py
+   python sunnypilot/sunnylink/tools/validate_settings_ui.py
+   uv run python -m pytest sunnypilot/sunnylink/tests/
+   ```
+
+   `apply_macros.py` is automatic for newly-added items only if you wrote the rule list inline; for greenfield items, you'd write `$ref` directly.
+
+### Change a toggle's behavior (rule changes)
+
+1. Find the item in `pages/<page>.yaml`.
+2. Edit `visibility`/`enablement`/`options[].enablement` directly. Use macros where possible.
+3. **Add a regression test** in `sunnypilot/sunnylink/tests/test_settings_changes.py` that asserts the new gate exists. Existing tests (e.g. `TestMadsBrandGates`, `TestNotEngagedReplacement`) are templates: lookup item by key, assert `_references_capability_field(rules, "...")` or `_flatten_rule_types(rules)` contains/excludes a type. This freezes the new behavior so a future edit can't silently revert it.
+4. Compile + run the full suite. Per-bug test should pass; structural tests should remain green.
+
+### Change a widget type or options
+
+Editing `widget:` from `toggle` to `multiple_button` is a frontend behavior change. Whenever you change widget shape:
+- The param's underlying type (bool / int / string) must match what the new widget writes. `toggle` writes bool; `multiple_button`/`option` write int/string. Update `params_keys.h` if the type changes.
+- Add an `options:` list when switching to `multiple_button` or `option`.
+- Old values stored on devices may not be valid for the new widget. Consider a migration in `sunnypilot/system/updated/` if users have stale values.
+
+### Deprecate / remove a setting
+
+1. Remove the item from `pages/<page>.yaml`.
+2. Remove the param key from `common/params_keys.h` **only after** confirming nothing in `selfdrive/`, `sunnypilot/`, or any controls code reads it.
+3. If the param has been on user devices, drop it via a migration (see `sunnypilot/system/updated/`) so stale values don't linger.
+4. Compile + validate + test. The validator's "no duplicate keys" + structural checks will fail if anything still references the removed key.
+
+### Move a setting between pages
+
+Cut the item block from one page YAML, paste into the target page's section. Compile + validate. The "no duplicate keys" check catches forgotten copies.
+
+### Change display text (title/description)
+
+Edit `title:` or `description:` directly in the page YAML. Compile to regenerate `settings_ui.json`. No other changes needed.
+
+### Reorder sections / sub_panels / items
+
+Reorder them within their parent list in the YAML. The compiler preserves authored order — no `order:` field required at the section/sub_panel/item level (panel-level `order:` controls which page comes first in the side nav).
 
 ---
 

@@ -85,7 +85,7 @@ def validate_rule(rule: dict, path: str, result: ValidationResult,
     result.error("rule well-formedness", f"{path}: rule missing 'type' field")
     return False
 
-  if rule_type == "offroad_only":
+  if rule_type in ("offroad_only", "not_engaged"):
     # Only type required
     return True
 
@@ -477,16 +477,23 @@ def check_ordering(data: dict, result: ValidationResult) -> None:
 
 
 def check_vehicle_brands(data: dict, result: ValidationResult) -> None:
-  """Check 10: Vehicle settings keys should be lowercase strings."""
+  """Check 10: Vehicle settings keys lowercase + each brand has consistent {title, description, items} shape."""
   vehicle = data.get("vehicle_settings", {})
-  bad_brands: list[str] = []
+  errors: list[str] = []
 
-  for brand in vehicle:
+  for brand, brand_data in vehicle.items():
     if not isinstance(brand, str) or brand != brand.lower():
-      bad_brands.append(brand)
+      errors.append(f"non-lowercase brand key: '{brand}'")
+    if not isinstance(brand_data, dict):
+      errors.append(f"brand '{brand}': expected object with {{title, description, items}}, got bare list")
+      continue
+    if "items" not in brand_data:
+      errors.append(f"brand '{brand}': missing 'items'")
+    if "title" not in brand_data:
+      errors.append(f"brand '{brand}': missing 'title' (use empty string for none)")
 
-  if bad_brands:
-    result.error("vehicle brands", f"non-lowercase brand keys: {', '.join(bad_brands)}")
+  if errors:
+    result.error("vehicle brands", "; ".join(errors))
   else:
     result.ok("vehicle brands")
 
