@@ -142,10 +142,10 @@ class SpeedLimitResolver:
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
-    # FIXME-SP: this is not working as expected
-    if 0. < next_speed_limit < self.v_ego:
-      adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
+    if 0. < next_speed_limit < speed_limit:
+      ref_speed = max(self.v_ego, next_speed_limit + 0.1)
+      adapt_time = (next_speed_limit - ref_speed) / LIMIT_ADAPT_ACC
+      adapt_distance = ref_speed * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
