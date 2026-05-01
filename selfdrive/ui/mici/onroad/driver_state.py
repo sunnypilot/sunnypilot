@@ -167,7 +167,7 @@ class DriverStateRenderer(Widget):
     driver_orient = driver_data.faceOrientation
     driver_position = driver_data.facePosition
 
-    if len(driver_orient) != 3:
+    if len(driver_orient) != 3 or len(driver_position) != 2:
       return
 
     # Calibrate orientation so looking straight ahead at road (instead of at device) is (0, 0, 0)
