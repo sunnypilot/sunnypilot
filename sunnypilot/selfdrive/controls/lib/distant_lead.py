@@ -1,0 +1,51 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+
+import numpy as np
+import capnp
+
+from openpilot.common.realtime import DT_MDL
+
+_CONFIRM_SECONDS = 0.5
+_CONFIRM_FRAMES = max(1, int(round(_CONFIRM_SECONDS / DT_MDL)))
+
+_MIN_FORWARD_SPEED = 1.0  # m/s — discard stationary or wrong-way radar returns
+_MIN_DREL = 2.0           # m — tracks closer than this are almost always glitches
+_MIN_V_EGO = 4.0          # m/s — disable at very low speed where radar clutter peaks
+
+
+class DistantLeadDetector:
+  def __init__(self) -> None:
+    self._streak: dict[int, int] = {}
+
+  def detect(self, tracks: dict, model_data: capnp._DynamicStructReader, v_ego: float = 0.0):
+    if v_ego < _MIN_V_EGO:
+      self._streak = {}
+      return None
+
+    horizon = model_data.position.x[-1]
+    left_x = model_data.laneLines[1].x
+    left_y = model_data.laneLines[1].y
+    right_x = model_data.laneLines[2].x
+    right_y = model_data.laneLines[2].y
+
+    next_streak: dict[int, int] = {}
+    chosen = None
+
+    for tid, track in tracks.items():
+      in_lane = np.interp(track.dRel, left_x, left_y) < -track.yRel < np.interp(track.dRel, right_x, right_y)
+      qualifies = track.vLeadK > _MIN_FORWARD_SPEED and _MIN_DREL < track.dRel < horizon and in_lane
+
+      streak = self._streak.get(tid, 0) + 1 if qualifies else 0
+      next_streak[tid] = streak
+
+      if streak >= _CONFIRM_FRAMES:
+        if chosen is None or track.dRel < chosen.dRel:
+          chosen = track
+
+    self._streak = next_streak
+    return chosen

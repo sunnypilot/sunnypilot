@@ -16,6 +16,8 @@ from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
+from openpilot.sunnypilot.selfdrive.controls.lib.distant_lead import DistantLeadDetector
+
 
 # Default lead acceleration decay set to 50% at 1s
 _LEAD_ACCEL_TAU = 1.5
@@ -214,6 +216,7 @@ class RadarD:
     self.radar_state_valid = False
 
     self.ready = False
+    self.distant_lead_detector = DistantLeadDetector()
 
   def update(self, sm: messaging.SubMaster, rr: car.RadarData):
     self.ready = sm.seen['modelV2']
@@ -256,8 +259,16 @@ class RadarD:
       model_v_ego = self.v_ego
     leads_v3 = sm['modelV2'].leadsV3
     if len(leads_v3) > 1:
-      self.radar_state.leadOne = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[0], model_v_ego, self.CP, self.CP_SP, low_speed_override=True)
-      self.radar_state.leadTwo = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[1], model_v_ego, self.CP, self.CP_SP, low_speed_override=False)
+      lead_one = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[0], model_v_ego, self.CP, self.CP_SP, low_speed_override=True)
+      lead_two = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[1], model_v_ego, self.CP, self.CP_SP, low_speed_override=False)
+
+      if not lead_one['status']:
+        distant_track = self.distant_lead_detector.detect(self.tracks, sm['modelV2'], self.v_ego)
+        if distant_track is not None:
+          lead_one = distant_track.get_RadarState()
+
+      self.radar_state.leadOne = lead_one
+      self.radar_state.leadTwo = lead_two
 
   def publish(self, pm: messaging.PubMaster):
     assert self.radar_state is not None
