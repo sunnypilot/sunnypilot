@@ -278,8 +278,67 @@ def generate_mpc_tuning_report():
 
   return htmls
 
-if __name__ == '__main__':
+def run_single_config(config):
+  accel_name, accel_key, dyn_name, dyn_key = config
+  import os
+  import uuid
+  import markdown
+  
+  # Crucial: Isolate each parallel python process with a unique ZMQ/Params Shared Memory prefix!
+  prefix = "tuning_" + str(uuid.uuid4())[:8]
+  os.environ["OPENPILOT_PREFIX"] = prefix
+  
+  # Ensure the IPC directory exists so cereal/msgq doesn't crash when opening sockets
+  os.makedirs(f"/dev/shm/msgq_{prefix}", exist_ok=True)
+  os.makedirs(f"/dev/shm/{prefix}", exist_ok=True)
+  
+  from openpilot.common.params import Params
+  from openpilot.selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver
+  
+  original_init = Maneuver.__init__
+  def new_init(self, title, duration, **kwargs):
+      kwargs['personality'] = getattr(self, '__global_personality', 1)
+      original_init(self, title, duration, **kwargs)
+  Maneuver.__init__ = new_init
+
+  params = Params()
+  if accel_name == "Stock":
+      params.put_bool("AccelPersonalityEnabled", False)
+      params.put_bool("DynamicFollow", False)
+      params.put("LongitudinalPersonality", 1)
+      params.put("AccelPersonality", 1)
+      Maneuver.__global_personality = 1
+      title = "Stock (Openpilot) Baseline"
+  else:
+      params.put_bool("AccelPersonalityEnabled", True)
+      params.put("AccelPersonality", accel_key)
+      params.put_bool("DynamicFollow", True)
+      params.put("LongitudinalPersonality", dyn_key)
+      Maneuver.__global_personality = dyn_key
+      title = f"{accel_name} Accel, {dyn_name} Dynamic"
+
+  print(f"Starting simulation: {title}")
   htmls = generate_mpc_tuning_report()
+  print(f"Finished simulation: {title}")
+  
+  header = markdown.markdown(f'<br><hr><h1>Tuning Report: {title}</h1>')
+  return header + "".join(htmls)
+
+if __name__ == '__main__':
+  import multiprocessing as mp
+
+  configs = [("Stock", -1, "Stock", -1)]
+  accel_profiles = {0: "Sport", 1: "Normal", 2: "Eco"}
+  dynamic_profiles = {0: "Aggressive", 1: "Standard", 2: "Relaxed"}
+
+  for accel_key, accel_name in accel_profiles.items():
+    for dyn_key, dyn_name in dynamic_profiles.items():
+      configs.append((accel_name, accel_key, dyn_name, dyn_key))
+
+  print(f"Booting {len(configs)} parallel simulations...")
+  ctx = mp.get_context('spawn')
+  with ctx.Pool(processes=min(len(configs), mp.cpu_count())) as pool:
+      htmls_chunks = pool.map(run_single_config, configs)
 
   if len(sys.argv) < 2:
     file_name = 'long_mpc_tune_report.html'
@@ -287,6 +346,7 @@ if __name__ == '__main__':
     file_name = sys.argv[1]
 
   with open(file_name, 'w') as f:
-    f.write(markdown.markdown('# MPC longitudinal tuning report'))
-    for html in htmls:
-      f.write(html)
+    f.write(markdown.markdown('# MPC longitudinal tuning report (All Profiles)'))
+    for chunk in htmls_chunks:
+      f.write(chunk)
+  print(f"Done! Report aggregated concurrently and saved to {file_name}")
