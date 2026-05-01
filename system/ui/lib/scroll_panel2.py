@@ -147,16 +147,8 @@ class GuiScrollPanel2:
           self._initial_click_event = mouse_event
 
     elif self._state == ScrollState.PRESSED:
-      initial_click_pos = self._initial_click_event.pos
-      diff_x = abs(mouse_event.pos.x - initial_click_pos.x)
-      diff_y = abs(mouse_event.pos.y - initial_click_pos.y)
-
-      diff = diff_x if self._horizontal else diff_y
-      anti_diff = diff_y if self._horizontal else diff_x
-
-      if diff > MIN_DRAG_PIXELS or anti_diff > MIN_DRAG_PIXELS:
-        print(f"[{'HORIZ' if self._horizontal else 'VERT '}] SWIPE detected. diff={diff:.1f}, anti={anti_diff:.1f}")
-
+      initial_click_pos = self._get_mouse_pos(cast(MouseEvent, self._initial_click_event))
+      diff = abs(mouse_pos - initial_click_pos)
       if mouse_event.left_released:
         # Special handling for down and up clicks across two frames
         # TODO: not sure what that means or if it's accurate anymore
@@ -165,15 +157,9 @@ class GuiScrollPanel2:
         elif diff <= MIN_DRAG_PIXELS:
           self._state = ScrollState.STEADY
         else:
-          if diff > anti_diff:
-            self._state = ScrollState.MANUAL_SCROLL
-          else:
-            self._state = ScrollState.STEADY
-      elif diff > MIN_DRAG_PIXELS and diff > anti_diff:
+          self._state = ScrollState.MANUAL_SCROLL
+      elif diff > MIN_DRAG_PIXELS:
         self._state = ScrollState.MANUAL_SCROLL
-      elif anti_diff > MIN_DRAG_PIXELS and anti_diff > diff:
-        # Orthogonal swipe detected, abort handling
-        self._state = ScrollState.STEADY
 
     elif self._state == ScrollState.MANUAL_SCROLL:
       if mouse_event.left_released:

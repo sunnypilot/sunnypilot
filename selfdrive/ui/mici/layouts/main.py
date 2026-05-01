@@ -69,11 +69,6 @@ class MiciMainLayout(Scroller):
     self._onroad_layout.set_click_callback(lambda: self._scroll_to(self._home_layout))
     device.add_interactive_timeout_callback(self._on_interactive_timeout)
 
-  def _is_on_side_panel(self) -> bool: # TODO: remove sunny not going like it ?
-    onroad_x = self._onroad_layout.rect.x
-    current_scroll = self._scroller.scroll_panel.get_offset()
-    return abs(current_scroll - onroad_x) > self._rect.width / 2
-
   def _scroll_to(self, layout: Widget):
     layout_x = int(layout.rect.x)
     self._scroller.scroll_to(layout_x, smooth=True)
@@ -105,21 +100,20 @@ class MiciMainLayout(Scroller):
       # onroad: after delay, pop nav stack and scroll to onroad
       # offroad: immediately scroll to home, but don't pop nav stack (can stay in settings)
       if ui_state.started:
-        self._scroll_to(self._onroad_layout)
         self._onroad_time_delay = rl.get_time()
       else:
         self._scroll_to(self._home_layout)
 
     # FIXME: these two pops can interrupt user interacting in the settings
     if self._onroad_time_delay is not None and rl.get_time() - self._onroad_time_delay >= ONROAD_DELAY:
-      if not self._is_on_side_panel():
+      if not gui_app.sunnypilot_ui() or self._should_auto_scroll_to_onroad():
         gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
       self._onroad_time_delay = None
 
     # When car leaves standstill, pop nav stack and scroll to onroad
     CS = ui_state.sm["carState"]
     if not CS.standstill and self._prev_standstill:
-      if not self._is_on_side_panel():
+      if not gui_app.sunnypilot_ui() or self._should_auto_scroll_to_onroad():
         gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
     self._prev_standstill = CS.standstill
 

@@ -32,6 +32,7 @@ class OnroadInfoPanelColors:
   dark_grey: rl.Color = rl.Color(100, 100, 100, 255)
   bg_dark: rl.Color = rl.Color(0, 0, 0, 255)
   card_bg: rl.Color = rl.Color(50, 50, 50, 200)
+  badge_bg: rl.Color = rl.Color(60, 60, 60, 255)
 
 
 COLORS = OnroadInfoPanelColors()
@@ -121,7 +122,7 @@ class OnroadInfoPanel(Widget):
     rl.draw_text_ex(self._font_semi_bold, unit, rl.Vector2(left_x, mid_y - 95), 38, 0, COLORS.grey)
     rl.draw_text_ex(self._font_bold, speed_val, rl.Vector2(left_x, mid_y - 60), 110, 0, speed_color)
 
-    sign_width = 135 if ui_state.is_metric else 135
+    sign_width = 135
     sign_height = 135 if ui_state.is_metric else 175
 
     has_next = self.next_speed_limit > 0 and self.next_speed_limit != self.speed_limit
@@ -172,13 +173,13 @@ class OnroadInfoPanel(Widget):
         badge_cx = badge_x + badge_r
         badge_cy = badge_y + badge_r
         rl.draw_circle(int(badge_cx), int(badge_cy), badge_r + 2, COLORS.dark_grey)
-        rl.draw_circle(int(badge_cx), int(badge_cy), badge_r, rl.Color(60, 60, 60, 255))
+        rl.draw_circle(int(badge_cx), int(badge_cy), badge_r, COLORS.badge_bg)
         self._draw_text_centered(self._font_bold, offset_val, 24, rl.Vector2(badge_cx, badge_cy), COLORS.white)
       else:
         mutcd_badge_x = sign_x + sign_width - badge_sz * 0.65
         mutcd_badge_y = sign_y - badge_sz * 0.50
         badge_rect = rl.Rectangle(mutcd_badge_x, mutcd_badge_y, badge_sz, badge_sz)
-        rl.draw_rectangle_rounded(badge_rect, 0.25, 10, rl.Color(60, 60, 60, 255))
+        rl.draw_rectangle_rounded(badge_rect, 0.25, 10, COLORS.badge_bg)
         rl.draw_rectangle_rounded_lines_ex(badge_rect, 0.25, 10, 2, COLORS.dark_grey)
         self._draw_text_centered(self._font_bold, offset_val, 24, rl.Vector2(mutcd_badge_x + badge_sz / 2, mutcd_badge_y + badge_sz / 2), COLORS.white)
 

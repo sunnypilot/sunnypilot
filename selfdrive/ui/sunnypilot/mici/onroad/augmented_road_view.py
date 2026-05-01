@@ -9,12 +9,17 @@ import pyray as rl
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
 
 
+class _SuppressedConfidenceBall:
+  def render(self, *_):
+    pass
+
+
 class AugmentedRoadViewSP(AugmentedRoadView):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     self._show_confidence_ball: bool = True
     self._real_confidence_ball = self._confidence_ball
-    self._confidence_ball = _ConfidenceBall()
+    self._confidence_ball = _SuppressedConfidenceBall()
 
   def set_show_confidence_ball(self, show: bool) -> None:
     self._show_confidence_ball = show
@@ -23,8 +28,3 @@ class AugmentedRoadViewSP(AugmentedRoadView):
     super()._render(rect)
     if self._show_confidence_ball:
       self._real_confidence_ball.render(self.rect)
-
-
-class _ConfidenceBall:
-  def render(self, *_):
-    pass
