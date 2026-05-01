@@ -59,9 +59,9 @@ class LongitudinalPlannerSP:
       return self.accel_controller.get_min_accel(v_ego)
     return None
 
-  def get_t_follow(self, v_ego: float) -> float | None:
+  def get_t_follow(self, v_ego: float, radarstate=None) -> float | None:
     if self.dynamic_follow.is_enabled():
-      return self.dynamic_follow.get_follow_distance_multiplier(v_ego)
+      return self.dynamic_follow.get_follow_distance_multiplier(v_ego, radarstate)
     return None
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
@@ -101,18 +101,6 @@ class LongitudinalPlannerSP:
     self.accel_controller.update(sm)
     self.dynamic_follow.update()
 
-    # DEBUG
-    if self.accel_controller.frame % 20 == 0:
-      v_ego = sm['carState'].vEgo if sm.valid.get('carState', False) else 0.0
-      accel_clip = self.get_accel_clip(v_ego)
-      cruise_min = self.get_cruise_min_accel(v_ego)
-      t_follow = self.get_t_follow(v_ego)
-      print(
-        f"[SP-DEBUG] AccelPersonality: enabled={self.accel_controller.is_enabled()}, "
-        f"personality={self.accel_controller.get_accel_personality()}, "
-        f"accel_clip={accel_clip}, cruise_min={cruise_min}"
-      )
-      print(f"[SP-DEBUG] DynamicFollow: enabled={self.dynamic_follow.is_enabled()}, t_follow={t_follow}")
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
