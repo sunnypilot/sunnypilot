@@ -13,6 +13,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.mici.onroad.alert_renderer import AlertRenderer
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import BookmarkIcon
@@ -70,6 +71,11 @@ class OnroadInfoPanel(Widget):
 
   def is_swiping_left(self) -> bool:
     return self._bookmark_icon.is_swiping_left()
+
+  def _handle_mouse_release(self, mouse_pos: MousePos) -> None:
+    # Mirror stock AugmentedRoadView: suppress click while bookmark gesture active
+    if not self._bookmark_icon.interacting():
+      super()._handle_mouse_release(mouse_pos)
 
   def _update_state(self) -> None:
     sm = ui_state.sm
