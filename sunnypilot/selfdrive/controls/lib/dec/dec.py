@@ -82,7 +82,7 @@ class ModeTransitionManager:
     self.current_mode: ModeType = 'acc'
     self.mode_confidence = {'acc': 1.0, 'blended': 0.0}
     self.transition_timeout = 0
-    self.min_mode_duration = 10
+    self.min_mode_duration = {'acc': 15, 'blended': 5}
     self.mode_duration = 0
     self.emergency_override = False
 
@@ -101,11 +101,14 @@ class ModeTransitionManager:
         self.mode_confidence[m] = max(0.0, self.mode_confidence[m] - 0.05)
 
     # Require minimum duration in current mode (unless emergency)
-    if self.mode_duration < self.min_mode_duration and not self.emergency_override:
+    if self.mode_duration < self.min_mode_duration[self.current_mode] and not self.emergency_override:
       return
 
-    # Hysteresis: higher threshold for mode changes
-    confidence_threshold = 0.6 if mode != self.current_mode else 0.3  # Lower threshold for faster response
+    # Hysteresis: asymmetric — harder to enter blended, easier to return to ACC
+    if mode != self.current_mode:
+      confidence_threshold = 0.6 if mode == 'blended' else 0.45
+    else:
+      confidence_threshold = 0.3
 
     if self.mode_confidence[mode] > confidence_threshold:
       if mode != self.current_mode and self.transition_timeout == 0:
@@ -122,9 +125,9 @@ class ModeTransitionManager:
     if self.emergency_override and self.mode_duration > 20:
       self.emergency_override = False
 
-    # Gradual confidence decay
+    # Gradual confidence decay — faster decay so stale blended signals clear sooner
     for mode in self.mode_confidence:
-      self.mode_confidence[mode] *= 0.98
+      self.mode_confidence[mode] *= 0.96
 
   def get_mode(self) -> ModeType:
     return self.current_mode
@@ -154,7 +157,7 @@ class DynamicExperimentalController:
       measurement_noise=0.1,
       process_noise=0.1,
       alpha=1.05,
-      smoothing_factor=0.7
+      smoothing_factor=0.55
     )
 
     self._slowness_filter = SmoothKalmanFilter(
