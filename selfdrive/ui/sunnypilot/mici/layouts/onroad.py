@@ -28,10 +28,6 @@ class OnroadViewContainerSP(ScrollerSP):
     self._scroller.set_reset_scroll_at_show(False)
     self._scroller.set_scrolling_enabled(lambda: abs(self.rect.x) < HORIZONTAL_SETTLE_PX)
 
-    # Inner scroller wraps children's touch_valid via inner panel only. Chain
-    # container's own touch_valid (already wrapped by outer scroller) so an
-    # outer-scroll drag invalidates child touches and suppresses the click —
-    # matches stock behavior when road_view is a direct outer child.
     for child in (self.road_view, self.onroad_info_panel):
       inner_touch_valid = child._touch_valid_callback
       child.set_touch_valid_callback(
