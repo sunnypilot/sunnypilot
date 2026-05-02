@@ -23,8 +23,8 @@ MAX_ACCEL_V = {
 
 JERK_ACCEL_BP = [0.0,  40.0]  # m/s
 JERK_ACCEL_V  = {
-  AccelPersonality.eco:    [1.50, 0.90],
-  AccelPersonality.normal: [1.50, 0.95],
+  AccelPersonality.eco:    [1.50, 0.55],
+  AccelPersonality.normal: [1.50, 0.80],
   AccelPersonality.sport:  [1.50, 1.00],
 }
 
@@ -49,9 +49,9 @@ COAST_FLOOR = {
 }
 
 JERK_DECEL_BP    = [0.0,  35.0]  # m/s
-JERK_DECEL_ONSET = [0.18, 0.06]  # m/s³
-JERK_DECEL_EASE  = [0.40, 0.14]  # m/s³
-EASE_FEATHER     = 0.70
+JERK_DECEL_ONSET = [0.10, 0.04]  # m/s³
+JERK_DECEL_EASE  = [0.24, 0.09]  # m/s³
+EASE_FEATHER     = 0.60
 
 _RAMP_OFF_START = 5.0   # m/s below cruise where ramp begins
 _MIN_MAX_GAP    = 0.05

@@ -49,8 +49,8 @@ ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
 ALEAD_DELTA_MAX   = 0.25   # sec
 
 # Asymmetric rate limits — fast up on danger, slow down on relax
-T_FOLLOW_RATE_UP   = 0.50  # sec/sec — snap toward danger, but not so fast that lead noise pumps t_follow
-T_FOLLOW_RATE_DOWN = 0.15  # sec/sec — ease back to base slowly
+T_FOLLOW_RATE_UP   = 0.45  # sec/sec — gentle snap toward danger; avoids lead noise ratcheting
+T_FOLLOW_RATE_DOWN = 0.08  # sec/sec — very slow decay so the car holds extra space longer, reducing later brake events
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 

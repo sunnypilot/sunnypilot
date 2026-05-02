@@ -13,9 +13,10 @@ from openpilot.common.realtime import DT_MDL
 _CONFIRM_SECONDS = 0.5
 _CONFIRM_FRAMES = max(1, int(round(_CONFIRM_SECONDS / DT_MDL)))
 
-# Hold a promoted track for 1s after it stops qualifying — prevents lane-line
-# jitter from flickering leadOne on/off and causing MPC gas/brake oscillation
-_RELEASE_SECONDS = 1.0
+# Hold a promoted track for 0.25s after it stops qualifying just enough to
+# absorb single-frame lane-line jitter without blocking new lead detection.
+# 1s was too long: ghost tracks with smaller dRel blocked real leads for ~1s.
+_RELEASE_SECONDS = 0.25
 _RELEASE_FRAMES = max(1, int(round(_RELEASE_SECONDS / DT_MDL)))
 
 _MIN_FORWARD_SPEED = 1.0  # m/s — discard stationary or wrong-way radar returns
@@ -52,12 +53,17 @@ class DistantLeadDetector:
       next_streak[tid] = streak
 
       promoted = streak >= _CONFIRM_FRAMES
+      in_holdover = self._release.get(tid, 0) > 0
 
       if promoted and qualifies:
         # Fully promoted and still qualifying — refresh holdover window
         next_release[tid] = _RELEASE_FRAMES
-      elif not qualifies and self._release.get(tid, 0) > 0:
-        # Was promoted, briefly disqualified — hold for release window
+      elif qualifies and in_holdover:
+        # Re-qualifies during holdover — restore immediately, no need to rebuild streak
+        next_release[tid] = _RELEASE_FRAMES
+        promoted = True
+      elif not qualifies and in_holdover:
+        # Was promoted, briefly disqualified — decrement holdover countdown
         next_release[tid] = self._release[tid] - 1
         promoted = True
 
