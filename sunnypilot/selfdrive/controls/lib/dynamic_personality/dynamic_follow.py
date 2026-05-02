@@ -49,7 +49,7 @@ ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
 ALEAD_DELTA_MAX   = 0.25   # sec
 
 # Asymmetric rate limits — fast up on danger, slow down on relax
-T_FOLLOW_RATE_UP   = 1.20  # sec/sec — snap toward danger quickly
+T_FOLLOW_RATE_UP   = 0.50  # sec/sec — snap toward danger, but not so fast that lead noise pumps t_follow
 T_FOLLOW_RATE_DOWN = 0.15  # sec/sec — ease back to base slowly
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
@@ -186,8 +186,8 @@ class FollowDistanceController:
     delta = 0.0
     delta += self._mod_jerk_volatility()
     delta += self._mod_cutin()
-    delta += self._mod_alead(a_lead)
-    delta += self._mod_closing(v_rel)
+    # alead and closing both fire on same braking event — take max to avoid double-counting
+    delta += max(self._mod_alead(a_lead), self._mod_closing(v_rel))
     delta += self._mod_atau(a_tau)
 
     self._prev_lead_status = status
