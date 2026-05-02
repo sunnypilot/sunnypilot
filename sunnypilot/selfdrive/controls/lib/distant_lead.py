@@ -13,6 +13,11 @@ from openpilot.common.realtime import DT_MDL
 _CONFIRM_SECONDS = 0.5
 _CONFIRM_FRAMES = max(1, int(round(_CONFIRM_SECONDS / DT_MDL)))
 
+# Hold a promoted track for 1s after it stops qualifying — prevents lane-line
+# jitter from flickering leadOne on/off and causing MPC gas/brake oscillation
+_RELEASE_SECONDS = 1.0
+_RELEASE_FRAMES = max(1, int(round(_RELEASE_SECONDS / DT_MDL)))
+
 _MIN_FORWARD_SPEED = 1.0  # m/s — discard stationary or wrong-way radar returns
 _MIN_DREL = 2.0           # m — tracks closer than this are almost always glitches
 _MIN_V_EGO = 4.0          # m/s — disable at very low speed where radar clutter peaks
@@ -21,10 +26,12 @@ _MIN_V_EGO = 4.0          # m/s — disable at very low speed where radar clutte
 class DistantLeadDetector:
   def __init__(self) -> None:
     self._streak: dict[int, int] = {}
+    self._release: dict[int, int] = {}  # countdown frames before dropping a promoted track
 
   def detect(self, tracks: dict, model_data: capnp._DynamicStructReader, v_ego: float = 0.0):
     if v_ego < _MIN_V_EGO:
       self._streak = {}
+      self._release = {}
       return None
 
     horizon = model_data.position.x[-1]
@@ -34,6 +41,7 @@ class DistantLeadDetector:
     right_y = model_data.laneLines[2].y
 
     next_streak: dict[int, int] = {}
+    next_release: dict[int, int] = {}
     chosen = None
 
     for tid, track in tracks.items():
@@ -43,9 +51,20 @@ class DistantLeadDetector:
       streak = self._streak.get(tid, 0) + 1 if qualifies else 0
       next_streak[tid] = streak
 
-      if streak >= _CONFIRM_FRAMES:
+      promoted = streak >= _CONFIRM_FRAMES
+
+      if promoted and qualifies:
+        # Fully promoted and still qualifying — refresh holdover window
+        next_release[tid] = _RELEASE_FRAMES
+      elif not qualifies and self._release.get(tid, 0) > 0:
+        # Was promoted, briefly disqualified — hold for release window
+        next_release[tid] = self._release[tid] - 1
+        promoted = True
+
+      if promoted:
         if chosen is None or track.dRel < chosen.dRel:
           chosen = track
 
     self._streak = next_streak
+    self._release = next_release
     return chosen
