@@ -1071,6 +1071,10 @@
     "title": "Panda Som Reset Triggered",
     "description": ""
   },
+  "ParamsVersion": {
+    "title": "Params Version",
+    "description": ""
+  },
   "PlanplusControl": {
     "title": "Plan Plus Controls",
     "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",

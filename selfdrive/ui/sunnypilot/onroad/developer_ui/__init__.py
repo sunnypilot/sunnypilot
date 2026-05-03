@@ -141,7 +141,8 @@ class DeveloperUiRenderer(Widget):
 
     # Add torque-specific elements if using torque control
     if sm['controlsState'].lateralControlState.which() == 'torqueState':
-      if sm.valid['liveTorqueParameters']:
+      override_active = ui_state.enforce_torque_control and ui_state.custom_torque_params and ui_state.torque_override_enabled
+      if sm.valid['liveTorqueParameters'] or override_active:
         elements.extend([
           self.friction_elem.update(sm, ui_state.is_metric),
           self.lat_accel_factor_elem.update(sm, ui_state.is_metric),

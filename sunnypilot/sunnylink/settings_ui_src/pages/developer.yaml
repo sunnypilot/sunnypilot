@@ -1,0 +1,147 @@
+# Page: developer
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: developer
+label: Developer
+icon: developer
+order: 9
+remote_configurable: true
+description: Debug tools, remote access, and advanced services
+sections:
+- id: connectivity
+  title: Connectivity
+  description: Remote access and debugging interfaces
+  items:
+  - key: AdbEnabled
+    widget: toggle
+    blocked: true
+    title: Enable ADB
+    description: ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma
+      for more info.
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: SshEnabled
+    widget: toggle
+    blocked: true
+    title: Enable SSH
+  - key: JoystickDebugMode
+    widget: toggle
+    title: Joystick Debug Mode
+    visibility:
+    - $ref: '#/macros/release_branches_hide'
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: AlphaLongitudinalEnabled
+    widget: toggle
+    needs_onroad_cycle: true
+    title: sunnypilot Longitudinal Control (Alpha)
+    description: 'WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking
+      (AEB). On this car, sunnypilot defaults to the car''s built-in ACC instead of sunnypilot''s longitudinal control. Enable
+      this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot
+      longitudinal control alpha. Changing this setting will restart sunnypilot if the car is powered on.'
+    visibility:
+    - type: all
+      conditions:
+      - type: capability
+        field: alpha_long_available
+        equals: true
+      - type: not
+        condition:
+          type: any
+          conditions:
+          - type: capability
+            field: is_release
+            equals: true
+          - type: capability
+            field: is_sp_release
+            equals: true
+    enablement:
+    - $ref: '#/macros/not_engaged'
+  - key: ShowDebugInfo
+    widget: toggle
+    title: UI Debug Mode
+- id: test_maneuvers
+  title: Test Maneuvers
+  description: 'DANGER: enabling these maneuvers replaces normal driving behavior with deterministic test sequences. Each
+    toggle requires explicit confirmation per write. Use only in a closed environment.'
+  visibility:
+  - type: any
+    conditions:
+    - type: capability
+      field: is_development
+      equals: true
+    - type: capability
+      field: is_sp_release
+      equals: true
+  enablement:
+  - type: any
+    conditions:
+    - type: capability
+      field: is_development
+      equals: true
+    - type: param
+      key: ShowAdvancedControls
+      equals: true
+  attestation_required: true
+  items:
+  - key: LateralManeuverMode
+    widget: toggle
+    title: '[TEST] Lateral Maneuver Mode'
+    description: Replaces normal lateral control with a deterministic test sequence. NOT for road use.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+    - type: capability
+      field: torque_allowed
+      equals: true
+  - key: LongitudinalManeuverMode
+    widget: toggle
+    title: '[TEST] Longitudinal Maneuver Mode'
+    description: Replaces normal longitudinal control with a deterministic test sequence. NOT for road use.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+    - $ref: '#/macros/longitudinal'
+- id: advanced_services
+  title: Advanced Settings
+  description: ''
+  items:
+  - key: ShowAdvancedControls
+    widget: toggle
+    title: Show Advanced Controls
+    description: Toggle visibility of advanced sunnypilot controls. This only changes the visibility of the toggles; it does
+      not change the actual enabled/disabled state.
+  - key: EnableGithubRunner
+    widget: toggle
+    title: GitHub Runner Service
+    description: Enables or disables the GitHub runner service.
+    visibility:
+    - $ref: '#/macros/release_branches_hide'
+    enablement:
+    - $ref: '#/macros/advanced_only'
+  - key: EnableCopyparty
+    widget: toggle
+    title: copyparty Service
+    description: copyparty is a very capable file server, you can use it to download your routes, view your logs and even
+      make some edits on some files from your browser. Requires you to connect to your comma locally via its IP address.
+    enablement:
+    - $ref: '#/macros/advanced_only'
+  - key: QuickBootToggle
+    widget: toggle
+    title: Quickboot Mode
+    visibility:
+    - type: not
+      condition:
+        type: any
+        conditions:
+        - type: capability
+          field: is_release
+          equals: true
+        - type: capability
+          field: is_sp_release
+          equals: true
+        - type: capability
+          field: is_development
+          equals: true
+    enablement:
+    - type: param
+      key: DisableUpdates
+      equals: true
+    - $ref: '#/macros/advanced_only'

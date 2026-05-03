@@ -215,64 +215,48 @@ class TestMonitoring:
                               events[int((INVISIBLE_SECONDS_TO_RED-1+DT_DMON*d_status.settings._HI_STD_FALLBACK_TIME+0.1)/DT_DMON)].names
 
 
-@pytest.mark.parametrize("enabled_state, lat_active_state, expected", [
-  (False, False, False), # Both Disabled
-  (True, False, True),   # OP Enabled, Lat Inactive
-  (False, True, True),   # OP Disabled, Lat Active (e.g. MADS)
-  (True, True, True)     # Both Active
-])
-def test_enabled_states(enabled_state, lat_active_state, expected):
-  """
-  Test DriverMonitoring.run_step with all 4 combinations of:
-  - selfdriveState.enabled (True/False)
-  - carControl.latActive (True/False)
-  """
+def _build_sm(selfdrive_enabled, lat_active, steering_pressed, gas_pressed):
   cs = car.CarState.new_message()
   cs.vEgo = 30.0
   cs.gearShifter = car.CarState.GearShifter.drive
-  cs.standstill = False
-  cs.steeringPressed = False
-  cs.gasPressed = False
-
+  cs.steeringPressed = steering_pressed
+  cs.gasPressed = gas_pressed
   ss = log.SelfdriveState.new_message()
-  ss.enabled = enabled_state
-
+  ss.enabled = selfdrive_enabled
   cc = car.CarControl.new_message()
-  cc.latActive = lat_active_state
-
+  cc.latActive = lat_active
   mv2 = log.ModelDataV2.new_message()
   mv2.meta.disengagePredictions.brakeDisengageProbs = [0.0]
-
   lc = log.LiveCalibrationData.new_message()
   lc.rpyCalib = [0.0, 0.0, 0.0]
-
-  ds = make_msg(False)
-
-  sm = {
-      'carState': cs,
-      'selfdriveState': ss,
-      'carControl': cc,
-      'modelV2': mv2,
-      'liveCalibration': lc,
-      'driverStateV2': ds
+  return {
+    'carState': cs, 'selfdriveState': ss, 'carControl': cc,
+    'modelV2': mv2, 'liveCalibration': lc, 'driverStateV2': make_msg(False),
   }
 
-  driver_monitoring = DriverMonitoring()
 
-  # run_test doesn't assign enabled to a variable, so we need to spy on _update_events to see its value
-  captured_args = []
-  original_update_events = driver_monitoring._update_events
+@pytest.mark.parametrize("selfdrive_enabled, lat_active, steering, gas, expected_op_engaged, expected_driver_engaged", [
+  (False, False, False, False, False, False),  # disabled
+  (True,  False, False, False, True,  False),  # OP enabled
+  (False, True,  False, False, True,  False),  # MADS lat-only
+  (True,  True,  False, False, True,  False),  # both active
+  (False, True,  False, True,  True,  False),  # MADS lat-only + gas
+  (True,  True,  False, True,  True,  True),   # full op + gas: override
+  (False, True,  True,  False, True,  True),   # MADS lat-only + wheel touch: override
+])
+def test_run_step_engagement(selfdrive_enabled, lat_active, steering, gas,
+                             expected_op_engaged, expected_driver_engaged):
+  sm = _build_sm(selfdrive_enabled, lat_active, steering, gas)
+  dm = DriverMonitoring()
+  captured = {}
+  orig = dm._update_events
 
-  def spy_update_events(driver_engaged, op_engaged, standstill, wrong_gear, car_speed):
-      captured_args.append(op_engaged)
-      return original_update_events(driver_engaged, op_engaged, standstill, wrong_gear, car_speed)
+  def spy(driver_engaged, op_engaged, standstill, wrong_gear, car_speed):
+    captured['driver_engaged'] = driver_engaged
+    captured['op_engaged'] = op_engaged
+    return orig(driver_engaged, op_engaged, standstill, wrong_gear, car_speed)
 
-  driver_monitoring._update_events = spy_update_events
-
-  driver_monitoring.run_step(sm, demo=False)
-
-  # Assertion
-  assert len(captured_args) == 1, "Expected _update_events to be called exactly once"
-  actual_enabled = captured_args[0]
-
-  assert actual_enabled == expected, f"Expected op_engaged={expected}, but got {actual_enabled}"
+  dm._update_events = spy
+  dm.run_step(sm, demo=False)
+  assert captured['op_engaged'] == expected_op_engaged
+  assert captured['driver_engaged'] == expected_driver_engaged

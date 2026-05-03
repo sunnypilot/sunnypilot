@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 import os
+from openpilot.selfdrive.modeld.tinygrad_helpers import MODELS_DIR, set_tinygrad_backend_from_compiled_flags
+set_tinygrad_backend_from_compiled_flags()
+
+# FIXME-SP: remove once we bump tg
 from openpilot.system.hardware import TICI
 os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
+
 USBGPU = "USBGPU" in os.environ
 if USBGPU:
   os.environ['DEV'] = 'AMD'
@@ -12,7 +17,6 @@ import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
-from pathlib import Path
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
@@ -37,7 +41,6 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
-MODELS_DIR = Path(__file__).parent / 'models'
 VISION_PKL_PATH = MODELS_DIR / 'driving_vision_tinygrad.pkl'
 VISION_METADATA_PATH = MODELS_DIR / 'driving_vision_metadata.pkl'
 POLICY_PKL_PATH = MODELS_DIR / 'driving_policy_tinygrad.pkl'
@@ -217,8 +220,7 @@ class ModelState(ModelStateBase):
 
     out = self.update_imgs(self.img_queues['img'], self.full_frames['img'], self.transforms['img'],
                            self.img_queues['big_img'], self.full_frames['big_img'], self.transforms['big_img'])
-    self.img_queues['img'], self.img_queues['big_img'] = out[0].realize(), out[2].realize()
-    vision_inputs = {'img': out[1], 'big_img': out[3]}
+    vision_inputs = {'img': out[0], 'big_img': out[1]}
 
     if prepare_only:
       return None
