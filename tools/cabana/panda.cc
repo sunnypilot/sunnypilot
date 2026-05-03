@@ -106,8 +106,8 @@ cereal::PandaState::PandaType Panda::get_hw_type() {
 
 
 
-void Panda::send_heartbeat(bool engaged) {
-  control_write(0xf3, engaged, 0);
+void Panda::send_heartbeat(bool engaged, bool engaged_mads) {
+  control_write(0xf3, engaged, engaged_mads);
 }
 
 void Panda::set_can_speed_kbps(uint16_t bus, uint16_t speed) {
