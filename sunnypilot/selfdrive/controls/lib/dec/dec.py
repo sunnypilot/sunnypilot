@@ -255,11 +255,7 @@ class DynamicExperimentalController:
     orientation_valid = len(md.orientation.x) == TRAJECTORY_SIZE
 
     if not (position_valid and orientation_valid):
-      # Invalid trajectory - this itself might indicate a stop scenario
-      # Apply moderate urgency for incomplete trajectories at speed
-      if self._v_ego_kph > 20.0:
-        urgency = 0.3
-
+      # Invalid trajectory — do not infer urgency from missing data alone; urgency stays 0.0
       self._slow_down_filter.add_data(urgency)
       urgency_filtered = self._slow_down_filter.get_value() or 0.0
       self._has_slow_down = urgency_filtered > WMACConstants.SLOW_DOWN_PROB
@@ -285,12 +281,12 @@ class DynamicExperimentalController:
       shortage_ratio = shortage / expected_distance
 
       # Base urgency on shortage ratio
-      urgency = min(1.0, shortage_ratio * 2.0)
+      urgency = min(1.0, shortage_ratio * 1.3)
 
       # Increase urgency for very short trajectories (imminent stops)
       critical_distance = expected_distance * 0.3
       if endpoint_x < critical_distance:
-        urgency = min(1.0, urgency * 2.0)
+        urgency = min(1.0, urgency * 1.5)
 
       # Speed-based urgency adjustment
       if self._v_ego_kph > 25.0:
@@ -301,8 +297,7 @@ class DynamicExperimentalController:
     self._slow_down_filter.add_data(urgency)
     urgency_filtered = self._slow_down_filter.get_value() or 0.0
 
-    # Update state with lower threshold for better stop detection
-    self._has_slow_down = urgency_filtered > (WMACConstants.SLOW_DOWN_PROB * 0.8)
+    self._has_slow_down = urgency_filtered > WMACConstants.SLOW_DOWN_PROB
     self._urgency = urgency_filtered
 
   def _radarless_mode(self) -> None:
