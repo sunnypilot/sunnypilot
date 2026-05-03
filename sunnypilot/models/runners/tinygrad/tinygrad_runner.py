@@ -46,14 +46,13 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
         assert "/dev/kgsl-3d0" not in str(e), "Model was built on C3 or C3X, but is being loaded on PC"
         raise
 
-    # Map input names to their required dtype and device from the loaded model
     self.input_to_dtype = {}
     self.input_to_device = {}
     for idx, name in enumerate(self.model_run.captured.expected_names):
       info = self.model_run.captured.expected_input_info[idx]
-      self.input_to_dtype[name] = info[2]  # dtype
-      self.input_to_device[name] = info[3]  # device
-    self._policy_cached = False
+      self.input_to_dtype[name] = info[2]
+      self.input_to_device[name] = info[3]
+      self.inputs[name] = Tensor.zeros(*self.input_shapes[name], dtype=info[2], device=info[3]).realize()
 
   @property
   def vision_input_names(self) -> list[str]:
@@ -62,18 +61,19 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
 
 
   def prepare_policy_inputs(self, numpy_inputs: NumpyDict):
-    if not self._policy_cached:
-      for key, value in numpy_inputs.items():
-        self.inputs[key] = Tensor(value, device='NPY').realize()
-      self._policy_cached = True
+    for key, value in numpy_inputs.items():
+      if key in self.inputs:
+        self.inputs[key].assign(Tensor(value, device=self.inputs[key].device))
 
   def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
     """Prepares all vision and policy inputs for the model."""
     self.prepare_policy_inputs(numpy_inputs)
-    for key in self.vision_input_names:
-      if key in self.inputs:
-        self.inputs[key] = self.inputs[key].cast(self.input_to_dtype[key])
     return self.inputs
+
+  def update_vision_inputs(self, vision_inputs: dict[str, Tensor]):
+    for name, tensor in vision_inputs.items():
+      if name in self.inputs:
+        self.inputs[name].assign(tensor)
 
   def _run_model(self) -> NumpyDict:
     """Runs the Tinygrad model inference and parses the outputs."""

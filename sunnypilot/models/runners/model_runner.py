@@ -132,6 +132,11 @@ class ModelRunner(ModularRunner):
       return list(self._model_data.input_shapes.keys())
     raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
 
+  def update_vision_inputs(self, vision_inputs: dict) -> None:
+    """Updates the vision inputs in the runner."""
+    for name, tensor in vision_inputs.items():
+      self.inputs[name] = tensor
+
   @abstractmethod
   def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
     """
