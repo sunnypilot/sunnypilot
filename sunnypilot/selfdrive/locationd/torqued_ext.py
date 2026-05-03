@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
 import numpy as np
 
 from cereal import car
@@ -18,7 +17,6 @@ RELAXED_MIN_BUCKET_POINTS = np.array([1, 200, 300, 500, 500, 300, 200, 1])
 ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
 
 
-
 class TorqueEstimatorExt:
   def __init__(self, CP: car.CarParams):
     self.CP = CP
@@ -28,6 +26,7 @@ class TorqueEstimatorExt:
     self.enforce_torque_control_toggle = self._params.get_bool("EnforceTorqueControl")  # only during init
     self.use_params = self.CP.brand in ALLOWED_CARS and self.CP.lateralTuning.which() == 'torque'
     self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
+    self.custom_torque_params = self._params.get_bool("CustomTorqueParams")
     self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
     self.min_bucket_points = RELAXED_MIN_BUCKET_POINTS
     self.factor_sanity = 0.0
@@ -51,13 +50,14 @@ class TorqueEstimatorExt:
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
+      self.custom_torque_params = self._params.get_bool("CustomTorqueParams")
       self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
 
   def update_use_params(self):
     self._update_params()
 
     if self.enforce_torque_control_toggle:
-      if self.torque_override_enabled:
+      if self.custom_torque_params and self.torque_override_enabled:
         self.use_params = False
       else:
         self.use_params = self.use_live_torque_params
