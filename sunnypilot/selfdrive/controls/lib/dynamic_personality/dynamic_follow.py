@@ -50,7 +50,7 @@ ALEAD_DELTA_MAX   = 0.10   # sec
 
 # Asymmetric rate limits — fast up on danger, slow down on relax
 T_FOLLOW_RATE_UP   = 0.45  # sec/sec — gentle snap toward danger; avoids lead noise ratcheting
-T_FOLLOW_RATE_DOWN = 0.08  # sec/sec — very slow decay so the car holds extra space longer, reducing later brake events
+T_FOLLOW_RATE_DOWN = 0.12  # sec/sec — moderate decay; holds space after brake events but recovers fast enough MPC doesn't hunt
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
