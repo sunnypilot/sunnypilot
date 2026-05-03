@@ -33,29 +33,20 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
 
   full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
   big_full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
-  full_buffer_np = np.zeros(img_buffer_shape, dtype=np.uint8)
-  big_full_buffer_np = np.zeros(img_buffer_shape, dtype=np.uint8)
-
+  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  new_big_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
-    new_frame_np = (32 * np.random.randn(yuv_size).astype(np.float32) + 128).clip(0, 255).astype(np.uint8)
     img_inputs = [full_buffer,
                   Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                   Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
-    new_big_frame_np = (32 * np.random.randn(yuv_size).astype(np.float32) + 128).clip(0, 255).astype(np.uint8)
     big_img_inputs = [big_full_buffer,
                       Tensor.from_blob(new_big_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                       Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     inputs = img_inputs + big_img_inputs
     Device.default.synchronize()
 
-    inputs_np = [x.numpy() for x in inputs]
-    inputs_np[0] = full_buffer_np
-    inputs_np[3] = big_full_buffer_np
-
     st = time.perf_counter()
-    out = update_img_jit(*inputs)
-    full_buffer = out[0].contiguous().realize().clone()
-    big_full_buffer = out[2].contiguous().realize().clone()
+    _ = update_img_jit(*inputs)
     mt = time.perf_counter()
     Device.default.synchronize()
     et = time.perf_counter()
@@ -125,8 +116,8 @@ class Warp:
       self.full_buffers['img'], road_blob, self.transforms['img'],
       self.full_buffers['big_img'], wide_blob, self.transforms['big_img'],
     )
-    self.full_buffers['img'], out_road = res[0].realize(), res[1].realize()
-    self.full_buffers['big_img'], out_wide = res[2].realize(), res[3].realize()
+    out_road = res[0].realize()
+    out_wide = res[1].realize()
 
     return {road: out_road, wide: out_wide}
 
