@@ -31,28 +31,33 @@ PERSONALITY_CEILING = {
 }
 
 JERK_WINDOW_FRAMES = 400   # ~20s at DT_MDL=0.05
-JERK_DELTA_MAX     = 0.30  # sec added at max jerk volatility
-JERK_SIGMA_SCALE   = 5.0   # m/s3 sigma to full delit ta
+JERK_DELTA_MAX     = 0.12  # sec added at max jerk volatility
+JERK_SIGMA_SCALE   = 5.0   # m/s³ sigma to full delta
 
-CUTIN_DELTA        = 0.20  # sec added on cut-in event
+CUTIN_DELTA        = 0.10  # sec added on cut-in event
 CUTIN_DECAY_FRAMES = 100   # ~5s decay
 
 CLOSING_VREL_SCALE = -2.0  # m/s — vRel at which closing delta is maxed
-CLOSING_DELTA_MAX  = 0.20  # sec
+CLOSING_DELTA_MAX  = 0.08  # sec
 
 # High aLeadTau means MPC lead extrapolation decays fast — uncertain future
 ATAU_HIGH      = 2.0   # tau threshold
-ATAU_DELTA_MAX = 0.12  # sec
+ATAU_DELTA_MAX = 0.05  # sec
 
 # aLeadK-based delta: fires earlier than vRel closing delta
 ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
-ALEAD_DELTA_MAX   = 0.25   # sec
+ALEAD_DELTA_MAX   = 0.10   # sec
 
 # Asymmetric rate limits — fast up on danger, slow down on relax
 T_FOLLOW_RATE_UP   = 0.45  # sec/sec — gentle snap toward danger; avoids lead noise ratcheting
 T_FOLLOW_RATE_DOWN = 0.08  # sec/sec — very slow decay so the car holds extra space longer, reducing later brake events
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
+
+# Grace period before clearing history on lead loss.
+# Radar leadOne flips on/off at ~100% sub-1s rate due to prob threshold jitter.
+# Without grace, every flip triggers _update_no_lead() → history reset → t_follow oscillation.
+LEAD_LOST_GRACE_FRAMES = 10  # ~0.5s at DT_MDL=0.05
 
 
 class FollowDistanceController:
@@ -73,6 +78,9 @@ class FollowDistanceController:
     self._prev_lead_status = False
     self._prev_drel = 0.0
     self._cutin_frames_remaining = 0
+    self._cutin_confirm = 0  # consecutive frames of closure >3m before triggering
+    self._lead_lost_grace = 0  # countdown frames before clearing history after lead loss
+    self._last_lead_target: float | None = None  # last target computed with lead present
 
     self.dbg_jerk_delta    = 0.0
     self.dbg_cutin_delta   = 0.0
@@ -164,7 +172,10 @@ class FollowDistanceController:
     self._alead_history.clear()
     self._jerk_history.clear()
     self._cutin_frames_remaining = 0
+    self._cutin_confirm = 0
     self._prev_lead_status = False
+    self._lead_lost_grace = 0
+    self._last_lead_target = None
 
   def _compute_target(self, v_ego: float, lead) -> float:
     base = PERSONALITY_BASE[self._personality]
@@ -172,8 +183,17 @@ class FollowDistanceController:
     ceil  = PERSONALITY_CEILING[self._personality]
 
     if lead is None:
-      self._update_no_lead()
+      self._lead_lost_grace = max(0, self._lead_lost_grace - 1)
+      if self._lead_lost_grace == 0:
+        self._update_no_lead()
+        self._last_lead_target = None
+        return float(np.clip(base, floor, ceil))
+      # Within grace: hold last lead-based target so current_t_follow doesn't chase base
+      if self._last_lead_target is not None:
+        return self._last_lead_target
       return float(np.clip(base, floor, ceil))
+
+    self._lead_lost_grace = LEAD_LOST_GRACE_FRAMES
 
     a_lead = float(lead.aLeadK)
     a_tau  = float(lead.aLeadTau)
@@ -193,12 +213,15 @@ class FollowDistanceController:
     self._prev_lead_status = status
     self._prev_drel = d_rel
 
-    return float(np.clip(base + delta, floor, ceil))
+    result = float(np.clip(base + delta, floor, ceil))
+    self._last_lead_target = result
+    return result
 
   def _update_no_lead(self):
     self._prev_lead_status = False
     self._prev_drel = 0.0
     self._cutin_frames_remaining = 0
+    self._cutin_confirm = 0
     self._alead_history.clear()
     self._jerk_history.clear()
 
@@ -207,8 +230,20 @@ class FollowDistanceController:
       self._jerk_history.append(abs((a_lead - self._alead_history[-1]) / DT_MDL))
     self._alead_history.append(a_lead)
 
-    if status and (not self._prev_lead_status or (self._prev_drel - d_rel) > 3.0):
+    # New lead: trigger immediately (genuine appearance)
+    # Sudden dRel jump: require 2 consecutive frames to reject single-frame radar jitter
+    is_new_lead = status and not self._prev_lead_status
+    is_closing_jump = status and self._prev_lead_status and (self._prev_drel - d_rel) > 3.0
+
+    if is_new_lead:
+      self._cutin_confirm = 0
       self._cutin_frames_remaining = CUTIN_DECAY_FRAMES
+    elif is_closing_jump:
+      self._cutin_confirm += 1
+      if self._cutin_confirm >= 2:
+        self._cutin_frames_remaining = CUTIN_DECAY_FRAMES
+    else:
+      self._cutin_confirm = 0
 
     if self._cutin_frames_remaining > 0:
       self._cutin_frames_remaining -= 1
