@@ -19,7 +19,7 @@
               "key": "Mads",
               "widget": "toggle",
               "title": "Enable Modular Assistive Driving System (MADS)",
-              "description": "Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.",
+              "description": "Enable MADS. Disable toggle to revert back to stock sunnypilot engagement/disengagement.",
               "enablement": [
                 {
                   "type": "offroad_only"
@@ -523,7 +523,7 @@
               "key": "AutoLaneChangeBsmDelay",
               "widget": "toggle",
               "title": "Auto Lane Change: Delay with Blind Spot",
-              "description": "Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering.",
+              "description": "Toggle to enable a delay timer for lane changes when blind spot monitoring (BSM) detects a vehicle in your blind spot.",
               "enablement": [
                 {
                   "type": "capability",
@@ -571,7 +571,7 @@
               "key": "DynamicExperimentalControl",
               "widget": "toggle",
               "title": "Dynamic Experimental Control",
-              "description": "Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.",
+              "description": "Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.",
               "visibility": [
                 {
                   "type": "any",
@@ -1474,7 +1474,7 @@
               "key": "RainbowMode",
               "widget": "toggle",
               "title": "Tesla Rainbow Mode",
-              "description": "A beautiful rainbow effect on the path the model wants to take. It does not affect driving in any way."
+              "description": "Display a rainbow effect on the path the model wants to take. It does not affect driving in any way."
             }
           ]
         }
