@@ -1,0 +1,70 @@
+# Named rule fragments. Reference from items/sections via {$ref: "#/macros/<name>"}.
+# Macros may $ref other macros (max depth 3 — see compile_settings_ui.py). No template logic.
+#
+# Adding a macro: define here once, then reference everywhere. The compiler
+# resolves $refs into the canonical settings_ui.json output the frontend reads.
+
+macros:
+  # Most-used: only writable when the device is offroad.
+  offroad:
+    - {type: offroad_only}
+
+  # Writable while not engaged (started, but selfdrive/MADS not active).
+  not_engaged:
+    - {type: not_engaged}
+
+  # sunnypilot longitudinal control is active.
+  longitudinal:
+    - {type: capability, field: has_longitudinal_control, equals: true}
+
+  # Longitudinal + ICBM both available.
+  longitudinal_and_icbm:
+    - {type: capability, field: has_longitudinal_control, equals: true}
+    - {type: capability, field: has_icbm, equals: true}
+
+  # Item only meaningful when "Show Advanced Controls" is enabled by the user.
+  advanced_only:
+    - {type: param, key: ShowAdvancedControls, equals: true}
+
+  # Hide on MICI hardware (no analog HUD support yet).
+  hide_on_mici:
+    - type: not
+      condition: {type: capability, field: device_type, equals: mici}
+
+  # Mirrors selfdrive/ui/sunnypilot/layouts/.../mads_settings.py:_mads_limited_settings()
+  # Rivian + Tesla-without-vehicle-bus get the limited MADS UI (3-toggle subset).
+  # On those platforms these toggles are disabled — full MADS settings are
+  # only writable on platforms NOT in the limited-set.
+  mads_full_platforms:
+    - type: not
+      condition:
+        type: any
+        conditions:
+          - {type: capability, field: brand, equals: rivian}
+          - type: all
+            conditions:
+              - {type: capability, field: brand, equals: tesla}
+              - type: not
+                condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
+
+  # Inverse of mads_full_platforms: present only on the limited platforms.
+  # Useful for "show this only on rivian/tesla-no-bus" toggles.
+  mads_limited_platforms:
+    - type: any
+      conditions:
+        - {type: capability, field: brand, equals: rivian}
+        - type: all
+          conditions:
+            - {type: capability, field: brand, equals: tesla}
+            - type: not
+              condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
+
+  # Hide everything but a clearly-marked release branch (matches Raylib
+  # _is_release_branch = is_release OR is_sp_release).
+  release_branches_hide:
+    - type: not
+      condition:
+        type: any
+        conditions:
+          - {type: capability, field: is_release, equals: true}
+          - {type: capability, field: is_sp_release, equals: true}
