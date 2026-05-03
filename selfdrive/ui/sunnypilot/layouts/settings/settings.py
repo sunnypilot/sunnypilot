@@ -27,12 +27,15 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLa
 from openpilot.system.ui.lib.application import gui_app, MousePos
 from openpilot.system.ui.lib.multilang import tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.wifi_manager import WifiManager
 from openpilot.system.ui.sunnypilot.lib.styles import style
-from openpilot.system.ui.sunnypilot.lib.wifi_manager import WifiManagerSP
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 # from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
+
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.lib.wifi_manager import WifiManagerSP as WifiManager
 
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
@@ -105,7 +108,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     self._sidebar_scroller = Scroller([], spacing=0, line_separator=False, pad_end=False)
 
     # Panel configuration
-    wifi_manager = WifiManagerSP()
+    wifi_manager = WifiManager()
     wifi_manager.set_active(False)
 
     self._panels = {
