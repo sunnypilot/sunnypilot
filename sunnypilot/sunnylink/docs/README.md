@@ -580,11 +580,11 @@ The device defines these labels in `capabilities.py:CAPABILITY_LABELS`. Examples
 
 ### Centralized param enforcement
 
-The device-side UI enforces capability constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_sp_constraints()`. This method removes incompatible params based on car capabilities, and should be the single source of truth for such constraints.
+The device-side UI enforces capability constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_constraints()`. This method removes incompatible params based on car capabilities, and should be the single source of truth for such constraints.
 
 **Settings layouts should NOT duplicate these params.remove() calls.** Instead, they should rely on schema rules and the centralized enforcement. This prevents duplicate logic and ensures consistency.
 
-Example constraints in `_enforce_sp_constraints()`:
+Example constraints in `_enforce_constraints()`:
 - Angle steering cars: remove `EnforceTorqueControl` and `NeuralNetworkLateralControl`
 - No CarParams: remove all car-dependent params
 - No longitudinal: remove `ExperimentalMode`

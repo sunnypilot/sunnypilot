@@ -177,7 +177,7 @@ def extract(definition_path: str, src_dir: str) -> None:
     path = os.path.join(pages_dir, f"{panel['id']}.yaml")
     with open(path, "w") as f:
       f.write(f"# Page: {panel['id']}\n")
-      f.write(f"# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.\n")
+      f.write("# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.\n")
       f.write(_dump_yaml(page))
     count += 1
 
