@@ -19,7 +19,7 @@ sections:
   - key: DynamicExperimentalControl
     widget: toggle
     title: Dynamic Experimental Control
-    description: Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.
+    description: Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.
     visibility:
     - type: any
       conditions:

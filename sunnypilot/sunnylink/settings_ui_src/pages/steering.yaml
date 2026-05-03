@@ -14,7 +14,7 @@ sections:
   - key: Mads
     widget: toggle
     title: Enable Modular Assistive Driving System (MADS)
-    description: Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.
+    description: Enable MADS. Disable toggle to revert back to stock sunnypilot engagement/disengagement.
     enablement:
     - $ref: '#/macros/offroad'
   sub_panels:
@@ -245,8 +245,8 @@ sections:
   - key: AutoLaneChangeBsmDelay
     widget: toggle
     title: 'Auto Lane Change: Delay with Blind Spot'
-    description: Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing
-      vehicle, ensuring safe maneuvering.
+    description: Toggle to enable a delay timer for lane changes when blind spot monitoring (BSM) detects a vehicle in your blind
+      spot.
     enablement:
     - type: capability
       field: enable_bsm

@@ -30,7 +30,7 @@ SCHEMA_VALIDATOR_PATH = os.path.join(os.path.dirname(DEFINITION_PATH), "settings
 
 
 def _walk_items(schema: dict[str, Any]):
-  """Yield every item dict reachable from the schema (panels, sections, sub_panels, sub_items, vehicle_settings)."""
+  """Yield every item dict from the schema."""
   def _yield(item: dict[str, Any]):
     yield item
     for sub in item.get("sub_items", []):
@@ -112,7 +112,7 @@ def schema():
 
 class TestMadsBrandGates:
   def test_mads_main_cruise_has_brand_gate(self, schema):
-    """MadsMainCruiseAllowed must be disabled on rivian + tesla-no-bus to match Raylib _mads_limited_settings."""
+    """MadsMainCruiseAllowed must gate on brand and tesla_has_vehicle_bus."""
     item = _find_item(schema, "MadsMainCruiseAllowed")
     assert item is not None
     assert _references_capability_field(item.get("enablement"), "brand")
@@ -150,12 +150,12 @@ class TestTestManeuversSection:
     enablement = section.get("enablement") or []
     enable_refs = json.dumps(enablement)
     assert "ShowAdvancedControls" in enable_refs, \
-      "test_maneuvers must gate ShowAdvancedControls via enablement (disabled, not hidden)"
+      "test_maneuvers must gate ShowAdvancedControls via enablement"
 
 
 class TestValidator:
   def test_validator_accepts_real_json(self):
-    """settings_ui.json must validate against settings_ui.schema.json."""
+    """settings_ui.json validates against settings_ui.schema.json."""
     jsonschema = pytest.importorskip("jsonschema")
     with open(DEFINITION_PATH) as f:
       data = json.load(f)
@@ -187,7 +187,7 @@ class TestReleaseBranchGates:
     "QuickBootToggle",
   ])
   def test_sp_dev_items_gate_on_is_sp_release(self, schema, key):
-    """SP-side dev items must hide on EITHER release branch (matches Raylib _is_release_branch = is_release OR IsReleaseSpBranch)."""
+    """SP dev items must hide on either release branch (is_release OR is_sp_release)."""
     item = _find_item(schema, key)
     assert item is not None, f"{key} not found in schema"
     rules = (item.get("visibility") or []) + (item.get("enablement") or [])
@@ -214,7 +214,7 @@ class TestNotEngagedReplacement:
     "ToyotaStopAndGoHack",
   ])
   def test_offroad_only_replaced_with_not_engaged(self, schema, key):
-    """These items can be changed safely when not engaged; must not require full offroad."""
+    """These items should use not_engaged, not offroad_only."""
     item = _find_item(schema, key)
     assert item is not None, f"{key} not found"
     rule_types = _flatten_rule_types(item.get("enablement"))

@@ -81,10 +81,9 @@ def _bundle_field(bundle: dict | None, key: str) -> str:
 def generate_capabilities(params: Params | None = None) -> dict:
   """Generate a SettingsCapabilities dict from CarParams + boolean params.
 
-  Bundle-first source of truth: when CarPlatformBundle is present, brand and
-  platform derive from the bundle (mirrors Raylib settings code paths). The
-  CarParams* deserialization is the fallback when the bundle has not yet been
-  written (very early after first pairing).
+  When CarPlatformBundle is present, brand and platform come from the bundle
+  (mirrors Raylib). CarParams* deserialization is the fallback before the bundle
+  is written (early after first pairing).
   """
   params = params or Params()
 

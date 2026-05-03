@@ -51,8 +51,7 @@ class TestProtocolVersion:
     assert caps["protocol_version"] == PROTOCOL_VERSION
 
   def test_protocol_version_is_known(self):
-    """Sentinel against accidental bumps. If you intentionally bumped the
-    protocol, edit KNOWN_PROTOCOL_VERSIONS in the same commit."""
+    """Sentinel against accidental bumps. Edit KNOWN_PROTOCOL_VERSIONS if intentional."""
     assert PROTOCOL_VERSION in KNOWN_PROTOCOL_VERSIONS, (
       f"PROTOCOL_VERSION={PROTOCOL_VERSION} is not in KNOWN_PROTOCOL_VERSIONS={KNOWN_PROTOCOL_VERSIONS}. " +
       "If this bump is intentional, add it to KNOWN_PROTOCOL_VERSIONS."

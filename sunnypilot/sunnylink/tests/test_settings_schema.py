@@ -25,8 +25,7 @@ MAX_ALLOWED_MISSING_TITLES = 0  # All items must have titles (metadata is inline
 
 
 def _iter_panel_items(panel: dict):
-  """Yield top-level items reachable from a panel: panel.items, panel.sub_panels.items,
-  panel.sections.items, panel.sections.sub_panels.items. Does not recurse sub_items."""
+  """Yield top-level items from a panel (non-recursive)."""
   for item in panel.get("items", []):
     yield item
   for sp in panel.get("sub_panels", []):
@@ -41,14 +40,14 @@ def _iter_panel_items(panel: dict):
 
 
 def _iter_all_sub_panels(panel: dict):
-  """Yield every sub_panel (panel-level + section-nested)."""
+  """Yield all sub_panels from a panel and its sections."""
   yield from panel.get("sub_panels", [])
   for section in panel.get("sections", []):
     yield from section.get("sub_panels", [])
 
 
 def _brand_items(brand_data) -> list[dict]:
-  """vehicle_settings[brand] is dict {title, description?, items}; tolerate raw list."""
+  """Extract items from vehicle_settings[brand] (handles dict or list)."""
   if isinstance(brand_data, dict):
     return brand_data.get("items", [])
   if isinstance(brand_data, list):
@@ -69,7 +68,7 @@ def all_param_keys():
 
 class TestSchemaStructure:
   def test_schema_is_valid_json(self):
-    """Schema can be serialized to valid JSON."""
+    """Schema serializes to valid JSON."""
     raw = generate_schema_json()
     parsed = json.loads(raw)
     assert isinstance(parsed, dict)
@@ -136,7 +135,7 @@ class TestSchemaStructure:
         assert "widget" in item, f"Vehicle item {item.get('key')} missing 'widget'"
 
   def test_no_duplicate_keys_across_panels(self, schema):
-    """Each param key should appear in at most one panel to avoid double-rendering."""
+    """Param keys should appear in at most one panel."""
     seen: dict[str, str] = {}  # key -> panel_id
     for panel in schema["panels"]:
       for item in _iter_panel_items(panel):
@@ -153,20 +152,20 @@ class TestSchemaStructure:
 
 class TestSchemaCoverage:
   def test_all_schema_keys_exist_in_params(self, schema, all_param_keys):
-    """Every key referenced in the schema must exist in Params().all_keys()."""
+    """Schema keys must exist in Params().all_keys()."""
     schema_keys = collect_all_keys(schema)
     missing = schema_keys - all_param_keys
     assert not missing, f"Schema references keys not in Params: {missing}"
 
   def test_all_capability_fields_are_declared(self, schema):
-    """Every capability field used in rules must be in capability_fields."""
+    """Capability fields used in rules must be declared."""
     declared = set(schema["capability_fields"])
     referenced = collect_capability_refs(schema)
     undeclared = referenced - declared
     assert not undeclared, f"Rules reference undeclared capability fields: {undeclared}"
 
   def test_capability_fields_match_constant(self, schema):
-    """Schema capability_fields must match the CAPABILITY_FIELDS constant."""
+    """Schema capability_fields must match CAPABILITY_FIELDS constant."""
     assert set(schema["capability_fields"]) == set(CAPABILITY_FIELDS)
 
 
@@ -258,7 +257,7 @@ class TestKnownPanels:
     assert "mads_settings" in sub_ids
 
   def test_mutual_exclusion_torque_nnlc(self, schema):
-    """EnforceTorqueControl and NNLC should have cross-param rules."""
+    """EnforceTorqueControl and NNLC must reference each other in enablement."""
     torque = nnlc = None
     for panel in schema["panels"]:
       for item in _iter_panel_items(panel):
@@ -296,7 +295,7 @@ class TestKnownVehicleSettings:
 
 class TestItemCompleteness:
   def _collect_all_items(self, schema):
-    """Collect every item, including sub_items, across panels (sections + flat) + vehicle_settings."""
+    """Collect all items and sub_items from panels and vehicle_settings."""
     items = []
     for panel in schema["panels"]:
       for item in _iter_panel_items(panel):
@@ -311,18 +310,18 @@ class TestItemCompleteness:
     return items
 
   def test_all_items_have_titles(self, schema):
-    """Every item must have a title (metadata is inline, no enrichment fallback)."""
+    """All items must have titles."""
     missing = [i["key"] for i in self._collect_all_items(schema) if "title" not in i]
     if len(missing) > MAX_ALLOWED_MISSING_TITLES:
       pytest.fail(f"Items without titles ({len(missing)}): {missing[:10]}")
 
   def test_no_default_titles(self, schema):
-    """No item should have title == key (forces human-readable titles)."""
+    """Item titles must differ from keys."""
     defaults = [i["key"] for i in self._collect_all_items(schema) if i.get("title") == i["key"]]
     assert not defaults, f"Items with default titles (title == key): {defaults}"
 
   def test_options_structure(self, schema):
-    """Options must be list of {value, label} dicts."""
+    """Options must be a list of {value, label} dicts."""
     for item in self._collect_all_items(schema):
       opts = item.get("options")
       if opts is None:
@@ -334,7 +333,7 @@ class TestItemCompleteness:
         assert "label" in opt, f"{item['key']}: option missing 'label': {opt}"
 
   def test_numeric_constraints(self, schema):
-    """If min/max/step present, all three must be present and min < max."""
+    """If any of min/max/step is present, all three must be, and min < max."""
     for item in self._collect_all_items(schema):
       has_min = "min" in item
       has_max = "max" in item

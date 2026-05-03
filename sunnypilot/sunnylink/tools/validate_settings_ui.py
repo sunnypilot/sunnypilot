@@ -5,12 +5,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-Settings UI Validator
-=====================
-
-Validates settings_ui.json against structural, semantic, and referential
-integrity constraints. Ensures the file is well-formed for consumption by
-the sunnylink frontend and the device-side schema generator.
+Validates settings_ui.json against structural, semantic, and referential integrity constraints.
 
 Usage:
   python validate_settings_ui.py
@@ -22,7 +17,6 @@ import json
 import os
 import sys
 
-# Add repo root to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from openpilot.sunnypilot.sunnylink.capabilities import CAPABILITY_FIELDS

@@ -206,9 +206,9 @@ def getParamsAllKeysV1() -> dict[str, str]:
 def getParamsMetadata() -> str:
   """Return settings_ui.json + live capabilities as gzip-compressed, base64-encoded string.
 
-  Reads settings_ui.json, injects live capabilities derived from CarParams,
-  compresses, and returns. This is the single RPC for the frontend to get
-  the complete settings UI definition + runtime capabilities.
+  Reads settings_ui.json, injects live capabilities from CarParams, compresses,
+  and returns. Single RPC for the frontend to get the complete settings UI and
+  runtime capabilities.
   """
   try:
     schema = generate_schema()

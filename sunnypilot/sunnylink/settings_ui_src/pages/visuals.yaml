@@ -108,4 +108,4 @@ sections:
   - key: RainbowMode
     widget: toggle
     title: Tesla Rainbow Mode
-    description: A beautiful rainbow effect on the path the model wants to take. It does not affect driving in any way.
+    description: Display a rainbow effect on the path the model wants to take. It does not affect driving in any way.

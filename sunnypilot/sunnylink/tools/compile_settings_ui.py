@@ -5,9 +5,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-Settings UI Compiler
-====================
-
 Reads settings_ui_src/ (the dev-friendly authoring tree) and emits the
 canonical settings_ui.json that the device generator + frontend consume.
 
@@ -57,7 +54,6 @@ def _load_yaml(path: str):
     return yaml.safe_load(f) or {}
 
 
-# -------- $ref resolution -----------------------------------------------------
 def _is_ref(node) -> bool:
   return isinstance(node, dict) and len(node) == 1 and "$ref" in node
 
@@ -106,7 +102,6 @@ def _resolve_refs(node, macros: dict, visiting: tuple[str, ...] = ()):
   return node
 
 
-# -------- Canonical key ordering ---------------------------------------------
 # Output JSON key order. Mirrors the conventions in the original hand-written
 # settings_ui.json so structural diffs after extraction are minimal.
 _ITEM_KEY_ORDER = [
@@ -220,7 +215,6 @@ def _canon_vehicle(page: dict, macros: dict) -> dict:
   return out
 
 
-# -------- Compile -------------------------------------------------------------
 def _load_pages(src: str) -> list[dict]:
   pages_dir = os.path.join(src, "pages")
   if not os.path.isdir(pages_dir):

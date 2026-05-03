@@ -43,13 +43,12 @@ def committed() -> dict:
 
 class TestRoundtrip:
   def test_compiled_matches_committed(self, compiled, committed):
-    """src tree compile output must structurally equal the checked-in JSON."""
+    """Compiled output must match the checked-in JSON."""
     assert compiled == committed
 
   def test_committed_file_is_canonical(self):
-    """Compiler's serialized output must byte-equal the checked-in file
-    (trailing newline included). Drift here means someone edited
-    settings_ui.json by hand instead of editing settings_ui_src/."""
+    """Compiled output must byte-match the checked-in file (including trailing newline).
+    Drift means someone edited settings_ui.json by hand instead of editing settings_ui_src/."""
     schema = compile_schema(DEFAULT_SRC)
     rendered = json.dumps(schema, indent=2) + "\n"
     with open(DEFAULT_OUT) as f:
@@ -115,7 +114,7 @@ class TestCompiledShape:
             "device", "software", "developer", "models"} <= panel_ids
 
   def test_vehicle_settings_consistent_shape(self, compiled):
-    """Every brand under vehicle_settings has {title, description, items}."""
+    """Each brand in vehicle_settings must have {title, description, items}."""
     for brand, data in compiled["vehicle_settings"].items():
       assert isinstance(data, dict), f"{brand}: expected object, got {type(data).__name__}"
       assert "title" in data, f"{brand}: missing title"
@@ -123,7 +122,7 @@ class TestCompiledShape:
       assert "items" in data, f"{brand}: missing items"
 
   def test_no_dangling_refs_after_compile(self, compiled):
-    """No $ref objects should survive the compile step."""
+    """All $ref objects must be resolved during compilation."""
     def walk(node):
       if isinstance(node, dict):
         if "$ref" in node:
