@@ -262,10 +262,11 @@ class RadarD:
       lead_one = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[0], model_v_ego, self.CP, self.CP_SP, low_speed_override=True)
       lead_two = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[1], model_v_ego, self.CP, self.CP_SP, low_speed_override=False)
 
-      if not lead_one['status']:
-        distant_track = self.distant_lead_detector.detect(self.tracks, sm['modelV2'], self.v_ego)
-        if distant_track is not None:
-          lead_one = distant_track.get_RadarState()
+      distant_track = self.distant_lead_detector.detect(self.tracks, sm['modelV2'], self.v_ego,
+                                                        lead_one['dRel'] if lead_one['status'] else 0.0,
+                                                        lead_one['status'])
+      if distant_track is not None and (not lead_one['status'] or distant_track.dRel < lead_one['dRel']):
+        lead_one = distant_track.get_RadarState()
 
       self.radar_state.leadOne = lead_one
       self.radar_state.leadTwo = lead_two
