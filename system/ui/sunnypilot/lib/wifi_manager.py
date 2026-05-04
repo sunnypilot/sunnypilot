@@ -15,6 +15,10 @@ TETHERING_UPLINK_IFACE = "wwan0"
 
 
 class WifiManagerSP(WifiManager):
+  def __init__(self):
+    super().__init__()
+    self._set_tethering_nat_rule(False)
+
   @staticmethod
   def _tethering_nat_rule() -> list[str]:
     return ["POSTROUTING", "-s", TETHERING_SUBNET, "-o", TETHERING_UPLINK_IFACE, "-j", "MASQUERADE"]
