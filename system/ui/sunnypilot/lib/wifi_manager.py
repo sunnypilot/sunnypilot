@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import subprocess
 import threading
+import time
 
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.ui.lib.wifi_manager import WifiManager
@@ -43,6 +44,7 @@ class WifiManagerSP(WifiManager):
         if self._ipv4_forward:
           self._set_tethering_nat_rule(True)
         else:
+          time.sleep(5)
           cloudlog.warning("net.ipv4.ip_forward = 0")
           subprocess.run(["sudo", "sysctl", "net.ipv4.ip_forward=0"], check=False)
       else:
