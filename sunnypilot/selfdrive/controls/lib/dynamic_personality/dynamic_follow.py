@@ -38,7 +38,7 @@ CUTIN_DELTA        = 0.10  # sec added on cut-in event
 CUTIN_DECAY_FRAMES = 100   # ~5s decay
 
 CLOSING_VREL_SCALE = -2.0  # m/s — vRel at which closing delta is maxed
-CLOSING_DELTA_MAX  = 0.08  # sec
+CLOSING_DELTA_MAX  = 0.12  # sec
 
 # High aLeadTau means MPC lead extrapolation decays fast — uncertain future
 ATAU_HIGH      = 2.0   # tau threshold
@@ -46,7 +46,7 @@ ATAU_DELTA_MAX = 0.05  # sec
 
 # aLeadK-based delta: fires earlier than vRel closing delta
 ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
-ALEAD_DELTA_MAX   = 0.10   # sec
+ALEAD_DELTA_MAX   = 0.15   # sec
 
 # Asymmetric rate limits — fast up on danger, slow down on relax
 T_FOLLOW_RATE_UP   = 0.45  # sec/sec — gentle snap toward danger; avoids lead noise ratcheting
