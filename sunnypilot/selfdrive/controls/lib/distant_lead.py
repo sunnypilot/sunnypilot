@@ -83,7 +83,9 @@ class DistantLeadDetector:
     self._release = next_release
 
     if self._close_tid is not None and self._close_tid in tracks:
-      if tracks[self._close_tid].dRel < _CLOSE_DREL_MAX:
+      ct = tracks[self._close_tid]
+      ct_in_lane = np.interp(ct.dRel, left_x, left_y) < -ct.yRel < np.interp(ct.dRel, right_x, right_y)
+      if ct.dRel < _CLOSE_DREL_MAX and ct_in_lane:
         self._close_streak += 1
         self._close_holdover = _CLOSE_HOLDOVER_FRAMES
       else:
@@ -102,7 +104,9 @@ class DistantLeadDetector:
         break
 
     if self._close_holdover > 0 and self._close_tid is not None and self._close_tid in tracks:
-      if not lead_one_status or lead_one_drel > _CLOSE_OVERRIDE_DREL:
-        return tracks[self._close_tid]
+      ct = tracks[self._close_tid]
+      ct_in_lane = np.interp(ct.dRel, left_x, left_y) < -ct.yRel < np.interp(ct.dRel, right_x, right_y)
+      if ct_in_lane and (not lead_one_status or lead_one_drel > _CLOSE_OVERRIDE_DREL):
+        return ct
 
     return chosen
