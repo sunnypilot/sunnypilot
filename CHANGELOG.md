@@ -170,6 +170,20 @@ sunnypilot Version 2026.001.000 (2026-05-06)
   * @royjr made their first contribution in "HKG: add KIA_FORTE_2019_NON_SCC fingerprint"
   * @ssysm made their first contribution in "Tesla: remove `TESLA_MODEL_X` from `dashcamOnly`"
 * Full Changelog: https://github.com/sunnypilot/sunnypilot/compare/v2025.002.000...v2026.001.000
+************************
+* Synced with commaai's openpilot (v0.11.1)
+  * master commit c001f3c9b490a80e69539f0af6022f6e07ceb721 (April 16, 2026)
+* New driver monitoring model
+* Improved image processing pipeline for driver camera
+* Rivian R1S and R1T 2025 support thanks to lukasloetkolben!
+* New driving model #36798
+  * Fully trained using a learned simulator
+  * Improved longitudinal performance in Experimental mode
+* Reduce comma four standby power usage by 77% to 52 mW
+* Kia K7 2017 support thanks to royjr!
+* Lexus LS 2018 support thanks to Hacheoy!
+* Improved inter-process communication memory efficiency
+* comma four support
 
 sunnypilot Version 2025.002.000 (2025-11-06)
 ========================
