@@ -81,7 +81,7 @@ sunnypilot Version 2026.001.000 (2026-05-06)
   * [MICI] ui: need superclass `_render` in `HudRendererSP` by @sunnyhaibin
   * [TIZI/TICI] ui: Speed Limit Assist active status by @sunnyhaibin
   * ui: reimplement "Screen Off" option to Onroad Brightness by @sunnyhaibin
-  * ui: dont hide steering wheel when blindspot disabled by @royjr
+  * ui: don't hide steering wheel when blindspot disabled by @royjr
   * ui: Speed Limit Assist `preActive` improvements  by @sunnyhaibin
   * ui: consolidate Speed Limit Assist `preActive` status rendering by @sunnyhaibin
   * [MICI] ui: Speed Limit Assist `preActive` status by @sunnyhaibin
