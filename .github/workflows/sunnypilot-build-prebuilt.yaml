@@ -15,7 +15,7 @@ env:
 
 on:
   push:
-    branches: [ master, master-dev ]
+    branches: [ master, master-dev, '_release-*' ]
     tags: [ 'release/*' ]
   pull_request_target:
     types: [ labeled ]
@@ -56,17 +56,29 @@ jobs:
 
           BUILD="$(date '+%Y.%m.%d')-${{ github.run_number }}"
           if [[ -z "$CONFIG" || "$CONFIG" == "null" ]]; then
-            echo "No exact strategy match found. Falling back to feature/fork logic."
-            IS_FORK="${{ github.event.pull_request.head.repo.fork && 'true' || 'false' }}"
-            FORK_SUFFIX=$( [[ "$IS_FORK" == "true" ]] && echo "-fork" || echo "" )
-            NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
+            if [[ "$BRANCH" =~ ^_release- ]]; then
+              echo "Release source branch detected. Using stable staging defaults."
+              stable_version=$(cat sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g')
+              echo "new_branch=${BRANCH}-prebuilt"                                    >> $GITHUB_OUTPUT
+              echo "version=$stable_version"                                           >> $GITHUB_OUTPUT
+              echo "is_stable_branch=true"                                            >> $GITHUB_OUTPUT
+              echo "environment=staging"                                               >> $GITHUB_OUTPUT
+              echo "extra_version_identifier=staging"                                 >> $GITHUB_OUTPUT
+              echo "cancel_publish_in_progress=false"                                 >> $GITHUB_OUTPUT
+              echo "publish_concurrency_group=publish-${BRANCH}-${{ github.sha }}"   >> $GITHUB_OUTPUT
+            else
+              echo "No exact strategy match found. Falling back to feature/fork logic."
+              IS_FORK="${{ github.event.pull_request.head.repo.fork && 'true' || 'false' }}"
+              FORK_SUFFIX=$( [[ "$IS_FORK" == "true" ]] && echo "-fork" || echo "" )
+              NEW_BRANCH="${BRANCH}${FORK_SUFFIX}-prebuilt"
 
-            echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-            echo "version=$BUILD" >> $GITHUB_OUTPUT
-            echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
-            echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
-            echo "environment=feature-branch" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=feature-branch" >> $GITHUB_OUTPUT
+              echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+              echo "version=$BUILD" >> $GITHUB_OUTPUT
+              echo "cancel_publish_in_progress=true" >> $GITHUB_OUTPUT
+              echo "publish_concurrency_group=publish-${BRANCH}" >> $GITHUB_OUTPUT
+              echo "environment=feature-branch" >> $GITHUB_OUTPUT
+              echo "extra_version_identifier=feature-branch" >> $GITHUB_OUTPUT
+            fi
           else
           echo "Matched config: $CONFIG"
             environment=$(echo "$CONFIG" | jq -r '.environment')
