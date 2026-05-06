@@ -38,19 +38,24 @@ CUTIN_DELTA        = 0.10  # sec added on cut-in event
 CUTIN_DECAY_FRAMES = 100   # ~5s decay
 
 CLOSING_VREL_SCALE = -2.0  # m/s — vRel at which closing delta is maxed
-CLOSING_DELTA_MAX  = 0.12  # sec
+CLOSING_DELTA_MAX  = 0.08  # sec
 
-# High aLeadTau means MPC lead extrapolation decays fast — uncertain future
-ATAU_HIGH      = 2.0   # tau threshold
-ATAU_DELTA_MAX = 0.05  # sec
+# High aLeadTau means MPC lead extrapolation decays fast — uncertain future.
+# Radar resets tau to ~1.5 at brake onset; sustained braking drives tau→0.
+# delta = ATAU_DELTA_MAX * (tau / ATAU_TAU_RESET): max at onset, smoothly falls to 0 as MPC calibrates.
+# Gate on a_lead<-0.3 so modifier only fires during active braking.
+ATAU_TAU_RESET = 1.5   # radar's reset value when |aLeadK| < 0.5 — used as normalization denominator
+ATAU_DELTA_MAX = 0.08  # sec
 
 # aLeadK-based delta: fires earlier than vRel closing delta
 ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
-ALEAD_DELTA_MAX   = 0.15   # sec
+ALEAD_DELTA_MAX   = 0.10   # sec
 
-# Asymmetric rate limits — fast up on danger, slow down on relax
-T_FOLLOW_RATE_UP   = 0.45  # sec/sec — gentle snap toward danger; avoids lead noise ratcheting
-T_FOLLOW_RATE_DOWN = 0.12  # sec/sec — moderate decay; holds space after brake events but recovers fast enough MPC doesn't hunt
+# Symmetric rate limits — same speed up and down eliminates fast-spike/slow-decay rubber-band oscillation.
+# 0.30 s/s: fast enough to respond before late-brake window closes (~0.6s to full delta),
+# symmetric so t_follow clears just as fast as it builds — no gas/brake hunting.
+T_FOLLOW_RATE_UP   = 0.30  # sec/sec
+T_FOLLOW_RATE_DOWN = 0.30  # sec/sec
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
@@ -208,7 +213,7 @@ class FollowDistanceController:
     delta += self._mod_cutin()
     # alead and closing both fire on same braking event — take max to avoid double-counting
     delta += max(self._mod_alead(a_lead), self._mod_closing(v_rel))
-    delta += self._mod_atau(a_tau)
+    delta += self._mod_atau(a_tau, a_lead)
 
     self._prev_lead_status = status
     self._prev_drel = d_rel
@@ -275,8 +280,12 @@ class FollowDistanceController:
     self.dbg_closing_delta = delta
     return delta
 
-  def _mod_atau(self, a_tau: float) -> float:
-    ratio = float(np.clip((a_tau - ATAU_HIGH) / ATAU_HIGH, 0.0, 1.0))
+  def _mod_atau(self, a_tau: float, a_lead: float = 0.0) -> float:
+    if a_lead >= -0.3:
+      self.dbg_atau_delta = 0.0
+      return 0.0
+    # Smooth proportional decay: max at onset (tau=1.5), zero when fully calibrated (tau=0)
+    ratio = float(np.clip(a_tau / ATAU_TAU_RESET, 0.0, 1.0))
     delta = ATAU_DELTA_MAX * ratio
     self.dbg_atau_delta = delta
     return delta

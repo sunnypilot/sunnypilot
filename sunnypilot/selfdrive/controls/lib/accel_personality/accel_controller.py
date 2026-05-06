@@ -29,7 +29,7 @@ JERK_ACCEL_V  = {
 }
 
 COAST_WINDOW_BP = [0.0, 10.0, 20.0, 35.0]  # m/s
-COAST_WINDOW_V  = [0.20, 0.40, 0.65, 1.10]  # m/s excess before braking starts
+COAST_WINDOW_V  = [0.30, 0.55, 0.80, 1.30]  # m/s excess before braking starts — wider window = glide longer before applying drag
 
 EXCESS_SCALE_BP = [0.0, 10.0, 20.0, 35.0]  # m/s
 EXCESS_SCALE_V  = [0.8,  1.8,  3.5,  5.5]
@@ -44,13 +44,13 @@ FULL_BRAKE_FLOOR_V = {
 
 COAST_FLOOR = {
   AccelPersonality.eco:    -0.02,
-  AccelPersonality.normal: -0.08,
+  AccelPersonality.normal: -0.04,  # halved — less aggressive drag at cruise speed, smoother glide-in
   AccelPersonality.sport:  -1.50,
 }
 
 JERK_DECEL_BP    = [0.0,  35.0]  # m/s
-JERK_DECEL_ONSET = [0.10, 0.04]  # m/s³
-JERK_DECEL_EASE  = [0.24, 0.09]  # m/s³
+JERK_DECEL_ONSET = [0.06, 0.03]  # m/s³ — slower onset = gentler initial decel bite
+JERK_DECEL_EASE  = [0.18, 0.07]  # m/s³ — slower ease = smoother recovery from coast drag
 EASE_FEATHER     = 0.60
 
 _RAMP_OFF_START = 5.0   # m/s below cruise where ramp begins
