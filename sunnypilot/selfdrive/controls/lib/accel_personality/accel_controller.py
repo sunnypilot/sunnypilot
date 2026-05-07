@@ -29,28 +29,28 @@ JERK_ACCEL_V  = {
 }
 
 COAST_WINDOW_BP = [0.0, 10.0, 20.0, 35.0]  # m/s
-COAST_WINDOW_V  = [0.30, 0.55, 0.80, 1.30]  # m/s excess before braking starts — wider window = glide longer before applying drag
+COAST_WINDOW_V  = [0.30, 0.55, 0.80, 1.30]  # m/s excess before braking starts
 
 EXCESS_SCALE_BP = [0.0, 10.0, 20.0, 35.0]  # m/s
-EXCESS_SCALE_V  = [0.8,  1.8,  3.5,  5.5]
+EXCESS_SCALE_V  = [1.2,  2.5,  4.5,  7.0]
 
 FULL_BRAKE_FLOOR_BP =      [0.0,    5.0,    10.0,   40.0]  # m/s
 
 FULL_BRAKE_FLOOR_V = {
-  AccelPersonality.eco:    [-0.001, -0.003, -0.001, -0.42],
-  AccelPersonality.normal: [-0.002, -0.004, -0.002, -0.60],
-  AccelPersonality.sport:  [-0.003, -0.005, -0.003, -0.80],
+  AccelPersonality.eco:    [-0.001, -0.002, -0.001, -0.30],
+  AccelPersonality.normal: [-0.001, -0.003, -0.001, -0.40],
+  AccelPersonality.sport:  [-0.002, -0.003, -0.002, -0.55],
 }
 
 COAST_FLOOR = {
   AccelPersonality.eco:    -0.02,
-  AccelPersonality.normal: -0.04,  # halved — less aggressive drag at cruise speed, smoother glide-in
-  AccelPersonality.sport:  -1.50,
+  AccelPersonality.normal: -0.04,
+  AccelPersonality.sport:  -0.18,
 }
 
 JERK_DECEL_BP    = [0.0,  35.0]  # m/s
-JERK_DECEL_ONSET = [0.06, 0.03]  # m/s³ — slower onset = gentler initial decel bite
-JERK_DECEL_EASE  = [0.18, 0.07]  # m/s³ — slower ease = smoother recovery from coast drag
+JERK_DECEL_ONSET = [0.06, 0.03]  # m/s³
+JERK_DECEL_EASE  = [0.18, 0.07]  # m/s³
 EASE_FEATHER     = 0.60
 
 _RAMP_OFF_START = 5.0   # m/s below cruise where ramp begins
@@ -160,7 +160,7 @@ class AccelPersonalityController:
     onset = float(np.interp(v_ego, JERK_DECEL_BP, JERK_DECEL_ONSET))
     ease  = float(np.interp(v_ego, JERK_DECEL_BP, JERK_DECEL_EASE)) * EASE_FEATHER
     delta = target_min - self._last_min
-    blend = float(np.clip(abs(delta) / 0.3, 0.0, 1.0))
+    blend = float(np.clip(abs(delta) / 0.5, 0.0, 1.0))
     d_rate = (onset * blend + ease * (1.0 - blend)) * DT_MDL
 
     new_min = float(np.clip(target_min, self._last_min - d_rate, self._last_min + d_rate))
