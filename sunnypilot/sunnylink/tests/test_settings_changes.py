@@ -181,17 +181,14 @@ class TestTorqueOptionGeneration:
 
 class TestReleaseBranchGates:
   @pytest.mark.parametrize("key", [
-    "JoystickDebugMode",
-    "AlphaLongitudinalEnabled",
     "EnableGithubRunner",
     "QuickBootToggle",
   ])
   def test_sp_dev_items_gate_on_is_sp_release(self, schema, key):
-    """SP dev items must hide on either release branch (is_release OR is_sp_release)."""
+    """sunnypilot dev items must hide on sunnypilot release branches (is_sp_release gate)."""
     item = _find_item(schema, key)
     assert item is not None, f"{key} not found in schema"
     rules = (item.get("visibility") or []) + (item.get("enablement") or [])
-    assert _references_capability_field(rules, "is_release"), f"{key} missing is_release gate"
     assert _references_capability_field(rules, "is_sp_release"), f"{key} missing is_sp_release gate"
 
 
