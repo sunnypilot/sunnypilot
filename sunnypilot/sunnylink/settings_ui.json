@@ -1721,16 +1721,6 @@
               "key": "JoystickDebugMode",
               "widget": "toggle",
               "title": "Joystick Debug Mode",
-              "visibility": [
-                {
-                  "type": "not",
-                  "condition": {
-                    "type": "capability",
-                    "field": "is_sp_release",
-                    "equals": true
-                  }
-                }
-              ],
               "enablement": [
                 {
                   "type": "offroad_only"
