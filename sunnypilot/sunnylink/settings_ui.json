@@ -574,19 +574,9 @@
               "description": "Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.",
               "visibility": [
                 {
-                  "type": "any",
-                  "conditions": [
-                    {
-                      "type": "capability",
-                      "field": "has_longitudinal_control",
-                      "equals": true
-                    },
-                    {
-                      "type": "capability",
-                      "field": "has_icbm",
-                      "equals": true
-                    }
-                  ]
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
                 }
               ],
               "enablement": [
@@ -1735,19 +1725,9 @@
                 {
                   "type": "not",
                   "condition": {
-                    "type": "any",
-                    "conditions": [
-                      {
-                        "type": "capability",
-                        "field": "is_release",
-                        "equals": true
-                      },
-                      {
-                        "type": "capability",
-                        "field": "is_sp_release",
-                        "equals": true
-                      }
-                    ]
+                    "type": "capability",
+                    "field": "is_sp_release",
+                    "equals": true
                   }
                 }
               ],
@@ -1775,19 +1755,9 @@
                     {
                       "type": "not",
                       "condition": {
-                        "type": "any",
-                        "conditions": [
-                          {
-                            "type": "capability",
-                            "field": "is_release",
-                            "equals": true
-                          },
-                          {
-                            "type": "capability",
-                            "field": "is_sp_release",
-                            "equals": true
-                          }
-                        ]
+                        "type": "capability",
+                        "field": "has_icbm",
+                        "equals": true
                       }
                     }
                   ]
@@ -1900,19 +1870,9 @@
                 {
                   "type": "not",
                   "condition": {
-                    "type": "any",
-                    "conditions": [
-                      {
-                        "type": "capability",
-                        "field": "is_release",
-                        "equals": true
-                      },
-                      {
-                        "type": "capability",
-                        "field": "is_sp_release",
-                        "equals": true
-                      }
-                    ]
+                    "type": "capability",
+                    "field": "is_sp_release",
+                    "equals": true
                   }
                 }
               ],
@@ -1947,11 +1907,6 @@
                   "condition": {
                     "type": "any",
                     "conditions": [
-                      {
-                        "type": "capability",
-                        "field": "is_release",
-                        "equals": true
-                      },
                       {
                         "type": "capability",
                         "field": "is_sp_release",

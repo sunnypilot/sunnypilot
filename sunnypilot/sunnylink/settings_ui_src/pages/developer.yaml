@@ -46,14 +46,9 @@ sections:
         equals: true
       - type: not
         condition:
-          type: any
-          conditions:
-          - type: capability
-            field: is_release
-            equals: true
-          - type: capability
-            field: is_sp_release
-            equals: true
+          type: capability
+          field: has_icbm
+          equals: true
     enablement:
     - $ref: '#/macros/not_engaged'
   - key: ShowDebugInfo
@@ -131,9 +126,6 @@ sections:
       condition:
         type: any
         conditions:
-        - type: capability
-          field: is_release
-          equals: true
         - type: capability
           field: is_sp_release
           equals: true
