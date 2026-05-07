@@ -1,3 +1,8 @@
+sunnypilot Version 2026.001.002 (2026-05-07)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * release: ignore upstream IsReleaseBranch by @sunnyhaibin
+
 sunnypilot Version 2026.001.001 (2026-05-06)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
