@@ -51,11 +51,31 @@ ATAU_DELTA_MAX = 0.08  # sec
 ALEAD_DECEL_SCALE = -1.0   # m/s² — aLeadK at which alead delta is maxed
 ALEAD_DELTA_MAX   = 0.10   # sec
 
-# Symmetric rate limits — same speed up and down eliminates fast-spike/slow-decay rubber-band oscillation.
-# 0.30 s/s: fast enough to respond before late-brake window closes (~0.6s to full delta),
-# symmetric so t_follow clears just as fast as it builds — no gas/brake hunting.
-T_FOLLOW_RATE_UP   = 0.30  # sec/sec
-T_FOLLOW_RATE_DOWN = 0.30  # sec/sec
+# Speed-dependent rate limits.
+# Rate-up: fast at low speed for quick stop-and-go response, gentler at highway to avoid jerk.
+# Rate-down: SLOW at low speed so t_follow stays elevated between repeated stop-and-go braking
+#   events — keeps gap larger going into the next event → softer repeat braking.
+#   Fast at highway so t_follow clears cleanly after sparse events → no rubber band.
+T_FOLLOW_RATE_UP_BP   = [0.0, 20.0]        # m/s
+T_FOLLOW_RATE_UP_V    = [0.42, 0.25]        # sec/sec
+T_FOLLOW_RATE_DOWN_BP = [0.0, 10.0, 25.0]  # m/s
+T_FOLLOW_RATE_DOWN_V  = [0.10, 0.16, 0.30]  # sec/sec
+
+# Low-speed t_follow scaling for stop-and-go.
+# MPC safe_dist = v²/(2*COMFORT_BRAKE) + t_follow*v + STOP_DIST.  At low speed the
+# stopping-distance term already dominates; the t_follow component adds unnecessary
+# gap requirement on top, forcing hard brakes when actual gap is urban-normal.
+# Scaling reduces t_follow contribution at city speeds without changing internal tracking.
+LOW_SPEED_SCALE_BP = [0.0, 3.0, 7.0, 12.0]  # m/s
+LOW_SPEED_SCALE_V  = [0.15, 0.28, 0.62, 1.00]
+
+# Dynamic headway scale: when time headway (dRel/v_ego) drops below HEADWAY_SCALE_S,
+# boost speed_scale toward 1.0 so MPC feels safe_dist pressure at v=4-6 m/s
+# (where stopping distance is small) rather than waiting until v=8-12 (hard brake).
+# Gated on a_lead ≤ 0.1: when lead is accelerating away from stop, gap will naturally
+# grow — don't apply boost or the car can't follow from a standing start.
+HEADWAY_SCALE_V_MIN = 3.0   # m/s — below this allow crawl from stop unrestricted
+HEADWAY_SCALE_S     = 2.5   # sec time-headway threshold that triggers boost
 
 PERSONALITY_CHANGE_COOLDOWN_S = 2.0
 
@@ -92,6 +112,7 @@ class FollowDistanceController:
     self.dbg_closing_delta = 0.0
     self.dbg_atau_delta    = 0.0
     self.dbg_alead_delta   = 0.0
+    self.dbg_speed_scale   = 1.0
 
   def is_enabled(self) -> bool:
     return self._enabled
@@ -127,28 +148,27 @@ class FollowDistanceController:
 
   def get_follow_distance_multiplier(self, v_ego: float, radarstate=None) -> float:
     v_ego = max(0.0, v_ego)
-
     lead = radarstate.leadOne if (radarstate is not None and radarstate.leadOne.status) else None
+    speed_scale = self._compute_speed_scale(v_ego, lead)
+    self.dbg_speed_scale = speed_scale
+
     target = self._compute_target(v_ego, lead)
 
     if self.first_run:
       self.current_t_follow = target
       self.first_run = False
-      return float(self.current_t_follow)
+      return float(self.current_t_follow * speed_scale)
+
+    rate_up   = float(np.interp(v_ego, T_FOLLOW_RATE_UP_BP,   T_FOLLOW_RATE_UP_V))   * DT_MDL
+    rate_down = float(np.interp(v_ego, T_FOLLOW_RATE_DOWN_BP, T_FOLLOW_RATE_DOWN_V)) * DT_MDL
 
     if self.personality_change_cooldown > 0:
-      # Fast converge to new personality base on cooldown
-      rate = T_FOLLOW_RATE_UP * DT_MDL
-      self.current_t_follow = float(np.clip(target, self.current_t_follow - rate, self.current_t_follow + rate))
-      return float(self.current_t_follow)
+      self.current_t_follow = float(np.clip(target, self.current_t_follow - rate_up, self.current_t_follow + rate_up))
+      return float(self.current_t_follow * speed_scale)
 
-    if target > self.current_t_follow:
-      rate = T_FOLLOW_RATE_UP * DT_MDL    # snap up fast — gap increasing needed (danger)
-    else:
-      rate = T_FOLLOW_RATE_DOWN * DT_MDL  # ease back slow — no rush to reduce gap
-
+    rate = rate_up if target > self.current_t_follow else rate_down
     self.current_t_follow = float(np.clip(target, self.current_t_follow - rate, self.current_t_follow + rate))
-    return float(self.current_t_follow)
+    return float(self.current_t_follow * speed_scale)
 
   def reset(self):
     self._personality = LongPersonality.standard
@@ -252,6 +272,22 @@ class FollowDistanceController:
 
     if self._cutin_frames_remaining > 0:
       self._cutin_frames_remaining -= 1
+
+  def _compute_speed_scale(self, v_ego: float, lead) -> float:
+    base = float(np.interp(v_ego, LOW_SPEED_SCALE_BP, LOW_SPEED_SCALE_V))
+    if lead is None or v_ego < HEADWAY_SCALE_V_MIN:
+      return base
+    d_rel  = float(lead.dRel)
+    a_lead = float(lead.aLeadK)
+    if d_rel <= 0.0 or a_lead > 0.1:
+      # Lead accelerating away  gap will grow naturally; don't restrict takeover from stop
+      return base
+    t_hw = d_rel / v_ego
+    if t_hw >= HEADWAY_SCALE_S:
+      return base
+    # Boost scale from base toward 1.0 as headway tightens below threshold
+    boost = float(np.interp(t_hw, [0.0, HEADWAY_SCALE_S], [1.0, base]))
+    return max(base, boost)
 
   def _mod_jerk_volatility(self) -> float:
     if len(self._jerk_history) < 10:
