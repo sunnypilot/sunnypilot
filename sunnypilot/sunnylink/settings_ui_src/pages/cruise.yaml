@@ -21,14 +21,7 @@ sections:
     title: Dynamic Experimental Control
     description: Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.
     visibility:
-    - type: any
-      conditions:
-      - type: capability
-        field: has_longitudinal_control
-        equals: true
-      - type: capability
-        field: has_icbm
-        equals: true
+    - $ref: '#/macros/longitudinal'
     enablement:
     - $ref: '#/macros/longitudinal'
   - key: DisengageOnAccelerator

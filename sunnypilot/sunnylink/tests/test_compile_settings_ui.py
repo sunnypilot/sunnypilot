@@ -15,6 +15,7 @@ compiled output once the compiler has produced it.
 """
 from __future__ import annotations
 
+import difflib
 import json
 import os
 
@@ -44,7 +45,16 @@ def committed() -> dict:
 class TestRoundtrip:
   def test_compiled_matches_committed(self, compiled, committed):
     """Compiled output must match the checked-in JSON."""
-    assert compiled == committed
+    if compiled == committed:
+      return
+    diff = "\n".join(difflib.unified_diff(
+      json.dumps(committed, indent=2).splitlines(),
+      json.dumps(compiled, indent=2).splitlines(),
+      fromfile="settings_ui.json (committed)",
+      tofile="settings_ui.json (freshly compiled)",
+      lineterm="",
+    ))
+    pytest.fail(f"settings_ui.json schema mismatch — run compile_settings_ui.py\n\n{diff}")
 
   def test_committed_file_is_canonical(self):
     """Compiled output must byte-match the checked-in file (including trailing newline).
@@ -53,7 +63,16 @@ class TestRoundtrip:
     rendered = json.dumps(schema, indent=2) + "\n"
     with open(DEFAULT_OUT) as f:
       current = f.read()
-    assert current == rendered, "settings_ui.json out of sync — run compile_settings_ui.py"
+    if current == rendered:
+      return
+    diff = "\n".join(difflib.unified_diff(
+      current.splitlines(),
+      rendered.splitlines(),
+      fromfile="settings_ui.json (on disk)",
+      tofile="settings_ui.json (freshly compiled)",
+      lineterm="",
+    ))
+    pytest.fail(f"settings_ui.json out of sync — run compile_settings_ui.py\n\n{diff}")
 
 
 class TestRefResolution:

@@ -59,12 +59,7 @@ macros:
             - type: not
               condition: {type: capability, field: tesla_has_vehicle_bus, equals: true}
 
-  # Hide everything but a clearly-marked release branch (matches Raylib
-  # _is_release_branch = is_release OR is_sp_release).
+  # Hide on sunnypilot release branches (is_release is hardcoded False everywhere; is_sp_release is the active gate).
   release_branches_hide:
     - type: not
-      condition:
-        type: any
-        conditions:
-          - {type: capability, field: is_release, equals: true}
-          - {type: capability, field: is_sp_release, equals: true}
+      condition: {type: capability, field: is_sp_release, equals: true}
