@@ -35,8 +35,8 @@ def manager_init() -> None:
   params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
   params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
   params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
-  if build_metadata.release_channel:
-    params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
+  # if build_metadata.release_channel:
+  #   params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
 
   # device boot mode
   if params.get("DeviceBootMode") == 1:  # start in Always Offroad mode
