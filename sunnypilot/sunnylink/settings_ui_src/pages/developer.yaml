@@ -26,8 +26,6 @@ sections:
   - key: JoystickDebugMode
     widget: toggle
     title: Joystick Debug Mode
-    visibility:
-    - $ref: '#/macros/release_branches_hide'
     enablement:
     - $ref: '#/macros/offroad'
   - key: AlphaLongitudinalEnabled
