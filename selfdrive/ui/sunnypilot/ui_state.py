@@ -168,8 +168,8 @@ class UIStateSP:
         self.params.remove("EnforceTorqueControl")
         self.params.remove("NeuralNetworkLateralControl")
 
-      # Alpha longitudinal: clear if not available or on release branch
-      if not CP.alphaLongitudinalAvailable or self.params.get_bool("IsReleaseBranch"):
+      # Alpha longitudinal: clear if not available
+      if not CP.alphaLongitudinalAvailable:
         self.params.remove("AlphaLongitudinalEnabled")
 
       # BSM not available: clear BSM-dependent settings
