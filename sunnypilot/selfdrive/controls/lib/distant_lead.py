@@ -5,108 +5,141 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import numpy as np
+from dataclasses import dataclass
+
 import capnp
+import numpy as np
 
 from openpilot.common.realtime import DT_MDL
 
-_CONFIRM_SECONDS = 0.5
-_CONFIRM_FRAMES = max(1, int(round(_CONFIRM_SECONDS / DT_MDL)))
 
-# 1s was too long: ghost tracks with smaller dRel blocked real leads for ~1s.
-_RELEASE_SECONDS = 0.25
-_RELEASE_FRAMES = max(1, int(round(_RELEASE_SECONDS / DT_MDL)))
+CONFIRM_FRAMES = max(1, int(round(0.5 / DT_MDL)))
+RELEASE_FRAMES = max(1, int(round(0.25 / DT_MDL)))
 
-_MIN_FORWARD_SPEED = 1.0  # m/s
-_MIN_DREL = 2.0           # m
-_MIN_V_EGO = 4.0          # m/s
+MIN_FORWARD_SPEED = 1.0
+MIN_DREL          = 2.0
+MIN_V_EGO         = 4.0
 
-_CLOSE_DREL_MAX = 25.0    # m
-_CLOSE_CONFIRM_FRAMES = max(1, int(round(0.5 / DT_MDL)))
-_CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.0 / DT_MDL)))
-_CLOSE_OVERRIDE_DREL = 25.0  # m
+CLOSE_DREL_MAX        = 25.0
+CLOSE_CONFIRM_FRAMES  = max(1, int(round(0.5 / DT_MDL)))
+CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.0 / DT_MDL)))
+CLOSE_OVERRIDE_DREL   = 25.0
+
+
+@dataclass
+class CloseLead:
+  tid: int | None = None
+  streak: int = 0
+  holdover: int = 0
+
+  def reset(self) -> None:
+    self.tid = None
+    self.streak = 0
+    self.holdover = 0
+
+  def decay(self) -> None:
+    self.streak = 0
+    self.holdover = max(0, self.holdover - 1)
+
+  def alive(self) -> bool:
+    return self.holdover > 0 and self.tid is not None
+
+
+def _in_lane(track, left_x, left_y, right_x, right_y) -> bool:
+  return bool(np.interp(track.dRel, left_x, left_y) < -track.yRel < np.interp(track.dRel, right_x, right_y))
 
 
 class DistantLeadDetector:
   def __init__(self) -> None:
     self._streak: dict[int, int] = {}
     self._release: dict[int, int] = {}
-
-    self._close_tid: int | None = None
-    self._close_streak: int = 0
-    self._close_holdover: int = 0
+    self._close = CloseLead()
 
   def detect(self, tracks: dict, model_data: capnp._DynamicStructReader, v_ego: float = 0.0,
              lead_one_drel: float = 0.0, lead_one_status: bool = False):
-    if v_ego < _MIN_V_EGO:
-      self._streak = {}
-      self._release = {}
-      self._close_tid = None
-      self._close_streak = 0
-      self._close_holdover = 0
+    if v_ego < MIN_V_EGO:
+      self._streak.clear()
+      self._release.clear()
+      self._close.reset()
       return None
 
     horizon = model_data.position.x[-1]
-    left_x = model_data.laneLines[1].x
-    left_y = model_data.laneLines[1].y
+    left_x  = model_data.laneLines[1].x
+    left_y  = model_data.laneLines[1].y
     right_x = model_data.laneLines[2].x
     right_y = model_data.laneLines[2].y
 
+    chosen = self._promote_distant(tracks, horizon, left_x, left_y, right_x, right_y)
+    self._update_close(tracks, left_x, left_y, right_x, right_y)
+
+    override = self._close_override(tracks, left_x, left_y, right_x, right_y,
+                                    lead_one_drel, lead_one_status)
+    return override if override is not None else chosen
+
+  def _promote_distant(self, tracks: dict, horizon: float,
+                       left_x, left_y, right_x, right_y):
     next_streak: dict[int, int] = {}
     next_release: dict[int, int] = {}
     chosen = None
 
     for tid, track in tracks.items():
-      in_lane = np.interp(track.dRel, left_x, left_y) < -track.yRel < np.interp(track.dRel, right_x, right_y)
-      qualifies = track.vLeadK > _MIN_FORWARD_SPEED and _MIN_DREL < track.dRel < horizon and in_lane
+      qualifies = (
+        track.vLeadK > MIN_FORWARD_SPEED
+        and MIN_DREL < track.dRel < horizon
+        and _in_lane(track, left_x, left_y, right_x, right_y)
+      )
 
       streak = self._streak.get(tid, 0) + 1 if qualifies else 0
       next_streak[tid] = streak
 
-      promoted = streak >= _CONFIRM_FRAMES
+      promoted = streak >= CONFIRM_FRAMES
       in_holdover = self._release.get(tid, 0) > 0
 
       if promoted and qualifies:
-        next_release[tid] = _RELEASE_FRAMES
+        next_release[tid] = RELEASE_FRAMES
       elif qualifies and in_holdover:
-        next_release[tid] = _RELEASE_FRAMES
+        next_release[tid] = RELEASE_FRAMES
         promoted = True
       elif not qualifies and in_holdover:
         next_release[tid] = self._release[tid] - 1
         promoted = True
 
-      if promoted:
-        if chosen is None or track.dRel < chosen.dRel:
-          chosen = track
+      if promoted and (chosen is None or track.dRel < chosen.dRel):
+        chosen = track
 
     self._streak = next_streak
     self._release = next_release
+    return chosen
 
-    if self._close_tid is not None and self._close_tid in tracks:
-      ct = tracks[self._close_tid]
-      ct_in_lane = np.interp(ct.dRel, left_x, left_y) < -ct.yRel < np.interp(ct.dRel, right_x, right_y)
-      if ct.dRel < _CLOSE_DREL_MAX and ct_in_lane:
-        self._close_streak += 1
-        self._close_holdover = _CLOSE_HOLDOVER_FRAMES
+  def _update_close(self, tracks: dict, left_x, left_y, right_x, right_y) -> None:
+    if self._close.tid is not None and self._close.tid in tracks:
+      ct = tracks[self._close.tid]
+      if ct.dRel < CLOSE_DREL_MAX and _in_lane(ct, left_x, left_y, right_x, right_y):
+        self._close.streak += 1
+        self._close.holdover = CLOSE_HOLDOVER_FRAMES
       else:
-        self._close_streak = 0
-        self._close_holdover = max(0, self._close_holdover - 1)
+        self._close.decay()
     else:
-      self._close_streak = 0
-      self._close_holdover = max(0, self._close_holdover - 1)
+      self._close.decay()
 
     for tid, track in tracks.items():
-      if track.dRel < _CLOSE_DREL_MAX and tid in next_streak and next_streak[tid] >= _CLOSE_CONFIRM_FRAMES:
-        if self._close_tid != tid:
-          self._close_tid = tid
-          self._close_streak = next_streak[tid]
-          self._close_holdover = _CLOSE_HOLDOVER_FRAMES
+      if (track.dRel < CLOSE_DREL_MAX
+          and self._streak.get(tid, 0) >= CLOSE_CONFIRM_FRAMES
+          and self._close.tid != tid):
+        self._close.tid = tid
+        self._close.streak = self._streak[tid]
+        self._close.holdover = CLOSE_HOLDOVER_FRAMES
         break
 
-    if self._close_holdover > 0 and self._close_tid is not None and self._close_tid in tracks:
-      ct = tracks[self._close_tid]
-      ct_in_lane = np.interp(ct.dRel, left_x, left_y) < -ct.yRel < np.interp(ct.dRel, right_x, right_y)
-      if ct_in_lane and (not lead_one_status or lead_one_drel > _CLOSE_OVERRIDE_DREL):
-        return ct
-
-    return chosen
+  def _close_override(self, tracks: dict, left_x, left_y, right_x, right_y,
+                      lead_one_drel: float, lead_one_status: bool):
+    if not self._close.alive():
+      return None
+    if self._close.tid not in tracks:
+      return None
+    ct = tracks[self._close.tid]
+    if not _in_lane(ct, left_x, left_y, right_x, right_y):
+      return None
+    if not lead_one_status or lead_one_drel > CLOSE_OVERRIDE_DREL:
+      return ct
+    return None
