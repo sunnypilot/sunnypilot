@@ -1,3 +1,8 @@
+sunnypilot Version 2026.001.003 (2026-05-08)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * manager: disable DEVELOPMENT_ONLY reset by @jason-wen
+
 sunnypilot Version 2026.001.002 (2026-05-07)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
