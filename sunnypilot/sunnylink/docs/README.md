@@ -2,8 +2,6 @@
 
 > One YAML file per page. Edit, run the compiler, commit. The sunnylink frontend updates automatically.
 
-For detailed architecture, capability fields, parity analysis, and dialog mappings, see [REFERENCE.md](REFERENCE.md).
-
 ## What you edit (and what's generated)
 
 | File | What | When to edit |

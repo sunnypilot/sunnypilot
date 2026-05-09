@@ -159,7 +159,6 @@ class UIStateSP:
 
   def _enforce_constraints(self) -> None:
     has_long = self.has_longitudinal_control
-    has_icbm = self.has_icbm
     CP = self.CP
 
     if CP is not None:
@@ -168,8 +167,8 @@ class UIStateSP:
         self.params.remove("EnforceTorqueControl")
         self.params.remove("NeuralNetworkLateralControl")
 
-      # Alpha longitudinal: clear if not available or on release branch
-      if not CP.alphaLongitudinalAvailable or self.params.get_bool("IsReleaseBranch"):
+      # Alpha longitudinal: clear if not available
+      if not CP.alphaLongitudinalAvailable:
         self.params.remove("AlphaLongitudinalEnabled")
 
       # BSM not available: clear BSM-dependent settings
@@ -181,21 +180,23 @@ class UIStateSP:
       self.params.remove("NeuralNetworkLateralControl")
       self.params.remove("AlphaLongitudinalEnabled")
 
-    # No longitudinal control: no experimental mode
+    # No longitudinal control: no experimental mode or DEC
     if not has_long:
       self.params.remove("ExperimentalMode")
+      self.params.remove("DynamicExperimentalControl")
 
     # ICBM: clear if not available or if full longitudinal control is active
     if self.CP_SP is not None:
       if not self.CP_SP.intelligentCruiseButtonManagementAvailable or has_long:
         self.params.remove("IntelligentCruiseButtonManagement")
+        self.has_icbm = False
     else:
       self.params.remove("IntelligentCruiseButtonManagement")
+      self.has_icbm = False
 
     # Cruise features requiring longitudinal or ICBM
-    if not (has_long or has_icbm):
+    if not (has_long or self.has_icbm):
       self.params.remove("CustomAccIncrementsEnabled")
-      self.params.remove("DynamicExperimentalControl")
       self.params.remove("SmartCruiseControlVision")
       self.params.remove("SmartCruiseControlMap")
 

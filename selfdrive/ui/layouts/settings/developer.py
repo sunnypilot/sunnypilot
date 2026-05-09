@@ -36,7 +36,7 @@ class DeveloperLayout(Widget):
   def __init__(self):
     super().__init__()
     self._params = Params()
-    self._is_release = self._params.get_bool("IsReleaseBranch")
+    self._is_release = False  # self._params.get_bool("IsReleaseBranch")
 
     # Build items and keep references for callbacks/state updates
     self._adb_toggle = toggle_item(

@@ -94,7 +94,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
 
   # Hardware + boolean params (no CarParams dependency)
   caps["device_type"] = HARDWARE.get_device_type()
-  caps["is_release"] = params.get_bool("IsReleaseBranch")
+  caps["is_release"] = False  # params.get_bool("IsReleaseBranch")
   caps["is_sp_release"] = params.get_bool("IsReleaseSpBranch")
   caps["is_development"] = params.get_bool("IsDevelopmentBranch")
   caps["stock_longitudinal"] = params.get_bool("ToyotaEnforceStockLongitudinal")
