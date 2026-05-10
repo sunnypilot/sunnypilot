@@ -40,15 +40,19 @@ jobs:
           sparse-checkout: cereal
           ref: "refs/heads/master"
 
-      - name: Install pycapnp
-        run: python3 -m pip install pycapnp
+      - name: Install uv
+        run: pip install uv
 
       - name: Generate sunnypilot schema
         run: |
-          export PYTHONPATH=${{ github.workspace }}
-          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -g -f /tmp/sp_schema.json
+          PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
+          uv run --isolated --with "pycapnp==${PYCAPNP_VER}" \
+            python3 cereal/messaging/tests/validate_sp_cereal_upstream.py \
+            -g -f /tmp/sp_schema.json --cereal-dir cereal
 
       - name: Validate against upstream
         run: |
-          export PYTHONPATH=${{ github.workspace }}/upstream_openpilot
-          python3 cereal/messaging/tests/validate_sp_cereal_upstream.py -r -f /tmp/sp_schema.json
+          PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
+          uv run --isolated --with "pycapnp==${PYCAPNP_VER}" \
+            python3 cereal/messaging/tests/validate_sp_cereal_upstream.py \
+            -r -f /tmp/sp_schema.json --cereal-dir upstream_openpilot/cereal
