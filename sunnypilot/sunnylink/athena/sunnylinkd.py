@@ -18,7 +18,7 @@ import time
 
 from jsonrpc import dispatcher
 from functools import partial
-from openpilot.common.params import Params
+from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
@@ -31,8 +31,10 @@ import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
+from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities, CAPABILITY_LABELS
+from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import generate_schema
 
-SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
+SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://athena.sunnylink.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
@@ -44,12 +46,15 @@ params = Params()
 
 # Parameters that should never be remotely modified
 BLOCKED_PARAMS = {
+  "AdbEnabled",
   "CompletedSunnylinkConsentVersion",
   "CompletedTrainingVersion",
   "GithubUsername",  # Could grant SSH access
   "GithubSshKeys",   # Direct SSH key injection
   "HasAcceptedTerms",
   "HasAcceptedTermsSP",
+  "OnroadCycleRequested",      # Prevent remote cycle trigger
+  "ParamsVersion",         # Device-managed version counter
 }
 
 
@@ -199,34 +204,18 @@ def getParamsAllKeysV1() -> dict[str, str]:
 
 @dispatcher.add_method
 def getParamsMetadata() -> str:
-  """Compressed equivalent of getParamsAllKeysV1 — same struct, gzipped + base64."""
+  """Return settings_ui.json + live capabilities as gzip-compressed, base64-encoded string.
+
+  Reads settings_ui.json, injects live capabilities from CarParams, compresses,
+  and returns. Single RPC for the frontend to get the complete settings UI and
+  runtime capabilities.
+  """
   try:
-    with open(METADATA_PATH) as f:
-      metadata = json.load(f)
-  except Exception:
-    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
-    metadata = {}
-
-  try:
-    available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
-
-    params_list: list[dict] = []
-    for key in available_keys:
-      value = get_param_as_byte(key, get_default=True)
-
-      param_entry: dict = {
-        "key": key,
-        "type": int(params.get_type(key).value),
-        "default_value": base64.b64encode(value).decode('utf-8') if value else None,
-      }
-
-      if key in metadata:
-        param_entry["_extra"] = metadata[key]
-
-      params_list.append(param_entry)
-
-    raw = json.dumps(params_list, separators=(',', ':')).encode('utf-8')
-    return base64.b64encode(gzip.compress(raw)).decode('utf-8')
+    schema = generate_schema()
+    schema["capabilities"] = generate_capabilities()
+    schema["capability_labels"] = CAPABILITY_LABELS
+    raw = json.dumps(schema, separators=(",", ":")).encode("utf-8")
+    return base64.b64encode(gzip.compress(raw)).decode("utf-8")
   except Exception:
     cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
     raise
@@ -238,12 +227,25 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
   available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
 
   try:
+    zero_values: dict[int, bytes] = {
+      ParamKeyType.STRING.value: b"",
+      ParamKeyType.BOOL.value: b"0",
+      ParamKeyType.INT.value: b"0",
+      ParamKeyType.FLOAT.value: b"0.0",
+      ParamKeyType.TIME.value: b"",
+      ParamKeyType.JSON.value: b"{}",
+      ParamKeyType.BYTES.value: b"",
+    }
+
     param_keys_validated = [key for key in params_keys if key in available_keys]
     params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
     for key in param_keys_validated:
       value = get_param_as_byte(key)
       if value is None:
-        continue
+        value = get_param_as_byte(key, get_default=True)
+      if value is None:
+        param_type = params.get_type(key)
+        value = zero_values.get(param_type.value, b"")
 
       params_dict["params"].append({
         "key": key,
@@ -273,6 +275,13 @@ def saveParams(params_to_update: dict[str, str], compression: bool = False) -> N
       save_param_from_base64_encoded_string(key, value, compression)
     except Exception as e:
       cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
+
+  # Increment version counter for frontend change detection
+  try:
+    current = int(params.get("ParamsVersion") or "0")
+    params.put("ParamsVersion", str(current + 1))
+  except Exception:
+    pass
 
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
