@@ -2,10 +2,11 @@ import argparse
 import os
 import hashlib
 
+from openpilot.common.model import DEFAULT_MODEL
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot import get_file_hash
 
-DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.h")
+DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.py")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
 VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
 POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
@@ -25,8 +26,7 @@ def update_model_hash():
 
 def get_current_default_model_name():
   print("[GET DEFAULT MODEL NAME]")
-  with open(DEFAULT_MODEL_NAME_PATH) as f:
-    name = f.read().split('"')[1]
+  name = DEFAULT_MODEL
   print(f'Current default model name: "{name}"')
 
   return name
@@ -35,7 +35,7 @@ def get_current_default_model_name():
 def update_default_model_name(name: str):
   print("[CHANGE DEFAULT MODEL NAME]")
   with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
-    f.write(f'#define DEFAULT_MODEL "{name}"\n')
+    f.write(f'DEFAULT_MODEL = "{name}"\n')
   print(f'New default model name: "{name}"')
   print("[DONE]")
 
