@@ -107,6 +107,7 @@ def collect_schema(root: Any) -> dict[str, dict]:
 
 def load_log(cereal_dir: str) -> Any:
   import capnp
+  cereal_dir = os.path.abspath(cereal_dir)
   capnp.remove_import_hook()
   return capnp.load(os.path.join(cereal_dir, "log.capnp"), imports=[cereal_dir])
 
