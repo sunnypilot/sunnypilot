@@ -99,7 +99,7 @@ class ModelsLayoutMici(NavScroller):
 
     folders = self._get_grouped_bundles(favorites)
     folder_buttons = []
-    default_btn = BigButton(tr("default model"))
+    default_btn = BigButton(DEFAULT_MODEL.lower())
     default_btn.set_click_callback(self._select_default)
     folder_buttons.append(default_btn)
 
