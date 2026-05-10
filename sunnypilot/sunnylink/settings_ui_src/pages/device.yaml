@@ -37,27 +37,27 @@ sections:
     options:
     - value: 0
       label: Always On
-    - value: 1
-      label: 5m
-    - value: 2
-      label: 10m
-    - value: 3
-      label: 15m
-    - value: 4
-      label: 30m
     - value: 5
-      label: 1h
-    - value: 6
-      label: 2h
-    - value: 7
-      label: 3h
-    - value: 8
-      label: 5h
-    - value: 9
-      label: 10h
+      label: 5m
     - value: 10
+      label: 10m
+    - value: 15
+      label: 15m
+    - value: 30
+      label: 30m
+    - value: 60
+      label: 1h
+    - value: 120
+      label: 2h
+    - value: 180
+      label: 3h
+    - value: 300
+      label: 5h
+    - value: 600
+      label: 10h
+    - value: 1440
       label: 24h
-    - value: 11
+    - value: 1800
       label: 30h (Default)
 - id: language
   title: Language
