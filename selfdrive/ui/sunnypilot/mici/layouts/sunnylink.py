@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import pyray as rl
+
 from collections.abc import Callable
 
 from cereal import custom
@@ -13,11 +15,43 @@ from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkC
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.system.ui.lib.application import gui_app, MousePos
+from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
 from openpilot.system.version import sunnylink_consent_version, sunnylink_consent_declined
 
+class SunnylinkInfo(Widget):
+  def __init__(self):
+    super().__init__()
+
+    self.set_rect(rl.Rectangle(0, 0, 360, 180))
+
+    header_color = rl.Color(255, 255, 255, int(255 * 0.9))
+    subheader_color = rl.Color(255, 255, 255, int(255 * 0.9 * 0.65))
+    max_width = int(self._rect.width - 20)
+    self.device_id_header = UnifiedLabel(tr("device id"), 48, max_width=max_width, text_color=header_color,
+                                         font_weight=FontWeight.DISPLAY, shimmer=True)
+    self.device_id_text = UnifiedLabel(UNREGISTERED_SUNNYLINK_DONGLE_ID, 32, max_width=max_width, text_color=subheader_color,
+                                       font_weight=FontWeight.ROMAN, scroll=True)
+
+    self.sponsor_header = UnifiedLabel(tr("sponsor tier"), 48, max_width=max_width, text_color=header_color,
+                                       font_weight=FontWeight.DISPLAY, shimmer=True)
+    self.sponsor_text = UnifiedLabel("N/A", 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN)
+
+  def _render(self, _):
+    self.device_id_header.set_position(self._rect.x + 20, self._rect.y - 10)
+    self.device_id_header.render()
+
+    self.device_id_text.set_position(self._rect.x + 20, self._rect.y + 68 - 25)
+    self.device_id_text.render()
+
+    self.sponsor_header.set_position(self._rect.x + 20, self._rect.y + 114 - 30)
+    self.sponsor_header.render()
+
+    self.sponsor_text.set_position(self._rect.x + 20, self._rect.y + 161 - 25)
+    self.sponsor_text.render()
 
 class SunnylinkLayoutMici(NavScroller):
   def __init__(self, back_callback: Callable):
@@ -26,6 +60,8 @@ class SunnylinkLayoutMici(NavScroller):
     self._restore_in_progress = False
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
+
+    self._sunnylink_info = SunnylinkInfo()
 
     self._sunnylink_toggle = BigToggle(text=tr("enable sunnylink"),
                                        initial_state=self._sunnylink_enabled,
@@ -40,6 +76,7 @@ class SunnylinkLayoutMici(NavScroller):
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
     self._scroller.add_widgets([
+      self._sunnylink_info,
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
@@ -59,6 +96,10 @@ class SunnylinkLayoutMici(NavScroller):
     self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
+    self._sunnylink_info.device_id_text.set_text(ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID)
+    self._sunnylink_info.sponsor_text.set_text(ui_state.sunnylink_state.get_sponsor_tier().name.lower() or "N/A")
+    self._sunnylink_info.set_visible(self._sunnylink_enabled)
+
     if ui_state.sunnylink_state.is_sponsor():
       self._sunnylink_sponsor_button.set_text(tr("thanks"))
       self._sunnylink_sponsor_button.set_value(ui_state.sunnylink_state.get_sponsor_tier().name.lower())
@@ -75,6 +116,11 @@ class SunnylinkLayoutMici(NavScroller):
   def show_event(self):
     super().show_event()
     ui_state.update_params()
+    ui_state.sunnylink_state.set_settings_open(True)
+
+  def hide_event(self):
+    super().hide_event()
+    ui_state.sunnylink_state.set_settings_open(False)
 
   @staticmethod
   def _sunnylink_toggle_callback(state: bool):
@@ -194,9 +240,14 @@ class SunnylinkPairBigButton(BigButton):
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
 
+    network_type = ui_state.sm["deviceState"].networkType
+
     dlg: BigDialog | SunnylinkPairingDialog | None = None
-    if UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
-      dlg = BigDialog(tr("sunnylink Dongle ID not found. Please reboot & try again."), "")
+
+    if network_type == 0:
+      dlg = BigDialog(tr("no internet"), tr("please connect to WiFi & try again"))
+    elif UNREGISTERED_SUNNYLINK_DONGLE_ID == (ui_state.params.get("SunnylinkDongleId") or UNREGISTERED_SUNNYLINK_DONGLE_ID):
+      dlg = BigDialog(tr("sunnylink dongle id not found"), tr("please reboot & try again"))
     elif self.sponsor_pairing:
       dlg = SunnylinkPairingDialog(sponsor_pairing=True)
     elif not self.sponsor_pairing:

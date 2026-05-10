@@ -21,8 +21,6 @@
 #define CUTOFF_IL 400
 #define SATURATE_IL 1000
 
-#define ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE 2048
-
 ExitHandler do_exit;
 
 bool check_connected(Panda *panda) {
@@ -34,15 +32,8 @@ bool check_connected(Panda *panda) {
 }
 
 bool process_mads_heartbeat(SubMaster *sm) {
-  const int &alt_exp = (*sm)["carParams"].getCarParams().getAlternativeExperience();
-  const bool disengage_lateral_on_brake = (alt_exp & ALT_EXP_MADS_DISENGAGE_LATERAL_ON_BRAKE) != 0;
-
   const auto &mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
-  const bool heartbeat_type = disengage_lateral_on_brake ? mads.getActive() : mads.getEnabled();
-
-  const bool engaged = sm->allAliveAndValid({"selfdriveStateSP"}) && heartbeat_type;
-
-  return engaged;
+  return sm->allAliveAndValid({"selfdriveStateSP"}) && mads.getEnabled();
 }
 
 Panda *connect(std::string serial) {
@@ -152,6 +143,8 @@ void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::Panda
   ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);
   ps.setSbu2Voltage(health.sbu2_voltage_mV / 1000.0f);
   ps.setSoundOutputLevel(health.sound_output_level_pkt);
+  ps.setControlsAllowedLateral(health.controls_allowed_lateral_pkt);
+  ps.setControlsAllowedLongitudinal(health.controls_allowed_longitudinal_pkt);
 }
 
 void fill_panda_can_state(cereal::PandaState::PandaCanState::Builder &cs, const can_health_t &can_health) {
@@ -306,7 +299,7 @@ void process_panda_state(Panda *panda, PubMaster *pm, bool engaged, bool engaged
   panda->send_heartbeat(engaged, engaged_mads);
 }
 
-void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) {
+void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control, bool is_onroad) {
   static Params params;
   static SubMaster sm({"deviceState", "driverCameraState"});
 
@@ -316,6 +309,8 @@ void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) 
   static int prev_ir_pwr = 999;
   static uint32_t prev_frame_id = UINT32_MAX;
   static bool driver_view = false;
+  static bool not_car = false;
+  static bool not_car_checked = false;
 
   // TODO: can we merge these?
   static FirstOrderFilter integ_lines_filter(0, 30.0, 0.05);
@@ -361,6 +356,21 @@ void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) 
       ir_pwr = 0;
     }
 
+    // turn off IR leds if body
+    if (!not_car_checked && is_onroad) {
+      std::string cp_bytes = params.get("CarParams");
+      if (cp_bytes.size() > 0) {
+        AlignedBuffer aligned_buf;
+        capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+        cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+        not_car = CP.getNotCar();
+        not_car_checked = true;
+      }
+    }
+    if (not_car) {
+      ir_pwr = 0;
+    }
+
     if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0) {
       int16_t ir_panda = util::map_val(ir_pwr, 0, 100, 0, MAX_IR_PANDA_VAL);
       panda->set_ir_pwr(ir_panda);
@@ -380,7 +390,7 @@ void pandad_run(Panda *panda) {
 
   Params params;
   RateKeeper rk("pandad", 100);
-  SubMaster sm({"selfdriveState", "selfdriveStateSP", "carParams"});
+  SubMaster sm({"selfdriveState", "selfdriveStateSP"});
   PubMaster pm({"can", "pandaStates", "peripheralState"});
   PandaSafety panda_safety(panda);
   bool engaged = false;
@@ -394,7 +404,7 @@ void pandad_run(Panda *panda) {
 
     // Process peripheral state at 20 Hz
     if (rk.frame() % 5 == 0) {
-      process_peripheral_state(panda, &pm, no_fan_control);
+      process_peripheral_state(panda, &pm, no_fan_control, is_onroad);
     }
 
     // Process panda state at 10 Hz
