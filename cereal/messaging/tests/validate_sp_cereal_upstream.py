@@ -243,7 +243,7 @@ def main() -> int:
       return 0
     return run_read(args.file)
   except ImportError as exc:
-    print(f"error: cannot import cereal ({exc}). did scons build cereal?")
+    print(f"error: cannot import cereal ({exc}). is pycapnp installed and PYTHONPATH set correctly?")
     return 2
 
 
