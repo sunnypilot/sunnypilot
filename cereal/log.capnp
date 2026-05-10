@@ -560,7 +560,6 @@ struct PandaState @0xa7649e2575e4591e {
   # reserved for forks building alternate experiences.
   controlsAllowedLateral @38 :Bool;
   controlsAllowedLongitudinal @39 :Bool;
-  test123 @40 :Bool;
 
   enum FaultStatus {
     none @0;
