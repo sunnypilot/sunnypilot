@@ -32,6 +32,9 @@ jobs:
         with:
           sparse-checkout: cereal
 
+      - name: Init sunnypilot opendbc submodule
+        run: git submodule update --init --depth 1 opendbc_repo
+
       - name: Checkout upstream openpilot cereal
         uses: actions/checkout@v6
         with:
@@ -39,6 +42,10 @@ jobs:
           path: upstream_openpilot
           sparse-checkout: cereal
           ref: "refs/heads/master"
+
+      - name: Init upstream opendbc submodule
+        working-directory: upstream_openpilot
+        run: git submodule update --init --depth 1 opendbc_repo
 
       - name: Install uv
         run: pip install uv
