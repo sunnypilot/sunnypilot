@@ -9,6 +9,7 @@ import json
 import os
 
 from openpilot.common.basedir import BASEDIR
+from openpilot.common.model import DEFAULT_MODEL
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
@@ -25,6 +26,14 @@ def update_car_list_param():
     cloudlog.warning("Updated CarList param with latest platform list")
   else:
     cloudlog.warning("CarList param is up to date, no need to update")
+
+def update_default_model_param():
+  params = Params()
+  if params.get("DefaultModel") != DEFAULT_MODEL:
+    params.put("DefaultModel", DEFAULT_MODEL)
+    cloudlog.warning("Updated default model param: %s", DEFAULT_MODEL)
+  else:
+    cloudlog.warning("Default model param is up to date, no need to update")
 
 
 if __name__ == "__main__":
