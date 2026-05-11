@@ -25,6 +25,30 @@ CLOSE_CONFIRM_FRAMES  = max(1, int(round(0.5 / DT_MDL)))
 CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.0 / DT_MDL)))
 CLOSE_OVERRIDE_DREL   = 25.0
 
+# Bias the chosen track's aLeadTau using the model's predicted lead acceleration
+# horizon (modelV2.leadsV3[0].a[1]). When a[1] agrees with a[0] in direction and
+# magnitude, nudge the FirstOrderFilter so MPC's extrapolate_lead persists
+# (sustained brake) or decays (spurious brake). Ambiguous frames return None and
+# the heuristic tau stays in place — safe by construction.
+_MODEL_TAU_MIN_PROB  = 0.5
+_MODEL_TAU_BRAKE_A   = -0.5
+_MODEL_TAU_SUSTAINED = 0.5  # small tau = accel persists in MPC horizon
+_MODEL_TAU_SPURIOUS  = 3.0  # large tau = accel decays fast
+
+
+def _model_lead_tau(lead_msg) -> float | None:
+  if lead_msg.prob < _MODEL_TAU_MIN_PROB or len(lead_msg.a) < 2:
+    return None
+  a0 = float(lead_msg.a[0])
+  a1 = float(lead_msg.a[1])
+  if a0 > _MODEL_TAU_BRAKE_A:
+    return None
+  if a1 < 0.5 * a0:
+    return _MODEL_TAU_SUSTAINED
+  if a1 > 0.1 * a0:
+    return _MODEL_TAU_SPURIOUS
+  return None
+
 
 @dataclass
 class CloseLead:
@@ -74,7 +98,12 @@ class DistantLeadDetector:
 
     override = self._close_override(tracks, left_x, left_y, right_x, right_y,
                                     lead_one_drel, lead_one_status)
-    return override if override is not None else chosen
+    selected = override if override is not None else chosen
+    if selected is not None and len(model_data.leadsV3):
+      model_tau = _model_lead_tau(model_data.leadsV3[0])
+      if model_tau is not None:
+        selected.aLeadTau.update(model_tau)
+    return selected
 
   def _promote_distant(self, tracks: dict, horizon: float,
                        left_x, left_y, right_x, right_y):
