@@ -220,10 +220,6 @@
     "title": "Enable Custom Torque Tuning",
     "description": "Enables custom tuning for Torque lateral control"
   },
-  "DefaultModel": {
-    "title": "Default Model",
-    "description": ""
-  },
   "DevUIInfo": {
     "title": "Developer UI Info",
     "description": ""
