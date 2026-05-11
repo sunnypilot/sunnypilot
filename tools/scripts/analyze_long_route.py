@@ -7,8 +7,12 @@ controls plan, and reports the metrics that matter for the smoothness goal:
 peak felt jerk, hard-brake events, gas/brake zero-crossings (rubber band),
 lead status flicker, late-brake detections.
 
+Reads `longitudinalPlanSP` when present (fork plan with SLA/DEC/SCC overrides
+applied) and falls back to upstream `longitudinalPlan` otherwise.
+
 Run:
   python3 tools/scripts/analyze_long_route.py <route> [<route> ...]
+  python3 tools/scripts/analyze_long_route.py --budget <route>   # exit nonzero on violation
 
 Auth first if private:
   python3 tools/lib/auth.py
@@ -29,6 +33,16 @@ LATE_BRAKE_LAG_S = 0.6        # s — ego decel lag behind lead decel
 
 CITY_V_MAX = 12.0             # m/s — stop-n-go regime
 HIGHWAY_V_MIN = 18.0          # m/s
+
+# Per-minute budgets used by --budget. Conservative starting values; tighten
+# as tuning improves. Any single violation across reported routes => exit 1.
+BUDGET = {
+  'hard_brakes_per_min':    0.5,
+  'jerk_p95':               1.5,   # m/s³
+  'late_brake_clusters_per_min': 0.1,
+  'rubber_band_per_min':    2.0,
+  'lead_flips_per_min':     6.0,
+}
 
 
 def load_series(route: str):
@@ -53,6 +67,9 @@ def load_series(route: str):
     elif w == 'longitudinalPlan':
       lp = msg.longitudinalPlan
       ts['longitudinalPlan'].append((t, {'aTarget': lp.aTarget}))
+    elif w == 'longitudinalPlanSP':
+      lp = msg.longitudinalPlanSP
+      ts['longitudinalPlanSP'].append((t, {'aTarget': lp.aTarget}))
   return ts
 
 
@@ -135,24 +152,40 @@ def detect_late_brakes(rs, cs, controls):
   return late
 
 
-def report(name: str, ts: dict):
+def report(name: str, ts: dict) -> dict:
+  """Print the route summary; return per-minute metrics for budget gating."""
   cs = to_arrays(ts.get('carState', []))
   ctl = to_arrays(ts.get('carControl', []))
   rs = to_arrays(ts.get('radarState', []))
-  lp = to_arrays(ts.get('longitudinalPlan', []))
+  # Prefer fork plan (SLA/DEC/SCC overrides applied) when present
+  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []))
+  lp_up = to_arrays(ts.get('longitudinalPlan', []))
+  lp = lp_sp if lp_sp is not None else lp_up
+  plan_source = 'longitudinalPlanSP' if lp_sp is not None else ('longitudinalPlan' if lp_up is not None else 'none')
+
+  metrics: dict[str, float] = {
+    'duration_s': 0.0,
+    'hard_brakes': 0,
+    'jerk_p95': 0.0,
+    'late_brake_clusters': 0,
+    'rubber_band': 0,
+    'lead_flips': 0,
+  }
 
   print(f"\n══════ {name} ══════")
   if cs is None:
     print("  no carState — empty route")
-    return
+    return metrics
 
   duration_s = float(cs['t'][-1])
+  metrics['duration_s'] = duration_s
   engaged = cs['cruiseEnabled'].astype(bool)
   v = cs['vEgo']
   a = cs['aEgo']
   j = jerk_series(a, cs['t'])
 
   print(f"  duration:        {duration_s:.1f} s")
+  print(f"  plan source:     {plan_source}")
   print(f"  engaged frac:    {float(np.mean(engaged)):.2%}")
   print(f"  v_ego mean:      {float(np.mean(v[engaged])) if engaged.any() else 0:.2f} m/s")
 
@@ -169,11 +202,16 @@ def report(name: str, ts: dict):
     print(f"\n  -- regime: {tag} ({mask.sum()*0.01:.0f}s engaged) --")
     print(f"    aEgo  range:        {float(np.min(a_m)):+.2f} .. {float(np.max(a_m)):+.2f} m/s²")
     print(f"    aEgo  p95/p05:      {float(np.percentile(a_m, 95)):+.2f} / {float(np.percentile(a_m, 5)):+.2f} m/s²")
-    print(f"    |jerk| p95:         {float(np.percentile(np.abs(j_m), 95)):.2f} m/s³")
-    print(f"    |jerk| max:         {float(np.max(np.abs(j_m))):.2f} m/s³"
-          + (" ⚠" if float(np.max(np.abs(j_m))) > PEAK_JERK_THRESHOLD else ""))
+    j_p95 = float(np.percentile(np.abs(j_m), 95))
+    j_max = float(np.max(np.abs(j_m)))
+    print(f"    |jerk| p95:         {j_p95:.2f} m/s³")
+    print(f"    |jerk| max:         {j_max:.2f} m/s³"
+          + (" ⚠" if j_max > PEAK_JERK_THRESHOLD else ""))
     print(f"    hard brake events:  {len(hard_clusters)} (thresh {HARD_BRAKE_THRESHOLD} m/s²)")
     if tag == 'all':
+      metrics['hard_brakes'] = len(hard_clusters)
+      metrics['jerk_p95'] = j_p95
+      metrics['rubber_band'] = count_zero_crossings(a_m, ZERO_CROSS_BAND)
       for s, e in hard_clusters[:8]:
         idx = np.where((cs['t'] >= s) & (cs['t'] <= e))[0]
         if idx.size:
@@ -184,12 +222,14 @@ def report(name: str, ts: dict):
 
   if rs is not None:
     flicker = int(np.sum(np.diff(rs['status'].astype(int)) != 0))
-    print(f"\n  lead status flips:   {flicker} over {duration_s:.0f}s "
-          f"({flicker / max(duration_s, 1):.2f}/s)")
+    metrics['lead_flips'] = flicker
+    print(f"\n  lead status flips:   {flicker} over {duration_s:.0f}s"
+          + f" ({flicker / max(duration_s, 1):.2f}/s)")
     if engaged.any():
       late = detect_late_brakes(rs, cs, ctl)
       late_ts = np.array([e[0] for e in late])
       late_clusters = cluster_events(late_ts)
+      metrics['late_brake_clusters'] = len(late_clusters)
       print(f"  late-brake clusters: {len(late_clusters)} (lead a < -1.5 m/s², ego >-0.5 m/s² {LATE_BRAKE_LAG_S}s later)")
       for s, e in late_clusters[:8]:
         relevant = [(t, la, ea) for t, la, ea in late if s <= t <= e]
@@ -203,21 +243,51 @@ def report(name: str, ts: dict):
       print(f"\n  carControl.accel |jerk| p95:  {float(np.percentile(np.abs(jerk_series(a_cmd[active], ctl['t'][active])), 95)):.2f} m/s³")
       print(f"  carControl.accel rubber band: {count_zero_crossings(a_cmd[active], ZERO_CROSS_BAND)} zero-crossings")
 
+      # Planner-vs-actuator gap detector (commit 542c1f692b regression signature):
+      # planner aTarget mild while actuator accel saturated for >=N consecutive frames.
+      if lp is not None and lp['t'].size:
+        idx = np.clip(np.searchsorted(lp['t'], ctl['t']), 0, len(lp['t']) - 1)
+        plan_aligned = lp['aTarget'][idx]
+        gap_mask = active & (ctl['accel'] < -3.0) & (plan_aligned > -1.0)
+        if gap_mask.sum() > 5:
+          print(f"  planner-vs-actuator gap: {int(gap_mask.sum())} frames where actuator<-3 m/s² while plan>-1")
+
   if lp is not None:
     lp_a = lp['aTarget']
-    print(f"  longPlan |jerk| p95: {float(np.percentile(np.abs(jerk_series(lp_a, lp['t'])), 95)):.2f} m/s³")
+    print(f"  longPlan |jerk| p95: {float(np.percentile(np.abs(jerk_series(lp_a, lp['t'])), 95)):.2f} m/s³ ({plan_source})")
+
+  return metrics
+
+
+def check_budget(name: str, metrics: dict, budget: dict) -> list[str]:
+  """Return list of violation strings; empty list = pass."""
+  dur = max(metrics['duration_s'], 1.0)
+  per_min = lambda x: 60.0 * x / dur  # noqa: E731
+  violations = []
+  if per_min(metrics['hard_brakes']) > budget['hard_brakes_per_min']:
+    violations.append(f"hard_brakes {per_min(metrics['hard_brakes']):.2f}/min > {budget['hard_brakes_per_min']}/min")
+  if metrics['jerk_p95'] > budget['jerk_p95']:
+    violations.append(f"jerk_p95 {metrics['jerk_p95']:.2f} > {budget['jerk_p95']} m/s³")
+  if per_min(metrics['late_brake_clusters']) > budget['late_brake_clusters_per_min']:
+    violations.append(f"late_brake_clusters {per_min(metrics['late_brake_clusters']):.2f}/min > {budget['late_brake_clusters_per_min']}/min")
+  if per_min(metrics['rubber_band']) > budget['rubber_band_per_min']:
+    violations.append(f"rubber_band {per_min(metrics['rubber_band']):.2f}/min > {budget['rubber_band_per_min']}/min")
+  if per_min(metrics['lead_flips']) > budget['lead_flips_per_min']:
+    violations.append(f"lead_flips {per_min(metrics['lead_flips']):.2f}/min > {budget['lead_flips_per_min']}/min")
+  return violations
 
 
 def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
   cs = to_arrays(ts.get('carState', []))
   cc = to_arrays(ts.get('carControl', []))
   rs = to_arrays(ts.get('radarState', []))
-  lp = to_arrays(ts.get('longitudinalPlan', []))
+  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []))
+  lp_up = to_arrays(ts.get('longitudinalPlan', []))
+  lp = lp_sp if lp_sp is not None else lp_up
   if cs is None:
     print(f"\n══════ DRILL {name} @ t={event_t:.1f}s ══════ no carState")
     return
 
-  origin = cs['t'][0] if cs['t'].size else 0.0
   abs_event = event_t
 
   def slice_in(arr_t):
@@ -229,7 +299,7 @@ def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
     return
 
   print(f"\n══════ DRILL @ t={event_t:.1f}s  (±{window_s:.0f}s) ══════")
-  print(f"  cols: rel_t  v_ego  aEgo  | lead.st dRel vRel vLead aLeadK aLeadTau | aTgtPlan aCmd  | engaged")
+  print("  cols: rel_t  v_ego  aEgo  | lead.st dRel vRel vLead aLeadK aLeadTau | aTgtPlan aCmd  | engaged")
 
   step = max(1, len(cs_idx) // 50)
   for i in cs_idx[::step]:
@@ -238,8 +308,8 @@ def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
     if rs is not None:
       j = np.searchsorted(rs['t'], cs['t'][i])
       j = min(j, len(rs['t']) - 1)
-      line += (f"{int(rs['status'][j]):d}      {rs['dRel'][j]:5.1f} {rs['vRel'][j]:+5.2f} "
-               f"{rs['vLead'][j]:5.2f} {rs['aLeadK'][j]:+5.2f} {rs['aLeadTau'][j]:4.2f} | ")
+      line += (f"{int(rs['status'][j]):d}      {rs['dRel'][j]:5.1f} {rs['vRel'][j]:+5.2f}"
+               + f" {rs['vLead'][j]:5.2f} {rs['aLeadK'][j]:+5.2f} {rs['aLeadTau'][j]:4.2f} | ")
     else:
       line += "—                                       | "
     if lp is not None and lp['t'].size:
@@ -268,17 +338,48 @@ def main() -> int:
   p.add_argument('--event', type=float, action='append', default=[],
                  help='drill into event at this absolute t (sec). repeat for multiple')
   p.add_argument('--window', type=float, default=5.0, help='drill window (sec) ±')
+  p.add_argument('--budget', action='store_true',
+                 help='exit nonzero on per-minute budget violation across reported routes')
+  p.add_argument('--hard-brakes-per-min', type=float, default=BUDGET['hard_brakes_per_min'])
+  p.add_argument('--jerk-p95', type=float, default=BUDGET['jerk_p95'])
+  p.add_argument('--late-brake-clusters-per-min', type=float, default=BUDGET['late_brake_clusters_per_min'])
+  p.add_argument('--rubber-band-per-min', type=float, default=BUDGET['rubber_band_per_min'])
+  p.add_argument('--lead-flips-per-min', type=float, default=BUDGET['lead_flips_per_min'])
   args = p.parse_args()
 
+  budget = {
+    'hard_brakes_per_min': args.hard_brakes_per_min,
+    'jerk_p95': args.jerk_p95,
+    'late_brake_clusters_per_min': args.late_brake_clusters_per_min,
+    'rubber_band_per_min': args.rubber_band_per_min,
+    'lead_flips_per_min': args.lead_flips_per_min,
+  }
+
+  any_violation = False
   for r in args.routes:
     try:
       ts = load_series(r)
-      report(r, ts)
+      metrics = report(r, ts)
       for ev_t in args.event:
         drill_event(r, ts, ev_t, args.window)
+      if args.budget:
+        v = check_budget(r, metrics, budget)
+        if v:
+          any_violation = True
+          print(f"\n  ❌ BUDGET VIOLATION ({r}):")
+          for line in v:
+            print(f"     - {line}")
+        else:
+          print(f"\n  ✅ budget OK ({r})")
     except Exception as e:
       print(f"\n══════ {r} ══════")
       print(f"  ERROR: {type(e).__name__}: {e}")
+      if args.budget:
+        any_violation = True
+
+  if args.budget and any_violation:
+    print("\n>>> BUDGET FAILED — at least one route exceeded thresholds")
+    return 1
   return 0
 
 

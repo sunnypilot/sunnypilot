@@ -59,6 +59,14 @@ CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 MIN_X_LEAD_FACTOR = 0.5
 
+# Per-timestep close-range tightening (m). Subtracted from the lead obstacle
+# only when (a) x_lead is within ~1.2*headway of ego, and (b) ego is closing
+# on the lead. Both gates are tanh-based (C1) and the term is elementwise on
+# the extrapolated lead trajectory, so per-timestep horizon shape is preserved.
+# 0.0 = upstream behavior. Bump to 4-8 m to brake earlier on stopped-lead
+# approach and cut-in without softening steady-follow.
+CLOSE_TIGHTEN_M = 0.0
+
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 1.0
@@ -85,6 +93,20 @@ def get_stopped_equivalence_factor(v_lead):
 
 def get_safe_obstacle_distance(v_ego, t_follow):
   return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + STOP_DISTANCE
+
+
+def get_close_tighten_offset(x_lead_traj, v_lead_traj, v_ego, t_follow, close_tighten=CLOSE_TIGHTEN_M):
+  if close_tighten <= 0.0:
+    return np.zeros_like(x_lead_traj)
+  headway = t_follow * v_ego + STOP_DISTANCE
+  near = 1.2 * headway
+  scale = max(0.3 * headway, 1e-3)
+  gate_close = 0.5 * (1.0 - np.tanh((x_lead_traj - near) / scale))
+  v_close = v_ego - v_lead_traj
+  # gate centered at v_close=1.5 m/s so steady-follow (v_close≈0) gets ~10% effect,
+  # genuine closing (v_close>3 m/s) gets full effect.
+  gate_approach = 0.5 * (1.0 + np.tanh((v_close - 1.5) / 1.5))
+  return close_tighten * gate_close * gate_approach
 
 def gen_long_model():
   model = AcadosModel()
@@ -328,8 +350,10 @@ class LongitudinalMpc:
     # To estimate a safe distance from a moving lead, we calculate how much stopping
     # distance that lead needs as a minimum. We can add that to the current distance
     # and then treat that as a stopped car/obstacle at this new distance.
-    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1])
-    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1])
+    close_tighten_0 = get_close_tighten_offset(lead_xv_0[:,0], lead_xv_0[:,1], v_ego, t_follow)
+    close_tighten_1 = get_close_tighten_offset(lead_xv_1[:,0], lead_xv_1[:,1], v_ego, t_follow)
+    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1]) - close_tighten_0
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1]) - close_tighten_1
 
     # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
     # when the leads are no factor.
