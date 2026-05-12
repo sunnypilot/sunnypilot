@@ -25,6 +25,8 @@ class WifiManagerSP(WifiManager):
     return subprocess.run(
       ["sudo", "iptables-legacy", "-t", "nat", "-C", *nat_rule],
       check=False,
+      stdout=subprocess.DEVNULL,
+      stderr=subprocess.DEVNULL,
     ).returncode == 0
 
   def _set_tethering_nat_rule(self, present: bool) -> None:
