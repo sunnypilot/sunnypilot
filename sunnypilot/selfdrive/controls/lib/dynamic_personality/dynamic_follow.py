@@ -44,6 +44,18 @@ ATAU_RESET      = 1.5
 ATAU_DELTA_MAX  = 0.14
 ATAU_GATE_ALEAD = -0.2
 
+# Lead-flicker modifier: when radar lead state oscillates (status flips,
+# dRel jumps from track-id churn), widen t_follow so MPC has buffer to
+# coast through the noise instead of brake/release ringing. We cannot
+# smooth what MPC sees in radarState from sunnypilot, but we can reduce
+# its reactivity by holding a wider follow gap during instability.
+FLICKER_WINDOW_FRAMES = max(1, int(round(1.0 / DT_MDL)))  # 1.0s @ 20Hz = 20
+FLICKER_FLIPS_DEADBAND = 2     # status flips in window below this = no delta
+FLICKER_FLIPS_MAX      = 6     # saturate flips contribution here
+FLICKER_DREL_JUMP_M    = 4.0   # dRel delta between frames signaling track churn
+FLICKER_JUMPS_MAX      = 4     # saturate dRel-jumps contribution here
+FLICKER_DELTA_MAX      = 0.18  # max t_follow delta added under full flicker
+
 RATE_UP_BP   = [0.0, 20.0]
 RATE_UP_V    = [0.42, 0.25]
 RATE_DOWN_BP = [0.0, 10.0, 25.0]
@@ -70,10 +82,11 @@ class ModifierDeltas:
   closing: float = 0.0
   alead: float = 0.0
   atau: float = 0.0
+  flicker: float = 0.0
 
   @property
   def total(self) -> float:
-    return self.jerk + self.cutin + max(self.alead, self.closing) + self.atau
+    return self.jerk + self.cutin + max(self.alead, self.closing) + self.atau + self.flicker
 
 
 class FollowDistanceController:
@@ -92,6 +105,8 @@ class FollowDistanceController:
 
     self._alead_history: deque[float] = deque(maxlen=JERK_WINDOW_FRAMES)
     self._jerk_history: deque[float] = deque(maxlen=JERK_WINDOW_FRAMES)
+    self._status_history: deque[bool] = deque(maxlen=FLICKER_WINDOW_FRAMES)
+    self._drel_jumps: deque[bool] = deque(maxlen=FLICKER_WINDOW_FRAMES)
 
     self._prev_lead = False
     self._prev_drel = 0.0
@@ -213,9 +228,15 @@ class FollowDistanceController:
   def dbg_atau_delta(self) -> float:
     return self._dbg.atau
 
+  @property
+  def dbg_flicker_delta(self) -> float:
+    return self._dbg.flicker
+
   def _reset_history(self):
     self._alead_history.clear()
     self._jerk_history.clear()
+    self._status_history.clear()
+    self._drel_jumps.clear()
     self._cutin_frames = 0
     self._cutin_confirm = 0
     self._prev_lead = False
@@ -256,6 +277,7 @@ class FollowDistanceController:
       closing = self._mod_closing(v_rel),
       alead   = self._mod_alead(a_lead),
       atau    = self._mod_atau(a_tau, a_lead),
+      flicker = self._mod_flicker(),
     )
 
     self._prev_lead = status
@@ -272,11 +294,16 @@ class FollowDistanceController:
     self._cutin_confirm = 0
     self._alead_history.clear()
     self._jerk_history.clear()
+    self._status_history.clear()
+    self._drel_jumps.clear()
 
   def _update_history(self, a_lead: float, status: bool, d_rel: float):
     if self._alead_history:
       self._jerk_history.append(abs((a_lead - self._alead_history[-1]) / DT_MDL))
     self._alead_history.append(a_lead)
+
+    self._status_history.append(status)
+    self._drel_jumps.append(self._prev_lead and status and abs(self._prev_drel - d_rel) > FLICKER_DREL_JUMP_M)
 
     is_new_lead = status and not self._prev_lead
     is_drel_jump = status and self._prev_lead and (self._prev_drel - d_rel) > 3.0
@@ -334,3 +361,14 @@ class FollowDistanceController:
     if a_lead >= ATAU_GATE_ALEAD:
       return 0.0
     return ATAU_DELTA_MAX * float(np.clip(a_tau / ATAU_RESET, 0.0, 1.0))
+
+  def _mod_flicker(self) -> float:
+    if len(self._status_history) < FLICKER_WINDOW_FRAMES // 2:
+      return 0.0
+    flips = sum(1 for i in range(1, len(self._status_history))
+                if self._status_history[i] != self._status_history[i-1])
+    jumps = sum(1 for j in self._drel_jumps if j)
+    flips_score = float(np.clip((flips - FLICKER_FLIPS_DEADBAND) /
+                                max(1, FLICKER_FLIPS_MAX - FLICKER_FLIPS_DEADBAND), 0.0, 1.0))
+    jumps_score = float(np.clip(jumps / FLICKER_JUMPS_MAX, 0.0, 1.0))
+    return FLICKER_DELTA_MAX * max(flips_score, jumps_score)
