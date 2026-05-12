@@ -25,6 +25,13 @@ CLOSE_CONFIRM_FRAMES  = max(1, int(round(0.5 / DT_MDL)))
 CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.0 / DT_MDL)))
 CLOSE_OVERRIDE_DREL   = 25.0
 
+# Hold the last selected (chosen or override) Track across short radar
+# dropouts so a 1-3 frame absence does not collapse the override and force
+# lead_one back to vision-only or to a freshly initialized track on the
+# radard side. Python keeps the Track object alive via reference even after
+# radard pops it from its own dict; we keep reading its last Kalman state.
+SELECT_HOLDOVER_FRAMES = max(1, int(round(0.15 / DT_MDL)))
+
 # Bias the chosen track's aLeadTau using the model's predicted lead acceleration
 # horizon (modelV2.leadsV3[0].a[1]). When a[1] agrees with a[0] in direction and
 # magnitude, nudge the FirstOrderFilter so MPC's extrapolate_lead persists
@@ -78,6 +85,8 @@ class DistantLeadDetector:
     self._streak: dict[int, int] = {}
     self._release: dict[int, int] = {}
     self._close = CloseLead()
+    self._last_selected = None
+    self._absent_count = 0
 
   def detect(self, tracks: dict, model_data: capnp._DynamicStructReader, v_ego: float = 0.0,
              lead_one_drel: float = 0.0, lead_one_status: bool = False):
@@ -85,6 +94,8 @@ class DistantLeadDetector:
       self._streak.clear()
       self._release.clear()
       self._close.reset()
+      self._last_selected = None
+      self._absent_count = 0
       return None
 
     horizon = model_data.position.x[-1]
@@ -99,6 +110,18 @@ class DistantLeadDetector:
     override = self._close_override(tracks, left_x, left_y, right_x, right_y,
                                     lead_one_drel, lead_one_status)
     selected = override if override is not None else chosen
+
+    if selected is not None:
+      self._last_selected = selected
+      self._absent_count = 0
+    elif self._last_selected is not None:
+      self._absent_count += 1
+      if self._absent_count > SELECT_HOLDOVER_FRAMES:
+        self._last_selected = None
+        self._absent_count = 0
+      else:
+        selected = self._last_selected
+
     if selected is not None and len(model_data.leadsV3):
       model_tau = _model_lead_tau(model_data.leadsV3[0])
       if model_tau is not None:
