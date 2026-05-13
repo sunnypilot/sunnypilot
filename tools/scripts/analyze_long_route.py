@@ -54,11 +54,17 @@ def load_series(route: str):
       cs = msg.carState
       ts['carState'].append((t, {'vEgo': cs.vEgo, 'aEgo': cs.aEgo,
                                  'gasPressed': cs.gasPressed, 'brakePressed': cs.brakePressed,
-                                 'cruiseEnabled': cs.cruiseState.enabled}))
+                                 'cruiseEnabled': cs.cruiseState.enabled,
+                                 'standstill': cs.standstill,
+                                 'cruiseStandstill': cs.cruiseState.standstill}))
     elif w == 'carControl':
       cc = msg.carControl
+      lcs_raw = cc.actuators.longControlState
+      lcs_map = {'off': 0, 'pid': 1, 'stopping': 2, 'starting': 3}
+      lcs_int = lcs_map.get(str(lcs_raw), -1)
       ts['carControl'].append((t, {'accel': cc.actuators.accel,
-                                   'longActive': cc.longActive}))
+                                   'longActive': cc.longActive,
+                                   'longControlState': lcs_int}))
     elif w == 'radarState':
       lo = msg.radarState.leadOne
       ts['radarState'].append((t, {'status': lo.status, 'dRel': lo.dRel,
@@ -66,22 +72,34 @@ def load_series(route: str):
                                    'aLeadK': lo.aLeadK, 'aLeadTau': lo.aLeadTau}))
     elif w == 'longitudinalPlan':
       lp = msg.longitudinalPlan
-      ts['longitudinalPlan'].append((t, {'aTarget': lp.aTarget}))
+      ts['longitudinalPlan'].append((t, {'aTarget': lp.aTarget,
+                                         'shouldStop': lp.shouldStop}))
     elif w == 'longitudinalPlanSP':
       lp = msg.longitudinalPlanSP
+      # SP plan has aTarget but no shouldStop — controller reads upstream
+      # longitudinalPlan.shouldStop; don't fabricate a shouldStop column here.
       ts['longitudinalPlanSP'].append((t, {'aTarget': lp.aTarget}))
   return ts
 
 
-def to_arrays(rows):
+def to_arrays(rows, t0: float | None = None):
+  """Build aligned numpy arrays for a topic. If t0 is given, all topics share
+  the same time origin so cross-topic plots align (carState, carControl,
+  longitudinalPlan can have different first-msg times)."""
   if not rows:
     return None
   ts = np.array([r[0] for r in rows])
-  ts -= ts[0]
+  ts -= (t0 if t0 is not None else ts[0])
   keys = rows[0][1].keys()
   data = {k: np.array([float(r[1][k]) for r in rows]) for k in keys}
   data['t'] = ts
   return data
+
+
+def common_t0(ts: dict) -> float:
+  """Pick the earliest first-msg time across all topics so they share a clock."""
+  origins = [rows[0][0] for rows in ts.values() if rows]
+  return min(origins) if origins else 0.0
 
 
 def regime_mask(v_ego: np.ndarray) -> dict[str, np.ndarray]:
@@ -154,12 +172,13 @@ def detect_late_brakes(rs, cs, controls):
 
 def report(name: str, ts: dict) -> dict:
   """Print the route summary; return per-minute metrics for budget gating."""
-  cs = to_arrays(ts.get('carState', []))
-  ctl = to_arrays(ts.get('carControl', []))
-  rs = to_arrays(ts.get('radarState', []))
+  t0 = common_t0(ts)
+  cs = to_arrays(ts.get('carState', []), t0)
+  ctl = to_arrays(ts.get('carControl', []), t0)
+  rs = to_arrays(ts.get('radarState', []), t0)
   # Prefer fork plan (SLA/DEC/SCC overrides applied) when present
-  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []))
-  lp_up = to_arrays(ts.get('longitudinalPlan', []))
+  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []), t0)
+  lp_up = to_arrays(ts.get('longitudinalPlan', []), t0)
   lp = lp_sp if lp_sp is not None else lp_up
   plan_source = 'longitudinalPlanSP' if lp_sp is not None else ('longitudinalPlan' if lp_up is not None else 'none')
 
@@ -278,12 +297,19 @@ def check_budget(name: str, metrics: dict, budget: dict) -> list[str]:
 
 
 def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
-  cs = to_arrays(ts.get('carState', []))
-  cc = to_arrays(ts.get('carControl', []))
-  rs = to_arrays(ts.get('radarState', []))
-  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []))
-  lp_up = to_arrays(ts.get('longitudinalPlan', []))
-  lp = lp_sp if lp_sp is not None else lp_up
+  # IMPORTANT: align all topics to a common t0 — different msgq services
+  # publish their first message at different times (often >5s skew), so
+  # if we don't share an origin, the aTarget/aCmd/cs columns will be misaligned.
+  t0 = common_t0(ts)
+  cs = to_arrays(ts.get('carState', []), t0)
+  cc = to_arrays(ts.get('carControl', []), t0)
+  rs = to_arrays(ts.get('radarState', []), t0)
+  lp_sp = to_arrays(ts.get('longitudinalPlanSP', []), t0)
+  lp_up = to_arrays(ts.get('longitudinalPlan', []), t0)
+  # Controller uses upstream longitudinalPlan.shouldStop — show that, not SP's
+  # (SP plan doesn't have shouldStop). Prefer upstream when both present so
+  # aTarget+shouldStop+aCmd line up with what longcontrol.py actually sees.
+  lp = lp_up if lp_up is not None else lp_sp
   if cs is None:
     print(f"\n══════ DRILL {name} @ t={event_t:.1f}s ══════ no carState")
     return
@@ -299,12 +325,32 @@ def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
     return
 
   print(f"\n══════ DRILL @ t={event_t:.1f}s  (±{window_s:.0f}s) ══════")
-  print("  cols: rel_t  v_ego  aEgo  | lead.st dRel vRel vLead aLeadK aLeadTau | aTgtPlan aCmd  | engaged")
+  print("  cols: rel_t  v_ego  aEgo  ss cSS  | lcs   aTgt  shStp aCmd  | lead.st dRel vRel vLead aLeadK aLeadTau | eng")
+  print("    lcs: 0=off 1=pid 2=stopping 3=starting        ss=carState.standstill        cSS=cruiseState.standstill")
 
-  step = max(1, len(cs_idx) // 50)
+  # ~0.1s resolution: carState is 100 Hz, so step=10 ≈ 0.1s
+  step = max(1, len(cs_idx) // max(int(window_s * 20), 50))  # ~20 rows/sec
+  LCS_NAMES = {0: 'off', 1: 'pid ', 2: 'stop', 3: 'strt'}
   for i in cs_idx[::step]:
     t_rel = cs['t'][i] - abs_event
-    line = f"  {t_rel:+5.2f}  {cs['vEgo'][i]:5.2f}  {cs['aEgo'][i]:+5.2f}  | "
+    ss = int(cs['standstill'][i]) if 'standstill' in cs else 0
+    css = int(cs['cruiseStandstill'][i]) if 'cruiseStandstill' in cs else 0
+    line = f"  {t_rel:+5.2f}  {cs['vEgo'][i]:5.2f}  {cs['aEgo'][i]:+5.2f}  {ss:d}  {css:d}  | "
+    if cc is not None and cc['t'].size:
+      k = np.searchsorted(cc['t'], cs['t'][i])
+      k = min(k, len(cc['t']) - 1)
+      lcs = int(cc['longControlState'][k]) if 'longControlState' in cc else 0
+      line += f"{LCS_NAMES.get(lcs, '?'):4s} "
+      if lp is not None and lp['t'].size:
+        kp = np.searchsorted(lp['t'], cs['t'][i])
+        kp = min(kp, len(lp['t']) - 1)
+        ss_plan = int(lp['shouldStop'][kp]) if 'shouldStop' in lp else 0
+        line += f"{lp['aTarget'][kp]:+5.2f}  {ss_plan:d}    "
+      else:
+        line += "—      —    "
+      line += f"{cc['accel'][k]:+5.2f}  | "
+    else:
+      line += "—                          | "
     if rs is not None:
       j = np.searchsorted(rs['t'], cs['t'][i])
       j = min(j, len(rs['t']) - 1)
@@ -312,24 +358,45 @@ def drill_event(name: str, ts: dict, event_t: float, window_s: float = 5.0):
                + f" {rs['vLead'][j]:5.2f} {rs['aLeadK'][j]:+5.2f} {rs['aLeadTau'][j]:4.2f} | ")
     else:
       line += "—                                       | "
-    if lp is not None and lp['t'].size:
-      k = np.searchsorted(lp['t'], cs['t'][i])
-      k = min(k, len(lp['t']) - 1)
-      line += f"{lp['aTarget'][k]:+5.2f}    "
-    else:
-      line += "—       "
-    if cc is not None and cc['t'].size:
-      k = np.searchsorted(cc['t'], cs['t'][i])
-      k = min(k, len(cc['t']) - 1)
-      line += f"{cc['accel'][k]:+5.2f}  | "
-    else:
-      line += "—     | "
     line += f"{int(cs['cruiseEnabled'][i]):d}"
     print(line)
 
   if rs is not None:
     flips = int(np.sum(np.diff(rs['status'][slice_in(rs['t'])].astype(int)) != 0))
     print(f"  -- lead status flips in window: {flips}")
+
+  # Transition detection: when does cruiseState.standstill, longControlState, and shouldStop flip?
+  if 'cruiseStandstill' in cs:
+    css_arr = cs['cruiseStandstill'][cs_idx].astype(int)
+    css_t = cs['t'][cs_idx]
+    diffs = np.where(np.diff(css_arr) != 0)[0]
+    for d in diffs:
+      print(f"  -- cruiseState.standstill {css_arr[d]}->{css_arr[d+1]} at t={css_t[d+1]:.2f}s "
+            f"(rel {css_t[d+1]-abs_event:+.2f}s)")
+  if 'standstill' in cs:
+    ss_arr = cs['standstill'][cs_idx].astype(int)
+    ss_t = cs['t'][cs_idx]
+    diffs = np.where(np.diff(ss_arr) != 0)[0]
+    for d in diffs:
+      print(f"  -- carState.standstill   {ss_arr[d]}->{ss_arr[d+1]} at t={ss_t[d+1]:.2f}s "
+            f"(rel {ss_t[d+1]-abs_event:+.2f}s)")
+  if cc is not None and 'longControlState' in cc:
+    cc_idx = slice_in(cc['t'])
+    lcs_arr = cc['longControlState'][cc_idx].astype(int)
+    cc_t = cc['t'][cc_idx]
+    diffs = np.where(np.diff(lcs_arr) != 0)[0]
+    for d in diffs:
+      print(f"  -- longControlState     {LCS_NAMES.get(lcs_arr[d],'?')}->"
+            f"{LCS_NAMES.get(lcs_arr[d+1],'?')} at t={cc_t[d+1]:.2f}s "
+            f"(rel {cc_t[d+1]-abs_event:+.2f}s)")
+  if lp is not None and 'shouldStop' in lp:
+    lp_idx = slice_in(lp['t'])
+    sh_arr = lp['shouldStop'][lp_idx].astype(int)
+    lp_t = lp['t'][lp_idx]
+    diffs = np.where(np.diff(sh_arr) != 0)[0]
+    for d in diffs:
+      print(f"  -- plan.shouldStop      {sh_arr[d]}->{sh_arr[d+1]} at t={lp_t[d+1]:.2f}s "
+            f"(rel {lp_t[d+1]-abs_event:+.2f}s)")
 
 
 def main() -> int:
