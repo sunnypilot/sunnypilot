@@ -254,14 +254,15 @@ class DynamicExperimentalController:
 
     self._trajectory_valid = True
 
-    # endpoint shortage
+    # endpoint shortage — only count once endpoint is below the deadband
     endpoint_x = md.position.x[TRAJECTORY_SIZE - 1]
     self._endpoint_x = endpoint_x
     expected_distance = interp(self._v_ego_kph, WMACConstants.SLOW_DOWN_BP, WMACConstants.SLOW_DOWN_DIST)
     self._expected_distance = expected_distance
 
-    if endpoint_x < expected_distance:
-      shortage_ratio = (expected_distance - endpoint_x) / expected_distance
+    shortage_threshold = expected_distance * WMACConstants.SLOW_DOWN_DEADBAND_RATIO
+    if endpoint_x < shortage_threshold:
+      shortage_ratio = (shortage_threshold - endpoint_x) / shortage_threshold
       urgency = min(1.0, shortage_ratio * 1.3)
       if endpoint_x < expected_distance * 0.3:
         urgency = min(1.0, urgency * 1.5)
