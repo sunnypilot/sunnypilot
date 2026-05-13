@@ -5,26 +5,26 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 # Version = 2025-6-30
-
-from cereal import messaging
-from opendbc.car import structs
-from numpy import interp
-from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants
 from typing import Literal
 
-# d-e2e, from modeldata.h
+from cereal import messaging
+from numpy import interp
+from opendbc.car import structs
+
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants
+
 TRAJECTORY_SIZE = 33
 SET_MODE_TIMEOUT = 15
 
-# Define the valid mode types
+T_IDXS = ModelConstants.T_IDXS
+
 ModeType = Literal['acc', 'blended']
 
 
 class SmoothKalmanFilter:
-  """Enhanced Kalman filter with smoothing for stable decision making."""
-
   def __init__(self, initial_value=0, measurement_noise=0.1, process_noise=0.01,
                alpha=1.0, smoothing_factor=0.85):
     self.x = initial_value
@@ -76,8 +76,6 @@ class SmoothKalmanFilter:
 
 
 class ModeTransitionManager:
-  """Manages smooth transitions between driving modes with hysteresis."""
-
   def __init__(self):
     self.current_mode: ModeType = 'acc'
     self.mode_confidence = {'acc': 1.0, 'blended': 0.0}
@@ -87,7 +85,6 @@ class ModeTransitionManager:
     self.emergency_override = False
 
   def request_mode(self, mode: ModeType, confidence: float = 1.0, emergency: bool = False):
-    # Emergency override for critical situations (stops, collisions)
     if emergency:
       self.emergency_override = True
       self.current_mode = mode
@@ -100,11 +97,10 @@ class ModeTransitionManager:
       if m != mode:
         self.mode_confidence[m] = max(0.0, self.mode_confidence[m] - 0.05)
 
-    # Require minimum duration in current mode (unless emergency)
     if self.mode_duration < self.min_mode_duration[self.current_mode] and not self.emergency_override:
       return
 
-    # Hysteresis: asymmetric — harder to enter blended, easier to return to ACC
+    # asymmetric hysteresis: harder to enter blended, easier to return to acc
     if mode != self.current_mode:
       confidence_threshold = 0.6 if mode == 'blended' else 0.45
     else:
@@ -121,11 +117,9 @@ class ModeTransitionManager:
       self.transition_timeout -= 1
     self.mode_duration += 1
 
-    # Reset emergency override after some time
     if self.emergency_override and self.mode_duration > 20:
       self.emergency_override = False
 
-    # Gradual confidence decay — faster decay so stale blended signals clear sooner
     for mode in self.mode_confidence:
       self.mode_confidence[mode] *= 0.96
 
@@ -145,47 +139,37 @@ class DynamicExperimentalController:
 
     self._mode_manager = ModeTransitionManager()
 
-    # Smooth filters for stable decision making with faster response for critical scenarios
-    self._lead_filter = SmoothKalmanFilter(
-      measurement_noise=0.15,
-      process_noise=0.05,
-      alpha=1.02,
-      smoothing_factor=0.8
-    )
+    self._lead_filter = SmoothKalmanFilter(measurement_noise=0.15, process_noise=0.05,
+                                           alpha=1.02, smoothing_factor=0.8)
+    self._slow_down_filter = SmoothKalmanFilter(measurement_noise=0.1, process_noise=0.1,
+                                                alpha=1.05, smoothing_factor=0.55)
+    self._slowness_filter = SmoothKalmanFilter(measurement_noise=0.1, process_noise=0.06,
+                                               alpha=1.015, smoothing_factor=0.92)
+    self._mpc_fcw_filter = SmoothKalmanFilter(measurement_noise=0.2, process_noise=0.1,
+                                              alpha=1.1, smoothing_factor=0.5)
 
-    self._slow_down_filter = SmoothKalmanFilter(
-      measurement_noise=0.1,
-      process_noise=0.1,
-      alpha=1.05,
-      smoothing_factor=0.55
-    )
-
-    self._slowness_filter = SmoothKalmanFilter(
-      measurement_noise=0.1,
-      process_noise=0.06,
-      alpha=1.015,
-      smoothing_factor=0.92
-    )
-
-    self._mpc_fcw_filter = SmoothKalmanFilter(
-      measurement_noise=0.2,
-      process_noise=0.1,
-      alpha=1.1,
-      smoothing_factor=0.5
-    )
     self._has_lead_filtered = False
     self._has_slow_down = False
     self._has_slowness = False
     self._has_mpc_fcw = False
+    self._has_model_stop = False
+    self._has_standstill = False
     self._v_ego_kph = 0.0
     self._v_cruise_kph = 0.0
-    self._has_standstill = False
     self._mpc_fcw_crash_cnt = 0
     self._standstill_count = 0
+
     # debug
     self._endpoint_x = float('inf')
     self._expected_distance = 0.0
     self._trajectory_valid = False
+    self._predicted_stop_t = float('inf')
+    self._predicted_stop_d = float('inf')
+    self._model_should_stop = False
+    self._model_hard_brake = False
+    self._brake_press_prob_max = 0.0
+    self._hard_brake_3ms2_prob_max = 0.0
+    self._hard_brake_5ms2_prob_max = 0.0
 
   def _read_params(self) -> None:
     if self._frame % int(1. / DT_MDL) == 0:
@@ -201,7 +185,6 @@ class DynamicExperimentalController:
     return self._active
 
   def set_mpc_fcw_crash_cnt(self) -> None:
-    """Set MPC FCW crash count"""
     self._mpc_fcw_crash_cnt = self._mpc.crash_cnt
 
   def _update_calculations(self, sm: messaging.SubMaster) -> None:
@@ -213,167 +196,172 @@ class DynamicExperimentalController:
     self._v_cruise_kph = car_state.vCruise
     self._has_standstill = car_state.standstill
 
-    # standstill detection
     if self._has_standstill:
       self._standstill_count = min(20, self._standstill_count + 1)
     else:
       self._standstill_count = max(0, self._standstill_count - 1)
 
-    # Lead detection
     self._lead_filter.add_data(float(lead_one.status))
     lead_value = self._lead_filter.get_value() or 0.0
     self._has_lead_filtered = lead_value > WMACConstants.LEAD_PROB
 
-    # MPC FCW detection
     fcw_filtered_value = self._mpc_fcw_filter.get_value() or 0.0
     self._mpc_fcw_filter.add_data(float(self._mpc_fcw_crash_cnt > 0))
     self._has_mpc_fcw = fcw_filtered_value > 0.5
 
-    # Slow down detection
     self._calculate_slow_down(md)
 
-    # Slowness detection
     if not (self._standstill_count > 5) and not self._has_slow_down:
       current_slowness = float(self._v_ego_kph <= (self._v_cruise_kph * WMACConstants.SLOWNESS_CRUISE_OFFSET))
       self._slowness_filter.add_data(current_slowness)
       slowness_value = self._slowness_filter.get_value() or 0.0
-
-      # Hysteresis for slowness
       threshold = WMACConstants.SLOWNESS_PROB * (0.8 if self._has_slowness else 1.1)
       self._has_slowness = slowness_value > threshold
 
-  def _calculate_slow_down(self, md):
-    """Calculate urgency based on trajectory endpoint vs expected distance."""
-
-    # Reset to safe defaults
-    urgency = 0.0
+  def _reset_slow_down_debug(self) -> None:
     self._endpoint_x = float('inf')
     self._trajectory_valid = False
+    self._predicted_stop_t = float('inf')
+    self._predicted_stop_d = float('inf')
+    self._model_should_stop = False
+    self._model_hard_brake = False
+    self._brake_press_prob_max = 0.0
+    self._hard_brake_3ms2_prob_max = 0.0
+    self._hard_brake_5ms2_prob_max = 0.0
 
-    #Require exact trajectory size
-    position_valid = len(md.position.x) == TRAJECTORY_SIZE
-    orientation_valid = len(md.orientation.x) == TRAJECTORY_SIZE
+  def _calculate_slow_down(self, md) -> None:
+    self._reset_slow_down_debug()
+    urgency = 0.0
 
-    if not (position_valid and orientation_valid):
-      # Invalid trajectory — do not infer urgency from missing data alone; urgency stays 0.0
+    if len(md.position.x) != TRAJECTORY_SIZE or len(md.orientation.x) != TRAJECTORY_SIZE:
+      # invalid trajectory — stay at urgency=0; missing data is not a brake signal
       self._slow_down_filter.add_data(urgency)
       urgency_filtered = self._slow_down_filter.get_value() or 0.0
       self._has_slow_down = urgency_filtered > WMACConstants.SLOW_DOWN_PROB
       self._urgency = urgency_filtered
+      self._has_model_stop = False
       return
 
-    # We have a valid full trajectory
     self._trajectory_valid = True
 
-    # Use the exact endpoint (33rd point, index 32)
+    # endpoint shortage
     endpoint_x = md.position.x[TRAJECTORY_SIZE - 1]
     self._endpoint_x = endpoint_x
-
-    # Get expected distance based on current speed using tuned constants
-    expected_distance = interp(self._v_ego_kph,
-                               WMACConstants.SLOW_DOWN_BP,
-                               WMACConstants.SLOW_DOWN_DIST)
+    expected_distance = interp(self._v_ego_kph, WMACConstants.SLOW_DOWN_BP, WMACConstants.SLOW_DOWN_DIST)
     self._expected_distance = expected_distance
 
-    # Calculate urgency based on trajectory shortage
     if endpoint_x < expected_distance:
-      shortage = expected_distance - endpoint_x
-      shortage_ratio = shortage / expected_distance
-
-      # Base urgency on shortage ratio
+      shortage_ratio = (expected_distance - endpoint_x) / expected_distance
       urgency = min(1.0, shortage_ratio * 1.3)
-
-      # Increase urgency for very short trajectories (imminent stops)
-      critical_distance = expected_distance * 0.3
-      if endpoint_x < critical_distance:
+      if endpoint_x < expected_distance * 0.3:
         urgency = min(1.0, urgency * 1.5)
-
-      # Speed-based urgency adjustment
       if self._v_ego_kph > 25.0:
-        speed_factor = 1.0 + (self._v_ego_kph - 25.0) / 80.0
-        urgency = min(1.0, urgency * speed_factor)
+        urgency = min(1.0, urgency * (1.0 + (self._v_ego_kph - 25.0) / 80.0))
 
-    # Apply filtering but with less smoothing for stops
+    # predicted velocity-zero crossing — first horizon sample below V_STOP_THRESH
+    if len(md.velocity.x) == TRAJECTORY_SIZE:
+      v_pred = md.velocity.x
+      for i in range(1, TRAJECTORY_SIZE):
+        if T_IDXS[i] > WMACConstants.T_STOP_HORIZON:
+          break
+        if v_pred[i] < WMACConstants.V_STOP_THRESH:
+          self._predicted_stop_t = T_IDXS[i]
+          self._predicted_stop_d = md.position.x[i]
+          break
+
+      if self._predicted_stop_t < WMACConstants.T_STOP_HORIZON:
+        stop_urgency = WMACConstants.V_STOP_URGENCY_CAP * (1.0 - self._predicted_stop_t / WMACConstants.T_STOP_HORIZON)
+        urgency = max(urgency, stop_urgency)
+
+    # model meta: brake-probability curves over t=[2,4,6,8,10]s
+    dp = md.meta.disengagePredictions
+    if len(dp.brakePressProbs):
+      self._brake_press_prob_max = max(dp.brakePressProbs)
+    if len(dp.brake3MetersPerSecondSquaredProbs):
+      self._hard_brake_3ms2_prob_max = max(dp.brake3MetersPerSecondSquaredProbs)
+    if len(dp.brake5MetersPerSecondSquaredProbs):
+      self._hard_brake_5ms2_prob_max = max(dp.brake5MetersPerSecondSquaredProbs)
+    self._model_hard_brake = bool(md.meta.hardBrakePredicted)
+
+    if self._brake_press_prob_max > WMACConstants.BRAKE_PRESS_PROB_THRESH:
+      urgency = max(urgency, min(1.0, self._brake_press_prob_max * 1.4))
+    if self._hard_brake_3ms2_prob_max > WMACConstants.HARD_BRAKE_3MS2_PROB_THRESH:
+      urgency = max(urgency, 0.85)
+    if self._hard_brake_5ms2_prob_max > WMACConstants.HARD_BRAKE_5MS2_PROB_THRESH:
+      urgency = 1.0
+
+    # model action
+    self._model_should_stop = bool(md.action.shouldStop)
+
+    self._has_model_stop = (self._model_should_stop or self._model_hard_brake
+                            or self._predicted_stop_t < WMACConstants.T_STOP_HORIZON)
+
     self._slow_down_filter.add_data(urgency)
     urgency_filtered = self._slow_down_filter.get_value() or 0.0
-
     self._has_slow_down = urgency_filtered > WMACConstants.SLOW_DOWN_PROB
     self._urgency = urgency_filtered
 
-  def _radarless_mode(self) -> None:
-    """Radarless mode decision logic with emergency handling."""
+  def _request_slow_down(self) -> None:
+    if self._urgency > 0.7:
+      self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
+    else:
+      self._mode_manager.request_mode('blended', confidence=min(1.0, self._urgency * 1.3))
 
-    # EMERGENCY: MPC FCW - immediate blended mode
+  def _radarless_mode(self) -> None:
     if self._has_mpc_fcw:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
-    # Standstill: use blended
+    if self._has_model_stop and self._predicted_stop_t < 4.0:
+      self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
+      return
+
     if self._standstill_count > 3:
       self._mode_manager.request_mode('blended', confidence=0.9)
       return
 
-    # Slow down scenarios: emergency for high urgency, normal for lower urgency
     if self._has_slow_down:
-      if self._urgency > 0.7:
-        # Emergency: immediate blended mode for high urgency stops
-        self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      else:
-        # Normal: blended with urgency-based confidence
-        confidence = min(1.0, self._urgency * 1.5)
-        self._mode_manager.request_mode('blended', confidence=confidence)
+      self._request_slow_down()
       return
 
-    # Driving slow: use ACC (but not if actively slowing down)
     if self._has_slowness and not self._has_slow_down:
       self._mode_manager.request_mode('acc', confidence=0.8)
       return
 
-    # Default: ACC
     self._mode_manager.request_mode('acc', confidence=0.7)
 
   def _radar_mode(self) -> None:
-    """Radar mode with emergency handling."""
-
-    # EMERGENCY: MPC FCW - immediate blended mode
+    # lead present always routes to ACC; only FCW preempts. blended is reserved
+    # for the no-lead case (model stop intent, trajectory shortening, standstill).
     if self._has_mpc_fcw:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
-    # If lead detected and not in standstill: always use ACC
     if self._has_lead_filtered and not (self._standstill_count > 3):
       self._mode_manager.request_mode('acc', confidence=1.0)
       return
 
-    # Slow down scenarios: emergency for high urgency, normal for lower urgency
-    if self._has_slow_down:
-      if self._urgency > 0.7:
-        # Emergency: immediate blended mode for high urgency stops
-        self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
-      else:
-        # Normal: blended with urgency-based confidence
-        confidence = min(1.0, self._urgency * 1.3)
-        self._mode_manager.request_mode('blended', confidence=confidence)
+    if self._has_model_stop and self._predicted_stop_t < 4.0:
+      self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
-    # Standstill: use blended
+    if self._has_slow_down:
+      self._request_slow_down()
+      return
+
     if self._standstill_count > 3:
       self._mode_manager.request_mode('blended', confidence=0.9)
       return
 
-    # Driving slow: use ACC (but not if actively slowing down)
     if self._has_slowness and not self._has_slow_down:
       self._mode_manager.request_mode('acc', confidence=0.8)
       return
 
-    # Default: ACC
     self._mode_manager.request_mode('acc', confidence=0.7)
 
   def update(self, sm: messaging.SubMaster) -> None:
     self._read_params()
-
     self.set_mpc_fcw_crash_cnt()
-
     self._update_calculations(sm)
 
     if self._CP.radarUnavailable:

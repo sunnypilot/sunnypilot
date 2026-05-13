@@ -21,6 +21,25 @@ class MockModelData:
     size = 33 if valid else 10  # incomplete if invalid
     self.position = type("Pos", (), {"x": [0.0] * size})()
     self.orientation = type("Ori", (), {"x": [0.0] * size})()
+    self.velocity = type("Vel", (), {"x": [30.0] * size})()  # default: no predicted stop
+    self.acceleration = type("Acc", (), {"x": [0.0] * size})()
+    self.action = type("Act", (), {"shouldStop": False, "desiredAcceleration": 0.0, "desiredCurvature": 0.0})()
+    dp = type("DP", (), {
+      "t": [2., 4., 6., 8., 10.],
+      "brakePressProbs": [0.0] * 5,
+      "gasPressProbs": [0.0] * 5,
+      "brakeDisengageProbs": [0.0] * 5,
+      "gasDisengageProbs": [0.0] * 5,
+      "steerOverrideProbs": [0.0] * 5,
+      "brake3MetersPerSecondSquaredProbs": [0.0] * 5,
+      "brake4MetersPerSecondSquaredProbs": [0.0] * 5,
+      "brake5MetersPerSecondSquaredProbs": [0.0] * 5,
+    })()
+    self.meta = type("Meta", (), {
+      "hardBrakePredicted": False,
+      "engagedProb": 1.0,
+      "disengagePredictions": dp,
+    })()
 
 class MockSelfDriveState:
   def __init__(self, experimentalMode=False):
