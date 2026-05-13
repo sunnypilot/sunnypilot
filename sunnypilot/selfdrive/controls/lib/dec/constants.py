@@ -13,9 +13,14 @@ class WMACConstants:
   V_STOP_THRESH = 0.5
   T_STOP_HORIZON = 8.0
   V_STOP_URGENCY_CAP = 0.9
+  V_STOP_MIN_T = 1.0          # ignore stops predicted within 1s (=current-state continuation)
+  V_STOP_MIN_D = 5.0          # ignore stops predicted <5m ahead
+  V_STOP_MIN_VEGO_KPH = 10.8  # skip when already creeping (<3 m/s); standstill path handles it
 
   # model brake-prob curves (modelV2.meta.disengagePredictions)
-  BRAKE_PRESS_PROB_THRESH = 0.35
+  # brakePressProbs sits in ~0.4-0.7 during normal driving — must spike above baseline to count
+  BRAKE_PRESS_PROB_THRESH = 0.7
+  BRAKE_PRESS_PEAK_RATIO = 1.5   # peak must exceed mean × this to trigger
   HARD_BRAKE_3MS2_PROB_THRESH = 0.25
   HARD_BRAKE_5MS2_PROB_THRESH = 0.15
 

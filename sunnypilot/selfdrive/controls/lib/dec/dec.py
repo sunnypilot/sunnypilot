@@ -123,6 +123,16 @@ class ModeTransitionManager:
     for mode in self.mode_confidence:
       self.mode_confidence[mode] *= 0.96
 
+  def force(self, mode: ModeType) -> None:
+    # Hard reset to `mode`, bypassing hysteresis and clearing any emergency
+    # override. Used by the lead-ACC rule: a confirmed lead must always win.
+    self.current_mode = mode
+    self.emergency_override = False
+    self.transition_timeout = 0
+    self.mode_duration = 0
+    for m in self.mode_confidence:
+      self.mode_confidence[m] = 1.0 if m == mode else 0.0
+
   def get_mode(self) -> ModeType:
     return self.current_mode
 
@@ -258,13 +268,17 @@ class DynamicExperimentalController:
       if self._v_ego_kph > 25.0:
         urgency = min(1.0, urgency * (1.0 + (self._v_ego_kph - 25.0) / 80.0))
 
-    # predicted velocity-zero crossing — first horizon sample below V_STOP_THRESH
-    if len(md.velocity.x) == TRAJECTORY_SIZE:
+    # predicted velocity-zero crossing — first horizon sample below V_STOP_THRESH.
+    # Gated on v_ego, look-ahead time, and forward distance to reject current-state
+    # continuation hits when already crawling.
+    if len(md.velocity.x) == TRAJECTORY_SIZE and self._v_ego_kph > WMACConstants.V_STOP_MIN_VEGO_KPH:
       v_pred = md.velocity.x
       for i in range(1, TRAJECTORY_SIZE):
         if T_IDXS[i] > WMACConstants.T_STOP_HORIZON:
           break
-        if v_pred[i] < WMACConstants.V_STOP_THRESH:
+        if (v_pred[i] < WMACConstants.V_STOP_THRESH
+            and T_IDXS[i] > WMACConstants.V_STOP_MIN_T
+            and md.position.x[i] > WMACConstants.V_STOP_MIN_D):
           self._predicted_stop_t = T_IDXS[i]
           self._predicted_stop_d = md.position.x[i]
           break
@@ -275,16 +289,22 @@ class DynamicExperimentalController:
 
     # model meta: brake-probability curves over t=[2,4,6,8,10]s
     dp = md.meta.disengagePredictions
-    if len(dp.brakePressProbs):
-      self._brake_press_prob_max = max(dp.brakePressProbs)
+    bp_probs = dp.brakePressProbs
+    brake_press_mean = 0.0
+    if len(bp_probs):
+      self._brake_press_prob_max = max(bp_probs)
+      brake_press_mean = sum(bp_probs) / len(bp_probs)
     if len(dp.brake3MetersPerSecondSquaredProbs):
       self._hard_brake_3ms2_prob_max = max(dp.brake3MetersPerSecondSquaredProbs)
     if len(dp.brake5MetersPerSecondSquaredProbs):
       self._hard_brake_5ms2_prob_max = max(dp.brake5MetersPerSecondSquaredProbs)
     self._model_hard_brake = bool(md.meta.hardBrakePredicted)
 
-    if self._brake_press_prob_max > WMACConstants.BRAKE_PRESS_PROB_THRESH:
-      urgency = max(urgency, min(1.0, self._brake_press_prob_max * 1.4))
+    # brakePressProbs is a "human might brake somewhere" prior — needs a real spike
+    # above its own baseline to count as stop intent.
+    if (self._brake_press_prob_max > WMACConstants.BRAKE_PRESS_PROB_THRESH
+        and self._brake_press_prob_max > brake_press_mean * WMACConstants.BRAKE_PRESS_PEAK_RATIO):
+      urgency = max(urgency, min(1.0, self._brake_press_prob_max * 1.2))
     if self._hard_brake_3ms2_prob_max > WMACConstants.HARD_BRAKE_3MS2_PROB_THRESH:
       urgency = max(urgency, 0.85)
     if self._hard_brake_5ms2_prob_max > WMACConstants.HARD_BRAKE_5MS2_PROB_THRESH:
@@ -338,7 +358,9 @@ class DynamicExperimentalController:
       return
 
     if self._has_lead_filtered and not (self._standstill_count > 3):
-      self._mode_manager.request_mode('acc', confidence=1.0)
+      # Hard force ACC — bypass hysteresis + clear any prior emergency_override
+      # so a stale blended request can't outlast a confirmed lead.
+      self._mode_manager.force('acc')
       return
 
     if self._has_model_stop and self._predicted_stop_t < 4.0:
