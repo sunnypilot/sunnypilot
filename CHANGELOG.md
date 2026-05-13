@@ -1,3 +1,8 @@
+sunnypilot Version 2026.001.005 (2026-05-13)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * sunnylink: add CarParams fallback for brand-specific capabilities by @sunnyhaibin
+
 sunnypilot Version 2026.001.004 (2026-05-10)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
@@ -7,7 +12,7 @@ sunnypilot Version 2026.001.004 (2026-05-10)
 sunnypilot Version 2026.001.003 (2026-05-08)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
-  * manager: disable DEVELOPMENT_ONLY reset by @jason-wen
+  * manager: disable DEVELOPMENT_ONLY reset by @sunnyhaibin
 
 sunnypilot Version 2026.001.002 (2026-05-07)
 ========================
