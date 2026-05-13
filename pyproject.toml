@@ -227,6 +227,7 @@ exclude = [
   "teleoprtc/",
   "teleoprtc_repo/",
   "third_party/",
+  "**/*.ipynb",
 ]
 
 [tool.ty.rules]
