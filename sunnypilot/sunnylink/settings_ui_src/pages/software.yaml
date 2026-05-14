@@ -1,0 +1,20 @@
+# Page: software
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: software
+label: Software
+icon: software
+order: 7
+remote_configurable: true
+description: Software update preferences
+sections:
+- id: updates
+  title: Updates
+  description: Control automatic software updates
+  items:
+  - key: DisableUpdates
+    widget: toggle
+    title: Disable Updates
+    description: When enabled, automatic software updates will be off. This requires a reboot to take effect.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/advanced_only'
