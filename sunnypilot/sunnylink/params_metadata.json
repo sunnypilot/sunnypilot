@@ -616,6 +616,10 @@
     "title": "Less Restrict Settings for Self-Tune (Beta)",
     "description": "Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values."
   },
+  "SpeedDependentTorqueToggle": {
+    "title": "Speed-Dependent Self-Tune (Beta)",
+    "description": "Learns separate torque parameters at different speeds for supported cars."
+  },
   "LiveTorqueParamsToggle": {
     "title": "Self-Tune",
     "description": "Enables self-tune for Torque lateral control"
