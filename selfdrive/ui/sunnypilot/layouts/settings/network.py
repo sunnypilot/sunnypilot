@@ -8,14 +8,85 @@ import threading
 import time
 import pyray as rl
 
+from openpilot.selfdrive.ui.lib.prime_state import PrimeType
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.sunnypilot.lib.wifi_manager import WifiManagerSP
+from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
-from openpilot.system.ui.widgets.network import NetworkUI, PanelType
+from openpilot.system.ui.widgets.network import AdvancedNetworkSettings, NetworkUI, PanelType, NavButton, WifiManagerUI
+
+
+class AdvancedNetworkSettingsSP(AdvancedNetworkSettings):
+  def __init__(self, wifi_manager: WifiManagerSP):
+    super().__init__(wifi_manager)
+    self._share_internet_state = False
+    self._last_share_internet_sync = 0.0
+    self._can_cleanup_stale_nat = False
+    self._share_internet_toggle = toggle_item_sp(
+      tr("Use Legacy NAT"),
+      tr("Uses an iptables-legacy NAT rule as a fallback when hotspot internet sharing does not work correctly."),
+      initial_state=self._share_internet_state,
+      callback=self._toggle_tethering_internet_sharing,
+      enabled=False,
+    )
+    self._share_internet_toggle.set_touch_valid_callback(self._scroller.scroll_panel.is_touch_valid)
+    self._scroller._items.insert(1, self._share_internet_toggle)
+    self._sync_share_internet_toggle()
+
+  def _on_network_updated(self, networks):
+    super()._on_network_updated(networks)
+    self._can_cleanup_stale_nat = True
+    self._sync_share_internet_toggle(sync_state=True)
+
+  def _update_state(self):
+    super()._update_state()
+    tethering_active = self._wifi_manager.is_tethering_active()
+    show_cell_settings = ui_state.prime_state.get_type() in (PrimeType.NONE, PrimeType.LITE)
+    should_sync = tethering_active and show_cell_settings and time.monotonic() - self._last_share_internet_sync >= 5.0
+    self._sync_share_internet_toggle(sync_state=should_sync)
+
+  def _sync_share_internet_toggle(self, sync_state: bool = False):
+    tethering_active = self._wifi_manager.is_tethering_active()
+    show_cell_settings = ui_state.prime_state.get_type() in (PrimeType.NONE, PrimeType.LITE)
+    nat_eligible = tethering_active and show_cell_settings
+
+    self._share_internet_toggle.set_visible(nat_eligible)
+    self._share_internet_toggle.action_item.set_enabled(nat_eligible)
+
+    if not sync_state:
+      if not nat_eligible and self._share_internet_state:
+        self._wifi_manager.set_tethering_internet_shared(False)
+      if not nat_eligible:
+        self._share_internet_state = False
+      self._share_internet_toggle.action_item.set_state(self._share_internet_state)
+      return
+
+    self._last_share_internet_sync = time.monotonic()
+
+    if nat_eligible:
+      self._share_internet_state = self._wifi_manager.is_tethering_internet_shared()
+    else:
+      if self._can_cleanup_stale_nat and self._wifi_manager.is_tethering_internet_shared():
+        self._wifi_manager.set_tethering_internet_shared(False)
+      self._share_internet_state = False
+    self._share_internet_toggle.action_item.set_state(self._share_internet_state)
+
+  def _toggle_tethering_internet_sharing(self, enabled: bool):
+    self._wifi_manager.set_tethering_internet_shared(enabled)
+    self._sync_share_internet_toggle(sync_state=True)
 
 
 class NetworkUISP(NetworkUI):
   def __init__(self, wifi_manager):
-    super().__init__(wifi_manager)
+    Widget.__init__(self)
+    self._wifi_manager = wifi_manager
+    self._current_panel: PanelType = PanelType.WIFI
+    self._wifi_panel = self._child(WifiManagerUI(wifi_manager))
+    self._advanced_panel = self._child(AdvancedNetworkSettingsSP(wifi_manager))
+    self._nav_button = self._child(NavButton(tr("Advanced")))
+    self._nav_button.set_click_callback(self._cycle_panel)
 
     self.scan_button = Button(tr("Scan"), self._scan_clicked, button_style=ButtonStyle.NORMAL, font_size=60, border_radius=30)
     self.scan_button.set_rect(rl.Rectangle(0, 0, 400, 100))
