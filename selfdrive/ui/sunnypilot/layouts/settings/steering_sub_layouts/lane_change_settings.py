@@ -54,7 +54,7 @@ class LaneChangeSettingsLayout(Widget):
     self._road_edge_block = toggle_item_sp(
       param="RoadEdgeLaneChangeEnabled",
       title=lambda: tr("Block Lane Change: Road Edge Detection"),
-      description=lambda: tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
+      description=lambda: tr("Blocks the lane change if the model sees a road edge on your signaled side."),
     )
 
     items = [

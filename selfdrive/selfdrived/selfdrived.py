@@ -304,7 +304,8 @@ class SelfdriveD(CruiseHelper):
             (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)
 
-      elif mdv2sp.leftLaneChangeEdgeBlock or mdv2sp.rightLaneChangeEdgeBlock:
+      elif (mdv2sp.leftLaneChangeEdgeBlock and direction == LaneChangeDirection.left) or \
+           (mdv2sp.rightLaneChangeEdgeBlock and direction == LaneChangeDirection.right):
         self.events_sp.add(custom.OnroadEventSP.EventName.laneChangeRoadEdge)
 
       else:

@@ -247,7 +247,7 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
-  RELC = RoadEdgeLaneChangeController(params.get_bool("RoadEdgeLaneChangeEnabled"))
+  RELC = RoadEdgeLaneChangeController(DH)
 
 
 
@@ -353,7 +353,7 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      RELC.update(modelv2_send.modelV2.roadEdgeStds, modelv2_send.modelV2.laneLineProbs)
+      RELC.update(modelv2_send.modelV2.roadEdgeStds, modelv2_send.modelV2.laneLineProbs, v_ego)
       mdv2sp_send.modelDataV2SP.leftLaneChangeEdgeBlock = RELC.left_edge_detected
       mdv2sp_send.modelDataV2SP.rightLaneChangeEdgeBlock = RELC.right_edge_detected
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, RELC.left_edge_detected, RELC.right_edge_detected)
