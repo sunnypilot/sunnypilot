@@ -333,7 +333,7 @@ class DynamicExperimentalController:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
-    if self._has_model_stop and self._predicted_stop_t < 4.0:
+    if self._has_model_stop and self._predicted_stop_t < 5.0:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
@@ -364,7 +364,7 @@ class DynamicExperimentalController:
       self._mode_manager.force('acc')
       return
 
-    if self._has_model_stop and self._predicted_stop_t < 4.0:
+    if self._has_model_stop and self._predicted_stop_t < 5.0:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 

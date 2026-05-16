@@ -13,16 +13,16 @@ import numpy as np
 from openpilot.common.realtime import DT_MDL
 
 
-CONFIRM_FRAMES = max(1, int(round(0.5 / DT_MDL)))
-RELEASE_FRAMES = max(1, int(round(0.25 / DT_MDL)))
+CONFIRM_FRAMES = max(1, int(round(0.4 / DT_MDL)))
+RELEASE_FRAMES = max(1, int(round(0.4 / DT_MDL)))
 
 MIN_FORWARD_SPEED = 1.0
 MIN_DREL          = 2.0
 MIN_V_EGO         = 4.0
 
 CLOSE_DREL_MAX        = 25.0
-CLOSE_CONFIRM_FRAMES  = max(1, int(round(0.5 / DT_MDL)))
-CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.0 / DT_MDL)))
+CLOSE_CONFIRM_FRAMES  = max(1, int(round(0.4 / DT_MDL)))
+CLOSE_HOLDOVER_FRAMES = max(1, int(round(2.5 / DT_MDL)))
 CLOSE_OVERRIDE_DREL   = 25.0
 
 # Hold the last selected (chosen or override) Track across short radar
@@ -30,7 +30,7 @@ CLOSE_OVERRIDE_DREL   = 25.0
 # lead_one back to vision-only or to a freshly initialized track on the
 # radard side. Python keeps the Track object alive via reference even after
 # radard pops it from its own dict; we keep reading its last Kalman state.
-SELECT_HOLDOVER_FRAMES = max(1, int(round(0.15 / DT_MDL)))
+SELECT_HOLDOVER_FRAMES = max(1, int(round(0.30 / DT_MDL)))
 
 # Bias the chosen track's aLeadTau using the model's predicted lead acceleration
 # horizon (modelV2.leadsV3[0].a[1]). When a[1] agrees with a[0] in direction and

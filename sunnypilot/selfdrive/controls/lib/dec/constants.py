@@ -5,12 +5,12 @@ class WMACConstants:
 
   # slow down
   SLOW_DOWN_WINDOW_SIZE = 5
-  SLOW_DOWN_PROB = 0.5
+  SLOW_DOWN_PROB = 0.42
   SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 60., 80., 100., 120.]
-  SLOW_DOWN_DIST = [20., 32., 45., 60., 80., 100., 130., 175., 220., 270.]
+  SLOW_DOWN_DIST = [22., 36., 50., 68., 90., 112., 145., 195., 245., 300.]
   # endpoint must be below this fraction of expected_distance for shortage to count;
   # gives a deadband so routine city traj (intersection turn, short visibility) doesn't trigger
-  SLOW_DOWN_DEADBAND_RATIO = 0.7
+  SLOW_DOWN_DEADBAND_RATIO = 0.75
 
   # predicted stop (modelV2.velocity)
   V_STOP_THRESH = 0.5

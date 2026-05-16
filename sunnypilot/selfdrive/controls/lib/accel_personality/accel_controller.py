@@ -14,34 +14,35 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 ACCEL_PERSONALITY_OPTIONS = [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]
 
 
-A_MAX_BP = [0.0, 4.0, 8.0, 16.0, 40.0]
+A_MAX_BP = [0.0, 2.0, 6.0, 12.0, 22.0, 40.0]
 A_MAX_V = {
-  AccelPersonality.eco:    [1.80, 1.80, 1.20, 0.40, 0.08],
-  AccelPersonality.normal: [1.80, 1.80, 1.35, 0.50, 0.15],
-  AccelPersonality.sport:  [1.80, 1.80, 1.50, 0.70, 0.25],
+  AccelPersonality.eco:    [2.00, 1.70, 1.10, 0.55, 0.22, 0.05],
+  AccelPersonality.normal: [2.00, 1.80, 1.30, 0.75, 0.35, 0.10],
+  AccelPersonality.sport:  [2.00, 1.90, 1.55, 0.95, 0.50, 0.18],
 }
 
 COAST_DRAG_BP = [0.0, 10.0, 25.0, 40.0]
 COAST_DRAG_V = {
-  AccelPersonality.eco:    [-0.03, -0.05, -0.08, -0.12],
-  AccelPersonality.normal: [-0.04, -0.07, -0.12, -0.18],
-  AccelPersonality.sport:  [-0.06, -0.10, -0.18, -0.28],
+  AccelPersonality.eco:    [-0.02, -0.04, -0.06, -0.09],
+  AccelPersonality.normal: [-0.03, -0.05, -0.08, -0.12],
+  AccelPersonality.sport:  [-0.05, -0.08, -0.14, -0.20],
 }
 
 A_MIN_FLOOR_BP = [0.0, 5.0, 15.0, 40.0]
 A_MIN_FLOOR_V = {
-  AccelPersonality.eco:    [-0.20, -0.35, -0.55, -0.50],
-  AccelPersonality.normal: [-0.25, -0.45, -0.75, -0.65],
-  AccelPersonality.sport:  [-0.35, -0.65, -1.00, -0.95],
+  AccelPersonality.eco:    [-0.15, -0.25, -0.40, -0.36],
+  AccelPersonality.normal: [-0.18, -0.32, -0.52, -0.46],
+  AccelPersonality.sport:  [-0.25, -0.45, -0.70, -0.66],
 }
 
-DEFICIT_TO_FLOOR = 8.5
-COAST_DEADBAND = 1.0
-RAMP_OFF_RANGE = 5.0
+DEFICIT_TO_FLOOR = 12.0
+DEFICIT_EXP = 1.8
+COAST_DEADBAND = 2.0
+RAMP_OFF_RANGE = 7.0
 
-A_MIN_TIGHTEN_RATE = 1.5
-A_MIN_RELAX_RATE = 0.6
-A_MAX_RATE = 0.8
+A_MIN_TIGHTEN_RATE = 0.7
+A_MIN_RELAX_RATE = 1.2
+A_MAX_RATE = 0.7
 
 MIN_MAX_GAP = 0.05
 
@@ -156,7 +157,7 @@ class AccelPersonalityController:
       return coast
     floor = float(np.interp(v_ego, A_MIN_FLOOR_BP, A_MIN_FLOOR_V[self._personality]))
     deficit = self._v_cruise - v_ego
-    t = float(np.clip(deficit / DEFICIT_TO_FLOOR, 0.0, 1.0)) ** 1.5
+    t = float(np.clip(deficit / DEFICIT_TO_FLOOR, 0.0, 1.0)) ** DEFICIT_EXP
     return coast + t * (floor - coast)
 
   def _apply_coast_deadband(self, v_ego: float, t_min: float, t_max: float) -> tuple[float, float]:

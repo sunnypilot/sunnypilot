@@ -21,28 +21,28 @@ PERSONALITY_OPTIONS = [LongPersonality.relaxed, LongPersonality.standard, LongPe
 
 PERSONALITY_BASE  = {LongPersonality.relaxed: 1.85, LongPersonality.standard: 1.55, LongPersonality.aggressive: 1.30}
 PERSONALITY_FLOOR = {LongPersonality.relaxed: 1.65, LongPersonality.standard: 1.35, LongPersonality.aggressive: 1.10}
-PERSONALITY_CEIL  = {LongPersonality.relaxed: 2.50, LongPersonality.standard: 2.10, LongPersonality.aggressive: 1.65}
+PERSONALITY_CEIL  = {LongPersonality.relaxed: 2.55, LongPersonality.standard: 2.15, LongPersonality.aggressive: 1.75}
 
 JERK_WINDOW_FRAMES = 400
-JERK_DELTA_MAX     = 0.12
-JERK_SIGMA_FLOOR   = 2.0
-JERK_SIGMA_SCALE   = 5.0
+JERK_DELTA_MAX     = 0.18
+JERK_SIGMA_FLOOR   = 1.5
+JERK_SIGMA_SCALE   = 4.0
 
-CUTIN_DELTA          = 0.10
-CUTIN_DECAY_FRAMES   = 100
+CUTIN_DELTA          = 0.22
+CUTIN_DECAY_FRAMES   = 160
 CUTIN_CONFIRM_FRAMES = 2
 
 CLOSING_VREL_MAX      = -2.0
-CLOSING_VREL_DEADBAND = -0.4
-CLOSING_DELTA_MAX     = 0.08
+CLOSING_VREL_DEADBAND = -0.2
+CLOSING_DELTA_MAX     = 0.18
 
-ALEAD_DECEL_MAX      = -1.0
-ALEAD_DECEL_DEADBAND = -0.4
-ALEAD_DELTA_MAX      = 0.22
+ALEAD_DECEL_MAX      = -1.2
+ALEAD_DECEL_DEADBAND = -0.15
+ALEAD_DELTA_MAX      = 0.32
 
 ATAU_RESET      = 1.5
-ATAU_DELTA_MAX  = 0.14
-ATAU_GATE_ALEAD = -0.2
+ATAU_DELTA_MAX  = 0.18
+ATAU_GATE_ALEAD = -0.1
 
 # Lead-flicker modifier: when radar lead state oscillates (status flips,
 # dRel jumps from track-id churn), widen t_follow so MPC has buffer to
@@ -54,15 +54,15 @@ FLICKER_FLIPS_DEADBAND = 2     # status flips in window below this = no delta
 FLICKER_FLIPS_MAX      = 6     # saturate flips contribution here
 FLICKER_DREL_JUMP_M    = 4.0   # dRel delta between frames signaling track churn
 FLICKER_JUMPS_MAX      = 4     # saturate dRel-jumps contribution here
-FLICKER_DELTA_MAX      = 0.18  # max t_follow delta added under full flicker
+FLICKER_DELTA_MAX      = 0.25  # max t_follow delta added under full flicker
 
 RATE_UP_BP   = [0.0, 20.0]
-RATE_UP_V    = [0.42, 0.25]
+RATE_UP_V    = [0.65, 0.45]
 RATE_DOWN_BP = [0.0, 10.0, 25.0]
-RATE_DOWN_V  = [0.08, 0.12, 0.22]
+RATE_DOWN_V  = [0.06, 0.10, 0.18]
 
 LOW_SPEED_SCALE_BP = [0.0, 3.0, 7.0, 12.0]
-LOW_SPEED_SCALE_V  = [0.15, 0.40, 0.75, 1.00]
+LOW_SPEED_SCALE_V  = [0.22, 0.48, 0.78, 1.00]
 
 HEADWAY_BOOST_V_MIN = 3.0
 HEADWAY_BOOST_T     = 3.0
