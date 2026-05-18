@@ -3,7 +3,8 @@
   url = https://github.com/sunnyhaibin/panda.git
 [submodule "opendbc"]
   path = opendbc_repo
-  url = https://github.com/sunnypilot/opendbc.git
+  url = https://github.com/Geomglot/opendbc.git
+  branch = rivian-down1-fix
 [submodule "msgq"]
   path = msgq_repo
   url = https://github.com/commaai/msgq.git
