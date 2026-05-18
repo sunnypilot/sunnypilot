@@ -363,7 +363,7 @@ def simple_button_item_sp(button_text: str | Callable[[], str], callback: Callab
 def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[], str] | None = None, initial_state: bool = False,
                    callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True, param: str | None = None) -> ListItemSP:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled, callback=callback, param=param)
-  return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
+  return ListItemSP(title=title, description=description, action_item=action, icon=icon)
 
 
 def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
