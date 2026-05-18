@@ -1,3 +1,8 @@
+sunnypilot Version 2026.001.006 (2026-05-17)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * sunnylink SDUI: tweak DisableUpdate param for clarity by @sunnyhaibin
+
 sunnypilot Version 2026.001.005 (2026-05-13)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
