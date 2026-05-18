@@ -172,7 +172,7 @@ jobs:
             output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
 
             echo "Compiling: $onnx_file -> $output_file"
-            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+            DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 IMAGE=2 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
             DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
           done
 
