@@ -5,7 +5,7 @@ class WMACConstants:
 
   # slow down
   SLOW_DOWN_WINDOW_SIZE = 5
-  SLOW_DOWN_PROB = 0.42
+  SLOW_DOWN_PROB = 0.55
   SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 60., 80., 100., 120.]
   SLOW_DOWN_DIST = [22., 36., 50., 68., 90., 112., 145., 195., 245., 300.]
   # endpoint must be below this fraction of expected_distance for shortage to count;

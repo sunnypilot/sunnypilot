@@ -25,24 +25,24 @@ PERSONALITY_CEIL  = {LongPersonality.relaxed: 2.55, LongPersonality.standard: 2.
 
 JERK_WINDOW_FRAMES = 400
 JERK_DELTA_MAX     = 0.18
-JERK_SIGMA_FLOOR   = 1.5
-JERK_SIGMA_SCALE   = 4.0
+JERK_SIGMA_FLOOR   = 0.5
+JERK_SIGMA_SCALE   = 3.0
 
-CUTIN_DELTA          = 0.22
-CUTIN_DECAY_FRAMES   = 160
-CUTIN_CONFIRM_FRAMES = 2
+CUTIN_DELTA          = 0.25
+CUTIN_DECAY_FRAMES   = 180
+CUTIN_CONFIRM_FRAMES = 1
 
 CLOSING_VREL_MAX      = -2.0
-CLOSING_VREL_DEADBAND = -0.2
-CLOSING_DELTA_MAX     = 0.18
+CLOSING_VREL_DEADBAND = -0.1
+CLOSING_DELTA_MAX     = 0.20
 
 ALEAD_DECEL_MAX      = -1.2
-ALEAD_DECEL_DEADBAND = -0.15
-ALEAD_DELTA_MAX      = 0.32
+ALEAD_DECEL_DEADBAND = -0.05
+ALEAD_DELTA_MAX      = 0.38
 
 ATAU_RESET      = 1.5
-ATAU_DELTA_MAX  = 0.18
-ATAU_GATE_ALEAD = -0.1
+ATAU_DELTA_MAX  = 0.20
+ATAU_GATE_ALEAD = -0.05
 
 # Lead-flicker modifier: when radar lead state oscillates (status flips,
 # dRel jumps from track-id churn), widen t_follow so MPC has buffer to
@@ -57,12 +57,12 @@ FLICKER_JUMPS_MAX      = 4     # saturate dRel-jumps contribution here
 FLICKER_DELTA_MAX      = 0.25  # max t_follow delta added under full flicker
 
 RATE_UP_BP   = [0.0, 20.0]
-RATE_UP_V    = [0.65, 0.45]
+RATE_UP_V    = [0.75, 0.55]
 RATE_DOWN_BP = [0.0, 10.0, 25.0]
 RATE_DOWN_V  = [0.06, 0.10, 0.18]
 
-LOW_SPEED_SCALE_BP = [0.0, 3.0, 7.0, 12.0]
-LOW_SPEED_SCALE_V  = [0.22, 0.48, 0.78, 1.00]
+LOW_SPEED_SCALE_BP = [0.0, 4.0, 10.0, 18.0]
+LOW_SPEED_SCALE_V  = [0.45, 0.65, 0.85, 1.00]
 
 HEADWAY_BOOST_V_MIN = 3.0
 HEADWAY_BOOST_T     = 3.0

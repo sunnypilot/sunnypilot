@@ -23,25 +23,25 @@ A_MAX_V = {
 
 COAST_DRAG_BP = [0.0, 10.0, 25.0, 40.0]
 COAST_DRAG_V = {
-  AccelPersonality.eco:    [-0.02, -0.04, -0.06, -0.09],
-  AccelPersonality.normal: [-0.03, -0.05, -0.08, -0.12],
-  AccelPersonality.sport:  [-0.05, -0.08, -0.14, -0.20],
+  AccelPersonality.eco:    [-0.01, -0.02, -0.04, -0.07],
+  AccelPersonality.normal: [-0.02, -0.03, -0.05, -0.08],
+  AccelPersonality.sport:  [-0.03, -0.05, -0.08, -0.13],
 }
 
 A_MIN_FLOOR_BP = [0.0, 5.0, 15.0, 40.0]
 A_MIN_FLOOR_V = {
-  AccelPersonality.eco:    [-0.15, -0.25, -0.40, -0.36],
-  AccelPersonality.normal: [-0.18, -0.32, -0.52, -0.46],
-  AccelPersonality.sport:  [-0.25, -0.45, -0.70, -0.66],
+  AccelPersonality.eco:    [-0.20, -0.35, -0.55, -0.50],
+  AccelPersonality.normal: [-0.25, -0.45, -0.75, -0.65],
+  AccelPersonality.sport:  [-0.35, -0.65, -1.00, -0.95],
 }
 
-DEFICIT_TO_FLOOR = 12.0
-DEFICIT_EXP = 1.8
-COAST_DEADBAND = 2.0
-RAMP_OFF_RANGE = 7.0
+DEFICIT_TO_FLOOR = 14.0
+DEFICIT_EXP = 2.0
+COAST_DEADBAND = 1.5
+RAMP_OFF_RANGE = 4.0
 
-A_MIN_TIGHTEN_RATE = 0.7
-A_MIN_RELAX_RATE = 1.2
+A_MIN_TIGHTEN_RATE = 0.40
+A_MIN_RELAX_RATE = 1.4
 A_MAX_RATE = 0.7
 
 MIN_MAX_GAP = 0.05
@@ -164,7 +164,7 @@ class AccelPersonalityController:
     if self._v_cruise <= 0.0 or abs(v_ego - self._v_cruise) >= COAST_DEADBAND:
       return t_min, t_max
     coast = float(np.interp(v_ego, COAST_DRAG_BP, COAST_DRAG_V[self._personality]))
-    return coast, max(0.05, t_max * 0.25)
+    return coast, max(0.30, t_max)
 
   def _rate_limit(self, last: float, target: float, rate_down: float, rate_up: float) -> float:
     rate = rate_up if target > last else rate_down
