@@ -7,7 +7,9 @@ See the LICENSE.md file in the root directory for more details.
 import math
 import numpy as np
 
+from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.pid import PIDController
+from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -97,6 +99,10 @@ class LatControlTorqueExtBase:
     self.t_diffs = np.diff(ModelConstants.T_IDXS)
     self.desired_lat_jerk_time = CP.steerActuatorDelay + LATERAL_LAG_MOD
 
+    # ~2 Hz LP on lookahead jerk to kill model-tick flutter without losing authority.
+    # tau=0.08s, dt=DT_MDL (0.05s) → ~13 ms phase lag.
+    self.lookahead_jerk_filter = FirstOrderFilter(0.0, 0.08, DT_MDL)
+
   def update_model_v2(self, model_v2):
     self.model_v2 = model_v2
     self.model_valid = self.model_v2 is not None and len(self.model_v2.orientation.x) >= CONTROL_N
@@ -126,7 +132,11 @@ class LatControlTorqueExtBase:
       predicted_lateral_jerk = get_predicted_lateral_jerk(self.model_v2.acceleration.y, self.t_diffs)
       desired_lateral_jerk = (np.interp(self.desired_lat_jerk_time, ModelConstants.T_IDXS,
                               self.model_v2.acceleration.y) - desired_lateral_accel) / self.desired_lat_jerk_time
-      self.lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
+      raw_lookahead_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
+      # Reset filter on sign flip so we don't blend opposing jerks through zero.
+      if raw_lookahead_jerk == 0.0 or sign(raw_lookahead_jerk) != sign(self.lookahead_jerk_filter.x):
+        self.lookahead_jerk_filter.x = raw_lookahead_jerk
+      self.lookahead_lateral_jerk = self.lookahead_jerk_filter.update(raw_lookahead_jerk)
       if self.lookahead_lateral_jerk == 0.0:
         self.actual_lateral_jerk = 0.0
         self.lat_accel_friction_factor = 1.0

@@ -46,6 +46,10 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
 
+    # ~4 Hz LP on NN feedforward to strip high-freq evaluator wobble (cause of micro-corrections / steering buzz).
+    # tau=0.04s, dt=0.01s → ~6.4 ms phase lag. Preserves <4 Hz reactions and full ff magnitude.
+    self.ff_filter = FirstOrderFilter(0.0, 0.04, 0.01)
+
     # setup future time offsets
     self.future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
     self.nn_future_times = [i + self.desired_lat_jerk_time for i in self.future_times]
@@ -155,7 +159,12 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     nn_input = [CS.vEgo, self._desired_lateral_accel, friction_input, roll] \
                + past_lateral_accels_desired + future_planned_lateral_accels \
                + past_rolls + future_rolls
-    self._ff = self.model.evaluate(nn_input)
+    raw_ff = self.model.evaluate(nn_input)
+    # Snap the LP filter through big steps (>0.2) so curve entries/exits don't crawl;
+    # only smooth the small evaluator-noise wobble that drives micro-corrections.
+    if abs(raw_ff - self.ff_filter.x) > 0.2:
+      self.ff_filter.x = raw_ff
+    self._ff = self.ff_filter.update(raw_ff)
 
     # apply friction override for cars with low NN friction response
     if self.model.friction_override:
