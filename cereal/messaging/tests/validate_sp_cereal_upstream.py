@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import Any
 
@@ -104,8 +105,15 @@ def collect_schema(root: Any) -> dict[str, dict]:
   return structs
 
 
-def dump_schema(path: str) -> None:
-  from cereal import log
+def load_log(cereal_dir: str) -> Any:
+  import capnp
+  cereal_dir = os.path.abspath(cereal_dir)
+  capnp.remove_import_hook()
+  return capnp.load(os.path.join(cereal_dir, "log.capnp"), imports=[cereal_dir])
+
+
+def dump_schema(cereal_dir: str, path: str) -> None:
+  log = load_log(cereal_dir)
   payload = {
     "root": hex_id(log.Event.schema.node.id),
     "structs": collect_schema(log.Event.schema),
@@ -206,8 +214,8 @@ def load_peer(path: str) -> dict:
     return json.load(handle)
 
 
-def run_read(peer_path: str) -> int:
-  from cereal import log
+def run_read(cereal_dir: str, peer_path: str) -> int:
+  log = load_log(cereal_dir)
   peer_dump = load_peer(peer_path)
   local_dump = {
     "root": hex_id(log.Event.schema.node.id),
@@ -235,16 +243,13 @@ def main() -> int:
   mode.add_argument("-g", "--generate", action="store_true", help="dump local schema to JSON")
   mode.add_argument("-r", "--read", action="store_true", help="load peer JSON and diff against local")
   parser.add_argument("-f", "--file", default="schema.json", help="JSON file path (default: schema.json)")
+  parser.add_argument("--cereal-dir", required=True, help="path to cereal directory containing log.capnp")
   args = parser.parse_args()
 
-  try:
-    if args.generate:
-      dump_schema(args.file)
-      return 0
-    return run_read(args.file)
-  except ImportError as exc:
-    print(f"error: cannot import cereal ({exc}). did scons build cereal?")
-    return 2
+  if args.generate:
+    dump_schema(args.cereal_dir, args.file)
+    return 0
+  return run_read(args.cereal_dir, args.file)
 
 
 if __name__ == "__main__":
