@@ -1239,6 +1239,10 @@
     "title": "[TIZI/TICI only] Standstill Timer",
     "description": "Show a timer on the HUD when the car is at a standstill."
   },
+  "SubaruAutoVehicleHold": {
+    "title": "Subaru Automatic Vehicle Hold (AVH)",
+    "description": "Holds the brakes at a complete stop while MADS is engaged, and releases when you press the accelerator. Subaru Global (non-Gen2, non-hybrid) only."
+  },
   "SubaruStopAndGo": {
     "title": "Subaru Stop and Go",
     "description": ""

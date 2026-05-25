@@ -292,6 +292,14 @@ class TestKnownVehicleSettings:
     assert "SubaruStopAndGo" in keys
     assert "SubaruStopAndGoManualParkingBrake" in keys
 
+  def test_subaru_has_auto_vehicle_hold(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("subaru"))
+    avh = next((i for i in items if i["key"] == "SubaruAutoVehicleHold"), None)
+    assert avh is not None, "SubaruAutoVehicleHold toggle missing from subaru settings"
+    assert avh["widget"] == "toggle"
+    cap_refs = {r.get("field") for r in avh.get("enablement", []) if r.get("type") == "capability"}
+    assert "subaru_has_brake_hold" in cap_refs
+
 
 class TestItemCompleteness:
   def _collect_all_items(self, schema):

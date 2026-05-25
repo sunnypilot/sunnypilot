@@ -63,6 +63,18 @@ class TestProtocolVersion:
     )
 
 
+class _FakeParams:
+  """Minimal Params stand-in: only CarPlatformBundle is populated."""
+  def __init__(self, bundle):
+    self._bundle = bundle
+
+  def get(self, key):
+    return self._bundle if key == "CarPlatformBundle" else None
+
+  def get_bool(self, key):
+    return False
+
+
 class TestOpaquePerBrandFlags:
   def test_subaru_has_sng_field_present(self):
     assert "subaru_has_sng" in CAPABILITY_FIELDS
@@ -75,6 +87,20 @@ class TestOpaquePerBrandFlags:
 
   def test_hyundai_alpha_long_available_default_false(self, caps):
     assert caps["hyundai_alpha_long_available"] is False
+
+  def test_subaru_has_brake_hold_field_present(self):
+    assert "subaru_has_brake_hold" in CAPABILITY_FIELDS
+
+  def test_subaru_has_brake_hold_default_false(self, caps):
+    assert caps["subaru_has_brake_hold"] is False
+
+  def test_subaru_has_brake_hold_true_for_eligible_platform(self):
+    caps = generate_capabilities(_FakeParams({"brand": "subaru", "platform": "SUBARU_IMPREZA_2020"}))
+    assert caps["subaru_has_brake_hold"] is True
+
+  def test_subaru_has_brake_hold_false_for_gen2_platform(self):
+    caps = generate_capabilities(_FakeParams({"brand": "subaru", "platform": "SUBARU_OUTBACK"}))
+    assert caps["subaru_has_brake_hold"] is False
 
 
 class TestCapabilitiesShape:

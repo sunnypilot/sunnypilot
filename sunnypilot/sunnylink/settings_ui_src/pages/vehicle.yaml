@@ -47,6 +47,15 @@ sections:
     - type: capability
       field: has_stop_and_go
       equals: true
+  - key: SubaruAutoVehicleHold
+    widget: toggle
+    title: Automatic Vehicle Hold (AVH) (Beta)
+    description: Holds the brakes at a complete stop while MADS is engaged, and releases when you press the accelerator. Subaru Global (non-Gen2, non-hybrid) only.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: subaru_has_brake_hold
+      equals: true
 - id: tesla
   title: Tesla Settings
   description: ''

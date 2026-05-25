@@ -40,6 +40,7 @@ CAPABILITY_FIELDS = (
   "stock_longitudinal",
   "device_type",
   "subaru_has_sng",
+  "subaru_has_brake_hold",
   "hyundai_alpha_long_available",
 )
 
@@ -62,6 +63,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "stock_longitudinal": "stock longitudinal",
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
+  "subaru_has_brake_hold": "Subaru Automatic Vehicle Hold available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
 }
 
@@ -150,6 +152,9 @@ def generate_capabilities(params: Params | None = None) -> dict:
       flags = SUBARU_CAR[bundle_platform].config.flags
       caps["subaru_has_sng"] = not bool(flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
       caps["has_stop_and_go"] = caps["subaru_has_sng"]
+      # AVH (brake hold) eligibility mirrors CP.alphaLongitudinalAvailable.
+      caps["subaru_has_brake_hold"] = not bool(flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.PREGLOBAL |
+                                                        SubaruFlags.LKAS_ANGLE | SubaruFlags.HYBRID))
     except KeyError:
       cloudlog.exception(f"capabilities: unknown subaru platform {bundle_platform!r}")
 
