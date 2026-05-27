@@ -1,4 +1,26 @@
 {
+  "AccelPersonality": {
+    "title": "Acceleration Personality",
+    "description": "Select the acceleration personality profile. Sport provides more aggressive acceleration, Eco provides gentler acceleration.",
+    "options": [
+      {
+        "value": 0,
+        "label": "Sport"
+      },
+      {
+        "value": 1,
+        "label": "Normal"
+      },
+      {
+        "value": 2,
+        "label": "Eco"
+      }
+    ]
+  },
+  "AccelPersonalityEnabled": {
+    "title": "Custom Acceleration Personality",
+    "description": "Enable custom acceleration and braking profiles that adjust max acceleration and min deceleration based on speed and selected personality."
+  },
   "AccessToken": {
     "title": "AccessTokenIsNice",
     "description": ""

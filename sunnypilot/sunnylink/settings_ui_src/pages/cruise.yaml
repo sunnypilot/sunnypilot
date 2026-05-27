@@ -43,6 +43,34 @@ sections:
       label: Relaxed
     enablement:
     - $ref: '#/macros/longitudinal'
+  - key: AccelPersonalityEnabled
+    widget: toggle
+    title: Acceleration Personality
+    description: Enable per-personality acceleration profiles. Sport allows stronger acceleration; Eco is gentler.
+    visibility:
+    - $ref: '#/macros/longitudinal'
+    enablement:
+    - $ref: '#/macros/longitudinal'
+  - key: AccelPersonality
+    widget: multiple_button
+    title: Acceleration Profile
+    description: Sport allows the most aggressive acceleration; Eco the gentlest. Normal sits between.
+    options:
+    - value: 0
+      label: Sport
+    - value: 1
+      label: Normal
+    - value: 2
+      label: Eco
+    visibility:
+    - type: param
+      key: AccelPersonalityEnabled
+      equals: true
+    enablement:
+    - $ref: '#/macros/longitudinal'
+    - type: param
+      key: AccelPersonalityEnabled
+      equals: true
   - key: IntelligentCruiseButtonManagement
     widget: toggle
     title: Intelligent Cruise Button Management (ICBM) (Alpha)
