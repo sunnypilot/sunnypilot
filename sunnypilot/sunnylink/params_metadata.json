@@ -1114,6 +1114,10 @@
     "title": "Record Front Lock",
     "description": ""
   },
+  "RoadEdgeLaneChangeEnabled": {
+    "title": "Block Lane Change: Road Edge Detection",
+    "description": ""
+  },
   "RoadName": {
     "title": "Road Name",
     "description": ""
