@@ -1,3 +1,8 @@
+sunnypilot Version 2026.001.007 (2026-05-27)
+========================
+* What's Changed (sunnypilot/sunnypilot)
+  * Revert "DM: Lancia Delta HF Integrale model" by @sunnyhaibin
+
 sunnypilot Version 2026.001.006 (2026-05-17)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
