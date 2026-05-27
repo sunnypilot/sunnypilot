@@ -2,8 +2,11 @@ import os
 os.environ['DEV'] = 'CPU'
 import pytest
 import numpy as np
-from openpilot.selfdrive.modeld.compile_warp import get_nv12_info, CAMERA_CONFIGS
-from openpilot.sunnypilot.modeld_v2.warp import Warp, MODEL_W, MODEL_H
+from openpilot.sunnypilot.modeld_v2.warp import CAMERA_CONFIGS
+from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+from openpilot.sunnypilot.modeld_v2.warp import Warp
+from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE
+MODEL_W, MODEL_H = MEDMODEL_INPUT_SIZE
 
 VISION_NAME_PAIRS = [  # needed to account for supercombos input_imgs
   ('img', 'big_img'),

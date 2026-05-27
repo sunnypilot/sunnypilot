@@ -129,8 +129,7 @@ class ModelState(ModelStateBase):
         self.numpy_inputs[key][:] = inputs[key]
 
     imgs_tensors = self.warp.process(bufs, transforms)
-    for name, tensor in imgs_tensors.items():
-      self.model_runner.inputs[name] = tensor
+    self.model_runner.update_vision_inputs(imgs_tensors)
     self.model_runner.prepare_inputs(self.numpy_inputs)
 
     if prepare_only:
