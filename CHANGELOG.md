@@ -1,3 +1,6 @@
+sunnypilot Version 2026.002.000 (2026-xx-xx)
+========================
+
 sunnypilot Version 2026.001.000 (2026-05-06)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
