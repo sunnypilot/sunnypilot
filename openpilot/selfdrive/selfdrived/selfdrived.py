@@ -53,6 +53,17 @@ TurnDirection = custom.ModelDataV2SP.TurnDirection
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
+# Upper bound (seconds after process start) on the cold-start suppression of
+# boot-time transient softDisable events (commIssue, commIssueAvgFreq,
+# posenetInvalid, locationdTemporaryError, paramsdTemporaryError). Dead-service
+# and estimator-validity suppression additionally require the cold-start
+# condition itself (publisher never seen / signal never yet OK), so for those
+# this cap is the worst case, not the norm; average-frequency and generic
+# invalid-data noise from alive services is suppressed for the whole window.
+# Drivelog evidence: 105/105 rising-edges in t < 19.5 s of seg-0 across
+# 4 Jeep GC routes / 126 segments / 37 hr.
+PUBLISHER_WARMUP_GRACE = 20.
+
 
 class SelfdriveD(CruiseHelper):
   def __init__(self, CP=None, CP_SP=None):
@@ -99,6 +110,11 @@ class SelfdriveD(CruiseHelper):
     if REPLAY:
       # no vipc in replay will make them ignored anyways
       ignore += ['roadCameraState', 'wideRoadCameraState']
+
+    # Liveness-checked services whose absence must always block engagement: commIssue is
+    # never suppressed while one of these has not yet published (see publishers_warming_up).
+    self.critical_services = {'modelV2', 'controlsState', 'carControl', 'carOutput', 'longitudinalPlan',
+                              'radarState', 'driverMonitoringState', 'pandaStates'} | set(self.camera_packets)
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose', 'liveDelay',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
@@ -130,6 +146,10 @@ class SelfdriveD(CruiseHelper):
     self.active = False
     self.mismatch_counter = 0
     self.cruise_mismatch_counter = 0
+    self.rx_checks_invalid_counter = 0
+    self.posenet_ok_once = False
+    self.pose_inputs_ok_once = False
+    self.live_params_ok_once = False
     self.last_steering_pressed_frame = 0
     self.distance_traveled = 0
     self.last_functional_fan_frame = 0
@@ -149,7 +169,16 @@ class SelfdriveD(CruiseHelper):
     self.state_machine = StateMachine()
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
-    self.ignored_processes = {'mapd', }
+    # Processes whose exit must NOT raise EventName.processNotRunning (which is a
+    # SOFT_DISABLE — see selfdrive/selfdrived/events.py). Non-safety-critical
+    # daemons whose transient death must not drop cruise.
+    #
+    # Drivelog evidence (Jeep GC, 5 routes, 431 events): processNotRunning
+    # accounted for 37/128 disengages, triggered by micd hitting RetryError on
+    # PortAudio get_stream and exiting with code 1. micd is purely informational
+    # (ambient noise -> alert volume); soundd already falls back to a fixed
+    # volume when SoundPressure is missing.
+    self.ignored_processes = {'mapd', 'micd'}
 
     # Determine startup event
     is_remote = build_metadata.openpilot.comma_remote or build_metadata.openpilot.sunnypilot_remote
@@ -346,6 +375,16 @@ class SelfdriveD(CruiseHelper):
     elif lane_turn_direction == TurnDirection.turnRight:
       self.events_sp.add(custom.OnroadEventSP.EventName.laneTurnRight)
 
+    # safetyRxChecksInvalid pulses True right after panda boot (drivelog evidence:
+    # sub-0.5 s pulses on most boots, up to ~1 s on a first boot after install). When
+    # sustained it is a genuine panda safety failure, so it is debounced (1.5 s) rather
+    # than suppressed: it still disengages at boot or any other time if it actually
+    # holds, and panda-side safety keeps blocking actuation during the debounce.
+    rx_invalid = any(ps.safetyRxChecksInvalid for ps in self.sm['pandaStates'])
+    self.rx_checks_invalid_counter = self.rx_checks_invalid_counter + 1 if rx_invalid else 0
+    rx_checks_failed = self.rx_checks_invalid_counter >= int(1.5 / DT_CTRL)
+    past_boot_grace = self.sm.frame * DT_CTRL > 10.
+
     for i, pandaState in enumerate(self.sm['pandaStates']):
       # All pandas must match the list of safetyConfigs, and if outside this list, must be silent or noOutput
       if i < len(self.CP.safetyConfigs):
@@ -355,8 +394,14 @@ class SelfdriveD(CruiseHelper):
       else:
         safety_mismatch = pandaState.safetyModel not in IGNORED_SAFETY_MODES
 
-      # safety mismatch allows some time for pandad to set the safety mode and publish it back from panda
-      if (safety_mismatch and self.sm.frame*DT_CTRL > 10.) or pandaState.safetyRxChecksInvalid or self.mismatch_counter >= 200:
+      # safety_mismatch keeps upstream's 10 s boot grace for pandad to set the safety
+      # mode and publish it back. The mismatch_counter path shares that boot grace to
+      # cover sunnypilot's MADS handshake — MADS auto-engages lateral before panda's
+      # controlsAllowed arrives over a separate socket, racing the counter to 200
+      # (= 2 s @ 100 Hz) during boot. Panda blocks actuation while controlsAllowed is
+      # false, so nothing can actuate during the graced window; after 10 s a sustained
+      # controlsAllowed disagreement disengages immediately, as upstream.
+      if (past_boot_grace and (safety_mismatch or self.mismatch_counter >= 200)) or rx_checks_failed:
         self.events.add(EventName.controlsMismatch)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
@@ -399,12 +444,30 @@ class SelfdriveD(CruiseHelper):
     # generic catch-all. ideally, a more specific event should be added above instead
     has_disable_events = self.events.contains(ET.NO_ENTRY) and (self.events.contains(ET.SOFT_DISABLE) or self.events.contains(ET.IMMEDIATE_DISABLE))
     no_system_errors = (not has_disable_events) or (len(self.events) == num_events)
+    # Cold-start warmup for liveness/health events, capped at PUBLISHER_WARMUP_GRACE after
+    # process start:
+    #  - dead service (all_alive fails): suppressed only while the dead service has never
+    #    published AND is not safety-critical. Only the set all_alive() actually checks is
+    #    considered — event-driven services (e.g. userBookmark) never publish and must not
+    #    hold the window open. A critical service (model, planner, radar, cameras, ...)
+    #    that has never published keeps commIssue firing so engagement stays blocked, and a
+    #    service that dies after publishing is never suppressed. On a mid-drive selfdrived
+    #    restart, healthy services are seen within a few frames, so the window closes
+    #    almost immediately instead of reopening for 20 s.
+    #  - low average frequency / invalid data from an alive service: statistical warmup
+    #    noise while buffers fill and estimators converge, suppressed for the whole cap
+    #    window (drivelog evidence: 105/105 rising edges in t < 19.5 s).
+    in_warmup_cap = self.sm.frame * DT_CTRL <= PUBLISHER_WARMUP_GRACE
+    checked_unseen = {s for s in self.sm.services if not self.sm.seen[s] and s not in self.sm.ignore_alive}
+    dead_service_warming_up = in_warmup_cap and bool(checked_unseen) and not (checked_unseen & self.critical_services)
     if not self.sm.all_checks() and no_system_errors:
       if not self.sm.all_alive():
-        self.events.add(EventName.commIssue)
+        if not dead_service_warming_up:
+          self.events.add(EventName.commIssue)
       elif not self.sm.all_freq_ok():
-        self.events.add(EventName.commIssueAvgFreq)
-      else:
+        if not in_warmup_cap:
+          self.events.add(EventName.commIssueAvgFreq)
+      elif not in_warmup_cap:
         self.events.add(EventName.commIssue)
 
       logs = {
@@ -419,11 +482,22 @@ class SelfdriveD(CruiseHelper):
       self.logged_comm_issue = None
 
     if not self.CP.notCar:
-      if not self.sm['livePose'].posenetOK:
+      # Convergence latches: these validity signals are expected to be false while their
+      # estimators converge after a cold start (drivelog evidence: 105/105 rising edges
+      # in t < 19.5 s of seg-0 across 4 Jeep GC routes / 126 segments / 37 hr). Each
+      # event is suppressed only until its signal has been OK once, capped at
+      # PUBLISHER_WARMUP_GRACE — a signal that goes bad after converging disengages
+      # immediately, even inside the warmup window.
+      warmup_cap_passed = self.sm.frame * DT_CTRL > PUBLISHER_WARMUP_GRACE
+      self.posenet_ok_once = self.posenet_ok_once or self.sm['livePose'].posenetOK
+      self.pose_inputs_ok_once = self.pose_inputs_ok_once or self.sm['livePose'].inputsOK
+      self.live_params_ok_once = self.live_params_ok_once or self.sm['liveParameters'].valid
+      if not self.sm['livePose'].posenetOK and (self.posenet_ok_once or warmup_cap_passed):
         self.events.add(EventName.posenetInvalid)
-      if not self.sm['livePose'].inputsOK:
+      if not self.sm['livePose'].inputsOK and (self.pose_inputs_ok_once or warmup_cap_passed):
         self.events.add(EventName.locationdTemporaryError)
-      if not self.sm['liveParameters'].valid and cal_status == log.LiveCalibrationData.Status.calibrated and not TESTING_CLOSET and (not SIMULATION or REPLAY):
+      if not self.sm['liveParameters'].valid and (self.live_params_ok_once or warmup_cap_passed) and \
+         cal_status == log.LiveCalibrationData.Status.calibrated and not TESTING_CLOSET and (not SIMULATION or REPLAY):
         self.events.add(EventName.paramsdTemporaryError)
 
     # conservative HW alert. if the data or frequency are off, locationd will throw an error

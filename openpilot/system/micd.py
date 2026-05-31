@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
+import time
 from functools import cache
 import threading
 
@@ -105,10 +106,33 @@ class Mic:
     # sounddevice must be imported after forking processes
     import sounddevice as sd
 
-    with self.get_stream(sd) as stream:
-      cloudlog.info(f"micd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
-      while True:
-        self.update()
+    # Outer recovery loop:
+    #
+    # Previously this method opened the InputStream once via `get_stream()` and
+    # ran `self.update()` in an infinite inner loop. If the stream context
+    # manager raised — either because `get_stream`'s @retry(attempts=10, delay=3)
+    # gave up after ~30s, or because the active stream threw asynchronously
+    # (e.g. PortAudio device disappearing on a USB/audio-HAL hiccup) — the
+    # exception propagated out of `micd_thread` -> `main()` -> process exit
+    # with code 1. The manager then reported `running=False shouldBeRunning=
+    # True`, which selfdrived turned into EventName.processNotRunning
+    # (SOFT_DISABLE), silently dropping cruise control mid-drive (drivelog
+    # evidence: 37 `processNotRunning` disengages across 5 Jeep GC routes).
+    #
+    # The microphone is non-safety-critical (only ambient noise -> alert
+    # volume), so a transient HAL error must NOT terminate the process.
+    while True:
+      try:
+        with self.get_stream(sd) as stream:
+          cloudlog.info(f"micd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
+          while True:
+            self.update()
+            # a stream can die without raising (callback simply stops firing), which
+            # would otherwise leave this loop publishing frozen soundPressure forever
+            assert stream.active
+      except Exception:
+        cloudlog.exception("micd stream failed; restarting after backoff")
+        time.sleep(5)
 
 
 def main():
