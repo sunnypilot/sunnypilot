@@ -32,8 +32,9 @@ class DRIVER_MONITOR_SETTINGS:
     self._DISTRACTED_PROMPT_TIME_TILL_TERMINAL = 6.
 
     self._FACE_THRESHOLD = 0.7
-    self._EYE_THRESHOLD = 0.5
-    self._BLINK_THRESHOLD = 0.5
+    self._EYE_THRESHOLD = 0.65
+    self._SG_THRESHOLD = 0.9
+    self._BLINK_THRESHOLD = 0.865
     self._PHONE_THRESH = 0.5
 
     self._POSE_PITCH_THRESHOLD = 0.3133
@@ -110,6 +111,11 @@ class DriverProb:
     self.prob_offseter = RunningStatFilter(raw_priors=raw_priors, max_trackable=max_trackable)
     self.prob_calibrated = False
 
+class DriverBlink:
+  def __init__(self):
+    self.left = 0.
+    self.right = 0.
+
 
 # model output refers to center of undistorted+leveled image
 EFL = 598.0 # focal length in K
@@ -144,7 +150,7 @@ class DriverMonitoring:
     wheelpos_filter_raw_priors = (self.settings._WHEELPOS_DATA_AVG, self.settings._WHEELPOS_DATA_VAR, 2)
     self.wheelpos = DriverProb(raw_priors=wheelpos_filter_raw_priors, max_trackable=self.settings._WHEELPOS_MAX_COUNT)
     self.pose = DriverPose(settings=self.settings)
-    self.blink_prob = 0.
+    self.blink = DriverBlink()
     self.phone_prob = 0.
 
     self.always_on = always_on
@@ -247,7 +253,7 @@ class DriverMonitoring:
     if pitch_error > pitch_threshold or yaw_error > yaw_threshold:
       distracted_types.append(DistractedType.DISTRACTED_POSE)
 
-    if self.blink_prob > self.settings._BLINK_THRESHOLD:
+    if (self.blink.left + self.blink.right)*0.5 > self.settings._BLINK_THRESHOLD:
       distracted_types.append(DistractedType.DISTRACTED_BLINK)
 
     if self.phone_prob > self.settings._PHONE_THRESH:
@@ -288,7 +294,10 @@ class DriverMonitoring:
     self.pose.yaw_std = driver_data.faceOrientationStd[1]
     model_std_max = max(self.pose.pitch_std, self.pose.yaw_std)
     self.pose.low_std = model_std_max < self.settings._POSESTD_THRESHOLD
-    self.blink_prob = driver_data.eyesClosedProb * (driver_data.eyesVisibleProb > self.settings._EYE_THRESHOLD)
+    self.blink.left = driver_data.leftBlinkProb * (driver_data.leftEyeProb > self.settings._EYE_THRESHOLD) \
+                      * (driver_data.sunglassesProb < self.settings._SG_THRESHOLD)
+    self.blink.right = driver_data.rightBlinkProb * (driver_data.rightEyeProb > self.settings._EYE_THRESHOLD) \
+                      * (driver_data.sunglassesProb < self.settings._SG_THRESHOLD)
     self.phone_prob = driver_data.phoneProb
 
     self.distracted_types = self._get_distracted_types()
@@ -345,10 +354,14 @@ class DriverMonitoring:
       self._reset_awareness()
       return
 
-    driver_attentive = self.driver_distraction_filter.x < 0.37
     awareness_prev = self.awareness
+    _reaching_pre = self.awareness - self.step_change <= self.threshold_pre
+    _reaching_terminal = self.awareness - self.step_change <= 0
+    standstill_orange_exemption = standstill and _reaching_pre
+    always_on_red_exemption = always_on_valid and not op_engaged and _reaching_terminal
 
-    if (driver_attentive and self.face_detected and self.pose.low_std and self.awareness > 0):
+    if self.awareness > 0 and \
+       ((self.driver_distraction_filter.x < 0.37 and self.face_detected and self.pose.low_std) or standstill_orange_exemption):
       if driver_engaged:
         self._reset_awareness()
         return
@@ -361,34 +374,28 @@ class DriverMonitoring:
       if self.awareness > self.threshold_prompt:
         return
 
-    _reaching_pre = self.awareness - self.step_change <= self.threshold_pre
-    _reaching_audible = self.awareness - self.step_change <= self.threshold_prompt
-    _reaching_terminal = self.awareness - self.step_change <= 0
-    standstill_exemption = standstill and _reaching_pre
-    always_on_red_exemption = always_on_valid and not op_engaged and _reaching_terminal
-
     certainly_distracted = self.driver_distraction_filter.x > 0.63 and self.driver_distracted and self.face_detected
     maybe_distracted = self.hi_stds > self.settings._HI_STD_FALLBACK_TIME or not self.face_detected
 
     if certainly_distracted or maybe_distracted:
       # should always be counting if distracted unless at standstill and reaching green
       # also will not be reaching 0 if DM is active when not engaged
-      if not (standstill_exemption or always_on_red_exemption):
+      if not (standstill_orange_exemption or always_on_red_exemption):
         self.awareness = max(self.awareness - self.step_change, -0.1)
 
     alert = None
     if self.awareness <= 0.:
       # terminal red alert: disengagement required
-      alert = EventName.driverDistracted if self.active_monitoring_mode else EventName.driverUnresponsive
+      alert = EventName.driverDistracted3 if self.active_monitoring_mode else EventName.driverUnresponsive3
       self.terminal_time += 1
       if awareness_prev > 0.:
         self.terminal_alert_cnt += 1
     elif self.awareness <= self.threshold_prompt:
       # prompt orange alert
-      alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
+      alert = EventName.driverDistracted2 if self.active_monitoring_mode else EventName.driverUnresponsive2
     elif self.awareness <= self.threshold_pre:
       # pre green alert
-      alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
+      alert = EventName.driverDistracted1 if self.active_monitoring_mode else EventName.driverUnresponsive1
 
     if alert is not None:
       self.current_events.add(alert)
@@ -436,7 +443,7 @@ class DriverMonitoring:
       enabled = sm['selfdriveState'].enabled or sm['carControl'].latActive
       wrong_gear = sm['carState'].gearShifter not in (car.CarState.GearShifter.drive, car.CarState.GearShifter.low)
       standstill = sm['carState'].standstill
-      driver_engaged = sm['carState'].steeringPressed or sm['carState'].gasPressed
+      driver_engaged = sm['carState'].steeringPressed or (sm['selfdriveState'].enabled and sm['carState'].gasPressed)
       brake_disengage_prob = sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs[0] # brake disengage prob in next 2s
       rpyCalib = sm['liveCalibration'].rpyCalib
     self._set_policy(

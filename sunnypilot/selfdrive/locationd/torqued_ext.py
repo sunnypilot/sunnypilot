@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
 import numpy as np
 
 from cereal import car, log
@@ -22,7 +21,6 @@ ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'honda']
 # Default speed bins — used when car has no speed_dependent.toml entry.
 DEFAULT_SPEED_BIN_BOUNDS = [(5, 8), (8, 12), (12, 18), (18, 24), (24, 29), (29, 35), (35, 40)]
 DEFAULT_SPEED_BIN_CENTERS = [6.5, 10.0, 15.0, 21.0, 26.5, 32.0, 37.5]
-
 
 class TorqueEstimatorExt:
   """SP extension mixed into TorqueEstimator via multiple inheritance.
@@ -50,6 +48,7 @@ class TorqueEstimatorExt:
     self.enforce_torque_control_toggle = self._params.get_bool("EnforceTorqueControl")  # only during init
     self.use_params = self.CP.brand in ALLOWED_CARS and self.CP.lateralTuning.which() == 'torque'
     self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
+    self.custom_torque_params = self._params.get_bool("CustomTorqueParams")
     self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
     # Independently gated — not restricted by ALLOWED_CARS brand list
     self.speed_binned = (self.CP.lateralTuning.which() == 'torque'
@@ -82,13 +81,14 @@ class TorqueEstimatorExt:
   def _update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.use_live_torque_params = self._params.get_bool("LiveTorqueParamsToggle")
+      self.custom_torque_params = self._params.get_bool("CustomTorqueParams")
       self.torque_override_enabled = self._params.get_bool("TorqueParamsOverrideEnabled")
 
   def update_use_params(self):
     self._update_params()
 
     if self.enforce_torque_control_toggle:
-      if self.torque_override_enabled:
+      if self.custom_torque_params and self.torque_override_enabled:
         self.use_params = False
       else:
         self.use_params = self.use_live_torque_params

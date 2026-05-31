@@ -86,7 +86,7 @@ class Car:
 
     self.can_callbacks = can_comm_callbacks(self.can_sock, self.pm.sock['sendcan'])
 
-    is_release = self.params.get_bool("IsReleaseBranch")
+    is_release = False  # self.params.get_bool("IsReleaseBranch")
     is_release_sp = self.params.get_bool("IsReleaseSpBranch")
 
     if CI is None:

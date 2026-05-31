@@ -10,6 +10,7 @@ import time
 import pyray as rl
 
 from cereal import custom
+from openpilot.sunnypilot.models.default_model import DEFAULT_MODEL
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.lib.multilang import tr
@@ -41,7 +42,7 @@ class ModelsLayout(Widget):
 
     self._initialize_items()
 
-    self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+    self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
     for ctrl, key in [(self.lane_turn_value_control, "LaneTurnValue"), (self.delay_control, "LagdToggleDelay")]:
       ctrl.action_item.set_value(int(float(ui_state.params.get(key, return_default=True)) * 100))
 
@@ -112,7 +113,7 @@ class ModelsLayout(Widget):
             self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
 
   @staticmethod
-  def _calculate_cache_size():
+  def calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
       cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
@@ -122,7 +123,7 @@ class ModelsLayout(Widget):
     def _callback(response):
       if response == DialogResult.CONFIRM:
         ui_state.params.put_bool("ModelManager_ClearCache", True)
-        self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+        self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
                            tr("Clear Cache"), callback=_callback)
@@ -155,7 +156,7 @@ class ModelsLayout(Widget):
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
-      self.clear_cache_item.action_item.set_value(f"{self._calculate_cache_size():.2f} MB")
+      self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     if self.download_status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()
@@ -207,7 +208,7 @@ class ModelsLayout(Widget):
     for bundle in bundles:
       folders.setdefault(next((ov_ride.value for ov_ride in bundle.overrides if ov_ride.key == "folder"), ""), []).append(bundle)
 
-    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': tr("Default Model"), 'short_name': "Default"})])]
+    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': f"{DEFAULT_MODEL} (Default)", 'short_name': "Default"})])]
     for folder, folder_bundles in sorted(folders.items(), key=lambda x: max((bundle.index for bundle in x[1]), default=-1), reverse=True):
       folder_bundles.sort(key=lambda bundle: bundle.index, reverse=True)
       name = folder + (f" - (Updated: {m.group(1)})" if folder_bundles and (m := re.search(r'\(([^)]*)\)[^(]*$', folder_bundles[0].displayName)) else "")
@@ -243,7 +244,7 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else tr("Default Model")
+    active_name = self.model_manager.activeBundle.internalName if self.model_manager and self.model_manager.activeBundle.ref else f"{DEFAULT_MODEL} (Default)"
     self.current_model_item.action_item.set_value(active_name)
 
     if not ui_state.is_offroad():
