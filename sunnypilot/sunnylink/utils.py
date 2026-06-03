@@ -52,7 +52,7 @@ def register_sunnylink():
     sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
     print(f"SunnyLinkId: {sunnylink_id}")
   except Exception:
-    Params().put_bool("SunnylinkTempFault", True)
+    Params().put_bool("SunnylinkTempFault", True, block=True)
     raise
 
 
@@ -98,7 +98,7 @@ def save_param_from_base64_encoded_string(param_name: str, base64_encoded_data: 
 
   # We convert to string anything that isn't bytes first. We later transform further.
   param_value = _convert_param_to_type(value, param_type)
-  params.put(param_name, param_value)
+  params.put(param_name, param_value, block=True)
 
 
 def _convert_param_to_type(value: bytes, param_type: ParamKeyType) -> bytes | str | int | float | bool | dict | None:

@@ -19,7 +19,7 @@ if platform.system() == 'Darwin':
 
 class TestLocationdProc:
   LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'liveCalibration',
-              'accelerometer', 'gyroscope', 'magnetometer']
+              'accelerometer', 'gyroscope']
 
   def setup_method(self):
     self.pm = messaging.PubMaster(self.LLD_MSGS)
