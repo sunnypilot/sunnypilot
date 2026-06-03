@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import hashlib
-import os
 import pickle
 import numpy as np
 
@@ -28,16 +27,12 @@ ModelManager = custom.ModelManagerSP
 
 
 async def verify_file(file_path: str, expected_hash: str) -> bool:
-  """Verifies file hash against expected hash"""
-  if not os.path.exists(file_path):
+  from openpilot.common.file_chunker import read_file_chunked
+  try:
+    data = read_file_chunked(file_path)
+  except FileNotFoundError:
     return False
-
-  sha256_hash = hashlib.sha256()
-  with open(file_path, "rb") as file:
-    for chunk in iter(lambda: file.read(4096), b""):
-      sha256_hash.update(chunk)
-
-  return sha256_hash.hexdigest().lower() == expected_hash.lower()
+  return hashlib.sha256(data).hexdigest().lower() == expected_hash.lower()
 
 
 def is_bundle_version_compatible(bundle: dict) -> bool:
@@ -75,32 +70,13 @@ def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundl
   return None
 
 
-def get_active_model_runner(params: Params = None, force_check=False) -> custom.ModelManagerSP.Runner:
-  """
-  Determines and returns the active model runner type, based on provided parameters.
-  The function utilizes caching to prevent redundant calculations and checks.
-
-  If the cached "ModelRunnerTypeCache" exists in the provided parameters and `force_check`
-  is set to False, the cached value is directly returned. Otherwise, the function determines
-  the runner type based on the active model bundle. If a model bundle containing a drive
-  model exists, the runner type is derived based on the filename of the drive model.
-  Finally, it updates the cache with the determined runner type, if needed.
-
-  :param params: The parameter set used to retrieve caching and runner details. If `None`,
-      a default `Params` instance is created internally.
-  :type params: Params
-  :param force_check: A flag indicating whether to bypass cached results and always
-      re-determine the runner type. Defaults to `False`.
-  :type force_check: bool
-  :return: The determined or cached model runner type.
-  :rtype: custom.ModelManagerSP.Runner
-  """
+def get_active_model_runner(params: Params = None, force_check=False) -> int:
   if params is None:
     params = Params()
 
-  if (cached_runner_type := params.get("ModelRunnerTypeCache")) and not force_check:
-    if isinstance(cached_runner_type, str) and cached_runner_type.isdigit():
-      return int(cached_runner_type)
+  cached_runner_type = params.get("ModelRunnerTypeCache")
+  if cached_runner_type is not None and not force_check:
+    return cached_runner_type
 
   runner_type = custom.ModelManagerSP.Runner.stock
 
@@ -108,7 +84,7 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
     runner_type = active_bundle.runner.raw
 
   if cached_runner_type != runner_type:
-    params.put("ModelRunnerTypeCache", int(runner_type))
+    params.put("ModelRunnerTypeCache", int(runner_type), block=True)
 
   return runner_type
 
