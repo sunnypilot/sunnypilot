@@ -152,7 +152,7 @@ class ModelsLayout(Widget):
     status_changed = self.prev_download_status != self.download_status
     self.prev_download_status = self.download_status
 
-    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and bool(ui_state.params.get("ModelManager_DownloadIndex")))
+    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadIndex") is not None)
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time

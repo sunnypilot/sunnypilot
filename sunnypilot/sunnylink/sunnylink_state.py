@@ -141,7 +141,7 @@ class SunnylinkState:
       response = self._api.api_get(f"device/{self.sunnylink_dongle_id}/roles", method='GET', access_token=token, session=self._session)
       if response.status_code == 200:
         roles = response.text
-        self._params.put("SunnylinkCache_Roles", roles)
+        self._params.put("SunnylinkCache_Roles", roles, block=True)
         with self._lock:
           self._roles = _parse_roles(roles)
           sponsor_tier = self._get_highest_tier()
@@ -160,7 +160,7 @@ class SunnylinkState:
       response = self._api.api_get(f"device/{self.sunnylink_dongle_id}/users", method='GET', access_token=token, session=self._session)
       if response.status_code == 200:
         users = response.text
-        self._params.put("SunnylinkCache_Users", users)
+        self._params.put("SunnylinkCache_Users", users, block=True)
         with self._lock:
           self._users = _parse_users(users)
     except Exception as e:

@@ -24,11 +24,11 @@ class TestSmartCruiseControlMap:
     self.scc_m = SmartCruiseControlMap()
 
   def reset_params(self):
-    self.params.put_bool("SmartCruiseControlMap", True)
+    self.params.put_bool("SmartCruiseControlMap", True, block=True)
 
     # TODO-SP: mock data from gpsLocation
-    self.params.put("LastGPSPosition", "{}")
-    self.params.put("MapTargetVelocities", "{}")
+    self.params.put("LastGPSPosition", "{}", block=True)
+    self.params.put("MapTargetVelocities", "{}", block=True)
 
   def test_initial_state(self):
     assert self.scc_m.state == VisionState.disabled
@@ -37,7 +37,7 @@ class TestSmartCruiseControlMap:
     assert self.scc_m.output_a_target == 0.
 
   def test_system_disabled(self):
-    self.params.put_bool("SmartCruiseControlMap", False)
+    self.params.put_bool("SmartCruiseControlMap", False, block=True)
     self.scc_m.enabled = self.params.get_bool("SmartCruiseControlMap")
 
     for _ in range(int(10. / DT_MDL)):

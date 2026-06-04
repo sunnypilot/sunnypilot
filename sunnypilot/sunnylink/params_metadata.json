@@ -620,6 +620,10 @@
     "title": "Self-Tune",
     "description": "Enables self-tune for Torque lateral control"
   },
+  "LivestreamEncoderBitrate": {
+    "title": "Livestream Encoder Bitrate",
+    "description": ""
+  },
   "LocationFilterInitialState": {
     "title": "Location Filter Initial State",
     "description": ""
@@ -1390,6 +1394,14 @@
   },
   "UptimeOnroad": {
     "title": "Uptime Onroad",
+    "description": ""
+  },
+  "UsbGpuCompiled": {
+    "title": "Usb Gpu Compiled",
+    "description": ""
+  },
+  "UsbGpuPresent": {
+    "title": "Usb Gpu Present",
     "description": ""
   },
   "Version": {
