@@ -46,7 +46,7 @@ class TestNeuralNetworkLateralControl:
   @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN, GM.CHEVROLET_BOLT_EUV])
   def test_saturation(self, car_name):
     params = Params()
-    params.put_bool("NeuralNetworkLateralControl", True)
+    params.put_bool("NeuralNetworkLateralControl", True, block=True)
 
     CarInterface = interfaces[car_name]
     CP = CarInterface.get_non_essential_params(car_name)

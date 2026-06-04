@@ -21,7 +21,7 @@ def update_car_list_param():
 
   params = Params()
   if params.get("CarList") != current_car_list:
-    params.put("CarList", current_car_list)
+    params.put("CarList", current_car_list, block=True)
     cloudlog.warning("Updated CarList param with latest platform list")
   else:
     cloudlog.warning("CarList param is up to date, no need to update")

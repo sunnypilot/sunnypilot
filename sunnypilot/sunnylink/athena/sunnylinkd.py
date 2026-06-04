@@ -126,7 +126,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
         cloudlog.debug("sunnylinkd.ws_recv.pong")
         last_ping = int(time.monotonic() * 1e9)
-        Params().put("LastSunnylinkPingTime", last_ping)
+        Params().put("LastSunnylinkPingTime", last_ping, block=True)
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > SUNNYLINK_RECONNECT_TIMEOUT_S * 1e9:
@@ -281,7 +281,7 @@ def saveParams(params_to_update: dict[str, str], compression: bool = False) -> N
   # Increment version counter for frontend change detection
   try:
     current = int(params.get("ParamsVersion") or "0")
-    params.put("ParamsVersion", str(current + 1))
+    params.put("ParamsVersion", str(current + 1), block=True)
   except Exception:
     pass
 

@@ -43,7 +43,7 @@ def _migrate_car_platform_bundle(_params):
   else:
     bundle["platform"] = new_platform
 
-  _params.put("CarPlatformBundle", bundle)
+  _params.put("CarPlatformBundle", bundle, block=True)
   cloudlog.info(f"params_migration: CarPlatformBundle migrated {old_platform!r} -> {new_platform!r}")
 
 
@@ -54,12 +54,12 @@ def run_migration(_params):
       val = _params.get("OnroadScreenOffBrightness", return_default=True)
       if val >= 2:  # old: 5%, new: Screen Off
         new_val = val + 1
-        _params.put("OnroadScreenOffBrightness", new_val)
+        _params.put("OnroadScreenOffBrightness", new_val, block=True)
         log_str = f"Successfully migrated OnroadScreenOffBrightness from {val} to {new_val}."
       else:
         log_str = "Migration not required for OnroadScreenOffBrightness."
 
-      _params.put("OnroadScreenOffBrightnessMigrated", ONROAD_BRIGHTNESS_MIGRATION_VERSION)
+      _params.put("OnroadScreenOffBrightnessMigrated", ONROAD_BRIGHTNESS_MIGRATION_VERSION, block=True)
       cloudlog.info(log_str + f" Setting OnroadScreenOffBrightnessMigrated to {ONROAD_BRIGHTNESS_MIGRATION_VERSION}")
     except Exception as e:
       cloudlog.exception(f"Error migrating OnroadScreenOffBrightness: {e}")
@@ -69,12 +69,12 @@ def run_migration(_params):
     try:
       val = _params.get("OnroadScreenOffTimer", return_default=True)
       if val not in VALID_TIMER_VALUES:
-        _params.put("OnroadScreenOffTimer", 15)
+        _params.put("OnroadScreenOffTimer", 15, block=True)
         log_str = f"Successfully migrated OnroadScreenOffTimer from {val} to 15 (default)."
       else:
         log_str = "Migration not required for OnroadScreenOffTimer."
 
-      _params.put("OnroadScreenOffTimerMigrated", ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION)
+      _params.put("OnroadScreenOffTimerMigrated", ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION, block=True)
       cloudlog.info(log_str + f" Setting OnroadScreenOffTimerMigrated to {ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION}")
     except Exception as e:
       cloudlog.exception(f"Error migrating OnroadScreenOffTimer: {e}")
