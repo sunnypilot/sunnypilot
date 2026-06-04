@@ -175,7 +175,11 @@ jobs:
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
       - name: Sync Python dependencies
-        run: uv sync --frozen --all-extras
+        run: |
+          pip install \
+            "acados @ git+https://github.com/commaai/dependencies.git@release-acados#subdirectory=acados" \
+            "catch2 @ git+https://github.com/commaai/dependencies.git@release-catch2#subdirectory=catch2" \
+            "json11 @ git+https://github.com/commaai/dependencies.git@release-json11#subdirectory=json11"
 
       - name: Build Main Project
         run: |
