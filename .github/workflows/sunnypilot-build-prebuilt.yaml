@@ -174,6 +174,9 @@ jobs:
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
+      - name: Sync Python dependencies
+        run: uv sync --frozen --all-extras
+
       - name: Build Main Project
         run: |
           export PYTHONPATH="$BUILD_DIR"
