@@ -138,6 +138,8 @@ class ModelState(ModelStateBase):
       self._policy_slices_list = [metadata[k]['output_slices'] for k in policy_keys]
       self.policy_output_slices = self._policy_slices_list[0]
       self._has_on_policy = any('on' in k.lower() for k in policy_keys)
+      on_policy_key = next((k for k in policy_keys if 'on' in k.lower()), None)
+      self._on_policy_has_plan = on_policy_key is not None and 'plan' in metadata[on_policy_key]['output_slices']
       first_policy_metadata = metadata[policy_keys[0]]
       vision_input_shapes = vision_metadata['input_shapes']
       policy_input_shapes = first_policy_metadata['input_shapes']
@@ -229,7 +231,7 @@ class ModelState(ModelStateBase):
         policy_output = raw_outputs[i + 1].numpy().flatten()
         policy_sliced = {k: policy_output[np.newaxis, v] for k, v in policy_slices.items()}
         parsed = self.parser.parse_policy_outputs(policy_sliced)
-        if 'off' in self._policy_keys[i] and self._has_on_policy:
+        if 'off' in self._policy_keys[i] and self._on_policy_has_plan:
           parsed.pop('plan', None)
         outputs.update(parsed)
 

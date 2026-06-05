@@ -146,6 +146,8 @@ class Parser:
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     self.parse_dynamic_outputs(outs)
     self.split_outputs(outs)
+    if 'action' in outs:
+      self.parse_mdn('action', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.ACTION_WIDTH,))
     return outs
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
