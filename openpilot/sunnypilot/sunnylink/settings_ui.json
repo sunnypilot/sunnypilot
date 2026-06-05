@@ -627,6 +627,58 @@
               ]
             },
             {
+              "key": "AccelPersonalityEnabled",
+              "widget": "toggle",
+              "title": "Enable Acceleration Profiles",
+              "description": "Enables acceleration profile selection for longitudinal control.",
+              "visibility": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
+              "key": "AccelPersonality",
+              "widget": "multiple_button",
+              "title": "Acceleration Profile",
+              "description": "Controls how quickly sunnypilot accelerates while preserving braking and stop behavior.",
+              "options": [
+                {
+                  "value": 2,
+                  "label": "Eco"
+                },
+                {
+                  "value": 1,
+                  "label": "Normal"
+                },
+                {
+                  "value": 0,
+                  "label": "Sport"
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                },
+                {
+                  "type": "param",
+                  "key": "AccelPersonalityEnabled",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",

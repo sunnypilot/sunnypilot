@@ -51,6 +51,16 @@ sections:
         key: LagdToggle
         equals: true
     - $ref: '#/macros/advanced_only'
+  - key: PlanplusControl
+    widget: option
+    title: Plan Plus Controls
+    description: Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover
+      to lane center; too high and it will ping-pong.
+    min: 0.0
+    max: 2.0
+    step: 0.1
+    enablement:
+    - $ref: '#/macros/advanced_only'
 - id: lateral_control
   title: Lateral Control
   description: Neural network lateral control for supported models

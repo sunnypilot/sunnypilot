@@ -43,6 +43,19 @@ sections:
       label: Relaxed
     enablement:
     - $ref: '#/macros/longitudinal'
+  - key: AccelPersonality
+    widget: multiple_button
+    title: Acceleration Profile
+    description: Controls how quickly sunnypilot accelerates while preserving braking and stop behavior.
+    options:
+    - value: 2
+      label: Eco
+    - value: 1
+      label: Normal
+    - value: 0
+      label: Sport
+    enablement:
+    - $ref: '#/macros/longitudinal'
   - key: IntelligentCruiseButtonManagement
     widget: toggle
     title: Intelligent Cruise Button Management (ICBM) (Alpha)
