@@ -143,8 +143,8 @@ class Warp:
       self._nv12_cache[key] = get_nv12_info(cam_w, cam_h)[3]
     yuv_size = self._nv12_cache[key]
 
-    road_ptr = bufs[road].data.ctypes.data
-    wide_ptr = bufs[wide].data.ctypes.data
+    road_ptr = np.frombuffer(bufs[road].data, dtype=np.uint8).ctypes.data
+    wide_ptr = np.frombuffer(bufs[wide].data, dtype=np.uint8).ctypes.data
     if road_ptr not in self._blob_cache:
       self._blob_cache[road_ptr] = Tensor.from_blob(road_ptr, (yuv_size,), dtype='uint8')
     if wide_ptr not in self._blob_cache:

@@ -68,3 +68,18 @@ def test_recovery_power_scaling():
     # For the below, yes, I know this isn't the same slicing as fillmodlmsg. This is to show that the values are only scaled on curv
     expected_curv_plan_vel = plan[0, :, Plan.VELOCITY][:, 0] + control * planplus[0, :, Plan.VELOCITY][:, 0]
     np.testing.assert_allclose(recorded_curv_plans[0][:, Plan.VELOCITY][:, 0], expected_curv_plan_vel, rtol=1e-5, atol=1e-6)
+
+
+def test_action_direct_output():
+  state = MockStruct(
+    LONG_SMOOTH_SECONDS=0.3,
+    LAT_SMOOTH_SECONDS=0.1,
+    MIN_LAT_CONTROL_SPEED=0.3,
+    generation=12,
+  )
+  prev_action = log.ModelDataV2.Action()
+  model_output = {'action': np.array([[0.01, -0.5]])}
+  result = ModelState.get_action_from_model(state, model_output, prev_action, 0.1, 0.1, 10.0)
+  assert result.desiredAcceleration != 0.0
+  assert result.desiredCurvature != 0.0
+  assert isinstance(result.shouldStop, bool)

@@ -80,11 +80,9 @@ class TestStockEquivalence:
     stock_queues, stock_npy = make_input_queues(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES, frame_skip,
                                                 device='NPY')
 
-    # TODO-SP: remove action_t skip once SP adds prerequisite for deep models (action_t input queue)
-    skip_keys = {'action_t'}
-    assert set(state.input_queues.keys()) == set(stock_queues.keys()) - skip_keys, \
+    assert set(state.input_queues.keys()) == set(stock_queues.keys()), \
       f"Queue keys differ: v2={set(state.input_queues.keys())}, stock={set(stock_queues.keys())}"
-    assert set(state.npy.keys()) == set(stock_npy.keys()) - skip_keys, \
+    assert set(state.npy.keys()) == set(stock_npy.keys()), \
       f"Npy keys differ: v2={set(state.npy.keys())}, stock={set(stock_npy.keys())}"
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):

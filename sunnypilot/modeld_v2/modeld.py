@@ -129,7 +129,7 @@ class ModelState(ModelStateBase):
     else:
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k != 'vision']
-      if policy_keys == ['policy']:
+      if len(policy_keys) == 1 and policy_keys[0] in ('policy', 'on_policy'):
         self._combined_model_type = 'split'
       else:
         self._combined_model_type = 'multi_policy'
@@ -201,7 +201,7 @@ class ModelState(ModelStateBase):
     inputs[desire_key][0] = 0
     self.npy[desire_key][:] = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
     self.prev_desire[:] = inputs[desire_key]
-    for key in ('traffic_convention', 'lateral_control_params'):
+    for key in ('traffic_convention', 'lateral_control_params', 'action_t'):
       if key in self.npy and key in inputs:
         self.npy[key][:] = inputs[key]
 
@@ -245,6 +245,20 @@ class ModelState(ModelStateBase):
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+    if 'action' in model_output:
+      desired_accel = model_output['action'][0, 1]
+      desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
+      should_stop = (v_ego < 0.3 and desired_accel < 0.1)
+      desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
+      if self.generation is not None and self.generation >= 10:
+        if v_ego > self.MIN_LAT_CONTROL_SPEED:
+          desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
+        else:
+          desired_curvature = prev_action.desiredCurvature
+      return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),
+                                    desiredAcceleration=float(desired_accel),
+                                    shouldStop=bool(should_stop))
+
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
                                                      action_t=long_action_t)
@@ -404,9 +418,14 @@ def main(demo=False):
 
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
-    inputs:dict[str, np.ndarray] = {
+    frame_delay = DT_MDL
+    action_delay = DT_MDL / 2
+    lat_action_t = lat_delay + frame_delay + action_delay
+    long_action_t = long_delay + frame_delay + action_delay
+    inputs: dict[str, np.ndarray] = {
       model.desire_key: vec_desire,
       'traffic_convention': traffic_convention,
+      'action_t': np.array([lat_action_t, long_action_t], dtype=np.float32),
     }
 
     if 'lateral_control_params' in model.npy:
