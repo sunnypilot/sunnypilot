@@ -215,8 +215,8 @@ jobs:
             --exclude='**/SConstruct' \
             --exclude='**/SConscript' \
             --exclude='**/.venv/' \
-            --exclude='selfdrive/modeld/models/driving_vision.onnx' \
-            --exclude='selfdrive/modeld/models/driving_policy.onnx' \
+            --exclude='selfdrive/modeld/models/*.onnx*' \
+            --exclude='sunnypilot/modeld*/models/*.onnx*' \
             --exclude='third_party/*x86*' \
             --exclude='third_party/*Darwin*' \
             --delete-excluded \
