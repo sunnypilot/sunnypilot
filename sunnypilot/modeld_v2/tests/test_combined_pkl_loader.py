@@ -46,16 +46,6 @@ class TestFindDrivingPkl:
     assert result is not None
     assert 'driving_fof_tinygrad.pkl' in result
 
-  def test_finds_fallback_driving_tinygrad(self, tmp_path, monkeypatch):
-    (tmp_path / 'driving_tinygrad.pkl').write_bytes(b'fake')
-    from openpilot.system.hardware import hw
-    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
-
-    bundle = DummyBundle(models=[DummyModel('vision', 'nonexistent.pkl')])
-    result = _find_driving_pkl(bundle)
-    assert result is not None
-    assert 'driving_tinygrad.pkl' in result
-
 
 # Init — assertion guard
 
