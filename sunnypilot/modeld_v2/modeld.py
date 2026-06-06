@@ -61,6 +61,8 @@ def _load_pkl_compat(data: bytes):
       shape_uop = src[1]
       if shape_uop.op is Ops.CONST and hasattr(shape_uop.dtype, 'count') and shape_uop.dtype.count > 1 and isinstance(shape_uop.arg, tuple):
         src = (src[0], UOp(Ops.STACK, shape_uop.dtype, tuple(UOp(Ops.CONST, dtypes.weakint, (), arg=v) for v in shape_uop.arg)))
+    if op is Ops.CUSTOM and hasattr(dtype, 'count') and dtype.count > 1 and not isinstance(arg, str):
+      op = Ops.CONST
     return _orig_call(cls, op, dtype, src, arg, tag, metadata, _buffer if op is Ops.BUFFER else None)
 
   UOpMetaClass.__call__ = _compat_call
