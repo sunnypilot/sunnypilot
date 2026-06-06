@@ -44,6 +44,27 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
+def _load_pkl_compat(data: bytes):
+  from tinygrad.uop.ops import UOpMetaClass, Ops, buffers, ParamArg
+  from tinygrad.dtype import dtypes
+  _orig_call = UOpMetaClass.__call__
+
+  def _compat_call(cls, op, dtype=dtypes.void, src=(), arg=None, tag=None, metadata=None, _buffer=None):
+    if _buffer is not None and op is Ops.SLICE:
+      created = _orig_call(cls, op, dtype, src, arg, tag, metadata)
+      buffers[created] = _buffer
+      return created
+    if op is Ops.PARAM and isinstance(arg, int):
+      arg = ParamArg(arg)
+    return _orig_call(cls, op, dtype, src, arg, tag, metadata, _buffer if op is Ops.BUFFER else None)
+
+  UOpMetaClass.__call__ = _compat_call
+  try:
+    return pickle.loads(data)
+  finally:
+    UOpMetaClass.__call__ = _orig_call
+
+
 def _pkl_exists(path):
   from openpilot.common.file_chunker import get_manifest_path
   return os.path.exists(path) or os.path.exists(get_manifest_path(path))
@@ -111,7 +132,7 @@ class ModelState(ModelStateBase):
     from openpilot.common.file_chunker import read_file_chunked
 
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    jits = pickle.loads(read_file_chunked(pkl_path))
+    jits = _load_pkl_compat(read_file_chunked(pkl_path))
 
     self.DEV = Device.DEFAULT
 
