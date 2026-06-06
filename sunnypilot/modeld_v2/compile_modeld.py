@@ -188,7 +188,7 @@ def make_supercombo_input_queues(input_shapes, frame_skip, device):
   n_frames = img_shape[1] // 6
   img_buf_shape = (frame_skip * (n_frames - 1) + 1, 6, img_shape[2], img_shape[3])
 
-  npy_keys = {}
+  numpy_keys = {}
   queue_keys = {}
 
   for key, shape in input_shapes.items():
@@ -196,7 +196,7 @@ def make_supercombo_input_queues(input_shapes, frame_skip, device):
       continue
     if len(shape) == 3 and shape[1] > 1:
       if key.startswith('desire'):
-        npy_keys[key] = np.zeros(shape[2], dtype=np.float32)
+        numpy_keys[key] = np.zeros(shape[2], dtype=np.float32)
         queue_keys[f'{key}_q'] = Tensor(
           np.zeros((frame_skip * shape[1], shape[0], shape[2]), dtype=np.float32),
           device=device).contiguous().realize()
@@ -205,24 +205,24 @@ def make_supercombo_input_queues(input_shapes, frame_skip, device):
           np.zeros((frame_skip * (shape[1] - 1) + 1, shape[0], shape[2]), dtype=np.float32),
           device=device).contiguous().realize()
       else:
-        npy_keys[key] = np.zeros(shape, dtype=np.float32)
+        numpy_keys[key] = np.zeros(shape, dtype=np.float32)
     elif len(shape) == 2:
-      npy_keys[key] = np.zeros(shape, dtype=np.float32)
+      numpy_keys[key] = np.zeros(shape, dtype=np.float32)
 
-  if 'traffic_convention' not in npy_keys:
+  if 'traffic_convention' not in numpy_keys:
     tc_shape = input_shapes.get('traffic_convention', (1, 2))
-    npy_keys['traffic_convention'] = np.zeros(tc_shape, dtype=np.float32)
+    numpy_keys['traffic_convention'] = np.zeros(tc_shape, dtype=np.float32)
 
-  npy_keys['tfm'] = np.zeros((3, 3), dtype=np.float32)
-  npy_keys['big_tfm'] = np.zeros((3, 3), dtype=np.float32)
+  numpy_keys['tfm'] = np.zeros((3, 3), dtype=np.float32)
+  numpy_keys['big_tfm'] = np.zeros((3, 3), dtype=np.float32)
 
   input_queues = {
     'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     **queue_keys,
-    **{k: Tensor(v, device='NPY').realize() for k, v in npy_keys.items()},
+    **{k: Tensor(v, device='NPY').realize() for k, v in numpy_keys.items()},
   }
-  return input_queues, npy_keys
+  return input_queues, numpy_keys
 
 
 def make_run_supercombo(model_runner, nv12: NV12Frame, model_w, model_h,
