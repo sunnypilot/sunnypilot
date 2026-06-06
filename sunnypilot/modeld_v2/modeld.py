@@ -45,7 +45,7 @@ PROCESS_NAME = "selfdrive.modeld.modeld_tinygrad"
 
 
 def _load_pkl_compat(data: bytes):
-  from tinygrad.uop.ops import UOpMetaClass, Ops, buffers, ParamArg
+  from tinygrad.uop.ops import UOpMetaClass, UOp, Ops, buffers, ParamArg
   from tinygrad.dtype import dtypes
   _orig_call = UOpMetaClass.__call__
 
@@ -56,6 +56,11 @@ def _load_pkl_compat(data: bytes):
       return created
     if op is Ops.PARAM and isinstance(arg, int):
       arg = ParamArg(arg)
+    if op is Ops.PERMUTE and len(src) >= 2 and src[0].op is Ops.NOOP:
+      op = Ops.RESHAPE
+      shape_uop = src[1]
+      if shape_uop.op is Ops.CONST and hasattr(shape_uop.dtype, 'count') and shape_uop.dtype.count > 1 and isinstance(shape_uop.arg, tuple):
+        src = (src[0], UOp(Ops.STACK, shape_uop.dtype, tuple(UOp(Ops.CONST, dtypes.weakint, (), arg=v) for v in shape_uop.arg)))
     return _orig_call(cls, op, dtype, src, arg, tag, metadata, _buffer if op is Ops.BUFFER else None)
 
   UOpMetaClass.__call__ = _compat_call

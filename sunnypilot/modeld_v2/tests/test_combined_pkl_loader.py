@@ -80,9 +80,10 @@ class TestStockEquivalence:
     stock_queues, stock_npy = make_input_queues(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES, frame_skip,
                                                 device='NPY')
 
-    assert set(state.input_queues.keys()) == set(stock_queues.keys()), \
+    optional_keys = {'action_t'} if 'action_t' not in SPLIT_POLICY_INPUT_SHAPES else set()
+    assert set(state.input_queues.keys()) == set(stock_queues.keys()) - optional_keys, \
       f"Queue keys differ: v2={set(state.input_queues.keys())}, stock={set(stock_queues.keys())}"
-    assert set(state.npy.keys()) == set(stock_npy.keys()), \
+    assert set(state.npy.keys()) == set(stock_npy.keys()) - optional_keys, \
       f"Npy keys differ: v2={set(state.npy.keys())}, stock={set(stock_npy.keys())}"
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
