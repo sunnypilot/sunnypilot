@@ -121,7 +121,7 @@ def validate_active_bundle(params: Params, available_bundles: list[custom.ModelM
     _LAST_VALIDATED_RAW = raw_bundle
 
 
-def get_active_bundle(params: Params | None = None, raw_bundle_dict: dict | bytes | None = None) -> custom.ModelManagerSP.ModelBundle | None:
+def get_active_bundle(params: Params | None = None, raw_bundle_dict: dict | bytes | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
   params = params or Params()
   try:
     active_bundle_dict = raw_bundle_dict if raw_bundle_dict is not None else (params.get("ModelManager_ActiveBundle") or {})
