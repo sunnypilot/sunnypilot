@@ -14,6 +14,22 @@ from collections import defaultdict
 from functools import partial
 import numpy as np
 
+def _patch_tinygrad_fetch_fw():
+  import hashlib
+  import pathlib
+  import zstandard
+  from tinygrad import helpers
+  _orig_fetch_fw = helpers.fetch_fw
+  def fetch_fw(path, name, sha256):
+    p = pathlib.Path(f"/lib/firmware/{path}/{name}.zst")
+    if p.is_file():
+      blob = zstandard.ZstdDecompressor().stream_reader(p.read_bytes()).read()
+      if hashlib.sha256(blob).hexdigest() == sha256:
+        return blob
+    return _orig_fetch_fw(path, name, sha256)
+  helpers.fetch_fw = fetch_fw
+_patch_tinygrad_fetch_fw()
+
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -184,6 +200,19 @@ def _parse_size(size_str: str) -> tuple[int, int]:
   return int(width), int(height)
 
 
+def read_file_chunked_to_shm(path):
+  if not path:
+    return None
+  from openpilot.common.file_chunker import read_file_chunked
+  from openpilot.system.hardware.hw import Paths
+  import atexit
+  shm_path = os.path.join(Paths.shm_path(), os.path.basename(path))
+  atexit.register(lambda: os.path.exists(shm_path) and os.remove(shm_path))
+  with open(shm_path, 'wb') as f:
+    f.write(read_file_chunked(path))
+  return shm_path
+
+
 def _compile_for_resolutions(camera_resolutions: list, model_size: tuple[int, int], frame_skip: int,
                              vision_runner, policy_runners: list, metadata: dict) -> dict:
   return {
@@ -225,6 +254,12 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
   output_data = defaultdict(dict)
+
+  args.vision_onnx = read_file_chunked_to_shm(args.vision_onnx)
+  args.policy_onnx = read_file_chunked_to_shm(args.policy_onnx)
+  args.off_policy_onnx = read_file_chunked_to_shm(args.off_policy_onnx)
+  args.on_policy_onnx = read_file_chunked_to_shm(args.on_policy_onnx)
+  args.supercombo_onnx = read_file_chunked_to_shm(args.supercombo_onnx)
 
   vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
 
