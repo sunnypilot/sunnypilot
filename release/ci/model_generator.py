@@ -53,7 +53,7 @@ def validate_model_outputs(metadata_paths: list[Path]) -> None:
     print(f"Optional output keys detected: {detected_optional}")
 
 
-def create_short_name(full_name):
+def create_short_name(full_name: str) -> str:
   # Remove parentheses and extract alphanumeric words
   clean_name = re.sub(r'\([^)]*\)', '', full_name)
   words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
@@ -121,7 +121,7 @@ def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
   return old_pkl.rename(new_pkl)
 
 
-def generate_metadata(model_path: Path, output_dir: Path, short_name: str, driving_pkl: Path):
+def generate_metadata(model_path: Path, output_dir: Path, short_name: str, driving_pkl: Path) -> dict | None:
   base = model_path.stem
   metadata_file = output_dir / f"{base}_metadata.pkl"
 
@@ -134,7 +134,7 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str, drivi
 
   if not metadata_file.exists():
     print(f"Warning: Missing metadata for {base} ({metadata_file}), skipping", file=sys.stderr)
-    return
+    return None
 
   tinygrad_hash = hashlib.sha256(_read_pkl_bytes(driving_pkl)).hexdigest()
 
@@ -143,15 +143,33 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str, drivi
 
   model_type = "offPolicy" if "off_policy" in base else "onPolicy" if "on_policy" in base else base.split("_")[-1]
 
+  chunks_config = []
+  manifest_file = Path(f"{driving_pkl}.chunkmanifest")
+  if manifest_file.exists():
+    num_chunks = int(manifest_file.read_text().strip())
+    for i in range(num_chunks):
+      chunk_path = Path(f"{driving_pkl}.chunk{i + 1:02d}of{num_chunks:02d}")
+      if chunk_path.exists():
+        chunk_hash = hashlib.sha256(chunk_path.read_bytes()).hexdigest()
+        chunks_config.append({
+          "file_name": chunk_path.name,
+          "sha256": chunk_hash
+        })
+
+  artifact_data = {
+    "file_name": driving_pkl.name,
+    "download_uri": {
+      "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/",
+      "sha256": tinygrad_hash
+    }
+  }
+
+  if chunks_config:
+    artifact_data["chunks"] = chunks_config
+
   return {
     "type": model_type,
-    "artifact": {
-      "file_name": driving_pkl.name,
-      "download_uri": {
-        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/",
-        "sha256": tinygrad_hash
-      }
-    },
+    "artifact": artifact_data,
     "metadata": {
       "file_name": metadata_file.name,
       "download_uri": {
@@ -162,8 +180,8 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str, drivi
   }
 
 
-def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown"):
-  metadata_json = {
+def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown") -> None:
+  bundle_json = {
     "short_name": short_name,
     "display_name": custom_name or upstream_branch,
     "is_20hz": is_20hz,
@@ -179,6 +197,10 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
   }
 
   # Write metadata to output_dir
+  metadata_json = {
+    "bundles": [bundle_json]
+  }
+
   with open(output_dir / "metadata.json", "w") as f:
     json.dump(metadata_json, f, indent=2)
 

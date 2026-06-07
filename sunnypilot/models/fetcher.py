@@ -27,10 +27,21 @@ class ModelParser:
     return download_uri
 
   @staticmethod
+  def _parse_chunk(chunk_data) -> custom.ModelManagerSP.Chunk:
+    chunk = custom.ModelManagerSP.Chunk()
+    chunk.fileName = chunk_data.get("file_name")
+    chunk.sha256 = chunk_data.get("sha256")
+    return chunk
+
+  @staticmethod
   def _parse_artifact(artifact_data) -> custom.ModelManagerSP.Artifact:
     artifact = custom.ModelManagerSP.Artifact()
     artifact.fileName = artifact_data.get("file_name")
     artifact.downloadUri = ModelParser._parse_download_uri(artifact_data.get("download_uri", {}))
+
+    if "chunks" in artifact_data:
+      artifact.chunks = [ModelParser._parse_chunk(chunk_data) for chunk_data in artifact_data["chunks"]]
+
     return artifact
 
   @staticmethod
@@ -184,4 +195,6 @@ if __name__ == "__main__":
       # Print artifact details
       print(f"Artifact: {model.artifact.fileName}, Download URI: {model.artifact.downloadUri.uri}")
       # Print metadata details
+      if model.artifact.chunks:
+        print(f"Contains {len(model.artifact.chunks)} chunks.")
       print(f"Metadata: {model.metadata.fileName}, Download URI: {model.metadata.downloadUri.uri}")

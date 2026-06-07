@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: ''
+      target_hardware:
+        description: 'Hardware target to compile for (qcom or usbgpu)'
+        required: false
+        type: string
+        default: 'qcom'
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -46,6 +51,14 @@ on:
         required: false
         type: boolean
         default: true
+      target_hardware:
+        description: 'Hardware target to compile for'
+        required: true
+        type: choice
+        options:
+          - qcom
+          - usbgpu
+        default: 'qcom'
 
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
@@ -169,7 +182,17 @@ jobs:
           COMPILE_MODELD="${{ github.workspace }}/sunnypilot/modeld_v2/compile_modeld.py"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
-          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+
+          if [ "${{ inputs.target_hardware }}" == "usbgpu" ]; then
+            echo "USBGPU build"
+            export USBGPU=1
+            TG_FLAGS="DEV=AMD USBGPU=1 IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
+          else
+            echo "QCOM build"
+            TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            OUTPUT_PKL="${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
+          fi
 
           # Generate metadata for all ONNX files
           find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
@@ -203,13 +226,13 @@ jobs:
           fi
 
           if [ -n "$MODEL_TYPE" ]; then
-            echo "Detected: $MODEL_TYPE -> driving_tinygrad.pkl"
+            echo "Detected: $MODEL_TYPE -> $OUTPUT_PKL"
             env ${TG_FLAGS} python3 "$COMPILE_MODELD" \
               --model-type $MODEL_TYPE \
               --model-size $MODEL_SIZE \
               --camera-resolutions $CAMERA_RES \
               $ONNX_ARGS \
-              --output "${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
+              --output "$OUTPUT_PKL"
           fi
 
       - name: Validate Model Outputs
