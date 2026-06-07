@@ -144,14 +144,15 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
       return img, big_img
 
     desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
-    inputs = {desire_key: desire_buf, **extra_tensors}
+    inputs = {desire_key: desire_buf.realize(), **extra_tensors}
     if traffic_conv_dev is not None:
       inputs['traffic_convention'] = traffic_conv_dev
 
     if vision_runner:
       vision_out = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32')
+      vision_out = vision_out.realize()
       new_feat = vision_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-      inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn)
+      inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
       policy_outs = [next(iter(runner(inputs).values())).cast('float32') for runner in policy_runners]
       return (vision_out, *policy_outs) if len(policy_outs) > 1 else (vision_out, policy_outs[0])
 
