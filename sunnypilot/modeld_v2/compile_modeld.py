@@ -13,14 +13,29 @@ import time
 from collections import defaultdict
 from functools import partial
 import numpy as np
+os.environ['GMMU'] = '0'
 
+def _patch_tinygrad_fetch_fw():
+  import hashlib
+  import pathlib
+  import zstandard
+  from tinygrad import helpers
+  _orig_fetch_fw = helpers.fetch_fw
+  def fetch_fw(path, name, sha256):
+    p = pathlib.Path(f"/lib/firmware/{path}/{name}.zst")
+    if p.is_file():
+      blob = zstandard.ZstdDecompressor().stream_reader(p.read_bytes()).read()
+      if hashlib.sha256(blob).hexdigest() == sha256:
+        return blob
+    return _orig_fetch_fw(path, name, sha256)
+  helpers.fetch_fw = fetch_fw
+_patch_tinygrad_fetch_fw()
+
+from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, sample_desire, sample_skip, shift_and_sample
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
 from tinygrad.tensor import Tensor
-
-from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, sample_desire, sample_skip, shift_and_sample
-
 
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 
@@ -72,12 +87,12 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
-                                  dtype=np.float32), device=device).contiguous().realize()
+                  dtype=np.float32), device=device).contiguous().realize()
   }
 
   if features_buffer:
     queues['feat_q'] = Tensor(np.zeros((frame_skip * (features_buffer[1] - 1) + 1, features_buffer[0], features_buffer[2]),
-                                        dtype=np.float32), device=device).contiguous().realize()
+                       dtype=np.float32), device=device).contiguous().realize()
 
   queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items()})
   return queues, npy_arrays
@@ -92,7 +107,7 @@ def make_supercombo_input_queues(input_shapes: dict, frame_skip: int, device: st
 
 
 def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, model_size: tuple[int, int],
-                      features_slice: slice, frame_skip: int, input_shapes: dict, prepare_only: bool):
+            features_slice: slice, frame_skip: int, input_shapes: dict, prepare_only: bool):
   frame_prepare = make_frame_prepare(nv12, *model_size)
   sample_skip_fn = partial(sample_skip, frame_skip=frame_skip)
   sample_desire_fn = partial(sample_desire, frame_skip=frame_skip)
@@ -128,20 +143,21 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
 
     desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
     inputs = {desire_key: desire_buf, **extra_tensors}
+
     if traffic_conv_dev is not None:
       inputs['traffic_convention'] = traffic_conv_dev
 
     if vision_runner:
-      vision_out = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32')
-      new_feat = vision_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-      inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn)
-      policy_outs = [next(iter(runner(inputs).values())).cast('float32') for runner in policy_runners]
-      return (vision_out, *policy_outs) if len(policy_outs) > 1 else (vision_out, policy_outs[0])
-
+      vision_out = next(iter(vision_runner({road_key: img, wide_key: big_img}).values()))
+      vision_out_cast = vision_out.cast('float32')
+      new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
+      inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+      policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32') for pol_runner in policy_runners]
+      return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
     inputs.update({road_key: img, wide_key: big_img, 'features_buffer': sample_skip_fn(feat_q)})
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32')
     new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-    shift_and_sample(feat_q, new_feat, sample_skip_fn)
+    shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
 
   return runner
@@ -157,6 +173,7 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
     raise ValueError("Could not find vision, model, or policy metadata.")
 
   features_slice = feat_meta['output_slices']['hidden_state']
+  WARP_DEV = 'CPU' if "USBGPU" in os.environ else Device.DEFAULT
 
   run_func = create_jit_runner(vision_runner, policy_runners, nv12, model_size, features_slice, frame_skip, all_shapes, prepare_only)
   run_jit = TinyJit(run_func, prune=True)
@@ -164,10 +181,10 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
 
   for i in range(3):
     np.random.seed(42 + i)
-    frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8).realize()
-    big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8).realize()
+    frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
+    big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     for arr in npy_arrays.values():
-        arr[:] = np.random.randn(*arr.shape).astype(arr.dtype)
+      arr[:] = np.random.randn(*arr.shape).astype(arr.dtype)
 
     Device.default.synchronize()
     start_time = time.perf_counter()
@@ -184,12 +201,26 @@ def _parse_size(size_str: str) -> tuple[int, int]:
   return int(width), int(height)
 
 
+def read_file_chunked_to_shm(path):
+  if not path:
+    return None
+  import atexit
+  from openpilot.common.file_chunker import read_file_chunked
+  from openpilot.system.hardware.hw import Paths
+  shm_path = os.path.join(Paths.shm_path(), os.path.basename(path))
+  atexit.register(lambda: os.path.exists(shm_path) and os.remove(shm_path))
+  with open(shm_path, 'wb') as f:
+    f.write(read_file_chunked(path))
+  return shm_path
+
+
 def _compile_for_resolutions(camera_resolutions: list, model_size: tuple[int, int], frame_skip: int,
-                             vision_runner, policy_runners: list, metadata: dict) -> dict:
+               vision_runner, policy_runners: list, metadata: dict) -> dict:
+  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
   return {
     (cam_w, cam_h): {
       name: compile_and_warmup(NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h)), model_size, prepare_only,
-                                frame_skip, vision_runner, policy_runners, metadata)
+                   frame_skip, vision_runner, policy_runners, metadata)
       for name, prepare_only in [('warp_enqueue', True), ('run_policy', False)]
     }
     for cam_w, cam_h in camera_resolutions
@@ -206,9 +237,8 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
 
 
 if __name__ == "__main__":
-  from tinygrad.nn.onnx import OnnxRunner
-  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
   from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
+  from tinygrad.nn.onnx import OnnxRunner
 
   parser = argparse.ArgumentParser(description="Compile combined JIT pkl for sunnypilot modeld_v2")
   parser.add_argument('--model-type', choices=MODEL_TYPES, required=True)
@@ -225,6 +255,12 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
   output_data = defaultdict(dict)
+
+  args.vision_onnx = read_file_chunked_to_shm(args.vision_onnx)
+  args.policy_onnx = read_file_chunked_to_shm(args.policy_onnx)
+  args.off_policy_onnx = read_file_chunked_to_shm(args.off_policy_onnx)
+  args.on_policy_onnx = read_file_chunked_to_shm(args.on_policy_onnx)
+  args.supercombo_onnx = read_file_chunked_to_shm(args.supercombo_onnx)
 
   vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
 
@@ -244,12 +280,13 @@ if __name__ == "__main__":
       runner_arg = getattr(args, f"{name}_onnx")
       output_data['metadata'][name] = make_metadata_dict(runner_arg)
 
-  first_policy_meta = output_data['metadata'].get('policy', output_data['metadata'].get('model', output_data['metadata'].get('off_policy', {})))
+  policy_keys = [key for key in output_data['metadata'].keys() if key != 'vision']
+  first_policy_meta = output_data['metadata'][policy_keys[0]] if policy_keys else {}
   vision_meta = output_data['metadata'].get('vision', {})
 
   derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
   output_data.update(_compile_for_resolutions(args.camera_resolutions, args.model_size, derived_frame_skip,
-                                              vision_runner, policy_runners, output_data['metadata']))
+                        vision_runner, policy_runners, output_data['metadata']))
 
   with open(args.output, "wb") as file:
     pickle.dump(output_data, file)
