@@ -159,7 +159,7 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
     inputs.update({road_key: img, wide_key: big_img, 'features_buffer': sample_skip_fn(feat_q)})
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32')
     new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-    shift_and_sample(feat_q, new_feat, sample_skip_fn)
+    shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
 
   return runner
@@ -282,7 +282,8 @@ if __name__ == "__main__":
       runner_arg = getattr(args, f"{name}_onnx")
       output_data['metadata'][name] = make_metadata_dict(runner_arg)
 
-  first_policy_meta = output_data['metadata'].get('policy', output_data['metadata'].get('model', output_data['metadata'].get('off_policy', {})))
+  policy_keys = [key for key in output_data['metadata'].keys() if key != 'vision']
+  first_policy_meta = output_data['metadata'][policy_keys[0]] if policy_keys else {}
   vision_meta = output_data['metadata'].get('vision', {})
 
   derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
