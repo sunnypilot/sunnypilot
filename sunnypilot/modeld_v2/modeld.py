@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import os
+os.environ['GMMU'] = '0'
 from openpilot.system.hardware import TICI
 os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
 USBGPU = "USBGPU" in os.environ
@@ -109,6 +110,8 @@ class ModelState(ModelStateBase):
     jits = pickle.loads(read_file_chunked(pkl_path))
 
     self.DEV = Device.DEFAULT
+    self.WARP_DEV = 'CPU' if USBGPU else self.DEV
+    self.QUEUE_DEV = self.DEV
 
     metadata = jits['metadata']
     if 'model' in metadata:
@@ -120,7 +123,7 @@ class ModelState(ModelStateBase):
       self._vision_input_names = [k for k in model_metadata['input_shapes'] if 'img' in k]
       from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
-      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.DEV)
+      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.QUEUE_DEV)
     else:
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k != 'vision']
@@ -138,7 +141,11 @@ class ModelState(ModelStateBase):
       policy_input_shapes = first_policy_metadata['input_shapes']
       self._vision_input_names = [k for k in vision_input_shapes if 'img' in k]
       frame_skip = derive_frame_skip(vision_input_shapes, policy_input_shapes)
-      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.DEV)
+      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.QUEUE_DEV)
+
+    self._desire_key = next(key for key in self.numpy_inputs if key.startswith('desire'))
+    self._road_key = next(key for key in self._vision_input_names if 'big' not in key)
+    self._wide_key = next(key for key in self._vision_input_names if 'big' in key)
 
     from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
     from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
@@ -160,12 +167,11 @@ class ModelState(ModelStateBase):
 
     self._run_policy = jits[(cam_w, cam_h)]['run_policy']
     self._warp_enqueue = jits[(cam_w, cam_h)]['warp_enqueue']
-    road_name = next(k for k in self._vision_input_names if 'big' not in k)
-    yuv_size = self.frame_buf_params[road_name][3]
+    yuv_size = self.frame_buf_params[self._road_key][3]
     self._warp_enqueue(
       **self.input_queues,
-      frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.DEV).contiguous().realize(),
-      big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.DEV).contiguous().realize())
+      frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize(),
+      big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize())
 
 
   @property
@@ -178,7 +184,7 @@ class ModelState(ModelStateBase):
 
   @property
   def desire_key(self) -> str:
-    return next(k for k in self.numpy_inputs if k.startswith('desire'))
+    return self._desire_key
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -189,7 +195,7 @@ class ModelState(ModelStateBase):
       yuv_size = self.frame_buf_params[key][3]
       cache_key = (key, ptr)
       if cache_key not in self._blob_cache:
-        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.DEV)
+        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
       self.full_frames[key] = self._blob_cache[cache_key]
 
     desire_key = self.desire_key
@@ -200,8 +206,8 @@ class ModelState(ModelStateBase):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
-    road_key = next(n for n in bufs if 'big' not in n)
-    wide_key = next(n for n in bufs if 'big' in n)
+    road_key = self._road_key
+    wide_key = self._wide_key
     self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 

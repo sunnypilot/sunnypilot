@@ -8,6 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import argparse
 import os
+os.environ['GMMU'] = '0'
 import pickle
 import time
 from collections import defaultdict
@@ -173,6 +174,7 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
     raise ValueError("Could not find vision, model, or policy metadata.")
 
   features_slice = feat_meta['output_slices']['hidden_state']
+  WARP_DEV = 'CPU' if "USBGPU" in os.environ else Device.DEFAULT
 
   run_func = create_jit_runner(vision_runner, policy_runners, nv12, model_size, features_slice, frame_skip, all_shapes, prepare_only)
   run_jit = TinyJit(run_func, prune=True)
@@ -180,8 +182,8 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
 
   for i in range(3):
     np.random.seed(42 + i)
-    frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8).realize()
-    big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8).realize()
+    frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
+    big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     for arr in npy_arrays.values():
         arr[:] = np.random.randn(*arr.shape).astype(arr.dtype)
 
