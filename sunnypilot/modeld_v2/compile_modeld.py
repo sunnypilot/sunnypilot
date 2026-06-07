@@ -240,9 +240,9 @@ if __name__ == "__main__":
     assert vision_runner
     policy_runners, policy_names = _load_policy_runners(args)
     output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx)}
-    for name, runner_arg in zip(policy_names, [args.policy_onnx, args.off_policy_onnx, args.on_policy_onnx], strict=True):
-      if runner_arg:
-        output_data['metadata'][name] = make_metadata_dict(runner_arg)
+    for name in policy_names:
+      runner_arg = getattr(args, f"{name}_onnx")
+      output_data['metadata'][name] = make_metadata_dict(runner_arg)
 
   first_policy_meta = output_data['metadata'].get('policy', output_data['metadata'].get('model', output_data['metadata'].get('off_policy', {})))
   vision_meta = output_data['metadata'].get('vision', {})
