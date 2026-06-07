@@ -149,13 +149,13 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
       inputs['traffic_convention'] = traffic_conv_dev
 
     if vision_runner:
-      vision_out = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32')
-      vision_out = vision_out.realize()
-      new_feat = vision_out[:, features_slice].reshape(1, -1).unsqueeze(0)
+      vision_out = next(iter(vision_runner({road_key: img, wide_key: big_img}).values()))
+      vision_out = vision_out.cast('float32').realize().numpy()
+      vision_out_tensor = Tensor(vision_out, device=Device.DEFAULT)
+      new_feat = vision_out_tensor[:, features_slice].reshape(1, -1).unsqueeze(0)
       inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
       policy_outs = [next(iter(runner(inputs).values())).cast('float32') for runner in policy_runners]
-      return (vision_out, *policy_outs) if len(policy_outs) > 1 else (vision_out, policy_outs[0])
-
+      return (vision_out_tensor, *policy_outs) if len(policy_outs) > 1 else (vision_out_tensor, policy_outs[0])
     inputs.update({road_key: img, wide_key: big_img, 'features_buffer': sample_skip_fn(feat_q)})
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32')
     new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)

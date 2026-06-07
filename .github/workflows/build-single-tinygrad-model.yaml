@@ -12,11 +12,11 @@ on:
         required: false
         type: string
       recompiled_dir:
-        description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
+        description: 'Existing recompiled directory number (e.g. 1 for recompiled1)'
         required: true
         type: string
       json_version:
-        description: 'driving_models version number to update (e.g. 5 for driving_models_v5.json)'
+        description: 'driving_models version number to update (e.g. 18 for driving_models_v18.json)'
         required: true
         type: string
       artifact_suffix:
@@ -63,12 +63,11 @@ on:
         default: 'None'
         options:
           - None
-          - Simple Plan Models
-          - Space Lab Models
-          - TR Models
-          - DTR Models
+          - Master Models
+          - Release Models
+          - 2025 World Models
+          - 2026 World Models
           - Custom Merge Models
-          - FOF series models
           - Other
       custom_model_folder:
         description: 'Custom model folder name (if "Other" selected)'
