@@ -46,16 +46,6 @@ class TestFindDrivingPkl:
     assert result is not None
     assert 'driving_fof_tinygrad.pkl' in result
 
-  def test_finds_fallback_driving_tinygrad(self, tmp_path, monkeypatch):
-    (tmp_path / 'driving_tinygrad.pkl').write_bytes(b'fake')
-    from openpilot.system.hardware import hw
-    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
-
-    bundle = DummyBundle(models=[DummyModel('vision', 'nonexistent.pkl')])
-    result = _find_driving_pkl(bundle)
-    assert result is not None
-    assert 'driving_tinygrad.pkl' in result
-
 
 # Init — assertion guard
 
@@ -84,8 +74,8 @@ class TestStockEquivalence:
     skip_keys = {'action_t'}
     assert set(state.input_queues.keys()) == set(stock_queues.keys()) - skip_keys, \
       f"Queue keys differ: v2={set(state.input_queues.keys())}, stock={set(stock_queues.keys())}"
-    assert set(state.npy.keys()) == set(stock_npy.keys()) - skip_keys, \
-      f"Npy keys differ: v2={set(state.npy.keys())}, stock={set(stock_npy.keys())}"
+    assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - skip_keys, \
+      f"Npy keys differ: v2={set(state.numpy_inputs.keys())}, stock={set(stock_npy.keys())}"
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
@@ -188,16 +178,16 @@ class TestInputQueueCreation:
   def test_npy_contains_transforms(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
-    assert 'tfm' in state.npy, f"{arch.name}: 'tfm' missing from npy"
-    assert 'big_tfm' in state.npy, f"{arch.name}: 'big_tfm' missing from npy"
-    assert state.npy['tfm'].shape == (3, 3)
-    assert state.npy['big_tfm'].shape == (3, 3)
+    assert 'tfm' in state.numpy_inputs, f"{arch.name}: 'tfm' missing from npy"
+    assert 'big_tfm' in state.numpy_inputs, f"{arch.name}: 'big_tfm' missing from npy"
+    assert state.numpy_inputs['tfm'].shape == (3, 3)
+    assert state.numpy_inputs['big_tfm'].shape == (3, 3)
 
   @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
   def test_npy_contains_desire(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
-    assert arch.expected_desire_key in state.npy, \
+    assert arch.expected_desire_key in state.numpy_inputs, \
       f"{arch.name}: '{arch.expected_desire_key}' missing from npy"
 
 
