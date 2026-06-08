@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import json
 
 from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import CAR_LIST_JSON_OUT
+from openpilot.sunnypilot.selfdrive.car.sync_sunnylink_params import CAR_LIST_JSON_OUT
 
 ONROAD_BRIGHTNESS_MIGRATION_VERSION: str = "1.0"
 ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION: str = "1.0"
