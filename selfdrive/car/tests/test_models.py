@@ -13,7 +13,7 @@ from opendbc.car import DT_CTRL, gen_empty_fingerprint, structs
 from opendbc.car.can_definitions import CanData
 from opendbc.car.car_helpers import FRAME_FINGERPRINT, interfaces
 from opendbc.car.fingerprints import MIGRATION
-from opendbc.car.honda.values import HondaFlags
+from opendbc.car.honda.values import CAR as HONDA, HondaFlags
 from opendbc.car.structs import car
 from opendbc.car.tests.routes import non_tested_cars, routes, CarTestRoute
 from opendbc.car.values import Platform, PLATFORMS
