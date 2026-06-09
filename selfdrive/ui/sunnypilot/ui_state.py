@@ -179,6 +179,10 @@ class UIStateSP:
     CP = self.CP
 
     if CP is not None:
+      if self.params.get_bool("EnforceTorqueControl") and self.params.get_bool("NeuralNetworkLateralControl"):
+        self.params.put_bool("EnforceTorqueControl", False)
+        self.params.put_bool("NeuralNetworkLateralControl", False)
+
       # Angle steering: no torque-based lateral controls
       if CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.params.remove("EnforceTorqueControl")
