@@ -365,6 +365,7 @@ class TestCarModelBase(unittest.TestCase):
             brake_pressed = False
 
         self.assertEqual(brake_pressed, self.safety.get_brake_pressed_prev())
+
       if self.safety.get_regen_braking_prev() != prev_panda_regen_braking:
         self.assertEqual(CS.regenBraking, self.safety.get_regen_braking_prev())
 
@@ -450,9 +451,8 @@ class TestCarModelBase(unittest.TestCase):
       # TODO: remove this exception once this mismatch is resolved
       brake_pressed = CS.brakePressed
       if CS.brakePressed and not self.safety.get_brake_pressed_prev():
-        if self.CP.carFingerprint in (HONDA.HONDA_PILOT, HONDA.HONDA_RIDGELINE):
-          if CS.brakeDEPRECATED  > 0.05:
-            brake_pressed = False
+        if self.CP.carFingerprint in (HONDA.HONDA_PILOT, HONDA.HONDA_RIDGELINE) and CS.brakeDEPRECATED > 0.05:
+          brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
       checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
       checks['steeringDisengage'] += CS.steeringDisengage != self.safety.get_steering_disengage_prev()
