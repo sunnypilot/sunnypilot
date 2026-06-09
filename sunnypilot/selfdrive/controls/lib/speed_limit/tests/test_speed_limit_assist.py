@@ -75,11 +75,11 @@ class TestSpeedLimitAssist:
     return CI
 
   def reset_custom_params(self):
-    self.params.put("IsReleaseSpBranch", True)
-    self.params.put("SpeedLimitMode", int(Mode.assist))
-    self.params.put_bool("IsMetric", False)
-    self.params.put("SpeedLimitOffsetType", 0)
-    self.params.put("SpeedLimitValueOffset", 0)
+    self.params.put("IsReleaseSpBranch", True, block=True)
+    self.params.put("SpeedLimitMode", int(Mode.assist), block=True)
+    self.params.put_bool("IsMetric", False, block=True)
+    self.params.put("SpeedLimitOffsetType", 0, block=True)
+    self.params.put("SpeedLimitValueOffset", 0, block=True)
 
   def reset_state(self):
     self.sla.state = SpeedLimitAssistState.disabled
@@ -115,14 +115,14 @@ class TestSpeedLimitAssist:
     assert not self.sla.enabled
 
     # stay disallowed even when the param may have changed from somewhere else
-    self.params.put("SpeedLimitMode", int(Mode.assist))
+    self.params.put("SpeedLimitMode", int(Mode.assist), block=True)
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
                       SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert not self.sla.enabled
 
   def test_disabled(self):
-    self.params.put("SpeedLimitMode", int(Mode.off))
+    self.params.put("SpeedLimitMode", int(Mode.off), block=True)
     for _ in range(int(10. / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.disabled

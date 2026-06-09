@@ -9,7 +9,7 @@ from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "model_name.py")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
 VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
-POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
+POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_on_policy.onnx")
 
 
 def update_model_hash():
