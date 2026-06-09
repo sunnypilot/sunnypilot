@@ -42,7 +42,7 @@ class TogglesLayout(Widget):
   def __init__(self):
     super().__init__()
     self._params = Params()
-    self._is_release = self._params.get_bool("IsReleaseBranch")
+    self._is_release = False  # self._params.get_bool("IsReleaseBranch")
 
     # param, title, desc, icon, needs_restart
     self._toggle_defs = {
@@ -221,8 +221,8 @@ class TogglesLayout(Widget):
     if state and not confirmed:
       def confirm_callback(result: DialogResult):
         if result == DialogResult.CONFIRM:
-          self._params.put_bool("ExperimentalMode", True)
-          self._params.put_bool("ExperimentalModeConfirmed", True)
+          self._params.put_bool("ExperimentalMode", True, block=True)
+          self._params.put_bool("ExperimentalModeConfirmed", True, block=True)
         else:
           self._toggles["ExperimentalMode"].action_item.set_state(False)
         self._update_experimental_mode_icon()
@@ -234,16 +234,16 @@ class TogglesLayout(Widget):
       gui_app.push_widget(dlg)
     else:
       self._update_experimental_mode_icon()
-      self._params.put_bool("ExperimentalMode", state)
+      self._params.put_bool("ExperimentalMode", state, block=True)
 
   def _toggle_callback(self, state: bool, param: str):
     if param == "ExperimentalMode":
       self._handle_experimental_mode_toggle(state)
       return
 
-    self._params.put_bool(param, state)
+    self._params.put_bool(param, state, block=True)
     if self._toggle_defs[param][3]:
-      self._params.put_bool("OnroadCycleRequested", True)
+      self._params.put_bool("OnroadCycleRequested", True, block=True)
 
   def _set_longitudinal_personality(self, button_index: int):
-    self._params.put("LongitudinalPersonality", button_index)
+    self._params.put("LongitudinalPersonality", button_index, block=True)

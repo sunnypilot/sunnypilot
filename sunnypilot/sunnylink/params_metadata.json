@@ -606,6 +606,10 @@
     "title": "Last Update Uptime Onroad",
     "description": ""
   },
+  "LateralManeuverMode": {
+    "title": "Lateral Maneuver Mode",
+    "description": ""
+  },
   "LeadDepartAlert": {
     "title": "Lead Departure Alert (Beta)",
     "description": "A chime and on-screen alert (TIZI/TICI only) will play when you are stopped, and the vehicle in front of you start moving. <br>Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly."
@@ -633,6 +637,10 @@
   "LiveTorqueParamsToggle": {
     "title": "Self-Tune",
     "description": "Enables self-tune for Torque lateral control"
+  },
+  "LivestreamEncoderBitrate": {
+    "title": "Livestream Encoder Bitrate",
+    "description": ""
   },
   "LocationFilterInitialState": {
     "title": "Location Filter Initial State",
@@ -1085,6 +1093,10 @@
     "title": "Panda Som Reset Triggered",
     "description": ""
   },
+  "ParamsVersion": {
+    "title": "Params Version",
+    "description": ""
+  },
   "PlanplusControl": {
     "title": "Plan Plus Controls",
     "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong",
@@ -1400,6 +1412,14 @@
   },
   "UptimeOnroad": {
     "title": "Uptime Onroad",
+    "description": ""
+  },
+  "UsbGpuCompiled": {
+    "title": "Usb Gpu Compiled",
+    "description": ""
+  },
+  "UsbGpuPresent": {
+    "title": "Usb Gpu Present",
     "description": ""
   },
   "Version": {

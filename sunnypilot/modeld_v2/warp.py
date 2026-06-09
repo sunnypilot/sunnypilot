@@ -7,10 +7,43 @@ from tinygrad.engine.jit import TinyJit
 from tinygrad.device import Device
 
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-from openpilot.selfdrive.modeld.compile_warp import (
-  CAMERA_CONFIGS, MEDMODEL_INPUT_SIZE, make_frame_prepare, make_update_both_imgs,
-  warp_pkl_path,
-)
+from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE
+from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
+from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare as _make_frame_prepare
+
+CAMERA_CONFIGS = [
+  (_ar_ox_fisheye.width, _ar_ox_fisheye.height),
+  (_os_fisheye.width, _os_fisheye.height),
+]
+
+
+def make_frame_prepare(cam_w, cam_h, model_w, model_h):
+  nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+  return _make_frame_prepare(nv12, model_w, model_h)
+
+
+def warp_pkl_path(w, h):
+  from openpilot.selfdrive.modeld.helpers import MODELS_DIR
+  return MODELS_DIR / f'warp_{w}x{h}_tinygrad.pkl'
+
+
+def make_update_img_input(frame_prepare, model_w, model_h):
+  def update_img_input_tinygrad(tensor, frame, M_inv):
+    M_inv = M_inv.to(Device.DEFAULT)
+    new_img = frame_prepare(frame, M_inv)
+    tensor.assign(tensor[6:].cat(new_img, dim=0).contiguous())
+    return Tensor.cat(tensor[:6], tensor[-6:], dim=0).contiguous().reshape(1, 12, model_h//2, model_w//2)
+  return update_img_input_tinygrad
+
+
+def make_update_both_imgs(frame_prepare, model_w, model_h):
+  update_img = make_update_img_input(frame_prepare, model_w, model_h)
+  def update_both_imgs_tinygrad(calib_img_buffer, new_img, M_inv,
+                                calib_big_img_buffer, new_big_img, M_inv_big):
+    calib_img_pair = update_img(calib_img_buffer, new_img, M_inv)
+    calib_big_img_pair = update_img(calib_big_img_buffer, new_big_img, M_inv_big)
+    return calib_img_pair, calib_big_img_pair
+  return update_both_imgs_tinygrad
 
 MODELS_DIR = Path(__file__).parent / 'models'
 MODEL_W, MODEL_H = MEDMODEL_INPUT_SIZE
@@ -33,29 +66,20 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
 
   full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
   big_full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
-  full_buffer_np = np.zeros(img_buffer_shape, dtype=np.uint8)
-  big_full_buffer_np = np.zeros(img_buffer_shape, dtype=np.uint8)
-
+  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  new_big_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
-    new_frame_np = (32 * np.random.randn(yuv_size).astype(np.float32) + 128).clip(0, 255).astype(np.uint8)
     img_inputs = [full_buffer,
                   Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                   Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
-    new_big_frame_np = (32 * np.random.randn(yuv_size).astype(np.float32) + 128).clip(0, 255).astype(np.uint8)
     big_img_inputs = [big_full_buffer,
                       Tensor.from_blob(new_big_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
                       Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY')]
     inputs = img_inputs + big_img_inputs
     Device.default.synchronize()
 
-    inputs_np = [x.numpy() for x in inputs]
-    inputs_np[0] = full_buffer_np
-    inputs_np[3] = big_full_buffer_np
-
     st = time.perf_counter()
-    out = update_img_jit(*inputs)
-    full_buffer = out[0].contiguous().realize().clone()
-    big_full_buffer = out[2].contiguous().realize().clone()
+    _ = update_img_jit(*inputs)
     mt = time.perf_counter()
     Device.default.synchronize()
     et = time.perf_counter()
@@ -67,7 +91,17 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
   print(f"  Saved to {pkl_path}")
 
   jit = pickle.load(open(pkl_path, "rb"))
-  jit(*inputs)
+  verify_frame = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  verify_big_frame = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  fresh_inputs = [
+    Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize(),
+    Tensor.from_blob(verify_frame.ctypes.data, (yuv_size,), dtype='uint8').realize(),
+    Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY'),
+    Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize(),
+    Tensor.from_blob(verify_big_frame.ctypes.data, (yuv_size,), dtype='uint8').realize(),
+    Tensor(Tensor.randn(3, 3).mul(8).realize().numpy(), device='NPY'),
+  ]
+  jit(*fresh_inputs)
 
 
 class Warp:
@@ -125,8 +159,8 @@ class Warp:
       self.full_buffers['img'], road_blob, self.transforms['img'],
       self.full_buffers['big_img'], wide_blob, self.transforms['big_img'],
     )
-    self.full_buffers['img'], out_road = res[0].realize(), res[1].realize()
-    self.full_buffers['big_img'], out_wide = res[2].realize(), res[3].realize()
+    out_road = res[0].realize()
+    out_wide = res[1].realize()
 
     return {road: out_road, wide: out_wide}
 

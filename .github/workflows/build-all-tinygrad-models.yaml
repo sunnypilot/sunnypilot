@@ -120,6 +120,7 @@ jobs:
     with:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
     secrets: inherit
@@ -157,6 +158,7 @@ jobs:
     with:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
       artifact_suffix: -retry

@@ -23,7 +23,7 @@ DESCRIPTIONS = {
     "other than your own. A comma employee will NEVER ask you to add their GitHub username."
   ),
   'alpha_longitudinal': tr_noop(
-    "<b>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</b><br><br>" +
+    "<b>WARNING: sunnypilot longitudinal control is in alpha for this car and may disable Automatic Emergency Braking (AEB).</b><br><br>" +
     "On this car, sunnypilot defaults to the car's built-in ACC instead of sunnypilot's longitudinal control. " +
     "Enable this to switch to sunnypilot longitudinal control. " +
     "Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha. " +
@@ -36,7 +36,7 @@ class DeveloperLayout(Widget):
   def __init__(self):
     super().__init__()
     self._params = Params()
-    self._is_release = self._params.get_bool("IsReleaseBranch")
+    self._is_release = False  # self._params.get_bool("IsReleaseBranch")
 
     # Build items and keep references for callbacks/state updates
     self._adb_toggle = toggle_item(
@@ -71,6 +71,13 @@ class DeveloperLayout(Widget):
       callback=self._on_long_maneuver_mode,
     )
 
+    self._lat_maneuver_toggle = toggle_item(
+      lambda: tr("Lateral Maneuver Mode"),
+      description="",
+      initial_state=self._params.get_bool("LateralManeuverMode"),
+      callback=self._on_lat_maneuver_mode,
+    )
+
     self._alpha_long_toggle = toggle_item(
       lambda: tr("sunnypilot Longitudinal Control (Alpha)"),
       description=lambda: tr(DESCRIPTIONS["alpha_longitudinal"]),
@@ -93,6 +100,7 @@ class DeveloperLayout(Widget):
       self._ssh_keys,
       self._joystick_toggle,
       self._long_maneuver_toggle,
+      self._lat_maneuver_toggle,
       self._alpha_long_toggle,
       self._ui_debug_toggle,
     ], line_separator=True, spacing=0)
@@ -113,7 +121,7 @@ class DeveloperLayout(Widget):
 
     # Hide non-release toggles on release builds
     # TODO: we can do an onroad cycle, but alpha long toggle requires a deinit function to re-enable radar and not fault
-    for item in (self._joystick_toggle, self._long_maneuver_toggle, self._alpha_long_toggle):
+    for item in (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle):
       item.set_visible(not self._is_release)
 
     # CP gating
@@ -127,11 +135,9 @@ class DeveloperLayout(Widget):
 
       long_man_enabled = ui_state.has_longitudinal_control and ui_state.is_offroad()
       self._long_maneuver_toggle.action_item.set_enabled(long_man_enabled)
-      if not long_man_enabled:
-        self._long_maneuver_toggle.action_item.set_state(False)
-        self._params.put_bool("LongitudinalManeuverMode", False)
     else:
       self._long_maneuver_toggle.action_item.set_enabled(False)
+      self._lat_maneuver_toggle.action_item.set_enabled(False)
       self._alpha_long_toggle.set_visible(False)
 
     # TODO: make a param control list item so we don't need to manage internal state as much here
@@ -141,39 +147,52 @@ class DeveloperLayout(Widget):
       ("SshEnabled", self._ssh_toggle),
       ("JoystickDebugMode", self._joystick_toggle),
       ("LongitudinalManeuverMode", self._long_maneuver_toggle),
+      ("LateralManeuverMode", self._lat_maneuver_toggle),
       ("AlphaLongitudinalEnabled", self._alpha_long_toggle),
       ("ShowDebugInfo", self._ui_debug_toggle),
     ):
       item.action_item.set_state(self._params.get_bool(key))
 
   def _on_enable_ui_debug(self, state: bool):
-    self._params.put_bool("ShowDebugInfo", state)
+    self._params.put_bool("ShowDebugInfo", state, block=True)
     gui_app.set_show_touches(state)
     gui_app.set_show_fps(state)
     gui_app.set_show_mouse_coords(state)
 
   def _on_enable_adb(self, state: bool):
-    self._params.put_bool("AdbEnabled", state)
+    self._params.put_bool("AdbEnabled", state, block=True)
 
   def _on_enable_ssh(self, state: bool):
-    self._params.put_bool("SshEnabled", state)
+    self._params.put_bool("SshEnabled", state, block=True)
 
   def _on_joystick_debug_mode(self, state: bool):
-    self._params.put_bool("JoystickDebugMode", state)
-    self._params.put_bool("LongitudinalManeuverMode", False)
+    self._params.put_bool("JoystickDebugMode", state, block=True)
+    self._params.put_bool("LongitudinalManeuverMode", False, block=True)
     self._long_maneuver_toggle.action_item.set_state(False)
+    self._params.put_bool("LateralManeuverMode", False, block=True)
+    self._lat_maneuver_toggle.action_item.set_state(False)
 
   def _on_long_maneuver_mode(self, state: bool):
-    self._params.put_bool("LongitudinalManeuverMode", state)
-    self._params.put_bool("JoystickDebugMode", False)
+    self._params.put_bool("LongitudinalManeuverMode", state, block=True)
+    self._params.put_bool("JoystickDebugMode", False, block=True)
     self._joystick_toggle.action_item.set_state(False)
+    self._params.put_bool("LateralManeuverMode", False, block=True)
+    self._lat_maneuver_toggle.action_item.set_state(False)
+
+  def _on_lat_maneuver_mode(self, state: bool):
+    self._params.put_bool("LateralManeuverMode", state, block=True)
+    self._params.put_bool("ExperimentalMode", False, block=True)
+    self._params.put_bool("JoystickDebugMode", False, block=True)
+    self._joystick_toggle.action_item.set_state(False)
+    self._params.put_bool("LongitudinalManeuverMode", False, block=True)
+    self._long_maneuver_toggle.action_item.set_state(False)
 
   def _on_alpha_long_enabled(self, state: bool):
     if state:
       def confirm_callback(result: DialogResult):
         if result == DialogResult.CONFIRM:
-          self._params.put_bool("AlphaLongitudinalEnabled", True)
-          self._params.put_bool("OnroadCycleRequested", True)
+          self._params.put_bool("AlphaLongitudinalEnabled", True, block=True)
+          self._params.put_bool("OnroadCycleRequested", True, block=True)
           self._update_toggles()
         else:
           self._alpha_long_toggle.action_item.set_state(False)
@@ -186,6 +205,6 @@ class DeveloperLayout(Widget):
       gui_app.push_widget(dlg)
 
     else:
-      self._params.put_bool("AlphaLongitudinalEnabled", False)
-      self._params.put_bool("OnroadCycleRequested", True)
+      self._params.put_bool("AlphaLongitudinalEnabled", False, block=True)
+      self._params.put_bool("OnroadCycleRequested", True, block=True)
       self._update_toggles()

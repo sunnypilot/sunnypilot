@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from enum import Enum
 
-from cereal import messaging, log, custom
+from cereal import messaging, log, car, custom
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
@@ -26,22 +26,37 @@ class OnroadTimerStatus(Enum):
 
 class UIStateSP:
   def __init__(self):
-    self.CP_SP: custom.CarParamsSP | None = None
     self.params = Params()
+    self.CP_SP: custom.CarParamsSP | None = None
+    self.has_icbm: bool = False
+    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
       "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "liveDelay"
     ]
 
     self.sunnylink_state = SunnylinkState()
-    self.update_params()
 
+    self.active_bundle = None
+    self.blindspot: bool = False
+    self.chevron_metrics = None
+    self.custom_interactive_timeout: int = 0
+    self.developer_ui = None
+    self.hide_v_ego_ui: bool = False
+    self.onroad_brightness: int = 0
     self.onroad_brightness_timer: int = 0
-    self.custom_interactive_timeout: int = self.params.get("InteractivityTimeout", return_default=True)
-    self.reset_onroad_sleep_timer()
-    self.CP_SP: custom.CarParamsSP | None = None
-    self.has_icbm: bool = False
-    self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
+    self.onroad_brightness_timer_param: int = 0
+    self.rainbow_path: bool = False
+    self.road_name_toggle: bool = False
+    self.rocket_fuel: bool = False
+    self.speed_limit_mode = None
+    self.standstill_timer: bool = False
+    self.sunnylink_enabled: bool = False
+    self.torque_bar: bool = False
+    self.enforce_torque_control: bool = False
+    self.custom_torque_params: bool = False
+    self.torque_override_enabled: bool = False
+    self._sp_initialized: bool = False
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -128,6 +143,8 @@ class UIStateSP:
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
       self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
+
+    self._enforce_constraints()
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
@@ -143,9 +160,62 @@ class UIStateSP:
     self.standstill_timer = self.params.get_bool("StandstillTimer")
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.torque_bar = self.params.get_bool("TorqueBar")
+    self.enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
+    self.custom_torque_params = self.params.get_bool("CustomTorqueParams")
+    self.torque_override_enabled = self.params.get_bool("TorqueParamsOverrideEnabled")
+    self.torque_override_lat_accel_factor = float(self.params.get("TorqueParamsOverrideLatAccelFactor", return_default=True))
+    self.torque_override_friction = float(self.params.get("TorqueParamsOverrideFriction", return_default=True))
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
+    self.always_offroad = self.params.get_bool("OffroadMode")
+
+    if not self._sp_initialized:
+      self._sp_initialized = True
+      self.reset_onroad_sleep_timer()
+
+  def _enforce_constraints(self) -> None:
+    has_long = self.has_longitudinal_control
+    CP = self.CP
+
+    if CP is not None:
+      # Angle steering: no torque-based lateral controls
+      if CP.steerControlType == car.CarParams.SteerControlType.angle:
+        self.params.remove("EnforceTorqueControl")
+        self.params.remove("NeuralNetworkLateralControl")
+
+      # Alpha longitudinal: clear if not available
+      if not CP.alphaLongitudinalAvailable:
+        self.params.remove("AlphaLongitudinalEnabled")
+
+      # BSM not available: clear BSM-dependent settings
+      if not CP.enableBsm:
+        self.params.remove("AutoLaneChangeBsmDelay")
+    else:
+      # No CarParams: clear all car-dependent params as safety default
+      self.params.remove("EnforceTorqueControl")
+      self.params.remove("NeuralNetworkLateralControl")
+      self.params.remove("AlphaLongitudinalEnabled")
+
+    # No longitudinal control: no experimental mode or DEC
+    if not has_long:
+      self.params.remove("ExperimentalMode")
+      self.params.remove("DynamicExperimentalControl")
+
+    # ICBM: clear if not available or if full longitudinal control is active
+    if self.CP_SP is not None:
+      if not self.CP_SP.intelligentCruiseButtonManagementAvailable or has_long:
+        self.params.remove("IntelligentCruiseButtonManagement")
+        self.has_icbm = False
+    else:
+      self.params.remove("IntelligentCruiseButtonManagement")
+      self.has_icbm = False
+
+    # Cruise features requiring longitudinal or ICBM
+    if not (has_long or self.has_icbm):
+      self.params.remove("CustomAccIncrementsEnabled")
+      self.params.remove("SmartCruiseControlVision")
+      self.params.remove("SmartCruiseControlMap")
 
 
 class DeviceSP:
@@ -162,7 +232,6 @@ class DeviceSP:
     if _ui_state.onroad_brightness_timer != 0:
       if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
         return max(30.0, cur_brightness)
-      # For AUTO (Default) and Manual modes (while timer running), use standard brightness
       return cur_brightness
 
     # 0: Auto (Default), 1: Auto (Dark), 2: Screen Off

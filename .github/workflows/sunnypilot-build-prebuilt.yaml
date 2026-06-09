@@ -185,7 +185,7 @@ jobs:
           echo "Building sunnypilot's locationd..."
           scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
           echo "Building openpilot's locationd..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
+          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
           echo "Building rest of sunnypilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
@@ -215,8 +215,8 @@ jobs:
             --exclude='**/SConstruct' \
             --exclude='**/SConscript' \
             --exclude='**/.venv/' \
-            --exclude='selfdrive/modeld/models/driving_vision.onnx' \
-            --exclude='selfdrive/modeld/models/driving_policy.onnx' \
+            --exclude='selfdrive/modeld/models/*.onnx*' \
+            --exclude='sunnypilot/modeld*/models/*.onnx*' \
             --exclude='third_party/*x86*' \
             --exclude='third_party/*Darwin*' \
             --delete-excluded \

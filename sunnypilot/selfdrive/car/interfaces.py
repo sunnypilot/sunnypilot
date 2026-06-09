@@ -93,17 +93,14 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
 
 
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
-  CP = CI.CP
-  CP_SP = CI.CP_SP
-
-  enforce_torque = _enforce_torque_lateral_control(CP, params)
-  nnlc_enabled = _initialize_neural_network_lateral_control(CP, CP_SP, params)
-  _initialize_intelligent_cruise_button_management(CP, CP_SP, params)
-  _initialize_torque_lateral_control(CI, CP, enforce_torque, nnlc_enabled)
-  _cleanup_unsupported_params(CP, CP_SP)
+  enforce_torque = _enforce_torque_lateral_control(CI.CP, params)
+  nnlc_enabled = _initialize_neural_network_lateral_control(CI.CP, CI.CP_SP, params)
+  _initialize_intelligent_cruise_button_management(CI.CP, CI.CP_SP, params)
+  _initialize_torque_lateral_control(CI, CI.CP, enforce_torque, nnlc_enabled)
+  _cleanup_unsupported_params(CI.CP, CI.CP_SP)
 
   try:
-    STATSLOGSP.raw('sunnypilot.car_params', CP.to_dict())
+    STATSLOGSP.raw('sunnypilot.car_params', CI.CP.to_dict())
   except RuntimeError:
     pass  # to_dict fails on macOS due to library issues.
   # STATSLOGSP.raw('sunnypilot_params.car_params_sp', CP_SP.to_dict()) # https://github.com/sunnypilot/opendbc/pull/361
