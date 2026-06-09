@@ -1,0 +1,81 @@
+# Page: vehicle (per-brand settings)
+# Compiles to settings_ui.json#vehicle_settings (brand = section id).
+id: vehicle
+label: Vehicle
+icon: vehicle
+order: 99
+kind: vehicle
+sections:
+- id: hyundai
+  title: Hyundai / Kia / Genesis Settings
+  description: ''
+  items:
+  - key: HyundaiLongitudinalTuning
+    widget: multiple_button
+    title: Custom Longitudinal Tuning
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: Dynamic
+    - value: 2
+      label: Predictive
+    visibility:
+    - type: capability
+      field: hyundai_alpha_long_available
+      equals: true
+    enablement:
+    - $ref: '#/macros/offroad'
+    - $ref: '#/macros/longitudinal'
+- id: subaru
+  title: Subaru Settings
+  description: ''
+  items:
+  - key: SubaruStopAndGo
+    widget: toggle
+    title: Stop and Go (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: has_stop_and_go
+      equals: true
+  - key: SubaruStopAndGoManualParkingBrake
+    widget: toggle
+    title: Stop and Go for Manual Parking Brake (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: has_stop_and_go
+      equals: true
+- id: tesla
+  title: Tesla Settings
+  description: ''
+  items:
+  - key: TeslaCoopSteering
+    widget: toggle
+    title: Cooperative Steering (Beta)
+    enablement:
+    - $ref: '#/macros/offroad'
+- id: toyota
+  title: Toyota / Lexus Settings
+  description: ''
+  items:
+  - key: ToyotaEnforceStockLongitudinal
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Enforce Factory Longitudinal Control
+    description: sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+  - key: ToyotaStopAndGoHack
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Stop and Go Hack (Alpha)
+    description: sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only
+      applicable to certain models that are able to use longitudinal control. This is an alpha feature. Use at your own risk.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+    - $ref: '#/macros/longitudinal'
+    - type: param
+      key: ToyotaEnforceStockLongitudinal
+      equals: false

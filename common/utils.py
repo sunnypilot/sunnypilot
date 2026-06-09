@@ -48,7 +48,7 @@ def sudo_write(val: str, path: str) -> None:
 
 def sudo_read(path: str) -> str:
   try:
-    return subprocess.check_output(f"sudo cat {path}", shell=True, encoding='utf8').strip()
+    return subprocess.check_output(["sudo", "cat", "--", path], encoding='utf8').strip()
   except Exception:
     return ""
 
@@ -131,11 +131,11 @@ def get_upload_stream(filepath: str, should_compress: bool) -> tuple[io.Buffered
     return compressed_stream, compressed_size
 
 
-# remove all keys that end in DEPRECATED
+# remove all keys that end in DEPRECATED, plus any "deprecated" group
 def strip_deprecated_keys(d):
   for k in list(d.keys()):
     if isinstance(k, str):
-      if k.endswith('DEPRECATED'):
+      if k.endswith('DEPRECATED') or k == 'deprecated':
         d.pop(k)
       elif isinstance(d[k], dict):
         strip_deprecated_keys(d[k])

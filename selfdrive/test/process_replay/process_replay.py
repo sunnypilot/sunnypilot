@@ -146,6 +146,7 @@ class ProcessContainer:
     self.cfg = copy.deepcopy(cfg)
     self.process = copy.deepcopy(managed_processes[cfg.proc_name])
     self.msg_queue: list[capnp._DynamicStructReader] = []
+    self.last_input_log_mono_time: int = -1
     self.cnt = 0
     self.pm: messaging.PubMaster | None = None
     self.sockets: list[messaging.SubSocket] | None = None
@@ -191,9 +192,9 @@ class ProcessContainer:
     params = Params()
     for k, v in params_config.items():
       if isinstance(v, bool):
-        params.put_bool(k, v)
+        params.put_bool(k, v, block=True)
       else:
-        params.put(k, v)
+        params.put(k, v, block=True)
 
     self.environ_config = environ_config
 
@@ -268,6 +269,7 @@ class ProcessContainer:
       ms = messaging.drain_sock(socket)
       for m in ms:
         m = m.as_builder()
+        assert start_time > 0, "start_time must be positive"
         m.logMonoTime = start_time + int(self.cfg.processing_time * 1e9)
         output_msgs.append(m.as_reader())
     return output_msgs
@@ -294,10 +296,11 @@ class ProcessContainer:
           trigger_empty_recv = any(m.which() == self.cfg.main_pub for m in self.msg_queue)
 
         # get output msgs from previous inputs
-        output_msgs = self.get_output_msgs(msg.logMonoTime)
+        output_msgs = self.get_output_msgs(self.last_input_log_mono_time)
 
         for m in self.msg_queue:
           self.pm.send(m.which(), m.as_builder())
+          self.last_input_log_mono_time = max(self.last_input_log_mono_time, m.logMonoTime)
           # send frames if needed
           if self.vipc_server is not None and m.which() in self.cfg.vision_pubs:
             camera_state = getattr(m, m.which())
@@ -372,8 +375,8 @@ def get_car_params_callback(rc, pm, msgs, fingerprint):
     _CI = get_car(can_recv, lambda _msgs: None, lambda obd: None, params.get_bool("AlphaLongitudinalEnabled"), False, cached_params=cached_params)
     CP, CP_SP = _CI.CP, _CI.CP_SP
 
-  params.put("CarParams", CP.to_bytes())
-  params.put("CarParamsSP", convert_to_capnp(CP_SP).to_bytes())
+  params.put("CarParams", CP.to_bytes(), block=True)
+  params.put("CarParamsSP", convert_to_capnp(CP_SP).to_bytes(), block=True)
 
 
 def card_rcv_callback(msg, cfg, frame):
@@ -513,6 +516,7 @@ CONFIGS = [
     ignore=["logMonoTime"],
     should_recv_callback=MessageBasedRcvCallback("cameraOdometry"),
     tolerance=NUMPY_TOLERANCE,
+    processing_time=0.01,
   ),
   ProcessConfig(
     proc_name="paramsd",
@@ -716,7 +720,7 @@ def _replay_multi_process(
 
     # flush last set of messages from each process
     for container in containers:
-      last_time = log_msgs[-1].logMonoTime if len(log_msgs) > 0 else int(time.monotonic() * 1e9)
+      last_time = container.last_input_log_mono_time if container.last_input_log_mono_time > 0 else int(time.monotonic() * 1e9)
       log_msgs.extend(container.get_output_msgs(last_time))
   finally:
     for container in containers:

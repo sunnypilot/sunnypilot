@@ -35,12 +35,12 @@ def manager_init() -> None:
   params.clear_all(ParamKeyFlag.CLEAR_ON_ONROAD_TRANSITION)
   params.clear_all(ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION)
   params.clear_all(ParamKeyFlag.CLEAR_ON_IGNITION_ON)
-  if build_metadata.release_channel:
-    params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
+  # if build_metadata.release_channel:
+  #   params.clear_all(ParamKeyFlag.DEVELOPMENT_ONLY)
 
   # device boot mode
   if params.get("DeviceBootMode") == 1:  # start in Always Offroad mode
-    params.put_bool("OffroadMode", True)
+    params.put_bool("OffroadMode", True, block=True)
 
   # quick boot
   if params.get_bool("QuickBootToggle") and not PC:
@@ -49,7 +49,7 @@ def manager_init() -> None:
       open(prebuilt_path, 'x').close()
 
   if params.get_bool("RecordFrontLock"):
-    params.put_bool("RecordFront", True)
+    params.put_bool("RecordFront", True, block=True)
 
   if not PC:
     run_migration(params)
@@ -58,7 +58,7 @@ def manager_init() -> None:
   for k in params.all_keys():
     default_value = params.get_default_value(k)
     if default_value is not None and params.get(k) is None:
-      params.put(k, default_value)
+      params.put(k, default_value, block=True)
 
   # Create folders needed for msgq
   try:
@@ -70,16 +70,16 @@ def manager_init() -> None:
 
   # set params
   serial = HARDWARE.get_serial()
-  params.put("Version", build_metadata.openpilot.version)
-  params.put("GitCommit", build_metadata.openpilot.git_commit)
-  params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
-  params.put("GitBranch", build_metadata.channel)
-  params.put("GitRemote", build_metadata.openpilot.git_origin)
-  params.put_bool("IsDevelopmentBranch", build_metadata.development_channel)
-  params.put_bool("IsTestedBranch", build_metadata.tested_channel)
-  params.put_bool("IsReleaseBranch", build_metadata.release_channel)
-  params.put_bool("IsReleaseSpBranch", build_metadata.release_sp_channel)
-  params.put("HardwareSerial", serial)
+  params.put("Version", build_metadata.openpilot.version, block=True)
+  params.put("GitCommit", build_metadata.openpilot.git_commit, block=True)
+  params.put("GitCommitDate", build_metadata.openpilot.git_commit_date, block=True)
+  params.put("GitBranch", build_metadata.channel, block=True)
+  params.put("GitRemote", build_metadata.openpilot.git_origin, block=True)
+  params.put_bool("IsDevelopmentBranch", build_metadata.development_channel, block=True)
+  params.put_bool("IsTestedBranch", build_metadata.tested_channel, block=True)
+  params.put_bool("IsReleaseBranch", build_metadata.release_channel, block=True)
+  params.put_bool("IsReleaseSpBranch", build_metadata.release_sp_channel, block=True)
+  params.put("HardwareSerial", serial, block=True)
 
   # set dongle id
   reg_res = register(show_spinner=True)
@@ -191,7 +191,7 @@ def manager_thread() -> None:
     for param in ("DoUninstall", "DoShutdown", "DoReboot"):
       if params.get_bool(param):
         shutdown = True
-        params.put("LastManagerExitReason", f"{param} {datetime.datetime.now()}")
+        params.put("LastManagerExitReason", f"{param} {datetime.datetime.now()}", block=True)
         cloudlog.warning(f"Shutting down manager - {param} set")
 
     if shutdown:

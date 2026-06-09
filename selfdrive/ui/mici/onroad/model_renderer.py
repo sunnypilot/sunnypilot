@@ -76,7 +76,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     self._torque_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
     self._ll_color_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
-    # Transform matrix (3x3 for car space to screen space)
+    # 3x3 car space -> rect-origin space (draw methods add rect.x/y)
     self._car_space_transform = np.zeros((3, 3), dtype=np.float32)
     self._transform_dirty = True
     self._clip_region = None
@@ -235,7 +235,8 @@ class ModelRenderer(Widget, ModelRendererSP):
     if not self._experimental_mode:
       return
 
-    max_len = min(len(self._path.projected_points) // 2, len(self._acceleration_x))
+    path_pts = self._path.projected_points + np.array([self._rect.x, self._rect.y], dtype=np.float32)
+    max_len = min(len(path_pts) // 2, len(self._acceleration_x))
 
     segment_colors = []
     gradient_stops = []
@@ -243,7 +244,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     i = 0
     while i < max_len:
       # Some points (screen space) are out of frame (rect space)
-      track_y = self._path.projected_points[i][1]
+      track_y = path_pts[i][1]
       if track_y < self._rect.y or track_y > (self._rect.y + self._rect.height):
         i += 1
         continue
@@ -319,14 +320,15 @@ class ModelRenderer(Widget, ModelRendererSP):
     return color
 
   def _draw_lane_lines(self):
-    """Draw lane lines and road edges"""
-    """Two closest lines should be green (lane line or road edges)"""
+    """Draw lane lines and road edges. Two closest lines should be green (lane line or road edges)."""
+    offset = np.array([self._rect.x, self._rect.y], dtype=np.float32)
+
     for i, lane_line in enumerate(self._lane_lines):
       if lane_line.projected_points.size == 0:
         continue
 
       color = self._get_ll_color(float(self._lane_line_probs[i]), i in (1, 2), i in (0, 1))
-      draw_polygon(self._rect, lane_line.projected_points, color)
+      draw_polygon(self._rect, lane_line.projected_points + offset, color)
 
     for i, road_edge in enumerate(self._road_edges):
       if road_edge.projected_points.size == 0:
@@ -334,7 +336,7 @@ class ModelRenderer(Widget, ModelRendererSP):
 
       # if closest lane lines are not confident, make road edges green
       color = self._get_ll_color(float(1.0 - self._road_edge_stds[i]), float(self._lane_line_probs[i + 1]) < 0.25, i == 0)
-      draw_polygon(self._rect, road_edge.projected_points, color)
+      draw_polygon(self._rect, road_edge.projected_points + offset, color)
 
   def _draw_path(self, sm):
     """Draw path with dynamic coloring based on mode and throttle state."""
@@ -348,14 +350,16 @@ class ModelRenderer(Widget, ModelRendererSP):
       self.rainbow_path.draw_rainbow_path(self._rect, self._path)
       return
 
+    path_pts = self._path.projected_points + np.array([self._rect.x, self._rect.y], dtype=np.float32)
+
     if self._experimental_mode:
       # Draw with acceleration coloring
       if ui_state.status == UIStatus.DISENGAGED:
-        draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
+        draw_polygon(self._rect, path_pts, rl.Color(0, 0, 0, 90))
       elif len(self._exp_gradient.colors) > 1:
-        draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
+        draw_polygon(self._rect, path_pts, gradient=self._exp_gradient)
       else:
-        draw_polygon(self._rect, self._path.projected_points, rl.Color(255, 255, 255, 30))
+        draw_polygon(self._rect, path_pts, rl.Color(255, 255, 255, 30))
     else:
       # Blend throttle/no throttle colors based on transition
       blend_factor = round(self._blend_filter.x * 100) / 100
@@ -368,9 +372,9 @@ class ModelRenderer(Widget, ModelRendererSP):
       )
 
       if ui_state.status == UIStatus.DISENGAGED:
-        draw_polygon(self._rect, self._path.projected_points, rl.Color(0, 0, 0, 90))
+        draw_polygon(self._rect, path_pts, rl.Color(0, 0, 0, 90))
       else:
-        draw_polygon(self._rect, self._path.projected_points, gradient=gradient)
+        draw_polygon(self._rect, path_pts, gradient=gradient)
 
   def _draw_lead_indicator(self):
     # Draw lead vehicles if available

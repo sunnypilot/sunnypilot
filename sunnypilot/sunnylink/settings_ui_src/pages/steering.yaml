@@ -1,0 +1,257 @@
+# Page: steering
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: steering
+label: Steering
+icon: steering_wheel
+order: 1
+remote_configurable: true
+description: Lateral control, lane changes, and steering behavior
+sections:
+- id: mads
+  title: Modular Assistive Driving System (MADS)
+  description: ''
+  items:
+  - key: Mads
+    widget: toggle
+    title: Enable Modular Assistive Driving System (MADS)
+    description: Enable MADS. Disable toggle to revert back to stock sunnypilot engagement/disengagement.
+    enablement:
+    - $ref: '#/macros/offroad'
+  sub_panels:
+  - id: mads_settings
+    label: MADS Settings
+    trigger_key: Mads
+    trigger_condition:
+      type: param
+      key: Mads
+      equals: true
+    items:
+    - key: MadsMainCruiseAllowed
+      widget: toggle
+      title: Toggle with Main Cruise
+      description: 'Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.'
+      enablement:
+      - $ref: '#/macros/offroad'
+      - $ref: '#/macros/mads_full_platforms'
+    - key: MadsUnifiedEngagementMode
+      widget: toggle
+      title: Unified Engagement Mode (UEM)
+      description: 'Engage lateral and longitudinal control with cruise control engagement. Note: Once lateral control is
+        engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.'
+      enablement:
+      - $ref: '#/macros/offroad'
+      - $ref: '#/macros/mads_full_platforms'
+    - key: MadsSteeringMode
+      widget: multiple_button
+      title: Steering Mode on Brake Pedal
+      description: Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.
+      options:
+      - value: 0
+        label: Remain Active
+        enablement:
+        - $ref: '#/macros/mads_full_platforms'
+      - value: 1
+        label: Pause
+        enablement:
+        - $ref: '#/macros/mads_full_platforms'
+      - value: 2
+        label: Disengage
+      enablement:
+      - $ref: '#/macros/offroad'
+- id: blinker
+  title: Blinker Control
+  description: Lateral pause behavior during turn signals
+  items:
+  - key: BlinkerPauseLateralControl
+    widget: toggle
+    title: Pause Lateral Control with Blinker
+    description: Pause lateral control with blinker when traveling below the desired speed selected.
+    sub_items:
+    - key: BlinkerMinLateralControlSpeed
+      widget: option
+      title: Minimum Speed to Pause Lateral Control
+      min: 0
+      max: 255
+      step: 5
+      unit:
+        metric: km/h
+        imperial: mph
+      enablement:
+      - type: param
+        key: BlinkerPauseLateralControl
+        equals: true
+    - key: BlinkerLateralReengageDelay
+      widget: option
+      title: Post-Blinker Delay
+      description: Delay before lateral control resumes after the turn signal ends.
+      min: 0
+      max: 10
+      step: 1
+      unit: second
+      enablement:
+      - type: param
+        key: BlinkerPauseLateralControl
+        equals: true
+- id: torque
+  title: Torque Control
+  description: Steering torque tuning and lateral control method
+  enablement:
+  - type: capability
+    field: torque_allowed
+    equals: true
+  items:
+  - key: EnforceTorqueControl
+    widget: toggle
+    title: Enforce Torque Lateral Control
+    description: Enable this to enforce sunnypilot to steer with Torque lateral control.
+    visibility:
+    - type: not
+      condition:
+        type: capability
+        field: steer_control_type
+        equals: angle
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: torque_allowed
+      equals: true
+    - type: param
+      key: NeuralNetworkLateralControl
+      equals: false
+  sub_panels:
+  - id: torque_settings
+    label: Torque Settings
+    trigger_key: EnforceTorqueControl
+    trigger_condition:
+      type: param
+      key: EnforceTorqueControl
+      equals: true
+    items:
+    - key: LiveTorqueParamsToggle
+      widget: toggle
+      title: Self-Tune
+      description: Enables self-tune for Torque lateral control for platforms that do not use Torque lateral control by default.
+      enablement:
+      - $ref: '#/macros/offroad'
+    - key: LiveTorqueParamsRelaxedToggle
+      widget: toggle
+      title: Less Restrict Settings for Self-Tune (Beta)
+      description: Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values.
+      enablement:
+      - $ref: '#/macros/offroad'
+      - type: param
+        key: LiveTorqueParamsToggle
+        equals: true
+    - key: CustomTorqueParams
+      widget: toggle
+      title: Enable Custom Tuning
+      description: Enables custom tuning for Torque lateral control. Modifying Lateral Acceleration Factor and Friction below
+        will override the offline values indicated in the YAML files within "opendbc/car/torque_data". The values will also
+        be used live when "Manual Real-Time Tuning" toggle is enabled.
+      enablement:
+      - $ref: '#/macros/offroad'
+    - key: TorqueParamsOverrideEnabled
+      widget: toggle
+      title: Manual Real-Time Tuning
+      description: Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune.
+        Enabling this toggle overrides Self-Tune values.
+      enablement:
+      - $ref: '#/macros/offroad'
+      - type: param
+        key: CustomTorqueParams
+        equals: true
+    - key: TorqueParamsOverrideLatAccelFactor
+      widget: option
+      title: Lateral Acceleration Factor
+      title_param_suffix:
+        param: TorqueParamsOverrideEnabled
+        values:
+          'true': (Real-Time & Offline)
+          'false': (Offline Only)
+      min: 0.1
+      max: 5.0
+      step: 0.1
+      unit: m/s²
+      enablement:
+      - type: param
+        key: CustomTorqueParams
+        equals: true
+      - type: any
+        conditions:
+        - type: param
+          key: TorqueParamsOverrideEnabled
+          equals: true
+        - type: offroad_only
+    - key: TorqueParamsOverrideFriction
+      widget: option
+      title: Friction
+      title_param_suffix:
+        param: TorqueParamsOverrideEnabled
+        values:
+          'true': (Real-Time & Offline)
+          'false': (Offline Only)
+      min: 0.0
+      max: 1.0
+      step: 0.01
+      enablement:
+      - type: param
+        key: CustomTorqueParams
+        equals: true
+      - type: any
+        conditions:
+        - type: param
+          key: TorqueParamsOverrideEnabled
+          equals: true
+        - type: offroad_only
+    - key: TorqueControlTune
+      widget: multiple_button
+      title: Torque Control Tune Version
+      description: Select the version of Torque Control Tune to use.
+      options:
+      - value: ''
+        label: Default
+      - value: 1.0
+        label: v1.0
+      - value: 0.0
+        label: v0.0
+      enablement:
+      - $ref: '#/macros/offroad'
+- id: lane_change
+  title: Lane Change
+  description: Automatic lane change timing and behavior
+  items:
+  - key: AutoLaneChangeTimer
+    widget: option
+    title: Auto Lane Change by Blinker
+    description: |-
+      Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
+    details: |-
+      Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.
+    options:
+    - value: -1
+      label: 'Off'
+    - value: 0
+      label: Nudge
+    - value: 1
+      label: Nudgeless
+    - value: 2
+      label: 0.5 second
+    - value: 3
+      label: 1 second
+    - value: 4
+      label: 2 seconds
+    - value: 5
+      label: 3 seconds
+  - key: AutoLaneChangeBsmDelay
+    widget: toggle
+    title: 'Auto Lane Change: Delay with Blind Spot'
+    description: Toggle to enable a delay timer for lane changes when blind spot monitoring (BSM) detects a vehicle in your blind
+      spot.
+    enablement:
+    - type: capability
+      field: enable_bsm
+      equals: true
+    - type: param_compare
+      key: AutoLaneChangeTimer
+      op: '>'
+      value: 0

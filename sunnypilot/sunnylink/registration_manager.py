@@ -27,7 +27,7 @@ def main():
     register_sunnylink()
   except Exception:
     cloudlog.exception("Sunnylink registration failed")
-    Params().put_bool("SunnylinkTempFault", True)
+    Params().put_bool("SunnylinkTempFault", True, block=True)
     raise
 
 
