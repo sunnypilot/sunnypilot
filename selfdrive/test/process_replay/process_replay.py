@@ -192,9 +192,9 @@ class ProcessContainer:
     params = Params()
     for k, v in params_config.items():
       if isinstance(v, bool):
-        params.put_bool(k, v)
+        params.put_bool(k, v, block=True)
       else:
-        params.put(k, v)
+        params.put(k, v, block=True)
 
     self.environ_config = environ_config
 
@@ -375,8 +375,8 @@ def get_car_params_callback(rc, pm, msgs, fingerprint):
     _CI = get_car(can_recv, lambda _msgs: None, lambda obd: None, params.get_bool("AlphaLongitudinalEnabled"), False, cached_params=cached_params)
     CP, CP_SP = _CI.CP, _CI.CP_SP
 
-  params.put("CarParams", CP.to_bytes())
-  params.put("CarParamsSP", convert_to_capnp(CP_SP).to_bytes())
+  params.put("CarParams", CP.to_bytes(), block=True)
+  params.put("CarParamsSP", convert_to_capnp(CP_SP).to_bytes(), block=True)
 
 
 def card_rcv_callback(msg, cfg, frame):

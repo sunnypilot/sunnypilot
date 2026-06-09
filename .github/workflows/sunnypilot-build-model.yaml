@@ -164,17 +164,53 @@ jobs:
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}:${{ github.workspace }}"
 
-          # Loop through all .onnx files
+          COMPILE_MODELD="${{ github.workspace }}/sunnypilot/modeld_v2/compile_modeld.py"
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+
+          # Generate metadata for all ONNX files
           find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
-            base_name=$(basename "$onnx_file" .onnx)
-            output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
-
-            echo "Compiling: $onnx_file -> $output_file"
-            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
-            DEV=QCOM FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+            echo "Generating metadata: $onnx_file"
+            env ${TG_FLAGS} python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
           done
+
+          # Detect model type and build compile args
+          VISION_ONNX="${{ env.MODELS_DIR }}/driving_vision.onnx"
+          POLICY_ONNX="${{ env.MODELS_DIR }}/driving_policy.onnx"
+          OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
+          ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
+          SUPERCOMBO_ONNX="${{ env.MODELS_DIR }}/supercombo.onnx"
+
+          MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
+          if [ -f "$VISION_ONNX" ]; then
+            ONNX_ARGS="--vision-onnx $VISION_ONNX"
+            if [ -f "$ON_POLICY_ONNX" ] && [ -f "$OFF_POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_multi_policy
+              ONNX_ARGS="$ONNX_ARGS --off-policy-onnx $OFF_POLICY_ONNX --on-policy-onnx $ON_POLICY_ONNX"
+            elif [ -f "$OFF_POLICY_ONNX" ] && [ -f "$POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_multi_policy
+              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX --off-policy-onnx $OFF_POLICY_ONNX"
+            elif [ -f "$POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_policy
+              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
+            fi
+          elif [ -f "$SUPERCOMBO_ONNX" ]; then
+            MODEL_TYPE=supercombo
+            ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
+          fi
+
+          if [ -n "$MODEL_TYPE" ]; then
+            echo "Detected: $MODEL_TYPE -> driving_tinygrad.pkl"
+            env ${TG_FLAGS} python3 "$COMPILE_MODELD" \
+              --model-type $MODEL_TYPE \
+              --model-size $MODEL_SIZE \
+              --camera-resolutions $CAMERA_RES \
+              $ONNX_ARGS \
+              --output "${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
+          fi
 
       - name: Validate Model Outputs
         run: |
@@ -194,6 +230,8 @@ jobs:
           rsync -avm \
             --include='*.dlc' \
             --include='*.pkl' \
+            --include='*.chunk*' \
+            --include='*.chunkmanifest' \
             --include='*.onnx' \
             --exclude='*' \
             --delete-excluded \

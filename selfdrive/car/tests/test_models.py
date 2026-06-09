@@ -28,6 +28,14 @@ from openpilot.tools.lib.route import SegmentName
 SafetyModel = car.CarParams.SafetyModel
 SteerControlType = structs.CarParams.SteerControlType
 
+# panda safety stores angle_meas in brand-specific CAN units (angle_deg_to_can in opendbc/safety/modes/*.h).
+ANGLE_DEG_TO_CAN = {
+  "tesla": -10,
+  "toyota": 17.452007,
+  "nissan": 100,
+  "psa": 10,
+}
+
 NUM_JOBS = int(os.environ.get("NUM_JOBS", "1"))
 JOB_ID = int(os.environ.get("JOB_ID", "0"))
 INTERNAL_SEG_LIST = os.environ.get("INTERNAL_SEG_LIST", "")
@@ -433,10 +441,17 @@ class TestCarModelBase(unittest.TestCase):
         checks['vEgoRaw'] += (v_ego_raw > (self.safety.get_vehicle_speed_max() + 1e-3) or
                               v_ego_raw < (self.safety.get_vehicle_speed_min() - 1e-3))
 
+      # check steering angle for angle control cars (panda stores angle_meas in CAN units)
+      # ford excluded since it tracks curvature, not steering angle
+      if self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar and self.CP.brand != "ford":
+        angle_can = (CS.steeringAngleDeg + CS.steeringAngleOffsetDeg) * ANGLE_DEG_TO_CAN[self.CP.brand]
+        checks['steeringAngleDeg'] += (angle_can > (self.safety.get_angle_meas_max() + 1) or
+                                       angle_can < (self.safety.get_angle_meas_min() - 1))
+
       # TODO: remove this exception once this mismatch is resolved
       brake_pressed = CS.brakePressed
       if CS.brakePressed and not self.safety.get_brake_pressed_prev():
-        if self.CP.carFingerprint in (HONDA.HONDA_PILOT, HONDA.HONDA_RIDGELINE) and CS.brake > 0.05:
+        if self.CP.carFingerprint in (HONDA.HONDA_PILOT, HONDA.HONDA_RIDGELINE) and CS.brakeDEPRECATED > 0.05:
           brake_pressed = False
       checks['brakePressed'] += brake_pressed != self.safety.get_brake_pressed_prev()
       checks['regenBraking'] += CS.regenBraking != self.safety.get_regen_braking_prev()
