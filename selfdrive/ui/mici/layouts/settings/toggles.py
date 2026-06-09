@@ -22,8 +22,10 @@ class TogglesLayoutMici(NavScroller):
     record_mic = BigParamControl("record & upload mic audio", "RecordAudio", toggle_callback=restart_needed_callback)
     enable_openpilot = BigParamControl("enable sunnypilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback)
     hyundai_radar = BigMultiParamToggle("hyundai radar", "HyundaiRadar", ["off", "lead only", "full radar"])
+    radar_tracks = BigParamControl("radar tracks", "RadarTracks")
 
     self._scroller.add_widgets([
+      radar_tracks,
       self._personality_toggle,
       self._experimental_btn,
       is_metric_toggle,
@@ -37,6 +39,7 @@ class TogglesLayoutMici(NavScroller):
     # Toggle lists
     self._refresh_toggles = (
       ("HyundaiRadar", hyundai_radar),
+      ("RadarTracks", radar_tracks),
       ("ExperimentalMode", self._experimental_btn),
       ("IsMetric", is_metric_toggle),
       ("IsLdwEnabled", ldw_toggle),
