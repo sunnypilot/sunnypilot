@@ -1297,6 +1297,12 @@
               "description": "When enabled, visual turn indicators are drawn on the HUD."
             },
             {
+              "key": "HideCamera",
+              "widget": "toggle",
+              "title": "Hide Camera",
+              "description": "Hide the camera live view from the driving screen."
+            },
+            {
               "key": "RoadNameToggle",
               "widget": "toggle",
               "title": "Display Road Name",
