@@ -62,11 +62,6 @@ def _find_driving_pkl(bundle):
   if _pkl_exists(pkl_path):
     return pkl_path
 
-  fallback = os.path.join(model_root, 'driving_tinygrad.pkl')
-  if _pkl_exists(fallback):
-    return fallback
-  return None
-
 
 class FrameMeta:
   frame_id: int = 0
@@ -125,7 +120,7 @@ class ModelState(ModelStateBase):
       self._vision_input_names = [k for k in model_metadata['input_shapes'] if 'img' in k]
       from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
-      self.input_queues, self.npy = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.DEV)
+      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.DEV)
     else:
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k != 'vision']
@@ -143,7 +138,7 @@ class ModelState(ModelStateBase):
       policy_input_shapes = first_policy_metadata['input_shapes']
       self._vision_input_names = [k for k in vision_input_shapes if 'img' in k]
       frame_skip = derive_frame_skip(vision_input_shapes, policy_input_shapes)
-      self.input_queues, self.npy = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.DEV)
+      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.DEV)
 
     from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
     from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
@@ -183,7 +178,7 @@ class ModelState(ModelStateBase):
 
   @property
   def desire_key(self) -> str:
-    return next(k for k in self.npy if k.startswith('desire'))
+    return next(k for k in self.numpy_inputs if k.startswith('desire'))
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -199,16 +194,16 @@ class ModelState(ModelStateBase):
 
     desire_key = self.desire_key
     inputs[desire_key][0] = 0
-    self.npy[desire_key][:] = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
+    self.numpy_inputs[desire_key][:] = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
     self.prev_desire[:] = inputs[desire_key]
     for key in ('traffic_convention', 'lateral_control_params'):
-      if key in self.npy and key in inputs:
-        self.npy[key][:] = inputs[key]
+      if key in self.numpy_inputs and key in inputs:
+        self.numpy_inputs[key][:] = inputs[key]
 
     road_key = next(n for n in bufs if 'big' not in n)
     wide_key = next(n for n in bufs if 'big' in n)
-    self.npy['tfm'][:, :] = transforms[road_key].reshape(3, 3)
-    self.npy['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
+    self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
+    self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 
     if prepare_only:
       self._warp_enqueue(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
@@ -236,8 +231,8 @@ class ModelState(ModelStateBase):
       if 'planplus' in outputs and 'plan' in outputs:
         outputs['plan'] = outputs['plan'] + outputs['planplus']
 
-    if 'desired_curvature' in outputs and 'prev_desired_curv' in self.npy:
-      buf = self.npy['prev_desired_curv']
+    if 'desired_curvature' in outputs and 'prev_desired_curv' in self.numpy_inputs:
+      buf = self.numpy_inputs['prev_desired_curv']
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
@@ -409,7 +404,7 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
     }
 
-    if 'lateral_control_params' in model.npy:
+    if 'lateral_control_params' in model.numpy_inputs:
       inputs['lateral_control_params'] = np.array([v_ego, lat_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
