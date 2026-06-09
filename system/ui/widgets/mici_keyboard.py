@@ -95,7 +95,7 @@ class Key(Widget):
     self._size_filter.update(size)
 
   def _get_font_size(self) -> int:
-    return int(round(self._size_filter.x))
+    return round(self._size_filter.x)
 
 
 class SmallKey(Key):
@@ -146,8 +146,9 @@ class CapsState(IntEnum):
 
 
 class MiciKeyboard(Widget):
-  def __init__(self):
+  def __init__(self, auto_return_to_letters: str = ""):
     super().__init__()
+    self._auto_return_to_letters = auto_return_to_letters
 
     lower_chars = [
       "qwertyuiop",
@@ -305,6 +306,10 @@ class MiciKeyboard(Widget):
         if self._caps_state == CapsState.UPPER:
           self._set_uppercase(False)
 
+        # Switch back to letters after common URL delimiters
+        if self._closest_key[0].char in self._auto_return_to_letters and self._current_keys in (self._special_keys, self._super_special_keys):
+          self._set_uppercase(False)
+
     # ensure minimum selected animation time
     key_selected_dt = rl.get_time() - (self._selected_key_t or 0)
     cur_t = rl.get_time()
@@ -348,7 +353,7 @@ class MiciKeyboard(Widget):
 
           # draw black circle behind selected key
           circle_alpha = int(self._selected_key_filter.x * 225)
-          rl.draw_circle_gradient(int(key_x + key.rect.width / 2), int(key_y + key.rect.height / 2),
+          rl.draw_circle_gradient(rl.Vector2(key_x + key.rect.width / 2, key_y + key.rect.height / 2),
                                   SELECTED_CHAR_FONT_SIZE, rl.Color(0, 0, 0, circle_alpha), rl.BLANK)
         else:
           # move other keys away from selected key a bit

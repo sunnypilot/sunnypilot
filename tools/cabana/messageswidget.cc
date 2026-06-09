@@ -64,7 +64,7 @@ MessagesWidget::MessagesWidget(QWidget *parent) : menu(new QMenu(this)), QWidget
 
   setWhatsThis(tr(R"(
     <b>Message View</b><br/>
-    <!-- TODO: add descprition here -->
+    <!-- TODO: add description here -->
     <span style="color:gray">Byte color</span><br />
     <span style="color:gray;">■ </span> constant changing<br />
     <span style="color:blue;">■ </span> increasing<br />
@@ -146,7 +146,7 @@ void MessagesWidget::menuAboutToShow() {
   action->setCheckable(true);
   action->setChecked(settings.multiple_lines_hex);
 
-  action = menu->addAction(tr("Show inactive Messages"), model, &MessageListModel::showInactivemessages);
+  action = menu->addAction(tr("Show inactive messages"), model, &MessageListModel::showInactiveMessages);
   action->setCheckable(true);
   action->setChecked(model->show_inactive_messages);
 }
@@ -205,7 +205,7 @@ QVariant MessageListModel::data(const QModelIndex &index, int role) const {
   } else if (role == Qt::ToolTipRole && index.column() == Column::NAME) {
     auto msg = dbc()->msg(item.id);
     auto tooltip = item.name;
-    if (msg && !msg->comment.isEmpty()) tooltip += "<br /><span style=\"color:gray;\">" + msg->comment + "</span>";
+    if (msg && !msg->comment.empty()) tooltip += "<br /><span style=\"color:gray;\">" + QString::fromStdString(msg->comment) + "</span>";
     return tooltip;
   }
   return {};
@@ -216,7 +216,7 @@ void MessageListModel::setFilterStrings(const QMap<int, QString> &filters) {
   filterAndSort();
 }
 
-void MessageListModel::showInactivemessages(bool show) {
+void MessageListModel::showInactiveMessages(bool show) {
   show_inactive_messages = show;
   filterAndSort();
 }
@@ -277,7 +277,7 @@ bool MessageListModel::match(const MessageListModel::Item &item) {
         if (!match) {
           const auto m = dbc()->msg(item.id);
           match = m && std::any_of(m->sigs.cbegin(), m->sigs.cend(),
-                                   [&txt](const auto &s) { return s->name.contains(txt, Qt::CaseInsensitive); });
+                                   [&txt](const auto &s) { return QString::fromStdString(s->name).contains(txt, Qt::CaseInsensitive); });
         }
         break;
       }
@@ -323,8 +323,8 @@ bool MessageListModel::filterAndSort() {
     if (show_inactive_messages || can->isMessageActive(id)) {
       auto msg = dbc()->msg(id);
       Item item = {.id = id,
-                  .name = msg ? msg->name : UNTITLED,
-                  .node = msg ? msg->transmitter : QString()};
+                  .name = msg ? QString::fromStdString(msg->name) : QString::fromStdString(UNTITLED),
+                  .node = msg ? QString::fromStdString(msg->transmitter) : QString()};
       if (match(item))
         items.emplace_back(item);
     }

@@ -19,8 +19,8 @@ DT = 0.05
 def process_messages(estimator, lag_frames, n_frames, vego=20.0, rejection_threshold=0.0):
   for i in range(n_frames):
     t = i * estimator.dt
-    desired_la = np.cos(10 * t) * 0.1
-    actual_la = np.cos(10 * (t - lag_frames * estimator.dt)) * 0.1
+    desired_la = np.cos(10 * t) * 0.3
+    actual_la = np.cos(10 * (t - lag_frames * estimator.dt)) * 0.3
 
     # if sample is masked out, set it to desired value (no lag)
     rejected = random.uniform(0, 1) < rejection_threshold
@@ -53,8 +53,8 @@ class TestLagd:
     msg = messaging.new_message('liveDelay')
     msg.liveDelay.lateralDelayEstimate = random.random()
     msg.liveDelay.validBlocks = random.randint(1, 10)
-    params.put("LiveDelay", msg.to_bytes())
-    params.put("CarParamsPrevRoute", CP.as_builder().to_bytes())
+    params.put("LiveDelay", msg.to_bytes(), block=True)
+    params.put("CarParamsPrevRoute", CP.as_builder().to_bytes(), block=True)
 
     saved_lag_params = retrieve_initial_lag(params, CP)
     assert saved_lag_params is not None

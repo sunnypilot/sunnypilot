@@ -74,7 +74,7 @@ def load_translations(path) -> tuple[dict[str, str], dict[str, list[str]]]:
   translations: msgid -> msgstr
   plurals: msgid -> [msgstr[0], msgstr[1], ...]
   """
-  with open(str(path), encoding='utf-8') as f:
+  with path.open(encoding='utf-8') as f:
     lines = f.readlines()
 
   translations: dict[str, str] = {}
@@ -177,7 +177,7 @@ class Multilang:
       self._plurals = {}
 
   def change_language(self, language_code: str) -> None:
-    self._params.put("LanguageSetting", language_code)
+    self._params.put("LanguageSetting", language_code, block=True)
     self._language = language_code
     self.setup()
 

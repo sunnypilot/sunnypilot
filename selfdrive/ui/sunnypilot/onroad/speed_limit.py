@@ -75,7 +75,7 @@ class SpeedLimitAlertRenderer:
       speed_limit_final_last = ui_state.sm['longitudinalPlanSP'].speedLimit.resolver.speedLimitFinalLast
 
       v_cruise_cluster = ui_state.sm['carState'].vCruiseCluster
-      set_speed = ui_state.sm['controlsState'].vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+      set_speed = ui_state.sm['controlsState'].deprecated.vCruise if v_cruise_cluster == 0.0 else v_cruise_cluster
       if not ui_state.is_metric:
         set_speed *= KM_TO_MILE
 
@@ -164,7 +164,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
 
     v_cruise_cluster = car_state.vCruiseCluster
     self.set_speed = (
-      controls_state.vCruiseDEPRECATED if v_cruise_cluster == 0.0 else v_cruise_cluster
+      controls_state.deprecated.vCruise if v_cruise_cluster == 0.0 else v_cruise_cluster
     )
     self.is_cruise_set = 0 < self.set_speed < SET_SPEED_NA
     self.is_cruise_available = self.set_speed != -1
@@ -227,7 +227,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       arrow_x = sign_rect.x + sign_rect.width + arrow_spacing
       arrow_y = sign_rect.y + (sign_rect.height - txt_icon.height) / 2
       color = rl.Color(255, 255, 255, int(icon_alpha))
-      rl.draw_texture(txt_icon, int(arrow_x), int(arrow_y), color)
+      rl.draw_texture_ex(txt_icon, rl.Vector2(arrow_x, arrow_y), 0.0, 1.0, color)
 
   def _render_vienna(self, rect, val, sub, color, has_limit, alpha=1.0):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)

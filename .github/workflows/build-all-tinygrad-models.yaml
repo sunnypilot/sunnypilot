@@ -34,10 +34,10 @@ jobs:
           echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
           echo "tinygrad_ref is $ref"
 
-      - name: Checkout docs repo (sunnypilot-docs, gh-pages)
+      - name: Checkout docs repo (sunnypilot-models, gh-pages)
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
@@ -120,6 +120,7 @@ jobs:
     with:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
     secrets: inherit
@@ -157,6 +158,7 @@ jobs:
     with:
       upstream_branch: ${{ matrix.model.ref }}
       custom_name: ${{ matrix.model.display_name }}
+      is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
       artifact_suffix: -retry
@@ -202,7 +204,7 @@ jobs:
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}

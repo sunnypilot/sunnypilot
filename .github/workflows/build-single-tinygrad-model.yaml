@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: ''
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
       bypass_push:
         description: 'Bypass pushing to GitLab for build-all'
         required: false
@@ -39,6 +44,11 @@ on:
         description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
       recompiled_dir:
         description: 'Existing recompiled directory number (e.g. 3 for recompiled3)'
         required: true
@@ -82,7 +92,7 @@ jobs:
     with:
       upstream_branch: ${{ inputs.upstream_branch }}
       custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
-      is_20hz: true
+      is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
     secrets: inherit
 
@@ -119,7 +129,7 @@ jobs:
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-docs
+          repository: sunnypilot/sunnypilot-models
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}

@@ -75,6 +75,7 @@ class DeviceLayout(Widget):
     self._power_off_btn.action_item.right_button.set_visible(ui_state.is_offroad())
 
   def show_event(self):
+    super().show_event()
     self._scroller.show_event()
 
   def _render(self, rect):
@@ -107,7 +108,7 @@ class DeviceLayout(Widget):
       self._params.remove("LiveParameters")
       self._params.remove("LiveParametersV2")
       self._params.remove("LiveDelay")
-      self._params.put_bool("OnroadCycleRequested", True)
+      self._params.put_bool("OnroadCycleRequested", True, block=True)
       self._update_calib_description()
 
     dialog = ConfirmDialog(tr("Are you sure you want to reset calibration?"), tr("Reset"), callback=reset_calibration)
@@ -168,7 +169,7 @@ class DeviceLayout(Widget):
 
     def perform_reboot(result: DialogResult):
       if not ui_state.engaged and result == DialogResult.CONFIRM:
-        self._params.put_bool_nonblocking("DoReboot", True)
+        self._params.put_bool("DoReboot", True)
 
     dialog = ConfirmDialog(tr("Are you sure you want to reboot?"), tr("Reboot"), callback=perform_reboot)
     gui_app.push_widget(dialog)
@@ -180,7 +181,7 @@ class DeviceLayout(Widget):
 
     def perform_power_off(result: DialogResult):
       if not ui_state.engaged and result == DialogResult.CONFIRM:
-        self._params.put_bool_nonblocking("DoShutdown", True)
+        self._params.put_bool("DoShutdown", True)
 
     dialog = ConfirmDialog(tr("Are you sure you want to power off?"), tr("Power Off"), callback=perform_power_off)
     gui_app.push_widget(dialog)

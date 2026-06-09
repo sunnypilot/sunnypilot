@@ -75,17 +75,14 @@ class NetworkUI(Widget):
     super().__init__()
     self._wifi_manager = wifi_manager
     self._current_panel: PanelType = PanelType.WIFI
-    self._wifi_panel = WifiManagerUI(wifi_manager)
-    self._advanced_panel = AdvancedNetworkSettings(wifi_manager)
-    self._nav_button = NavButton(tr("Advanced"))
+    self._wifi_panel = self._child(WifiManagerUI(wifi_manager))
+    self._advanced_panel = self._child(AdvancedNetworkSettings(wifi_manager))
+    self._nav_button = self._child(NavButton(tr("Advanced")))
     self._nav_button.set_click_callback(self._cycle_panel)
 
   def show_event(self):
+    super().show_event()
     self._set_current_panel(PanelType.WIFI)
-    self._wifi_panel.show_event()
-
-  def hide_event(self):
-    self._wifi_panel.hide_event()
 
   def _cycle_panel(self):
     if self._current_panel == PanelType.WIFI:
@@ -163,10 +160,6 @@ class AdvancedNetworkSettings(Widget):
 
     self._scroller = Scroller(items, line_separator=True, spacing=0)
 
-    # Set initial config
-    metered = self._params.get_bool("GsmMetered")
-    self._wifi_manager.update_gsm_settings(roaming_enabled, self._params.get("GsmApn") or "", metered)
-
   def _on_network_updated(self, networks: list[Network]):
     self._tethering_action.set_enabled(True)
     self._tethering_action.set_state(self._wifi_manager.is_tethering_active())
@@ -188,9 +181,7 @@ class AdvancedNetworkSettings(Widget):
     self._wifi_manager.set_tethering_active(checked)
 
   def _toggle_roaming(self):
-    roaming_state = self._roaming_action.get_state()
-    self._params.put_bool("GsmRoaming", roaming_state)
-    self._wifi_manager.update_gsm_settings(roaming_state, self._params.get("GsmApn") or "", self._params.get_bool("GsmMetered"))
+    self._params.put_bool("GsmRoaming", self._roaming_action.get_state(), block=True)
 
   def _edit_apn(self):
     def update_apn(result: DialogResult):
@@ -201,9 +192,7 @@ class AdvancedNetworkSettings(Widget):
       if apn == "":
         self._params.remove("GsmApn")
       else:
-        self._params.put("GsmApn", apn)
-
-      self._wifi_manager.update_gsm_settings(self._params.get_bool("GsmRoaming"), apn, self._params.get_bool("GsmMetered"))
+        self._params.put("GsmApn", apn, block=True)
 
     current_apn = self._params.get("GsmApn") or ""
     self._keyboard.reset(min_text_size=0)
@@ -213,9 +202,7 @@ class AdvancedNetworkSettings(Widget):
     gui_app.push_widget(self._keyboard)
 
   def _toggle_cellular_metered(self):
-    metered = self._cellular_metered_action.get_state()
-    self._params.put_bool("GsmMetered", metered)
-    self._wifi_manager.update_gsm_settings(self._params.get_bool("GsmRoaming"), self._params.get("GsmApn") or "", metered)
+    self._params.put_bool("GsmMetered", self._cellular_metered_action.get_state(), block=True)
 
   def _toggle_wifi_metered(self, metered):
     metered_type = {0: MeteredType.UNKNOWN, 1: MeteredType.YES, 2: MeteredType.NO}.get(metered, MeteredType.UNKNOWN)
@@ -305,10 +292,12 @@ class WifiManagerUI(Widget):
                                      disconnected=self._on_disconnected)
 
   def show_event(self):
+    super().show_event()
     # start/stop scanning when widget is visible
     self._wifi_manager.set_active(True)
 
   def hide_event(self):
+    super().hide_event()
     self._wifi_manager.set_active(False)
 
   def _load_icons(self):
