@@ -123,7 +123,7 @@ jobs:
         submodules: true
     - run: ./tools/op.sh setup
     - name: Build openpilot
-      run: scons -j$(nproc)
+      run: scons
     - name: Run unit tests
       timeout-minutes: ${{ contains(runner.name, 'nsc') && 2 || 999 }}
       run: |
@@ -147,7 +147,7 @@ jobs:
         submodules: true
     - run: ./tools/op.sh setup
     - name: Build openpilot
-      run: scons -j$(nproc)
+      run: scons
     - name: Run replay
       timeout-minutes: ${{ contains(runner.name, 'nsc') && 2 || 20 }}
       continue-on-error: ${{ github.ref == 'refs/heads/master' }}
@@ -156,12 +156,22 @@ jobs:
       id: print-diff
       if: always()
       run: cat selfdrive/test/process_replay/diff.txt
+    - name: Print diff report
+      if: always()
+      run: cat selfdrive/test/process_replay/diff_report.txt
     - uses: actions/upload-artifact@v6
       if: always()
       continue-on-error: true
       with:
         name: process_replay_diff.txt
         path: selfdrive/test/process_replay/diff.txt
+    - name: Upload diff report
+      uses: actions/upload-artifact@v6
+      if: always() && github.event_name == 'pull_request'
+      continue-on-error: true
+      with:
+        name: diff_report_${{ github.event.number }}
+        path: selfdrive/test/process_replay/diff_report.txt
     - name: Checkout ci-artifacts
       if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
       uses: actions/checkout@v4
@@ -169,7 +179,7 @@ jobs:
         repository: commaai/ci-artifacts
         ssh-key: ${{ secrets.CI_ARTIFACTS_DEPLOY_KEY }}
         path: ${{ github.workspace }}/ci-artifacts
-    - name: Push refs
+    - name: Prepare refs
       if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
       working-directory: ${{ github.workspace }}/ci-artifacts
       run: |
@@ -181,7 +191,13 @@ jobs:
         echo "${{ github.sha }}" > ref_commit
         git add .
         git commit -m "process-replay refs for ${{ github.repository }}@${{ github.sha }}" || echo "No changes to commit"
-        git push origin process-replay
+    - name: Push refs
+      if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
+      uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e
+      with:
+        timeout_minutes: 2
+        max_attempts: 3
+        command: cd ${{ github.workspace }}/ci-artifacts && git push origin process-replay --force
     - name: Run regen
       if: false
       timeout-minutes: 4
@@ -204,7 +220,7 @@ jobs:
         submodules: true
     - run: ./tools/op.sh setup
     - name: Build openpilot
-      run: scons -j$(nproc)
+      run: scons
     - name: Driving test
       timeout-minutes: 2
       run: |
@@ -225,7 +241,7 @@ jobs:
           submodules: true
       - run: ./tools/op.sh setup
       - name: Build openpilot
-        run: scons -j$(nproc)
+        run: scons
       - name: Create UI Report
         run: |
           source selfdrive/test/setup_xvfb.sh

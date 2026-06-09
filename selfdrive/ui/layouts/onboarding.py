@@ -69,7 +69,7 @@ class TrainingGuide(Widget):
       if self._step == DM_RECORD_STEP:
         yes = rl.check_collision_point_rec(mouse_pos, DM_RECORD_YES_RECT)
         print(f"putting RecordFront to {yes}")
-        ui_state.params.put_bool("RecordFront", yes)
+        ui_state.params.put_bool("RecordFront", yes, block=True)
 
       # Restart training?
       elif self._step == len(self._image_paths) - 1:
@@ -94,7 +94,7 @@ class TrainingGuide(Widget):
   def _render(self, _):
     # Safeguard against fast tapping
     step = min(self._step, len(self._textures) - 1)
-    rl.draw_texture(self._textures[step], 0, 0, rl.WHITE)
+    rl.draw_texture_ex(self._textures[step], rl.Vector2(0, 0), 0.0, 1.0, rl.WHITE)
 
     # progress bar
     if 0 < step < len(STEP_RECTS) - 1:
@@ -156,7 +156,7 @@ class DeclinePage(Widget):
                                  click_callback=self._on_uninstall_clicked)
 
   def _on_uninstall_clicked(self):
-    ui_state.params.put_bool("DoUninstall", True)
+    ui_state.params.put_bool("DoUninstall", True, block=True)
     gui_app.request_close()
 
   def _render(self, _):
@@ -209,8 +209,8 @@ class OnboardingWindow(Widget):
     self._state = OnboardingState.TERMS
 
   def _on_terms_accepted(self):
-    ui_state.params.put("HasAcceptedTerms", terms_version)
-    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp)
+    ui_state.params.put("HasAcceptedTerms", terms_version, block=True)
+    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp, block=True)
     if not self._sunnylink.completed:
       self._state = OnboardingState.SUNNYLINK_CONSENT
     elif not self._training_done:
@@ -219,7 +219,7 @@ class OnboardingWindow(Widget):
       gui_app.pop_widget()
 
   def _on_completed_training(self):
-    ui_state.params.put("CompletedTrainingVersion", training_version)
+    ui_state.params.put("CompletedTrainingVersion", training_version, block=True)
 
   def _render(self, _):
     if self._training_guide is None:
