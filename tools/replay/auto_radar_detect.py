@@ -13,7 +13,6 @@ from msgq.ipc_pyx import IpcError
 from opendbc.car.tests.routes import CarTestRoute, routes
 from openpilot.tools.replay.custom_routes import CUSTOM_ROUTES
 from openpilot.tools.replay.radar_helpers import (
-  RADAR_SPECS,
   build_seen_address_map,
   get_radar_spec,
   is_exclusive_full_range_match,

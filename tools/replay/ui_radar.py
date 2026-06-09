@@ -20,7 +20,6 @@ from openpilot.tools.replay.lib.ui_helpers import (
   UP,
   BLACK,
   GREEN,
-  YELLOW,
   Calibration,
   get_blank_lid_overlay,
   init_plots,
@@ -353,7 +352,8 @@ def ui_thread(addr, route_entries=None, playback="1.0", data_dir=None, prefix="u
     return max(0, int(current_start_seconds + (time.monotonic() - last_replay_started_at) * current_playback))
 
   def connect_streams():
-    nonlocal replay_proc, current_route_name, current_route_model, current_route_idx, current_start_seconds, loading_status, paused, last_replay_started_at, current_playback, playback_ready
+    nonlocal replay_proc, current_route_name, current_route_model, current_route_idx, current_start_seconds, loading_status, paused, \
+             last_replay_started_at, current_playback, playback_ready
 
     if route_entries:
       current_route_name, current_route_model = route_entries[current_route_idx]
@@ -604,7 +604,8 @@ def ui_thread(addr, route_entries=None, playback="1.0", data_dir=None, prefix="u
         f"Playback: {current_playback:.1f}x" if route_entries else "",
         f"Radar state checks: {'ON' if state_checks_enabled else 'OFF'}",
         f"Radar heatmap: {RADAR_HEATMAP_MODES[radar_heatmap_mode_idx]}",
-        "Keys: SPACE play/pause, RIGHT next, LEFT prev, M +/-60s, S +/-10s, +/- speed, C checks, H heatmap, Q quit" if route_entries else "Keys: C checks, H heatmap, Q quit",
+        "Keys: SPACE play/pause, RIGHT next, LEFT prev, M +/-60s, S +/-10s, +/- speed, C checks, H heatmap, Q quit" \
+        if route_entries else "Keys: C checks, H heatmap, Q quit",
       ]
       draw_loading_overlay(font, loading_lines, camera_texture, top_down_texture, hor_mode, 80, 160)
       rl.end_drawing()
