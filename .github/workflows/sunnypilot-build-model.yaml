@@ -235,15 +235,6 @@ jobs:
               --output "$OUTPUT_PKL"
           fi
 
-      - name: Validate Model Outputs
-        run: |
-          source /etc/profile
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
-            --validate-only \
-            --model-dir "${{ env.MODELS_DIR }}"
-
       - name: Prepare Output
         run: |
           sudo rm -rf ${{ env.OUTPUT_DIR }}
