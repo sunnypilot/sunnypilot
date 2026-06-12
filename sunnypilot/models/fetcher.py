@@ -6,11 +6,12 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import time
-
+import os
 import requests
 from requests.exceptions import (SSLError, RequestException, HTTPError)
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware.hw import Paths
 from openpilot.sunnypilot.models.helpers import is_bundle_version_compatible
 
 from cereal import custom
@@ -41,6 +42,19 @@ class ModelParser:
 
     if "chunks" in artifact_data:
       artifact.chunks = [ModelParser._parse_chunk(chunk_data) for chunk_data in artifact_data["chunks"]]
+
+      try:
+        model_dir = Paths.model_root()
+        os.makedirs(model_dir, exist_ok=True)
+        manifest_path = os.path.join(model_dir, f"{artifact.fileName}.chunkmanifest")
+        num_chunks = str(len(artifact.chunks))
+
+        if not os.path.exists(manifest_path) or open(manifest_path).read().strip() != num_chunks:
+          with open(manifest_path, "w") as f:
+            f.write(num_chunks)
+          cloudlog.info(f"Wrote chunk manifest for {artifact.fileName}: {num_chunks} chunks")
+      except Exception as e:
+        cloudlog.warning(f"Failed to write chunk manifest for {artifact.fileName}: {e}")
 
     return artifact
 
@@ -197,5 +211,5 @@ if __name__ == "__main__":
       # Print metadata details
       if model.artifact.chunks:
         print(f"Contains {len(model.artifact.chunks)} chunks.")
-      if model.metadata.fileName:
+      if hasattr(model, 'metadata') and model.metadata and model.metadata.fileName:
         print(f"Metadata: {model.metadata.fileName}, Download URI: {model.metadata.downloadUri.uri}")
