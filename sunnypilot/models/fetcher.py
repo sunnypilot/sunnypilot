@@ -197,4 +197,5 @@ if __name__ == "__main__":
       # Print metadata details
       if model.artifact.chunks:
         print(f"Contains {len(model.artifact.chunks)} chunks.")
-      print(f"Metadata: {model.metadata.fileName}, Download URI: {model.metadata.downloadUri.uri}")
+      if model.metadata.fileName:
+        print(f"Metadata: {model.metadata.fileName}, Download URI: {model.metadata.downloadUri.uri}")

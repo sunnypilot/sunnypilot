@@ -168,15 +168,8 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str, drivi
     artifact_data["chunks"] = chunks_config
 
   return {
-    "type": model_type,
+    "type": "chunked",
     "artifact": artifact_data,
-    "metadata": {
-      "file_name": metadata_file.name,
-      "download_uri": {
-        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/",
-        "sha256": metadata_hash
-      }
-    }
   }
 
 

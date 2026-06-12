@@ -174,7 +174,6 @@ class ModelManagerSP:
 
   async def _process_model(self, model, destination_path: str) -> None:
     """Processes a single model download including verification"""
-    await self._process_artifact(model.metadata, destination_path)
     await self._process_artifact(model.artifact, destination_path)
 
   def _report_status(self) -> None:
