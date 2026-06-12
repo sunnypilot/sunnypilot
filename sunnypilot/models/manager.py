@@ -89,20 +89,16 @@ class ModelManagerSP:
         del self._download_start_times[model.fileName]
 
   async def _download_chunked(self, base_url: str, base_path: str, artifact) -> None:
-    from openpilot.common.file_chunker import get_manifest_path, get_chunk_name
-    manifest_url = get_manifest_path(base_url)
+    from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
+
+    num_chunks = len(artifact.chunks)
+    if num_chunks == 0:
+      raise ValueError("No chunks defined in artifact")
+
     manifest_path = get_manifest_path(base_path)
-
-    async with aiohttp.ClientSession() as session:
-      async with session.get(manifest_url) as resp:
-        if resp.status == 404:
-          raise FileNotFoundError
-        resp.raise_for_status()
-        num_chunks = int((await resp.read()).strip())
-
     self._download_start_times[artifact.fileName] = time.monotonic()
 
-    for i in range(num_chunks):
+    for i, _ in enumerate(artifact.chunks):
       chunk_url = get_chunk_name(base_url, i, num_chunks)
       chunk_path = get_chunk_name(base_path, i, num_chunks)
       chunk_downloaded = 0
@@ -117,7 +113,7 @@ class ModelManagerSP:
               if self.params.get("ModelManager_DownloadIndex") is None:
                 raise Exception("Download cancelled")
               intra = chunk_downloaded / max(chunk_size, 1)
-              progress = min(99, (i + intra) / num_chunks * 100)
+              progress = min(99.0, ((i + intra) / num_chunks) * 100)
               artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
               artifact.downloadProgress.progress = progress
               artifact.downloadProgress.eta = self._calculate_eta(artifact.fileName, progress)
@@ -148,9 +144,9 @@ class ModelManagerSP:
         self._report_status()
         return
 
-      try:
+      if len(artifact.chunks) > 0:
         await self._download_chunked(url, full_path, artifact)
-      except (FileNotFoundError, aiohttp.ClientResponseError):
+      else:
         await self._download_file(url, full_path, artifact)
 
       if not await verify_file(full_path, expected_hash):
@@ -170,18 +166,15 @@ class ModelManagerSP:
       artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
       artifact.downloadProgress.eta = 0
       self._sync_artifact_progress(artifact)
-      self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+      if self.selected_bundle:
+        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
       self._report_status()
       self._download_start_times.pop(artifact.fileName, None)
       raise
 
   async def _process_model(self, model, destination_path: str) -> None:
     """Processes a single model download including verification"""
-    model_artifact = model.artifact
-    metadata_artifact = model.metadata
-
-    await self._process_artifact(metadata_artifact, destination_path)
-    await self._process_artifact(model_artifact, destination_path)
+    await self._process_artifact(model.artifact, destination_path)
 
   def _report_status(self) -> None:
     """Reports current status through messaging system"""
@@ -222,7 +215,8 @@ class ModelManagerSP:
       self.selected_bundle = None
 
     except Exception:
-      self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+      if self.selected_bundle:
+        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
       raise
 
     finally:
