@@ -15,6 +15,7 @@ from openpilot.common.simple_kalman import KF1D
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
+from openpilot.sunnypilot.selfdrive.controls.lib.increased_stop_distance import IncreasedStopDistance
 
 
 # Default lead acceleration decay set to 50% at 1s
@@ -217,9 +218,12 @@ class RadarD:
 
     self.ready = False
 
+    self.increased_stop_distance = IncreasedStopDistance()
+
   def update(self, sm: messaging.SubMaster, rr: car.RadarData):
     self.ready = sm.seen['modelV2']
     self.current_time = 1e-9*max(sm.logMonoTime.values())
+    self.increased_stop_distance.update()
 
     if sm.recv_frame['carState'] != self.last_v_ego_frame:
       self.v_ego = sm['carState'].vEgo
@@ -266,10 +270,12 @@ class RadarD:
         else:
           self.lead_prob_filters[i].update(lead_prob)
 
-      self.radar_state.leadOne = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[0], model_v_ego, self.lead_prob_filters[0].x,
-                                          self.CP, self.CP_SP, low_speed_override=True)
-      self.radar_state.leadTwo = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[1], model_v_ego, self.lead_prob_filters[1].x,
-                                          self.CP, self.CP_SP, low_speed_override=False)
+      lead_one = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[0], model_v_ego, self.lead_prob_filters[0].x,
+                          self.CP, self.CP_SP, low_speed_override=True)
+      lead_two = get_lead(self.v_ego, self.ready, self.tracks, leads_v3[1], model_v_ego, self.lead_prob_filters[1].x,
+                          self.CP, self.CP_SP, low_speed_override=False)
+      self.radar_state.leadOne = self.increased_stop_distance.apply_lead(lead_one)
+      self.radar_state.leadTwo = self.increased_stop_distance.apply_lead(lead_two)
 
   def publish(self, pm: messaging.PubMaster):
     assert self.radar_state is not None

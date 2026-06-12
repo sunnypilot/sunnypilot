@@ -57,6 +57,21 @@ sections:
         type: capability
         field: has_longitudinal_control
         equals: true
+- id: increased_stop_distance
+  title: ''
+  description: ''
+  items:
+  - key: IncreasedStoppedDistance
+    widget: option
+    title: Increased Stopped Distance
+    description: Increase the distance sunnypilot stops behind a stopped lead vehicle or at a red light, in meters.
+    min: 0
+    max: 5
+    step: 1
+    visibility:
+    - $ref: '#/macros/longitudinal'
+    enablement:
+    - $ref: '#/macros/longitudinal'
 - id: custom_acc_increments
   title: Custom ACC Speed Intervals
   description: ''
