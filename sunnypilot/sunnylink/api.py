@@ -30,10 +30,6 @@ class SunnylinkApi(BaseApi):
 
     return super().api_get(endpoint, method, timeout, access_token, session, json, **kwargs)
 
-  def resume_queued(self, timeout=10, **kwargs):
-    sunnylinkId, commaId = self._resolve_dongle_ids()
-    return self.api_get(f"ws/{sunnylinkId}/resume_queued", "POST", timeout, access_token=self.get_token(), **kwargs)
-
   def get_token(self, payload_extra=None, expiry_hours=1):
     # Add your additional data here
     additional_data = {}
@@ -89,7 +85,7 @@ class SunnylinkApi(BaseApi):
       sunnylink_dongle_id = UNREGISTERED_SUNNYLINK_DONGLE_ID
       self._status_update("Public key not found, setting dongle ID to unregistered.")
     else:
-      Params().put("LastSunnylinkPingTime", 0)  # Reset the last ping time to 0 if we are trying to register
+      Params().put("LastSunnylinkPingTime", 0, block=True)  # Reset the last ping time to 0 if we are trying to register
 
       backoff = 1
       while True:
@@ -141,15 +137,15 @@ class SunnylinkApi(BaseApi):
           time.sleep(3)
           break
 
-    self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID)
+    self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID, block=True)
 
     # Set the last ping time to the current time since we were just talking to the API
     last_ping = int((time.monotonic() if successful_registration else start_time) * 1e9)
-    Params().put("LastSunnylinkPingTime", last_ping)
+    Params().put("LastSunnylinkPingTime", last_ping, block=True)
 
     # Disable sunnylink if registration was not successful
     if not successful_registration:
-      Params().put_bool("SunnylinkEnabled", False)
+      Params().put_bool("SunnylinkEnabled", False, block=True)
 
     self.spinner = None
     return sunnylink_dongle_id

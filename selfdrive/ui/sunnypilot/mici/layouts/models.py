@@ -8,6 +8,7 @@ from collections.abc import Callable
 import pyray as rl
 
 from cereal import custom
+from openpilot.sunnypilot.models.default_model import DEFAULT_MODEL
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.ui_state import ui_state, device
@@ -27,7 +28,8 @@ class CurrentModelInfo(Widget):
     subheader_color = rl.Color(255, 255, 255, int(255 * 0.9 * 0.65))
     max_width = int(self._rect.width - 20)
     self.current_model_header = UnifiedLabel(tr("active model"), 48, max_width=max_width, text_color=header_color, font_weight=FontWeight.DISPLAY)
-    self.current_model_text = UnifiedLabel(tr("default model"), 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN, scroll=True)
+    default_text = f"{DEFAULT_MODEL} (Default)".lower()
+    self.current_model_text = UnifiedLabel(default_text, 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN, scroll=True)
 
     self.info_header = UnifiedLabel("cache size", 48, max_width=max_width, text_color=header_color, font_weight=FontWeight.DISPLAY)
     self.info_text = UnifiedLabel("0 mb", 32, max_width=max_width, text_color=subheader_color, font_weight=FontWeight.ROMAN)
@@ -98,7 +100,7 @@ class ModelsLayoutMici(NavScroller):
 
     folders = self._get_grouped_bundles(favorites)
     folder_buttons = []
-    default_btn = BigButton(tr("default model"))
+    default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
     default_btn.set_click_callback(self._select_default)
     folder_buttons.append(default_btn)
 
@@ -168,7 +170,8 @@ class ModelsLayoutMici(NavScroller):
     self._was_downloading = is_downloading
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
-    self.current_model_info.current_model_text.set_text(manager.activeBundle.displayName.lower() if manager.activeBundle.index > 0 else tr("default model"))
+    model_text = manager.activeBundle.displayName.lower() if manager.activeBundle.ref else f"{DEFAULT_MODEL} (Default)".lower()
+    self.current_model_info.current_model_text.set_text(model_text)
     self.current_model_info.info_header.set_text(tr("cache size"))
     self.current_model_info.info_text.set_text(f"{ModelsLayout.calculate_cache_size():.2f} MB")
 

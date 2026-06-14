@@ -9,7 +9,7 @@ from openpilot.system.hardware import HARDWARE
 if __name__ == "__main__":
   CP = car.CarParams(notCar=True, wheelbase=1, steerRatio=10)
   params = Params()
-  params.put("CarParams", CP.to_bytes())
+  params.put("CarParams", CP.to_bytes(), block=True)
 
   if use_tinygrad_modeld := is_tinygrad_model(False, params, CP):
     print("Using TinyGrad modeld")
