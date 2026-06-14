@@ -251,7 +251,7 @@ class TestPowerMonitoring:
   )
   def test_battery_voltage_below_threshold(self, custom_voltage, car_voltage, expected_result):
     if custom_voltage is not None:
-      self.params.put("CustomShutdownVoltage", custom_voltage)
+      self.params.put("CustomShutdownVoltage", custom_voltage, block=True)
 
     pm = PowerMonitoring()
     result = pm.battery_voltage_below_threshold(car_voltage * 1e3)
