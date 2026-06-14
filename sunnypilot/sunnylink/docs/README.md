@@ -97,12 +97,11 @@ The compiler splices a list-context `$ref` into its parent list. Macros may refe
 
 ```
 1. common/params_keys.h               — add/remove the C++ param key
-2. params_metadata.json               — automated via update_params_metadata.py
-3. settings_ui_src/pages/<page>.yaml  — add/edit/remove the item in the right section
-4. python sunnypilot/sunnylink/tools/compile_settings_ui.py
-5. python sunnypilot/sunnylink/tools/validate_settings_ui.py  (or: --check on the compiler)
-6. uv run python -m pytest sunnypilot/sunnylink/tests/   # run regression + compiler tests
-7. commit
+2. settings_ui_src/pages/<page>.yaml  — add/edit/remove the item in the right section
+3. python sunnypilot/sunnylink/tools/compile_settings_ui.py
+4. python sunnypilot/sunnylink/tools/validate_settings_ui.py  (or: --check on the compiler)
+5. uv run python -m pytest sunnypilot/sunnylink/tests/   # run regression + compiler tests
+6. commit
 ```
 
 CI runs `compile_settings_ui.py --check` to fail on hand-edited `settings_ui.json`.
