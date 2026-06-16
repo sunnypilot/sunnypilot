@@ -1,4 +1,7 @@
-sunnypilot Version 2026.001.000 (2026-03-xx)
+sunnypilot Version 2026.002.000 (2026-xx-xx)
+========================
+
+sunnypilot Version 2026.001.000 (2026-05-06)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
   * Complete rewrite of the user interface from Qt C++ to Raylib Python
@@ -66,6 +69,64 @@ sunnypilot Version 2026.001.000 (2026-03-xx)
   * Pause Lateral Control with Blinker: Post-Blinker Delay by @CHaucke89
   * SCC-V: Use p97 for predicted lateral accel by @yasu-oh
   * Controls: Support for Torque Lateral Control v0 Tune by @sunnyhaibin
+  * [TIZI/TICI] ui: ensure null checks for `CarParams` and `CarParamsSP` by @sunnyhaibin
+  * [TIZI/TICI] ui: use `vCruiseCluster` and `vEgoCluster` for SLA `preActive` by @sunnyhaibin
+  * Fix display of values when using use_float_scaling by @CHaucke89
+  * models: fix default & index "0" by @nayan8teen
+  * [TIZI/TICI] visuals: Improved speed limit by @angaz
+  * ICBM: ensure button timers update on disable to clear stale presses by @jamesmikesell
+  * [TIZI/TICI] ui: simplify Smart Cruise Control text rendering by @sunnyhaibin
+  * controlsd: fix steer_limited_by_safety not updating under MADS by @zephleggett
+  * soundd: trigger timeout warning during MADS lateral-only by @zephleggett
+  * pandad: flasher for Rivian long upgrade module by @lukasloetkolben
+  * modeld_v2: tinygrad transformation warp by @Discountchubbs
+  * tools: block `manage_sunnylinkd` in sim startup script by @sunnyhaibin
+  * [MICI] ui: need superclass `_render` in `HudRendererSP` by @sunnyhaibin
+  * [TIZI/TICI] ui: Speed Limit Assist active status by @sunnyhaibin
+  * ui: reimplement "Screen Off" option to Onroad Brightness by @sunnyhaibin
+  * ui: don't hide steering wheel when blindspot disabled by @royjr
+  * ui: Speed Limit Assist `preActive` improvements  by @sunnyhaibin
+  * ui: consolidate Speed Limit Assist `preActive` status rendering by @sunnyhaibin
+  * [MICI] ui: Speed Limit Assist `preActive` status by @sunnyhaibin
+  * sunnypilot modeld: remove thneed modeld by @Discountchubbs
+  * modeld_v2: decouple planplus scaling from accel by @Discountchubbs
+  * sunnylink: Handle exceptions in `getParamsAllKeysV1` to log crashes by @devtekve
+  * [TIZI/TICI] ui: Developer UI cleanup by @sunnyhaibin
+  * [TIZI/TICI] ui: dynamic alert size by @nayan8teen
+  * i18n(fr): Add French translations by @didlawowo
+  * Toyota: Stop and Go Hack (Alpha) by @sunnyhaibin
+  * ui: `AlertFadeAnimator` for longitudinal-related statuses by @sunnyhaibin
+  * pandad: gate unsupported pandas before flashing by @sunnyhaibin
+  * Rivian: Flash xnor's Longitudinal Upgrade Kit prior supported panda check by @lukasloetkolben
+  * [TIZI/TICI] ui: add back gate steering arc behind toggle by @sunnyhaibin
+  * ui: gate Onroad Brightness Delay on readiness by @sunnyhaibin
+  * ui: add new timer options for Onroad Brightness Delay by @sunnyhaibin
+  * [TIZI/TICI] ui: branch switcher is always available by @sunnyhaibin
+  * pandad: always prioritize internal panda by @sunnyhaibin
+  * sunnylinkd: fetch compressed params schema by @sunnyhaibin
+  * sunnypilot locationd: remove unused car_ekf filter by @sunnyhaibin
+  * modeld_v2: update deprecated temporalPose ref by @sunnyhaibin
+  * NNLC: restore pre-v1 PID gains in torque extension by @mmmorks
+  * MADS safety: enable heartbeat and lateral controls mismatch checks by @sunnyhaibin
+  * [MICI] ui: models panel enhancements by @nayan8teen
+  * [TIZI/TICI] ui: fix unintended selection while scrolling in TreeOptionDialog by @TheSecurityDev
+  * tools: script for video concatenation by @Discountchubbs
+  * tools: profile memory usage by @Discountchubbs
+  * [TIZI/TICI] ui: remove per-frame param sync by @sunnyhaibin
+  * [MICI] ui: always offroad by @nayan8teen
+  * controls: always default Torque Lateral Control to v0 Tune by @sunnyhaibin
+  * Revert "controls: always default Torque Lateral Control to v0 Tune" by @sunnyhaibin
+  * Reapply "controls: always default Torque Lateral Control to v0 Tune" (#1806) by @sunnyhaibin
+  * [MICI] ui: add sunnylink info & connectivity check by @nayan8teen
+  * sunnylink: Remove unused API endpoint by @devtekve
+  * DM: wheel touch enforcement in MADS by @sunnyhaibin
+  * torque: show static override values in Dev UI & gate `useParams` on custom torque tune by @sunnyhaibin
+  * MADS: suppress espActive event when long is not engaged by @sunnyhaibin
+  * sunnylink: SDUI by @sunnyhaibin
+  * [MICI] ui: align upstream changes with sunnypilot settings buttons by @nayan8teen
+  * ui: fix cellular toggles by @AmyJeanes
+  * sunnylink: switch athena domain by @devtekve
+  * Platform List: dynamically migrate CarPlatformBundle by @sunnyhaibin
 * What's Changed (sunnypilot/opendbc)
   * Honda: DBC for Accord 9th Generation by @mvl-boston
   * FCA: update tire stiffness values for `RAM_HD` by @dparring
@@ -84,12 +145,25 @@ sunnypilot Version 2026.001.000 (2026-03-xx)
   * Honda: add missing `GasInterceptor` messages to Taiwan Odyssey DBC by @mvl-boston
   * GM: remove `CHEVROLET_EQUINOX_NON_ACC_3RD_GEN` from `dashcamOnly` by @sunnyhaibin
   * GM: remove `CHEVROLET_BOLT_NON_ACC_2ND_GEN` from `dashcamOnly` by @sunnyhaibin
+  * Hyundai Longitudinal: deprecate ramp update for dynamic tune by @Discountchubbs
+  * Rivian: long upgrade messages on bus 1 by @lukasloetkolben
+  * Toyota: Stop and Go Hack (Alpha) by @sunnyhaibin
+  * Toyota: gate Smart DSU behind Alpha Longitudinal by @sunnyhaibin
+  * Toyota: Gas Interceptor always set `standstill_req` by @sunnyhaibin
+  * MADS safety: dedicated `controls_allowed_lateral` by @sunnyhaibin
+  * Platform List: include community supported platforms by @sunnyhaibin
 * New Contributors (sunnypilot/sunnypilot)
   * @TheSecurityDev made their first contribution in "ui: fix sidebar scroll in UI screenshots"
   * @zikeji made their first contribution in "sunnylink: block remote modification of SSH key parameters"
   * @Candy0707 made their first contribution in "[TIZI/TICI] ui: Fix misaligned turn signals and blindspot indicators with sidebar"
   * @CHaucke89 made their first contribution in "Pause Lateral Control with Blinker: Post-Blinker Delay"
   * @yasu-oh made their first contribution in "SCC-V: Use p97 for predicted lateral accel"
+  * @angaz made their first contribution in "[TIZI/TICI] visuals: Improved speed limit"
+  * @jamesmikesell made their first contribution in "ICBM: ensure button timers update on disable to clear stale presses"
+  * @zephleggett made their first contribution in "controlsd: fix steer_limited_by_safety not updating under MADS"
+  * @lukasloetkolben made their first contribution in "pandad: flasher for Rivian long upgrade module"
+  * @didlawowo made their first contribution in "i18n(fr): Add French translations"
+  * @mmmorks made their first contribution in "NNLC: restore pre-v1 PID gains in torque extension"
 * New Contributors (sunnypilot/opendbc)
   * @AmyJeanes made their first contribution in "Tesla: Fix stock LKAS being blocked when MADS is enabled"
   * @mvl-boston made their first contribution in "Honda: Update Clarity brake to renamed DBC message name"
@@ -99,6 +173,20 @@ sunnypilot Version 2026.001.000 (2026-03-xx)
   * @royjr made their first contribution in "HKG: add KIA_FORTE_2019_NON_SCC fingerprint"
   * @ssysm made their first contribution in "Tesla: remove `TESLA_MODEL_X` from `dashcamOnly`"
 * Full Changelog: https://github.com/sunnypilot/sunnypilot/compare/v2025.002.000...v2026.001.000
+************************
+* Synced with commaai's openpilot (v0.11.1)
+  * master commit c001f3c9b490a80e69539f0af6022f6e07ceb721 (April 16, 2026)
+* New driver monitoring model
+* Improved image processing pipeline for driver camera
+* Rivian R1S and R1T 2025 support thanks to lukasloetkolben!
+* New driving model #36798
+  * Fully trained using a learned simulator
+  * Improved longitudinal performance in Experimental mode
+* Reduce comma four standby power usage by 77% to 52 mW
+* Kia K7 2017 support thanks to royjr!
+* Lexus LS 2018 support thanks to Hacheoy!
+* Improved inter-process communication memory efficiency
+* comma four support
 
 sunnypilot Version 2025.002.000 (2025-11-06)
 ========================
