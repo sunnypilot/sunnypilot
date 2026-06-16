@@ -151,8 +151,8 @@ class SmartCruiseControlMap:
         a = 0.5 * TARGET_JERK
         b = self.a_ego
         c = self.v_ego - tv
-        t_a = -1 * ((b**2 - 4 * a * c) ** 0.5 + b) / 2 * a
-        t_b = ((b**2 - 4 * a * c) ** 0.5 - b) / 2 * a
+        t_a = -1 * ((b**2 - 4 * a * c) ** 0.5 + b) / (2 * a)
+        t_b = ((b**2 - 4 * a * c) ** 0.5 - b) / (2 * a)
         if not isinstance(t_a, complex) and t_a > 0:
           t = t_a
         else:
