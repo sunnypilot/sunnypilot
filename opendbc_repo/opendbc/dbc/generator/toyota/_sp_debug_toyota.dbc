@@ -1,0 +1,79 @@
+BO_ 1880 DEBUG: 8 XXX
+ SG_ BLINDSPOTSIDE : 7|8@0+ (1,0) [0|255] "" XXX
+ SG_ BLINDSPOT : 38|1@0+ (1,0) [0|15] "" XXX
+ SG_ BLINDSPOTD1 : 47|8@0+ (1,0) [0|255] "" XXX
+ SG_ BLINDSPOTD2 : 55|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 836 PRE_COLLISION_2: 8 DSU
+ SG_ DSS1GDRV : 7|10@0- (0.1,0) [0|0] "m/s^2" Vector__XXX
+ SG_ DS1STAT2 : 13|3@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ DS1STBK2 : 10|3@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSWAR : 18|1@0+ (1,0) [0|0] "" FCM
+ SG_ PCSALM : 17|1@0+ (1,0) [0|0] "" FCM
+ SG_ PCSOPR : 16|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSABK : 31|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBATRGR : 30|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PPTRGR : 28|1@0+ (1,0) [0|0] "" FCM
+ SG_ IBTRGR : 27|1@0+ (1,0) [0|0] "" FCM
+ SG_ CLEXTRGR : 26|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ IRLT_REQ : 25|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ BRKHLD : 37|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ AVSTRGR : 36|1@0+ (1,0) [0|0] "" SCS
+ SG_ VGRSTRGR : 35|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PREFILL : 33|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBRTRGR : 32|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSDIS : 43|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBPREPMP : 40|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ CHECKSUM : 63|8@0+ (1,0) [0|0] "" XXX
+
+BO_ 713 HYBRID_POWERTRAIN: 8 XXX
+ SG_ COAST_FUEL_CUT : 5|1@0+ (1,0) [0|1] "" XXX
+ SG_ HYBRID_DRIVE_STATE : 11|4@0+ (1,0) [0|15] "" XXX
+
+BO_ 814 BRAKE_HYDRAULIC: 8 XXX
+ SG_ BRAKE_PRESSURE : 15|8@0+ (1,0) [0|255] "" XXX
+ SG_ BRAKE_PRESSURE_COPY1 : 31|8@0+ (1,0) [0|255] "" XXX
+ SG_ BRAKE_PRESSURE_COPY2 : 47|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 971 MOTOR_SPEED_CLUSTER: 7 XXX
+ SG_ CLUSTER_SPEED : 55|8@0+ (1,-21) [0|255] "km/h" XXX
+
+BO_ 896 HYBRID_BATTERY: 8 XXX
+ SG_ HV_SOC_PCT : 55|8@0+ (1,0) [0|100] "%" XXX
+
+BO_ 1654 HV_POWER_INTEGRATOR: 8 XXX
+ SG_ HV_POWER_ACCUM : 39|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 975 HV_INVERTER: 5 XXX
+ SG_ HV_VOLTAGE_LO : 23|8@0+ (1,0) [0|255] "" XXX
+ SG_ HV_CURRENT_LO : 39|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 955 BRAKE_REDUNDANT: 8 XXX
+ SG_ BRAKE_PRESSED_REDUNDANT : 0|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 918 VEHICLE_DRIVE_MODE: 8 XXX
+ SG_ DRIVE_MODE_STATE : 7|8@0+ (1,0) [0|255] "" XXX
+
+CM_ "Sunnypilot Prius TSS2 reverse-engineered signals — route 550a71ee4c7a7fbe/0000038f--6b48497966, 2026-05-19. Confidence: high unless noted.";
+CM_ BO_ 713 "Hybrid powertrain status. 100Hz on bus 0.";
+CM_ SG_ 713 COAST_FUEL_CUT "byte0 bit5. 1 when accelerator lifted at speed -> ICE fuel cut / decel-fuel-cut active. P(=1|coast)=0.95, P(=1|accel)=0.008, P(=1|brake)=0.0. Use: lift detection for accel feedforward, EV-only mode hint.";
+CM_ SG_ 713 HYBRID_DRIVE_STATE "byte1 lower-nibble (bits 8-11). Enum (validated): 4=brake/regen-active, 5-8=coast/cruise levels, 10/12=ICE running active, 11=idle-stop. Not a scalar magnitude. Use: distinguish ICE-on vs EV for accel command shaping.";
+CM_ BO_ 814 "Brake hydraulic. 5Hz on bus 0. Bytes 0,2,4,6 are status/flag bytes (not yet decoded). Saturates 255 under hard brake.";
+CM_ SG_ 814 BRAKE_PRESSURE "byte1. Master cylinder pressure proxy. 0 during coast, 33-45 mean during brake, 254-255 max. NOT same as BRAKE_MODULE.BRAKE_PRESSURE.";
+CM_ SG_ 814 BRAKE_PRESSURE_COPY1 "byte3. Identical to BRAKE_PRESSURE 90% of brake samples. Redundant copy (CRC/safety).";
+CM_ SG_ 814 BRAKE_PRESSURE_COPY2 "byte5. Identical to BRAKE_PRESSURE 90% of brake samples. Redundant copy.";
+CM_ BO_ 971 "Cluster speedometer feed. 10Hz on bus 0.";
+CM_ SG_ 971 CLUSTER_SPEED "byte6. Encoded as raw_byte = v_kph + 21. After (1,-21) factor/offset: km/h matching dashboard speedometer. Corr 0.998 w/ WHEEL_SPEEDS. ~5km/h higher than wheel mean = cluster display bias.";
+CM_ BO_ 896 "HV battery status. 5Hz on bus 0.";
+CM_ SG_ 896 HV_SOC_PCT "byte6. HV battery state-of-charge percent. Validated range 53-62% on route 0000038f (Prius hybrid SoC normal band 40-80%). Use: energy-aware planner — reduce regen demand at high SoC (>70%), lift accel demand at low SoC (<50%).";
+CM_ BO_ 1654 "HV power integrator. 1Hz on bus 0. Slow drift signal, semantic not fully confirmed.";
+CM_ SG_ 1654 HV_POWER_ACCUM "byte4. Slow-drifting integer 0-59, independent of HV_SOC_PCT. Hypothesis: HV power flow accumulator or charging-cycle counter. Needs more routes.";
+CM_ BO_ 975 "HV inverter telemetry. 10Hz on bus 0. 5-byte message.";
+CM_ SG_ 975 HV_VOLTAGE_LO "byte2. Sequential integer 40-53 range. Hypothesis: HV bus voltage low-byte scaled. Moderate corr w/ brake (regen-loaded voltage).";
+CM_ SG_ 975 HV_CURRENT_LO "byte4. Sequential integer 17-36 range. JUMPS -16 at brake-release (regen current cutoff signature). Use: real-time regen current readback for brake-blend tuning.";
+CM_ BO_ 955 "Brake redundant signal. 10Hz on bus 0.";
+CM_ SG_ 955 BRAKE_PRESSED_REDUNDANT "byte0 bit0. 99.9% agreement with BRAKE_MODULE.BRAKE_PRESSED. Safety-redundant copy. Use: cross-check brake state for fault detection.";
+CM_ BO_ 918 "Vehicle drive mode state. 5Hz on bus 0.";
+CM_ SG_ 918 DRIVE_MODE_STATE "byte0. 3 states observed: 185=parked-with-brake, 189=ready-to-drive, 191=ready-no-brake. Transitions on GEAR shifts + brake. Use: more reliable drive-state machine than gear+brake combo.";
+VAL_ 713 HYBRID_DRIVE_STATE 4 "brake_regen_active" 5 "coast_5" 6 "coast_6" 7 "coast_7" 8 "coast_cruise" 10 "ice_active_10" 11 "idle_stop" 12 "ice_active_12";
+VAL_ 918 DRIVE_MODE_STATE 185 "parked_brake" 189 "ready" 191 "ready_no_brake";
