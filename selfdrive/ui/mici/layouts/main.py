@@ -69,6 +69,9 @@ class MiciMainLayout(Scroller):
     # For scroll_to
     return self._body_onroad_layout if ui_state.is_body else self._car_onroad_layout
 
+  def _should_auto_scroll_to_onroad(self) -> bool:
+    return True
+
   def _setup_callbacks(self):
     self._home_layout.set_callbacks(
       on_settings=lambda: gui_app.push_widget(self._settings_layout),
