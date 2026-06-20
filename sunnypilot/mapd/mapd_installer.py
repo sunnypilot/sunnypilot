@@ -30,7 +30,7 @@ def update_installed_version(version: str, params: Params = None) -> None:
   if params is None:
     params = Params()
 
-  params.put("MapdVersion", version)
+  params.put("MapdVersion", version, block=True)
 
 
 class MapdInstallManager:

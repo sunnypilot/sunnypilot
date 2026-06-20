@@ -30,9 +30,9 @@ class LagdToggle:
       steer_actuator_delay = self.CP.steerActuatorDelay
       delay = self.software_delay
       self.lag = (steer_actuator_delay + delay)
-      self.params.put_nonblocking("LagdValueCache", self.lag)
+      self.params.put("LagdValueCache", self.lag)
       return
 
     lateral_delay = lag_msg.liveDelay.lateralDelay
     self.lag = lateral_delay
-    self.params.put_nonblocking("LagdValueCache", self.lag)
+    self.params.put("LagdValueCache", self.lag)

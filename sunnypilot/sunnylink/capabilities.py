@@ -78,6 +78,38 @@ def _bundle_field(bundle: dict | None, key: str) -> str:
   return bundle.get(key, "") if isinstance(bundle, dict) else ""
 
 
+def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
+  """Set brand-specific capabilities from bundle platform or CarParams fallback.
+
+  Bundle (manual car selection) is a pre-fingerprint approximation.
+  CarParams (auto-fingerprint) is the authoritative post-fingerprint source.
+  Mirrors the per-brand update_settings() logic in device UI layouts.
+  """
+  brand = caps["brand"]
+
+  if brand == "hyundai":
+    if bundle_platform:
+      try:
+        unsupported = set().union(*UNSUPPORTED_LONGITUDINAL_CAR.values())
+        caps["hyundai_alpha_long_available"] = HYUNDAI_CAR[bundle_platform] not in unsupported
+      except KeyError:
+        cloudlog.exception(f"capabilities: unknown hyundai platform {bundle_platform!r}")
+    elif CP is not None:
+      caps["hyundai_alpha_long_available"] = bool(CP.alphaLongitudinalAvailable)
+
+  elif brand == "subaru":
+    if bundle_platform:
+      try:
+        flags = SUBARU_CAR[bundle_platform].config.flags
+        caps["subaru_has_sng"] = not bool(flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
+        caps["has_stop_and_go"] = caps["subaru_has_sng"]
+      except KeyError:
+        cloudlog.exception(f"capabilities: unknown subaru platform {bundle_platform!r}")
+    elif CP is not None:
+      caps["subaru_has_sng"] = not bool(CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
+      caps["has_stop_and_go"] = caps["subaru_has_sng"]
+
+
 def generate_capabilities(params: Params | None = None) -> dict:
   """Generate a SettingsCapabilities dict from CarParams + boolean params.
 
@@ -108,6 +140,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
     caps["brand"] = bundle_brand
 
   # CarParams-derived capabilities
+  CP = None
   CP_bytes = params.get("CarParamsPersistent")
   if CP_bytes is not None:
     try:
@@ -129,6 +162,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
       # Generic SnG fallback. Brand-specific opaque flags below override.
       caps["has_stop_and_go"] = bool(CP.openpilotLongitudinalControl)
     except Exception:
+      CP = None
       cloudlog.exception("capabilities: failed to deserialize CarParamsPersistent")
 
   # CarParamsSP-derived capabilities
@@ -142,23 +176,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
     except Exception:
       cloudlog.exception("capabilities: failed to deserialize CarParamsSPPersistent")
 
-  # Brand-specific opaque flags. Mirror Raylib brand-settings logic so the
-  # device and the dashboard agree on per-platform availability without
-  # leaking the platform identifier over the wire.
-  if caps["brand"] == "subaru" and bundle_platform:
-    try:
-      flags = SUBARU_CAR[bundle_platform].config.flags
-      caps["subaru_has_sng"] = not bool(flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
-      caps["has_stop_and_go"] = caps["subaru_has_sng"]
-    except KeyError:
-      cloudlog.exception(f"capabilities: unknown subaru platform {bundle_platform!r}")
-
-  if caps["brand"] == "hyundai" and bundle_platform:
-    try:
-      unsupported = set().union(*UNSUPPORTED_LONGITUDINAL_CAR.values())
-      caps["hyundai_alpha_long_available"] = HYUNDAI_CAR[bundle_platform] not in unsupported
-    except KeyError:
-      cloudlog.exception(f"capabilities: unknown hyundai platform {bundle_platform!r}")
+  _resolve_brand_capabilities(caps, bundle_platform, CP)
 
   return caps
 

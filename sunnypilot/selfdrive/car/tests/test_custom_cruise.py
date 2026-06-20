@@ -21,9 +21,9 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
   def reset_custom_params(self) -> None:
     """Reset to default custom ACC parameters"""
-    self.params.put_bool("CustomAccIncrementsEnabled", False)
-    self.params.put("CustomAccShortPressIncrement", 1)
-    self.params.put("CustomAccLongPressIncrement", 5)
+    self.params.put_bool("CustomAccIncrementsEnabled", False, block=True)
+    self.params.put("CustomAccShortPressIncrement", 1, block=True)
+    self.params.put("CustomAccLongPressIncrement", 5, block=True)
     self.v_cruise_helper.read_custom_set_speed_params()
 
   def press_button_short(self, button_type: car.CarState.ButtonEvent.Type) -> None:
@@ -51,9 +51,9 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
   def set_custom_increments(self, enabled: bool, short_inc: int, long_inc: int) -> None:
     """Set custom ACC increment parameters"""
-    self.params.put_bool("CustomAccIncrementsEnabled", enabled)
-    self.params.put("CustomAccShortPressIncrement", short_inc)
-    self.params.put("CustomAccLongPressIncrement", long_inc)
+    self.params.put_bool("CustomAccIncrementsEnabled", enabled, block=True)
+    self.params.put("CustomAccShortPressIncrement", short_inc, block=True)
+    self.params.put("CustomAccLongPressIncrement", long_inc, block=True)
     self.v_cruise_helper.read_custom_set_speed_params()
 
   def test_default_behavior_when_disabled(self):

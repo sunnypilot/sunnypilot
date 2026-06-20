@@ -414,7 +414,7 @@ def main():
       pm.send('liveDelay', lag_msg_dat)
 
       if sm.frame % 1200 == 0: # cache every 60 seconds
-        params.put_nonblocking("LiveDelay", lag_msg_dat)
+        params.put("LiveDelay", lag_msg_dat)
 
       if sm.frame % 60 == 0:  # read from and write to params every 3 seconds
         lagd_toggle.update(lag_msg)

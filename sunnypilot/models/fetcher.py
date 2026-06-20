@@ -110,13 +110,13 @@ class ModelCache:
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""
-    self.params.put(self._CACHE_KEY, data)
-    self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9))
+    self.params.put(self._CACHE_KEY, data, block=True)
+    self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9), block=True)
 
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v16.json"
+  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v17.json"
 
   def __init__(self, params: Params):
     self.params = params
