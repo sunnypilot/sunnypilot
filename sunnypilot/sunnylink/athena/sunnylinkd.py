@@ -41,7 +41,6 @@ LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require a change on sidebar.cc
 DISALLOW_LOG_UPLOAD = threading.Event()
-METADATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "params_metadata.json")
 
 params = Params()
 
@@ -126,7 +125,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
         cloudlog.debug("sunnylinkd.ws_recv.pong")
         last_ping = int(time.monotonic() * 1e9)
-        Params().put("LastSunnylinkPingTime", last_ping)
+        Params().put("LastSunnylinkPingTime", last_ping, block=True)
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > SUNNYLINK_RECONNECT_TIMEOUT_S * 1e9:
@@ -168,39 +167,6 @@ def toggleLogUpload(enabled: bool):
 def getParamsAllKeys() -> list[str]:
   keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
   return keys
-
-
-@dispatcher.add_method
-def getParamsAllKeysV1() -> dict[str, str]:
-  try:
-    with open(METADATA_PATH) as f:
-      metadata = json.load(f)
-  except Exception:
-    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.metadata.exception")
-    metadata = {}
-
-  try:
-    available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
-
-    params_dict: dict[str, list[dict[str, str | bool | int | object | dict | None]]] = {"params": []}
-    for key in available_keys:
-      value = get_param_as_byte(key, get_default=True)
-
-      param_entry = {
-        "key": key,
-        "type": int(params.get_type(key).value),
-        "default_value": base64.b64encode(value).decode('utf-8') if value else None,
-      }
-
-      if key in metadata:
-        meta_copy = metadata[key].copy()
-        param_entry["_extra"] = meta_copy
-
-      params_dict["params"].append(param_entry)
-    return {"keys": json.dumps(params_dict.get("params", []))}
-  except Exception:
-    cloudlog.exception("sunnylinkd.getParamsAllKeysV1.exception")
-    raise
 
 
 @dispatcher.add_method
@@ -281,7 +247,7 @@ def saveParams(params_to_update: dict[str, str], compression: bool = False) -> N
   # Increment version counter for frontend change detection
   try:
     current = int(params.get("ParamsVersion") or "0")
-    params.put("ParamsVersion", str(current + 1))
+    params.put("ParamsVersion", str(current + 1), block=True)
   except Exception:
     pass
 

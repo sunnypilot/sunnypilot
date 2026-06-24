@@ -170,7 +170,7 @@ class ModelsLayoutMici(NavScroller):
     self._was_downloading = is_downloading
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
-    model_text = manager.activeBundle.displayName.lower() if manager.activeBundle.index > 0 else f"{DEFAULT_MODEL} (Default)".lower()
+    model_text = manager.activeBundle.displayName.lower() if manager.activeBundle.ref else f"{DEFAULT_MODEL} (Default)".lower()
     self.current_model_info.current_model_text.set_text(model_text)
     self.current_model_info.info_header.set_text(tr("cache size"))
     self.current_model_info.info_text.set_text(f"{ModelsLayout.calculate_cache_size():.2f} MB")

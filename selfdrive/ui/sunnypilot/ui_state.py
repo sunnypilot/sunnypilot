@@ -37,8 +37,25 @@ class UIStateSP:
 
     self.sunnylink_state = SunnylinkState()
 
-    self.onroad_brightness_timer: int = 0
+    self.active_bundle = None
+    self.blindspot: bool = False
+    self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
+    self.developer_ui = None
+    self.hide_v_ego_ui: bool = False
+    self.onroad_brightness: int = 0
+    self.onroad_brightness_timer: int = 0
+    self.onroad_brightness_timer_param: int = 0
+    self.rainbow_path: bool = False
+    self.road_name_toggle: bool = False
+    self.rocket_fuel: bool = False
+    self.speed_limit_mode = None
+    self.standstill_timer: bool = False
+    self.sunnylink_enabled: bool = False
+    self.torque_bar: bool = False
+    self.enforce_torque_control: bool = False
+    self.custom_torque_params: bool = False
+    self.torque_override_enabled: bool = False
     self._sp_initialized: bool = False
 
   def update(self) -> None:
@@ -162,6 +179,10 @@ class UIStateSP:
     CP = self.CP
 
     if CP is not None:
+      if self.params.get_bool("EnforceTorqueControl") and self.params.get_bool("NeuralNetworkLateralControl"):
+        self.params.put_bool("EnforceTorqueControl", False, block=True)
+        self.params.put_bool("NeuralNetworkLateralControl", False, block=True)
+
       # Angle steering: no torque-based lateral controls
       if CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.params.remove("EnforceTorqueControl")
