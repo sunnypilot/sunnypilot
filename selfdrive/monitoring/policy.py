@@ -121,7 +121,7 @@ def face_orientation_from_model(orient_model, pos_model, rpy_calib):
 
 
 class DriverMonitoring:
-  def __init__(self, rhd_saved=False, settings=None, always_on=False):
+  def __init__(self, rhd_saved=False, settings=None, always_on=False, disabled=False):
     # init policy settings
     self.settings = settings if settings is not None else DRIVER_MONITOR_SETTINGS()
 
@@ -134,6 +134,7 @@ class DriverMonitoring:
 
     self.alert_level = AlertLevel.none
     self.always_on = always_on
+    self.disabled = disabled  # test-only: bypass driver awareness, never alert
     self.distracted_types = defaultdict(bool)
     self.driver_distracted = False
     self.driver_distraction_filter = FirstOrderFilter(0., self.settings._DISTRACTED_FILTER_TS, DT_DMON)
@@ -298,6 +299,11 @@ class DriverMonitoring:
   def _update_events(self, driver_engaged, op_engaged, standstill, wrong_gear):
     self.alert_level = AlertLevel.none
     self.driver_interacting = driver_engaged
+
+    if self.disabled:
+      # test-only: treat the driver as always attentive so no distraction alerts fire
+      self._reset_awareness()
+      return
 
     if self.terminal_alert_cnt >= self.settings._MAX_TERMINAL_ALERTS or \
        self.terminal_time >= self.settings._MAX_TERMINAL_DURATION:
