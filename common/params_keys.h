@@ -80,7 +80,6 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"LiveDelay", {PERSISTENT | BACKUP, BYTES}},
     {"LiveParameters", {PERSISTENT, JSON}},
     {"LiveParametersV2", {PERSISTENT, BYTES}},
-    {"LivestreamEncoderBitrate", {CLEAR_ON_MANAGER_START | DONT_LOG, INT}},
     {"LiveTorqueParameters", {PERSISTENT | DONT_LOG, BYTES}},
     {"LocationFilterInitialState", {PERSISTENT, BYTES}},
     {"LateralManeuverMode", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL}},
