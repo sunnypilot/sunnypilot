@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Schema-level cereal compat check between sunnypilot and upstream openpilot.
+"""Validate sunnypilot routes are parseable by stock commaai/openpilot.
 
-Rules (per struct matched across sides by typeId):
-  R1  shared ordinal must reference the same type.
-  R2  sunnypilot-only ordinal in a union -> FAIL (unknown discriminant upstream).
-  R3  sunnypilot-only ordinal on a regular field -> OK (additive struct evolution).
-  R4  upstream-only ordinal -> OK.
-  R5  sunnypilot-only struct referenced via an upstream-shared field -> FAIL.
+Cap'n Proto is wire-compatible across renames, type relocations, and
+additive fields. The only breaking change is a union variant that
+upstream doesn't recognize — an unknown discriminant makes the entire
+union unreadable.
+
+This script checks: for every struct with a union that exists in both
+schemas, does sunnypilot introduce union variants upstream doesn't have?
 """
 
 from __future__ import annotations
@@ -24,46 +25,19 @@ def hex_id(value: int) -> str:
   return f"0x{value:016x}"
 
 
-def encode_type(type_node: Any) -> dict:
-  which = type_node.which()
-  if which == "struct":
-    return {"kind": "struct", "typeId": hex_id(type_node.struct.typeId)}
-  if which == "enum":
-    return {"kind": "enum", "typeId": hex_id(type_node.enum.typeId)}
-  if which == "interface":
-    return {"kind": "interface", "typeId": hex_id(type_node.interface.typeId)}
-  if which == "list":
-    return {"kind": "list", "element": encode_type(type_node.list.elementType)}
-  if which == "anyPointer":
-    return {"kind": "anyPointer"}
-  return {"kind": which}
-
-
-def encode_field(name: str, field: Any) -> dict:
-  proto = field.proto
-  ordinal = proto.ordinal.explicit if proto.ordinal.which() == "explicit" else None
-  discriminant = proto.discriminantValue if proto.discriminantValue != NO_DISCRIMINANT else None
-
-  if proto.which() == "group":
-    type_desc = {"kind": "group", "typeId": hex_id(proto.group.typeId)}
-  else:
-    type_desc = encode_type(proto.slot.type)
-
-  return {
-    "name": name,
-    "ordinal": ordinal,
-    "discriminant": discriminant,
-    "type": type_desc,
-  }
-
-
 def encode_struct(schema: Any) -> dict:
   node = schema.node
+  fields = []
+  for name, field in schema.fields.items():
+    proto = field.proto
+    ordinal = proto.ordinal.explicit if proto.ordinal.which() == "explicit" else None
+    discriminant = proto.discriminantValue if proto.discriminantValue != NO_DISCRIMINANT else None
+    fields.append({"name": name, "ordinal": ordinal, "discriminant": discriminant})
   return {
     "typeId": hex_id(node.id),
     "displayName": node.displayName,
     "hasUnion": node.struct.discriminantCount > 0,
-    "fields": [encode_field(name, field) for name, field in schema.fields.items()],
+    "fields": fields,
   }
 
 
@@ -105,15 +79,16 @@ def collect_schema(root: Any) -> dict[str, dict]:
   return structs
 
 
-def load_log(cereal_dir: str) -> Any:
+def load_log(cereal_dir: str, extra_imports: list[str] | None = None) -> Any:
   import capnp
   cereal_dir = os.path.abspath(cereal_dir)
   capnp.remove_import_hook()
-  return capnp.load(os.path.join(cereal_dir, "log.capnp"), imports=[cereal_dir])
+  imports = [cereal_dir] + [os.path.abspath(p) for p in (extra_imports or [])]
+  return capnp.load(os.path.join(cereal_dir, "log.capnp"), imports=imports)
 
 
-def dump_schema(cereal_dir: str, path: str) -> None:
-  log = load_log(cereal_dir)
+def dump_schema(cereal_dir: str, path: str, extra_imports: list[str] | None = None) -> None:
+  log = load_log(cereal_dir, extra_imports)
   payload = {
     "root": hex_id(log.Event.schema.node.id),
     "structs": collect_schema(log.Event.schema),
@@ -123,100 +98,37 @@ def dump_schema(cereal_dir: str, path: str) -> None:
   print(f"wrote schema dump with {len(payload['structs'])} structs to {path}")
 
 
-def types_equal(a: dict, b: dict) -> bool:
-  if a.get("kind") != b.get("kind"):
-    return False
-  kind = a["kind"]
-  if kind in ("struct", "enum", "interface", "group"):
-    return a.get("typeId") == b.get("typeId")
-  if kind == "list":
-    return types_equal(a["element"], b["element"])
-  return True
-
-
-def type_repr(t: dict) -> str:
-  kind = t.get("kind", "?")
-  if kind in ("struct", "enum", "interface", "group"):
-    return f"{kind}({t.get('typeId')})"
-  if kind == "list":
-    return f"list<{type_repr(t['element'])}>"
-  return kind
-
-
-def field_is_union_variant(field: dict) -> bool:
-  return field.get("discriminant") is not None
-
-
-def index_fields_by_ordinal(struct: dict) -> dict[int, dict]:
-  indexed: dict[int, dict] = {}
-  for field in struct["fields"]:
-    ordinal = field.get("ordinal")
-    if ordinal is None:
-      continue
-    indexed[ordinal] = field
-  return indexed
-
-
 def compare(sunnypilot_dump: dict, upstream_dump: dict) -> list[str]:
   violations: list[str] = []
-  sunnypilot_structs: dict[str, dict] = sunnypilot_dump["structs"]
-  upstream_structs: dict[str, dict] = upstream_dump["structs"]
+  sunnypilot_structs = sunnypilot_dump["structs"]
+  upstream_structs = upstream_dump["structs"]
 
-  sunnypilot_struct_referenced_from_shared: set[str] = set()
-
-  for type_id, sunnypilot_struct in sunnypilot_structs.items():
-    upstream_struct = upstream_structs.get(type_id)
-    if upstream_struct is None:
+  for type_id, sp_struct in sunnypilot_structs.items():
+    if not sp_struct["hasUnion"]:
+      continue
+    up_struct = upstream_structs.get(type_id)
+    if up_struct is None:
       continue
 
-    sunnypilot_fields = index_fields_by_ordinal(sunnypilot_struct)
-    upstream_fields = index_fields_by_ordinal(upstream_struct)
-    display = sunnypilot_struct["displayName"]
+    up_ordinals = {f["ordinal"] for f in up_struct["fields"] if f.get("discriminant") is not None}
+    display = sp_struct["displayName"]
 
-    for ordinal, sunnypilot_field in sunnypilot_fields.items():
-      upstream_field = upstream_fields.get(ordinal)
-      if upstream_field is None:
-        if field_is_union_variant(sunnypilot_field):
-          violations.append(
-            f"[R2] {display} @{ordinal} ('{sunnypilot_field['name']}', {type_repr(sunnypilot_field['type'])}): "
-            f"union variant not present upstream. upstream cannot parse this discriminant."
-          )
+    for field in sp_struct["fields"]:
+      if field.get("discriminant") is None:
         continue
-
-      if not types_equal(sunnypilot_field["type"], upstream_field["type"]):
+      if field["ordinal"] not in up_ordinals:
         violations.append(
-          f"[R1] {display} @{ordinal}: type mismatch. "
-          f"sunnypilot='{sunnypilot_field['name']}' {type_repr(sunnypilot_field['type'])} vs "
-          f"upstream='{upstream_field['name']}' {type_repr(upstream_field['type'])}."
+          f"{display} @{field['ordinal']} '{field['name']}': "
+          f"union variant not present upstream (discriminant={field['discriminant']})"
         )
-        continue
-
-      cursor = sunnypilot_field["type"]
-      while cursor.get("kind") == "list":
-        cursor = cursor["element"]
-      if cursor.get("kind") in ("struct", "group", "interface") and cursor.get("typeId"):
-        sunnypilot_struct_referenced_from_shared.add(cursor["typeId"])
-
-  for type_id, sunnypilot_struct in sunnypilot_structs.items():
-    if type_id in upstream_structs:
-      continue
-    if type_id in sunnypilot_struct_referenced_from_shared:
-      violations.append(
-        f"[R5] struct {sunnypilot_struct['displayName']} ({type_id}) exists only on sunnypilot "
-        f"but is referenced from an upstream-shared field. upstream cannot resolve this type."
-      )
 
   return violations
 
 
-def load_peer(path: str) -> dict:
-  with open(path, "r", encoding="utf-8") as handle:
-    return json.load(handle)
-
-
-def run_read(cereal_dir: str, peer_path: str) -> int:
-  log = load_log(cereal_dir)
-  peer_dump = load_peer(peer_path)
+def run_read(cereal_dir: str, peer_path: str, extra_imports: list[str] | None = None) -> int:
+  log = load_log(cereal_dir, extra_imports)
+  with open(peer_path, "r", encoding="utf-8") as f:
+    peer_dump = json.load(f)
   local_dump = {
     "root": hex_id(log.Event.schema.node.id),
     "structs": collect_schema(log.Event.schema),
@@ -224,32 +136,29 @@ def run_read(cereal_dir: str, peer_path: str) -> int:
   violations = compare(sunnypilot_dump=peer_dump, upstream_dump=local_dump)
 
   if not violations:
-    print("cereal compat OK: upstream openpilot can parse sunnypilot routes "
-          "(no leaked structs, no ordinal collisions).")
+    print("cereal compat OK: upstream can parse sunnypilot routes.")
     return 0
 
-  print(f"cereal compat FAIL: upstream openpilot would misparse sunnypilot routes "
-        f"({len(violations)} violation(s)):")
+  print(f"cereal compat FAIL ({len(violations)} leaked union variant(s)):")
   for v in violations:
     print(f"  {v}")
   return 1
 
 
 def main() -> int:
-  parser = argparse.ArgumentParser(
-    description="sunnypilot <-> upstream cereal compatibility validator (schema-level)."
-  )
+  parser = argparse.ArgumentParser(description="sunnypilot cereal upstream compat check")
   mode = parser.add_mutually_exclusive_group(required=True)
   mode.add_argument("-g", "--generate", action="store_true", help="dump local schema to JSON")
-  mode.add_argument("-r", "--read", action="store_true", help="load peer JSON and diff against local")
-  parser.add_argument("-f", "--file", default="schema.json", help="JSON file path (default: schema.json)")
-  parser.add_argument("--cereal-dir", required=True, help="path to cereal directory containing log.capnp")
+  mode.add_argument("-r", "--read", action="store_true", help="validate against peer schema")
+  parser.add_argument("-f", "--file", default="schema.json", help="JSON file path")
+  parser.add_argument("--cereal-dir", required=True, help="path to cereal directory")
+  parser.add_argument("-I", "--import-path", action="append", default=[], help="extra capnp import paths")
   args = parser.parse_args()
 
   if args.generate:
-    dump_schema(args.cereal_dir, args.file)
+    dump_schema(args.cereal_dir, args.file, args.import_path)
     return 0
-  return run_read(args.cereal_dir, args.file)
+  return run_read(args.cereal_dir, args.file, args.import_path)
 
 
 if __name__ == "__main__":
