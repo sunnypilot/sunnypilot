@@ -1,3 +1,8 @@
+sunnypilot Version 2026.002.001 (2026-06-28)
+========================
+* What's Changed
+  * safety: ignore frequency check for Toyota UNSUPPORTED_DSU cars by @sunnyhaibin in https://github.com/sunnypilot/opendbc/pull/489
+
 sunnypilot Version 2026.002.000 (2026-06-28)
 ========================
 * What's Changed (sunnypilot/sunnypilot)
