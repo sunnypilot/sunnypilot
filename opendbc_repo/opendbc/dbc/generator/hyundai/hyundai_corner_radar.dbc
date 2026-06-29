@@ -1,0 +1,421 @@
+VERSION ""
+
+
+NS_ :
+    NS_DESC_
+    CM_
+    BA_DEF_
+    BA_
+    VAL_
+    CAT_DEF_
+    CAT_
+    FILTER
+    BA_DEF_DEF_
+    EV_DATA_
+    ENVVAR_DATA_
+    SGTYPE_
+    SGTYPE_VAL_
+    BA_DEF_SGTYPE_
+    BA_SGTYPE_
+    SIG_TYPE_REF_
+    VAL_TABLE_
+    SIG_GROUP_
+    SIG_VALTYPE_
+    SIGTYPE_VALTYPE_
+    BO_TX_BU_
+    BA_DEF_REL_
+    BA_REL_
+    BA_DEF_DEF_REL_
+    BU_SG_REL_
+    BU_EV_REL_
+    BU_BO_REL_
+    SG_MUL_VAL_
+
+BS_:
+
+BU_: XXX
+
+    
+BO_ 933 RADAR_POINT_3a5: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 934 RADAR_POINT_3a6: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 935 RADAR_POINT_3a7: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 936 RADAR_POINT_3a8: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 937 RADAR_POINT_3a9: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 938 RADAR_POINT_3aa: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 939 RADAR_POINT_3ab: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 940 RADAR_POINT_3ac: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 941 RADAR_POINT_3ad: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 942 RADAR_POINT_3ae: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 943 RADAR_POINT_3af: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 944 RADAR_POINT_3b0: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 945 RADAR_POINT_3b1: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 946 RADAR_POINT_3b2: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 947 RADAR_POINT_3b3: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 948 RADAR_POINT_3b4: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 949 RADAR_POINT_3b5: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 950 RADAR_POINT_3b6: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 951 RADAR_POINT_3b7: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 952 RADAR_POINT_3b8: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 953 RADAR_POINT_3b9: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 954 RADAR_POINT_3ba: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 955 RADAR_POINT_3bb: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 956 RADAR_POINT_3bc: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 957 RADAR_POINT_3bd: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 958 RADAR_POINT_3be: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 959 RADAR_POINT_3bf: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 960 RADAR_POINT_3c0: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 961 RADAR_POINT_3c1: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 962 RADAR_POINT_3c2: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 963 RADAR_POINT_3c3: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
+    
+BO_ 964 RADAR_POINT_3c4: 24 RADAR
+ SG_ CHECKSUM : 0|16@1+ (1,0) [0|65535] "" XXX
+ SG_ COUNTER : 16|8@1+ (1,0) [0|255] "" XXX
+ SG_ STATE : 24|6@1+ (1,0) [0|63] "" XXX
+ SG_ SUB_COUNTER : 30|2@1+ (1,0) [0|3] "" XXX
+ SG_ OBJ_TYPE : 32|8@1+ (1,0) [0|255] "" XXX
+ SG_ TRACK_AGE : 40|8@1+ (1,0) [0|255] "" XXX
+ SG_ LONG_DIST : 64|12@1+ (0.05,0) [0|204.75] "m" XXX
+ SG_ LAT_DIST : 78|10@1+ (0.05,-25.6) [-25.6|25.55] "m" XXX
+ SG_ REL_SPEED : 91|12@1+ (0.05,-100) [-100|104.75] "m/s" XXX
+    
