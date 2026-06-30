@@ -9,7 +9,7 @@ import subprocess
 from openpilot.system.ui.lib.wifi_manager import WifiManager
 
 TETHERING_SUBNET = "192.168.43.0/24"
-TETHERING_UPLINK_IFACE = "wwan0"
+TETHERING_UPLINK_IFACE = "ppp0"
 
 
 class WifiManagerSP(WifiManager):
