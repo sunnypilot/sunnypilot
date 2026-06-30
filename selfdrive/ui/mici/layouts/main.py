@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.application import gui_app
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings import SettingsLayoutSP as SettingsLayout
+  from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onroad import OnroadViewContainerSP as AugmentedRoadView
 
 ONROAD_DELAY = 2.5  # seconds
 
@@ -68,6 +69,9 @@ class MiciMainLayout(Scroller):
     # For scroll_to
     return self._body_onroad_layout if ui_state.is_body else self._car_onroad_layout
 
+  def _should_auto_scroll_to_onroad(self) -> bool:
+    return True
+
   def _setup_callbacks(self):
     self._home_layout.set_callbacks(
       on_settings=lambda: gui_app.push_widget(self._settings_layout),
@@ -118,13 +122,15 @@ class MiciMainLayout(Scroller):
 
     # FIXME: these two pops can interrupt user interacting in the settings
     if self._onroad_time_delay is not None and rl.get_time() - self._onroad_time_delay >= ONROAD_DELAY:
-      gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
+      if not gui_app.sunnypilot_ui() or self._should_auto_scroll_to_onroad():
+        gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
       self._onroad_time_delay = None
 
     # When car leaves standstill, pop nav stack and scroll to onroad
     CS = ui_state.sm["carState"]
     if not CS.standstill and self._prev_standstill:
-      gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
+      if not gui_app.sunnypilot_ui() or self._should_auto_scroll_to_onroad():
+        gui_app.pop_widgets_to(self, lambda: self._scroll_to(self._onroad_layout))
     self._prev_standstill = CS.standstill
 
   def _on_interactive_timeout(self):
