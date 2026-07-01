@@ -38,7 +38,7 @@ class OsmMapData(BaseMapData):
     if self.last_bearing is not None:
       params['bearing'] = self.last_bearing
 
-    self.mem_params.put("LastGPSPosition", json.dumps(params))
+    self.mem_params.put("LastGPSPosition", json.dumps(params), block=True)
 
   def get_current_speed_limit(self) -> float:
     return float(self.mem_params.get("MapSpeedLimit") or 0.0)

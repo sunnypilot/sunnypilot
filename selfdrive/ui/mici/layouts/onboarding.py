@@ -71,7 +71,7 @@ class TrainingGuidePreDMTutorial(NavScroller):
   def show_event(self):
     super().show_event()
     # Get driver monitoring model ready for next step
-    ui_state.params.put_bool_nonblocking("IsDriverViewEnabled", True)
+    ui_state.params.put_bool("IsDriverViewEnabled", True)
 
 
 class DMBadFaceDetected(NavScroller):
@@ -123,7 +123,7 @@ class TrainingGuideDMTutorial(NavWidget):
   def _update_state(self):
     super()._update_state()
     if device.awake and not ui_state.params.get_bool("IsDriverViewEnabled"):
-      ui_state.params.put_bool_nonblocking("IsDriverViewEnabled", True)
+      ui_state.params.put_bool("IsDriverViewEnabled", True)
 
     sm = ui_state.sm
     if sm.recv_frame.get("driverMonitoringState", 0) == 0:
@@ -140,7 +140,7 @@ class TrainingGuideDMTutorial(NavWidget):
 
     # stay at 100% once reached
     in_bad_face = gui_app.get_active_widget() == self._bad_face_page
-    if ((dm_state.faceDetected and looking_center) or self._progress.x > 0.99) and not in_bad_face:
+    if ((dm_state.visionPolicyState.faceDetected and looking_center) or self._progress.x > 0.99) and not in_bad_face:
       slow = self._progress.x < 0.25
       duration = self.PROGRESS_DURATION * 2 if slow else self.PROGRESS_DURATION
       self._progress.x += 1.0 / (duration * gui_app.target_fps)
@@ -219,11 +219,11 @@ class TrainingGuideRecordFront(NavScroller):
     super().__init__()
 
     def on_accept():
-      ui_state.params.put_bool_nonblocking("RecordFront", True)
+      ui_state.params.put_bool("RecordFront", True)
       continue_callback()
 
     def on_decline():
-      ui_state.params.put_bool_nonblocking("RecordFront", False)
+      ui_state.params.put_bool("RecordFront", False)
       continue_callback()
 
     self._accept_button = BigConfirmationCircleButton("allow data uploading", gui_app.texture("icons_mici/setup/driver_monitoring/dm_check.png", 64, 64),
@@ -367,7 +367,7 @@ class OnboardingWindow(Widget):
     self._needs_initial_push = False
 
   def _on_uninstall(self):
-    ui_state.params.put_bool("DoUninstall", True)
+    ui_state.params.put_bool("DoUninstall", True, block=True)
 
   def show_event(self):
     super().show_event()
@@ -386,12 +386,12 @@ class OnboardingWindow(Widget):
     return self._accepted_terms and self._sunnylink_consent_done and self._training_done
 
   def close(self):
-    ui_state.params.put_bool_nonblocking("IsDriverViewEnabled", False)
+    ui_state.params.put_bool("IsDriverViewEnabled", False)
     self._completed_callback()
 
   def _on_terms_accepted(self):
-    ui_state.params.put("HasAcceptedTerms", terms_version)
-    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp)
+    ui_state.params.put("HasAcceptedTerms", terms_version, block=True)
+    ui_state.params.put("HasAcceptedTermsSP", terms_version_sp, block=True)
     self._accepted_terms = True
     if not self._sunnylink_consent_done:
       gui_app.push_widget(self._sunnylink_consent)
@@ -401,7 +401,7 @@ class OnboardingWindow(Widget):
       self.close()
 
   def _on_sunnylink_accepted(self):
-    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version)
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_version, block=True)
     ui_state.params.put_bool("SunnylinkEnabled", True)
     self._sunnylink_consent_done = True
     if not self._training_done:
@@ -410,7 +410,7 @@ class OnboardingWindow(Widget):
       self.close()
 
   def _on_sunnylink_declined(self):
-    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_declined)
+    ui_state.params.put("CompletedSunnylinkConsentVersion", sunnylink_consent_declined, block=True)
     ui_state.params.put_bool("SunnylinkEnabled", False)
     self._sunnylink_consent_done = True
     if not self._training_done:
@@ -419,7 +419,7 @@ class OnboardingWindow(Widget):
       self.close()
 
   def _on_completed_training(self):
-    ui_state.params.put("CompletedTrainingVersion", training_version)
+    ui_state.params.put("CompletedTrainingVersion", training_version, block=True)
     self._training_done = True
     self.close()
 

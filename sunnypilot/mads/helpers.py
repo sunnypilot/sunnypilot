@@ -65,8 +65,8 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   # TODO-SP: To enable MADS full support for Rivian and most Tesla, identify consistent signals for MADS toggling
   mads_partial_support = get_mads_limited_brands(CP, CP_SP)
   if mads_partial_support:
-    params.put("MadsSteeringMode", 2)
-    params.put_bool("MadsUnifiedEngagementMode", True)
+    params.put("MadsSteeringMode", 2, block=True)
+    params.put_bool("MadsUnifiedEngagementMode", True, block=True)
 
   # no ACC MAIN button for these brands
   if CP.brand in MADS_NO_ACC_MAIN_BUTTON:

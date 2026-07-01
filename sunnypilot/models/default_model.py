@@ -4,11 +4,12 @@ import hashlib
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot import get_file_hash
+from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL
 
-DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.h")
+DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "model_name.py")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
 VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
-POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
+POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_on_policy.onnx")
 
 
 def update_model_hash():
@@ -25,8 +26,7 @@ def update_model_hash():
 
 def get_current_default_model_name():
   print("[GET DEFAULT MODEL NAME]")
-  with open(DEFAULT_MODEL_NAME_PATH) as f:
-    name = f.read().split('"')[1]
+  name = DEFAULT_MODEL
   print(f'Current default model name: "{name}"')
 
   return name
@@ -35,7 +35,7 @@ def get_current_default_model_name():
 def update_default_model_name(name: str):
   print("[CHANGE DEFAULT MODEL NAME]")
   with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
-    f.write(f'#define DEFAULT_MODEL "{name}"\n')
+    f.write(f'DEFAULT_MODEL = "{name}"\n')
   print(f'New default model name: "{name}"')
   print("[DONE]")
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     exit(0)
 
   current_name = get_current_default_model_name()
-  new_name = f"{args.new_name} (Default)"
+  new_name = args.new_name
   if current_name == new_name:
     print(f'Proposed default model name: "{new_name}"')
     confirm = input("Proposed default model name is the same as the current default model name. Confirm? (y/n): ").upper().strip()
