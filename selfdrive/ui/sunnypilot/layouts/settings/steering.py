@@ -134,6 +134,11 @@ class SteeringLayout(Widget):
 
     enforce_torque_enabled = self._torque_control_toggle.action_item.get_state()
     nnlc_enabled = self._nnlc_toggle.action_item.get_state()
+    if enforce_torque_enabled and nnlc_enabled:
+      self._torque_control_toggle.action_item.set_state(False)
+      self._nnlc_toggle.action_item.set_state(False)
+      enforce_torque_enabled = False
+      nnlc_enabled = False
     self._nnlc_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not enforce_torque_enabled)
     self._torque_control_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not nnlc_enabled)
     self._torque_customization_button.action_item.set_enabled(self._torque_control_toggle.action_item.get_state())
