@@ -69,7 +69,7 @@ class ModularAssistiveDrivingSystem:
     return False
 
   def should_silent_lkas_enable(self, CS: structs.CarState) -> bool:
-    if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and self.pedal_pressed_non_gas_pressed(CS):
+    if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and (CS.brakePressed or CS.regenBraking or self.pedal_pressed_non_gas_pressed(CS)):
       return False
 
     if self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
