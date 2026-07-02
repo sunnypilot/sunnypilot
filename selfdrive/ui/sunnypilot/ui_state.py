@@ -169,6 +169,7 @@ class UIStateSP:
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
     self.always_offroad = self.params.get_bool("OffroadMode")
+    self.radar_tracks = self.params.get_bool("RadarTracks")
 
     if not self._sp_initialized:
       self._sp_initialized = True

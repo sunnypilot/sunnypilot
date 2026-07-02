@@ -1297,6 +1297,12 @@
               "description": "When enabled, visual turn indicators are drawn on the HUD."
             },
             {
+              "key": "RadarTracks",
+              "widget": "toggle",
+              "title": "Radar Tracks",
+              "description": "Show radar tracks"
+            },
+            {
               "key": "RoadNameToggle",
               "widget": "toggle",
               "title": "Display Road Name",
