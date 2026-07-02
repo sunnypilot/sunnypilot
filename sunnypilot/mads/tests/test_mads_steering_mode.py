@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import pytest
-from unittest.mock import MagicMock
 
 from cereal import log, custom
 from opendbc.car import structs
@@ -32,15 +31,15 @@ def make_car_state(brake_pressed=False, regen_braking=False, standstill=False, v
   return cs
 
 
-def make_panda_state(controls_allowed_lateral=True):
-  ps = MagicMock()
+def make_panda_state(mocker, controls_allowed_lateral=True):
+  ps = mocker.MagicMock()
   ps.controlsAllowedLateral = controls_allowed_lateral
   ps.safetyModel = SafetyModel.hyundai
   return ps
 
 
 def make_mads(mocker, steering_mode):
-  sd = MagicMock()
+  sd = mocker.MagicMock()
   sd.CP = structs.CarParams()
   sd.CP.brand = "hyundai"
   sd.CP_SP = structs.CarParamsSP()
@@ -56,7 +55,7 @@ def make_mads(mocker, steering_mode):
   sd.enabled_prev = False
   sd.initialized = True
   sd.CS_prev = make_car_state()
-  sd.sm = {'pandaStates': [make_panda_state()]}
+  sd.sm = {'pandaStates': [make_panda_state(mocker)]}
   sd.state_machine = mocker.MagicMock()
 
   mads = ModularAssistiveDrivingSystem(sd)
@@ -111,7 +110,7 @@ class TestPauseMode:
     run_frames(mads, sd, make_car_state(brake_pressed=True, v_ego=15.0))
     assert mads.state_machine.state == State.paused
 
-    sd.sm['pandaStates'] = [make_panda_state(False)]
+    sd.sm['pandaStates'] = [make_panda_state(mocker, False)]
     run_frames(mads, sd, make_car_state(brake_pressed=True, standstill=True), n=250)
     assert mads.state_machine.state == State.paused
 
@@ -134,11 +133,11 @@ class TestPauseMode:
     run_frames(mads, sd, make_car_state(brake_pressed=True, v_ego=15.0))
     assert mads.state_machine.state == State.paused
 
-    sd.sm['pandaStates'] = [make_panda_state(False)]
+    sd.sm['pandaStates'] = [make_panda_state(mocker, False)]
     run_frames(mads, sd, make_car_state(brake_pressed=True, standstill=True), n=250)
     assert mads.state_machine.state == State.paused
 
-    sd.sm['pandaStates'] = [make_panda_state(True)]
+    sd.sm['pandaStates'] = [make_panda_state(mocker, True)]
     run_frames(mads, sd, make_car_state(standstill=True))
     assert mads.state_machine.state == State.enabled
 
@@ -189,7 +188,7 @@ class TestLateralMismatchCounter:
     mads.state_machine.state = State.paused
     mads.enabled = True
     mads.active = False
-    sd.sm['pandaStates'] = [make_panda_state(False)]
+    sd.sm['pandaStates'] = [make_panda_state(mocker, False)]
 
     run_frames(mads, sd, make_car_state(brake_pressed=True, standstill=True), n=250)
     assert mads.lateral_mismatch_counter == 0
@@ -198,7 +197,7 @@ class TestLateralMismatchCounter:
     mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.PAUSE)
     mads.enabled = True
     mads.active = True
-    sd.sm['pandaStates'] = [make_panda_state(False)]
+    sd.sm['pandaStates'] = [make_panda_state(mocker, False)]
 
     for _ in range(200):
       mads.data_sample()
@@ -208,36 +207,36 @@ class TestLateralMismatchCounter:
 # brand restrictions
 
 class TestBrandSteeringModeRestrictions:
-  def test_rivian_forced_to_disengage(self):
+  def test_rivian_forced_to_disengage(self, mocker):
     CP = structs.CarParams()
     CP.brand = "rivian"
     CP_SP = structs.CarParamsSP()
-    params = MagicMock()
+    params = mocker.MagicMock()
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
     params.get.assert_not_called()
 
-  def test_tesla_without_vehicle_bus_forced_to_disengage(self):
+  def test_tesla_without_vehicle_bus_forced_to_disengage(self, mocker):
     CP = structs.CarParams()
     CP.brand = "tesla"
     CP_SP = structs.CarParamsSP()
     CP_SP.flags = 0
-    params = MagicMock()
+    params = mocker.MagicMock()
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
 
-  def test_tesla_with_vehicle_bus_uses_param(self):
+  def test_tesla_with_vehicle_bus_uses_param(self, mocker):
     CP = structs.CarParams()
     CP.brand = "tesla"
     CP_SP = structs.CarParamsSP()
     CP_SP.flags = TeslaFlagsSP.HAS_VEHICLE_BUS
-    params = MagicMock()
-    params.get = MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+    params = mocker.MagicMock()
+    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
 
   @pytest.mark.parametrize("brand", ["hyundai", "toyota", "honda", "gm"])
-  def test_other_brands_use_param(self, brand):
+  def test_other_brands_use_param(self, mocker, brand):
     CP = structs.CarParams()
     CP.brand = brand
     CP_SP = structs.CarParamsSP()
-    params = MagicMock()
-    params.get = MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+    params = mocker.MagicMock()
+    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
