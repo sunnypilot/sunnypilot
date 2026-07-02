@@ -27,8 +27,12 @@ fi
 # Store the script argument in a descriptive variable
 ACTION=$1
 
-# Trap EXIT signal (Ctrl+C) and stop the service
-trap 'control_service stop ; exit' SIGINT SIGKILL EXIT
+# Stop the systemd service on any orderly termination so the actions-runner
+# process does not get orphaned when the manager tears this wrapper down.
+# SIGKILL is intentionally omitted: it cannot be caught (kernel-forced).
+# openpilot's manager sends SIGINT first, then escalates to SIGTERM after a
+# timeout; catching both keeps the shutdown deterministic.
+trap 'control_service stop ; exit' SIGINT SIGTERM SIGHUP EXIT
 
 # Enter the main loop
 while true; do
