@@ -56,6 +56,27 @@ sections:
     title: Cooperative Steering (Beta)
     enablement:
     - $ref: '#/macros/offroad'
+  - key: TeslaMadsScreenButton
+    widget: multiple_button
+    title: MADS Screen Button
+    description: 'Use a multi-finger press on the infotainment display as a MADS button.
+      This allows the use of full MADS functionality when enabled. Note: Setting this
+      to Off may reset your MADS settings to default.'
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: 3 Finger
+    - value: 2
+      label: 4 Finger
+    - value: 3
+      label: 5 Finger
+    visibility:
+    - type: capability
+      field: tesla_has_vehicle_bus
+      equals: true
+    enablement:
+    - $ref: '#/macros/offroad'
 - id: toyota
   title: Toyota / Lexus Settings
   description: ''
