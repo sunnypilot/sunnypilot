@@ -32,7 +32,8 @@ ACTION=$1
 # SIGKILL is intentionally omitted: it cannot be caught (kernel-forced).
 # openpilot's manager sends SIGINT first, then escalates to SIGTERM after a
 # timeout; catching both keeps the shutdown deterministic.
-trap 'control_service stop ; exit' SIGINT SIGTERM SIGHUP EXIT
+trap 'control_service stop' EXIT
+trap 'exit' SIGINT SIGTERM SIGHUP
 
 # Enter the main loop
 while true; do
