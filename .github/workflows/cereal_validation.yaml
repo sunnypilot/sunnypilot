@@ -35,17 +35,35 @@ jobs:
       - name: Init sunnypilot opendbc submodule
         run: git submodule update --init --depth 1 opendbc_repo
 
-      - name: Checkout upstream openpilot cereal
+      - name: Checkout upstream openpilot
         uses: actions/checkout@v6
         with:
           repository: 'commaai/openpilot'
           path: upstream_openpilot
-          sparse-checkout: cereal
           ref: "refs/heads/master"
 
       - name: Init upstream opendbc submodule
         working-directory: upstream_openpilot
         run: git submodule update --init --depth 1 opendbc_repo
+
+      - name: Locate upstream capnp paths
+        id: locate-capnp
+        run: |
+          CEREAL_DIR=$(find upstream_openpilot -maxdepth 4 -name log.capnp -path '*/cereal/log.capnp' -printf '%h\n' -quit)
+          if [ -z "$CEREAL_DIR" ]; then
+            echo "::error::Could not locate cereal/log.capnp in upstream openpilot"
+            exit 1
+          fi
+          echo "cereal_dir=$CEREAL_DIR" >> "$GITHUB_OUTPUT"
+          echo "Found upstream cereal at: $CEREAL_DIR"
+
+          IMPORT_ARGS=""
+          CAR_CAPNP=$(find upstream_openpilot -maxdepth 5 -name car.capnp -path '*/opendbc/car/car.capnp' -printf '%h\n' -quit)
+          if [ -n "$CAR_CAPNP" ]; then
+            IMPORT_ARGS="-I $CAR_CAPNP"
+            echo "Found car.capnp at: $CAR_CAPNP"
+          fi
+          echo "import_args=$IMPORT_ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Install uv
         run: pip install uv
@@ -62,4 +80,5 @@ jobs:
           PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
           uv run --isolated --with "pycapnp==${PYCAPNP_VER}" \
             python3 cereal/messaging/tests/validate_sp_cereal_upstream.py \
-            -r -f /tmp/sp_schema.json --cereal-dir upstream_openpilot/cereal
+            -r -f /tmp/sp_schema.json --cereal-dir ${{ steps.locate-capnp.outputs.cereal_dir }} \
+            ${{ steps.locate-capnp.outputs.import_args }}
