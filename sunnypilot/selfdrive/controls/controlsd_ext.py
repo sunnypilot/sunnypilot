@@ -31,7 +31,7 @@ class ControlsExt(ModelStateBase):
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['radarState', 'selfdriveStateSP']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'liveTracks']
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
@@ -90,6 +90,15 @@ class ControlsExt(ModelStateBase):
 
     self.get_lead_data(CC_SP.leadOne, sm['radarState'].leadOne)
     self.get_lead_data(CC_SP.leadTwo, sm['radarState'].leadTwo)
+
+    live_tracks = sm['liveTracks']
+    CC_SP.radarTracksActive = sm.valid['liveTracks'] and len(live_tracks.trackSources) > 0
+    radar_tracks = CC_SP.init('radarTracks', len(live_tracks.points) if CC_SP.radarTracksActive else 0)
+    for dst, src in zip(radar_tracks, live_tracks.points, strict=True):
+      dst.trackId = src.trackId
+      dst.dRel = src.dRel
+      dst.yRel = src.yRel
+      dst.vRel = src.vRel
 
     # MADS state
     mads_src = sm['selfdriveStateSP'].mads
