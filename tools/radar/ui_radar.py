@@ -15,7 +15,7 @@ import cereal.messaging as messaging
 from opendbc.car.tests.routes import routes
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
-from openpilot.tools.replay.custom_routes import CUSTOM_ROUTES
+from openpilot.tools.radar.custom_routes import CUSTOM_ROUTES
 from openpilot.tools.replay.lib.ui_helpers import (
   UP,
   BLACK,
@@ -27,7 +27,7 @@ from openpilot.tools.replay.lib.ui_helpers import (
   plot_model,
   to_topdown_pt,
 )
-from openpilot.tools.replay.radar_helpers import (
+from openpilot.tools.radar.radar_helpers import (
   RADAR_SPECS,
   build_seen_address_map,
   decode_radar_track,
@@ -51,7 +51,7 @@ CAMERA_RADAR_Y_OFFSET = 25
 RADAR_HEATMAP_DECAY = 0.975
 RADAR_HEATMAP_ALPHA = 0.65
 CAMERA_RADAR_HEATMAP_ALPHA = 0.45
-REPLAY_PATH = os.path.join(os.path.dirname(__file__), "replay")
+REPLAY_PATH = os.path.join(os.path.dirname(__file__), "..", "replay", "replay")
 REPLAY_SOCKET_WAIT_TIMEOUT_SECONDS = 10.0
 REPLAY_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
 CAMERA_DRAW_WIDTH = 640
@@ -877,7 +877,7 @@ def get_arg_parser():
   parser.add_argument("--route", default=None, help="Route to replay locally before opening the UI.")
   parser.add_argument("--routes", action="store_true", help="Cycle Hyundai/Kia/Genesis routes from opendbc/car/tests/routes.py.")
   parser.add_argument("--custom-routes", nargs="?", type=int, const=1, default=None,
-                      help="Cycle routes from tools/replay/custom_routes.py, optionally starting from a 1-based route index.")
+                      help="Cycle routes from tools/radar/custom_routes.py, optionally starting from a 1-based route index.")
   parser.add_argument("--data-dir", default=None, help="Optional local route data directory to pass to replay.")
   parser.add_argument("--playback", default="1.0", help="Replay playback speed when using --route.")
   parser.add_argument("--prefix", default="ui-replay", help="OPENPILOT_PREFIX to use when launching replay from the UI.")
