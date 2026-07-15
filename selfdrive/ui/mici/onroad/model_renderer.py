@@ -154,7 +154,7 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path(sm)
 
     if sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
-      self.radar_tracks.draw_radar_tracks(sm['liveTracks'], self._map_to_screen, self._path_offset_z, track_size=5,
+      self.radar_tracks.draw_radar_tracks(sm['liveTracks'], self._map_to_screen, self._path_offset_z,
                                           screen_offset=(self._rect.x, self._rect.y), v_ego=sm['carState'].vEgo)
 
     # if render_lead_indicator and radar_state:
