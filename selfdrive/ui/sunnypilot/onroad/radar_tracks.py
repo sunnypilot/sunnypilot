@@ -135,7 +135,11 @@ class RadarTracksStatus:
 
 
 class RadarTracks:
-  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, screen_offset=(0, 0), v_ego=0.0):
+  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, screen_offset=(0, 0), v_ego=0.0,
+                        highlighted_tracks=None):
+    highlighted_tracks = highlighted_tracks or {}
+    highlighted_positions = {}
+
     for track in live_tracks.points:
       d_rel, y_rel, v_rel = track.dRel, track.yRel, track.vRel
       if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel)):
@@ -148,4 +152,13 @@ class RadarTracks:
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
       color = radar_track_color(v_rel, v_ego)
       stationary = radar_track_is_stationary(v_rel, v_ego)
-      rl.draw_circle(int(x), int(y), max(1, track_size - 4) if stationary else track_size, color)
+      radius = max(1, track_size - 4) if stationary else track_size
+      track_id = int(track.trackId)
+      highlight_color = highlighted_tracks.get(track_id)
+      if highlight_color is not None:
+        center = rl.Vector2(int(x), int(y))
+        rl.draw_ring(center, radius + 2, radius + 5, 0, 360, 24, highlight_color)
+        highlighted_positions[track_id] = (x, y)
+      rl.draw_circle(int(x), int(y), radius, color)
+
+    return highlighted_positions

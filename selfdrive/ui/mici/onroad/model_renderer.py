@@ -1,4 +1,5 @@
 import colorsys
+import math
 import numpy as np
 import pyray as rl
 from cereal import messaging, car
@@ -37,6 +38,11 @@ LANE_LINE_COLORS = {
   **LANE_LINE_COLORS_SP,
 }
 
+LEAD_TRACK_COLORS = (
+  rl.Color(255, 215, 0, 255),
+  rl.Color(255, 140, 0, 220),
+)
+
 
 @dataclass
 class ModelPoints:
@@ -49,6 +55,9 @@ class LeadVehicle:
   glow: list[float] = field(default_factory=list)
   chevron: list[float] = field(default_factory=list)
   fill_alpha: int = 0
+  position: tuple[float, float] | None = None
+  radar_track_id: int = -1
+  radar: bool = False
 
 
 class ModelRenderer(Widget, ModelRendererSP):
@@ -131,7 +140,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     model = sm['modelV2']
     radar_state = sm['radarState'] if sm.valid['radarState'] else None
     lead_one = radar_state.leadOne if radar_state else None
-    render_lead_indicator = self._longitudinal_control and radar_state is not None
+    render_lead_indicator = ui_state.radar_tracks != 0 and radar_state is not None
 
     # Update model data when needed
     model_updated = sm.updated['modelV2']
@@ -154,11 +163,17 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path(sm)
 
     if sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
-      self.radar_tracks.draw_radar_tracks(sm['liveTracks'], self._map_to_screen, self._path_offset_z,
-                                          screen_offset=(self._rect.x, self._rect.y), v_ego=sm['carState'].vEgo)
+      highlighted_tracks = self._lead_track_colors(radar_state) if render_lead_indicator else {}
+      matched_positions = self.radar_tracks.draw_radar_tracks(
+        sm['liveTracks'], self._map_to_screen, self._path_offset_z,
+        screen_offset=(self._rect.x, self._rect.y), v_ego=sm['carState'].vEgo,
+        highlighted_tracks=highlighted_tracks,
+      )
+      if render_lead_indicator:
+        self._draw_lead_connectors(matched_positions, highlighted_tracks)
 
-    # if render_lead_indicator and radar_state:
-    #   self._draw_lead_indicator()
+    if render_lead_indicator:
+      self._draw_lead_indicator()
 
   def _update_raw_points(self, model):
     """Update raw 3D points from model data"""
@@ -188,7 +203,11 @@ class ModelRenderer(Widget, ModelRendererSP):
         z = self._path.raw_points[idx, 2] if idx < len(self._path.raw_points) else 0.0
         point = self._map_to_screen(d_rel, -y_rel + self._camera_offset, z + self._path_offset_z)
         if point:
-          self._lead_vehicles[i] = self._update_lead_vehicle(d_rel, v_rel, point, self._rect)
+          lead_vehicle = self._update_lead_vehicle(d_rel, v_rel, point, self._rect)
+          lead_vehicle.position = lead_vehicle.chevron[1]
+          lead_vehicle.radar_track_id = int(lead_data.radarTrackId)
+          lead_vehicle.radar = lead_data.radar
+          self._lead_vehicles[i] = lead_vehicle
 
   def _update_model(self, lead, path_x_array):
     """Update model visualization data based on model message"""
@@ -383,8 +402,34 @@ class ModelRenderer(Widget, ModelRendererSP):
       if not lead.glow or not lead.chevron:
         continue
 
-      rl.draw_triangle_fan(lead.glow, len(lead.glow), rl.Color(218, 202, 37, 255))
-      rl.draw_triangle_fan(lead.chevron, len(lead.chevron), rl.Color(201, 34, 49, lead.fill_alpha))
+      offset_glow = [(x + self._rect.x, y + self._rect.y) for x, y in lead.glow]
+      offset_chevron = [(x + self._rect.x, y + self._rect.y) for x, y in lead.chevron]
+      rl.draw_triangle_fan(offset_glow, len(offset_glow), rl.Color(218, 202, 37, 255))
+      rl.draw_triangle_fan(offset_chevron, len(offset_chevron), rl.Color(201, 34, 49, lead.fill_alpha))
+
+  @staticmethod
+  def _lead_track_colors(radar_state):
+    highlighted_tracks = {}
+    if radar_state is None:
+      return highlighted_tracks
+
+    for lead, color in zip((radar_state.leadOne, radar_state.leadTwo), LEAD_TRACK_COLORS, strict=True):
+      if lead.status and lead.radar and lead.radarTrackId >= 0:
+        highlighted_tracks.setdefault(int(lead.radarTrackId), color)
+    return highlighted_tracks
+
+  def _draw_lead_connectors(self, matched_positions, highlighted_tracks):
+    for lead in self._lead_vehicles:
+      if not lead.radar or lead.position is None or lead.radar_track_id not in matched_positions:
+        continue
+
+      radar_position = matched_positions[lead.radar_track_id]
+      lead_position = (lead.position[0] + self._rect.x, lead.position[1] + self._rect.y)
+      if math.dist(lead_position, radar_position) < 4:
+        continue
+
+      rl.draw_line_ex(rl.Vector2(*lead_position), rl.Vector2(*radar_position), 2,
+                      highlighted_tracks[lead.radar_track_id])
 
   @staticmethod
   def _get_path_length_idx(pos_x_array: np.ndarray, path_height: float) -> int:

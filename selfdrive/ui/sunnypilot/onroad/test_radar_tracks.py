@@ -126,3 +126,33 @@ def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
   )
 
   assert drawn_sizes == [6]
+
+
+def test_draw_radar_tracks_highlights_and_returns_matched_track(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  points = live_tracks.init("points", 2)
+  for track_id, point in enumerate(points, start=10):
+    point.trackId = track_id
+    point.dRel = track_id
+    point.yRel = 1
+    point.vRel = 2
+    point.aRel = 0
+
+  highlight_color = radar_tracks.rl.Color(255, 215, 0, 255)
+  drawn_rings = []
+  monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda *args: None)
+  monkeypatch.setattr(
+    radar_tracks.rl,
+    "draw_ring",
+    lambda center, inner, outer, start, end, segments, color: drawn_rings.append(
+      ((center.x, center.y), inner, outer, color_tuple(color))
+    ),
+  )
+
+  matched_positions = radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2,
+    screen_offset=(100, 7), highlighted_tracks={11: highlight_color},
+  )
+
+  assert drawn_rings == [((111, 37), 9, 12, (255, 215, 0, 255))]
+  assert matched_positions == {11: (111, 37)}
