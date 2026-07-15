@@ -11,15 +11,15 @@ from collections import Counter, defaultdict
 import cereal.messaging as messaging
 from msgq.ipc_pyx import IpcError
 from opendbc.car.tests.routes import CarTestRoute, routes
-from openpilot.tools.replay.custom_routes import CUSTOM_ROUTES
-from openpilot.tools.replay.radar_helpers import (
+from openpilot.tools.radar.custom_routes import CUSTOM_ROUTES
+from openpilot.tools.radar.radar_helpers import (
   build_seen_address_map,
   get_radar_spec,
   is_exclusive_full_range_match,
 )
 
 
-REPLAY_PATH = os.path.join(os.path.dirname(__file__), "replay")
+REPLAY_PATH = os.path.join(os.path.dirname(__file__), "..", "replay", "replay")
 REPLAY_PLAYBACK_SPEED = "3.0"
 REPLAY_ALLOW_SERVICES = "can"
 DETECTION_TIMEOUT_SECONDS = 20.0
@@ -54,7 +54,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
   parser.add_argument("--routes", action="store_true",
                       help="Use Hyundai/Kia/Genesis routes from opendbc/car/tests/routes.py.")
   parser.add_argument("--custom-routes", action="store_true",
-                      help="Use routes from tools/replay/custom_routes.py.")
+                      help="Use routes from tools/radar/custom_routes.py.")
   parser.add_argument("--route", action="append", default=[],
                       help="Specific route(s) to test. If omitted, use Hyundai/Kia/Genesis routes from opendbc/car/tests/routes.py.")
   parser.add_argument("--data-dir", default=None,
