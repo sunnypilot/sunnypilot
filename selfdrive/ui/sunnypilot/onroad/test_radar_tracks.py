@@ -94,7 +94,7 @@ def test_draw_radar_tracks_allows_unknown_acceleration(monkeypatch):
   assert drawn_colors == [color_tuple(radar_track_color(-5))]
 
 
-def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
+def test_draw_radar_tracks_hides_stationary_dots(monkeypatch):
   live_tracks = car.RadarData.new_message()
   point = live_tracks.init("points", 1)[0]
   point.dRel = 10
@@ -108,7 +108,7 @@ def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
     live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=6, v_ego=20,
   )
 
-  assert drawn_sizes == [2]
+  assert drawn_sizes == []
 
 
 def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
