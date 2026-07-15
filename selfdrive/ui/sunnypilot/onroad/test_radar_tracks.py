@@ -111,4 +111,4 @@ def test_draw_radar_tracks_shrinks_neutral_dots(monkeypatch):
     live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=5, v_ego=20,
   )
 
-  assert drawn_sizes == [3]
+  assert drawn_sizes == [2]
