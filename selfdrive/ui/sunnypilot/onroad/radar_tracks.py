@@ -144,8 +144,6 @@ class RadarTracks:
       d_rel, y_rel, v_rel = track.dRel, track.yRel, track.vRel
       if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel)):
         continue
-      if radar_track_is_stationary(v_rel, v_ego):
-        continue
 
       pt = map_to_screen(d_rel, -y_rel, path_offset_z)
       if pt is None:
@@ -153,7 +151,8 @@ class RadarTracks:
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
       color = radar_track_color(v_rel, v_ego)
-      radius = track_size
+      stationary = radar_track_is_stationary(v_rel, v_ego)
+      radius = max(1, track_size - 4) if stationary else track_size
       track_id = int(track.trackId)
       highlight_color = highlighted_tracks.get(track_id)
       if highlight_color is not None:
