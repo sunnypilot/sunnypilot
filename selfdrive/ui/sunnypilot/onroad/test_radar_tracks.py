@@ -16,9 +16,9 @@ def test_radar_track_relative_speed_colors():
   assert color_tuple(radar_track_color(5.0)) == (255, 45, 45, 255)
 
 
-def test_radar_track_relative_speed_deadband_is_white():
-  assert color_tuple(radar_track_color(-0.5, v_ego=10.0)) == (255, 255, 255, 255)
-  assert color_tuple(radar_track_color(0.5, v_ego=10.0)) == (255, 255, 255, 255)
+def test_radar_track_relative_speed_deadband_is_green():
+  assert color_tuple(radar_track_color(-0.5, v_ego=10.0)) == (0, 255, 64, 255)
+  assert color_tuple(radar_track_color(0.5, v_ego=10.0)) == (0, 255, 64, 255)
   assert color_tuple(radar_track_color(-0.51, v_ego=10.0)) == (0, 140, 255, 255)
   assert color_tuple(radar_track_color(0.51, v_ego=10.0)) == (255, 45, 45, 255)
 
@@ -111,7 +111,7 @@ def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
   assert drawn_sizes == [2]
 
 
-def test_draw_radar_tracks_keeps_moving_white_dots_large(monkeypatch):
+def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
   live_tracks = car.RadarData.new_message()
   point = live_tracks.init("points", 1)[0]
   point.dRel = 10
