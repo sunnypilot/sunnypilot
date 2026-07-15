@@ -9,24 +9,24 @@ def color_tuple(color):
 
 
 def test_radar_track_relative_speed_colors():
-  assert color_tuple(radar_track_color(-10.0)) == (0, 64, 255, 255)
+  assert color_tuple(radar_track_color(-10.0)) == (0, 140, 255, 255)
   assert color_tuple(radar_track_color(0.0)) == (255, 255, 255, 255)
-  assert color_tuple(radar_track_color(10.0)) == (255, 0, 0, 255)
-  assert color_tuple(radar_track_color(-5.0)) == (0, 64, 255, 255)
-  assert color_tuple(radar_track_color(5.0)) == (255, 0, 0, 255)
+  assert color_tuple(radar_track_color(10.0)) == (255, 45, 45, 255)
+  assert color_tuple(radar_track_color(-5.0)) == (0, 140, 255, 255)
+  assert color_tuple(radar_track_color(5.0)) == (255, 45, 45, 255)
 
 
 def test_radar_track_relative_speed_deadband_is_white():
   assert color_tuple(radar_track_color(-0.5, v_ego=10.0)) == (255, 255, 255, 255)
   assert color_tuple(radar_track_color(0.5, v_ego=10.0)) == (255, 255, 255, 255)
-  assert color_tuple(radar_track_color(-0.51, v_ego=10.0)) == (0, 64, 255, 255)
-  assert color_tuple(radar_track_color(0.51, v_ego=10.0)) == (255, 0, 0, 255)
+  assert color_tuple(radar_track_color(-0.51, v_ego=10.0)) == (0, 140, 255, 255)
+  assert color_tuple(radar_track_color(0.51, v_ego=10.0)) == (255, 45, 45, 255)
 
 
 def test_radar_track_stationary_world_object_is_white():
   assert color_tuple(radar_track_color(-20.0, v_ego=20.0)) == (255, 255, 255, 255)
   assert color_tuple(radar_track_color(-19.0, v_ego=20.0)) == (255, 255, 255, 255)
-  assert color_tuple(radar_track_color(-18.9, v_ego=20.0)) == (0, 64, 255, 255)
+  assert color_tuple(radar_track_color(-18.9, v_ego=20.0)) == (0, 140, 255, 255)
 
 
 def test_format_radar_tracks_status_none():
