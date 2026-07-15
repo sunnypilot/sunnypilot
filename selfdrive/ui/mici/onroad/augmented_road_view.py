@@ -10,7 +10,7 @@ from openpilot.selfdrive.ui.mici.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.mici.onroad.model_renderer import ModelRenderer
 from openpilot.selfdrive.ui.mici.onroad.confidence_ball import ConfidenceBall
 from openpilot.selfdrive.ui.mici.onroad.cameraview import CameraView
-from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import RadarTracksStatus
 from openpilot.system.ui.lib.application import FontWeight, gui_app, MousePos, MouseEvent
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets import Widget
@@ -138,9 +138,7 @@ class AugmentedRoadView(CameraView):
                radar_tracks_settings_callback=None):
     super().__init__("camerad", stream_type)
     self._bookmark_callback = bookmark_callback
-    self._radar_tracks_settings_callback = radar_tracks_settings_callback
-    self._radar_tracks_settings_prompt = False
-    self._radar_status_rect = rl.Rectangle()
+    self._radar_tracks_status = RadarTracksStatus(radar_tracks_settings_callback)
     self._set_placeholder_color(rl.BLACK)
 
     self.device_camera: DeviceCameraConfig | None = None
@@ -164,22 +162,6 @@ class AugmentedRoadView(CameraView):
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
-    radar_text_args = {
-      "font_size": 26,
-      "font_weight": FontWeight.SEMI_BOLD,
-      "text_color": rl.Color(0, 255, 64, 255),
-      "alignment": rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
-      "alignment_vertical": rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
-      "wrap_text": False,
-    }
-    self._radar_ranges_label = UnifiedLabel("", **radar_text_args)
-    self._radar_counts_label = UnifiedLabel("none", **radar_text_args)
-    self._radar_status = ("", "none")
-    self._radar_layout_key: tuple[str, str, int] | None = None
-    self._radar_range_width = 0
-    self._radar_count_width = 36
-    self._radar_status_width = 52
-    self._radar_status_height = 42
 
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
 
@@ -191,16 +173,9 @@ class AugmentedRoadView(CameraView):
     super()._update_state()
 
     if ui_state.sm.updated["liveTracks"]:
-      live_tracks = ui_state.sm["liveTracks"]
-      self._radar_tracks_settings_prompt = bool(live_tracks.radarTracksAvailable and ui_state.radar_tracks != 2)
-      if self._radar_tracks_settings_prompt:
-        status = ("", "radar detected\ntap to enable")
-      else:
-        status = format_radar_tracks_onroad_columns(live_tracks) if ui_state.sm.valid["liveTracks"] else ("", "none")
-      self._set_radar_status(status)
+      self._radar_tracks_status.update(ui_state.sm["liveTracks"], ui_state.sm.valid["liveTracks"], ui_state.radar_tracks)
     elif not ui_state.sm.alive["liveTracks"]:
-      self._radar_tracks_settings_prompt = False
-      self._set_radar_status(("", "none"))
+      self._radar_tracks_status.reset()
 
     # update offroad label
     if ui_state.panda_type == log.PandaState.PandaType.unknown:
@@ -210,41 +185,8 @@ class AugmentedRoadView(CameraView):
     else:
       self._offroad_label.set_text("start the car to\nuse sunnypilot")
 
-  def _set_radar_status(self, status: tuple[str, str]) -> None:
-    if status == self._radar_status:
-      return
-
-    self._radar_status = status
-    self._radar_ranges_label.set_text(status[0])
-    self._radar_counts_label.set_text(status[1])
-    self._radar_layout_key = None
-
-  def _update_radar_status_layout(self) -> None:
-    radar_horizontal_padding = 8
-    radar_column_gap = 8
-    radar_max_inner_width = int(self._content_rect.width - 40)
-    layout_key = (*self._radar_status, radar_max_inner_width)
-    if layout_key == self._radar_layout_key:
-      return
-
-    radar_range_max_width = radar_max_inner_width - 36 - radar_column_gap
-    self._radar_ranges_label.get_content_height(radar_range_max_width)
-    self._radar_counts_label.get_content_height(radar_max_inner_width)
-    self._radar_range_width = int(np.ceil(self._radar_ranges_label.text_width))
-    self._radar_count_width = max(36, int(np.ceil(self._radar_counts_label.text_width)))
-    radar_status_inner_width = self._radar_range_width + self._radar_count_width + (radar_column_gap if self._radar_range_width else 0)
-    self._radar_status_width = radar_status_inner_width + radar_horizontal_padding * 2
-    self._radar_status_height = max(
-      42,
-      self._radar_ranges_label.get_content_height(max(self._radar_range_width, 1)) + 10,
-      self._radar_counts_label.get_content_height(self._radar_count_width) + 10,
-    )
-    self._radar_layout_key = layout_key
-
   def _handle_mouse_release(self, mouse_pos: MousePos):
-    if (self._radar_tracks_settings_callback is not None and
-        rl.check_collision_point_rec(mouse_pos, self._radar_status_rect)):
-      self._radar_tracks_settings_callback()
+    if self._radar_tracks_status.handle_mouse(mouse_pos):
       return
 
     # Don't trigger click callback if bookmark was triggered
@@ -289,29 +231,7 @@ class AugmentedRoadView(CameraView):
     # Fade out bottom of overlays for looks
     rl.draw_texture_ex(self._fade_texture, rl.Vector2(self._content_rect.x, self._content_rect.y), 0.0, 1.0, rl.WHITE)
 
-    radar_horizontal_padding = 8
-    radar_column_gap = 8
-    self._update_radar_status_layout()
-    self._radar_status_rect = rl.Rectangle(
-      self._content_rect.x + self._content_rect.width - self._radar_status_width - 12,
-      self._content_rect.y + 8,
-      self._radar_status_width,
-      self._radar_status_height,
-    )
-    radar_status_rect = self._radar_status_rect
-    rl.draw_rectangle_rounded(radar_status_rect, 0.5, 8, rl.Color(0, 0, 0, 170))
-    self._radar_ranges_label.render(rl.Rectangle(
-      radar_status_rect.x + radar_horizontal_padding,
-      radar_status_rect.y + 5,
-      self._radar_range_width,
-      radar_status_rect.height - 10,
-    ))
-    self._radar_counts_label.render(rl.Rectangle(
-      radar_status_rect.x + radar_horizontal_padding + self._radar_range_width + (radar_column_gap if self._radar_range_width else 0),
-      radar_status_rect.y + 5,
-      self._radar_count_width,
-      radar_status_rect.height - 10,
-    ))
+    self._radar_tracks_status.render(self._content_rect)
 
     alert_to_render, not_animating_out = self._alert_renderer.will_render()
 
