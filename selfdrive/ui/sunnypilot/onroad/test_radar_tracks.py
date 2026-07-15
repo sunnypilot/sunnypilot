@@ -19,6 +19,12 @@ def test_radar_track_relative_speed_colors():
   assert receding == (255, 144, 144, 255)
 
 
+def test_radar_track_stationary_world_object_is_white():
+  assert color_tuple(radar_track_color(-20.0, v_ego=20.0)) == (255, 255, 255, 255)
+  assert color_tuple(radar_track_color(-19.0, v_ego=20.0)) == (255, 255, 255, 255)
+  assert color_tuple(radar_track_color(-18.9, v_ego=20.0)) == (0, 128, 255, 255)
+
+
 def test_format_radar_tracks_status_none():
   live_tracks = car.RadarData.new_message()
 

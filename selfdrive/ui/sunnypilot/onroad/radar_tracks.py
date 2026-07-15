@@ -8,13 +8,17 @@ import math
 import pyray as rl
 
 RELATIVE_SPEED_COLOR_RANGE = 10.0  # m/s; speeds beyond this use the full endpoint color
+STATIONARY_SPEED_THRESHOLD = 1.0  # m/s estimated ground speed
 APPROACHING_COLOR = (0, 128, 255)
 NEUTRAL_COLOR = (255, 255, 255)
 RECEDING_COLOR = (255, 32, 32)
 
 
-def radar_track_color(v_rel: float) -> rl.Color:
+def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
   """Map relative speed from approaching blue through neutral white to receding red."""
+  if abs(v_ego + v_rel) <= STATIONARY_SPEED_THRESHOLD:
+    return rl.Color(*NEUTRAL_COLOR, 255)
+
   blend = min(abs(v_rel) / RELATIVE_SPEED_COLOR_RANGE, 1.0)
   target = APPROACHING_COLOR if v_rel < 0.0 else RECEDING_COLOR
   rgb = tuple(round(neutral + (endpoint - neutral) * blend) for neutral, endpoint in zip(NEUTRAL_COLOR, target, strict=True))
@@ -40,7 +44,7 @@ def format_radar_tracks_onroad_columns(live_tracks) -> tuple[str, str]:
 
 
 class RadarTracks:
-  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=6, screen_offset=(0, 0)):
+  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=6, screen_offset=(0, 0), v_ego=0.0):
     for track in live_tracks.points:
       d_rel, y_rel, v_rel = track.dRel, track.yRel, track.vRel
       if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel)):
@@ -51,4 +55,4 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      rl.draw_circle(int(x), int(y), track_size, radar_track_color(v_rel))
+      rl.draw_circle(int(x), int(y), track_size, radar_track_color(v_rel, v_ego))
