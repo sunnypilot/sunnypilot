@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import math
 import pyray as rl
 
-RELATIVE_SPEED_COLOR_RANGE = 10.0  # m/s; speeds beyond this use the full endpoint color
+RELATIVE_SPEED_MOVING_THRESHOLD = 0.5  # m/s relative speed deadband
 STATIONARY_SPEED_THRESHOLD = 1.0  # m/s estimated ground speed
 APPROACHING_COLOR = (0, 64, 255)
 NEUTRAL_COLOR = (255, 255, 255)
@@ -15,14 +15,12 @@ RECEDING_COLOR = (255, 0, 0)
 
 
 def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
-  """Map relative speed from approaching blue through neutral white to receding red."""
-  if abs(v_ego + v_rel) <= STATIONARY_SPEED_THRESHOLD:
+  """Classify tracks as stationary, approaching, or receding with discrete colors."""
+  if abs(v_ego + v_rel) <= STATIONARY_SPEED_THRESHOLD or abs(v_rel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
     return rl.Color(*NEUTRAL_COLOR, 255)
 
-  blend = min(abs(v_rel) / RELATIVE_SPEED_COLOR_RANGE, 1.0)
-  target = APPROACHING_COLOR if v_rel < 0.0 else RECEDING_COLOR
-  rgb = tuple(round(neutral + (endpoint - neutral) * blend) for neutral, endpoint in zip(NEUTRAL_COLOR, target, strict=True))
-  return rl.Color(*rgb, 255)
+  color = APPROACHING_COLOR if v_rel < 0.0 else RECEDING_COLOR
+  return rl.Color(*color, 255)
 
 
 def format_radar_tracks_onroad_status(live_tracks) -> str:

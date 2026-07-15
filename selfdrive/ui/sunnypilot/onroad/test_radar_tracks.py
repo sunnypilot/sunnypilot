@@ -12,11 +12,15 @@ def test_radar_track_relative_speed_colors():
   assert color_tuple(radar_track_color(-10.0)) == (0, 64, 255, 255)
   assert color_tuple(radar_track_color(0.0)) == (255, 255, 255, 255)
   assert color_tuple(radar_track_color(10.0)) == (255, 0, 0, 255)
+  assert color_tuple(radar_track_color(-5.0)) == (0, 64, 255, 255)
+  assert color_tuple(radar_track_color(5.0)) == (255, 0, 0, 255)
 
-  approaching = color_tuple(radar_track_color(-5.0))
-  receding = color_tuple(radar_track_color(5.0))
-  assert approaching == (128, 160, 255, 255)
-  assert receding == (255, 128, 128, 255)
+
+def test_radar_track_relative_speed_deadband_is_white():
+  assert color_tuple(radar_track_color(-0.5, v_ego=10.0)) == (255, 255, 255, 255)
+  assert color_tuple(radar_track_color(0.5, v_ego=10.0)) == (255, 255, 255, 255)
+  assert color_tuple(radar_track_color(-0.51, v_ego=10.0)) == (0, 64, 255, 255)
+  assert color_tuple(radar_track_color(0.51, v_ego=10.0)) == (255, 0, 0, 255)
 
 
 def test_radar_track_stationary_world_object_is_white():
