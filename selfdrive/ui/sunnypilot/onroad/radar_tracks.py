@@ -9,9 +9,9 @@ import pyray as rl
 
 RELATIVE_SPEED_MOVING_THRESHOLD = 0.5  # m/s relative speed deadband
 STATIONARY_SPEED_THRESHOLD = 1.0  # m/s estimated ground speed
-APPROACHING_COLOR = (0, 64, 255)
+APPROACHING_COLOR = (0, 140, 255)
 NEUTRAL_COLOR = (255, 255, 255)
-RECEDING_COLOR = (255, 0, 0)
+RECEDING_COLOR = (255, 45, 45)
 
 
 def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
