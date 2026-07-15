@@ -91,3 +91,20 @@ def test_draw_radar_tracks_allows_unknown_acceleration(monkeypatch):
   radar_tracks.RadarTracks().draw_radar_tracks(live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2)
 
   assert drawn_colors == [color_tuple(radar_track_color(-5))]
+
+
+def test_draw_radar_tracks_shrinks_neutral_dots(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  point = live_tracks.init("points", 1)[0]
+  point.dRel = 10
+  point.yRel = 1
+  point.vRel = -20
+  point.aRel = 0
+  drawn_sizes = []
+  monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_sizes.append(size))
+
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=5, v_ego=20,
+  )
+
+  assert drawn_sizes == [3]

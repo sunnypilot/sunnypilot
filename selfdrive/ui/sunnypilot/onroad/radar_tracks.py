@@ -55,4 +55,6 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      rl.draw_circle(int(x), int(y), track_size, radar_track_color(v_rel, v_ego))
+      color = radar_track_color(v_rel, v_ego)
+      neutral = (color.r, color.g, color.b) == NEUTRAL_COLOR
+      rl.draw_circle(int(x), int(y), max(1, track_size - 2) if neutral else track_size, color)
