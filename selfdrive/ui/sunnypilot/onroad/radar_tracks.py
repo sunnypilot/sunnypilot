@@ -13,13 +13,16 @@ RELATIVE_SPEED_MOVING_THRESHOLD = 0.5  # m/s relative speed deadband
 STATIONARY_SPEED_THRESHOLD = 1.0  # m/s estimated ground speed
 APPROACHING_COLOR = (0, 140, 255)
 NEUTRAL_COLOR = (255, 255, 255)
+MATCHED_SPEED_COLOR = (0, 255, 64)
 RECEDING_COLOR = (255, 45, 45)
 
 
 def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
-  """Classify tracks as stationary, approaching, or receding with discrete colors."""
-  if radar_track_is_stationary(v_rel, v_ego) or abs(v_rel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
+  """Classify tracks as stationary, speed-matched, approaching, or receding with discrete colors."""
+  if radar_track_is_stationary(v_rel, v_ego):
     return rl.Color(*NEUTRAL_COLOR, 255)
+  if abs(v_rel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
+    return rl.Color(*MATCHED_SPEED_COLOR, 255)
 
   color = APPROACHING_COLOR if v_rel < 0.0 else RECEDING_COLOR
   return rl.Color(*color, 255)
