@@ -7,10 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 import math
 import pyray as rl
 
-RELATIVE_SPEED_COLOR_RANGE = 15.0  # m/s; speeds beyond this use the full endpoint color
-APPROACHING_COLOR = (32, 128, 255)
+RELATIVE_SPEED_COLOR_RANGE = 10.0  # m/s; speeds beyond this use the full endpoint color
+APPROACHING_COLOR = (0, 128, 255)
 NEUTRAL_COLOR = (255, 255, 255)
-RECEDING_COLOR = (255, 48, 48)
+RECEDING_COLOR = (255, 32, 32)
 
 
 def radar_track_color(v_rel: float) -> rl.Color:

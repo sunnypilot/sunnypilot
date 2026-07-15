@@ -9,14 +9,14 @@ def color_tuple(color):
 
 
 def test_radar_track_relative_speed_colors():
-  assert color_tuple(radar_track_color(-15.0)) == (32, 128, 255, 255)
+  assert color_tuple(radar_track_color(-10.0)) == (0, 128, 255, 255)
   assert color_tuple(radar_track_color(0.0)) == (255, 255, 255, 255)
-  assert color_tuple(radar_track_color(15.0)) == (255, 48, 48, 255)
+  assert color_tuple(radar_track_color(10.0)) == (255, 32, 32, 255)
 
-  approaching = color_tuple(radar_track_color(-7.5))
-  receding = color_tuple(radar_track_color(7.5))
-  assert approaching == (144, 192, 255, 255)
-  assert receding == (255, 152, 152, 255)
+  approaching = color_tuple(radar_track_color(-5.0))
+  receding = color_tuple(radar_track_color(5.0))
+  assert approaching == (128, 192, 255, 255)
+  assert receding == (255, 144, 144, 255)
 
 
 def test_format_radar_tracks_status_none():
