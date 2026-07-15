@@ -23,14 +23,6 @@ def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
   return rl.Color(*color, 255)
 
 
-def format_radar_tracks_onroad_status(live_tracks) -> str:
-  range_text, count_text = format_radar_tracks_onroad_columns(live_tracks)
-  if not range_text:
-    return count_text
-
-  return "\n".join(f"{radar_range} {track_count}" for radar_range, track_count in zip(range_text.splitlines(), count_text.splitlines(), strict=True))
-
-
 def format_radar_tracks_onroad_columns(live_tracks) -> tuple[str, str]:
   sources = sorted(live_tracks.trackSources, key=lambda source: (source.startAddress, source.endAddress, source.bus))
   if not sources:

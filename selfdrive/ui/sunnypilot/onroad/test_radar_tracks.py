@@ -1,7 +1,7 @@
 from cereal import car
 
 from openpilot.selfdrive.ui.sunnypilot.onroad import radar_tracks
-from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns, format_radar_tracks_onroad_status, radar_track_color
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns, radar_track_color
 
 
 def color_tuple(color):
@@ -29,23 +29,21 @@ def test_radar_track_stationary_world_object_is_white():
   assert color_tuple(radar_track_color(-18.9, v_ego=20.0)) == (0, 140, 255, 255)
 
 
-def test_format_radar_tracks_status_none():
+def test_format_radar_tracks_columns_none():
   live_tracks = car.RadarData.new_message()
 
-  assert format_radar_tracks_onroad_status(live_tracks) == "none"
   assert format_radar_tracks_onroad_columns(live_tracks) == ("", "none")
 
 
-def test_format_radar_tracks_status_range_and_count():
+def test_format_radar_tracks_columns_range_and_count():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [{"startAddress": 0x500, "endAddress": 0x51F, "bus": 1, "trackCount": 2}]
   live_tracks.init("points", 2)
 
-  assert format_radar_tracks_onroad_status(live_tracks) == "500-51F 2"
   assert format_radar_tracks_onroad_columns(live_tracks) == ("500-51F", "2")
 
 
-def test_format_radar_tracks_status_deduplicates_and_sorts_ranges():
+def test_format_radar_tracks_columns_sorts_ranges():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [
     {"startAddress": 0x500, "endAddress": 0x51F, "bus": 2, "trackCount": 3},
@@ -54,7 +52,6 @@ def test_format_radar_tracks_status_deduplicates_and_sorts_ranges():
   ]
   live_tracks.init("points", 1)
 
-  assert format_radar_tracks_onroad_status(live_tracks) == "210-21F 1\n500-51F 2\n500-51F 3"
   assert format_radar_tracks_onroad_columns(live_tracks) == (
     "210-21F\n500-51F\n500-51F",
     "1\n2\n3",
