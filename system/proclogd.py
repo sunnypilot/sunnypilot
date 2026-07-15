@@ -128,7 +128,8 @@ _SMAPS_KEYS = {b'Pss:', b'Pss_Anon:', b'Pss_Shmem:'}
 _smaps_path: str | None = None  # auto-detected on first call
 
 # per-VMA smaps is expensive (kernel walks page tables for every VMA).
-# cache results and only refresh every N cycles to keep CPU low.
+# Cache results and stagger refreshes across N cycles so all large processes
+# aren't scanned in the same cycle.
 _smaps_cache: dict[int, SmapsData] = {}
 _smaps_cycle = 0
 _SMAPS_EVERY = 20  # refresh every 20th cycle (40s at 0.5Hz)
@@ -158,8 +159,8 @@ def _read_smaps(pid: int) -> SmapsData:
 
 
 def _get_smaps_cached(pid: int) -> SmapsData:
-  """Return cached smaps data, refreshing every _SMAPS_EVERY cycles."""
-  if _smaps_cycle == 0 or pid not in _smaps_cache:
+  """Return cached smaps data, refreshing each PID in its assigned cycle."""
+  if pid % _SMAPS_EVERY == _smaps_cycle:
     _smaps_cache[pid] = _read_smaps(pid)
   return _smaps_cache.get(pid, {'pss': 0, 'pss_anon': 0, 'pss_shmem': 0})
 
