@@ -4,7 +4,7 @@ import time
 import shutil
 import threading
 from pathlib import Path
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.loggerd.config import get_available_bytes, get_available_percent
 from openpilot.system.loggerd.uploader import listdir_by_creation

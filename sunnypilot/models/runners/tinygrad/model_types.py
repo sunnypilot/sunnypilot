@@ -6,7 +6,7 @@ from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as Combine
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
 from openpilot.sunnypilot.models.runners.constants import ModelType, NumpyDict
 from openpilot.sunnypilot.models.runners.model_runner import ModularRunner
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
