@@ -5,7 +5,7 @@ import pickle
 import codecs
 from pathlib import Path
 
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 from sunnypilot.modeld_v2.get_model_metadata import MetadataOnnxPBParser, get_name_and_shape, get_metadata_value_by_name
 
 
