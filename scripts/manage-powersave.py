@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import multiprocessing
-from openpilot.system.hardware import HARDWARE
+from openpilot.common.hardware import HARDWARE
 
 
 def main():

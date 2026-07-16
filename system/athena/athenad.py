@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import io
+import itertools
 import json
 import os
 import queue
@@ -35,17 +36,16 @@ from openpilot.common.api import Api, get_key_pair
 from openpilot.common.utils import CallbackReader, get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
-from openpilot.system.hardware import HARDWARE, PC
+from openpilot.common.hardware import HARDWARE, PC
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_build_metadata
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 
 
 ATHENA_HOST = os.getenv('ATHENA_HOST', 'wss://athena.comma.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {22, }  # SSH
-WEBRTCD_PORT = 5001
 
 LOG_ATTR_NAME = 'user.upload'
 LOG_ATTR_VALUE_MAX_UNIX_TIME = int.to_bytes(2147483647, 4, sys.byteorder)
@@ -57,6 +57,9 @@ MAX_AGE = 31 * 24 * 3600  # seconds
 WS_FRAME_SIZE = 4096
 DEVICE_STATE_UPDATE_INTERVAL = 1.0  # in seconds
 DEFAULT_UPLOAD_PRIORITY = 99  # higher number = lower priority
+
+SEND_PRIORITY_HIGH = 0
+SEND_PRIORITY_LOW = 1
 
 # https://bytesolutions.com/dscp-tos-cos-precedence-conversion-chart,
 # https://en.wikipedia.org/wiki/Differentiated_services
@@ -127,13 +130,17 @@ class UploadItem:
 
 dispatcher["echo"] = lambda s: s
 recv_queue: Queue[str] = queue.Queue()
-send_queue: Queue[str] = queue.Queue()
+send_queue: Queue[tuple[int, int, str]] = queue.PriorityQueue()
 upload_queue: Queue[UploadItem] = queue.PriorityQueue()
-low_priority_send_queue: Queue[str] = queue.Queue()
 log_recv_queue: Queue[str] = queue.Queue()
 cancelled_uploads: set[str] = set()
 
 cur_upload_items: dict[int, UploadItem | None] = {}
+
+send_seq = itertools.count()
+def send_queue_push(data: str, priority: int) -> None:
+  assert priority is not None, "send queue priority must be specified"
+  send_queue.put_nowait((priority, next(send_seq), data)) # tie-break with a monotonic counter
 
 
 # TODO-SP: adapt zst for sunnylink
@@ -210,7 +217,7 @@ def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None) -> Non
       if "method" in data:
         cloudlog.event("athena.jsonrpc_handler.call_method", data=data)
         response = JSONRPCResponseManager.handle(data, dispatcher)
-        send_queue.put_nowait(response.json)
+        send_queue_push(response.json, SEND_PRIORITY_HIGH)
       elif "id" in data and ("result" in data or "error" in data):
         log_recv_queue.put_nowait(data)
       else:
@@ -219,7 +226,7 @@ def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None) -> Non
       pass
     except Exception as e:
       cloudlog.exception("athena jsonrpc handler failed")
-      send_queue.put_nowait(json.dumps({"error": str(e)}))
+      send_queue_push(json.dumps({"error": str(e)}), SEND_PRIORITY_HIGH)
 
 
 def retry_upload(tid: int, end_event: threading.Event, increase_count: bool = True) -> None:
@@ -595,37 +602,28 @@ def getNetworkMetered() -> bool:
 
 
 @dispatcher.add_method
-def getNetworks():
-  return HARDWARE.get_networks()
-
-
-@dispatcher.add_method
-def startStream(sdp: str) -> dict:
-  from openpilot.system.webrtc.webrtcd import StreamRequestBody
+def startStream(sdp: str, enabled: bool) -> dict:
+  from openpilot.system.webrtc.helpers import StreamRequestBody, post_stream_request, wait_for_webrtcd
+  params = Params()
   bridge_services_in = []
 
-  # get live car params to avoid stale notCar edge case
-  cp_bytes = Params().get("CarParams")
+  # stale car params case taken care of by webrtcd being shut off on ignition
+  cp_bytes = Params().get("CarParamsPersistent")
   if cp_bytes is not None:
     with car.CarParams.from_bytes(cp_bytes) as CP:
       if CP.notCar:
         bridge_services_in.append("testJoystick")
+  else:
+      raise Exception("failed to get CarParamsPersistent")
 
-  body = StreamRequestBody(sdp, "wideRoad", bridge_services_in, ["carState"])
-  try:
-    resp = requests.post(f"http://localhost:{WEBRTCD_PORT}/stream",
-                       json=asdict(body), timeout=10)
-    if not resp.ok:
-      try:
-        error_body = resp.json()
-        raise Exception(error_body.get("message", f"webrtcd returned {resp.status_code}"))
-      except ValueError:
-        resp.raise_for_status()
-    return resp.json()
-  except requests.ConnectTimeout as e:
-    raise Exception("webrtc took too long to respond. is it on?") from e
-  except requests.ConnectionError as e:
-    raise Exception("webrtc is not running. turn on comma body ignition.") from e
+  if not params.get_bool("IsOnroad"):
+    # manager owns camerad/stream_encoderd/webrtcd; flip the param and let it bring them up.
+    # webrtcd clears IsLiveStreaming when the session ends
+    params.put_bool("IsLiveStreaming", True)
+    # wait for webrtcd end points to wake up
+    wait_for_webrtcd()
+
+  return post_stream_request(StreamRequestBody(sdp, "wideRoad", enabled, bridge_services_in, ["carState", "deviceState"]))
 
 
 @dispatcher.add_method
@@ -716,12 +714,12 @@ def add_log_to_queue(log_path, log_id, is_sunnylink=False):
 
     if is_sunnylink and size_in_bytes <= MAX_SIZE_BYTES:
       cloudlog.debug(f"Target is sunnylink and log file {log_path} is small enough to send in one request ({size_in_bytes} bytes).")
-      low_priority_send_queue.put_nowait(jsonrpc_str)
+      send_queue_push(jsonrpc_str, SEND_PRIORITY_LOW)
     elif is_sunnylink:
       cloudlog.warning(f"Target is sunnylink and log file {log_path} is too large to send in one request.")
     else:
       cloudlog.debug(f"Target is not sunnylink, proceeding to send log file {log_path} in one request ({size_in_bytes} bytes).")
-      low_priority_send_queue.put_nowait(jsonrpc_str)
+      send_queue_push(jsonrpc_str, SEND_PRIORITY_LOW)
 
 
 def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None:
@@ -815,7 +813,7 @@ def stat_handler(end_event: threading.Event, stats_dir=None, is_sunnylink=False)
             if is_sunnylink and is_compressed:
               jsonrpc["params"]["compressed"] = is_compressed
 
-            low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
+            send_queue_push(json.dumps(jsonrpc), SEND_PRIORITY_LOW)
           os.remove(stat_path)
         last_scan = curr_scan
     except Exception:
@@ -897,10 +895,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
 def ws_send(ws: WebSocket, end_event: threading.Event) -> None:
   while not end_event.is_set():
     try:
-      try:
-        data = send_queue.get_nowait()
-      except queue.Empty:
-        data = low_priority_send_queue.get(timeout=1)
+      _, _, data = send_queue.get(timeout=1)
       for i in range(0, len(data), WS_FRAME_SIZE):
         frame = data[i:i+WS_FRAME_SIZE]
         last = i + WS_FRAME_SIZE >= len(data)

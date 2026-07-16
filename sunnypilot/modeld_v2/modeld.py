@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import os
-from openpilot.system.hardware import TICI
+from openpilot.common.hardware import TICI
 os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
 USBGPU = "USBGPU" in os.environ
 if USBGPU:
@@ -54,7 +54,7 @@ def _find_driving_pkl(bundle):
     return override
   if bundle is None or not bundle.models:
     return None
-  from openpilot.system.hardware.hw import Paths
+  from openpilot.common.hardware.hw import Paths
   model_root = Paths.model_root()
 
   pkl_name = bundle.models[0].artifact.fileName
