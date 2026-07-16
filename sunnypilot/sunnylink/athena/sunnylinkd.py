@@ -57,6 +57,58 @@ BLOCKED_PARAMS = {
   "ParamsVersion",         # Device-managed version counter
 }
 
+_SETTINGS_UI_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "settings_ui.json")
+
+
+def _extract_rule_params(schema: dict, rule_type: str) -> frozenset[str]:
+  result: set[str] = set()
+
+  def has_rule(rules: list) -> bool:
+    for r in rules:
+      if not isinstance(r, dict):
+        continue
+      if r.get('type') == rule_type:
+        return True
+      for v in r.values():
+        if isinstance(v, list) and has_rule(v):
+          return True
+    return False
+
+  def scan(items: list) -> None:
+    for item in items:
+      if not isinstance(item, dict):
+        continue
+      key = item.get('key')
+      if key and has_rule(item.get('enablement') or []):
+        result.add(key)
+      scan(item.get('sub_items') or [])
+
+  def scan_sections(sections: list) -> None:
+    for section in sections:
+      if not isinstance(section, dict):
+        continue
+      scan(section.get('items') or [])
+      for sp in section.get('sub_panels') or []:
+        if isinstance(sp, dict):
+          scan(sp.get('items') or [])
+
+  for panel in schema.get('panels') or []:
+    if isinstance(panel, dict):
+      scan_sections(panel.get('sections') or [])
+  for brand_data in (schema.get('vehicle_settings') or {}).values():
+    if isinstance(brand_data, dict):
+      scan_sections(brand_data.get('sections') or [])
+
+  return frozenset(result)
+
+
+try:
+  with open(_SETTINGS_UI_PATH) as _f:
+    OFFROAD_ONLY_PARAMS: frozenset[str] = _extract_rule_params(json.load(_f), 'offroad_only')
+except Exception:
+  cloudlog.exception("sunnylinkd: failed to load settings_ui.json for offroad enforcement")
+  OFFROAD_ONLY_PARAMS = frozenset()
+
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
@@ -233,23 +285,30 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
+  is_onroad = params.get_bool("IsOnroad")
+  wrote_any = False
+
   for key, value in params_to_update.items():
-    # disallow modifications to blocked parameters
     if key in BLOCKED_PARAMS:
-      cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
+      cloudlog.warning(f"sunnylinkd.saveParams.blocked: '{key}'")
+      continue
+
+    if is_onroad and key in OFFROAD_ONLY_PARAMS:
+      cloudlog.warning(f"sunnylinkd.saveParams.offroad_only: '{key}' rejected (device is onroad)")
       continue
 
     try:
       save_param_from_base64_encoded_string(key, value, compression)
+      wrote_any = True
     except Exception as e:
       cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
 
-  # Increment version counter for frontend change detection
-  try:
-    current = int(params.get("ParamsVersion") or "0")
-    params.put("ParamsVersion", str(current + 1), block=True)
-  except Exception:
-    pass
+  if wrote_any:
+    try:
+      current = int(params.get("ParamsVersion") or "0")
+      params.put("ParamsVersion", str(current + 1), block=True)
+    except Exception:
+      pass
 
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:

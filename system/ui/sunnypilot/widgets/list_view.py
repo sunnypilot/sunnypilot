@@ -181,6 +181,12 @@ class MultipleButtonActionSP(MultipleButtonAction):
 
       rl.draw_text_ex(self._font, text, rl.Vector2(text_x, text_y), 40, 0, current_text_color)
 
+  def show_event(self):
+    if self.param_key:
+      self.selected_button = int(self.params.get(self.param_key, return_default=True))
+      self._anim_x = None
+    super().show_event()
+
   def _handle_mouse_release(self, mouse_pos: MousePos):
     # Override parent method to check individual button enabled state
     if not self.enabled:

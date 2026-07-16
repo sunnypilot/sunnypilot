@@ -166,7 +166,7 @@ The tables below describe the **compiled** `settings_ui.json` schema — what th
 
 | Use this | When | Why |
 |---|---|---|
-| `offroad_only` | Param can only be safely changed when the car is parked. Most user-facing toggles. | Strictest. Frontend shows "device is driving" badge and disables the row. |
+| `offroad_only` | Param can only be safely changed when the car is parked. Most user-facing toggles. | Strictest. Frontend shows "device is driving" badge and disables the row. Sunnylink remote writes are also blocked on the device when onroad (enforced by `sunnylinkd.py` at the remote write path, derived from `settings_ui.json` at startup). |
 | `not_engaged` | Param can be changed while the car is started but only when sunnypilot/MADS is **not** actively driving. | Less strict than offroad. Matches Raylib `engaged = started AND (selfdriveState.enabled OR mads.enabled)`. Use for items the device must apply mid-drive (e.g. test maneuvers, longitudinal stock-vs-OP toggle). |
 | `param`-based | Behavior depends on another setting's value (parent toggle, mode selector, etc.). | Composes with `not`/`any`/`all` for arbitrary logic. |
 | `capability`-based | Behavior depends on the connected car or device (brand, longitudinal, hardware). | Resolved on the device from `CarParams` / hardware. See [`capabilities.py`](../capabilities.py) for the full field list. |
@@ -574,7 +574,7 @@ The device defines these labels in `capabilities.py:CAPABILITY_LABELS`. Examples
 
 ### Centralized param enforcement
 
-The device-side UI enforces capability constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_constraints()`, which removes incompatible params based on car capabilities. This is the single source of truth for such constraints.
+The device-side UI enforces capability constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_constraints()`, which removes incompatible params based on car capabilities.
 
 Settings layouts should not duplicate these params.remove() calls. Instead, rely on schema rules and centralized enforcement to prevent duplicate logic and ensure consistency.
 
@@ -583,3 +583,5 @@ Example constraints in `_enforce_constraints()`:
 - No CarParams: remove all car-dependent params
 - No longitudinal: remove `ExperimentalMode`
 - No ICBM: remove `IntelligentCruiseButtonManagement`
+
+`sunnylinkd.py` also enforces `offroad_only` rules at the Sunnylink remote write path: it loads `settings_ui.json` at startup and builds `OFFROAD_ONLY_PARAMS` from all items that carry an `offroad_only` enablement rule. Any `saveParams()` call received while the device is onroad silently drops writes to those params. New `offroad_only` settings are automatically covered when the schema is recompiled and committed — no code change needed.
