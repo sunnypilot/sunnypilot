@@ -192,7 +192,7 @@ def patch_modeld(monkeypatch):
 
 @pytest.fixture
 def model_state_factory(tmp_path, monkeypatch, patch_modeld):
-  from openpilot.system.hardware import hw
+  from openpilot.common.hardware import hw
 
   def _create(archetype):
     write_pkl(tmp_path, archetype)

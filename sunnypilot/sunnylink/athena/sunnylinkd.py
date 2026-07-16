@@ -21,7 +21,7 @@ from functools import partial
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, start_local_proxy_shim, upload_handler, stat_handler
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,

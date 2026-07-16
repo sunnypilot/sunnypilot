@@ -22,7 +22,7 @@ from openpilot.system.athena import athenad
 from openpilot.system.athena.athenad import MAX_RETRY_COUNT, UPLOAD_SESS, dispatcher
 from openpilot.system.athena.tests.helpers import HTTPRequestHandler, MockWebsocket, MockApi, EchoSocket
 from openpilot.selfdrive.test.helpers import http_server_context
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 
 
 def seed_athena_server(host, port):
@@ -422,11 +422,11 @@ class TestAthenadMethods:
     try:
       # with params
       athenad.recv_queue.put_nowait(json.dumps({"method": "echo", "params": ["hello"], "jsonrpc": "2.0", "id": 0}))
-      resp = athenad.send_queue.get(timeout=3)
+      _, _, resp = athenad.send_queue.get(timeout=3)
       assert json.loads(resp) == {'result': 'hello', 'id': 0, 'jsonrpc': '2.0'}
       # without params
       athenad.recv_queue.put_nowait(json.dumps({"method": "getNetworkType", "jsonrpc": "2.0", "id": 0}))
-      resp = athenad.send_queue.get(timeout=3)
+      _, _, resp = athenad.send_queue.get(timeout=3)
       assert json.loads(resp) == {'result': 1, 'id': 0, 'jsonrpc': '2.0'}
       # log forwarding
       athenad.recv_queue.put_nowait(json.dumps({'result': {'success': 1}, 'id': 0, 'jsonrpc': '2.0'}))

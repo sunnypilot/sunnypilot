@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 import numpy as np
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.constants import NumpyDict, ShapeDict, Model, SliceDict, SEND_RAW_PRED
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 import pickle
 
 CUSTOM_MODEL_PATH = Paths.model_root()

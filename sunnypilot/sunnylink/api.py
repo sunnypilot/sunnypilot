@@ -8,8 +8,8 @@ from datetime import datetime, timedelta, UTC
 
 from openpilot.common.api.base import BaseApi
 from openpilot.common.params import Params
-from openpilot.system.hardware import HARDWARE
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware import HARDWARE
+from openpilot.common.hardware.hw import Paths
 
 API_HOST = os.getenv('SUNNYLINK_API_HOST', 'https://stg.api.sunnypilot.ai')
 UNREGISTERED_SUNNYLINK_DONGLE_ID = "UnregisteredDevice"
@@ -47,16 +47,16 @@ class SunnylinkApi(BaseApi):
     return sunnylink_dongle_id, comma_dongle_id
 
   def _resolve_imeis(self):
-    imei1, imei2 = None, None
+    imei = None
     imei_try = 0
-    while imei1 is None and imei2 is None and imei_try < MAX_RETRIES:
+    while imei is None and imei_try < MAX_RETRIES:
       try:
-        imei1, imei2 = HARDWARE.get_imei(0), HARDWARE.get_imei(1)
+        imei = HARDWARE.get_imei()
       except Exception:
         self._status_update(f"Error getting imei, trying again... [{imei_try + 1}/{MAX_RETRIES}]")
         time.sleep(1)
       imei_try += 1
-    return imei1, imei2
+    return imei, ""
 
   def _resolve_serial(self):
     return (self.params.get("HardwareSerial")

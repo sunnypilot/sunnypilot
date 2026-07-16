@@ -3,7 +3,7 @@ import os
 import requests
 import unicodedata
 from datetime import datetime, timedelta, UTC
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 from openpilot.system.version import get_version
 
 # name: jwt signature algorithm

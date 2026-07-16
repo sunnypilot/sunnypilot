@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware.hw import Paths
 from cereal import custom
 
 # Type definitions for clarity

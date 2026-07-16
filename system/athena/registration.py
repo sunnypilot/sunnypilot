@@ -10,8 +10,8 @@ from openpilot.common.api import api_get, get_key_pair
 from openpilot.common.params import Params
 from openpilot.common.spinner import Spinner
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
-from openpilot.system.hardware import HARDWARE, PC
-from openpilot.system.hardware.hw import Paths
+from openpilot.common.hardware import HARDWARE, PC
+from openpilot.common.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
 
 
@@ -54,17 +54,16 @@ def register(show_spinner=False) -> str | None:
     # Block until we get the imei
     serial = HARDWARE.get_serial()
     start_time = time.monotonic()
-    imei1: str | None = None
-    imei2: str | None = None
-    while imei1 is None and imei2 is None:
+    imei: str | None = None
+    while imei is None:
       try:
-        imei1, imei2 = HARDWARE.get_imei(0), HARDWARE.get_imei(1)
+        imei = HARDWARE.get_imei()
       except Exception:
         cloudlog.exception("Error getting imei, trying again...")
         time.sleep(1)
 
       if time.monotonic() - start_time > 60 and show_spinner:
-        spinner.update(f"registering device - serial: {serial}, IMEI: ({imei1}, {imei2})")
+        spinner.update(f"registering device - serial: {serial}, IMEI: {imei}")
 
     backoff = 0
     start_time = time.monotonic()
@@ -75,7 +74,7 @@ def register(show_spinner=False) -> str | None:
         cloudlog.info("getting pilotauth")
         cloudlog.info("getting pilotauth")
         resp = api_get("v2/pilotauth/", method='POST', timeout=15,
-                       imei=imei1, imei2=imei2, serial=serial, public_key=public_key, register_token=register_token)
+                       imei=imei, imei2="", serial=serial, public_key=public_key, register_token=register_token)
 
         if resp.status_code in (402, 403):
           cloudlog.info(f"Unable to register device, got {resp.status_code}")
@@ -90,7 +89,7 @@ def register(show_spinner=False) -> str | None:
         time.sleep(backoff)
 
       if time.monotonic() - start_time > 60 and show_spinner:
-        spinner.update(f"registering device - serial: {serial}, IMEI: ({imei1}, {imei2})")
+        spinner.update(f"registering device - serial: {serial}, IMEI: {imei}")
         return UNREGISTERED_DONGLE_ID  # hotfix to prevent an infinite wait for registration
 
     if show_spinner:
