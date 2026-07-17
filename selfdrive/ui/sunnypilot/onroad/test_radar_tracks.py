@@ -38,7 +38,7 @@ def test_format_radar_tracks_columns_range_and_count():
   assert format_radar_tracks_onroad_columns(live_tracks) == ("3A5-3C4", "2", "1", "1", "0", "")
 
 
-def test_format_radar_tracks_columns_ignores_non_dbc_ranges():
+def test_format_radar_tracks_columns_stacks_all_ranges_with_preferred_first():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [
     {"startAddress": 0x500, "endAddress": 0x51F, "bus": 2, "trackCount": 3},
@@ -53,16 +53,16 @@ def test_format_radar_tracks_columns_ignores_non_dbc_ranges():
   points[2].sourceAddress = 0x500
 
   assert format_radar_tracks_onroad_columns(live_tracks) == (
-    "3A5-3C4",
-    "2",
+    "3A5-3C4\n500-51F",
+    "2\n3",
     "1",
     "1",
-    "0",
+    "1",
     "",
   )
 
 
-def test_format_radar_tracks_columns_hides_non_dbc_source():
+def test_format_radar_tracks_columns_shows_non_motion_source():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [{"startAddress": 0x500, "endAddress": 0x51F, "bus": 1, "trackCount": 4}]
   points = live_tracks.init("points", 4)
@@ -71,7 +71,7 @@ def test_format_radar_tracks_columns_hides_non_dbc_source():
     point.motionState = 0
     point.sourceAddress = 0x500
 
-  assert format_radar_tracks_onroad_columns(live_tracks, v_ego=20.0) == ("", "none", "", "", "", "")
+  assert format_radar_tracks_onroad_columns(live_tracks, v_ego=20.0) == ("500-51F", "4", "0", "0", "4", "")
 
 
 def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
@@ -81,6 +81,7 @@ def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
   points[0].yRel = 1
   points[0].vRel = 2
   points[0].aRel = 0
+  points[0].motionState = radar_tracks.DBC_MOTION_MOVING
   drawn_circles = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_circles.append((x, y, size)))
 
@@ -95,22 +96,23 @@ def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
   assert drawn_circles == [(120, 37, 3)]
 
 
-def test_draw_radar_tracks_allows_unknown_acceleration(monkeypatch):
+def test_draw_radar_tracks_hides_unknown_motion(monkeypatch):
   live_tracks = car.RadarData.new_message()
   point = live_tracks.init("points", 1)[0]
   point.dRel = 10
   point.yRel = 1
   point.vRel = -5
   point.aRel = float("nan")
+  point.motionState = 0
   drawn_colors = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_colors.append(color_tuple(color)))
 
   radar_tracks.RadarTracks().draw_radar_tracks(live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2)
 
-  assert drawn_colors == [(*radar_tracks.DBC_UNKNOWN_COLOR, 255)]
+  assert drawn_colors == []
 
 
-def test_draw_radar_tracks_hides_non_dbc_source(monkeypatch):
+def test_draw_radar_tracks_hides_unknown_motion_from_other_source(monkeypatch):
   live_tracks = car.RadarData.new_message()
   point = live_tracks.init("points", 1)[0]
   point.dRel = 10
@@ -128,6 +130,37 @@ def test_draw_radar_tracks_hides_non_dbc_source(monkeypatch):
   assert drawn_circles == []
 
 
+def test_draw_radar_tracks_uses_source_shapes_with_preferred_circle(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  live_tracks.trackSources = [
+    {"startAddress": 0x500, "endAddress": 0x51F, "bus": 1, "trackCount": 1},
+    {"startAddress": 0x3A5, "endAddress": 0x3C4, "bus": 1, "trackCount": 1},
+  ]
+  points = live_tracks.init("points", 2)
+  for point, address in zip(points, (0x500, 0x3A5), strict=True):
+    point.dRel = address
+    point.yRel = 1
+    point.vRel = 2
+    point.motionState = radar_tracks.DBC_MOTION_MOVING
+    point.sourceAddress = address
+    point.sourceBus = 1
+
+  circles = []
+  polygons = []
+  monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, radius, color: circles.append((x, radius)))
+  monkeypatch.setattr(
+    radar_tracks.rl, "draw_poly",
+    lambda center, sides, radius, rotation, color: polygons.append((center.x, sides, radius, rotation)),
+  )
+
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2, track_size=6,
+  )
+
+  assert circles == [(0x3A5, 6)]
+  assert polygons == [(0x500, 4, 6, 45.0)]
+
+
 def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
   live_tracks = car.RadarData.new_message()
   point = live_tracks.init("points", 1)[0]
@@ -143,7 +176,7 @@ def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
     live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=6, v_ego=20,
   )
 
-  assert drawn_sizes == [2]
+  assert drawn_sizes == [1]
 
 
 def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
@@ -153,6 +186,7 @@ def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
   point.yRel = 1
   point.vRel = 0.5
   point.aRel = 0
+  point.motionState = radar_tracks.DBC_MOTION_MOVING
   drawn_sizes = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_sizes.append(size))
 
@@ -172,6 +206,7 @@ def test_draw_radar_tracks_highlights_and_returns_matched_track(monkeypatch):
     point.yRel = 1
     point.vRel = 2
     point.aRel = 0
+    point.motionState = radar_tracks.DBC_MOTION_MOVING
 
   highlight_color = radar_tracks.rl.Color(255, 215, 0, 255)
   drawn_rings = []
