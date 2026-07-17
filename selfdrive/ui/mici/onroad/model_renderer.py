@@ -1,5 +1,4 @@
 import colorsys
-import math
 import numpy as np
 import pyray as rl
 from cereal import messaging, car
@@ -14,6 +13,7 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP, ModelRendererSP
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import draw_radar_lead_connectors, radar_lead_track_colors
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -37,12 +37,6 @@ LANE_LINE_COLORS = {
   UIStatus.ENGAGED: rl.Color(0, 255, 64, 255),
   **LANE_LINE_COLORS_SP,
 }
-
-LEAD_TRACK_COLORS = (
-  rl.Color(255, 215, 0, 255),
-  rl.Color(255, 140, 0, 220),
-)
-
 
 @dataclass
 class ModelPoints:
@@ -163,14 +157,17 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path(sm)
 
     if sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
-      highlighted_tracks = self._lead_track_colors(radar_state) if render_lead_indicator else {}
+      highlighted_tracks = radar_lead_track_colors(radar_state) if render_lead_indicator else {}
       matched_positions = self.radar_tracks.draw_radar_tracks(
         sm['liveTracks'], self._map_to_screen, self._path_offset_z,
         screen_offset=(self._rect.x, self._rect.y), v_ego=sm['carState'].vEgo,
         highlighted_tracks=highlighted_tracks,
       )
       if render_lead_indicator:
-        self._draw_lead_connectors(matched_positions, highlighted_tracks)
+        draw_radar_lead_connectors(
+          self._lead_vehicles, matched_positions, highlighted_tracks,
+          screen_offset=(self._rect.x, self._rect.y),
+        )
 
     if render_lead_indicator:
       self._draw_lead_indicator()
@@ -406,30 +403,6 @@ class ModelRenderer(Widget, ModelRendererSP):
       offset_chevron = [(x + self._rect.x, y + self._rect.y) for x, y in lead.chevron]
       rl.draw_triangle_fan(offset_glow, len(offset_glow), rl.Color(218, 202, 37, 255))
       rl.draw_triangle_fan(offset_chevron, len(offset_chevron), rl.Color(201, 34, 49, lead.fill_alpha))
-
-  @staticmethod
-  def _lead_track_colors(radar_state):
-    highlighted_tracks = {}
-    if radar_state is None:
-      return highlighted_tracks
-
-    for lead, color in zip((radar_state.leadOne, radar_state.leadTwo), LEAD_TRACK_COLORS, strict=True):
-      if lead.status and lead.radar and lead.radarTrackId >= 0:
-        highlighted_tracks.setdefault(int(lead.radarTrackId), color)
-    return highlighted_tracks
-
-  def _draw_lead_connectors(self, matched_positions, highlighted_tracks):
-    for lead in self._lead_vehicles:
-      if not lead.radar or lead.position is None or lead.radar_track_id not in matched_positions:
-        continue
-
-      radar_position = matched_positions[lead.radar_track_id]
-      lead_position = (lead.position[0] + self._rect.x, lead.position[1] + self._rect.y)
-      if math.dist(lead_position, radar_position) < 4:
-        continue
-
-      rl.draw_line_ex(rl.Vector2(*lead_position), rl.Vector2(*radar_position), 2,
-                      highlighted_tracks[lead.radar_track_id])
 
   @staticmethod
   def _get_path_length_idx(pos_x_array: np.ndarray, path_height: float) -> int:
