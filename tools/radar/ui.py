@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import atexit
+import ipaddress
 import logging
 import math
 import multiprocessing
@@ -44,7 +46,21 @@ MAX_FORWARD_DISTANCE = 160.0
 MAX_LATERAL_DISTANCE = 30.0
 FUSED_CAMERA_ZOOM = 1.7
 FUSED_STREAM_GRACE_SECONDS = 1.0
+REMOTE_BRIDGE_TIMEOUT_SECONDS = 1.5
 REPLAY_EXECUTABLE = os.path.join(BASEDIR, "tools/replay/replay")
+MESSAGING_BRIDGE_EXECUTABLE = os.path.join(BASEDIR, "cereal/messaging/bridge")
+CAMERA_RELAY_EXECUTABLE = os.path.join(BASEDIR, "tools/camerastream/compressed_vipc.py")
+CAMERA_RELAY_BOOTSTRAP = "".join((
+  "import multiprocessing, runpy, sys; ",
+  "multiprocessing.set_start_method('fork', force=True); ",
+  "path = sys.argv.pop(1); ",
+  "runpy.run_path(path, run_name='__main__')",
+))
+REMOTE_SERVICES = (
+  "can", "carParams", "carState", "liveCalibration", "liveTracks", "modelV2", "radarState",
+  "roadCameraState", "wideRoadCameraState", "roadEncodeData", "wideRoadEncodeData",
+)
+ACTIVE_REMOTE_RELAYS: list[subprocess.Popen] = []
 
 BACKGROUND = rl.Color(11, 16, 24, 255)
 PANEL = rl.Color(17, 25, 36, 255)
@@ -202,6 +218,52 @@ def stop_route_replay(replay: ManagedReplay | None) -> None:
   replay.close_terminal()
 
 
+def stop_remote_relays(processes: list[subprocess.Popen]) -> None:
+  stopped_processes = list(processes)
+  for process in reversed(stopped_processes):
+    if process.poll() is not None:
+      continue
+    process.send_signal(signal.SIGINT)
+    try:
+      process.wait(timeout=2.0)
+    except subprocess.TimeoutExpired:
+      process.kill()
+      process.wait(timeout=1.0)
+  ACTIVE_REMOTE_RELAYS[:] = [
+    process for process in ACTIVE_REMOTE_RELAYS
+    if all(process is not stopped_process for stopped_process in stopped_processes)
+  ]
+  if processes is not ACTIVE_REMOTE_RELAYS:
+    processes.clear()
+
+
+def start_remote_relays(address: str) -> list[subprocess.Popen]:
+  processes: list[subprocess.Popen] = []
+  try:
+    processes.append(subprocess.Popen([
+      MESSAGING_BRIDGE_EXECUTABLE,
+      address,
+      ",".join(REMOTE_SERVICES),
+    ], cwd=BASEDIR))
+    processes.append(subprocess.Popen([
+      sys.executable,
+      "-c",
+      CAMERA_RELAY_BOOTSTRAP,
+      CAMERA_RELAY_EXECUTABLE,
+      "127.0.0.1",
+      "--cams", "0,2",
+      "--silent",
+    ], cwd=BASEDIR))
+  except BaseException:
+    stop_remote_relays(processes)
+    raise
+  ACTIVE_REMOTE_RELAYS.extend(processes)
+  return processes
+
+
+atexit.register(stop_remote_relays, ACTIVE_REMOTE_RELAYS)
+
+
 def replace_route_replay(process: ManagedReplay | None, route: str) -> tuple[ManagedReplay | None, str]:
   route = route.strip()
   if not route:
@@ -218,6 +280,13 @@ def replace_route_replay(process: ManagedReplay | None, route: str) -> tuple[Man
 def route_start_seconds(route: str) -> float:
   match = re.search(r"(?:--|/)(\d+)(?::[^/]*)?(?:/[qra])?$", route)
   return int(match.group(1)) * 60.0 if match is not None else 0.0
+
+
+def parse_live_ip(value: str) -> str | None:
+  try:
+    return str(ipaddress.ip_address(value.strip()))
+  except ValueError:
+    return None
 
 
 def replay_timeline_worker(route: str, output_queue) -> None:
@@ -555,11 +624,13 @@ def radar_decoder_worker(addr: str, output_queue) -> None:
   snapshot = RadarSnapshot()
   motion_states: dict[int, int] = {}
   last_publish_time = 0.0
+  last_can_message_time = 0.0
 
   while True:
     sm.update(100)
     radar_data = None
     if sm.updated["can"]:
+      last_can_message_time = time.monotonic()
       can_messages = [(message.address, bytes(message.dat), message.src) for message in sm["can"]]
       radar_data = radar_interface.update([(sm.logMonoTime["can"], can_messages)])
       enable_dbc_detail_signals(radar_interface, enhanced_parsers)
@@ -569,7 +640,9 @@ def radar_decoder_worker(addr: str, output_queue) -> None:
 
     now = time.monotonic()
     if radar_data is not None or now - last_publish_time >= 0.1:
-      replace_queued_value(output_queue, (snapshot, motion_states, sm.alive["can"], sm.seen["can"]))
+      replace_queued_value(
+        output_queue, (snapshot, motion_states, sm.alive["can"], sm.seen["can"], last_can_message_time),
+      )
       last_publish_time = now
 
 
@@ -1150,8 +1223,9 @@ def draw_route_dialog(font, bounds: rl.Rectangle, route: str, cursor_index: int,
   dialog = rl.Rectangle(bounds.x + (bounds.width - width) / 2, bounds.y + (bounds.height - 190.0) / 2, width, 190.0)
   rl.draw_rectangle_rounded(dialog, 0.08, 8, PANEL)
   rl.draw_rectangle_rounded_lines_ex(dialog, 0.08, 8, 1.0, MUTED)
-  draw_text(font, "Open route", dialog.x + 20, dialog.y + 17, 22, TEXT)
-  draw_text(font, "Paste a route or segment ID, then press Enter.", dialog.x + 20, dialog.y + 48, 15, MUTED)
+  draw_text(font, "Open route or live car", dialog.x + 20, dialog.y + 17, 22, TEXT)
+  draw_text(font, "Paste a route, segment ID, or IP address, then press Enter.",
+            dialog.x + 20, dialog.y + 48, 15, MUTED)
 
   input_rect = rl.Rectangle(dialog.x + 20, dialog.y + 76, dialog.width - 40, 38)
   rl.draw_rectangle_rounded(input_rect, 0.15, 4, BACKGROUND)
@@ -1444,14 +1518,13 @@ def fused_stream_loss_state(available_streams, missing_since: float | None,
 
 def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive: bool, source_active: bool,
                        show_labels: bool, data_source: str, camera_mode: str,
-                       both_cameras_available: bool,
+                       both_cameras_available: bool, remote_address: str | None, bridge_connected: bool,
                        visible_tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]],
                        source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
                        table_mode: str, fps: int) -> str | tuple[str, RadarSourceKey] | None:
   rl.draw_rectangle_rec(rect, rl.Color(11, 16, 24, 225))
   tracks = live_tracks.points if valid else ()
   sources = sorted(live_tracks.trackSources, key=radar_source_sort_key) if valid else []
-  status_color = GREEN if valid and alive else ORANGE
   source_title = "CAN" if data_source == "can" else "LIVE"
   mouse_position = rl.get_mouse_position()
   top_hovered_tooltip = None
@@ -1563,10 +1636,18 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
   camera_label = {"fused": "FUSED", "wide 180": "WIDE"}.get(camera_mode, "ROAD")
   table_label = {"motion": "MOTION", "kinematics": "KIN", "object": "OBJ"}[table_mode]
   chip_specs = [
-    ("OPEN", GREEN, "route", "Open a route, or paste one with Cmd/Ctrl+V"),
-    (source_title, status_color, "source", "Switch CAN / liveTracks source"),
+    ("OPEN", GREEN, "route", "Open a route or live-car IP, or paste one with Cmd/Ctrl+V"),
+    (source_title, CYAN, "source", "Switch CAN / liveTracks source"),
     ("LABELS ON" if show_labels else "LABELS", GREEN if show_labels else MUTED, "labels", "Show / hide all labels"),
   ]
+  if remote_address is not None:
+    bridge_label = f"BRIDGE {'OK' if bridge_connected else '--'}  {remote_address}"
+    bridge_tooltip = (
+      f"Receiving live messages from {remote_address}"
+      if bridge_connected
+      else f"Waiting for remote bridge messages from {remote_address}"
+    )
+    chip_specs.insert(1, (bridge_label, GREEN if bridge_connected else ORANGE, None, bridge_tooltip))
   if both_cameras_available:
     chip_specs.append((camera_label, CYAN, "camera", "Cycle road / wide / fused camera"))
   chip_specs.append((table_label, MUTED, "table", "Cycle motion / kinematics / object table"))
@@ -1576,7 +1657,7 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
     chip_x, chip_rect, hovered = draw_status_chip(font, label, chip_x, chip_y, color, mouse_position)
     if hovered:
       hovered_tooltip = (tooltip, chip_rect)
-      if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251 - standalone raylib tool
+      if action is not None and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
         clicked_action = action
   rl.set_mouse_cursor(rl.MouseCursor.MOUSE_CURSOR_POINTING_HAND if hovered_tooltip is not None
                       else rl.MouseCursor.MOUSE_CURSOR_DEFAULT)
@@ -1586,6 +1667,11 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
 
 
 def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, start_route: str | None = None) -> None:
+  remote_relays = start_remote_relays(addr) if addr != "127.0.0.1" else []
+  remote_address = addr if remote_relays else None
+  remote_bridge_last_message = 0.0
+  bridge_connected = False
+  messaging_addr = "127.0.0.1"
   rl.set_trace_log_level(rl.TraceLogLevel.LOG_ERROR)
   rl.set_config_flags(rl.ConfigFlags.FLAG_VSYNC_HINT | rl.ConfigFlags.FLAG_WINDOW_RESIZABLE)
   rl.init_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Radar Tracks Debugger")
@@ -1623,11 +1709,13 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     "radarState",
     "roadCameraState",
     "wideRoadCameraState",
-  ], addr=addr)
+  ], addr=messaging_addr)
 
   process_context = multiprocessing.get_context("spawn")
   decoder_output = process_context.Queue(maxsize=1)
-  decoder_process = process_context.Process(target=radar_decoder_worker, args=(addr, decoder_output), daemon=True)
+  decoder_process = process_context.Process(
+    target=radar_decoder_worker, args=(messaging_addr, decoder_output), daemon=True,
+  )
   decoder_process.start()
   timeline_output = process_context.Queue(maxsize=1)
   timeline_process = None
@@ -1654,7 +1742,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   model_pixels = np.zeros((CAMERA_BUFFER_HEIGHT, CAMERA_BUFFER_WIDTH, 3), dtype=np.uint8)
   dummy_top_down = np.zeros((384, 960), dtype=np.uint8)
   overlay_dirty = True
-  route_dialog_open = start_route is None
+  route_dialog_open = start_route is None and addr == "127.0.0.1"
   route_input = start_route or ""
   route_cursor = len(route_input)
   route_error = ""
@@ -1668,14 +1756,87 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   route_message_start_mono: int | None = None
   route_fingerprint = ""
   current_route_seconds = route_start_seconds(route_input)
-  if start_route:
-    replay_process, route_error = replace_route_replay(replay_process, start_route)
-    route_dialog_open = bool(route_error)
-    route_loading = replay_process is not None and not route_error
+
+  def open_target(target: str) -> str:
+    nonlocal remote_relays, remote_address, remote_bridge_last_message, bridge_connected
+    nonlocal replay_process, timeline_process, replay_timeline, replay_scrub
+    nonlocal route_input, route_loading, route_loading_started, route_message_start_mono
+    nonlocal route_fingerprint, current_route_seconds, replay_seek_input, replay_seek_active
+    nonlocal can_tracks, live_tracks, can_data_seen, live_data_seen, can_data_alive, decoded_motion_states
+    nonlocal table_scroll, selected_track_id, calibration, calibration_key, overlay_dirty
+    nonlocal decoder_process
+
+    target = target.strip()
+    if not target:
+      return "Enter a route, segment ID, or IP address."
+
+    stop_route_replay(replay_process)
+    replay_process = None
+    stop_timeline_process(timeline_process)
+    timeline_process = None
+    stop_remote_relays(remote_relays)
+    remote_relays = []
+    remote_address = None
+    remote_bridge_last_message = 0.0
+    bridge_connected = False
+    decoder_process.terminate()
+    decoder_process.join(timeout=1.0)
+
+    for output_queue in (decoder_output, timeline_output):
+      while True:
+        try:
+          output_queue.get_nowait()
+        except queue.Empty:
+          break
+
+    can_tracks = RadarSnapshot()
+    live_tracks = RadarSnapshot()
+    can_data_seen = False
+    live_data_seen = False
+    can_data_alive = False
+    decoded_motion_states = {}
+    replay_timeline = ReplayTimeline()
+    replay_scrub = ReplayScrubState()
+    replay_seek_input = ""
+    replay_seek_active = False
+    route_loading = False
+    route_message_start_mono = None
+    route_fingerprint = ""
+    current_route_seconds = 0.0
+    table_scroll = 0
+    selected_track_id = None
+    calibration = None
+    calibration_key = None
+    overlay_dirty = True
+
+    if (live_ip := parse_live_ip(target)) is not None:
+      route_input = live_ip
+      remote_relays = start_remote_relays(live_ip)
+      remote_address = live_ip
+      decoder_process = process_context.Process(
+        target=radar_decoder_worker, args=(messaging_addr, decoder_output), daemon=True,
+      )
+      decoder_process.start()
+      print(f"Radar debugger opened live car: {live_ip}", flush=True)
+      return ""
+
+    route_input = target
+    replay_process, error = replace_route_replay(None, target)
+    route_loading = replay_process is not None and not error
     route_loading_started = time.monotonic()
+    current_route_seconds = route_start_seconds(target)
     if route_loading:
-      replay_timeline = ReplayTimeline(route_start_seconds(start_route), route_start_seconds(start_route))
-      timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, start_route)
+      replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
+      timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, target)
+    decoder_process = process_context.Process(
+      target=radar_decoder_worker, args=(messaging_addr, decoder_output), daemon=True,
+    )
+    decoder_process.start()
+    return error
+
+  if start_route:
+    route_error = open_target(start_route)
+    route_dialog_open = bool(route_error)
   composite_mode = composite_mode and not route_dialog_open
   startup_focus_deadline = time.monotonic() + 2.0
   next_startup_focus_request = 0.0
@@ -1778,20 +1939,9 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_input = "".join(character for character in clipboard_text if 32 <= ord(character) <= 126)[:180]
       route_cursor = len(route_input)
       route_select_all = False
-      replay_process, route_error = replace_route_replay(replay_process, route_input)
+      route_error = open_target(route_input)
       route_dialog_open = bool(route_error)
-      route_loading = replay_process is not None and not route_error
-      route_loading_started = time.monotonic()
-      route_message_start_mono = None
-      route_fingerprint = ""
-      current_route_seconds = route_start_seconds(route_input)
-      if route_loading:
-        replay_scrub = ReplayScrubState()
-        replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
-        timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
       composite_mode = composite_mode and not route_dialog_open
-      table_scroll = 0
-      selected_track_id = None
     elif modifier_down:
       pass
     elif replay_process is not None and rl.is_key_pressed(rl.KeyboardKey.KEY_ENTER):
@@ -1799,20 +1949,13 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     elif replay_process is not None and (replay_command := replay_keyboard_command()) is not None:
       replay_process.send(replay_command)
     if open_entered_route:
-      replay_process, route_error = replace_route_replay(replay_process, route_input)
+      route_error = open_target(route_input)
       route_dialog_open = bool(route_error)
       route_select_all = False
-      route_loading = replay_process is not None and not route_error
-      route_loading_started = time.monotonic()
-      route_message_start_mono = None
-      route_fingerprint = ""
-      current_route_seconds = route_start_seconds(route_input)
-      if route_loading:
-        replay_scrub = ReplayScrubState()
-        replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
-        timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
 
     sm.update(0)
+    if remote_address is not None and any(sm.updated.values()):
+      remote_bridge_last_message = time.monotonic()
     if sm.updated["carParams"]:
       message_fingerprint = str(sm["carParams"].carFingerprint)
       if message_fingerprint:
@@ -1835,9 +1978,16 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_loading = False
     while True:
       try:
-        can_tracks, decoded_motion_states, can_data_alive, can_data_seen = decoder_output.get_nowait()
+        can_tracks, decoded_motion_states, can_data_alive, can_data_seen, last_can_message_time = decoder_output.get_nowait()
+        remote_bridge_last_message = max(remote_bridge_last_message, last_can_message_time)
       except queue.Empty:
         break
+    bridge_connected = (
+      remote_address is not None
+      and bool(remote_relays)
+      and remote_relays[0].poll() is None
+      and time.monotonic() - remote_bridge_last_message < REMOTE_BRIDGE_TIMEOUT_SECONDS
+    )
     while True:
       try:
         replay_timeline = timeline_output.get_nowait()
@@ -1966,7 +2116,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       clicked_action = draw_source_status(
         font, status_rect, selected_tracks, data_valid, data_alive,
         replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
-        "fused", both_camera_streams_available(fused_available_streams),
+        "fused", both_camera_streams_available(fused_available_streams), remote_address, bridge_connected,
         tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
       )
       if isinstance(clicked_action, tuple):
@@ -2078,7 +2228,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       font, status_rect, selected_tracks, data_valid, data_alive,
       replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
       "wide 180" if camera_view.stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD else "road",
-      both_camera_streams_available(camera_view.available_streams),
+      both_camera_streams_available(camera_view.available_streams), remote_address, bridge_connected,
       tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
     )
     if isinstance(clicked_action, tuple):
@@ -2118,18 +2268,9 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         route_error = ""
         route_select_all = False
       elif route_action == "open":
-        replay_process, route_error = replace_route_replay(replay_process, route_input)
+        route_error = open_target(route_input)
         route_dialog_open = bool(route_error)
         route_select_all = False
-        route_loading = replay_process is not None and not route_error
-        route_loading_started = time.monotonic()
-        route_message_start_mono = None
-        route_fingerprint = ""
-        current_route_seconds = route_start_seconds(route_input)
-        if route_loading:
-          replay_scrub = ReplayScrubState()
-          replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
-          timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
     if route_loading and not route_dialog_open:
       draw_route_loading(
         font, rl.Rectangle(0, 0, window_width, window_height), route_input, time.monotonic() - route_loading_started,
@@ -2148,6 +2289,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
 
   stop_route_replay(replay_process)
   stop_timeline_process(timeline_process)
+  stop_remote_relays(remote_relays)
   decoder_process.terminate()
   decoder_process.join(timeout=1.0)
   decoder_output.close()
@@ -2161,7 +2303,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
 
 def get_arg_parser() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
-    description="Decode replay CAN with Hyundai auto radar discovery and visualize the resulting tracks.",
+    description="Decode live or replay CAN with Hyundai auto radar discovery and visualize the resulting tracks.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   )
   parser.add_argument("ip_address", nargs="?", default="127.0.0.1", help="Address publishing replay or on-car messages.")
@@ -2173,9 +2315,6 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
   args = get_arg_parser().parse_args(sys.argv[1:])
-  if args.ip_address != "127.0.0.1":
-    os.environ["ZMQ"] = "1"
-    messaging.reset_context()
   try:
     ui_thread(args.ip_address, args.wide, args.fused, args.route)
   except KeyboardInterrupt:
