@@ -6,71 +6,62 @@ See the LICENSE.md file in the root directory for more details.
 """
 import math
 import pyray as rl
+from opendbc.car.hyundai.radar_interface import RADAR_3A5_3C4
 from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
-RELATIVE_SPEED_MOVING_THRESHOLD = 0.5  # m/s relative speed deadband
-STATIONARY_SPEED_THRESHOLD = 1.0  # m/s estimated ground speed
-APPROACHING_COLOR = (0, 140, 255)
 NEUTRAL_COLOR = (255, 255, 255)
-MATCHED_SPEED_COLOR = (0, 255, 64)
-RECEDING_COLOR = (255, 45, 45)
 DBC_MOVING_COLOR = (190, 125, 255)
 DBC_UNKNOWN_COLOR = (154, 168, 184)
 DBC_MOTION_STATIONARY = 1
 DBC_MOTION_MOVING = 2
 
 
-def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
-  """Classify tracks as stationary, speed-matched, approaching, or receding with discrete colors."""
-  if radar_track_is_stationary(v_rel, v_ego):
-    return rl.Color(*NEUTRAL_COLOR, 255)
-  if abs(v_rel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
-    return rl.Color(*MATCHED_SPEED_COLOR, 255)
-
-  color = APPROACHING_COLOR if v_rel < 0.0 else RECEDING_COLOR
-  return rl.Color(*color, 255)
+def is_preferred_radar_source(source) -> bool:
+  return source.startAddress == RADAR_3A5_3C4.start_addr and source.endAddress == RADAR_3A5_3C4.end_addr
 
 
-def radar_track_is_stationary(v_rel: float, v_ego: float = 0.0) -> bool:
-  return abs(v_ego + v_rel) <= STATIONARY_SPEED_THRESHOLD
+def preferred_radar_tracks(live_tracks):
+  points = list(live_tracks.points)
+  if any(int(track.sourceAddress) != 0 for track in points):
+    return [
+      track for track in points
+      if RADAR_3A5_3C4.start_addr <= int(track.sourceAddress) <= RADAR_3A5_3C4.end_addr
+    ]
+
+  # Legacy messages have no per-point source metadata. They are unambiguous only
+  # when 3A5-3C4 is the sole reported source (or tests provide no source list).
+  sources = list(live_tracks.trackSources)
+  if not sources or all(is_preferred_radar_source(source) for source in sources):
+    return points
+  return []
 
 
-def radar_track_display(v_rel: float, v_ego: float, motion_state: int) -> tuple[rl.Color, bool]:
-  """Prefer the radar's motion classification, falling back when it is unknown or unavailable."""
+def radar_track_display(motion_state: int) -> tuple[rl.Color, bool]:
+  """Color tracks exclusively from the radar's DBC motion classification."""
   if motion_state == DBC_MOTION_STATIONARY:
     return rl.Color(*NEUTRAL_COLOR, 255), True
   if motion_state == DBC_MOTION_MOVING:
     return rl.Color(*DBC_MOVING_COLOR, 255), False
-  return radar_track_color(v_rel, v_ego), radar_track_is_stationary(v_rel, v_ego)
+  return rl.Color(*DBC_UNKNOWN_COLOR, 255), False
 
 
 def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple[str, str, str, str, str, str]:
-  sources = sorted(live_tracks.trackSources, key=lambda source: (source.startAddress, source.endAddress, source.bus))
+  sources = sorted(
+    (source for source in live_tracks.trackSources if is_preferred_radar_source(source)),
+    key=lambda source: (source.startAddress, source.endAddress, source.bus),
+  )
   if not sources:
     return "", "none", "", "", "", ""
 
   range_text = "\n".join(f"{source.startAddress:X}-{source.endAddress:X}" for source in sources)
   count_text = "\n".join(str(source.trackCount) for source in sources)
-  motion_states = [int(track.motionState) for track in live_tracks.points]
-  if not any(state in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING) for state in motion_states):
-    implementation_counts = [0, 0, 0, 0]  # approaching, speed matched, stationary, receding
-    for track in live_tracks.points:
-      if radar_track_is_stationary(track.vRel, v_ego):
-        implementation_counts[2] += 1
-      elif abs(track.vRel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
-        implementation_counts[1] += 1
-      elif track.vRel < 0.0:
-        implementation_counts[0] += 1
-      else:
-        implementation_counts[3] += 1
-    approaching, speed_matched, stationary, receding = implementation_counts
-    return range_text, count_text, f"A {approaching}", f"= {speed_matched}", f"S {stationary}", f"R {receding}"
+  motion_states = [int(track.motionState) for track in preferred_radar_tracks(live_tracks)]
 
   moving_count = sum(state == DBC_MOTION_MOVING for state in motion_states)
   stationary_count = sum(state == DBC_MOTION_STATIONARY for state in motion_states)
   unknown_count = len(motion_states) - moving_count - stationary_count
-  return range_text, count_text, f"M {moving_count}", f"S {stationary_count}", f"U {unknown_count}", ""
+  return range_text, count_text, str(moving_count), str(stationary_count), str(unknown_count), ""
 
 
 class RadarTracksStatus:
@@ -109,12 +100,7 @@ class RadarTracksStatus:
       status_colors = ()
     else:
       status = format_radar_tracks_onroad_columns(live_tracks, v_ego) if valid else ("", "none", "", "", "", "")
-      has_dbc_motion = any(int(track.motionState) in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING) for track in live_tracks.points)
-      status_colors = (
-        (DBC_MOVING_COLOR, NEUTRAL_COLOR, DBC_UNKNOWN_COLOR, DBC_UNKNOWN_COLOR)
-        if has_dbc_motion
-        else (APPROACHING_COLOR, MATCHED_SPEED_COLOR, NEUTRAL_COLOR, RECEDING_COLOR)
-      )
+      status_colors = (DBC_MOVING_COLOR, NEUTRAL_COLOR, DBC_UNKNOWN_COLOR, DBC_UNKNOWN_COLOR)
     self._set_status(status, status_colors)
 
   def reset(self) -> None:
@@ -167,6 +153,9 @@ class RadarTracksStatus:
       for label, text in zip(self._labels, self._status, strict=True)
     ]
     self._column_widths[1] = max(36, self._column_widths[1])
+    for index in (2, 3, 4):
+      if self._column_widths[index]:
+        self._column_widths[index] = max(36, self._column_widths[index])
     active_widths = [width for width in self._column_widths if width]
     inner_width = sum(active_widths) + self.COLUMN_GAP * (len(active_widths) - 1)
     self._width = inner_width + self.HORIZONTAL_PADDING * 2
@@ -184,7 +173,7 @@ class RadarTracks:
     highlighted_tracks = highlighted_tracks or {}
     highlighted_positions = {}
 
-    for track in live_tracks.points:
+    for track in preferred_radar_tracks(live_tracks):
       d_rel, y_rel, v_rel = track.dRel, track.yRel, track.vRel
       if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel)):
         continue
@@ -194,7 +183,7 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      color, stationary = radar_track_display(v_rel, v_ego, int(track.motionState))
+      color, stationary = radar_track_display(int(track.motionState))
       radius = max(1, track_size - 4) if stationary else track_size
       track_id = int(track.trackId)
       highlight_color = highlighted_tracks.get(track_id)
