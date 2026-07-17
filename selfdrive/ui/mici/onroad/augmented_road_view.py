@@ -173,7 +173,9 @@ class AugmentedRoadView(CameraView):
     super()._update_state()
 
     if ui_state.sm.updated["liveTracks"]:
-      self._radar_tracks_status.update(ui_state.sm["liveTracks"], ui_state.sm.valid["liveTracks"], ui_state.radar_tracks)
+      self._radar_tracks_status.update(
+        ui_state.sm["liveTracks"], ui_state.sm.valid["liveTracks"], ui_state.radar_tracks, ui_state.sm["carState"].vEgo,
+      )
     elif not ui_state.sm.alive["liveTracks"]:
       self._radar_tracks_status.reset()
 
