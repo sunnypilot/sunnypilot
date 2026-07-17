@@ -15,6 +15,10 @@ APPROACHING_COLOR = (0, 140, 255)
 NEUTRAL_COLOR = (255, 255, 255)
 MATCHED_SPEED_COLOR = (0, 255, 64)
 RECEDING_COLOR = (255, 45, 45)
+DBC_MOVING_COLOR = (190, 125, 255)
+DBC_UNKNOWN_COLOR = (154, 168, 184)
+DBC_MOTION_STATIONARY = 1
+DBC_MOTION_MOVING = 2
 
 
 def radar_track_color(v_rel: float, v_ego: float = 0.0) -> rl.Color:
@@ -32,14 +36,41 @@ def radar_track_is_stationary(v_rel: float, v_ego: float = 0.0) -> bool:
   return abs(v_ego + v_rel) <= STATIONARY_SPEED_THRESHOLD
 
 
-def format_radar_tracks_onroad_columns(live_tracks) -> tuple[str, str]:
+def radar_track_display(v_rel: float, v_ego: float, motion_state: int) -> tuple[rl.Color, bool]:
+  """Prefer the radar's motion classification, falling back when it is unknown or unavailable."""
+  if motion_state == DBC_MOTION_STATIONARY:
+    return rl.Color(*NEUTRAL_COLOR, 255), True
+  if motion_state == DBC_MOTION_MOVING:
+    return rl.Color(*DBC_MOVING_COLOR, 255), False
+  return radar_track_color(v_rel, v_ego), radar_track_is_stationary(v_rel, v_ego)
+
+
+def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple[str, str, str, str, str, str]:
   sources = sorted(live_tracks.trackSources, key=lambda source: (source.startAddress, source.endAddress, source.bus))
   if not sources:
-    return "", "none"
+    return "", "none", "", "", "", ""
 
   range_text = "\n".join(f"{source.startAddress:X}-{source.endAddress:X}" for source in sources)
   count_text = "\n".join(str(source.trackCount) for source in sources)
-  return range_text, count_text
+  motion_states = [int(track.motionState) for track in live_tracks.points]
+  if not any(state in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING) for state in motion_states):
+    implementation_counts = [0, 0, 0, 0]  # approaching, speed matched, stationary, receding
+    for track in live_tracks.points:
+      if radar_track_is_stationary(track.vRel, v_ego):
+        implementation_counts[2] += 1
+      elif abs(track.vRel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
+        implementation_counts[1] += 1
+      elif track.vRel < 0.0:
+        implementation_counts[0] += 1
+      else:
+        implementation_counts[3] += 1
+    approaching, speed_matched, stationary, receding = implementation_counts
+    return range_text, count_text, f"A {approaching}", f"= {speed_matched}", f"S {stationary}", f"R {receding}"
+
+  moving_count = sum(state == DBC_MOTION_MOVING for state in motion_states)
+  stationary_count = sum(state == DBC_MOTION_STATIONARY for state in motion_states)
+  unknown_count = len(motion_states) - moving_count - stationary_count
+  return range_text, count_text, f"M {moving_count}", f"S {stationary_count}", f"U {unknown_count}", ""
 
 
 class RadarTracksStatus:
@@ -53,29 +84,41 @@ class RadarTracksStatus:
     text_args = {
       "font_size": 26,
       "font_weight": FontWeight.SEMI_BOLD,
-      "text_color": rl.Color(0, 255, 64, 255),
       "alignment": rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
       "alignment_vertical": rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
       "wrap_text": False,
     }
-    self._ranges_label = UnifiedLabel("", **text_args)
-    self._counts_label = UnifiedLabel("none", **text_args)
-    self._status = ("", "none")
-    self._layout_key: tuple[str, str, int] | None = None
-    self._range_width = 0
-    self._count_width = 36
+    self._labels = (
+      UnifiedLabel("", text_color=rl.Color(0, 255, 64, 255), **text_args),
+      UnifiedLabel("none", text_color=rl.Color(0, 255, 64, 255), **text_args),
+      UnifiedLabel("", text_color=rl.Color(*DBC_MOVING_COLOR, 255), **text_args),
+      UnifiedLabel("", text_color=rl.Color(*NEUTRAL_COLOR, 255), **text_args),
+      UnifiedLabel("", text_color=rl.Color(*DBC_UNKNOWN_COLOR, 255), **text_args),
+      UnifiedLabel("", text_color=rl.Color(*DBC_UNKNOWN_COLOR, 255), **text_args),
+    )
+    self._status = ("", "none", "", "", "", "")
+    self._status_colors: tuple[tuple[int, int, int], ...] = ()
+    self._layout_key: tuple[str, str, str, str, str, str, int] | None = None
+    self._column_widths = [0, 36, 0, 0, 0, 0]
     self._width = 52
     self._height = 42
 
-  def update(self, live_tracks, valid: bool, radar_mode: int) -> None:
+  def update(self, live_tracks, valid: bool, radar_mode: int, v_ego: float = 0.0) -> None:
     if live_tracks.radarTracksAvailable and radar_mode != 2:
-      status = ("", "radar detected\ntap to enable")
+      status = ("", "radar detected\ntap to enable", "", "", "", "")
+      status_colors = ()
     else:
-      status = format_radar_tracks_onroad_columns(live_tracks) if valid else ("", "none")
-    self._set_status(status)
+      status = format_radar_tracks_onroad_columns(live_tracks, v_ego) if valid else ("", "none", "", "", "", "")
+      has_dbc_motion = any(int(track.motionState) in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING) for track in live_tracks.points)
+      status_colors = (
+        (DBC_MOVING_COLOR, NEUTRAL_COLOR, DBC_UNKNOWN_COLOR, DBC_UNKNOWN_COLOR)
+        if has_dbc_motion
+        else (APPROACHING_COLOR, MATCHED_SPEED_COLOR, NEUTRAL_COLOR, RECEDING_COLOR)
+      )
+    self._set_status(status, status_colors)
 
   def reset(self) -> None:
-    self._set_status(("", "none"))
+    self._set_status(("", "none", "", "", "", ""), ())
 
   def handle_mouse(self, mouse_pos) -> bool:
     if self._settings_callback is None or not rl.check_collision_point_rec(mouse_pos, self._rect):
@@ -93,26 +136,23 @@ class RadarTracksStatus:
       self._height,
     )
     rl.draw_rectangle_rounded(self._rect, 0.5, 8, rl.Color(0, 0, 0, 170))
-    self._ranges_label.render(rl.Rectangle(
-      self._rect.x + self.HORIZONTAL_PADDING,
-      self._rect.y + 5,
-      self._range_width,
-      self._rect.height - 10,
-    ))
-    self._counts_label.render(rl.Rectangle(
-      self._rect.x + self.HORIZONTAL_PADDING + self._range_width + (self.COLUMN_GAP if self._range_width else 0),
-      self._rect.y + 5,
-      self._count_width,
-      self._rect.height - 10,
-    ))
+    x = self._rect.x + self.HORIZONTAL_PADDING
+    active_columns = [(label, width) for label, width in zip(self._labels, self._column_widths, strict=True) if width]
+    for index, (label, width) in enumerate(active_columns):
+      label.render(rl.Rectangle(x, self._rect.y + 5, width, self._rect.height - 10))
+      x += width + (self.COLUMN_GAP if index < len(active_columns) - 1 else 0)
 
-  def _set_status(self, status: tuple[str, str]) -> None:
-    if status == self._status:
+  def _set_status(self, status: tuple[str, str, str, str, str, str],
+                  status_colors: tuple[tuple[int, int, int], ...]) -> None:
+    if status == self._status and status_colors == self._status_colors:
       return
 
     self._status = status
-    self._ranges_label.set_text(status[0])
-    self._counts_label.set_text(status[1])
+    self._status_colors = status_colors
+    for label, text in zip(self._labels, status, strict=True):
+      label.set_text(text)
+    for label, color in zip(self._labels[2:], status_colors, strict=False):
+      label.set_text_color(rl.Color(*color, 255))
     self._layout_key = None
 
   def _update_layout(self, max_inner_width: int) -> None:
@@ -120,16 +160,20 @@ class RadarTracksStatus:
     if layout_key == self._layout_key:
       return
 
-    self._ranges_label.get_content_height(max_inner_width - 36 - self.COLUMN_GAP)
-    self._counts_label.get_content_height(max_inner_width)
-    self._range_width = math.ceil(self._ranges_label.text_width)
-    self._count_width = max(36, math.ceil(self._counts_label.text_width))
-    inner_width = self._range_width + self._count_width + (self.COLUMN_GAP if self._range_width else 0)
+    for label in self._labels:
+      label.get_content_height(max_inner_width)
+    self._column_widths = [
+      math.ceil(label.text_width) if text else 0
+      for label, text in zip(self._labels, self._status, strict=True)
+    ]
+    self._column_widths[1] = max(36, self._column_widths[1])
+    active_widths = [width for width in self._column_widths if width]
+    inner_width = sum(active_widths) + self.COLUMN_GAP * (len(active_widths) - 1)
     self._width = inner_width + self.HORIZONTAL_PADDING * 2
     self._height = max(
       42,
-      self._ranges_label.get_content_height(max(self._range_width, 1)) + 10,
-      self._counts_label.get_content_height(self._count_width) + 10,
+      *(label.get_content_height(max(width, 1)) + 10
+        for label, width in zip(self._labels, self._column_widths, strict=True) if width),
     )
     self._layout_key = layout_key
 
@@ -150,8 +194,7 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      color = radar_track_color(v_rel, v_ego)
-      stationary = radar_track_is_stationary(v_rel, v_ego)
+      color, stationary = radar_track_display(v_rel, v_ego, int(track.motionState))
       radius = max(1, track_size - 4) if stationary else track_size
       track_id = int(track.trackId)
       highlight_color = highlighted_tracks.get(track_id)

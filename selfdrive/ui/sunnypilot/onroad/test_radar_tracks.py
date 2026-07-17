@@ -1,7 +1,8 @@
 from cereal import car
 
 from openpilot.selfdrive.ui.sunnypilot.onroad import radar_tracks
-from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns, radar_track_color
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns, radar_track_color, \
+  radar_track_display
 
 
 def color_tuple(color):
@@ -29,18 +30,34 @@ def test_radar_track_stationary_world_object_is_white():
   assert color_tuple(radar_track_color(-18.9, v_ego=20.0)) == (0, 140, 255, 255)
 
 
+def test_dbc_motion_overrides_relative_speed_classification():
+  assert color_tuple(radar_track_display(-20.0, 20.0, 2)[0]) == (190, 125, 255, 255)
+  assert not radar_track_display(-20.0, 20.0, 2)[1]
+  assert color_tuple(radar_track_display(0.0, 20.0, 1)[0]) == (255, 255, 255, 255)
+  assert radar_track_display(0.0, 20.0, 1)[1]
+
+
+def test_unknown_dbc_motion_falls_back_to_relative_speed_classification():
+  color, stationary = radar_track_display(-20.0, 20.0, 0)
+
+  assert color_tuple(color) == (255, 255, 255, 255)
+  assert stationary
+
+
 def test_format_radar_tracks_columns_none():
   live_tracks = car.RadarData.new_message()
 
-  assert format_radar_tracks_onroad_columns(live_tracks) == ("", "none")
+  assert format_radar_tracks_onroad_columns(live_tracks) == ("", "none", "", "", "", "")
 
 
 def test_format_radar_tracks_columns_range_and_count():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [{"startAddress": 0x500, "endAddress": 0x51F, "bus": 1, "trackCount": 2}]
-  live_tracks.init("points", 2)
+  points = live_tracks.init("points", 2)
+  points[0].motionState = 2
+  points[1].motionState = 1
 
-  assert format_radar_tracks_onroad_columns(live_tracks) == ("500-51F", "2")
+  assert format_radar_tracks_onroad_columns(live_tracks) == ("500-51F", "2", "M 1", "S 1", "U 0", "")
 
 
 def test_format_radar_tracks_columns_sorts_ranges():
@@ -50,11 +67,31 @@ def test_format_radar_tracks_columns_sorts_ranges():
     {"startAddress": 0x210, "endAddress": 0x21F, "bus": 1, "trackCount": 1},
     {"startAddress": 0x500, "endAddress": 0x51F, "bus": 0, "trackCount": 2},
   ]
-  live_tracks.init("points", 1)
+  points = live_tracks.init("points", 3)
+  points[0].motionState = 2
+  points[1].motionState = 0
+  points[2].motionState = 7
 
   assert format_radar_tracks_onroad_columns(live_tracks) == (
     "210-21F\n500-51F\n500-51F",
     "1\n2\n3",
+    "M 1",
+    "S 0",
+    "U 2",
+    "",
+  )
+
+
+def test_format_radar_tracks_columns_uses_implementation_when_dbc_motion_is_unavailable():
+  live_tracks = car.RadarData.new_message()
+  live_tracks.trackSources = [{"startAddress": 0x500, "endAddress": 0x51F, "bus": 1, "trackCount": 4}]
+  points = live_tracks.init("points", 4)
+  for point, v_rel in zip(points, (-5.0, 0.2, -20.0, 5.0), strict=True):
+    point.vRel = v_rel
+    point.motionState = 0
+
+  assert format_radar_tracks_onroad_columns(live_tracks, v_ego=20.0) == (
+    "500-51F", "4", "A 1", "= 1", "S 1", "R 1",
   )
 
 
