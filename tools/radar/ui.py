@@ -25,8 +25,6 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, view_frame_from_device_frame
 from openpilot.common.transformations.orientation import rot_from_euler
 from openpilot.selfdrive.ui.mici.onroad.cameraview import CameraView
-from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import RELATIVE_SPEED_MOVING_THRESHOLD, radar_track_color, \
-                                                                  radar_track_is_stationary
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.tools.replay.lib.ui_helpers import Calibration, plot_model
 from opendbc.can import CANParser
@@ -72,7 +70,7 @@ RADAR_DETAIL_SIGNALS = {
   "MOTION_STATE", "REL_LAT_SPEED", "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE",
   "AGE", "COAST_AGE", "STATE_ALT", "TRACK_COUNTER",
 }
-TABLE_MODES = ("comparison", "kinematics", "object")
+TABLE_MODES = ("motion", "kinematics", "object")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
 TRACK_COUNT_FIELD_WIDTH = 3
 SOURCE_CIRCLE_RADIUS_SCALE = 0.8
@@ -406,14 +404,6 @@ def toggle_source_filter(source_filters: dict[RadarSourceKey, tuple[bool, bool, 
   source_filters[source_key] = (filters[0], filters[1], filters[2])
 
 
-def implementation_class(v_rel: float, v_ego: float) -> str:
-  if radar_track_is_stationary(v_rel, v_ego):
-    return "stationary"
-  if abs(v_rel) <= RELATIVE_SPEED_MOVING_THRESHOLD:
-    return "speed matched"
-  return "approaching" if v_rel < 0.0 else "receding"
-
-
 def dbc_motion_class(motion_state: int | None) -> str:
   if motion_state is None:
     return "unknown"
@@ -432,10 +422,8 @@ def dbc_unknown_raw_label(motion_state: int | None) -> str | None:
   return "DBC unknown" if motion_state is None else f"DBC raw={motion_state}"
 
 
-def display_track_color(track, v_ego: float, motion_states: dict[int, int], use_dbc_colors: bool) -> rl.Color:
-  if use_dbc_colors:
-    return dbc_motion_color(motion_states.get(int(track.trackId)))
-  return radar_track_color(track.vRel, v_ego)
+def display_track_color(track, motion_states: dict[int, int]) -> rl.Color:
+  return dbc_motion_color(motion_states.get(int(track.trackId)))
 
 
 def filter_tracks(tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]], sources,
@@ -823,8 +811,8 @@ def draw_track_popup(font, track, x: float, y: float, radius: float, bounds: rl.
   draw_text(font, label, label_x, label_y, 18, color)
 
 
-def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rect: rl.Rectangle, v_ego: float,
-                       show_labels: bool, motion_states: dict[int, int], use_dbc_colors: bool,
+def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rect: rl.Rectangle,
+                       show_labels: bool, motion_states: dict[int, int],
                        track_locations: dict[int, tuple[int, int]], sources,
                        projection_height: float, hovered_id: int | None, selected_id: int | None,
                        preview_id: int | None = None) -> None:
@@ -838,7 +826,7 @@ def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rec
     x, y, radius = geometry
     dot_radius = max(4.5, radius * 0.68)
 
-    color = display_track_color(track, v_ego, motion_states, use_dbc_colors)
+    color = display_track_color(track, motion_states)
     is_hovered = int(track.trackId) == hovered_id
     is_selected = int(track.trackId) == selected_id
     is_previewed = int(track.trackId) == preview_id and not is_selected
@@ -858,8 +846,8 @@ def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rec
 
 def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view: CameraView, device_camera,
                            rpy_calib: np.ndarray, wide_from_device_euler: np.ndarray, full_rect: rl.Rectangle,
-                           tracks, v_ego: float, show_labels: bool, motion_states: dict[int, int],
-                           use_dbc_colors: bool, track_locations: dict[int, tuple[int, int]], sources,
+                           tracks, show_labels: bool, motion_states: dict[int, int],
+                           track_locations: dict[int, tuple[int, int]], sources,
                            selected_id: int | None) -> int | None:
   wide_render_rect = rl.Rectangle(
     full_rect.x - full_rect.width * (FUSED_CAMERA_ZOOM - 1.0) / 2,
@@ -901,10 +889,10 @@ def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view:
   current_hovered_id = road_hovered_id if road_hovered_id is not None else wide_hovered_id
   selected_id = retain_selected_track_id(selected_id, current_hovered_id, tracks)
 
-  draw_camera_tracks(font, wide_calibration, wide_tracks, wide_content_rect, v_ego, show_labels, motion_states,
-                     use_dbc_colors, track_locations, sources, wide_projection_height, wide_hovered_id, selected_id)
-  draw_camera_tracks(font, road_calibration, road_tracks, road_content_rect, v_ego, show_labels, motion_states,
-                     use_dbc_colors, track_locations, sources, road_projection_height, road_hovered_id, selected_id)
+  draw_camera_tracks(font, wide_calibration, wide_tracks, wide_content_rect, show_labels, motion_states,
+                     track_locations, sources, wide_projection_height, wide_hovered_id, selected_id)
+  draw_camera_tracks(font, road_calibration, road_tracks, road_content_rect, show_labels, motion_states,
+                     track_locations, sources, road_projection_height, road_hovered_id, selected_id)
   return selected_id
 
 
@@ -923,8 +911,8 @@ def draw_model_line(points_x, points_y, center_x: float, car_y: float, longitudi
     previous = current
 
 
-def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: bool, model,
-                  motion_states: dict[int, int], use_dbc_colors: bool, hide_moving: bool, hide_stationary: bool,
+def draw_top_down(font, rect: rl.Rectangle, tracks, show_labels: bool, model,
+                  motion_states: dict[int, int], hide_moving: bool, hide_stationary: bool,
                   hide_unknown: bool, track_locations: dict[int, tuple[int, int]], sources,
                   hovered_id: int | None, selected_id: int | None,
                   preview_id: int | None = None) -> None:
@@ -945,19 +933,11 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     label_size = measure_text_cached(font, label, 14)
     draw_text(font, label, scale_x - label_size.x - 10, y - 7, 14, MUTED)
 
-  if use_dbc_colors:
-    legend = (
-      (PURPLE, "moving", hide_moving),
-      (WHITE, "stationary", hide_stationary),
-      (MUTED, "unknown", hide_unknown),
-    )
-  else:
-    legend = (
-      (radar_track_color(-2.0, 10.0), "approaching", hide_moving),
-      (radar_track_color(0.0, 10.0), "speed matched", hide_moving),
-      (radar_track_color(2.0, 10.0), "receding", hide_moving),
-      (radar_track_color(-10.0, 10.0), "stationary", hide_stationary),
-    )
+  legend = (
+    (PURPLE, "moving", hide_moving),
+    (WHITE, "stationary", hide_stationary),
+    (MUTED, "unknown", hide_unknown),
+  )
   legend_x = rect.x + rect.width - 150
   legend_y = rect.y + 50
   for index, (color, label, disabled) in enumerate(legend):
@@ -996,7 +976,7 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     if geometry is None:
       continue
     x, y, radius = geometry
-    color = display_track_color(track, v_ego, motion_states, use_dbc_colors)
+    color = display_track_color(track, motion_states)
     is_hovered = int(track.trackId) == hovered_id
     is_selected = int(track.trackId) == selected_id
     is_previewed = int(track.trackId) == preview_id and not is_selected
@@ -1036,7 +1016,7 @@ def dbc_track_state(state: int) -> str:
   return {0: "empty", 1: "tent 1", 2: "tent 2", 3: "measured", 4: "coasted", 7: "unresolved"}.get(state, str(state))
 
 
-def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_states: dict[int, int], scroll: int,
+def draw_track_table(font, rect: rl.Rectangle, tracks, motion_states: dict[int, int], scroll: int,
                      selected_id: int | None, hovered_id: int | None,
                      track_signals: dict[int, DisplayTrackSignals], track_locations: dict[int, tuple[int, int]],
                      table_mode: str) -> None:
@@ -1062,8 +1042,8 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_stat
     )
   else:
     columns = (
-      ("ID", 0.02), ("CAN", 0.09), ("DIST", 0.21), ("LAT", 0.32), ("REL V", 0.43),
-      ("IMPLEMENTATION", 0.56), ("DBC MOTION", 0.80),
+      ("ID", 0.02), ("CAN", 0.10), ("DIST", 0.24), ("LAT", 0.38), ("REL V", 0.52),
+      ("DBC MOTION", 0.70),
     )
   header_y = rect.y + 36
   for title, offset in columns:
@@ -1109,12 +1089,11 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_stat
     else:
       values = (
         (str(track.trackId), 0.02, TEXT),
-        (can_location, 0.09, TEXT if can_address >= 0 else MUTED),
-        (f"{track.dRel:6.1f}", 0.21, TEXT),
-        (f"{track.yRel:+6.1f}", 0.32, TEXT),
-        (f"{track.vRel:+6.1f}", 0.43, TEXT),
-        (implementation_class(track.vRel, v_ego), 0.56, radar_track_color(track.vRel, v_ego)),
-        (dbc_motion_class(motion_state), 0.80, dbc_motion_color(motion_state)),
+        (can_location, 0.10, TEXT if can_address >= 0 else MUTED),
+        (f"{track.dRel:6.1f}", 0.24, TEXT),
+        (f"{track.yRel:+6.1f}", 0.38, TEXT),
+        (f"{track.vRel:+6.1f}", 0.52, TEXT),
+        (dbc_motion_class(motion_state), 0.70, dbc_motion_color(motion_state)),
       )
     for value, offset, color in values:
       draw_text(font, value, rect.x + rect.width * offset, y, 15, color)
@@ -1464,7 +1443,7 @@ def fused_stream_loss_state(available_streams, missing_since: float | None,
 
 
 def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive: bool, source_active: bool,
-                       show_labels: bool, data_source: str, use_dbc_colors: bool, camera_mode: str,
+                       show_labels: bool, data_source: str, camera_mode: str,
                        both_cameras_available: bool,
                        visible_tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]],
                        source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
@@ -1582,17 +1561,15 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
   chip_x = rect.x + 14
   chip_y = source_tooltip_anchor_y
   camera_label = {"fused": "FUSED", "wide 180": "WIDE"}.get(camera_mode, "ROAD")
-  table_label = {"comparison": "COMP", "kinematics": "KIN", "object": "OBJ"}[table_mode]
+  table_label = {"motion": "MOTION", "kinematics": "KIN", "object": "OBJ"}[table_mode]
   chip_specs = [
     ("OPEN", GREEN, "route", "Open a route, or paste one with Cmd/Ctrl+V"),
     (source_title, status_color, "source", "Switch CAN / liveTracks source"),
-    ("DBC" if use_dbc_colors else "IMPL", PURPLE if use_dbc_colors else CYAN, "colors",
-     "Switch DBC / implementation colors"),
     ("LABELS ON" if show_labels else "LABELS", GREEN if show_labels else MUTED, "labels", "Show / hide all labels"),
   ]
   if both_cameras_available:
     chip_specs.append((camera_label, CYAN, "camera", "Cycle road / wide / fused camera"))
-  chip_specs.append((table_label, MUTED, "table", "Cycle comparison / kinematics / object table"))
+  chip_specs.append((table_label, MUTED, "table", "Cycle motion / kinematics / object table"))
   clicked_action = source_clicked_action
   hovered_tooltip = source_hovered_tooltip or top_hovered_tooltip
   for label, color, action, tooltip in chip_specs:
@@ -1669,7 +1646,6 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   show_labels = False
   source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]] = {}
   use_can_source = True
-  use_dbc_colors = True
   table_mode_index = 0
   table_scroll = 0
   selected_track_id = None
@@ -1972,7 +1948,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         wide_from_device_euler = np.asarray(sm["liveCalibration"].wideFromDeviceEuler)
       selected_track_id = draw_fused_camera_mode(
         font, road_camera_view, wide_camera_view, fused_device_camera, rpy_calib, wide_from_device_euler,
-        fused_bounds, tracks, v_ego, show_labels, motion_states, use_dbc_colors,
+        fused_bounds, tracks, show_labels, motion_states,
         track_locations, selected_tracks.trackSources, selected_track_id,
       )
       fused_available_streams = set(road_camera_view.available_streams) | set(wide_camera_view.available_streams)
@@ -1989,7 +1965,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       table_mode = TABLE_MODES[table_mode_index]
       clicked_action = draw_source_status(
         font, status_rect, selected_tracks, data_valid, data_alive,
-        replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source, use_dbc_colors,
+        replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
         "fused", both_camera_streams_available(fused_available_streams),
         tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
       )
@@ -2001,8 +1977,6 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         use_can_source = not use_can_source
         table_scroll = 0
         selected_track_id = None
-      elif clicked_action == "colors":
-        use_dbc_colors = not use_dbc_colors
       elif clicked_action == "labels":
         show_labels = not show_labels
       elif clicked_action == "camera":
@@ -2089,20 +2063,20 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       WHITE,
     )
 
-    draw_camera_tracks(font, calibration, tracks, camera_draw_rect, v_ego, show_labels, motion_states, use_dbc_colors,
+    draw_camera_tracks(font, calibration, tracks, camera_draw_rect, show_labels, motion_states,
                        track_locations, selected_tracks.trackSources,
                        camera_projection_height, camera_hovered_id, selected_track_id, table_hover_id)
     draw_top_down(
-      font, radar_rect, tracks, v_ego, show_labels, model, motion_states, use_dbc_colors,
+      font, radar_rect, tracks, show_labels, model, motion_states,
       hide_moving, hide_stationary, hide_unknown, track_locations, selected_tracks.trackSources,
       top_down_hovered_id, selected_track_id, table_hover_id,
     )
     table_mode = TABLE_MODES[table_mode_index]
-    draw_track_table(font, table_rect, tracks, v_ego, motion_states, table_scroll, selected_track_id, table_hover_id,
+    draw_track_table(font, table_rect, tracks, motion_states, table_scroll, selected_track_id, table_hover_id,
                      track_signals, track_locations, table_mode)
     clicked_action = draw_source_status(
       font, status_rect, selected_tracks, data_valid, data_alive,
-      replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source, use_dbc_colors,
+      replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
       "wide 180" if camera_view.stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD else "road",
       both_camera_streams_available(camera_view.available_streams),
       tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
@@ -2115,8 +2089,6 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       use_can_source = not use_can_source
       table_scroll = 0
       selected_track_id = None
-    elif clicked_action == "colors":
-      use_dbc_colors = not use_dbc_colors
     elif clicked_action == "labels":
       show_labels = not show_labels
     elif clicked_action == "camera":
