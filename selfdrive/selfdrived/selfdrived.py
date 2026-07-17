@@ -641,7 +641,7 @@ class SelfdriveD(CruiseHelper):
 
 
 def main():
-  config_realtime_process(4, Priority.CTRL_HIGH)
+  config_realtime_process(6 if HARDWARE.get_device_type() == "mici" else 4, Priority.CTRL_HIGH)
   s = SelfdriveD()
   s.run()
 

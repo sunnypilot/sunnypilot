@@ -90,7 +90,7 @@ class ControlsExt(ModelStateBase):
   def get_radar_track_data(CC_SP: custom.CarControlSP, live_tracks, valid: bool, model=None, model_valid: bool = False) -> None:
     CC_SP.radarTracksActive = valid and len(live_tracks.trackSources) > 0
     source_tracks = (
-      [track for track in live_tracks.points if track.motionState in (1, 2)]
+      [track for track in live_tracks.points if track.measured and track.motionState in (1, 2)]
       if CC_SP.radarTracksActive else ()
     )
     path_x = np.asarray(model.position.x, dtype=float) if model_valid else np.empty(0)

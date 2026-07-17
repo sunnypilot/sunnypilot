@@ -4,15 +4,18 @@ from cereal import car, custom
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 
-def make_live_tracks(motion_states: tuple[int, ...], with_source: bool = True):
+def make_live_tracks(motion_states: tuple[int, ...], with_source: bool = True,
+                     measured: tuple[bool, ...] | None = None):
   live_tracks = car.RadarData.new_message()
   points = live_tracks.init("points", len(motion_states))
+  measured = measured or (True,) * len(motion_states)
   for track_id, (point, motion_state) in enumerate(zip(points, motion_states, strict=True), start=7):
     point.trackId = track_id
     point.dRel = 12
     point.yRel = -3
     point.vRel = 1
     point.motionState = motion_state
+    point.measured = measured[track_id - 7]
   if with_source:
     live_tracks.trackSources = [{"startAddress": 0x3A5, "endAddress": 0x3C4, "bus": 1,
                                  "trackCount": len(motion_states)}]
@@ -36,6 +39,16 @@ def test_active_radar_tracks_copy_only_classified_points():
   assert cc_sp.radarTracksActive
   assert [track.trackId for track in cc_sp.radarTracks] == [7, 8]
   assert [track.motionState for track in cc_sp.radarTracks] == [2, 1]
+
+
+def test_active_radar_tracks_exclude_coasted_points_from_cluster():
+  cc_sp = custom.CarControlSP.new_message()
+
+  ControlsExt.get_radar_track_data(
+    cc_sp, make_live_tracks((2, 2), measured=(True, False)), valid=True,
+  )
+
+  assert [track.trackId for track in cc_sp.radarTracks] == [7]
 
 
 def test_radar_tracks_are_positioned_relative_to_curved_model_path():

@@ -15,6 +15,8 @@ DBC_MOVING_COLOR = (190, 125, 255)
 DBC_UNKNOWN_COLOR = (154, 168, 184)
 DBC_MOTION_STATIONARY = 1
 DBC_MOTION_MOVING = 2
+COASTED_ALPHA = 96
+COASTED_RADIUS_REDUCTION = 2
 
 
 def is_preferred_radar_source(source) -> bool:
@@ -54,13 +56,14 @@ def draw_radar_source_marker(center: rl.Vector2, radius: float, color: rl.Color,
   rl.draw_poly(center, sides, radius, rotation, color)
 
 
-def radar_track_display(motion_state: int) -> tuple[rl.Color, bool]:
+def radar_track_display(motion_state: int, measured: bool = True) -> tuple[rl.Color, bool]:
   """Color tracks exclusively from the radar's DBC motion classification."""
+  alpha = 255 if measured else COASTED_ALPHA
   if motion_state == DBC_MOTION_STATIONARY:
-    return rl.Color(*NEUTRAL_COLOR, 255), True
+    return rl.Color(*NEUTRAL_COLOR, alpha), True
   if motion_state == DBC_MOTION_MOVING:
-    return rl.Color(*DBC_MOVING_COLOR, 255), False
-  return rl.Color(*DBC_UNKNOWN_COLOR, 255), False
+    return rl.Color(*DBC_MOVING_COLOR, alpha), False
+  return rl.Color(*DBC_UNKNOWN_COLOR, alpha), False
 
 
 def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple[str, str, str, str, str, str]:
@@ -224,8 +227,11 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      color, stationary = radar_track_display(motion_state)
+      measured = bool(track.measured)
+      color, stationary = radar_track_display(motion_state, measured)
       radius = max(1, track_size - 5) if stationary else track_size
+      if not measured:
+        radius = max(1, radius - COASTED_RADIUS_REDUCTION)
       track_id = int(track.trackId)
       highlight_color = highlighted_tracks.get(track_id)
       if highlight_color is not None:

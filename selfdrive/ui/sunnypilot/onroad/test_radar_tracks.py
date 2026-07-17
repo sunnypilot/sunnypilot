@@ -15,6 +15,13 @@ def test_dbc_motion_colors():
   assert radar_track_display(1)[1]
 
 
+def test_coasted_dbc_motion_is_faded():
+  color, stationary = radar_track_display(2, measured=False)
+
+  assert color_tuple(color) == (*radar_tracks.DBC_MOVING_COLOR, radar_tracks.COASTED_ALPHA)
+  assert not stationary
+
+
 def test_unknown_dbc_motion_uses_neutral_dbc_color():
   color, stationary = radar_track_display(0)
 
@@ -82,6 +89,7 @@ def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
   points[0].vRel = 2
   points[0].aRel = 0
   points[0].motionState = radar_tracks.DBC_MOTION_MOVING
+  points[0].measured = True
   drawn_circles = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_circles.append((x, y, size)))
 
@@ -142,6 +150,7 @@ def test_draw_radar_tracks_uses_source_shapes_with_preferred_circle(monkeypatch)
     point.yRel = 1
     point.vRel = 2
     point.motionState = radar_tracks.DBC_MOTION_MOVING
+    point.measured = True
     point.sourceAddress = address
     point.sourceBus = 1
 
@@ -169,6 +178,7 @@ def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
   point.vRel = -20
   point.aRel = 0
   point.motionState = 1
+  point.measured = True
   drawn_sizes = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_sizes.append(size))
 
@@ -187,6 +197,7 @@ def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
   point.vRel = 0.5
   point.aRel = 0
   point.motionState = radar_tracks.DBC_MOTION_MOVING
+  point.measured = True
   drawn_sizes = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_sizes.append(size))
 
@@ -207,6 +218,7 @@ def test_draw_radar_tracks_highlights_and_returns_matched_track(monkeypatch):
     point.vRel = 2
     point.aRel = 0
     point.motionState = radar_tracks.DBC_MOTION_MOVING
+    point.measured = True
 
   highlight_color = radar_tracks.rl.Color(255, 215, 0, 255)
   drawn_rings = []
@@ -226,3 +238,24 @@ def test_draw_radar_tracks_highlights_and_returns_matched_track(monkeypatch):
 
   assert drawn_rings == [((111, 37), 9, 12, (255, 215, 0, 255))]
   assert matched_positions == {11: (111, 37)}
+
+
+def test_draw_radar_tracks_shrinks_and_fades_coasted_moving_track(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  point = live_tracks.init("points", 1)[0]
+  point.dRel = 10
+  point.yRel = 1
+  point.vRel = 0
+  point.motionState = radar_tracks.DBC_MOTION_MOVING
+  point.measured = False
+  drawn = []
+  monkeypatch.setattr(
+    radar_tracks.rl, "draw_circle",
+    lambda x, y, radius, color: drawn.append((radius, color_tuple(color))),
+  )
+
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=6,
+  )
+
+  assert drawn == [(4, (*radar_tracks.DBC_MOVING_COLOR, radar_tracks.COASTED_ALPHA))]

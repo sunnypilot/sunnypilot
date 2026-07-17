@@ -49,20 +49,61 @@ def convert_to_capnp(struct: structs.CarParamsSP | structs.CarStateSP) -> capnp.
 
 
 def convert_carControlSP(struct: capnp.lib.capnp._DynamicStructReader) -> structs.CarControlSP:
-  # TODO: recursively handle any car struct as needed
-  def remove_deprecated(s: dict) -> dict:
-    return {k: v for k, v in s.items() if not k.endswith('DEPRECATED')}
+  def convert_lead(src) -> structs.LeadData:
+    lead_is_default = not any((
+      src.dRel, src.yRel, src.vRel, src.aRel, src.vLead, src.aLeadDEPRECATED, src.dPath, src.vLat,
+      src.vLeadK, src.aLeadK, src.fcw, src.status, src.aLeadTau, src.modelProb, src.radar,
+      src.radarTrackId != -1,
+    ))
+    if lead_is_default:
+      return structs.LeadData()
 
-  struct_dict = struct.to_dict()
-  struct_dataclass = structs.CarControlSP(**remove_deprecated({k: v for k, v in struct_dict.items() if not isinstance(k, dict)}))
+    return structs.LeadData(
+      dRel=src.dRel,
+      yRel=src.yRel,
+      vRel=src.vRel,
+      aRel=src.aRel,
+      vLead=src.vLead,
+      dPath=src.dPath,
+      vLat=src.vLat,
+      vLeadK=src.vLeadK,
+      aLeadK=src.aLeadK,
+      fcw=src.fcw,
+      status=src.status,
+      aLeadTau=src.aLeadTau,
+      modelProb=src.modelProb,
+      radar=src.radar,
+      radarTrackId=src.radarTrackId,
+    )
 
-  struct_dataclass.mads = structs.ModularAssistiveDrivingSystem(**remove_deprecated(struct_dict.get('mads', {})))
-  # struct_dataclass.params = [structs.CarControlSP.Param(**remove_deprecated(p)) for p in struct_dict.get('params', [])]
-  struct_dataclass.leadOne = structs.LeadData(**remove_deprecated(struct_dict.get('leadOne', {})))
-  struct_dataclass.leadTwo = structs.LeadData(**remove_deprecated(struct_dict.get('leadTwo', {})))
-  struct_dataclass.radarTracks = [structs.CarControlSP.RadarTrack(**track) for track in struct_dict.get('radarTracks', [])]
-  struct_dataclass.intelligentCruiseButtonManagement = structs.IntelligentCruiseButtonManagement(
-    **remove_deprecated(struct_dict.get('intelligentCruiseButtonManagement', {}))
+  return structs.CarControlSP(
+    mads=structs.ModularAssistiveDrivingSystem(
+      state=str(struct.mads.state),
+      enabled=struct.mads.enabled,
+      active=struct.mads.active,
+      available=struct.mads.available,
+    ),
+    params=[
+      {"key": param.key, "type": str(param.type), "value": bytes(param.value)}
+      for param in struct.params
+    ],
+    leadOne=convert_lead(struct.leadOne),
+    leadTwo=convert_lead(struct.leadTwo),
+    intelligentCruiseButtonManagement=structs.IntelligentCruiseButtonManagement(
+      state=str(struct.intelligentCruiseButtonManagement.state),
+      sendButton=str(struct.intelligentCruiseButtonManagement.sendButton),
+      vTarget=struct.intelligentCruiseButtonManagement.vTarget,
+    ),
+    radarTracks=[
+      structs.CarControlSP.RadarTrack(
+        trackId=track.trackId,
+        dRel=track.dRel,
+        yRel=track.yRel,
+        vRel=track.vRel,
+        motionState=track.motionState,
+        age=track.age,
+      )
+      for track in struct.radarTracks
+    ],
+    radarTracksActive=struct.radarTracksActive,
   )
-
-  return struct_dataclass
