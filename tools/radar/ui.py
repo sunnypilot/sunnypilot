@@ -14,7 +14,6 @@ import sys
 import termios
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 import fcntl
 
 import numpy as np
@@ -65,12 +64,18 @@ SPEC_BY_RANGE = {
   (spec.start_addr, spec.end_addr): spec
   for spec in HYUNDAI_RADAR_TRACK_SPECS
 }
+SPEC_BY_NAME = {spec.name: spec for spec in HYUNDAI_RADAR_TRACK_SPECS}
+PREFERRED_RADAR_SOURCE = "RADAR_3A5_3C4"
+DEFAULT_SOURCE_FILTERS = (False, True, True)  # hide moving, stationary, unknown
+RadarSourceKey = tuple[int, int, int]
 RADAR_DETAIL_SIGNALS = {
   "MOTION_STATE", "REL_LAT_SPEED", "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE",
   "AGE", "COAST_AGE", "STATE_ALT", "TRACK_COUNTER",
 }
 TABLE_MODES = ("comparison", "kinematics", "object")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
+TRACK_COUNT_FIELD_WIDTH = 3
+SOURCE_CIRCLE_RADIUS_SCALE = 0.8
 
 
 @dataclass
@@ -81,6 +86,7 @@ class ManagedReplay:
   playback_speed: float = 1.0
   progress_current: int = 0
   progress_total: int = 0
+  car_fingerprint: str = ""
   terminal_buffer: str = ""
 
   def poll(self):
@@ -125,11 +131,40 @@ class ManagedReplay:
       if progress_matches:
         self.progress_current = int(progress_matches[-1].group(1))
         self.progress_total = int(progress_matches[-1].group(2))
+      fingerprint_matches = list(re.finditer(r"Car Fingerprint:\s*([^\r\n\x1b]+)", self.terminal_buffer))
+      if fingerprint_matches:
+        self.car_fingerprint = fingerprint_matches[-1].group(1).strip()
 
   def close_terminal(self) -> None:
     if self.master_fd >= 0:
       os.close(self.master_fd)
       self.master_fd = -1
+
+
+@dataclass(frozen=True)
+class ReplayTimelineEntry:
+  start: float
+  end: float
+  kind: str
+  title: str = ""
+  detail: str = ""
+
+
+@dataclass(frozen=True)
+class ReplayTimeline:
+  start: float = 0.0
+  end: float = 0.0
+  entries: tuple[ReplayTimelineEntry, ...] = ()
+  car_fingerprint: str = ""
+
+
+@dataclass
+class ReplayScrubState:
+  active: bool = False
+  preview_seconds: float | None = None
+  last_seek_at: float = 0.0
+  last_seek_second: int | None = None
+  pending_seconds: float | None = None
 
 
 def start_route_replay(route: str) -> ManagedReplay:
@@ -175,7 +210,9 @@ def replace_route_replay(process: ManagedReplay | None, route: str) -> tuple[Man
     return process, "Enter a route or segment ID."
   stop_route_replay(process)
   try:
-    return start_route_replay(route), ""
+    replay = start_route_replay(route)
+    print(f"Radar debugger opened route: {route}", flush=True)
+    return replay, ""
   except OSError as exc:
     return None, f"Could not start replay: {exc}"
 
@@ -185,15 +222,77 @@ def route_start_seconds(route: str) -> float:
   return int(match.group(1)) * 60.0 if match is not None else 0.0
 
 
-def route_wall_time(route: str, route_seconds: float) -> str:
-  match = re.search(r"\d{4}-\d{2}-\d{2}--\d{2}-\d{2}-\d{2}", route)
-  if match is None:
-    return "--"
+def replay_timeline_worker(route: str, output_queue) -> None:
+  from openpilot.tools.lib.logreader import LogReader, ReadMode
+
+  entries: list[list[float | str]] = []
+  engagement_index = None
+  alert_index = None
+  alert_signature = None
+  first_mono_time = None
+  route_offset = route_start_seconds(route)
+  end_time = route_offset
+  car_fingerprint = ""
   try:
-    route_datetime = datetime.strptime(match.group(), "%Y-%m-%d--%H-%M-%S") + timedelta(seconds=route_seconds)
-  except ValueError:
-    return "--"
-  return route_datetime.strftime("%a %b %d %H:%M:%S %Y")
+    for message in LogReader(route, default_mode=ReadMode.QLOG, only_union_types=True):
+      mono_time = int(message.logMonoTime)
+      if first_mono_time is None:
+        first_mono_time = mono_time
+      seconds = route_offset + (mono_time - first_mono_time) / 1e9
+      end_time = max(end_time, seconds)
+      message_type = message.which()
+      if message_type == "carParams":
+        car_fingerprint = str(message.carParams.carFingerprint)
+      elif message_type == "userBookmark":
+        entries.append([seconds, seconds, "bookmark", "USER TAG", ""])
+      elif message_type == "selfdriveState":
+        state = message.selfdriveState
+        if engagement_index is not None:
+          entries[engagement_index][1] = seconds
+        if state.enabled:
+          if engagement_index is None:
+            engagement_index = len(entries)
+            entries.append([seconds, seconds, "engaged", "", ""])
+        else:
+          engagement_index = None
+
+        if alert_index is not None:
+          entries[alert_index][1] = seconds
+        if int(state.alertSize.raw) != 0:
+          alert_kind = ("info", "warning", "critical")[int(state.alertStatus.raw)]
+          next_signature = (alert_kind, str(state.alertText1), str(state.alertText2))
+          if alert_signature != next_signature:
+            alert_index = len(entries)
+            alert_signature = next_signature
+            entries.append([seconds, seconds, alert_kind, str(state.alertText1), str(state.alertText2)])
+        else:
+          alert_index = None
+          alert_signature = None
+    timeline_entries = tuple(
+      ReplayTimelineEntry(float(start), float(end), str(kind), str(title), str(detail))
+      for start, end, kind, title, detail in entries
+    )
+    output_queue.put(ReplayTimeline(route_offset, end_time, timeline_entries, car_fingerprint))
+  except Exception:
+    output_queue.put(ReplayTimeline(route_offset, end_time, (), car_fingerprint))
+
+
+def stop_timeline_process(process) -> None:
+  if process is not None and process.is_alive():
+    process.terminate()
+    process.join(timeout=1.0)
+
+
+def start_timeline_process(process_context, process, output_queue, route: str):
+  stop_timeline_process(process)
+  while True:
+    try:
+      output_queue.get_nowait()
+    except queue.Empty:
+      break
+  process = process_context.Process(target=replay_timeline_worker, args=(route, output_queue), daemon=True)
+  process.start()
+  return process
 
 
 def format_download_progress(current: int, total: int) -> str:
@@ -210,6 +309,8 @@ class DisplayTrack:
   yRel: float
   vRel: float
   aRel: float
+  canAddress: int = -1
+  canBus: int = -1
 
 
 @dataclass(frozen=True)
@@ -243,7 +344,9 @@ class RadarSnapshot:
   radarTracksAvailable: bool = False
 
 
-def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ...] = ()) -> RadarSnapshot:
+def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ...] = (),
+                        track_locations: dict[int, tuple[int, int]] | None = None) -> RadarSnapshot:
+  track_locations = track_locations or {}
   return RadarSnapshot(
     points=tuple(DisplayTrack(
       trackId=int(point.trackId),
@@ -251,6 +354,8 @@ def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ..
       yRel=float(point.yRel),
       vRel=float(point.vRel),
       aRel=float(point.aRel),
+      canAddress=track_locations.get(int(point.trackId), (-1, -1))[0],
+      canBus=track_locations.get(int(point.trackId), (-1, -1))[1],
     ) for point in radar_data.points),
     trackSources=tuple(DisplaySource(
       startAddress=int(source.startAddress),
@@ -275,6 +380,32 @@ def source_details(start_address: int, end_address: int) -> str:
   return f"{spec.frequency} Hz  {spec.message_size} B"
 
 
+def radar_source_sort_key(source) -> tuple[bool, int, int, int]:
+  spec = SPEC_BY_RANGE.get((source.startAddress, source.endAddress))
+  return (
+    spec is None or spec.name != PREFERRED_RADAR_SOURCE,
+    source.startAddress,
+    source.endAddress,
+    source.bus,
+  )
+
+
+def radar_source_key(source) -> RadarSourceKey:
+  return int(source.startAddress), int(source.endAddress), int(source.bus)
+
+
+def source_filter_state(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
+                        source_key: RadarSourceKey) -> tuple[bool, bool, bool]:
+  return source_filters.get(source_key, DEFAULT_SOURCE_FILTERS)
+
+
+def toggle_source_filter(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
+                         source_key: RadarSourceKey, filter_index: int) -> None:
+  filters = list(source_filter_state(source_filters, source_key))
+  filters[filter_index] = not filters[filter_index]
+  source_filters[source_key] = (filters[0], filters[1], filters[2])
+
+
 def implementation_class(v_rel: float, v_ego: float) -> str:
   if radar_track_is_stationary(v_rel, v_ego):
     return "stationary"
@@ -297,12 +428,23 @@ def display_track_color(track, v_ego: float, motion_states: dict[int, int], use_
   return radar_track_color(track.vRel, v_ego)
 
 
-def filter_tracks(tracks, motion_states: dict[int, int], hide_unknown: bool, hide_stationary: bool):
-  return [
-    track for track in tracks
-    if not (hide_unknown and motion_states.get(int(track.trackId)) not in (1, 2))
-    and not (hide_stationary and motion_states.get(int(track.trackId)) == 1)
-  ]
+def filter_tracks(tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]], sources,
+                  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]]):
+  filtered_tracks = []
+  for track in tracks:
+    address, bus = track_locations.get(int(track.trackId), (-1, -1))
+    source = next((
+      source for source in sources
+      if source.startAddress <= address <= source.endAddress and source.bus == bus
+    ), None)
+    filters = source_filter_state(source_filters, radar_source_key(source)) if source is not None else DEFAULT_SOURCE_FILTERS
+    motion_state = motion_states.get(int(track.trackId))
+    if ((filters[0] and motion_state == 2)
+        or (filters[1] and motion_state == 1)
+        or (filters[2] and motion_state not in (1, 2))):
+      continue
+    filtered_tracks.append(track)
+  return filtered_tracks
 
 
 def enable_dbc_detail_signals(radar_interface: RadarInterface, enhanced_parsers: set[tuple[str, int]]) -> None:
@@ -326,14 +468,27 @@ def enable_dbc_detail_signals(radar_interface: RadarInterface, enhanced_parsers:
     enhanced_parsers.add(parser_key)
 
 
-def get_dbc_track_details(radar_interface: RadarInterface) -> tuple[dict[int, int], tuple[DisplayTrackSignals, ...]]:
+def get_dbc_track_details(
+  radar_interface: RadarInterface,
+) -> tuple[dict[int, int], tuple[DisplayTrackSignals, ...], dict[int, tuple[int, int]]]:
   states = {}
   details = []
+  locations = {}
   for track_key, point in radar_interface.pts.items():
-    if not isinstance(track_key, tuple) or track_key[0] != "RADAR_3A5_3C4":
+    if not isinstance(track_key, tuple):
       continue
 
+    spec = SPEC_BY_NAME.get(track_key[0])
+    if spec is None:
+      continue
+    stored_address = track_key[1]
+    can_address = stored_address // 2 if len(spec.track_prefixes) > 1 else stored_address
     active_bus = radar_interface.active_radar_buses.get(track_key[0])
+    locations[int(point.trackId)] = (can_address, active_bus if active_bus is not None else -1)
+
+    if track_key[0] != "RADAR_3A5_3C4":
+      continue
+
     radar_parser = next((parser for parser in radar_interface.radar_parsers
                          if parser.spec.name == track_key[0] and parser.bus == active_bus), None)
     if radar_parser is None:
@@ -355,7 +510,7 @@ def get_dbc_track_details(radar_interface: RadarInterface) -> tuple[dict[int, in
         stateAlt=int(message["STATE_ALT"]),
         trackCounter=int(message["TRACK_COUNTER"]),
       ))
-  return states, tuple(details)
+  return states, tuple(details), locations
 
 
 def match_decoded_track_values(tracks, decoded_tracks, decoded_values: dict):
@@ -411,8 +566,8 @@ def radar_decoder_worker(addr: str, output_queue) -> None:
       radar_data = radar_interface.update([(sm.logMonoTime["can"], can_messages)])
       enable_dbc_detail_signals(radar_interface, enhanced_parsers)
       if radar_data is not None:
-        motion_states, track_signals = get_dbc_track_details(radar_interface)
-        snapshot = make_radar_snapshot(radar_data, track_signals)
+        motion_states, track_signals, track_locations = get_dbc_track_details(radar_interface)
+        snapshot = make_radar_snapshot(radar_data, track_signals, track_locations)
 
     now = time.monotonic()
     if radar_data is not None or now - last_publish_time >= 0.1:
@@ -426,6 +581,66 @@ def draw_text(font, text: str, x: float, y: float, size: float, color: rl.Color 
 
 def measure_standalone_text(font, text: str, size: float) -> rl.Vector2:
   return rl.measure_text_ex(font, text, size, 0)  # noqa: TID251 - standalone raylib tool
+
+
+def fit_overlay_text(font, text: str, size: float, max_width: float) -> str:
+  text = " ".join(text.split())
+  if measure_standalone_text(font, text, size).x <= max_width:
+    return text
+  suffix = "..."
+  while text and measure_standalone_text(font, text + suffix, size).x > max_width:
+    text = text[:-1]
+  return text.rstrip() + suffix if text else suffix
+
+
+def current_replay_events(timeline: ReplayTimeline, route_seconds: float) -> list[ReplayTimelineEntry]:
+  events = []
+  for entry in timeline.entries:
+    if entry.kind == "bookmark" and 0.0 <= route_seconds - entry.start <= 2.0:
+      events.append(entry)
+    elif entry.kind in ("info", "warning", "critical"):
+      visible_end = max(entry.end + 0.25, entry.start + 1.0)
+      if entry.start - 0.1 <= route_seconds <= visible_end:
+        events.append(entry)
+  priority = {"critical": 3, "warning": 2, "info": 1, "bookmark": 0}
+  return sorted(events, key=lambda entry: (priority[entry.kind], entry.start), reverse=True)[:2]
+
+
+def draw_replay_event_overlay(font, bounds: rl.Rectangle, top: float,
+                              timeline: ReplayTimeline, route_seconds: float) -> None:
+  events = current_replay_events(timeline, route_seconds)
+  if not events:
+    return
+
+  event_colors = {
+    "bookmark": CYAN,
+    "info": GREEN,
+    "warning": ORANGE,
+    "critical": RED,
+  }
+  event_labels = {
+    "bookmark": "USER TAG",
+    "info": "INFO ALERT",
+    "warning": "WARNING",
+    "critical": "CRITICAL ALERT",
+  }
+  width = min(max(340.0, bounds.width * 0.62), bounds.width - 24.0)
+  y = max(bounds.y + 12.0, top)
+  for entry in events:
+    body_lines = [line for line in (entry.title, entry.detail) if line and line != event_labels[entry.kind]]
+    height = 42.0 + len(body_lines) * 22.0
+    if y + height > bounds.y + bounds.height - 12.0:
+      break
+    rect = rl.Rectangle(bounds.x + (bounds.width - width) / 2, y, width, height)
+    color = event_colors[entry.kind]
+    rl.draw_rectangle_rounded(rect, 0.12, 6, rl.Color(4, 8, 14, 225))
+    rl.draw_rectangle_rounded_lines_ex(rect, 0.12, 6, 1.0, color)
+    rl.draw_rectangle_rec(rl.Rectangle(rect.x, rect.y, 5, rect.height), color)
+    draw_text(font, event_labels[entry.kind], rect.x + 16, rect.y + 10, 16, color)
+    for index, line in enumerate(body_lines):
+      fitted = fit_overlay_text(font, line, 18 if index == 0 else 15, rect.width - 32)
+      draw_text(font, fitted, rect.x + 16, rect.y + 34 + index * 22, 18 if index == 0 else 15, TEXT)
+    y += height + 8
 
 
 def edit_key_pressed(key) -> bool:
@@ -567,6 +782,23 @@ def retain_selected_track_id(selected_id: int | None, hovered_id: int | None, tr
   return None
 
 
+def track_source_index(track, track_locations: dict[int, tuple[int, int]], sources) -> int:
+  address, bus = track_locations.get(int(track.trackId), (-1, -1))
+  return next((
+    index for index, source in enumerate(sorted(sources, key=radar_source_sort_key))
+    if source.startAddress <= address <= source.endAddress and source.bus == bus
+  ), -1)
+
+
+def draw_track_source_marker(center: rl.Vector2, radius: float, color: rl.Color, source_index: int) -> None:
+  if source_index <= 0:
+    rl.draw_circle_v(center, radius * SOURCE_CIRCLE_RADIUS_SCALE, color)
+    return
+  sides = (4, 3, 5, 6)[(source_index - 1) % 4]
+  rotation = 45.0 if sides == 4 else -90.0
+  rl.draw_poly(center, sides, radius, rotation, color)
+
+
 def draw_track_popup(font, track, x: float, y: float, radius: float, bounds: rl.Rectangle, color: rl.Color) -> None:
   label = f"#{track.trackId}  {track.dRel:.1f} m  {track.vRel:+.1f} m/s"
   label_size = measure_text_cached(font, label, 18)
@@ -580,6 +812,7 @@ def draw_track_popup(font, track, x: float, y: float, radius: float, bounds: rl.
 
 def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rect: rl.Rectangle, v_ego: float,
                        show_labels: bool, motion_states: dict[int, int], use_dbc_colors: bool,
+                       track_locations: dict[int, tuple[int, int]], sources,
                        projection_height: float, hovered_id: int | None, selected_id: int | None,
                        preview_id: int | None = None) -> None:
   if calibration is None:
@@ -596,13 +829,15 @@ def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rec
     is_hovered = int(track.trackId) == hovered_id
     is_selected = int(track.trackId) == selected_id
     is_previewed = int(track.trackId) == preview_id and not is_selected
-    rl.draw_circle_v(rl.Vector2(x, y), dot_radius + 3.0, rl.Color(0, 0, 0, 180))
+    center = rl.Vector2(x, y)
+    source_index = track_source_index(track, track_locations, sources)
+    draw_track_source_marker(center, dot_radius + 3.0, rl.Color(0, 0, 0, 180), source_index)
     if is_selected:
-      rl.draw_circle_lines_v(rl.Vector2(x, y), dot_radius + 4.0, CYAN)
+      rl.draw_circle_lines_v(center, dot_radius + 4.0, CYAN)
     elif is_previewed:
-      rl.draw_circle_lines_v(rl.Vector2(x, y), dot_radius + 4.0, ORANGE)
-    rl.draw_circle_v(rl.Vector2(x, y), dot_radius, color)
-    rl.draw_circle_v(rl.Vector2(x, y), max(1.5, dot_radius * 0.32), BACKGROUND)
+      rl.draw_circle_lines_v(center, dot_radius + 4.0, ORANGE)
+    draw_track_source_marker(center, dot_radius, color, source_index)
+    rl.draw_circle_v(center, max(1.5, dot_radius * 0.32), BACKGROUND)
 
     if show_labels or is_hovered:
       draw_track_popup(font, track, x, y, dot_radius, camera_rect, color)
@@ -611,7 +846,8 @@ def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rec
 def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view: CameraView, device_camera,
                            rpy_calib: np.ndarray, wide_from_device_euler: np.ndarray, full_rect: rl.Rectangle,
                            tracks, v_ego: float, show_labels: bool, motion_states: dict[int, int],
-                           use_dbc_colors: bool, selected_id: int | None) -> int | None:
+                           use_dbc_colors: bool, track_locations: dict[int, tuple[int, int]], sources,
+                           selected_id: int | None) -> int | None:
   wide_render_rect = rl.Rectangle(
     full_rect.x - full_rect.width * (FUSED_CAMERA_ZOOM - 1.0) / 2,
     full_rect.y - full_rect.height * (FUSED_CAMERA_ZOOM - 1.0) / 2,
@@ -653,9 +889,9 @@ def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view:
   selected_id = retain_selected_track_id(selected_id, current_hovered_id, tracks)
 
   draw_camera_tracks(font, wide_calibration, wide_tracks, wide_content_rect, v_ego, show_labels, motion_states,
-                     use_dbc_colors, wide_projection_height, wide_hovered_id, selected_id)
+                     use_dbc_colors, track_locations, sources, wide_projection_height, wide_hovered_id, selected_id)
   draw_camera_tracks(font, road_calibration, road_tracks, road_content_rect, v_ego, show_labels, motion_states,
-                     use_dbc_colors, road_projection_height, road_hovered_id, selected_id)
+                     use_dbc_colors, track_locations, sources, road_projection_height, road_hovered_id, selected_id)
   return selected_id
 
 
@@ -675,8 +911,10 @@ def draw_model_line(points_x, points_y, center_x: float, car_y: float, longitudi
 
 
 def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: bool, model,
-                  motion_states: dict[int, int], use_dbc_colors: bool, hovered_id: int | None,
-                  selected_id: int | None, preview_id: int | None = None) -> None:
+                  motion_states: dict[int, int], use_dbc_colors: bool, hide_moving: bool, hide_stationary: bool,
+                  hide_unknown: bool, track_locations: dict[int, tuple[int, int]], sources,
+                  hovered_id: int | None, selected_id: int | None,
+                  preview_id: int | None = None) -> None:
   rl.draw_rectangle_rec(rect, PANEL)
   plot = rl.Rectangle(rect.x + 48, rect.y + 44, rect.width - 72, rect.height - 72)
   center_x = plot.x + plot.width / 2
@@ -695,20 +933,32 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     draw_text(font, label, scale_x - label_size.x - 10, y - 7, 14, MUTED)
 
   if use_dbc_colors:
-    legend = ((PURPLE, "moving"), (WHITE, "stationary"), (MUTED, "unknown / n/a"))
+    legend = (
+      (PURPLE, "moving", hide_moving),
+      (WHITE, "stationary", hide_stationary),
+      (MUTED, "unknown / n/a", hide_unknown),
+    )
   else:
     legend = (
-      (radar_track_color(-2.0, 10.0), "approaching"),
-      (radar_track_color(0.0, 10.0), "speed matched"),
-      (radar_track_color(2.0, 10.0), "receding"),
-      (radar_track_color(-10.0, 10.0), "stationary"),
+      (radar_track_color(-2.0, 10.0), "approaching", hide_moving),
+      (radar_track_color(0.0, 10.0), "speed matched", hide_moving),
+      (radar_track_color(2.0, 10.0), "receding", hide_moving),
+      (radar_track_color(-10.0, 10.0), "stationary", hide_stationary),
     )
   legend_x = rect.x + rect.width - 150
   legend_y = rect.y + 50
-  for index, (color, label) in enumerate(legend):
+  for index, (color, label, disabled) in enumerate(legend):
     y = legend_y + index * 23
     rl.draw_circle(int(legend_x), int(y + 7), 5, color)
     draw_text(font, label, legend_x + 12, y, 15, TEXT)
+    if disabled:
+      label_width = measure_standalone_text(font, label, 15).x
+      rl.draw_line_ex(
+        rl.Vector2(legend_x + 10, y + 8),
+        rl.Vector2(legend_x + 14 + label_width, y + 8),
+        1.5,
+        MUTED,
+      )
 
   if model is not None:
     for lane_line, probability in zip(model.laneLines, model.laneLineProbs, strict=True):
@@ -722,7 +972,11 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     draw_model_line(model.position.x, model.position.y, center_x, car_y, longitudinal_scale, lateral_scale,
                     rl.Color(72, 220, 255, 45), 0.75)
 
-  rl.draw_rectangle_rounded(rl.Rectangle(center_x - 13, car_y - 25, 26, 48), 0.3, 6, CYAN)
+  ego_car_rect = rl.Rectangle(center_x - 13, car_y - 25, 26, 48)
+  rl.draw_rectangle_rounded(ego_car_rect, 0.3, 6, rl.Color(82, 94, 108, 210))
+  rl.draw_rectangle_rounded_lines_ex(
+    ego_car_rect, 0.3, 6, 1.0, rl.Color(MUTED.r, MUTED.g, MUTED.b, 150),
+  )
 
   for track in tracks:
     geometry = top_down_track_geometry(rect, track)
@@ -733,12 +987,14 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     is_hovered = int(track.trackId) == hovered_id
     is_selected = int(track.trackId) == selected_id
     is_previewed = int(track.trackId) == preview_id and not is_selected
-    rl.draw_circle_v(rl.Vector2(x, y), radius, rl.Color(0, 0, 0, 180))
+    center = rl.Vector2(x, y)
+    source_index = track_source_index(track, track_locations, sources)
+    draw_track_source_marker(center, radius, rl.Color(0, 0, 0, 180), source_index)
     if is_selected:
       rl.draw_circle_lines_v(rl.Vector2(x, y), radius + 3.0, CYAN)
     elif is_previewed:
       rl.draw_circle_lines_v(rl.Vector2(x, y), radius + 3.0, ORANGE)
-    rl.draw_circle_v(rl.Vector2(x, y), 6.0, color)
+    draw_track_source_marker(center, 6.0, color, source_index)
     if show_labels:
       draw_text(font, f"{track.trackId}", x + 9, y - 9, 16, color)
     elif is_hovered:
@@ -767,7 +1023,8 @@ def dbc_track_state(state: int) -> str:
 
 def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_states: dict[int, int], scroll: int,
                      selected_id: int | None, hovered_id: int | None,
-                     track_signals: dict[int, DisplayTrackSignals], table_mode: str) -> None:
+                     track_signals: dict[int, DisplayTrackSignals], track_locations: dict[int, tuple[int, int]],
+                     table_mode: str) -> None:
   rl.draw_rectangle_rec(rect, BACKGROUND)
   rl.draw_line_ex(rl.Vector2(rect.x, rect.y), rl.Vector2(rect.x + rect.width, rect.y), 2.0, GRID)
   sorted_tracks = sorted(tracks, key=lambda track: (track.dRel, track.trackId))
@@ -780,18 +1037,18 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_stat
 
   if table_mode == "kinematics":
     columns = (
-      ("ID", 0.02), ("DIST", 0.11), ("LAT", 0.23), ("REL V", 0.35), ("LAT V", 0.48), ("REL A", 0.61),
-      ("ABS V", 0.74), ("AGE", 0.88),
+      ("ID", 0.02), ("CAN", 0.08), ("DIST", 0.19), ("LAT", 0.29), ("REL V", 0.39), ("LAT V", 0.50),
+      ("REL A", 0.61), ("ABS V", 0.73), ("AGE", 0.88),
     )
   elif table_mode == "object":
     columns = (
-      ("ID", 0.02), ("WIDTH", 0.12), ("LENGTH", 0.25), ("ANGLE", 0.39), ("STATE", 0.53), ("COAST", 0.72),
-      ("UPD", 0.86),
+      ("ID", 0.02), ("CAN", 0.09), ("WIDTH", 0.21), ("LENGTH", 0.33), ("ANGLE", 0.45), ("STATE", 0.57),
+      ("COAST", 0.74), ("UPD", 0.87),
     )
   else:
     columns = (
-      ("ID", 0.02), ("DIST", 0.12), ("LAT", 0.25), ("REL V", 0.38), ("IMPLEMENTATION", 0.53),
-      ("DBC MOTION", 0.78),
+      ("ID", 0.02), ("CAN", 0.09), ("DIST", 0.21), ("LAT", 0.32), ("REL V", 0.43),
+      ("IMPLEMENTATION", 0.56), ("DBC MOTION", 0.80),
     )
   header_y = rect.y + 36
   for title, offset in columns:
@@ -809,50 +1066,58 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, v_ego: float, motion_stat
       rl.draw_rectangle_rec(rl.Rectangle(rect.x, y - 3, rect.width, 24), rl.Color(255, 255, 255, 8))
     motion_state = motion_states.get(int(track.trackId))
     detail = track_signals.get(int(track.trackId))
+    can_address, can_bus = track_locations.get(int(track.trackId), (-1, -1))
+    can_location = f"{can_address:X}/B{can_bus}" if can_address >= 0 and can_bus >= 0 else "n/a"
     if table_mode == "kinematics":
       values = (
         (str(track.trackId), 0.02, TEXT),
-        (f"{track.dRel:.1f}", 0.11, TEXT),
-        (f"{track.yRel:+.1f}", 0.23, TEXT),
-        (f"{track.vRel:+.1f}", 0.35, TEXT),
-        (f"{detail.relLatSpeed:+.1f}" if detail else "n/a", 0.48, TEXT if detail else MUTED),
+        (can_location, 0.08, TEXT if can_address >= 0 else MUTED),
+        (f"{track.dRel:.1f}", 0.19, TEXT),
+        (f"{track.yRel:+.1f}", 0.29, TEXT),
+        (f"{track.vRel:+.1f}", 0.39, TEXT),
+        (f"{detail.relLatSpeed:+.1f}" if detail else "n/a", 0.50, TEXT if detail else MUTED),
         (f"{track.aRel:+.1f}" if math.isfinite(track.aRel) else "n/a", 0.61, TEXT),
-        (f"{detail.absSpeed:.1f}" if detail else "n/a", 0.74, TEXT if detail else MUTED),
+        (f"{detail.absSpeed:.1f}" if detail else "n/a", 0.73, TEXT if detail else MUTED),
         (str(detail.age) if detail else "n/a", 0.88, TEXT if detail else MUTED),
       )
     elif table_mode == "object":
       values = (
         (str(track.trackId), 0.02, TEXT),
-        (f"{detail.width:.1f}" if detail else "n/a", 0.12, TEXT if detail else MUTED),
-        (f"{detail.length:.1f}" if detail else "n/a", 0.25, TEXT if detail else MUTED),
-        (f"{detail.orientationAngle:+.0f}" if detail else "n/a", 0.39, TEXT if detail else MUTED),
-        (dbc_track_state(detail.state) if detail else "n/a", 0.53, TEXT if detail else MUTED),
-        (str(detail.coastAge) if detail else "n/a", 0.72, TEXT if detail else MUTED),
-        (str(detail.trackCounter) if detail else "n/a", 0.86, TEXT if detail else MUTED),
+        (can_location, 0.09, TEXT if can_address >= 0 else MUTED),
+        (f"{detail.width:.1f}" if detail else "n/a", 0.21, TEXT if detail else MUTED),
+        (f"{detail.length:.1f}" if detail else "n/a", 0.33, TEXT if detail else MUTED),
+        (f"{detail.orientationAngle:+.0f}" if detail else "n/a", 0.45, TEXT if detail else MUTED),
+        (dbc_track_state(detail.state) if detail else "n/a", 0.57, TEXT if detail else MUTED),
+        (str(detail.coastAge) if detail else "n/a", 0.74, TEXT if detail else MUTED),
+        (str(detail.trackCounter) if detail else "n/a", 0.87, TEXT if detail else MUTED),
       )
     else:
       values = (
         (str(track.trackId), 0.02, TEXT),
-        (f"{track.dRel:6.1f}", 0.12, TEXT),
-        (f"{track.yRel:+6.1f}", 0.25, TEXT),
-        (f"{track.vRel:+6.1f}", 0.38, TEXT),
-        (implementation_class(track.vRel, v_ego), 0.53, radar_track_color(track.vRel, v_ego)),
-        (dbc_motion_class(motion_state), 0.78, dbc_motion_color(motion_state)),
+        (can_location, 0.09, TEXT if can_address >= 0 else MUTED),
+        (f"{track.dRel:6.1f}", 0.21, TEXT),
+        (f"{track.yRel:+6.1f}", 0.32, TEXT),
+        (f"{track.vRel:+6.1f}", 0.43, TEXT),
+        (implementation_class(track.vRel, v_ego), 0.56, radar_track_color(track.vRel, v_ego)),
+        (dbc_motion_class(motion_state), 0.80, dbc_motion_color(motion_state)),
       )
     for value, offset, color in values:
       draw_text(font, value, rect.x + rect.width * offset, y, 15, color)
 
 
 def draw_status_chip(font, label: str, x: float, y: float, color: rl.Color,
-                     mouse_position: rl.Vector2) -> tuple[float, rl.Rectangle, bool]:
-  size = measure_text_cached(font, label, 15)
+                     mouse_position: rl.Vector2, selected: bool | None = None,
+                     selection_color: "rl.Color | None" = None) -> tuple[float, rl.Rectangle, bool]:
+  size = measure_standalone_text(font, label, 15)
   width = size.x + 16
   chip_rect = rl.Rectangle(x, y, width, 25)
   hovered = rl.check_collision_point_rec(mouse_position, chip_rect)
-  alpha = 72 if hovered else 32
+  alpha = 72 if hovered else (52 if selected else 18) if selected is not None else 32
   rl.draw_rectangle_rounded(chip_rect, 0.3, 4, rl.Color(color.r, color.g, color.b, alpha))
   if hovered:
     rl.draw_rectangle_rounded_lines_ex(chip_rect, 0.3, 4, 1.0, color)
+  elif selected:
+    rl.draw_rectangle_rounded_lines_ex(chip_rect, 0.3, 4, 1.0, selection_color or color)
   draw_text(font, label, x + 8, y + 4, 15, color)
   return x + width + 7, chip_rect, hovered
 
@@ -866,6 +1131,22 @@ def draw_status_tooltip(font, text: str, chip_rect: rl.Rectangle, bounds: rl.Rec
   rl.draw_rectangle_rounded(tooltip_rect, 0.25, 4, rl.Color(0, 0, 0, 235))
   rl.draw_rectangle_rounded_lines_ex(tooltip_rect, 0.25, 4, 1.0, MUTED)
   draw_text(font, text, x + 9, y + 5, 15, TEXT)
+
+
+def draw_status_parts(font, parts: tuple[tuple[str, str], ...], x: float, y: float, size: float, color: rl.Color,
+                      mouse_position: rl.Vector2, separator: str) -> tuple[str, rl.Rectangle] | None:
+  hovered_tooltip = None
+  for index, (text, tooltip) in enumerate(parts):
+    if index:
+      draw_text(font, separator, x, y, size, color)
+      x += measure_standalone_text(font, separator, size).x
+    text_size = measure_standalone_text(font, text, size)
+    text_rect = rl.Rectangle(x, y, text_size.x, max(size + 4, text_size.y))
+    draw_text(font, text, x, y, size, color)
+    if rl.check_collision_point_rec(mouse_position, text_rect):
+      hovered_tooltip = (tooltip, text_rect)
+    x += text_size.x
+  return hovered_tooltip
 
 
 def draw_route_dialog(font, bounds: rl.Rectangle, route: str, cursor_index: int, error: str,
@@ -952,8 +1233,114 @@ def draw_route_loading(font, bounds: rl.Rectangle, route: str, elapsed: float) -
     rl.draw_rectangle_rounded(progress, 0.5, 6, CYAN)
 
 
-def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, route: str, route_seconds: float,
-                            v_ego: float, loading: bool, seek_input: str, seek_active: bool) -> str | None:
+def draw_replay_timeline(font, bounds: rl.Rectangle, timeline: ReplayTimeline,
+                         route_seconds: float, scrub: ReplayScrubState,
+                         download_current: int, download_total: int) -> tuple[str | None, bool]:
+  timeline_rect = rl.Rectangle(bounds.x + 12, bounds.y + 68, bounds.width - 24, 16)
+  rl.draw_rectangle_rounded(timeline_rect, 0.25, 4, rl.Color(25, 65, 135, 150))
+  duration = timeline.end - timeline.start
+  if duration <= 0.0:
+    scrub.active = False
+    scrub.preview_seconds = None
+    return None, False
+
+  mouse_position = rl.get_mouse_position()
+  hovered = rl.check_collision_point_rec(mouse_position, timeline_rect)
+  download_ratio = float(np.clip(download_current / download_total, 0.0, 1.0)) if download_total > 0 else 1.0
+  downloaded_end = timeline.start + duration * download_ratio
+  pressed = hovered and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT)  # noqa: TID251
+  if pressed:
+    scrub.active = True
+
+  action = None
+  if scrub.active:
+    scrub_ratio = float(np.clip((mouse_position.x - timeline_rect.x) / timeline_rect.width, 0.0, 1.0))
+    scrub.preview_seconds = timeline.start + scrub_ratio * duration
+    seek_second = round(scrub.preview_seconds)
+    now = time.monotonic()
+    released = rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT)  # noqa: TID251
+    if (pressed or released
+        or (rl.is_mouse_button_down(rl.MouseButton.MOUSE_BUTTON_LEFT)
+            and seek_second != scrub.last_seek_second and now - scrub.last_seek_at >= 0.15)):
+      action = f"seek-time:{seek_second}"
+      scrub.last_seek_at = now
+      scrub.last_seek_second = seek_second
+      scrub.pending_seconds = scrub.preview_seconds if scrub.preview_seconds > downloaded_end else None
+    if released:
+      scrub.active = False
+
+  for entry in timeline.entries:
+    start_ratio = float(np.clip((entry.start - timeline.start) / duration, 0.0, 1.0))
+    end_ratio = float(np.clip((entry.end - timeline.start) / duration, start_ratio, 1.0))
+    start_x = timeline_rect.x + start_ratio * timeline_rect.width
+    end_x = timeline_rect.x + end_ratio * timeline_rect.width
+    width = max(2.0, end_x - start_x)
+    if entry.kind == "engaged":
+      rl.draw_rectangle_rec(rl.Rectangle(start_x, timeline_rect.y, width, 10), GREEN)
+    elif entry.kind == "bookmark":
+      rl.draw_rectangle_rec(rl.Rectangle(start_x, timeline_rect.y + 10, 2, 6), CYAN)
+    else:
+      alert_color = {"info": GREEN, "warning": ORANGE, "critical": RED}[entry.kind]
+      rl.draw_rectangle_rec(rl.Rectangle(start_x, timeline_rect.y + 11, width, 5), alert_color)
+
+  if download_ratio < 1.0:
+    downloaded_x = timeline_rect.x + download_ratio * timeline_rect.width
+    rl.draw_rectangle_rec(
+      rl.Rectangle(downloaded_x, timeline_rect.y, timeline_rect.x + timeline_rect.width - downloaded_x,
+                   timeline_rect.height),
+      rl.Color(5, 9, 15, 105),
+    )
+    rl.draw_line_ex(
+      rl.Vector2(downloaded_x, timeline_rect.y),
+      rl.Vector2(downloaded_x, timeline_rect.y + timeline_rect.height),
+      1.0,
+      MUTED,
+    )
+
+  if scrub.pending_seconds is not None:
+    if abs(route_seconds - scrub.pending_seconds) <= 1.0:
+      scrub.pending_seconds = None
+    else:
+      pending_ratio = float(np.clip((scrub.pending_seconds - timeline.start) / duration, 0.0, 1.0))
+      pending_x = timeline_rect.x + pending_ratio * timeline_rect.width
+      for dash_y in np.arange(timeline_rect.y - 3, timeline_rect.y + timeline_rect.height + 3, 5):
+        rl.draw_line_ex(
+          rl.Vector2(pending_x, float(dash_y)),
+          rl.Vector2(pending_x, float(min(dash_y + 3, timeline_rect.y + timeline_rect.height + 3))),
+          2.0,
+          ORANGE,
+        )
+      rl.draw_triangle(
+        rl.Vector2(pending_x, timeline_rect.y - 4),
+        rl.Vector2(pending_x - 5, timeline_rect.y - 10),
+        rl.Vector2(pending_x + 5, timeline_rect.y - 10),
+        ORANGE,
+      )
+
+  display_seconds = scrub.preview_seconds if scrub.active and scrub.preview_seconds is not None else route_seconds
+  current_ratio = float(np.clip((display_seconds - timeline.start) / duration, 0.0, 1.0))
+  current_x = timeline_rect.x + current_ratio * timeline_rect.width
+  rl.draw_line_ex(
+    rl.Vector2(current_x, timeline_rect.y - 2),
+    rl.Vector2(current_x, timeline_rect.y + timeline_rect.height + 2),
+    2.0,
+    WHITE,
+  )
+  if scrub.active and scrub.preview_seconds is not None:
+    preview = f"{scrub.preview_seconds:.1f}s"
+    preview_size = measure_text_cached(font, preview, 14)
+    preview_x = float(np.clip(current_x - preview_size.x / 2, timeline_rect.x, timeline_rect.x + timeline_rect.width - preview_size.x - 10))
+    preview_rect = rl.Rectangle(preview_x, timeline_rect.y - 27, preview_size.x + 10, 22)
+    rl.draw_rectangle_rounded(preview_rect, 0.25, 4, rl.Color(0, 0, 0, 220))
+    draw_text(font, preview, preview_rect.x + 5, preview_rect.y + 3, 14, TEXT)
+  if not scrub.active:
+    scrub.preview_seconds = None
+  return action, hovered or scrub.active
+
+
+def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, route_seconds: float,
+                            route_fingerprint: str, timeline: ReplayTimeline, v_ego: float, loading: bool, seek_input: str,
+                            seek_active: bool, scrub: ReplayScrubState) -> str | None:
   rl.draw_rectangle_rec(bounds, rl.Color(8, 12, 18, 248))
   rl.draw_line_ex(rl.Vector2(bounds.x, bounds.y), rl.Vector2(bounds.x + bounds.width, bounds.y), 1.0, MUTED)
   controls = (
@@ -984,23 +1371,19 @@ def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, r
       if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
         clicked_action = action
 
-  draw_text(font, "SEEK", chip_x + 2, bounds.y + 14, 14, MUTED)
-  field_x = chip_x + measure_standalone_text(font, "SEEK", 14).x + 10
-  field = rl.Rectangle(field_x, bounds.y + 8, 66, 27)
+  field_x = chip_x + 2
+  field = rl.Rectangle(field_x, bounds.y + 8, measure_standalone_text(font, "SEEK", 15).x + 14, 27)
   field_hovered = rl.check_collision_point_rec(mouse_position, field)
   rl.draw_rectangle_rounded(field, 0.18, 4, BACKGROUND)
   rl.draw_rectangle_rounded_lines_ex(field, 0.18, 4, 1.0, CYAN if seek_active else MUTED)
-  draw_text(font, seek_input, field.x + 7, field.y + 5, 15, TEXT)
+  draw_text(font, seek_input or "SEEK", field.x + 7, field.y + 5, 15, TEXT if seek_input else MUTED)
   if seek_active and int(time.monotonic() * 2) % 2 == 0:
     cursor_x = field.x + 7 + measure_standalone_text(font, seek_input, 15).x
     rl.draw_line_ex(rl.Vector2(cursor_x + 1, field.y + 4), rl.Vector2(cursor_x + 1, field.y + 22), 1.0, TEXT)
   if field_hovered and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
     clicked_action = "seek-focus"
-  _, go_rect, go_hovered = draw_status_chip(font, "GO", field.x + field.width + 6, chip_y, CYAN, mouse_position)
-  if go_hovered:
-    hovered_tooltip = ("Enter: seek to absolute route seconds", go_rect)
-    if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
-      clicked_action = "seek"
+  elif seek_active and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
+    clicked_action = clicked_action or "seek-blur"
 
   if hovered_tooltip is not None:
     tooltip, chip_rect = hovered_tooltip
@@ -1013,14 +1396,19 @@ def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, r
 
   status_text = "loading" if loading else ("paused" if replay.paused else "playing")
   info = "".join((
-    f"STATUS {status_text}   ROUTE {route_seconds:.1f}s   TIME {route_wall_time(route, route_seconds)}   ",
+    f"STATUS {status_text}   ROUTE {route_seconds:.1f}s   FINGERPRINT {route_fingerprint or '--'}   ",
     f"SPEED {v_ego:.1f} m/s   PLAYBACK {replay.playback_speed:.1f}x   ",
     f"DOWNLOAD {format_download_progress(replay.progress_current, replay.progress_total)}",
   ))
   draw_text(font, info, bounds.x + 12, bounds.y + 43, 14, TEXT)
+  timeline_action, timeline_hovered = draw_replay_timeline(
+    font, bounds, timeline, route_seconds, scrub, replay.progress_current, replay.progress_total,
+  )
+  if timeline_action is not None:
+    clicked_action = timeline_action
   rl.set_mouse_cursor(
     rl.MouseCursor.MOUSE_CURSOR_POINTING_HAND
-    if hovered_tooltip is not None or field_hovered or go_hovered
+    if hovered_tooltip is not None or field_hovered or timeline_hovered
     else rl.MouseCursor.MOUSE_CURSOR_DEFAULT,
   )
   return clicked_action
@@ -1028,14 +1416,20 @@ def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, r
 
 def apply_replay_control(replay: ManagedReplay, action: str | None, seek_input: str,
                          seek_active: bool) -> tuple[str, bool]:
+  if action is not None and action.startswith("seek-time:"):
+    replay.send(f"\n{action.removeprefix('seek-time:')}\n")
+    return "", False
   if action == "seek-focus":
     return seek_input, True
+  if action == "seek-blur":
+    return seek_input, False
   if action == "seek":
     if seek_input:
       replay.send(f"\n{seek_input}\n")
     return "", False
   if action is not None:
     replay.send(action)
+    return seek_input, False
   return seek_input, seek_active
 
 
@@ -1054,47 +1448,108 @@ def fused_stream_loss_state(available_streams, missing_since: float | None,
   return missing_since, now - missing_since >= FUSED_STREAM_GRACE_SECONDS
 
 
-def draw_fused_video_button(font, bounds: rl.Rectangle, data_source: str, use_dbc_colors: bool, show_labels: bool,
-                            hide_unknown: bool, hide_stationary: bool) -> bool:
-  source_title = "CAN" if data_source == "can" else "LIVE"
-  preceding_labels = (
-    f"R {source_title}",
-    f"C {'DBC' if use_dbc_colors else 'IMPL'}",
-    f"L {'ON' if show_labels else 'OFF'}",
-    "U UNKNOWN",
-    "S STATIONARY",
-  )
-  chip_x = bounds.x + 14
-  for label in preceding_labels:
-    chip_x += measure_text_cached(font, label, 15).x + 23
-
-  mouse_position = rl.get_mouse_position()
-  _, chip_rect, hovered = draw_status_chip(font, "V FUSE", chip_x, bounds.y + 49, GREEN, mouse_position)
-  rl.set_mouse_cursor(rl.MouseCursor.MOUSE_CURSOR_POINTING_HAND if hovered else rl.MouseCursor.MOUSE_CURSOR_DEFAULT)
-  if hovered:
-    draw_status_tooltip(font, "Switch to road camera", chip_rect, bounds)
-  return bool(
-    hovered
-    and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT)  # noqa: TID251 - standalone raylib tool
-  )
-
-
 def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive: bool, source_active: bool,
-                       v_ego: float, show_labels: bool, data_source: str, use_dbc_colors: bool, camera_mode: str,
-                       both_cameras_available: bool, hide_unknown: bool, hide_stationary: bool, visible_track_count: int,
-                       table_mode: str, fps: int) -> str | None:
+                       show_labels: bool, data_source: str, use_dbc_colors: bool, camera_mode: str,
+                       both_cameras_available: bool,
+                       visible_tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]],
+                       source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
+                       table_mode: str, fps: int) -> str | tuple[str, RadarSourceKey] | None:
   rl.draw_rectangle_rec(rect, rl.Color(11, 16, 24, 225))
   tracks = live_tracks.points if valid else ()
-  sources = sorted(live_tracks.trackSources, key=lambda source: (source.startAddress, source.endAddress, source.bus)) if valid else []
+  sources = sorted(live_tracks.trackSources, key=radar_source_sort_key) if valid else []
   status_color = GREEN if valid and alive else ORANGE
   source_title = "CAN" if data_source == "can" else "LIVE"
+  mouse_position = rl.get_mouse_position()
+  top_hovered_tooltip = None
+  source_clicked_action = None
+  source_hovered_tooltip = None
+  fps_text = f"{fps} fps"
+  fps_size = measure_standalone_text(font, fps_text, 16)
+  source_tooltip_anchor_y = rect.y + 49 + max(0, len(sources) - 1) * 30
 
   if sources:
-    source = sources[0]
-    compact_name = source_name(source.startAddress, source.endAddress).removeprefix("RADAR_")
-    source_text = f"{compact_name} / B{source.bus} / {source_details(source.startAddress, source.endAddress)}"
-    if len(sources) > 1:
-      source_text += f" / +{len(sources) - 1}"
+    for row, source in enumerate(sources):
+      row_y = rect.y + 14 + row * 30
+      source_x = rect.x + 34
+      draw_track_source_marker(rl.Vector2(rect.x + 20, row_y + 8), 6.0, CYAN, row)
+      spec = SPEC_BY_RANGE.get((source.startAddress, source.endAddress))
+      compact_name = source_name(source.startAddress, source.endAddress).removeprefix("RADAR_")
+      source_parts = [
+        (compact_name, f"Radar CAN address range 0x{source.startAddress:X}-0x{source.endAddress:X}"),
+        (f"B{source.bus}", f"CAN bus {source.bus} carrying this radar source"),
+      ]
+      if spec is not None:
+        source_parts.extend((
+          (f"{spec.frequency} Hz", "Expected radar message frequency"),
+          (f"{spec.message_size} B", "Radar CAN message payload size"),
+        ))
+      else:
+        source_parts.append(("unknown format", "No supported radar format matches this address range"))
+      source_hovered_tooltip = draw_status_parts(
+        font, tuple(source_parts), source_x, row_y, 16, CYAN, mouse_position, " / ",
+      )
+      if source_hovered_tooltip is not None:
+        top_hovered_tooltip = source_hovered_tooltip
+
+      source_key = radar_source_key(source)
+      hide_moving, hide_stationary, hide_unknown = source_filter_state(source_filters, source_key)
+      source_text = " / ".join(text for text, _ in source_parts)
+      source_track_ids = [
+        int(track.trackId)
+        for track in tracks
+        if (
+          source.startAddress
+          <= track_locations.get(int(track.trackId), (-1, -1))[0]
+          <= source.endAddress
+          and track_locations.get(int(track.trackId), (-1, -1))[1] == source.bus
+        )
+      ]
+      moving_count = sum(motion_states.get(track_id) == 2 for track_id in source_track_ids)
+      stationary_count = sum(motion_states.get(track_id) == 1 for track_id in source_track_ids)
+      unknown_count = max(0, source.trackCount - moving_count - stationary_count)
+      visible_source_tracks = sum(
+        source.startAddress <= address <= source.endAddress and bus == source.bus
+        for track in visible_tracks
+        for address, bus in (track_locations.get(int(track.trackId), (-1, -1)),)
+      )
+      count_text = f"{visible_source_tracks:>{TRACK_COUNT_FIELD_WIDTH}}/{source.trackCount:<{TRACK_COUNT_FIELD_WIDTH}}"
+      count_x = source_x + measure_standalone_text(font, source_text, 16).x + measure_standalone_text(font, " / ", 16).x
+      count_size = measure_standalone_text(font, count_text, 16)
+      count_rect = rl.Rectangle(count_x, row_y, count_size.x, count_size.y + 4)
+      draw_text(font, count_text, count_x, row_y, 16, TEXT)
+      if rl.check_collision_point_rec(mouse_position, count_rect):
+        top_hovered_tooltip = (
+          f"{visible_source_tracks} visible tracks out of {source.trackCount} decoded from this radar source",
+          count_rect,
+        )
+      filter_x = count_rect.x + count_rect.width + 9
+      filter_specs = (
+        (f"MOVING {moving_count:>{TRACK_COUNT_FIELD_WIDTH}}",
+         PURPLE, "moving", hide_moving, moving_count),
+        (f"STATIONARY {stationary_count:>{TRACK_COUNT_FIELD_WIDTH}}",
+         WHITE, "stationary", hide_stationary, stationary_count),
+        (f"UNKNOWN {unknown_count:>{TRACK_COUNT_FIELD_WIDTH}}",
+         MUTED, "unknown", hide_unknown, unknown_count),
+      )
+      for label, color, action, hidden, category_count in filter_specs:
+        filter_x, chip_rect, hovered = draw_status_chip(
+          font, label, filter_x, row_y - 4, color, mouse_position,
+          selected=not hidden, selection_color=MUTED,
+        )
+        if hovered:
+          tooltip_anchor = rl.Rectangle(chip_rect.x, source_tooltip_anchor_y, chip_rect.width, chip_rect.height)
+          source_hovered_tooltip = (
+            f"{'Show' if hidden else 'Hide'} {category_count} {action} tracks from {compact_name} on bus {source.bus}",
+            tooltip_anchor,
+          )
+          if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
+            source_clicked_action = (action, source_key)
+      if row == 0:
+        fps_x = rect.x + rect.width - fps_size.x - 14
+        fps_rect = rl.Rectangle(fps_x, row_y, fps_size.x, fps_size.y + 4)
+        draw_text(font, fps_text, fps_x, row_y, 16, TEXT)
+        if rl.check_collision_point_rec(mouse_position, fps_rect):
+          top_hovered_tooltip = ("Debugger rendering frame rate", fps_rect)
   elif not source_active:
     source_text = "no route loaded"
   elif data_source == "liveTracks":
@@ -1103,35 +1558,28 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
     source_text = "radar detected / parsing"
   else:
     source_text = "searching for supported radar"
-  draw_text(font, source_text, rect.x + 14, rect.y + 14, 16, CYAN if sources else MUTED)
-
-  filtered = hide_unknown or hide_stationary
-  track_count = f"{visible_track_count}/{len(tracks)}" if filtered else str(len(tracks))
-  summary = f"{track_count} tracks  {v_ego:.1f} m/s  {fps} fps"
-  summary_size = measure_text_cached(font, summary, 16)
-  draw_text(font, summary, rect.x + rect.width - summary_size.x - 14, rect.y + 14, 16, TEXT)
+  if not sources:
+    draw_text(font, source_text, rect.x + 14, rect.y + 14, 16, MUTED)
+    fallback_summary = f"{len(visible_tracks)}/{len(tracks)}  {fps_text}"
+    summary_size = measure_standalone_text(font, fallback_summary, 16)
+    draw_text(font, fallback_summary, rect.x + rect.width - summary_size.x - 14, rect.y + 14, 16, TEXT)
 
   chip_x = rect.x + 14
-  chip_y = rect.y + 49
-  mouse_position = rl.get_mouse_position()
-  camera_label = "WIDE" if camera_mode == "wide 180" else "ROAD"
+  chip_y = source_tooltip_anchor_y
+  camera_label = {"fused": "FUSED", "wide 180": "WIDE"}.get(camera_mode, "ROAD")
   table_label = {"comparison": "COMP", "kinematics": "KIN", "object": "OBJ"}[table_mode]
   chip_specs = [
-    (f"R {source_title}", status_color, "source", "Switch CAN / liveTracks source"),
-    (f"C {'DBC' if use_dbc_colors else 'IMPL'}", PURPLE if use_dbc_colors else CYAN, "colors",
+    ("OPEN", GREEN, "route", "Open a route, or paste one with Cmd/Ctrl+V"),
+    (source_title, status_color, "source", "Switch CAN / liveTracks source"),
+    ("DBC" if use_dbc_colors else "IMPL", PURPLE if use_dbc_colors else CYAN, "colors",
      "Switch DBC / implementation colors"),
-    (f"L {'ON' if show_labels else 'OFF'}", GREEN if show_labels else MUTED, "labels", "Show / hide all labels"),
-    ("U UNKNOWN", MUTED if hide_unknown else CYAN, "unknown",
-     "Show unknown tracks" if hide_unknown else "Hide unknown tracks"),
-    ("S STATIONARY", MUTED if hide_stationary else CYAN, "stationary",
-     "Show stationary tracks" if hide_stationary else "Hide stationary tracks"),
+    ("LABELS ON" if show_labels else "LABELS", GREEN if show_labels else MUTED, "labels", "Show / hide all labels"),
   ]
   if both_cameras_available:
-    chip_specs.append((f"V {camera_label}", CYAN, "camera", "Cycle road / wide / fused camera"))
-  chip_specs.append((f"T {table_label}", MUTED, "table", "Cycle comparison / kinematics / object table"))
-  chip_specs.append(("O OPEN", GREEN, "route", "Open a route, or paste one with Cmd/Ctrl+V"))
-  clicked_action = None
-  hovered_tooltip = None
+    chip_specs.append((camera_label, CYAN, "camera", "Cycle road / wide / fused camera"))
+  chip_specs.append((table_label, MUTED, "table", "Cycle comparison / kinematics / object table"))
+  clicked_action = source_clicked_action
+  hovered_tooltip = source_hovered_tooltip or top_hovered_tooltip
   for label, color, action, tooltip in chip_specs:
     chip_x, chip_rect, hovered = draw_status_chip(font, label, chip_x, chip_y, color, mouse_position)
     if hovered:
@@ -1175,6 +1623,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   rl.unload_image(overlay_image)
 
   sm = messaging.SubMaster([
+    "carParams",
     "carState",
     "liveCalibration",
     "liveTracks",
@@ -1188,6 +1637,9 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   decoder_output = process_context.Queue(maxsize=1)
   decoder_process = process_context.Process(target=radar_decoder_worker, args=(addr, decoder_output), daemon=True)
   decoder_process.start()
+  timeline_output = process_context.Queue(maxsize=1)
+  timeline_process = None
+  replay_timeline = ReplayTimeline()
 
   can_tracks = RadarSnapshot()
   live_tracks = RadarSnapshot()
@@ -1200,8 +1652,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   calibration_key = None
   camera_projection_height = float(CAMERA_BUFFER_HEIGHT)
   show_labels = False
-  hide_unknown = True
-  hide_stationary = True
+  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]] = {}
   use_can_source = True
   use_dbc_colors = True
   table_mode_index = 0
@@ -1222,13 +1673,18 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   route_loading_started = 0.0
   replay_seek_input = ""
   replay_seek_active = False
+  replay_scrub = ReplayScrubState()
   route_message_start_mono: int | None = None
+  route_fingerprint = ""
   current_route_seconds = route_start_seconds(route_input)
   if start_route:
     replay_process, route_error = replace_route_replay(replay_process, start_route)
     route_dialog_open = bool(route_error)
     route_loading = replay_process is not None and not route_error
     route_loading_started = time.monotonic()
+    if route_loading:
+      replay_timeline = ReplayTimeline(route_start_seconds(start_route), route_start_seconds(start_route))
+      timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, start_route)
   composite_mode = composite_mode and not route_dialog_open
   startup_focus_deadline = time.monotonic() + 2.0
   next_startup_focus_request = 0.0
@@ -1237,6 +1693,8 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     now = time.monotonic()
     if replay_process is not None:
       replay_process.drain_output()
+      if replay_process.car_fingerprint:
+        route_fingerprint = replay_process.car_fingerprint
     if now < startup_focus_deadline and now >= next_startup_focus_request:
       rl.set_window_focused()
       next_startup_focus_request = now + 0.1
@@ -1334,7 +1792,12 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_loading = replay_process is not None and not route_error
       route_loading_started = time.monotonic()
       route_message_start_mono = None
+      route_fingerprint = ""
       current_route_seconds = route_start_seconds(route_input)
+      if route_loading:
+        replay_scrub = ReplayScrubState()
+        replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
+        timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
       composite_mode = composite_mode and not route_dialog_open
       table_scroll = 0
       selected_track_id = None
@@ -1344,39 +1807,6 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       replay_seek_active = True
     elif replay_process is not None and (replay_command := replay_keyboard_command()) is not None:
       replay_process.send(replay_command)
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_O):
-      route_dialog_open = True
-      route_error = ""
-      route_select_all = bool(route_input)
-      route_cursor = len(route_input)
-      composite_mode = False
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_L):
-      show_labels = not show_labels
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_R):
-      use_can_source = not use_can_source
-      table_scroll = 0
-      selected_track_id = None
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_C):
-      use_dbc_colors = not use_dbc_colors
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_U):
-      hide_unknown = not hide_unknown
-      table_scroll = 0
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_S):
-      hide_stationary = not hide_stationary
-      table_scroll = 0
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_T):
-      table_mode_index = (table_mode_index + 1) % len(TABLE_MODES)
-    elif rl.is_key_pressed(rl.KeyboardKey.KEY_V):
-      if composite_mode:
-        composite_mode = False
-        fused_streams_missing_since = None
-        camera_view = road_camera_view
-      elif both_camera_streams_available(camera_view.available_streams):
-        if camera_view is road_camera_view:
-          camera_view = wide_camera_view
-        else:
-          composite_mode = True
-          fused_streams_missing_since = None
     if open_entered_route:
       replay_process, route_error = replace_route_replay(replay_process, route_input)
       route_dialog_open = bool(route_error)
@@ -1384,9 +1814,18 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_loading = replay_process is not None and not route_error
       route_loading_started = time.monotonic()
       route_message_start_mono = None
+      route_fingerprint = ""
       current_route_seconds = route_start_seconds(route_input)
+      if route_loading:
+        replay_scrub = ReplayScrubState()
+        replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
+        timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
 
     sm.update(0)
+    if sm.updated["carParams"]:
+      message_fingerprint = str(sm["carParams"].carFingerprint)
+      if message_fingerprint:
+        route_fingerprint = message_fingerprint
     route_message_times = [
       sm.logMonoTime[service]
       for service in ("carState", "modelV2", "roadCameraState", "liveTracks")
@@ -1408,13 +1847,20 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         can_tracks, decoded_motion_states, can_data_alive, can_data_seen = decoder_output.get_nowait()
       except queue.Empty:
         break
+    while True:
+      try:
+        replay_timeline = timeline_output.get_nowait()
+        if replay_timeline.car_fingerprint:
+          route_fingerprint = replay_timeline.car_fingerprint
+      except queue.Empty:
+        break
     if sm.updated["liveTracks"]:
       live_tracks = make_radar_snapshot(sm["liveTracks"])
       live_data_seen = sm.valid["liveTracks"]
 
     window_width = rl.get_screen_width()
     window_height = rl.get_screen_height()
-    replay_bar_height = 70.0 if replay_process is not None else 0.0
+    replay_bar_height = 94.0 if replay_process is not None else 0.0
     content_height = window_height - replay_bar_height
     left_width = float(round(window_width * 0.58))
     camera_height = float(round(content_height * 0.64))
@@ -1422,7 +1868,9 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     table_rect = rl.Rectangle(0, camera_height, left_width, content_height - camera_height)
     radar_rect = rl.Rectangle(left_width, 0, window_width - left_width, content_height)
     replay_bar_rect = rl.Rectangle(0, content_height, window_width, replay_bar_height)
-    status_rect = rl.Rectangle(0, 0, left_width, min(88, camera_height * 0.2))
+    status_sources = can_tracks.trackSources if use_can_source else live_tracks.trackSources
+    status_height = 88 + max(0, len(status_sources) - 1) * 30
+    status_rect = rl.Rectangle(0, 0, left_width, min(status_height, camera_height))
 
     if sm.valid["roadCameraState"] and sm.valid["liveCalibration"] and camera_view.frame:
       camera_key = ("tici", str(sm["roadCameraState"].sensor))
@@ -1446,6 +1894,11 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
 
     decoded_tracks = list(can_tracks.points) if can_data_seen else []
     decoded_track_signals = {signals.trackId: signals for signals in can_tracks.trackSignals}
+    decoded_track_locations = {
+      int(track.trackId): (track.canAddress, track.canBus)
+      for track in decoded_tracks
+      if track.canAddress >= 0 and track.canBus >= 0
+    }
     if use_can_source:
       selected_tracks = can_tracks
       tracks = decoded_tracks
@@ -1453,6 +1906,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       data_alive = can_data_alive
       motion_states = decoded_motion_states
       track_signals = decoded_track_signals
+      track_locations = decoded_track_locations
       data_source = "can"
     else:
       selected_tracks = live_tracks
@@ -1461,15 +1915,21 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       tracks = list(selected_tracks.points) if data_valid else []
       motion_states = match_decoded_track_values(tracks, decoded_tracks, decoded_motion_states)
       track_signals = match_decoded_track_values(tracks, decoded_tracks, decoded_track_signals)
+      track_locations = match_decoded_track_values(tracks, decoded_tracks, decoded_track_locations)
       data_source = "liveTracks"
 
-    tracks = filter_tracks(tracks, motion_states, hide_unknown, hide_stationary)
+    source_filter_values = [
+      source_filter_state(source_filters, radar_source_key(source))
+      for source in selected_tracks.trackSources
+    ] or [DEFAULT_SOURCE_FILTERS]
+    hide_moving = all(filters[0] for filters in source_filter_values)
+    hide_stationary = all(filters[1] for filters in source_filter_values)
+    hide_unknown = all(filters[2] for filters in source_filter_values)
+    tracks = filter_tracks(
+      tracks, motion_states, track_locations, selected_tracks.trackSources, source_filters,
+    )
     capacity = table_capacity(table_rect)
     max_scroll = max(0, len(tracks) - capacity)
-    if rl.is_key_pressed(rl.KeyboardKey.KEY_DOWN):
-      table_scroll += 1
-    if rl.is_key_pressed(rl.KeyboardKey.KEY_UP):
-      table_scroll -= 1
     if rl.check_collision_point_rec(rl.get_mouse_position(), table_rect):
       table_scroll -= int(rl.get_mouse_wheel_move() * 3)
     table_scroll = int(np.clip(table_scroll, 0, max_scroll))
@@ -1497,7 +1957,8 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         wide_from_device_euler = np.asarray(sm["liveCalibration"].wideFromDeviceEuler)
       selected_track_id = draw_fused_camera_mode(
         font, road_camera_view, wide_camera_view, fused_device_camera, rpy_calib, wide_from_device_euler,
-        fused_bounds, tracks, v_ego, show_labels, motion_states, use_dbc_colors, selected_track_id,
+        fused_bounds, tracks, v_ego, show_labels, motion_states, use_dbc_colors,
+        track_locations, selected_tracks.trackSources, selected_track_id,
       )
       fused_available_streams = set(road_camera_view.available_streams) | set(wide_camera_view.available_streams)
       fused_streams_missing_since, streams_timed_out = fused_stream_loss_state(
@@ -1510,18 +1971,48 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
           camera_view = road_camera_view
         elif VisionStreamType.VISION_STREAM_WIDE_ROAD in fused_available_streams:
           camera_view = wide_camera_view
-      if draw_fused_video_button(
-        font, fused_bounds, data_source, use_dbc_colors, show_labels, hide_unknown, hide_stationary,
-      ):
+      table_mode = TABLE_MODES[table_mode_index]
+      clicked_action = draw_source_status(
+        font, status_rect, selected_tracks, data_valid, data_alive,
+        replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source, use_dbc_colors,
+        "fused", both_camera_streams_available(fused_available_streams),
+        tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
+      )
+      if isinstance(clicked_action, tuple):
+        action, source_key = clicked_action
+        toggle_source_filter(source_filters, source_key, {"moving": 0, "stationary": 1, "unknown": 2}[action])
+        table_scroll = 0
+      elif clicked_action == "source":
+        use_can_source = not use_can_source
+        table_scroll = 0
+        selected_track_id = None
+      elif clicked_action == "colors":
+        use_dbc_colors = not use_dbc_colors
+      elif clicked_action == "labels":
+        show_labels = not show_labels
+      elif clicked_action == "camera":
         composite_mode = False
         fused_streams_missing_since = None
         camera_view = road_camera_view
+      elif clicked_action == "table":
+        table_mode_index = (table_mode_index + 1) % len(TABLE_MODES)
+      elif clicked_action == "route":
+        composite_mode = False
+        route_dialog_open = True
+        route_error = ""
+        route_select_all = bool(route_input)
+        route_cursor = len(route_input)
+      if replay_process is not None:
+        draw_replay_event_overlay(
+          font, fused_bounds, status_rect.y + status_rect.height + 10,
+          replay_timeline, current_route_seconds,
+        )
       if route_loading:
         draw_route_loading(font, fused_bounds, route_input, time.monotonic() - route_loading_started)
       if replay_process is not None:
         replay_action = draw_replay_control_bar(
-          font, replay_bar_rect, replay_process, route_input, current_route_seconds, v_ego, route_loading,
-          replay_seek_input, replay_seek_active,
+          font, replay_bar_rect, replay_process, current_route_seconds, route_fingerprint,
+          replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub,
         )
         replay_seek_input, replay_seek_active = apply_replay_control(
           replay_process, replay_action, replay_seek_input, replay_seek_active,
@@ -1584,20 +2075,28 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     )
 
     draw_camera_tracks(font, calibration, tracks, camera_draw_rect, v_ego, show_labels, motion_states, use_dbc_colors,
+                       track_locations, selected_tracks.trackSources,
                        camera_projection_height, camera_hovered_id, selected_track_id, table_hover_id)
-    draw_top_down(font, radar_rect, tracks, v_ego, show_labels, model, motion_states, use_dbc_colors,
-                  top_down_hovered_id, selected_track_id, table_hover_id)
+    draw_top_down(
+      font, radar_rect, tracks, v_ego, show_labels, model, motion_states, use_dbc_colors,
+      hide_moving, hide_stationary, hide_unknown, track_locations, selected_tracks.trackSources,
+      top_down_hovered_id, selected_track_id, table_hover_id,
+    )
     table_mode = TABLE_MODES[table_mode_index]
     draw_track_table(font, table_rect, tracks, v_ego, motion_states, table_scroll, selected_track_id, table_hover_id,
-                     track_signals, table_mode)
+                     track_signals, track_locations, table_mode)
     clicked_action = draw_source_status(
       font, status_rect, selected_tracks, data_valid, data_alive,
-      replay_process is not None or can_data_seen or live_data_seen, v_ego, show_labels, data_source, use_dbc_colors,
+      replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source, use_dbc_colors,
       "wide 180" if camera_view.stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD else "road",
-      both_camera_streams_available(camera_view.available_streams), hide_unknown, hide_stationary,
-      len(tracks), table_mode, rl.get_fps(),
+      both_camera_streams_available(camera_view.available_streams),
+      tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
     )
-    if clicked_action == "source":
+    if isinstance(clicked_action, tuple):
+      action, source_key = clicked_action
+      toggle_source_filter(source_filters, source_key, {"moving": 0, "stationary": 1, "unknown": 2}[action])
+      table_scroll = 0
+    elif clicked_action == "source":
       use_can_source = not use_can_source
       table_scroll = 0
       selected_track_id = None
@@ -1605,12 +2104,6 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       use_dbc_colors = not use_dbc_colors
     elif clicked_action == "labels":
       show_labels = not show_labels
-    elif clicked_action == "unknown":
-      hide_unknown = not hide_unknown
-      table_scroll = 0
-    elif clicked_action == "stationary":
-      hide_stationary = not hide_stationary
-      table_scroll = 0
     elif clicked_action == "camera":
       if camera_view is road_camera_view:
         camera_view = wide_camera_view
@@ -1624,6 +2117,11 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_error = ""
       route_select_all = bool(route_input)
       route_cursor = len(route_input)
+    if replay_process is not None:
+      draw_replay_event_overlay(
+        font, camera_draw_rect, status_rect.y + status_rect.height + 10,
+        replay_timeline, current_route_seconds,
+      )
     if route_dialog_open:
       route_action = draw_route_dialog(
         font, rl.Rectangle(0, 0, window_width, window_height), route_input, route_cursor, route_error, route_select_all,
@@ -1639,15 +2137,20 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         route_loading = replay_process is not None and not route_error
         route_loading_started = time.monotonic()
         route_message_start_mono = None
+        route_fingerprint = ""
         current_route_seconds = route_start_seconds(route_input)
+        if route_loading:
+          replay_scrub = ReplayScrubState()
+          replay_timeline = ReplayTimeline(current_route_seconds, current_route_seconds)
+          timeline_process = start_timeline_process(process_context, timeline_process, timeline_output, route_input)
     if route_loading and not route_dialog_open:
       draw_route_loading(
         font, rl.Rectangle(0, 0, window_width, window_height), route_input, time.monotonic() - route_loading_started,
       )
     if replay_process is not None and not route_dialog_open:
       replay_action = draw_replay_control_bar(
-        font, replay_bar_rect, replay_process, route_input, current_route_seconds, v_ego, route_loading,
-        replay_seek_input, replay_seek_active,
+        font, replay_bar_rect, replay_process, current_route_seconds, route_fingerprint,
+        replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub,
       )
       replay_seek_input, replay_seek_active = apply_replay_control(
         replay_process, replay_action, replay_seek_input, replay_seek_active,
@@ -1657,9 +2160,11 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     rl.end_drawing()
 
   stop_route_replay(replay_process)
+  stop_timeline_process(timeline_process)
   decoder_process.terminate()
   decoder_process.join(timeout=1.0)
   decoder_output.close()
+  timeline_output.close()
   rl.unload_texture(overlay_texture)
   rl.unload_font(font)
   road_camera_view.close()
