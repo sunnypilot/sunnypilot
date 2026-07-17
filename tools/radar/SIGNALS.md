@@ -58,8 +58,8 @@ An optional field that is dead on one platform is not globally dead.
 | `COAST_AGE` | Confirmed core | Zero for measured tracks and increments while a track is coasted/predicted. |
 | `STATE` | Confirmed core | Track lifecycle: empty, tentative, measured, coasted, or unresolved tentative. |
 | `NEW_SIGNAL_8` | Active unknown | Smooth signed attribute observed from -33 to 43. Return-strength/RCS-like behavior remains plausible but unproven. |
-| `LONG_DIST` | Confirmed core | Longitudinal target distance in metres. |
-| `LAT_DIST` | Confirmed core | Lateral target position relative to the ego axis in metres. |
+| `LONG_DIST` | Confirmed core | Longitudinal target distance in meters. |
+| `LAT_DIST` | Confirmed core | Lateral target position relative to the ego axis in meters. |
 | `REL_SPEED` | Confirmed core | Longitudinal target speed relative to ego. |
 | `NEW_SIGNAL_4` | Active unknown | Category 0-2. Nonzero in about 25% of moving samples, 10% of stationary samples, and 6% of unknown samples; it is related to target state but is not another motion class. |
 | `REL_LAT_SPEED` | Confirmed core | Lateral target speed relative to the ego axis. A live crossing target showed `+6.78 m/s` lateral versus `-0.51 m/s` forward. An EV9 route independently supplied hundreds of perpendicular-motion samples. |
