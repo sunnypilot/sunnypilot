@@ -415,11 +415,21 @@ def implementation_class(v_rel: float, v_ego: float) -> str:
 
 
 def dbc_motion_class(motion_state: int | None) -> str:
-  return {0: "unknown", 1: "stationary", 2: "moving"}.get(motion_state, "n/a")
+  if motion_state is None:
+    return "unknown"
+  return {0: "unknown (raw 0)", 1: "stationary", 2: "moving"}.get(
+    motion_state, f"unknown (raw {motion_state})",
+  )
 
 
 def dbc_motion_color(motion_state: int | None) -> rl.Color:
   return {0: MUTED, 1: WHITE, 2: PURPLE}.get(motion_state, MUTED)
+
+
+def dbc_unknown_raw_label(motion_state: int | None) -> str | None:
+  if motion_state in (1, 2):
+    return None
+  return "DBC unknown" if motion_state is None else f"DBC raw={motion_state}"
 
 
 def display_track_color(track, v_ego: float, motion_states: dict[int, int], use_dbc_colors: bool) -> rl.Color:
@@ -799,8 +809,11 @@ def draw_track_source_marker(center: rl.Vector2, radius: float, color: rl.Color,
   rl.draw_poly(center, sides, radius, rotation, color)
 
 
-def draw_track_popup(font, track, x: float, y: float, radius: float, bounds: rl.Rectangle, color: rl.Color) -> None:
+def draw_track_popup(font, track, x: float, y: float, radius: float, bounds: rl.Rectangle, color: rl.Color,
+                     motion_state: int | None) -> None:
   label = f"#{track.trackId}  {track.dRel:.1f} m  {track.vRel:+.1f} m/s"
+  if (raw_label := dbc_unknown_raw_label(motion_state)) is not None:
+    label += f"  {raw_label}"
   label_size = measure_text_cached(font, label, 18)
   label_x = float(np.clip(x - label_size.x / 2, bounds.x + 5, bounds.x + bounds.width - label_size.x - 5))
   label_y = max(bounds.y + 5, y - radius - 29)
@@ -840,7 +853,7 @@ def draw_camera_tracks(font, calibration: Calibration | None, tracks, camera_rec
     rl.draw_circle_v(center, max(1.5, dot_radius * 0.32), BACKGROUND)
 
     if show_labels or is_hovered:
-      draw_track_popup(font, track, x, y, dot_radius, camera_rect, color)
+      draw_track_popup(font, track, x, y, dot_radius, camera_rect, color, motion_states.get(int(track.trackId)))
 
 
 def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view: CameraView, device_camera,
@@ -936,7 +949,7 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
     legend = (
       (PURPLE, "moving", hide_moving),
       (WHITE, "stationary", hide_stationary),
-      (MUTED, "unknown / n/a", hide_unknown),
+      (MUTED, "unknown", hide_unknown),
     )
   else:
     legend = (
@@ -996,9 +1009,11 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, v_ego: float, show_labels: b
       rl.draw_circle_lines_v(rl.Vector2(x, y), radius + 3.0, ORANGE)
     draw_track_source_marker(center, 6.0, color, source_index)
     if show_labels:
-      draw_text(font, f"{track.trackId}", x + 9, y - 9, 16, color)
+      raw_label = dbc_unknown_raw_label(motion_states.get(int(track.trackId)))
+      label = f"{track.trackId}  {raw_label}" if raw_label is not None else f"{track.trackId}"
+      draw_text(font, label, x + 9, y - 9, 16, color)
     elif is_hovered:
-      draw_track_popup(font, track, x, y, radius, rect, color)
+      draw_track_popup(font, track, x, y, radius, rect, color, motion_states.get(int(track.trackId)))
 
 
 def table_capacity(rect: rl.Rectangle) -> int:
