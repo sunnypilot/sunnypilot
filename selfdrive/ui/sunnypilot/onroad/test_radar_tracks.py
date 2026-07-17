@@ -1,7 +1,10 @@
+from types import SimpleNamespace
+
 from cereal import car
 
 from openpilot.selfdrive.ui.sunnypilot.onroad import radar_tracks
-from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import format_radar_tracks_onroad_columns, radar_track_display
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import draw_radar_lead_connectors, format_radar_tracks_onroad_columns, \
+  radar_lead_track_colors, radar_track_display
 
 
 def color_tuple(color):
@@ -27,6 +30,36 @@ def test_unknown_dbc_motion_uses_neutral_dbc_color():
 
   assert color_tuple(color) == (*radar_tracks.DBC_UNKNOWN_COLOR, 255)
   assert not stationary
+
+
+def test_radar_lead_track_colors_only_highlight_radar_matches():
+  radar_state = SimpleNamespace(
+    leadOne=SimpleNamespace(status=True, radar=True, radarTrackId=7),
+    leadTwo=SimpleNamespace(status=True, radar=False, radarTrackId=9),
+  )
+
+  colors = radar_lead_track_colors(radar_state)
+
+  assert list(colors) == [7]
+  assert color_tuple(colors[7]) == color_tuple(radar_tracks.LEAD_TRACK_COLORS[0])
+
+
+def test_draw_radar_lead_connectors_applies_screen_offset(monkeypatch):
+  lead = SimpleNamespace(radar=True, position=(10, 20), radar_track_id=7)
+  color = radar_tracks.LEAD_TRACK_COLORS[0]
+  drawn = []
+  monkeypatch.setattr(
+    radar_tracks.rl, "draw_line_ex",
+    lambda start, end, width, line_color: drawn.append(
+      ((start.x, start.y), (end.x, end.y), width, color_tuple(line_color))
+    ),
+  )
+
+  draw_radar_lead_connectors(
+    [lead], {7: (120, 30)}, {7: color}, screen_offset=(100, 5),
+  )
+
+  assert drawn == [((110, 25), (120, 30), 2, color_tuple(color))]
 
 
 def test_format_radar_tracks_columns_none():

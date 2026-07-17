@@ -17,6 +17,10 @@ DBC_MOTION_STATIONARY = 1
 DBC_MOTION_MOVING = 2
 COASTED_ALPHA = 96
 COASTED_RADIUS_REDUCTION = 2
+LEAD_TRACK_COLORS = (
+  rl.Color(255, 215, 0, 255),
+  rl.Color(255, 140, 0, 220),
+)
 
 
 def is_preferred_radar_source(source) -> bool:
@@ -64,6 +68,33 @@ def radar_track_display(motion_state: int, measured: bool = True) -> tuple[rl.Co
   if motion_state == DBC_MOTION_MOVING:
     return rl.Color(*DBC_MOVING_COLOR, alpha), False
   return rl.Color(*DBC_UNKNOWN_COLOR, alpha), False
+
+
+def radar_lead_track_colors(radar_state) -> dict[int, rl.Color]:
+  highlighted_tracks = {}
+  if radar_state is None:
+    return highlighted_tracks
+
+  for lead, color in zip((radar_state.leadOne, radar_state.leadTwo), LEAD_TRACK_COLORS, strict=True):
+    if lead.status and lead.radar and lead.radarTrackId >= 0:
+      highlighted_tracks.setdefault(int(lead.radarTrackId), color)
+  return highlighted_tracks
+
+
+def draw_radar_lead_connectors(lead_vehicles, matched_positions, highlighted_tracks, screen_offset=(0, 0)) -> None:
+  for lead in lead_vehicles:
+    if not lead.radar or lead.position is None or lead.radar_track_id not in matched_positions:
+      continue
+
+    radar_position = matched_positions[lead.radar_track_id]
+    lead_position = (lead.position[0] + screen_offset[0], lead.position[1] + screen_offset[1])
+    if math.dist(lead_position, radar_position) < 4:
+      continue
+
+    rl.draw_line_ex(
+      rl.Vector2(*lead_position), rl.Vector2(*radar_position), 2,
+      highlighted_tracks[lead.radar_track_id],
+    )
 
 
 def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple[str, str, str, str, str, str]:
