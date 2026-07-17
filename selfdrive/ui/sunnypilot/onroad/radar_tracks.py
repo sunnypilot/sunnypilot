@@ -21,20 +21,37 @@ def is_preferred_radar_source(source) -> bool:
   return source.startAddress == RADAR_3A5_3C4.start_addr and source.endAddress == RADAR_3A5_3C4.end_addr
 
 
-def preferred_radar_tracks(live_tracks):
-  points = list(live_tracks.points)
-  if any(int(track.sourceAddress) != 0 for track in points):
-    return [
-      track for track in points
-      if RADAR_3A5_3C4.start_addr <= int(track.sourceAddress) <= RADAR_3A5_3C4.end_addr
-    ]
+def radar_source_sort_key(source) -> tuple[bool, int, int, int]:
+  return (
+    not is_preferred_radar_source(source),
+    int(source.startAddress),
+    int(source.endAddress),
+    int(source.bus),
+  )
 
-  # Legacy messages have no per-point source metadata. They are unambiguous only
-  # when 3A5-3C4 is the sole reported source (or tests provide no source list).
-  sources = list(live_tracks.trackSources)
-  if not sources or all(is_preferred_radar_source(source) for source in sources):
-    return points
-  return []
+
+def sorted_radar_sources(live_tracks):
+  return sorted(live_tracks.trackSources, key=radar_source_sort_key)
+
+
+def radar_track_source_index(track, sources) -> int:
+  address = int(track.sourceAddress)
+  bus = int(track.sourceBus)
+  if address != 0:
+    return next((
+      index for index, source in enumerate(sources)
+      if source.startAddress <= address <= source.endAddress and source.bus == bus
+    ), 0)
+  return 0
+
+
+def draw_radar_source_marker(center: rl.Vector2, radius: float, color: rl.Color, source_index: int) -> None:
+  if source_index <= 0:
+    rl.draw_circle(int(center.x), int(center.y), radius, color)
+    return
+  sides = (4, 3, 5, 6)[(source_index - 1) % 4]
+  rotation = 45.0 if sides == 4 else -90.0
+  rl.draw_poly(center, sides, radius, rotation, color)
 
 
 def radar_track_display(motion_state: int) -> tuple[rl.Color, bool]:
@@ -47,16 +64,13 @@ def radar_track_display(motion_state: int) -> tuple[rl.Color, bool]:
 
 
 def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple[str, str, str, str, str, str]:
-  sources = sorted(
-    (source for source in live_tracks.trackSources if is_preferred_radar_source(source)),
-    key=lambda source: (source.startAddress, source.endAddress, source.bus),
-  )
+  sources = sorted_radar_sources(live_tracks)
   if not sources:
     return "", "none", "", "", "", ""
 
   range_text = "\n".join(f"{source.startAddress:X}-{source.endAddress:X}" for source in sources)
   count_text = "\n".join(str(source.trackCount) for source in sources)
-  motion_states = [int(track.motionState) for track in preferred_radar_tracks(live_tracks)]
+  motion_states = [int(track.motionState) for track in live_tracks.points]
 
   moving_count = sum(state == DBC_MOTION_MOVING for state in motion_states)
   stationary_count = sum(state == DBC_MOTION_STATIONARY for state in motion_states)
@@ -67,6 +81,7 @@ def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple
 class RadarTracksStatus:
   HORIZONTAL_PADDING = 8
   COLUMN_GAP = 8
+  SOURCE_MARKER_WIDTH = 18
 
   def __init__(self, settings_callback=None, right_margin: int = 12):
     self._settings_callback = settings_callback
@@ -89,6 +104,7 @@ class RadarTracksStatus:
     )
     self._status = ("", "none", "", "", "", "")
     self._status_colors: tuple[tuple[int, int, int], ...] = ()
+    self._source_count = 0
     self._layout_key: tuple[str, str, str, str, str, str, int] | None = None
     self._column_widths = [0, 36, 0, 0, 0, 0]
     self._width = 52
@@ -98,13 +114,15 @@ class RadarTracksStatus:
     if live_tracks.radarTracksAvailable and radar_mode != 2:
       status = ("", "radar detected\ntap to enable", "", "", "", "")
       status_colors = ()
+      source_count = 0
     else:
       status = format_radar_tracks_onroad_columns(live_tracks, v_ego) if valid else ("", "none", "", "", "", "")
       status_colors = (DBC_MOVING_COLOR, NEUTRAL_COLOR, DBC_UNKNOWN_COLOR, DBC_UNKNOWN_COLOR)
-    self._set_status(status, status_colors)
+      source_count = len(live_tracks.trackSources) if valid else 0
+    self._set_status(status, status_colors, source_count)
 
   def reset(self) -> None:
-    self._set_status(("", "none", "", "", "", ""), ())
+    self._set_status(("", "none", "", "", "", ""), (), 0)
 
   def handle_mouse(self, mouse_pos) -> bool:
     if self._settings_callback is None or not rl.check_collision_point_rec(mouse_pos, self._rect):
@@ -123,18 +141,34 @@ class RadarTracksStatus:
     )
     rl.draw_rectangle_rounded(self._rect, 0.5, 8, rl.Color(0, 0, 0, 170))
     x = self._rect.x + self.HORIZONTAL_PADDING
-    active_columns = [(label, width) for label, width in zip(self._labels, self._column_widths, strict=True) if width]
-    for index, (label, width) in enumerate(active_columns):
-      label.render(rl.Rectangle(x, self._rect.y + 5, width, self._rect.height - 10))
-      x += width + (self.COLUMN_GAP if index < len(active_columns) - 1 else 0)
+    active_columns = [
+      (column_index, label, width)
+      for column_index, (label, width) in enumerate(zip(self._labels, self._column_widths, strict=True))
+      if width
+    ]
+    for active_index, (column_index, label, width) in enumerate(active_columns):
+      label_x = x
+      label_width = width
+      if column_index == 0 and self._source_count:
+        marker_height = (self._rect.height - 10) / self._source_count
+        for source_index in range(self._source_count):
+          draw_radar_source_marker(
+            rl.Vector2(x + 6, self._rect.y + 5 + marker_height * (source_index + 0.5)),
+            5.0, rl.Color(0, 255, 64, 255), source_index,
+          )
+        label_x += self.SOURCE_MARKER_WIDTH
+        label_width -= self.SOURCE_MARKER_WIDTH
+      label.render(rl.Rectangle(label_x, self._rect.y + 5, label_width, self._rect.height - 10))
+      x += width + (self.COLUMN_GAP if active_index < len(active_columns) - 1 else 0)
 
   def _set_status(self, status: tuple[str, str, str, str, str, str],
-                  status_colors: tuple[tuple[int, int, int], ...]) -> None:
-    if status == self._status and status_colors == self._status_colors:
+                  status_colors: tuple[tuple[int, int, int], ...], source_count: int) -> None:
+    if status == self._status and status_colors == self._status_colors and source_count == self._source_count:
       return
 
     self._status = status
     self._status_colors = status_colors
+    self._source_count = source_count
     for label, text in zip(self._labels, status, strict=True):
       label.set_text(text)
     for label, color in zip(self._labels[2:], status_colors, strict=False):
@@ -152,6 +186,8 @@ class RadarTracksStatus:
       math.ceil(label.text_width) if text else 0
       for label, text in zip(self._labels, self._status, strict=True)
     ]
+    if self._column_widths[0] and self._source_count:
+      self._column_widths[0] += self.SOURCE_MARKER_WIDTH
     self._column_widths[1] = max(36, self._column_widths[1])
     for index in (2, 3, 4):
       if self._column_widths[index]:
@@ -172,10 +208,15 @@ class RadarTracks:
                         highlighted_tracks=None):
     highlighted_tracks = highlighted_tracks or {}
     highlighted_positions = {}
+    sources = sorted_radar_sources(live_tracks)
 
-    for track in preferred_radar_tracks(live_tracks):
+    for track in live_tracks.points:
       d_rel, y_rel, v_rel = track.dRel, track.yRel, track.vRel
       if not (math.isfinite(d_rel) and math.isfinite(y_rel) and math.isfinite(v_rel)):
+        continue
+
+      motion_state = int(track.motionState)
+      if motion_state not in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING):
         continue
 
       pt = map_to_screen(d_rel, -y_rel, path_offset_z)
@@ -183,14 +224,16 @@ class RadarTracks:
         continue
 
       x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
-      color, stationary = radar_track_display(int(track.motionState))
-      radius = max(1, track_size - 4) if stationary else track_size
+      color, stationary = radar_track_display(motion_state)
+      radius = max(1, track_size - 5) if stationary else track_size
       track_id = int(track.trackId)
       highlight_color = highlighted_tracks.get(track_id)
       if highlight_color is not None:
         center = rl.Vector2(int(x), int(y))
         rl.draw_ring(center, radius + 2, radius + 5, 0, 360, 24, highlight_color)
         highlighted_positions[track_id] = (x, y)
-      rl.draw_circle(int(x), int(y), radius, color)
+      draw_radar_source_marker(
+        rl.Vector2(x, y), radius, color, radar_track_source_index(track, sources),
+      )
 
     return highlighted_positions
