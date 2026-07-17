@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import time
 
 import cereal.messaging as messaging
+import numpy as np
 from cereal import log, custom
 
 from opendbc.car import structs
@@ -31,7 +32,7 @@ class ControlsExt(ModelStateBase):
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['radarState', 'selfdriveStateSP']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'liveTracks']
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
@@ -85,11 +86,34 @@ class ControlsExt(ModelStateBase):
     _lead.radar = src.radar
     _lead.radarTrackId = src.radarTrackId
 
+  @staticmethod
+  def get_radar_track_data(CC_SP: custom.CarControlSP, live_tracks, valid: bool, model=None, model_valid: bool = False) -> None:
+    CC_SP.radarTracksActive = valid and len(live_tracks.trackSources) > 0
+    source_tracks = (
+      [track for track in live_tracks.points if track.motionState in (1, 2)]
+      if CC_SP.radarTracksActive else ()
+    )
+    path_x = np.asarray(model.position.x, dtype=float) if model_valid else np.empty(0)
+    path_y = np.asarray(model.position.y, dtype=float) if model_valid else np.empty(0)
+    path_valid = len(path_x) >= 2 and len(path_x) == len(path_y) and np.all(np.isfinite(path_x)) and np.all(np.isfinite(path_y))
+    radar_tracks = CC_SP.init('radarTracks', len(source_tracks))
+    for dst, src in zip(radar_tracks, source_tracks, strict=True):
+      dst.trackId = src.trackId
+      dst.dRel = src.dRel
+      center_y = float(np.interp(src.dRel, path_x, path_y)) if path_valid else 0.0
+      dst.yRel = src.yRel + center_y
+      dst.vRel = src.vRel
+      dst.motionState = src.motionState
+      dst.age = src.trackAge
+
   def state_control_ext(self, sm: messaging.SubMaster) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
 
     self.get_lead_data(CC_SP.leadOne, sm['radarState'].leadOne)
     self.get_lead_data(CC_SP.leadTwo, sm['radarState'].leadTwo)
+    self.get_radar_track_data(
+      CC_SP, sm['liveTracks'], sm.valid['liveTracks'], sm['modelV2'], sm.valid['modelV2'],
+    )
 
     # MADS state
     mads_src = sm['selfdriveStateSP'].mads
