@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from dataclasses import dataclass
 import math
 import pyray as rl
 from opendbc.car.hyundai.radar_interface import RADAR_3A5_3C4
@@ -21,6 +22,16 @@ LEAD_TRACK_COLORS = (
   rl.Color(255, 215, 0, 255),
   rl.Color(255, 140, 0, 220),
 )
+
+
+@dataclass(frozen=True)
+class ProjectedRadarTrack:
+  x: float
+  y: float
+  radius: float
+  color: object
+  source_index: int
+  track_id: int
 
 
 def is_preferred_radar_source(source) -> bool:
@@ -238,10 +249,20 @@ class RadarTracksStatus:
 
 
 class RadarTracks:
-  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, screen_offset=(0, 0), v_ego=0.0,
-                        highlighted_tracks=None):
-    highlighted_tracks = highlighted_tracks or {}
-    highlighted_positions = {}
+  def __init__(self):
+    self._projected_tracks: tuple[ProjectedRadarTrack, ...] = ()
+    self._projection_initialized = False
+
+  @property
+  def projection_initialized(self) -> bool:
+    return self._projection_initialized
+
+  def clear_projection(self) -> None:
+    self._projected_tracks = ()
+    self._projection_initialized = False
+
+  def update_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7) -> None:
+    projected_tracks = []
     sources = sorted_radar_sources(live_tracks)
 
     for track in live_tracks.points:
@@ -257,20 +278,41 @@ class RadarTracks:
       if pt is None:
         continue
 
-      x, y = pt[0] + screen_offset[0], pt[1] + screen_offset[1]
       measured = bool(track.measured)
       color, stationary = radar_track_display(motion_state, measured)
       radius = max(1, track_size - 5) if stationary else track_size
       if not measured:
         radius = max(1, radius - COASTED_RADIUS_REDUCTION)
-      track_id = int(track.trackId)
-      highlight_color = highlighted_tracks.get(track_id)
+      projected_tracks.append(ProjectedRadarTrack(
+        x=pt[0],
+        y=pt[1],
+        radius=radius,
+        color=color,
+        source_index=radar_track_source_index(track, sources),
+        track_id=int(track.trackId),
+      ))
+
+    self._projected_tracks = tuple(projected_tracks)
+    self._projection_initialized = True
+
+  def draw_cached_radar_tracks(self, screen_offset=(0, 0), highlighted_tracks=None):
+    highlighted_tracks = highlighted_tracks or {}
+    highlighted_positions = {}
+
+    for track in self._projected_tracks:
+      x, y = track.x + screen_offset[0], track.y + screen_offset[1]
+      highlight_color = highlighted_tracks.get(track.track_id)
       if highlight_color is not None:
         center = rl.Vector2(int(x), int(y))
-        rl.draw_ring(center, radius + 2, radius + 5, 0, 360, 24, highlight_color)
-        highlighted_positions[track_id] = (x, y)
+        rl.draw_ring(center, track.radius + 2, track.radius + 5, 0, 360, 24, highlight_color)
+        highlighted_positions[track.track_id] = (x, y)
       draw_radar_source_marker(
-        rl.Vector2(x, y), radius, color, radar_track_source_index(track, sources),
+        rl.Vector2(x, y), track.radius, track.color, track.source_index,
       )
 
     return highlighted_positions
+
+  def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, screen_offset=(0, 0), v_ego=0.0,
+                        highlighted_tracks=None):
+    self.update_radar_tracks(live_tracks, map_to_screen, path_offset_z, track_size)
+    return self.draw_cached_radar_tracks(screen_offset, highlighted_tracks)
