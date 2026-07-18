@@ -1,5 +1,6 @@
 import time
 import pyray as rl
+from cereal import custom
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
@@ -30,6 +31,12 @@ class ExpButton(Widget):
   def _update_state(self) -> None:
     selfdrive_state = ui_state.sm["selfdriveState"]
     self._experimental_mode = selfdrive_state.experimentalMode
+    if ui_state.sm.seen['longitudinalPlanSP'] and ui_state.sm['longitudinalPlanSP'].dec.active:
+      self._experimental_mode = (
+          self._experimental_mode
+          and ui_state.sm["longitudinalPlanSP"].dec.state
+          == custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState.blended
+      )
     self._engageable = selfdrive_state.engageable or selfdrive_state.enabled
 
   def _handle_mouse_release(self, _):
