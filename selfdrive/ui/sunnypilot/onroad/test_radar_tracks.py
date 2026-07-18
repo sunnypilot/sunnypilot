@@ -292,3 +292,32 @@ def test_draw_radar_tracks_shrinks_and_fades_coasted_moving_track(monkeypatch):
   )
 
   assert drawn == [(4, (*radar_tracks.DBC_MOVING_COLOR, radar_tracks.COASTED_ALPHA))]
+
+
+def test_cached_radar_tracks_only_reproject_on_update(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  point = live_tracks.init("points", 1)[0]
+  point.trackId = 7
+  point.dRel = 10
+  point.yRel = 1
+  point.vRel = 0
+  point.motionState = radar_tracks.DBC_MOTION_MOVING
+  point.measured = True
+  projected = []
+  drawn = []
+
+  def map_to_screen(d_rel, y_rel, z):
+    projected.append((d_rel, y_rel, z))
+    return (20, 30)
+
+  monkeypatch.setattr(
+    radar_tracks.rl, "draw_circle",
+    lambda x, y, radius, color: drawn.append((x, y)),
+  )
+  renderer = radar_tracks.RadarTracks()
+  renderer.update_radar_tracks(live_tracks, map_to_screen, path_offset_z=1.2)
+  renderer.draw_cached_radar_tracks(screen_offset=(100, 7))
+  renderer.draw_cached_radar_tracks(screen_offset=(200, 9))
+
+  assert projected == [(10, -1, 1.2)]
+  assert drawn == [(120, 37), (220, 39)]

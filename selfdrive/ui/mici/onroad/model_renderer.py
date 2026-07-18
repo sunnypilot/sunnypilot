@@ -138,7 +138,8 @@ class ModelRenderer(Widget, ModelRendererSP):
 
     # Update model data when needed
     model_updated = sm.updated['modelV2']
-    if model_updated or sm.updated['radarState'] or self._transform_dirty:
+    transform_updated = self._transform_dirty
+    if model_updated or sm.updated['radarState'] or transform_updated:
       if model_updated:
         self._update_raw_points(model)
 
@@ -157,10 +158,14 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path(sm)
 
     if sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
+      if (sm.updated['liveTracks'] or sm.updated['liveCalibration'] or transform_updated or
+          not self.radar_tracks.projection_initialized):
+        self.radar_tracks.update_radar_tracks(
+          sm['liveTracks'], self._map_to_screen, self._path_offset_z,
+        )
       highlighted_tracks = radar_lead_track_colors(radar_state) if render_lead_indicator else {}
-      matched_positions = self.radar_tracks.draw_radar_tracks(
-        sm['liveTracks'], self._map_to_screen, self._path_offset_z,
-        screen_offset=(self._rect.x, self._rect.y), v_ego=sm['carState'].vEgo,
+      matched_positions = self.radar_tracks.draw_cached_radar_tracks(
+        screen_offset=(self._rect.x, self._rect.y),
         highlighted_tracks=highlighted_tracks,
       )
       if render_lead_indicator:
@@ -168,6 +173,8 @@ class ModelRenderer(Widget, ModelRendererSP):
           self._lead_vehicles, matched_positions, highlighted_tracks,
           screen_offset=(self._rect.x, self._rect.y),
         )
+    else:
+      self.radar_tracks.clear_projection()
 
     if render_lead_indicator:
       self._draw_lead_indicator()

@@ -66,3 +66,19 @@ def test_radar_tracks_are_positioned_relative_to_curved_model_path():
 
   assert cc_sp.radarTracks[0].yRel == 0
   assert cc_sp.radarTracks[1].yRel == -3.5
+
+
+def test_radar_track_cache_only_rebuilds_when_inputs_update():
+  controls_ext = object.__new__(ControlsExt)
+  controls_ext._reset_radar_track_cache()
+  live_tracks = make_live_tracks((2,))
+
+  controls_ext.update_radar_track_cache(live_tracks, valid=True, inputs_updated=True)
+  assert controls_ext._radar_tracks_cache[0]["dRel"] == 12
+
+  live_tracks.points[0].dRel = 30
+  controls_ext.update_radar_track_cache(live_tracks, valid=True, inputs_updated=False)
+  assert controls_ext._radar_tracks_cache[0]["dRel"] == 12
+
+  controls_ext.update_radar_track_cache(live_tracks, valid=True, inputs_updated=True)
+  assert controls_ext._radar_tracks_cache[0]["dRel"] == 30

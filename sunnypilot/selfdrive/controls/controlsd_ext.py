@@ -21,6 +21,10 @@ from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import Lat
 
 
 class ControlsExt(ModelStateBase):
+  _radar_tracks_active: bool
+  _radar_tracks_cache: tuple[dict[str, int | float], ...]
+  _radar_tracks_cache_initialized: bool
+
   def __init__(self, CP: structs.CarParams, params: Params):
     ModelStateBase.__init__(self)
     self.CP = CP
@@ -34,6 +38,12 @@ class ControlsExt(ModelStateBase):
 
     self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'liveTracks']
     self.pm_services_ext = ['carControlSP']
+    self._reset_radar_track_cache()
+
+  def _reset_radar_track_cache(self) -> None:
+    self._radar_tracks_active = False
+    self._radar_tracks_cache = ()
+    self._radar_tracks_cache_initialized = False
 
   def initialize_lateral_control(self, lac, CI, dt):
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
@@ -87,33 +97,64 @@ class ControlsExt(ModelStateBase):
     _lead.radarTrackId = src.radarTrackId
 
   @staticmethod
-  def get_radar_track_data(CC_SP: custom.CarControlSP, live_tracks, valid: bool, model=None, model_valid: bool = False) -> None:
-    CC_SP.radarTracksActive = valid and len(live_tracks.trackSources) > 0
-    source_tracks = (
-      [track for track in live_tracks.points if track.measured and track.motionState in (1, 2)]
-      if CC_SP.radarTracksActive else ()
-    )
+  def build_radar_track_data(live_tracks, valid: bool, model=None,
+                             model_valid: bool = False) -> tuple[bool, tuple[dict[str, int | float], ...]]:
+    radar_tracks_active = valid and len(live_tracks.trackSources) > 0
+    if not radar_tracks_active:
+      return False, ()
+
+    source_tracks = [track for track in live_tracks.points if track.measured and track.motionState in (1, 2)]
+    if not source_tracks:
+      return True, ()
+
     path_x = np.asarray(model.position.x, dtype=float) if model_valid else np.empty(0)
     path_y = np.asarray(model.position.y, dtype=float) if model_valid else np.empty(0)
     path_valid = len(path_x) >= 2 and len(path_x) == len(path_y) and np.all(np.isfinite(path_x)) and np.all(np.isfinite(path_y))
-    radar_tracks = CC_SP.init('radarTracks', len(source_tracks))
-    for dst, src in zip(radar_tracks, source_tracks, strict=True):
-      dst.trackId = src.trackId
-      dst.dRel = src.dRel
+    radar_tracks = []
+    for src in source_tracks:
       center_y = float(np.interp(src.dRel, path_x, path_y)) if path_valid else 0.0
-      dst.yRel = src.yRel + center_y
-      dst.vRel = src.vRel
-      dst.motionState = src.motionState
-      dst.age = src.trackAge
+      radar_tracks.append({
+        "trackId": int(src.trackId),
+        "dRel": float(src.dRel),
+        "yRel": float(src.yRel + center_y),
+        "vRel": float(src.vRel),
+        "motionState": int(src.motionState),
+        "age": int(src.trackAge),
+      })
+    return radar_tracks_active, tuple(radar_tracks)
+
+  @staticmethod
+  def set_radar_track_data(CC_SP: custom.CarControlSP, active: bool,
+                           radar_tracks: tuple[dict[str, int | float], ...]) -> None:
+    CC_SP.radarTracksActive = active
+    CC_SP.radarTracks = radar_tracks
+
+  @classmethod
+  def get_radar_track_data(cls, CC_SP: custom.CarControlSP, live_tracks, valid: bool,
+                           model=None, model_valid: bool = False) -> None:
+    active, radar_tracks = cls.build_radar_track_data(live_tracks, valid, model, model_valid)
+    cls.set_radar_track_data(CC_SP, active, radar_tracks)
+
+  def update_radar_track_cache(self, live_tracks, valid: bool, model=None,
+                               model_valid: bool = False, inputs_updated: bool = True) -> None:
+    if self._radar_tracks_cache_initialized and not inputs_updated:
+      return
+
+    self._radar_tracks_active, self._radar_tracks_cache = self.build_radar_track_data(
+      live_tracks, valid, model, model_valid,
+    )
+    self._radar_tracks_cache_initialized = True
 
   def state_control_ext(self, sm: messaging.SubMaster) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
 
     self.get_lead_data(CC_SP.leadOne, sm['radarState'].leadOne)
     self.get_lead_data(CC_SP.leadTwo, sm['radarState'].leadTwo)
-    self.get_radar_track_data(
-      CC_SP, sm['liveTracks'], sm.valid['liveTracks'], sm['modelV2'], sm.valid['modelV2'],
+    self.update_radar_track_cache(
+      sm['liveTracks'], sm.valid['liveTracks'], sm['modelV2'], sm.valid['modelV2'],
+      sm.updated['liveTracks'] or sm.updated['modelV2'],
     )
+    self.set_radar_track_data(CC_SP, self._radar_tracks_active, self._radar_tracks_cache)
 
     # MADS state
     mads_src = sm['selfdriveStateSP'].mads
