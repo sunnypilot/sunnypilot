@@ -29,11 +29,11 @@ BO_ {addr_dec} RADAR_TRACK_{addr_hex}: 24 RADAR
  SG_ STATE_ALT : 25|2@0+ (1,0) [0|3] "" XXX
  SG_ MOTION_STATE : 28|2@0+ (1,0) [0|2] "" XXX
  SG_ TRACK_COUNTER : 31|2@0+ (1,0) [0|3] "" XXX
- SG_ NEW_SIGNAL_2 : 38|7@0- (1,0) [-64|63] "" XXX
+ SG_ TRACK_QUALITY : 38|7@0+ (1,0) [0|127] "" XXX
  SG_ AGE : 47|8@0+ (1,0) [0|255] "" XXX
  SG_ COAST_AGE : 51|4@0+ (1,0) [0|15] "" XXX
  SG_ STATE : 54|3@0+ (1,0) [0|7] "" XXX
- SG_ NEW_SIGNAL_8 : 62|7@0- (1,0) [-33|37] "" XXX
+ SG_ RCS : 62|7@0- (1,0) [-64|63] "" XXX
  SG_ LONG_DIST : 63|13@1+ (0.05,0) [0|409.55] "m" XXX
  SG_ LAT_DIST : 76|12@1- (0.05,0) [-102.4|102.35] "m" XXX
  SG_ REL_SPEED : 88|14@1- (0.01,0) [-81.92|81.91] "m/s" XXX
