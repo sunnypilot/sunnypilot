@@ -111,8 +111,8 @@ contained in that family.
 
 | Source | Runtime layout | Current role | Status and next proof |
 | --- | --- | --- | --- |
-| `0x3A5–0x3C4` | 32 × 24-byte messages at 20 Hz | Front | Confirmed on compatible routes. It is the only family with a confirmed `MOTION_STATE` and deep cross-platform signal study. Sportage HEV 2026 has an incompatible overlapping layout. |
-| `0x210–0x21F` | 16 × 32-byte messages at 20 Hz; two tracks per message | Likely front | Implemented. Confirm role and signal semantics across its platform group; K8 HEV's supplied route contained no active tracks. |
+| `0x3A5–0x3C4` | 32 × 24-byte messages at 20 Hz | Front | Confirmed across 21 common-layout routes and 817,852 checksum-valid frames. `TRACK_QUALITY`, `RCS`, lifecycle, kinematics, and the optional rich extension are decoded. No dedicated oncoming value was found. Sportage HEV 2026 has an incompatible overlapping layout. |
+| `0x210–0x21F` | 16 × 32-byte messages at 20 Hz; two tracks per message | Front | Confirmed across 16 active routes and two dialects. Detailed and compact layouts share the core; compact adds persistent object IDs and uses motion code 3 for stopped and 4 for oncoming, while detailed has no dedicated oncoming value. Three additional streams were empty and one non-HDA2 Telluride route had no 210 range. |
 | `0x500–0x51F` | 32 × 8-byte messages at 20 Hz | Likely front | Implemented. Confirm special behavior around `0x501/0x502` and validate lateral conversion from azimuth. |
 | `0x602–0x617` | Generator has double-track `0x602–0x611` and alternate single-track `0x612–0x617` formats | Likely front | Partially implemented: runtime currently consumes only `0x602–0x611`. Confirm whether `0x612–0x617` is the same objects, an alternate view, or a separate output before expanding it. |
 | `0x235–0x248` | 20 × 32-byte messages at 33 Hz; one track per message | Corner candidate | Implemented geometry, but the post's corner classification still needs HDA2 route/video confirmation. |
@@ -153,15 +153,15 @@ topology; it does not claim that either is present.
 
 | Platform | Front | Corner | Extras/fused | Rear |
 | --- | --- | --- | --- | --- |
-| Hyundai Elantra HEV 2024 | `210–21F` implemented; verify | Unknown | Unknown | Unknown |
-| Hyundai Ioniq 5 | `210–21F` implemented; verify | HDA2 candidate | Unknown | Unknown |
-| Hyundai Palisade 2023 | `210–21F` implemented; verify | HDA2 candidate | Unknown | Unknown |
-| Kia EV6 | `210–21F` implemented; verify | Four-block prototype candidate | Unknown | Prototype family may include rear corners |
-| Kia K8 HEV 1st gen | Range observed, supplied route empty | Unknown | Unknown | Unknown |
-| Hyundai Santa Cruz 2025 | `210–21F` implemented; verify | Unknown | Unknown | Unknown |
-| Hyundai Tucson 4th gen | `210–21F` implemented; verify | Unknown | Unknown | Unknown |
-| Hyundai Tucson HEV 2025 | `210–21F` implemented; verify | Unknown | Unknown | Unknown |
-| Kia Sportage 5th gen | `210–21F` implemented; verify | Unknown | Unknown | Unknown |
+| Hyundai Elantra HEV 2024 | `210–21F` detailed confirmed | Unknown | Unknown | Unknown |
+| Hyundai Ioniq 5 | `210–21F` detailed confirmed on two active routes; one route empty | HDA2 candidate | Unknown | Unknown |
+| Hyundai Palisade 2023 | `210–21F` detailed confirmed on one active route; one route empty | HDA2 candidate | Unknown | Unknown |
+| Kia EV6 | `210–21F` detailed confirmed on four active routes; one route empty | Four-block prototype candidate | Unknown | Prototype family may include rear corners |
+| Kia K8 HEV 1st gen | Historical supplied route empty; outside the 20-route validation set | Unknown | Unknown | Unknown |
+| Hyundai Santa Cruz 2025 | `210–21F` compact confirmed | Unknown | Unknown | Unknown |
+| Hyundai Tucson 4th gen | `210–21F` compact confirmed on four routes | Unknown | Unknown | Unknown |
+| Hyundai Tucson HEV 2025 | `210–21F` compact confirmed | Unknown | Unknown | Unknown |
+| Kia Sportage 5th gen | `210–21F` compact confirmed on two routes | Unknown | Unknown | Unknown |
 
 ### Platforms with legacy implemented layouts
 
