@@ -78,6 +78,16 @@ def test_format_radar_tracks_columns_range_and_count():
   assert format_radar_tracks_onroad_columns(live_tracks) == ("3A5-3C4", "2", "1", "1", "0", "")
 
 
+def test_format_camera_objects_are_not_labeled_as_radar():
+  live_tracks = car.RadarData.new_message()
+  live_tracks.trackSources = [{"startAddress": 0x235, "endAddress": 0x248, "bus": 1, "trackCount": 3}]
+  points = live_tracks.init("points", 3)
+  for point in points:
+    point.motionState = 2
+
+  assert format_radar_tracks_onroad_columns(live_tracks) == ("CAM 235-248", "3", "3", "0", "0", "")
+
+
 def test_format_radar_tracks_columns_stacks_all_ranges_with_preferred_first():
   live_tracks = car.RadarData.new_message()
   live_tracks.trackSources = [
@@ -112,6 +122,13 @@ def test_format_radar_tracks_columns_shows_non_motion_source():
     point.sourceAddress = 0x500
 
   assert format_radar_tracks_onroad_columns(live_tracks, v_ego=20.0) == ("500-51F", "4", "0", "0", "4", "")
+
+
+def test_format_radar_tracks_columns_shows_64_track_source():
+  live_tracks = car.RadarData.new_message()
+  live_tracks.trackSources = [{"startAddress": 0x500, "endAddress": 0x53F, "bus": 1, "trackCount": 7}]
+
+  assert format_radar_tracks_onroad_columns(live_tracks) == ("500-53F", "7", "0", "0", "0", "")
 
 
 def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
@@ -201,6 +218,30 @@ def test_draw_radar_tracks_uses_source_shapes_with_preferred_circle(monkeypatch)
 
   assert circles == [(0x3A5, 6)]
   assert polygons == [(0x500, 4, 6, 45.0)]
+
+
+def test_draw_camera_objects_uses_triangle(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  live_tracks.trackSources = [{"startAddress": 0x235, "endAddress": 0x248, "bus": 1, "trackCount": 1}]
+  point = live_tracks.init("points", 1)[0]
+  point.dRel = 25
+  point.yRel = 1
+  point.vRel = 2
+  point.motionState = radar_tracks.DBC_MOTION_MOVING
+  point.measured = True
+  point.sourceAddress = 0x235
+  point.sourceBus = 1
+  polygons = []
+  monkeypatch.setattr(
+    radar_tracks.rl, "draw_poly",
+    lambda center, sides, radius, rotation, color: polygons.append((center.x, sides, radius, rotation)),
+  )
+
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2, track_size=6,
+  )
+
+  assert polygons == [(25, 3, 6, -90.0)]
 
 
 def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):

@@ -75,21 +75,60 @@ WHITE = rl.Color(255, 255, 255, 255)
 PURPLE = rl.Color(190, 125, 255, 255)
 
 SPEC_BY_RANGE = {
-  (spec.start_addr, spec.end_addr): spec
+  (spec.start_addr, end_addr): spec
   for spec in HYUNDAI_RADAR_TRACK_SPECS
+  for end_addr in {spec.required_end_addr, spec.end_addr}
 }
 SPEC_BY_NAME = {spec.name: spec for spec in HYUNDAI_RADAR_TRACK_SPECS}
 PREFERRED_RADAR_SOURCE = "RADAR_3A5_3C4"
-DEFAULT_SOURCE_FILTERS = (False, True, True)  # hide moving, stationary, unknown
+DEFAULT_SOURCE_FILTERS = (False, False, False)  # hide moving, stationary, unknown
 RadarSourceKey = tuple[int, int, int]
 RADAR_DETAIL_SIGNALS = {
-  "MOTION_STATE", "REL_LAT_SPEED", "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE",
-  "AGE", "COAST_AGE", "STATE_ALT", "TRACK_COUNTER",
+  "RADAR_210_21F": {
+    f"{prefix}{signal}"
+    for prefix in ("1_", "2_")
+    for signal in (
+      "MOTION_STATE", "TRACK_QUALITY", "AGE", "COAST_AGE", "STATE", "STATE_ALT", "RCS",
+      "REL_LAT_SPEED", "NEW_SIGNAL_4", "NEW_SIGNAL_18", "OBJECT_ID",
+    )
+  },
+  "RADAR_3A5_3C4": {
+    "MOTION_STATE", "TRACK_QUALITY", "AGE", "COAST_AGE", "STATE", "STATE_ALT", "RCS",
+    "REL_LAT_SPEED", "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE", "TRACK_COUNTER",
+    "NEW_SIGNAL_4", "NEW_SIGNAL_5", "NEW_SIGNAL_12", "NEW_SIGNAL_13", "NEW_SIGNAL_14",
+    "NEW_SIGNAL_15", "NEW_SIGNAL_16", "NEW_SIGNAL_17", "NEW_SIGNAL_18",
+  },
 }
-TABLE_MODES = ("motion", "kinematics", "object")
+TABLE_MODES = ("motion", "kinematics", "object", "signals")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
 TRACK_COUNT_FIELD_WIDTH = 3
 SOURCE_CIRCLE_RADIUS_SCALE = 0.8
+
+
+@dataclass(frozen=True)
+class ResearchSourceSpec:
+  name: str
+  start_address: int
+  end_address: int
+  message_sizes: tuple[int, ...]
+  details: str
+
+
+RESEARCH_SOURCE_SPECS = (
+  ResearchSourceSpec("CCNC_FUSED_OBJECTS", 0x162, 0x162, (32,), "fused cluster objects, not raw radar  32 B"),
+  ResearchSourceSpec("RADAR_500_STATUS_CORE", 0x4E0, 0x4E1, (8,) * 2, "front-radar status  20 Hz  ESR/shared 4E0"),
+  ResearchSourceSpec("RADAR_500_BUILD", 0x4E2, 0x4E2, (8,), "optional build metadata  20 Hz"),
+  ResearchSourceSpec("RADAR_500_PATHS", 0x4E3, 0x4E3, (8,), "front-radar path selectors/status  20 Hz"),
+  ResearchSourceSpec("RADAR_500_HEALTH", 0x4E4, 0x4E5, (8,) * 2, "optional ADC/alignment status  20 Hz"),
+  ResearchSourceSpec("RADAR_602_ALT", 0x612, 0x617, (8,) * 6, "alternate legacy front objects  8 B"),
+  ResearchSourceSpec("CORNER_A_OBJECTS", 0x240, 0x24F, (16, *([24] * 15)), "right-front corner objects (inferred)  20 Hz"),
+  ResearchSourceSpec("CORNER_A_DETECTIONS", 0x270, 0x277, (32,) * 8, "right-front compact scan bins (inferred)  20 Hz"),
+  ResearchSourceSpec("CORNER_B_OBJECTS", 0x278, 0x287, (8, *([24] * 15)), "left-front corner objects (inferred)  20 Hz"),
+  ResearchSourceSpec("CORNER_B_DETECTIONS", 0x288, 0x28F, (32,) * 8, "left-front compact scan bins (inferred)  20 Hz"),
+  ResearchSourceSpec("RADAR_RAW_DETECTIONS", 0x3D0, 0x3D4, (32,) * 5, "front-radar auxiliary scan records  20 Hz  32 B"),
+  ResearchSourceSpec("CAMERA_LANE_PATH", 0x360, 0x366, (32,) * 7, "forward-camera lane/path geometry  32 B"),
+)
+RESEARCH_SPEC_BY_RANGE = {(spec.start_address, spec.end_address): spec for spec in RESEARCH_SOURCE_SPECS}
 
 
 @dataclass
@@ -401,6 +440,17 @@ class DisplayTrackSignals:
   state: int
   stateAlt: int
   trackCounter: int
+  signalSummary: str
+
+
+@dataclass(frozen=True)
+class DisplayRawSignal:
+  startAddress: int
+  endAddress: int
+  address: int
+  bus: int
+  label: str
+  signalSummary: str
 
 
 @dataclass(frozen=True)
@@ -408,10 +458,305 @@ class RadarSnapshot:
   points: tuple[DisplayTrack, ...] = ()
   trackSources: tuple[DisplaySource, ...] = ()
   trackSignals: tuple[DisplayTrackSignals, ...] = ()
+  rawSignals: tuple[DisplayRawSignal, ...] = ()
   radarTracksAvailable: bool = False
 
 
+class ResearchCanDecoder:
+  """Inventory auxiliary families without publishing them as control-facing radar tracks."""
+
+  def __init__(self):
+    self.payloads: dict[tuple[str, int], dict[int, bytes]] = {}
+
+  def update(self, can_messages) -> None:
+    for address, dat, bus in can_messages:
+      for spec in RESEARCH_SOURCE_SPECS:
+        if not spec.start_address <= address <= spec.end_address:
+          continue
+        expected_size = spec.message_sizes[address - spec.start_address]
+        if len(dat) == expected_size:
+          self.payloads.setdefault((spec.name, int(bus)), {})[int(address)] = bytes(dat)
+
+  @staticmethod
+  def _packed_detection_records(payload: bytes) -> tuple[int, ...]:
+    return tuple(
+      int.from_bytes(payload[offset:offset + 4], "little")
+      for offset in (3, 8, 12, 16, 20, 24, 28)
+    )
+
+  @staticmethod
+  def _signed(raw: int, size: int) -> int:
+    return raw - (1 << size) if raw & (1 << (size - 1)) else raw
+
+  @classmethod
+  def _little(cls, raw: int, start: int, size: int, *, signed: bool = False) -> int:
+    value = (raw >> start) & ((1 << size) - 1)
+    return cls._signed(value, size) if signed else value
+
+  @classmethod
+  def _big(cls, raw: int, start: int, size: int, *, signed: bool = False) -> int:
+    value = 0
+    bit = start
+    for _ in range(size):
+      value = (value << 1) | ((raw >> bit) & 1)
+      bit = bit + 15 if bit % 8 == 0 else bit - 1
+    return cls._signed(value, size) if signed else value
+
+  @classmethod
+  def _corner_object(cls, payload: bytes) -> tuple[float, float, float] | None:
+    raw = int.from_bytes(payload, "little")
+    raw_dist = (raw >> 63) & 0x1FFF
+    if raw_dist == 0xFFE:
+      return None
+
+    d_rel = raw_dist * 0.05
+    # Exclude the high-range default/sentinel region and points outside the debugger plot.
+    if not 0 < d_rel <= MAX_FORWARD_DISTANCE:
+      return None
+
+    y_rel = cls._signed((raw >> 76) & 0x7FF, 11) * 0.05
+    v_rel = cls._signed((raw >> 88) & 0x3FF, 10) * 0.2
+    return d_rel, y_rel, v_rel
+
+  @classmethod
+  def _radar_500_status_summary(cls, address: int, raw: int) -> str:
+    if address == 0x4E0:
+      return " ".join((
+        f"CTR:{cls._little(raw, 6, 2)}",
+        f"TS:{cls._big(raw, 5, 7) * 2}ms",
+        f"SCAN:{cls._big(raw, 31, 16)}",
+        f"SPD:{cls._big(raw, 50, 11) * 0.0625:.2f}m/s",
+        f"YAW:{cls._big(raw, 47, 12, signed=True) * 0.0625:.2f}deg/s",
+        f"CURV:{cls._big(raw, 13, 14, signed=True)}m",
+        f"COMM:{cls._big(raw, 14, 1)}",
+      ))
+    if address == 0x4E1:
+      return " ".join((
+        f"CTR:{cls._big(raw, 1, 2)}",
+        f"MAX:{cls._big(raw, 7, 6) + 1}",
+        f"STEER:{cls._big(raw, 10, 11)}",
+        f"RAW:{cls._big(raw, 11, 1)}",
+        f"OP:{cls._big(raw, 12, 1)}",
+        f"ERR:{cls._big(raw, 13, 1)}/{cls._big(raw, 14, 1)}/{cls._big(raw, 15, 1)}",
+        f"TEMP:{cls._big(raw, 31, 8, signed=True)}C",
+        f"GROUP:{cls._big(raw, 33, 2)}",
+        f"VER:{cls._big(raw, 55, 16):04X}",
+      ))
+    if address == 0x4E2:
+      values = tuple(cls._little(raw, byte * 8, 8) for byte in range(8))
+      return " ".join((
+        f"BUILD:{values[0]:02X}-{values[1]:02X}-{values[2]:02X}",
+        f"{values[3]:02X}:{values[4]:02X}",
+        f"U5-7:{values[5]:02X}/{values[6]:02X}/{values[7]:02X}",
+      ))
+    if address == 0x4E3:
+      return " ".join((
+        f"CTR:{cls._big(raw, 1, 2)}",
+        f"MODE:{cls._big(raw, 3, 2)}",
+        f"BLOCK:{cls._big(raw, 4, 1)}/{cls._big(raw, 5, 1)}/{cls._big(raw, 6, 1)}",
+        f"TRUCK:{cls._big(raw, 7, 1)}",
+        f"PATHS:{'/'.join(str(cls._big(raw, start, 8)) for start in (15, 23, 31, 39, 47, 63))}",
+        f"ALIGN:{cls._big(raw, 55, 8, signed=True) * 0.0625:.2f}deg",
+      ))
+    if address == 0x4E4:
+      names = ("BAT", "IGN", "T1", "T2", "5VA", "5VDX", "3V3", "10V")
+      return " ".join(f"{name}:{cls._little(raw, byte * 8, 8):02X}" for byte, name in enumerate(names))
+    if address == 0x4E5:
+      return " ".join((
+        f"1V8:{cls._little(raw, 0, 8):02X}",
+        f"N5V:{cls._little(raw, 8, 8):02X}",
+        f"WAVE:{cls._little(raw, 16, 8):02X}",
+        f"PWR:{cls._little(raw, 24, 3)}",
+        f"VUP:{cls._little(raw, 27, 1)}",
+        f"FACT:{cls._little(raw, 32, 3)}/{cls._little(raw, 35, 3)}",
+        f"FLAGS:{cls._little(raw, 38, 1)}/{cls._little(raw, 39, 1)}",
+        f"MIS:{cls._little(raw, 40, 8, signed=True)}/{cls._little(raw, 56, 8, signed=True)}",
+        f"UPDATES:{cls._little(raw, 48, 8)}",
+      ))
+    return f"RAW:{raw:016X}"
+
+  def snapshot(
+    self,
+  ) -> tuple[
+    tuple[DisplaySource, ...],
+    tuple[DisplayTrack, ...],
+    tuple[DisplayTrackSignals, ...],
+    tuple[DisplayRawSignal, ...],
+    dict[int, tuple[int, int]],
+  ]:
+    sources = []
+    tracks = []
+    track_signals = []
+    raw_signals = []
+    track_locations = {}
+    for spec in RESEARCH_SOURCE_SPECS:
+      for (name, bus), payloads in self.payloads.items():
+        if name != spec.name or any(address not in payloads for address in range(spec.start_address, spec.end_address + 1)):
+          continue
+
+        track_count = 0
+        if spec.name == "RADAR_602_ALT":
+          for address in range(spec.start_address, spec.end_address + 1):
+            raw = int.from_bytes(payloads[address], "little")
+            d_rel = self._little(raw, 0, 10) * 0.25
+            if not 0 < d_rel < 255.75:
+              continue
+            y_rel = self._little(raw, 10, 11) * 0.03 - 30.705
+            v_rel = self._little(raw, 21, 10) * 0.25 - 128
+            object_id = self._little(raw, 31, 9)
+            track_id = 800_000 + bus * 0x10000 + address
+            tracks.append(DisplayTrack(
+              trackId=track_id,
+              dRel=d_rel,
+              yRel=y_rel,
+              vRel=v_rel,
+              aRel=float("nan"),
+              canAddress=address,
+              canBus=bus,
+            ))
+            track_signals.append(DisplayTrackSignals(
+              trackId=track_id,
+              relLatSpeed=float("nan"),
+              absSpeed=float("nan"),
+              width=float("nan"),
+              length=float("nan"),
+              orientationAngle=float("nan"),
+              age=-1,
+              coastAge=-1,
+              state=-1,
+              stateAlt=-1,
+              trackCounter=-1,
+              signalSummary=" ".join((
+                f"ID:{object_id}",
+                f"S1:{self._little(raw, 42, 8) - 128}",
+                f"S2:{self._little(raw, 50, 6) - 32}",
+                f"CTR:{self._little(raw, 56, 4)}",
+                f"CRC:{self._little(raw, 60, 4):X}",
+              )),
+            ))
+            track_locations[track_id] = (address, bus)
+            track_count += 1
+        elif spec.name in ("CORNER_A_OBJECTS", "CORNER_B_OBJECTS"):
+          object_start = 0x241 if spec.name == "CORNER_A_OBJECTS" else 0x279
+          for address in range(object_start, object_start + 15):
+            decoded = self._corner_object(payloads[address])
+            if decoded is None:
+              continue
+            track_id = 900_000 + bus * 0x10000 + address
+            d_rel, y_rel, v_rel = decoded
+            tracks.append(DisplayTrack(
+              trackId=track_id,
+              dRel=d_rel,
+              yRel=y_rel,
+              vRel=v_rel,
+              aRel=float("nan"),
+              canAddress=address,
+              canBus=bus,
+            ))
+            raw = int.from_bytes(payloads[address], "little")
+            category = (raw >> 24) & 0x3
+            rcs = self._signed((raw >> 56) & 0x7F, 7)
+            unknown_87 = (raw >> 87) & 0x1
+            unknown_108 = (raw >> 108) & 0x3FF
+            unknown_118 = (raw >> 118) & 0x3FF
+            unknown_128 = (raw >> 128) & 0xFFFFFFFFFFFFFFFF
+            track_signals.append(DisplayTrackSignals(
+              trackId=track_id,
+              relLatSpeed=self._signed((raw >> 98) & 0x3FF, 10) * 0.05,
+              absSpeed=float("nan"),
+              width=float("nan"),
+              length=float("nan"),
+              orientationAngle=float("nan"),
+              age=-1,
+              coastAge=-1,
+              state=-1,
+              stateAlt=-1,
+              trackCounter=-1,
+              signalSummary=" ".join((
+                f"CAT:{category}", f"RCS:{rcs}", f"U87:{unknown_87}",
+                f"U108:{unknown_108:03X}", f"U118:{unknown_118:03X}", f"U128:{unknown_128:016X}",
+              )),
+            ))
+            track_locations[track_id] = (address, bus)
+            track_count += 1
+        elif spec.name == "CCNC_FUSED_OBJECTS":
+          raw = int.from_bytes(payloads[0x162], "little")
+          fused_slots = (
+            ("FRONT", self._little(raw, 64, 5), self._little(raw, 69, 11) * 0.1, self._little(raw, 80, 7) * 0.1),
+            ("FRONT_ALT", self._little(raw, 88, 5), self._little(raw, 93, 11) * 0.1, self._little(raw, 104, 7) * 0.1),
+            ("LEFT", self._little(raw, 112, 5), self._little(raw, 117, 11) * 0.1, self._little(raw, 128, 7) * 0.1),
+            ("RIGHT", self._little(raw, 136, 5), self._little(raw, 141, 11) * 0.1, self._little(raw, 152, 7) * 0.1),
+            ("LEFT_REAR", self._big(raw, 167, 5), self._big(raw, 175, 8) * 0.1, self._big(raw, 182, 7) * 0.1),
+            ("RIGHT_REAR", self._big(raw, 196, 5), self._little(raw, 197, 8) * 0.1, self._little(raw, 205, 7) * 0.1),
+          )
+          for label, status, distance, lateral in fused_slots:
+            raw_signals.append(DisplayRawSignal(
+              spec.start_address, spec.end_address, 0x162, bus, label,
+              f"STATUS:{status} DIST:{distance:.1f}m LAT:{lateral:.1f}m",
+            ))
+            track_count += status != 0
+          raw_signals.append(DisplayRawSignal(
+            spec.start_address, spec.end_address, 0x162, bus, "FAULTS",
+            " ".join((
+              f"FSS:{self._little(raw, 213, 3)}", f"FCA:{self._little(raw, 216, 3)}",
+              f"LSS:{self._little(raw, 219, 3)}", f"SLA:{self._little(raw, 222, 3)}",
+              f"DAW:{self._little(raw, 225, 3)}", f"HBA:{self._little(raw, 228, 3)}",
+              f"SCC:{self._little(raw, 231, 3)}", f"LFA:{self._little(raw, 234, 3)}",
+            )),
+          ))
+        elif spec.name in ("CORNER_A_DETECTIONS", "CORNER_B_DETECTIONS", "RADAR_RAW_DETECTIONS"):
+          for address in range(spec.start_address, spec.end_address + 1):
+            for record, raw in enumerate(self._packed_detection_records(payloads[address])):
+              if raw == 0:
+                continue
+              if spec.name in ("CORNER_A_DETECTIONS", "CORNER_B_DETECTIONS"):
+                if (raw & 0x1FFF) == 8000:
+                  continue
+                raw_signals.append(DisplayRawSignal(
+                  spec.start_address, spec.end_address, address, bus, f"REC{record}",
+                  " ".join((
+                    f"DIST?:{(raw & 0x1FFF) * 0.05:.2f}",
+                    f"RSV:{(raw >> 13) & 0x7}",
+                    f"PROP:{(raw >> 16) & 0x7F}",
+                    f"AUX:{(raw >> 23) & 0x1FF}",
+                    f"RAW:{raw:08X}",
+                  )),
+                ))
+                track_count += 1
+                continue
+              if raw == 0xC8782EE0:
+                continue
+              raw_signals.append(DisplayRawSignal(
+                spec.start_address, spec.end_address, address, bus, f"REC{record}",
+                " ".join((
+                  f"DIST?:{(raw & 0xFFF) * 0.05:.2f}",
+                  f"FLAGS:{(raw >> 12) & 0xF}",
+                  f"U16:{(raw >> 16) & 0xFF:02X}",
+                  f"U24:{(raw >> 24) & 0xFF:02X}",
+                  f"RAW:{raw:08X}",
+                )),
+              ))
+              track_count += 1
+        elif spec.name.startswith("RADAR_500_"):
+          for address in range(spec.start_address, spec.end_address + 1):
+            raw = int.from_bytes(payloads[address], "little")
+            raw_signals.append(DisplayRawSignal(
+              spec.start_address, spec.end_address, address, bus, f"{address:X}",
+              self._radar_500_status_summary(address, raw),
+            ))
+        elif spec.name == "CAMERA_LANE_PATH":
+          for address in range(spec.start_address, spec.end_address + 1):
+            payload = payloads[address]
+            raw_signals.append(DisplayRawSignal(
+              spec.start_address, spec.end_address, address, bus, f"{address:X}",
+              f"CTR:{payload[2]} DATA:{payload[3:].hex().upper()}",
+            ))
+        sources.append(DisplaySource(spec.start_address, spec.end_address, bus, track_count))
+    return tuple(sources), tuple(tracks), tuple(track_signals), tuple(raw_signals), track_locations
+
+
 def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ...] = (),
+                        raw_signals: tuple[DisplayRawSignal, ...] = (),
                         track_locations: dict[int, tuple[int, int]] | None = None) -> RadarSnapshot:
   track_locations = track_locations or {}
   return RadarSnapshot(
@@ -431,20 +776,26 @@ def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ..
       trackCount=int(source.trackCount),
     ) for source in radar_data.trackSources),
     trackSignals=track_signals,
+    rawSignals=raw_signals,
     radarTracksAvailable=bool(radar_data.radarTracksAvailable),
   )
 
 
 def source_name(start_address: int, end_address: int) -> str:
   spec = SPEC_BY_RANGE.get((start_address, end_address))
-  return spec.name if spec is not None else f"RADAR_{start_address:X}_{end_address:X}"
+  if spec is not None:
+    return "CAMERA_OBJECTS_235_248" if spec.source_kind == "camera" else spec.name
+  research_spec = RESEARCH_SPEC_BY_RANGE.get((start_address, end_address))
+  return research_spec.name if research_spec is not None else f"RADAR_{start_address:X}_{end_address:X}"
 
 
 def source_details(start_address: int, end_address: int) -> str:
   spec = SPEC_BY_RANGE.get((start_address, end_address))
-  if spec is None:
-    return "unknown format"
-  return f"{spec.frequency} Hz  {spec.message_size} B"
+  if spec is not None:
+    prefix = "forward-camera objects  " if spec.source_kind == "camera" else ""
+    return f"{prefix}{spec.frequency} Hz  {spec.message_size} B"
+  research_spec = RESEARCH_SPEC_BY_RANGE.get((start_address, end_address))
+  return research_spec.details if research_spec is not None else "unknown format"
 
 
 def radar_source_sort_key(source) -> tuple[bool, int, int, int]:
@@ -463,6 +814,8 @@ def radar_source_key(source) -> RadarSourceKey:
 
 def source_filter_state(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
                         source_key: RadarSourceKey) -> tuple[bool, bool, bool]:
+  if source_key[:2] == (0x3D0, 0x3D4):
+    return source_filters.get(source_key, (False, True, False))
   return source_filters.get(source_key, DEFAULT_SOURCE_FILTERS)
 
 
@@ -476,7 +829,7 @@ def toggle_source_filter(source_filters: dict[RadarSourceKey, tuple[bool, bool, 
 def dbc_motion_class(motion_state: int | None) -> str:
   if motion_state is None:
     return "unknown"
-  return {0: "unknown (raw 0)", 1: "stationary", 2: "moving"}.get(
+  return {0: "unknown (raw 0)", 1: "stationary", 2: "moving", 3: "stopped", 4: "oncoming"}.get(
     motion_state, f"unknown (raw {motion_state})",
   )
 
@@ -518,7 +871,8 @@ def enable_dbc_detail_signals(radar_interface: RadarInterface, enhanced_parsers:
   """Add visualization-only signals to the branch parser without maintaining a second CAN decoder."""
   for radar_parser in radar_interface.radar_parsers:
     parser_key = (radar_parser.spec.name, radar_parser.bus)
-    if parser_key in enhanced_parsers or radar_parser.spec.name != "RADAR_3A5_3C4":
+    detail_signals = RADAR_DETAIL_SIGNALS.get(radar_parser.spec.name)
+    if parser_key in enhanced_parsers or detail_signals is None:
       continue
 
     # This UI can intentionally run slower than replay and uses conflated CAN, so don't apply parser liveness checks here.
@@ -527,12 +881,16 @@ def enable_dbc_detail_signals(radar_interface: RadarInterface, enhanced_parsers:
       radar_parser.spec.dbc_name,
       messages,
       radar_parser.bus,
-      signals={*radar_parser.spec.signals, *RADAR_DETAIL_SIGNALS},
+      signals={*radar_parser.spec.signals, *detail_signals},
     )
     for message_state in parser.message_states.values():
       message_state.ignore_alive = True
     radar_parser.parser = parser
     enhanced_parsers.add(parser_key)
+
+
+def dbc_signal_value(message, prefix: str, name: str, default=0):
+  return message.get(f"{prefix}{name}", default)
 
 
 def get_dbc_track_details(
@@ -553,7 +911,7 @@ def get_dbc_track_details(
     active_bus = radar_interface.active_radar_buses.get(track_key[0])
     locations[int(point.trackId)] = (can_address, active_bus if active_bus is not None else -1)
 
-    if track_key[0] != "RADAR_3A5_3C4":
+    if track_key[0] not in RADAR_DETAIL_SIGNALS:
       continue
 
     radar_parser = next((parser for parser in radar_interface.radar_parsers
@@ -561,21 +919,45 @@ def get_dbc_track_details(
     if radar_parser is None:
       continue
 
-    message = radar_parser.parser.vl[f"RADAR_TRACK_{track_key[1]:x}"]
-    if "MOTION_STATE" in message:
-      states[int(point.trackId)] = int(message["MOTION_STATE"])
+    prefix = f"{stored_address % 2 + 1}_" if spec.name == "RADAR_210_21F" else ""
+    message = radar_parser.parser.vl[f"RADAR_TRACK_{can_address:x}"]
+    motion_signal = f"{prefix}MOTION_STATE"
+    if motion_signal in message:
+      states[int(point.trackId)] = int(message[motion_signal])
+
+      if spec.name == "RADAR_210_21F":
+        signal_summary = " ".join((
+          f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
+          f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
+          f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
+          f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
+          f"ID:{int(dbc_signal_value(message, prefix, 'OBJECT_ID'))}",
+        ))
+      else:
+        geometry = "/".join(
+          str(int(dbc_signal_value(message, prefix, f"NEW_SIGNAL_{index}"))) for index in range(12, 18)
+        )
+        signal_summary = " ".join((
+          f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
+          f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
+          f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
+          f"U5:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_5'))}",
+          f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
+          f"G12-17:{geometry}",
+        ))
       details.append(DisplayTrackSignals(
         trackId=int(point.trackId),
-        relLatSpeed=float(message["REL_LAT_SPEED"]),
-        absSpeed=float(message["ABS_SPEED"]),
-        width=float(message["WIDTH"]),
-        length=float(message["LENGTH"]),
-        orientationAngle=float(message["ORIENTATION_ANGLE"]),
-        age=int(message["AGE"]),
-        coastAge=int(message["COAST_AGE"]),
-        state=int(message["STATE"]),
-        stateAlt=int(message["STATE_ALT"]),
-        trackCounter=int(message["TRACK_COUNTER"]),
+        relLatSpeed=float(dbc_signal_value(message, prefix, "REL_LAT_SPEED", float("nan"))),
+        absSpeed=float(dbc_signal_value(message, prefix, "ABS_SPEED", float("nan"))),
+        width=float(dbc_signal_value(message, prefix, "WIDTH", float("nan"))),
+        length=float(dbc_signal_value(message, prefix, "LENGTH", float("nan"))),
+        orientationAngle=float(dbc_signal_value(message, prefix, "ORIENTATION_ANGLE", float("nan"))),
+        age=int(dbc_signal_value(message, prefix, "AGE", -1)),
+        coastAge=int(dbc_signal_value(message, prefix, "COAST_AGE", -1)),
+        state=int(dbc_signal_value(message, prefix, "STATE", -1)),
+        stateAlt=int(dbc_signal_value(message, prefix, "STATE_ALT", -1)),
+        trackCounter=int(dbc_signal_value(message, prefix, "TRACK_COUNTER", -1)),
+        signalSummary=signal_summary,
       ))
   return states, tuple(details), locations
 
@@ -620,8 +1002,10 @@ def radar_decoder_worker(addr: str, output_queue) -> None:
   radar_cp.flags = 0
   radar_cp_sp = structs.CarParamsSP(flags=HyundaiFlagsSP.RADAR_FULL_RADAR.value)
   radar_interface = RadarInterface(radar_cp, radar_cp_sp)
+  research_decoder = ResearchCanDecoder()
   enhanced_parsers: set[tuple[str, int]] = set()
-  snapshot = RadarSnapshot()
+  radar_snapshot = RadarSnapshot()
+  snapshot = radar_snapshot
   motion_states: dict[int, int] = {}
   last_publish_time = 0.0
   last_can_message_time = 0.0
@@ -632,11 +1016,20 @@ def radar_decoder_worker(addr: str, output_queue) -> None:
     if sm.updated["can"]:
       last_can_message_time = time.monotonic()
       can_messages = [(message.address, bytes(message.dat), message.src) for message in sm["can"]]
+      research_decoder.update(can_messages)
       radar_data = radar_interface.update([(sm.logMonoTime["can"], can_messages)])
       enable_dbc_detail_signals(radar_interface, enhanced_parsers)
       if radar_data is not None:
         motion_states, track_signals, track_locations = get_dbc_track_details(radar_interface)
-        snapshot = make_radar_snapshot(radar_data, track_signals, track_locations)
+        radar_snapshot = make_radar_snapshot(radar_data, track_signals, track_locations=track_locations)
+      research_sources, research_tracks, research_signals, raw_signals, _ = research_decoder.snapshot()
+      snapshot = RadarSnapshot(
+        points=(*radar_snapshot.points, *research_tracks),
+        trackSources=(*radar_snapshot.trackSources, *research_sources),
+        trackSignals=(*radar_snapshot.trackSignals, *research_signals),
+        rawSignals=raw_signals,
+        radarTracksAvailable=radar_snapshot.radarTracksAvailable,
+      )
 
     now = time.monotonic()
     if radar_data is not None or now - last_publish_time >= 0.1:
@@ -1092,11 +1485,54 @@ def dbc_track_state(state: int) -> str:
 def draw_track_table(font, rect: rl.Rectangle, tracks, motion_states: dict[int, int], scroll: int,
                      selected_id: int | None, hovered_id: int | None,
                      track_signals: dict[int, DisplayTrackSignals], track_locations: dict[int, tuple[int, int]],
-                     table_mode: str) -> None:
+                     table_mode: str, raw_signals: tuple[DisplayRawSignal, ...] = ()) -> None:
   rl.draw_rectangle_rec(rect, BACKGROUND)
   rl.draw_line_ex(rl.Vector2(rect.x, rect.y), rl.Vector2(rect.x + rect.width, rect.y), 2.0, GRID)
   sorted_tracks = sorted(tracks, key=lambda track: (track.dRel, track.trackId))
   capacity = table_capacity(rect)
+
+  if table_mode == "signals":
+    rows = [
+      (
+        "{:X}/B{}".format(*track_locations.get(int(track.trackId), (-1, -1))),
+        f"TRACK {track.trackId}",
+        track_signals[int(track.trackId)].signalSummary,
+        int(track.trackId),
+      )
+      for track in sorted_tracks
+      if int(track.trackId) in track_signals
+    ]
+    rows.extend(
+      (
+        f"{signal.address:X}/B{signal.bus}",
+        f"{source_name(signal.startAddress, signal.endAddress).removeprefix('RADAR_')} {signal.label}",
+        signal.signalSummary,
+        None,
+      )
+      for signal in sorted(raw_signals, key=lambda item: (
+        item.startAddress, item.bus, item.address, item.label,
+      ))
+    )
+    visible_rows = rows[scroll:scroll + capacity]
+    draw_text(font, "SIGNALS", rect.x + 12, rect.y + 8, 21, TEXT)
+    if rows:
+      draw_text(font, f"{scroll + 1}-{scroll + len(visible_rows)} / {len(rows)}",
+                rect.x + rect.width - 112, rect.y + 11, 16, MUTED)
+    columns = (("CAN", 0.02), ("SOURCE / ITEM", 0.12), ("DECODED / RAW SIGNALS", 0.36))
+    header_y = rect.y + 36
+    for title, offset in columns:
+      draw_text(font, title, rect.x + rect.width * offset, header_y, 15, MUTED)
+    for row, (can_location, label, summary, track_id) in enumerate(visible_rows):
+      y = header_y + 23 + row * 24
+      if track_id == selected_id:
+        rl.draw_rectangle_rec(rl.Rectangle(rect.x, y - 3, rect.width, 24), rl.Color(CYAN.r, CYAN.g, CYAN.b, 42))
+      elif row % 2:
+        rl.draw_rectangle_rec(rl.Rectangle(rect.x, y - 3, rect.width, 24), rl.Color(255, 255, 255, 8))
+      draw_text(font, can_location, rect.x + rect.width * 0.02, y, 15, TEXT)
+      draw_text(font, label, rect.x + rect.width * 0.12, y, 15, CYAN if track_id is None else TEXT)
+      draw_text(font, summary, rect.x + rect.width * 0.36, y, 15, TEXT)
+    return
+
   visible = sorted_tracks[scroll:scroll + capacity]
 
   draw_text(font, f"TRACK {table_mode.upper()}", rect.x + 12, rect.y + 8, 21, TEXT)
@@ -1143,21 +1579,29 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, motion_states: dict[int, 
         (f"{track.dRel:.1f}", 0.19, TEXT),
         (f"{track.yRel:+.1f}", 0.29, TEXT),
         (f"{track.vRel:+.1f}", 0.39, TEXT),
-        (f"{detail.relLatSpeed:+.1f}" if detail else "n/a", 0.50, TEXT if detail else MUTED),
+        (f"{detail.relLatSpeed:+.1f}" if detail and math.isfinite(detail.relLatSpeed) else "n/a",
+         0.50, TEXT if detail and math.isfinite(detail.relLatSpeed) else MUTED),
         (f"{track.aRel:+.1f}" if math.isfinite(track.aRel) else "n/a", 0.61, TEXT),
-        (f"{detail.absSpeed:.1f}" if detail else "n/a", 0.73, TEXT if detail else MUTED),
-        (str(detail.age) if detail else "n/a", 0.88, TEXT if detail else MUTED),
+        (f"{detail.absSpeed:.1f}" if detail and math.isfinite(detail.absSpeed) else "n/a",
+         0.73, TEXT if detail and math.isfinite(detail.absSpeed) else MUTED),
+        (str(detail.age) if detail and detail.age >= 0 else "n/a", 0.88, TEXT if detail and detail.age >= 0 else MUTED),
       )
     elif table_mode == "object":
       values = (
         (str(track.trackId), 0.02, TEXT),
         (can_location, 0.09, TEXT if can_address >= 0 else MUTED),
-        (f"{detail.width:.1f}" if detail else "n/a", 0.21, TEXT if detail else MUTED),
-        (f"{detail.length:.1f}" if detail else "n/a", 0.33, TEXT if detail else MUTED),
-        (f"{detail.orientationAngle:+.0f}" if detail else "n/a", 0.45, TEXT if detail else MUTED),
-        (dbc_track_state(detail.state) if detail else "n/a", 0.57, TEXT if detail else MUTED),
-        (str(detail.coastAge) if detail else "n/a", 0.74, TEXT if detail else MUTED),
-        (str(detail.trackCounter) if detail else "n/a", 0.87, TEXT if detail else MUTED),
+        (f"{detail.width:.1f}" if detail and math.isfinite(detail.width) else "n/a",
+         0.21, TEXT if detail and math.isfinite(detail.width) else MUTED),
+        (f"{detail.length:.1f}" if detail and math.isfinite(detail.length) else "n/a",
+         0.33, TEXT if detail and math.isfinite(detail.length) else MUTED),
+        (f"{detail.orientationAngle:+.0f}" if detail and math.isfinite(detail.orientationAngle) else "n/a",
+         0.45, TEXT if detail and math.isfinite(detail.orientationAngle) else MUTED),
+        (dbc_track_state(detail.state) if detail and detail.state >= 0 else "n/a",
+         0.57, TEXT if detail and detail.state >= 0 else MUTED),
+        (str(detail.coastAge) if detail and detail.coastAge >= 0 else "n/a",
+         0.74, TEXT if detail and detail.coastAge >= 0 else MUTED),
+        (str(detail.trackCounter) if detail and detail.trackCounter >= 0 else "n/a",
+         0.87, TEXT if detail and detail.trackCounter >= 0 else MUTED),
       )
     else:
       values = (
@@ -1542,8 +1986,8 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
       spec = SPEC_BY_RANGE.get((source.startAddress, source.endAddress))
       compact_name = source_name(source.startAddress, source.endAddress).removeprefix("RADAR_")
       source_parts = [
-        (compact_name, f"Radar CAN address range 0x{source.startAddress:X}-0x{source.endAddress:X}"),
-        (f"B{source.bus}", f"CAN bus {source.bus} carrying this radar source"),
+        (compact_name, f"CAN address range 0x{source.startAddress:X}-0x{source.endAddress:X}"),
+        (f"B{source.bus}", f"CAN bus {source.bus} carrying this source"),
       ]
       if spec is not None:
         source_parts.extend((
@@ -1551,7 +1995,8 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
           (f"{spec.message_size} B", "Radar CAN message payload size"),
         ))
       else:
-        source_parts.append(("unknown format", "No supported radar format matches this address range"))
+        details = source_details(source.startAddress, source.endAddress)
+        source_parts.append((details, details))
       source_hovered_tooltip = draw_status_parts(
         font, tuple(source_parts), source_x, row_y, 16, CYAN, mouse_position, " / ",
       )
@@ -2043,6 +2488,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     if use_can_source:
       selected_tracks = can_tracks
       tracks = decoded_tracks
+      raw_signals = can_tracks.rawSignals
       data_valid = can_data_seen
       data_alive = can_data_alive
       motion_states = decoded_motion_states
@@ -2054,6 +2500,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       data_valid = live_data_seen
       data_alive = sm.alive["liveTracks"]
       tracks = list(selected_tracks.points) if data_valid else []
+      raw_signals = ()
       motion_states = match_decoded_track_values(tracks, decoded_tracks, decoded_motion_states)
       track_signals = match_decoded_track_values(tracks, decoded_tracks, decoded_track_signals)
       track_locations = match_decoded_track_values(tracks, decoded_tracks, decoded_track_locations)
@@ -2069,12 +2516,18 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     tracks = filter_tracks(
       tracks, motion_states, track_locations, selected_tracks.trackSources, source_filters,
     )
+    current_table_mode = TABLE_MODES[table_mode_index]
     capacity = table_capacity(table_rect)
-    max_scroll = max(0, len(tracks) - capacity)
+    table_row_count = (
+      sum(int(track.trackId) in track_signals for track in tracks) + len(raw_signals)
+      if current_table_mode == "signals"
+      else len(tracks)
+    )
+    max_scroll = max(0, table_row_count - capacity)
     if rl.check_collision_point_rec(rl.get_mouse_position(), table_rect):
       table_scroll -= int(rl.get_mouse_wheel_move() * 3)
     table_scroll = int(np.clip(table_scroll, 0, max_scroll))
-    table_hover_id = None if composite_mode else table_hovered_track_id(
+    table_hover_id = None if composite_mode or current_table_mode == "signals" else table_hovered_track_id(
       tracks, table_rect, table_scroll, rl.get_mouse_position(),
     )
     if (table_hover_id is not None
@@ -2183,7 +2636,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     current_hovered_id = camera_hovered_id if camera_hovered_id is not None else top_down_hovered_id
     selected_track_id = retain_selected_track_id(selected_track_id, current_hovered_id, tracks)
 
-    if selected_track_id is not None:
+    if selected_track_id is not None and current_table_mode != "signals":
       sorted_tracks = sorted(tracks, key=lambda track: (track.dRel, track.trackId))
       hovered_row = next((index for index, track in enumerate(sorted_tracks)
                           if int(track.trackId) == selected_track_id), None)
@@ -2223,7 +2676,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     )
     table_mode = TABLE_MODES[table_mode_index]
     draw_track_table(font, table_rect, tracks, motion_states, table_scroll, selected_track_id, table_hover_id,
-                     track_signals, track_locations, table_mode)
+                     track_signals, track_locations, table_mode, raw_signals)
     clicked_action = draw_source_status(
       font, status_rect, selected_tracks, data_valid, data_alive,
       replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,

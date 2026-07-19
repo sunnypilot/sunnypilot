@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from dataclasses import dataclass
 import math
 import pyray as rl
-from opendbc.car.hyundai.radar_interface import RADAR_3A5_3C4
+from opendbc.car.hyundai.radar_interface import RADAR_235_248, RADAR_3A5_3C4
 from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
@@ -31,6 +31,7 @@ class ProjectedRadarTrack:
   radius: float
   color: object
   source_index: int
+  camera_object: bool
   track_id: int
 
 
@@ -62,7 +63,31 @@ def radar_track_source_index(track, sources) -> int:
   return 0
 
 
-def draw_radar_source_marker(center: rl.Vector2, radius: float, color: rl.Color, source_index: int) -> None:
+def is_camera_object_source(source) -> bool:
+  return source.startAddress == RADAR_235_248.start_addr and source.endAddress == RADAR_235_248.end_addr
+
+
+def radar_track_source(track, sources):
+  address = int(track.sourceAddress)
+  bus = int(track.sourceBus)
+  if address == 0:
+    return None
+  return next((
+    source for source in sources
+    if source.startAddress <= address <= source.endAddress and source.bus == bus
+  ), None)
+
+
+def radar_source_label(source) -> str:
+  prefix = "CAM " if is_camera_object_source(source) else ""
+  return f"{prefix}{source.startAddress:X}-{source.endAddress:X}"
+
+
+def draw_radar_source_marker(center: rl.Vector2, radius: float, color: rl.Color, source_index: int,
+                             camera_object: bool = False) -> None:
+  if camera_object:
+    rl.draw_poly(center, 3, radius, -90.0, color)
+    return
   if source_index <= 0:
     rl.draw_circle(int(center.x), int(center.y), radius, color)
     return
@@ -113,7 +138,7 @@ def format_radar_tracks_onroad_columns(live_tracks, v_ego: float = 0.0) -> tuple
   if not sources:
     return "", "none", "", "", "", ""
 
-  range_text = "\n".join(f"{source.startAddress:X}-{source.endAddress:X}" for source in sources)
+  range_text = "\n".join(radar_source_label(source) for source in sources)
   count_text = "\n".join(str(source.trackCount) for source in sources)
   motion_states = [int(track.motionState) for track in live_tracks.points]
 
@@ -283,12 +308,14 @@ class RadarTracks:
       radius = max(1, track_size - 5) if stationary else track_size
       if not measured:
         radius = max(1, radius - COASTED_RADIUS_REDUCTION)
+      source = radar_track_source(track, sources)
       projected_tracks.append(ProjectedRadarTrack(
         x=pt[0],
         y=pt[1],
         radius=radius,
         color=color,
         source_index=radar_track_source_index(track, sources),
+        camera_object=source is not None and is_camera_object_source(source),
         track_id=int(track.trackId),
       ))
 
@@ -307,7 +334,7 @@ class RadarTracks:
         rl.draw_ring(center, track.radius + 2, track.radius + 5, 0, 360, 24, highlight_color)
         highlighted_positions[track.track_id] = (x, y)
       draw_radar_source_marker(
-        rl.Vector2(x, y), track.radius, track.color, track.source_index,
+        rl.Vector2(x, y), track.radius, track.color, track.source_index, track.camera_object,
       )
 
     return highlighted_positions
