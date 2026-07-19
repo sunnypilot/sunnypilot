@@ -12,3 +12,6 @@
 
 selfdrive/car/tests/test_models_segs.txt filter=lfs diff=lfs merge=lfs -text
 common/hardware/tici/updater filter=lfs diff=lfs merge=lfs -text
+
+# Small vendored Leaflet UI icons are kept directly in Git.
+tools/clustermaps/web/vendor/leaflet/images/*.png -filter -diff -merge -text

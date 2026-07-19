@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="An offline-first atlas of road impacts, roughness, body motion, and driving events from openpilot rlogs.">
+    <title>clustermaps</title>
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <link rel="stylesheet" href="styles.css?v=5">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>clustermaps</h1>
+          </div>
+        </div>
+        <div class="atlas-stats" aria-label="Atlas summary">
+          <div><strong id="route-count">—</strong><span>routes</span></div>
+          <div><strong id="driver-count">—</strong><span>drivers</span></div>
+          <div><strong id="distance-total">—</strong><span>mapped</span></div>
+          <div><strong id="observation-count">—</strong><span>signals</span></div>
+        </div>
+        <div class="data-state">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="data-status">Loading local cache…</span>
+        </div>
+      </header>
+
+      <main>
+        <aside class="sidebar" aria-label="Map controls">
+          <section class="control-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Legend</p>
+                <h2>Sensor layers</h2>
+              </div>
+            </div>
+            <div class="layer-list">
+              <label class="layer-control">
+                <input type="checkbox" data-layer="route" checked>
+                <span class="legend-line route-line" aria-hidden="true"></span>
+                <span><strong>Route traces</strong><small>GPS path by driver</small></span>
+                <output data-count="route">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="roughness" checked>
+                <span class="legend-gradient" aria-hidden="true"></span>
+                <span><strong>Road roughness</strong><small>2-second vertical vibration</small></span>
+                <output data-count="roughness">0</output>
+              </label>
+              <div class="roughness-scale" aria-label="Road roughness color scale">
+                <span>Smoother</span><i aria-hidden="true"></i><span>Rougher</span>
+              </div>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="impact" checked>
+                <span class="legend-dot impact-dot" aria-hidden="true"></span>
+                <span><strong>Sharp impacts</strong><small>Adaptive IMU peaks</small></span>
+                <output data-count="impact">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="hardAcceleration" checked>
+                <span class="legend-dot acceleration-dot" aria-hidden="true"></span>
+                <span><strong>Hard acceleration</strong><small>Sustained longitudinal force</small></span>
+                <output data-count="hardAcceleration">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="hardBraking" checked>
+                <span class="legend-dot braking-dot" aria-hidden="true"></span>
+                <span><strong>Hard braking</strong><small>Sustained deceleration</small></span>
+                <output data-count="hardBraking">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="bodyMotion">
+                <span class="legend-dot motion-dot" aria-hidden="true"></span>
+                <span><strong>Body motion</strong><small>Roll and pitch activity</small></span>
+                <output data-count="bodyMotion">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="gps">
+                <span class="legend-dot gps-dot" aria-hidden="true"></span>
+                <span><strong>GPS samples</strong><small>Recorded location cadence</small></span>
+                <output data-count="gps">0</output>
+              </label>
+              <p class="layer-group-title">Deep telemetry</p>
+              <label class="layer-control repeated-control">
+                <input type="checkbox" data-layer="repeated" checked>
+                <span class="legend-ring" aria-hidden="true"></span>
+                <span><strong>Repeated locations</strong><small>Seen on 2+ imported routes</small></span>
+                <output data-count="repeated">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="imu">
+                <span class="legend-dot imu-dot" aria-hidden="true"></span>
+                <span><strong>Raw IMU vectors</strong><small>Acceleration + rotation at 5 Hz</small></span>
+                <output data-count="imu">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="vehicle">
+                <span class="legend-dot vehicle-dot" aria-hidden="true"></span>
+                <span><strong>Vehicle dynamics</strong><small>Wheels, steering, pedals, yaw</small></span>
+                <output data-count="vehicle">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="pose">
+                <span class="legend-dot pose-dot" aria-hidden="true"></span>
+                <span><strong>Fused pose</strong><small>Filtered acceleration + rotation</small></span>
+                <output data-count="pose">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="visualOdometry">
+                <span class="legend-dot odometry-dot" aria-hidden="true"></span>
+                <span><strong>Visual odometry</strong><small>Camera motion + uncertainty</small></span>
+                <output data-count="visualOdometry">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="controls">
+                <span class="legend-dot controls-dot" aria-hidden="true"></span>
+                <span><strong>Path curvature</strong><small>Estimated versus desired path</small></span>
+                <output data-count="controls">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="calibration">
+                <span class="legend-dot calibration-dot" aria-hidden="true"></span>
+                <span><strong>Vehicle calibration</strong><small>Roll, steer ratio, stiffness</small></span>
+                <output data-count="calibration">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="roadVision">
+                <span class="legend-dot vision-dot" aria-hidden="true"></span>
+                <span><strong>Road vision</strong><small>Lanes, action, frame health</small></span>
+                <output data-count="roadVision">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="radar">
+                <span class="legend-dot radar-dot" aria-hidden="true"></span>
+                <span><strong>Radar leads</strong><small>Distance + relative motion</small></span>
+                <output data-count="radar">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="sound">
+                <span class="legend-dot sound-dot" aria-hidden="true"></span>
+                <span><strong>Cabin sound</strong><small>A-weighted sound pressure</small></span>
+                <output data-count="sound">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="magnetic">
+                <span class="legend-dot magnetic-dot" aria-hidden="true"></span>
+                <span><strong>Magnetic field</strong><small>Three-axis field magnitude</small></span>
+                <output data-count="magnetic">0</output>
+              </label>
+              <label class="layer-control">
+                <input type="checkbox" data-layer="thermal">
+                <span class="legend-dot thermal-dot" aria-hidden="true"></span>
+                <span><strong>Thermal + power</strong><small>IMU/device temperature and load</small></span>
+                <output data-count="thermal">0</output>
+              </label>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Coverage</p>
+                <h2>Imported drives</h2>
+              </div>
+              <div class="route-actions">
+                <button class="text-button" id="select-all-routes" type="button">Select all</button>
+                <button class="text-button" id="unselect-all-routes" type="button">Unselect all</button>
+                <button class="text-button" id="fit-all" type="button">Fit all</button>
+              </div>
+            </div>
+            <div id="route-list" class="route-list">
+              <div class="route-skeleton"></div>
+              <div class="route-skeleton short"></div>
+            </div>
+          </section>
+
+          <section class="control-section service-section">
+            <details class="service-catalog">
+              <summary>
+                <span>
+                  <span class="eyebrow">Rlog inventory</span>
+                  <strong>All recorded services</strong>
+                </span>
+                <output id="service-count">0</output>
+              </summary>
+              <p>Every service is listed even when its full payload is too large, redundant, transient, or sensitive for browser export.</p>
+              <div id="service-list" class="service-list"></div>
+            </details>
+          </section>
+
+          <section class="import-help">
+            <p class="eyebrow">Add data</p>
+            <h2>Route manager</h2>
+            <form id="route-manager">
+              <label class="field-label" for="route-input">comma route</label>
+              <div class="field-row">
+                <input id="route-input" name="route" required autocomplete="off" placeholder="dongle/route">
+                <button id="discover-route" type="submit">Load segments</button>
+              </div>
+              <label class="field-label" for="route-label">Local label <span>optional</span></label>
+              <input id="route-label" name="label" maxlength="120" autocomplete="off" placeholder="Morning survey">
+            </form>
+            <div id="segment-picker" class="segment-picker" hidden>
+              <div class="segment-heading">
+                <strong id="segment-summary">0 segments</strong>
+                <span>
+                  <button id="select-all-segments" type="button">All</button>
+                  <button id="select-no-segments" type="button">None</button>
+                </span>
+              </div>
+              <div id="segment-list" class="segment-list"></div>
+              <button id="import-selected" class="primary-button" type="button">Import selected segments</button>
+            </div>
+            <div id="import-progress" class="import-progress" hidden>
+              <div><strong id="progress-stage">Preparing import</strong><output id="progress-percent">0%</output></div>
+              <progress id="progress-bar" max="100" value="0">0%</progress>
+              <p id="progress-detail">Full rlogs are parsed locally.</p>
+            </div>
+            <p id="route-manager-status" class="route-manager-status" aria-live="polite">Imports run locally and are added to this atlas.</p>
+          </section>
+
+          <section class="method-note">
+            <p class="eyebrow">How to read this</p>
+            <p>Scores are route-adaptive screening signals, not confirmed pothole labels. Repeated observations across independent drives are the strongest evidence.</p>
+          </section>
+        </aside>
+
+        <section class="map-panel" aria-label="Road quality map">
+          <div id="map" role="application" aria-label="Interactive map of road-quality observations"></div>
+          <div class="map-toolbar">
+            <div class="basemap-picker" role="group" aria-label="Basemap">
+              <button type="button" data-basemap="streets" aria-pressed="true">Streets</button>
+              <button type="button" data-basemap="satellite" aria-pressed="false">Satellite</button>
+              <button type="button" data-basemap="data" aria-pressed="false">Data only</button>
+            </div>
+            <button id="visuals-toggle" type="button" aria-expanded="false" aria-controls="visuals-panel">Visuals</button>
+            <button id="reset-view" type="button">Reset view</button>
+          </div>
+          <section id="visuals-panel" class="visuals-panel" aria-label="Map visualization options" hidden>
+            <div class="visuals-heading">
+              <div>
+                <p class="eyebrow">Map rendering</p>
+                <h2>Visual styles</h2>
+              </div>
+              <button id="visuals-close" type="button" aria-label="Close visualization options">×</button>
+            </div>
+            <div class="visual-presets" role="group" aria-label="Visualization presets">
+              <button type="button" data-viz-preset="signal" aria-pressed="true">Signal</button>
+              <button type="button" data-viz-preset="heat" aria-pressed="false">Heat</button>
+              <button type="button" data-viz-preset="corridor" aria-pressed="false">Corridor</button>
+              <button type="button" data-viz-preset="night" aria-pressed="false">Night</button>
+            </div>
+            <label class="visual-range" for="visual-width">
+              <span>Road width <output id="visual-width-value">1.0×</output></span>
+              <input id="visual-width" type="range" min="0.7" max="3.5" value="1" step="0.1">
+            </label>
+            <label class="visual-range" for="visual-intensity">
+              <span>Signal intensity <output id="visual-intensity-value">80%</output></span>
+              <input id="visual-intensity" type="range" min="0.25" max="1" value="0.8" step="0.05">
+            </label>
+            <div class="visual-switches">
+              <label>
+                <input id="route-glow-toggle" type="checkbox">
+                <span><strong>Coverage glow</strong><small>Bleed routes beyond the road centerline</small></span>
+              </label>
+              <label>
+                <input id="impact-halo-toggle" type="checkbox">
+                <span><strong>Impact heat halos</strong><small>Overlaps become stronger problem areas</small></span>
+              </label>
+              <label>
+                <input id="point-bleed-toggle" type="checkbox">
+                <span><strong>Point bleed</strong><small>Blend neighboring sensor samples into a continuous field</small></span>
+              </label>
+              <label>
+                <input id="night-map-toggle" type="checkbox">
+                <span><strong>High-contrast map</strong><small>Dark background for bright sensor signals</small></span>
+              </label>
+            </div>
+          </section>
+          <div id="map-scale-note" class="map-scale-note">Street tiles require a connection. Sensor overlays remain available offline.</div>
+
+          <article id="inspector" class="inspector" aria-live="polite">
+            <button id="inspector-close" class="inspector-close" type="button" aria-label="Close observation details">×</button>
+            <p class="eyebrow" id="inspector-kicker">Selected observation</p>
+            <h2 id="inspector-title">Choose a point on the map</h2>
+            <p id="inspector-copy">Impact, roughness, motion, and driving-event markers reveal their measurements here.</p>
+            <dl id="inspector-metrics"></dl>
+          </article>
+
+          <div id="map-message" class="map-message" hidden>
+            <strong>Local cache unavailable</strong>
+            <span>Import an rlog and open this site through the local map server.</span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <noscript>This map requires JavaScript to render the cached route data.</noscript>
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script type="module" src="app.js?v=10"></script>
+  </body>
+</html>
