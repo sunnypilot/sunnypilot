@@ -15,6 +15,7 @@ import subprocess
 import sys
 import termios
 import time
+import warnings
 from dataclasses import dataclass
 import fcntl
 
@@ -81,23 +82,41 @@ SPEC_BY_RANGE = {
 }
 SPEC_BY_NAME = {spec.name: spec for spec in HYUNDAI_RADAR_TRACK_SPECS}
 PREFERRED_RADAR_SOURCE = "RADAR_3A5_3C4"
-DEFAULT_SOURCE_FILTERS = (False, False, False)  # hide moving, stationary, unknown
+DEFAULT_SOURCE_FILTERS = (False, True, True)  # hide moving, stationary, unknown
+RESEARCH_BUSES = (0, 1, 2)
 RadarSourceKey = tuple[int, int, int]
 RADAR_DETAIL_SIGNALS = {
+  "RADAR_500_53F": {
+    "UNKNOWN_1", "ONCOMING_ESR", "GROUPING_CHANGED_ESR", "REL_LAT_SPEED_ESR", "AZIMUTH", "STATE",
+    "LONG_DIST", "REL_ACCEL", "REL_ACCEL_ESR", "WIDTH_ESR", "COUNTER", "BRIDGE_OBJECT_ESR", "REL_SPEED",
+    "MED_RANGE_MODE_ESR",
+  },
   "RADAR_210_21F": {
     f"{prefix}{signal}"
     for prefix in ("1_", "2_")
     for signal in (
-      "MOTION_STATE", "TRACK_QUALITY", "AGE", "COAST_AGE", "STATE", "STATE_ALT", "RCS",
-      "REL_LAT_SPEED", "NEW_SIGNAL_4", "NEW_SIGNAL_18", "OBJECT_ID",
+      "STATE_ALT", "MOTION_STATE", "TRACK_QUALITY", "AGE", "COAST_AGE", "STATE", "RCS",
+      "LONG_DIST", "LAT_DIST", "REL_SPEED", "NEW_SIGNAL_4", "REL_LAT_SPEED", "REL_ACCEL",
+      "NEW_SIGNAL_18", "OBJECT_ID",
     )
+  } | {"CHECKSUM", "COUNTER"},
+  "RADAR_235_248": {
+    "CHECKSUM", "COUNTER", "QUALITY", "AGE", "MOTION_STATE", "OBJECT_ID", "WIDTH", "CLASSIFICATION",
+    "LONG_DIST", "LAT_DIST", "REL_SPEED", "REL_LAT_SPEED", "REL_ACCEL", "UNKNOWN_1", "UNKNOWN_2",
+    "UNKNOWN_3", "AZIMUTH",
   },
   "RADAR_3A5_3C4": {
-    "MOTION_STATE", "TRACK_QUALITY", "AGE", "COAST_AGE", "STATE", "STATE_ALT", "RCS",
-    "REL_LAT_SPEED", "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE", "TRACK_COUNTER",
+    "CHECKSUM", "COUNTER", "STATE_ALT", "MOTION_STATE", "TRACK_COUNTER", "TRACK_QUALITY", "AGE",
+    "COAST_AGE", "STATE", "RCS", "LONG_DIST", "LAT_DIST", "REL_SPEED", "REL_LAT_SPEED", "REL_ACCEL",
+    "ABS_SPEED", "WIDTH", "LENGTH", "ORIENTATION_ANGLE",
     "NEW_SIGNAL_4", "NEW_SIGNAL_5", "NEW_SIGNAL_12", "NEW_SIGNAL_13", "NEW_SIGNAL_14",
     "NEW_SIGNAL_15", "NEW_SIGNAL_16", "NEW_SIGNAL_17", "NEW_SIGNAL_18",
   },
+  "RADAR_602_617": {
+    f"{prefix}{signal}"
+    for prefix in ("1_", "2_")
+    for signal in ("DISTANCE", "LATERAL", "SPEED")
+  } | {"UNKNOWN_2", "COUNTER"},
 }
 TABLE_MODES = ("motion", "kinematics", "object", "signals")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
@@ -340,40 +359,45 @@ def replay_timeline_worker(route: str, output_queue) -> None:
   end_time = route_offset
   car_fingerprint = ""
   try:
-    for message in LogReader(route, default_mode=ReadMode.QLOG, only_union_types=True):
-      mono_time = int(message.logMonoTime)
-      if first_mono_time is None:
-        first_mono_time = mono_time
-      seconds = route_offset + (mono_time - first_mono_time) / 1e9
-      end_time = max(end_time, seconds)
-      message_type = message.which()
-      if message_type == "carParams":
-        car_fingerprint = str(message.carParams.carFingerprint)
-      elif message_type == "userBookmark":
-        entries.append([seconds, seconds, "bookmark", "USER TAG", ""])
-      elif message_type == "selfdriveState":
-        state = message.selfdriveState
-        if engagement_index is not None:
-          entries[engagement_index][1] = seconds
-        if state.enabled:
-          if engagement_index is None:
-            engagement_index = len(entries)
-            entries.append([seconds, seconds, "engaged", "", ""])
-        else:
-          engagement_index = None
+    # The qlog may still be downloading when this metadata worker starts.
+    # LogReader reports the incomplete tail as corruption even though replay can
+    # continue streaming the available prefix.
+    with warnings.catch_warnings():
+      warnings.filterwarnings("ignore", message="Corrupted events detected", category=RuntimeWarning)
+      for message in LogReader(route, default_mode=ReadMode.QLOG, only_union_types=True):
+        mono_time = int(message.logMonoTime)
+        if first_mono_time is None:
+          first_mono_time = mono_time
+        seconds = route_offset + (mono_time - first_mono_time) / 1e9
+        end_time = max(end_time, seconds)
+        message_type = message.which()
+        if message_type == "carParams":
+          car_fingerprint = str(message.carParams.carFingerprint)
+        elif message_type == "userBookmark":
+          entries.append([seconds, seconds, "bookmark", "USER TAG", ""])
+        elif message_type == "selfdriveState":
+          state = message.selfdriveState
+          if engagement_index is not None:
+            entries[engagement_index][1] = seconds
+          if state.enabled:
+            if engagement_index is None:
+              engagement_index = len(entries)
+              entries.append([seconds, seconds, "engaged", "", ""])
+          else:
+            engagement_index = None
 
-        if alert_index is not None:
-          entries[alert_index][1] = seconds
-        if int(state.alertSize.raw) != 0:
-          alert_kind = ("info", "warning", "critical")[int(state.alertStatus.raw)]
-          next_signature = (alert_kind, str(state.alertText1), str(state.alertText2))
-          if alert_signature != next_signature:
-            alert_index = len(entries)
-            alert_signature = next_signature
-            entries.append([seconds, seconds, alert_kind, str(state.alertText1), str(state.alertText2)])
-        else:
-          alert_index = None
-          alert_signature = None
+          if alert_index is not None:
+            entries[alert_index][1] = seconds
+          if int(state.alertSize.raw) != 0:
+            alert_kind = ("info", "warning", "critical")[int(state.alertStatus.raw)]
+            next_signature = (alert_kind, str(state.alertText1), str(state.alertText2))
+            if alert_signature != next_signature:
+              alert_index = len(entries)
+              alert_signature = next_signature
+              entries.append([seconds, seconds, alert_kind, str(state.alertText1), str(state.alertText2)])
+          else:
+            alert_index = None
+            alert_signature = None
     timeline_entries = tuple(
       ReplayTimelineEntry(float(start), float(end), str(kind), str(title), str(detail))
       for start, end, kind, title, detail in entries
@@ -441,6 +465,7 @@ class DisplayTrackSignals:
   stateAlt: int
   trackCounter: int
   signalSummary: str
+  allSignals: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -470,6 +495,8 @@ class ResearchCanDecoder:
 
   def update(self, can_messages) -> None:
     for address, dat, bus in can_messages:
+      if int(bus) not in RESEARCH_BUSES:
+        continue
       for spec in RESEARCH_SOURCE_SPECS:
         if not spec.start_address <= address <= spec.end_address:
           continue
@@ -570,7 +597,7 @@ class ResearchCanDecoder:
         f"VUP:{cls._little(raw, 27, 1)}",
         f"FACT:{cls._little(raw, 32, 3)}/{cls._little(raw, 35, 3)}",
         f"FLAGS:{cls._little(raw, 38, 1)}/{cls._little(raw, 39, 1)}",
-        f"MIS:{cls._little(raw, 40, 8, signed=True)}/{cls._little(raw, 56, 8, signed=True)}",
+        f"MISC:{cls._little(raw, 40, 8, signed=True)}/{cls._little(raw, 56, 8, signed=True)}",
         f"UPDATES:{cls._little(raw, 48, 8)}",
       ))
     return f"RAW:{raw:016X}"
@@ -633,6 +660,16 @@ class ResearchCanDecoder:
                 f"CTR:{self._little(raw, 56, 4)}",
                 f"CRC:{self._little(raw, 60, 4):X}",
               )),
+              allSignals=(
+                ("DISTANCE", format_signal_value(d_rel)),
+                ("LATERAL", format_signal_value(y_rel)),
+                ("SPEED", format_signal_value(v_rel)),
+                ("ID", str(object_id)),
+                ("SOMETHING_1", str(self._little(raw, 42, 8) - 128)),
+                ("SOMETHING_2", str(self._little(raw, 50, 6) - 32)),
+                ("COUNTER", str(self._little(raw, 56, 4))),
+                ("CHECKSUM", str(self._little(raw, 60, 4))),
+              ),
             ))
             track_locations[track_id] = (address, bus)
             track_count += 1
@@ -676,6 +713,21 @@ class ResearchCanDecoder:
                 f"CAT:{category}", f"RCS:{rcs}", f"U87:{unknown_87}",
                 f"U108:{unknown_108:03X}", f"U118:{unknown_118:03X}", f"U128:{unknown_128:016X}",
               )),
+              allSignals=(
+                ("CHECKSUM", str(raw & 0xFFFF)),
+                ("COUNTER", str((raw >> 16) & 0xFF)),
+                ("UNKNOWN_CATEGORY", str(category)),
+                ("UNKNOWN_BITS_26_55", str((raw >> 26) & 0x3FFFFFFF)),
+                ("RCS", str(rcs)),
+                ("LONG_DIST", format_signal_value(d_rel)),
+                ("LAT_DIST", format_signal_value(y_rel)),
+                ("UNKNOWN_BIT_87", str(unknown_87)),
+                ("REL_SPEED", format_signal_value(v_rel)),
+                ("REL_LAT_SPEED", format_signal_value(self._signed((raw >> 98) & 0x3FF, 10) * 0.05)),
+                ("UNKNOWN_BITS_108_117", str(unknown_108)),
+                ("UNKNOWN_BITS_118_127", str(unknown_118)),
+                ("UNKNOWN_BITS_128_191", str(unknown_128)),
+              ),
             ))
             track_locations[track_id] = (address, bus)
             track_count += 1
@@ -814,8 +866,6 @@ def radar_source_key(source) -> RadarSourceKey:
 
 def source_filter_state(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
                         source_key: RadarSourceKey) -> tuple[bool, bool, bool]:
-  if source_key[:2] == (0x3D0, 0x3D4):
-    return source_filters.get(source_key, (False, True, False))
   return source_filters.get(source_key, DEFAULT_SOURCE_FILTERS)
 
 
@@ -834,12 +884,20 @@ def dbc_motion_class(motion_state: int | None) -> str:
   )
 
 
+def dbc_motion_category(motion_state: int | None) -> str:
+  if motion_state in (2, 4):
+    return "moving"
+  if motion_state in (1, 3):
+    return "stationary"
+  return "unknown"
+
+
 def dbc_motion_color(motion_state: int | None) -> rl.Color:
-  return {0: MUTED, 1: WHITE, 2: PURPLE}.get(motion_state, MUTED)
+  return {"moving": PURPLE, "stationary": WHITE}.get(dbc_motion_category(motion_state), MUTED)
 
 
 def dbc_unknown_raw_label(motion_state: int | None) -> str | None:
-  if motion_state in (1, 2):
+  if dbc_motion_category(motion_state) != "unknown":
     return None
   return "DBC unknown" if motion_state is None else f"DBC raw={motion_state}"
 
@@ -858,10 +916,10 @@ def filter_tracks(tracks, motion_states: dict[int, int], track_locations: dict[i
       if source.startAddress <= address <= source.endAddress and source.bus == bus
     ), None)
     filters = source_filter_state(source_filters, radar_source_key(source)) if source is not None else DEFAULT_SOURCE_FILTERS
-    motion_state = motion_states.get(int(track.trackId))
-    if ((filters[0] and motion_state == 2)
-        or (filters[1] and motion_state == 1)
-        or (filters[2] and motion_state not in (1, 2))):
+    category = dbc_motion_category(motion_states.get(int(track.trackId)))
+    if ((filters[0] and category == "moving")
+        or (filters[1] and category == "stationary")
+        or (filters[2] and category == "unknown")):
       continue
     filtered_tracks.append(track)
   return filtered_tracks
@@ -893,6 +951,25 @@ def dbc_signal_value(message, prefix: str, name: str, default=0):
   return message.get(f"{prefix}{name}", default)
 
 
+def format_signal_value(value) -> str:
+  if isinstance(value, float):
+    if not math.isfinite(value):
+      return "n/a"
+    if value.is_integer():
+      return str(int(value))
+    return f"{value:.6g}"
+  return str(value)
+
+
+def dbc_signal_rows(message, prefix: str = "") -> tuple[tuple[str, str], ...]:
+  rows = []
+  for name, value in message.items():
+    if prefix and name.startswith(("1_", "2_")) and not name.startswith(prefix):
+      continue
+    rows.append((name.removeprefix(prefix), format_signal_value(value)))
+  return tuple(rows)
+
+
 def get_dbc_track_details(
   radar_interface: RadarInterface,
 ) -> tuple[dict[int, int], tuple[DisplayTrackSignals, ...], dict[int, tuple[int, int]]]:
@@ -919,46 +996,54 @@ def get_dbc_track_details(
     if radar_parser is None:
       continue
 
-    prefix = f"{stored_address % 2 + 1}_" if spec.name == "RADAR_210_21F" else ""
+    prefix = f"{stored_address % 2 + 1}_" if len(spec.track_prefixes) > 1 else ""
     message = radar_parser.parser.vl[f"RADAR_TRACK_{can_address:x}"]
     motion_signal = f"{prefix}MOTION_STATE"
     if motion_signal in message:
-      states[int(point.trackId)] = int(message[motion_signal])
+      motion_state = int(message[motion_signal])
+      if spec.name == "RADAR_235_248":
+        motion_state = 1 if motion_state in (1, 2, 3, 6) else 2 if motion_state in (5, 8, 9) else 0
+      states[int(point.trackId)] = motion_state
+    elif spec.name == "RADAR_500_53F" and int(message.get("ONCOMING_ESR", 0)):
+      states[int(point.trackId)] = 4
 
-      if spec.name == "RADAR_210_21F":
-        signal_summary = " ".join((
-          f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
-          f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
-          f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
-          f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
-          f"ID:{int(dbc_signal_value(message, prefix, 'OBJECT_ID'))}",
-        ))
-      else:
-        geometry = "/".join(
-          str(int(dbc_signal_value(message, prefix, f"NEW_SIGNAL_{index}"))) for index in range(12, 18)
-        )
-        signal_summary = " ".join((
-          f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
-          f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
-          f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
-          f"U5:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_5'))}",
-          f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
-          f"G12-17:{geometry}",
-        ))
-      details.append(DisplayTrackSignals(
-        trackId=int(point.trackId),
-        relLatSpeed=float(dbc_signal_value(message, prefix, "REL_LAT_SPEED", float("nan"))),
-        absSpeed=float(dbc_signal_value(message, prefix, "ABS_SPEED", float("nan"))),
-        width=float(dbc_signal_value(message, prefix, "WIDTH", float("nan"))),
-        length=float(dbc_signal_value(message, prefix, "LENGTH", float("nan"))),
-        orientationAngle=float(dbc_signal_value(message, prefix, "ORIENTATION_ANGLE", float("nan"))),
-        age=int(dbc_signal_value(message, prefix, "AGE", -1)),
-        coastAge=int(dbc_signal_value(message, prefix, "COAST_AGE", -1)),
-        state=int(dbc_signal_value(message, prefix, "STATE", -1)),
-        stateAlt=int(dbc_signal_value(message, prefix, "STATE_ALT", -1)),
-        trackCounter=int(dbc_signal_value(message, prefix, "TRACK_COUNTER", -1)),
-        signalSummary=signal_summary,
+    if spec.name == "RADAR_210_21F":
+      signal_summary = " ".join((
+        f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
+        f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
+        f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
+        f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
+        f"ID:{int(dbc_signal_value(message, prefix, 'OBJECT_ID'))}",
       ))
+    elif spec.name == "RADAR_3A5_3C4":
+      geometry = "/".join(
+        str(int(dbc_signal_value(message, prefix, f"NEW_SIGNAL_{index}"))) for index in range(12, 18)
+      )
+      signal_summary = " ".join((
+        f"Q:{int(dbc_signal_value(message, prefix, 'TRACK_QUALITY'))}",
+        f"RCS:{int(dbc_signal_value(message, prefix, 'RCS'))}",
+        f"U4:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_4'))}",
+        f"U5:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_5'))}",
+        f"U18:{int(dbc_signal_value(message, prefix, 'NEW_SIGNAL_18'))}",
+        f"G12-17:{geometry}",
+      ))
+    else:
+      signal_summary = " ".join(f"{name}:{value}" for name, value in dbc_signal_rows(message, prefix)[:6])
+    details.append(DisplayTrackSignals(
+      trackId=int(point.trackId),
+      relLatSpeed=float(dbc_signal_value(message, prefix, "REL_LAT_SPEED", float("nan"))),
+      absSpeed=float(dbc_signal_value(message, prefix, "ABS_SPEED", float("nan"))),
+      width=float(dbc_signal_value(message, prefix, "WIDTH", float("nan"))),
+      length=float(dbc_signal_value(message, prefix, "LENGTH", float("nan"))),
+      orientationAngle=float(dbc_signal_value(message, prefix, "ORIENTATION_ANGLE", float("nan"))),
+      age=int(dbc_signal_value(message, prefix, "AGE", -1)),
+      coastAge=int(dbc_signal_value(message, prefix, "COAST_AGE", -1)),
+      state=int(dbc_signal_value(message, prefix, "STATE", -1)),
+      stateAlt=int(dbc_signal_value(message, prefix, "STATE_ALT", -1)),
+      trackCounter=int(dbc_signal_value(message, prefix, "TRACK_COUNTER", -1)),
+      signalSummary=signal_summary,
+      allSignals=dbc_signal_rows(message, prefix),
+    ))
   return states, tuple(details), locations
 
 
@@ -1239,11 +1324,17 @@ def hovered_track_id(tracks, geometry, mouse: rl.Vector2) -> int | None:
 
 
 def retain_selected_track_id(selected_id: int | None, hovered_id: int | None, tracks) -> int | None:
-  if hovered_id is not None:
-    return hovered_id
+  del hovered_id
   if selected_id is not None and any(int(track.trackId) == selected_id for track in tracks):
     return selected_id
   return None
+
+
+def toggle_selected_track_id(selected_id: int | None, clicked_id: int | None, tracks) -> int | None:
+  selected_id = retain_selected_track_id(selected_id, None, tracks)
+  if clicked_id is None:
+    return selected_id
+  return None if selected_id == clicked_id else clicked_id
 
 
 def track_source_index(track, track_locations: dict[int, tuple[int, int]], sources) -> int:
@@ -1353,7 +1444,9 @@ def draw_fused_camera_mode(font, road_camera_view: CameraView, wide_camera_view:
     mouse_position,
   ) if road_hovered_id is None and rl.check_collision_point_rec(mouse_position, wide_content_rect) else None
   current_hovered_id = road_hovered_id if road_hovered_id is not None else wide_hovered_id
-  selected_id = retain_selected_track_id(selected_id, current_hovered_id, tracks)
+  selected_id = retain_selected_track_id(selected_id, None, tracks)
+  if current_hovered_id is not None and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
+    selected_id = toggle_selected_track_id(selected_id, current_hovered_id, tracks)
 
   draw_camera_tracks(font, wide_calibration, wide_tracks, wide_content_rect, show_labels, motion_states,
                      track_locations, sources, wide_projection_height, wide_hovered_id, selected_id)
@@ -1482,6 +1575,40 @@ def dbc_track_state(state: int) -> str:
   return {0: "empty", 1: "tent 1", 2: "tent 2", 3: "measured", 4: "coasted", 7: "unresolved"}.get(state, str(state))
 
 
+def selected_signal_row_count(detail: DisplayTrackSignals | None) -> int:
+  return math.ceil(len(detail.allSignals) / 2) if detail is not None else 0
+
+
+def draw_selected_signal_inspector(font, rect: rl.Rectangle, track, detail: DisplayTrackSignals,
+                                   can_location: str, motion_state: int | None, scroll: int) -> None:
+  rows = tuple(detail.allSignals[index:index + 2] for index in range(0, len(detail.allSignals), 2))
+  capacity = table_capacity(rect)
+  visible_rows = rows[scroll:scroll + capacity]
+  title = f"TRACK {track.trackId}  ALL SIGNALS"
+  subtitle = " ".join((
+    can_location, dbc_motion_class(motion_state),
+    f"DIST {track.dRel:.2f}m", f"LAT {track.yRel:+.2f}m", f"REL V {track.vRel:+.2f}m/s",
+  ))
+  draw_text(font, title, rect.x + 12, rect.y + 8, 21, CYAN)
+  draw_text(font, subtitle, rect.x + 300, rect.y + 11, 15, TEXT)
+  draw_text(font, "click selected point again to close", rect.x + 12, rect.y + 36, 14, MUTED)
+  if rows:
+    draw_text(font, f"{scroll + 1}-{scroll + len(visible_rows)} / {len(rows)} rows",
+              rect.x + rect.width - 150, rect.y + 36, 14, MUTED)
+  header_y = rect.y + 58
+  columns = (("SIGNAL", 0.02), ("VALUE", 0.31), ("SIGNAL", 0.52), ("VALUE", 0.81))
+  for label, offset in columns:
+    draw_text(font, label, rect.x + rect.width * offset, header_y, 14, MUTED)
+  for row, signal_pairs in enumerate(visible_rows):
+    y = header_y + 22 + row * 24
+    if row % 2:
+      rl.draw_rectangle_rec(rl.Rectangle(rect.x, y - 3, rect.width, 24), rl.Color(255, 255, 255, 8))
+    for pair_index, (name, value) in enumerate(signal_pairs):
+      base = 0.02 if pair_index == 0 else 0.52
+      draw_text(font, name, rect.x + rect.width * base, y, 15, TEXT)
+      draw_text(font, value, rect.x + rect.width * (base + 0.29), y, 15, CYAN)
+
+
 def draw_track_table(font, rect: rl.Rectangle, tracks, motion_states: dict[int, int], scroll: int,
                      selected_id: int | None, hovered_id: int | None,
                      track_signals: dict[int, DisplayTrackSignals], track_locations: dict[int, tuple[int, int]],
@@ -1490,6 +1617,17 @@ def draw_track_table(font, rect: rl.Rectangle, tracks, motion_states: dict[int, 
   rl.draw_line_ex(rl.Vector2(rect.x, rect.y), rl.Vector2(rect.x + rect.width, rect.y), 2.0, GRID)
   sorted_tracks = sorted(tracks, key=lambda track: (track.dRel, track.trackId))
   capacity = table_capacity(rect)
+
+  selected_track = next((track for track in sorted_tracks if int(track.trackId) == selected_id), None)
+  selected_detail = track_signals.get(selected_id) if selected_id is not None else None
+  if selected_track is not None and selected_detail is not None and selected_detail.allSignals:
+    can_address, can_bus = track_locations.get(int(selected_track.trackId), (-1, -1))
+    can_location = f"{can_address:X}/B{can_bus}" if can_address >= 0 and can_bus >= 0 else "n/a"
+    draw_selected_signal_inspector(
+      font, rect, selected_track, selected_detail, can_location,
+      motion_states.get(int(selected_track.trackId)), scroll,
+    )
+    return
 
   if table_mode == "signals":
     rows = [
@@ -1965,10 +2103,12 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
                        both_cameras_available: bool, remote_address: str | None, bridge_connected: bool,
                        visible_tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]],
                        source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
-                       table_mode: str, fps: int) -> str | tuple[str, RadarSourceKey] | None:
+                       table_mode: str, fps: int, show_inactive_sources: bool) -> str | tuple[str, RadarSourceKey] | None:
   rl.draw_rectangle_rec(rect, rl.Color(11, 16, 24, 225))
   tracks = live_tracks.points if valid else ()
-  sources = sorted(live_tracks.trackSources, key=radar_source_sort_key) if valid else []
+  all_sources = sorted(live_tracks.trackSources, key=radar_source_sort_key) if valid else []
+  sources = all_sources if show_inactive_sources else [source for source in all_sources if source.trackCount > 0]
+  hidden_source_count = len(all_sources) - len(sources)
   source_title = "CAN" if data_source == "can" else "LIVE"
   mouse_position = rl.get_mouse_position()
   top_hovered_tooltip = None
@@ -2016,8 +2156,10 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
           and track_locations.get(int(track.trackId), (-1, -1))[1] == source.bus
         )
       ]
-      moving_count = sum(motion_states.get(track_id) == 2 for track_id in source_track_ids)
-      stationary_count = sum(motion_states.get(track_id) == 1 for track_id in source_track_ids)
+      moving_count = sum(dbc_motion_category(motion_states.get(track_id)) == "moving" for track_id in source_track_ids)
+      stationary_count = sum(
+        dbc_motion_category(motion_states.get(track_id)) == "stationary" for track_id in source_track_ids
+      )
       unknown_count = max(0, source.trackCount - moving_count - stationary_count)
       visible_source_tracks = sum(
         source.startAddress <= address <= source.endAddress and bus == source.bus
@@ -2062,6 +2204,8 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
         draw_text(font, fps_text, fps_x, row_y, 16, TEXT)
         if rl.check_collision_point_rec(mouse_position, fps_rect):
           top_hovered_tooltip = ("Debugger rendering frame rate", fps_rect)
+  elif all_sources:
+    source_text = f"{hidden_source_count} inactive source{'s' if hidden_source_count != 1 else ''} hidden"
   elif not source_active:
     source_text = "no route loaded"
   elif data_source == "liveTracks":
@@ -2079,7 +2223,7 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
   chip_x = rect.x + 14
   chip_y = source_tooltip_anchor_y
   camera_label = {"fused": "FUSED", "wide 180": "WIDE"}.get(camera_mode, "ROAD")
-  table_label = {"motion": "MOTION", "kinematics": "KIN", "object": "OBJ"}[table_mode]
+  table_label = {"motion": "MOTION", "kinematics": "KIN", "object": "OBJ", "signals": "SIGNALS"}[table_mode]
   chip_specs = [
     ("OPEN", GREEN, "route", "Open a route or live-car IP, or paste one with Cmd/Ctrl+V"),
     (source_title, CYAN, "source", "Switch CAN / liveTracks source"),
@@ -2095,7 +2239,15 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
     chip_specs.insert(1, (bridge_label, GREEN if bridge_connected else ORANGE, None, bridge_tooltip))
   if both_cameras_available:
     chip_specs.append((camera_label, CYAN, "camera", "Cycle road / wide / fused camera"))
-  chip_specs.append((table_label, MUTED, "table", "Cycle motion / kinematics / object table"))
+  if hidden_source_count or show_inactive_sources:
+    source_list_label = "ACTIVE ONLY" if show_inactive_sources else f"RANGES +{hidden_source_count}"
+    source_list_tooltip = (
+      "Hide inactive and empty source ranges"
+      if show_inactive_sources
+      else "Show inactive and empty source ranges"
+    )
+    chip_specs.append((source_list_label, MUTED, "sources", source_list_tooltip))
+  chip_specs.append((table_label, MUTED, "table", "Cycle motion / kinematics / object / signals table"))
   clicked_action = source_clicked_action
   hovered_tooltip = source_hovered_tooltip or top_hovered_tooltip
   for label, color, action, tooltip in chip_specs:
@@ -2177,6 +2329,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   calibration_key = None
   camera_projection_height = float(CAMERA_BUFFER_HEIGHT)
   show_labels = False
+  show_inactive_sources = False
   source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]] = {}
   use_can_source = True
   table_mode_index = 0
@@ -2208,7 +2361,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     nonlocal route_input, route_loading, route_loading_started, route_message_start_mono
     nonlocal route_fingerprint, current_route_seconds, replay_seek_input, replay_seek_active
     nonlocal can_tracks, live_tracks, can_data_seen, live_data_seen, can_data_alive, decoded_motion_states
-    nonlocal table_scroll, selected_track_id, calibration, calibration_key, overlay_dirty
+    nonlocal table_scroll, selected_track_id, calibration, calibration_key, overlay_dirty, show_inactive_sources
     nonlocal decoder_process
 
     target = target.strip()
@@ -2250,6 +2403,8 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     current_route_seconds = 0.0
     table_scroll = 0
     selected_track_id = None
+    show_inactive_sources = False
+    source_filters.clear()
     calibration = None
     calibration_key = None
     overlay_dirty = True
@@ -2455,7 +2610,12 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     radar_rect = rl.Rectangle(left_width, 0, window_width - left_width, content_height)
     replay_bar_rect = rl.Rectangle(0, content_height, window_width, replay_bar_height)
     status_sources = can_tracks.trackSources if use_can_source else live_tracks.trackSources
-    status_height = 88 + max(0, len(status_sources) - 1) * 30
+    visible_status_sources = (
+      status_sources
+      if show_inactive_sources
+      else tuple(source for source in status_sources if source.trackCount > 0)
+    )
+    status_height = 88 + max(0, len(visible_status_sources) - 1) * 30
     status_rect = rl.Rectangle(0, 0, left_width, min(status_height, camera_height))
 
     if sm.valid["roadCameraState"] and sm.valid["liveCalibration"] and camera_view.frame:
@@ -2518,21 +2678,28 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     )
     current_table_mode = TABLE_MODES[table_mode_index]
     capacity = table_capacity(table_rect)
-    table_row_count = (
-      sum(int(track.trackId) in track_signals for track in tracks) + len(raw_signals)
-      if current_table_mode == "signals"
-      else len(tracks)
-    )
+    selected_detail = track_signals.get(selected_track_id) if selected_track_id is not None else None
+    if selected_detail is not None and selected_detail.allSignals:
+      table_row_count = selected_signal_row_count(selected_detail)
+    elif current_table_mode == "signals":
+      table_row_count = sum(int(track.trackId) in track_signals for track in tracks) + len(raw_signals)
+    else:
+      table_row_count = len(tracks)
     max_scroll = max(0, table_row_count - capacity)
     if rl.check_collision_point_rec(rl.get_mouse_position(), table_rect):
       table_scroll -= int(rl.get_mouse_wheel_move() * 3)
     table_scroll = int(np.clip(table_scroll, 0, max_scroll))
-    table_hover_id = None if composite_mode or current_table_mode == "signals" else table_hovered_track_id(
+    table_hover_id = None if (
+      composite_mode or current_table_mode == "signals" or selected_detail is not None
+    ) else table_hovered_track_id(
       tracks, table_rect, table_scroll, rl.get_mouse_position(),
     )
     if (table_hover_id is not None
         and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT)):  # noqa: TID251 - standalone raylib tool
-      selected_track_id = table_hover_id
+      next_selected_id = toggle_selected_track_id(selected_track_id, table_hover_id, tracks)
+      if next_selected_id != selected_track_id:
+        table_scroll = 0
+      selected_track_id = next_selected_id
 
     v_ego = float(sm["carState"].vEgo) if sm.valid["carState"] else 0.0
     model = sm["modelV2"] if sm.valid["modelV2"] else None
@@ -2549,11 +2716,14 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         fused_device_camera = DEVICE_CAMERAS.get(("tici", str(sm["roadCameraState"].sensor)))
         rpy_calib = np.asarray(sm["liveCalibration"].rpyCalib)
         wide_from_device_euler = np.asarray(sm["liveCalibration"].wideFromDeviceEuler)
+      previous_selected_track_id = selected_track_id
       selected_track_id = draw_fused_camera_mode(
         font, road_camera_view, wide_camera_view, fused_device_camera, rpy_calib, wide_from_device_euler,
         fused_bounds, tracks, show_labels, motion_states,
         track_locations, selected_tracks.trackSources, selected_track_id,
       )
+      if selected_track_id != previous_selected_track_id:
+        table_scroll = 0
       fused_available_streams = set(road_camera_view.available_streams) | set(wide_camera_view.available_streams)
       fused_streams_missing_since, streams_timed_out = fused_stream_loss_state(
         fused_available_streams, fused_streams_missing_since, time.monotonic(),
@@ -2570,7 +2740,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         font, status_rect, selected_tracks, data_valid, data_alive,
         replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
         "fused", both_camera_streams_available(fused_available_streams), remote_address, bridge_connected,
-        tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
+        tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(), show_inactive_sources,
       )
       if isinstance(clicked_action, tuple):
         action, source_key = clicked_action
@@ -2588,6 +2758,8 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         camera_view = road_camera_view
       elif clicked_action == "table":
         table_mode_index = (table_mode_index + 1) % len(TABLE_MODES)
+      elif clicked_action == "sources":
+        show_inactive_sources = not show_inactive_sources
       elif clicked_action == "route":
         composite_mode = False
         route_dialog_open = True
@@ -2634,9 +2806,15 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         tracks, lambda track, radar_rect=radar_rect: top_down_track_geometry(radar_rect, track), mouse_position,
       )
     current_hovered_id = camera_hovered_id if camera_hovered_id is not None else top_down_hovered_id
-    selected_track_id = retain_selected_track_id(selected_track_id, current_hovered_id, tracks)
+    selected_track_id = retain_selected_track_id(selected_track_id, None, tracks)
+    if current_hovered_id is not None and rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):  # noqa: TID251
+      next_selected_id = toggle_selected_track_id(selected_track_id, current_hovered_id, tracks)
+      if next_selected_id != selected_track_id:
+        table_scroll = 0
+      selected_track_id = next_selected_id
 
-    if selected_track_id is not None and current_table_mode != "signals":
+    selected_detail = track_signals.get(selected_track_id) if selected_track_id is not None else None
+    if selected_track_id is not None and current_table_mode != "signals" and selected_detail is None:
       sorted_tracks = sorted(tracks, key=lambda track: (track.dRel, track.trackId))
       hovered_row = next((index for index, track in enumerate(sorted_tracks)
                           if int(track.trackId) == selected_track_id), None)
@@ -2650,8 +2828,13 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     if overlay_dirty:
       model_pixels.fill(0)
       dummy_top_down.fill(0)
-      if sm.valid["modelV2"]:
-        plot_model(sm["modelV2"], model_pixels, calibration, (None, dummy_top_down))
+      if sm.valid["modelV2"] and calibration is not None:
+        # Partially downloaded/corrupt model events can contain points on the
+        # projection plane. ui_helpers safely discards their out-of-bounds
+        # integer results, but NumPy otherwise emits noisy divide/cast warnings.
+        with warnings.catch_warnings(), np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+          warnings.filterwarnings("ignore", message="invalid value encountered in cast", category=RuntimeWarning)
+          plot_model(sm["modelV2"], model_pixels, calibration, (None, dummy_top_down))
       model_mask = np.any(model_pixels > 0, axis=2)
       overlay_pixels[:, :, :3] = model_pixels
       overlay_pixels[:, :, 3] = model_mask * 220
@@ -2682,7 +2865,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       replay_process is not None or can_data_seen or live_data_seen, show_labels, data_source,
       "wide 180" if camera_view.stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD else "road",
       both_camera_streams_available(camera_view.available_streams), remote_address, bridge_connected,
-      tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(),
+      tracks, motion_states, track_locations, source_filters, table_mode, rl.get_fps(), show_inactive_sources,
     )
     if isinstance(clicked_action, tuple):
       action, source_key = clicked_action
@@ -2702,6 +2885,8 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         fused_streams_missing_since = None
     elif clicked_action == "table":
       table_mode_index = (table_mode_index + 1) % len(TABLE_MODES)
+    elif clicked_action == "sources":
+      show_inactive_sources = not show_inactive_sources
     elif clicked_action == "route":
       route_dialog_open = True
       route_error = ""
