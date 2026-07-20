@@ -1,1 +1,0 @@
-DEFAULT_MODEL = "POP model"
