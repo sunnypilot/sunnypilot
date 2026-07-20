@@ -23,7 +23,7 @@ def main():
   cloudlog.info("plannerd got CarParamsSP")
 
   gps_location_service = get_gps_location_service(params)
-  ignore_services = ["liveMapDataSP"]
+  ignore_services = ["liveMapDataSP", gps_location_service]
 
   ldw = LaneDepartureWarning()
   longitudinal_planner = LongitudinalPlanner(CP, CP_SP)
