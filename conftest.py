@@ -5,19 +5,25 @@ import pytest
 
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.system.manager import manager
-from openpilot.system.hardware import TICI, HARDWARE
+from openpilot.common.hardware import TICI, HARDWARE
 
 # these are heavy CI-only tests, invoked explicitly in .github/workflows/tests.yaml
 collect_ignore = [
-  "selfdrive/test/process_replay/test_processes.py",
-  "selfdrive/test/process_replay/test_regen.py",
+  "openpilot/selfdrive/test/process_replay/test_processes.py",
+  "openpilot/selfdrive/test/process_replay/test_regen.py",
+
+  "openpilot/tools/sim/",
+
   # tinygrad JIT has process-global state. Other test files import modeld → tinygrad,
   # which corrupts JIT captures for test_warp.py in the same process. Run separately in CI.
-  "sunnypilot/modeld_v2/tests/test_warp.py",
+  "openpilot/sunnypilot/modeld_v2/tests/test_warp.py",
 ]
-collect_ignore_glob = [
-  "selfdrive/debug/*.py",
-]
+
+
+def pytest_sessionstart(session):
+  # TODO: fix tests and enable test order randomization
+  if session.config.pluginmanager.hasplugin('randomly'):
+    session.config.option.randomly_reorganize = False
 
 
 @pytest.hookimpl(hookwrapper=True, trylast=True)
