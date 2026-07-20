@@ -6,7 +6,7 @@ on:
       - master
   pull_request:
     paths:
-      - 'cereal/**'
+      - 'openpilot/cereal/**'
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -30,10 +30,24 @@ jobs:
       - name: Checkout sunnypilot cereal
         uses: actions/checkout@v6
         with:
-          sparse-checkout: cereal
+          sparse-checkout: |
+            openpilot/cereal
+            uv.lock
+          submodules: false
 
       - name: Init sunnypilot opendbc submodule
         run: git submodule update --init --depth 1 opendbc_repo
+
+      - name: Locate sunnypilot capnp import paths
+        id: locate-sp-capnp
+        run: |
+          SP_IMPORT_ARGS=""
+          SP_CAR_CAPNP=$(find opendbc_repo -maxdepth 4 -name car.capnp -path '*/opendbc/car/car.capnp' -printf '%h\n' -quit)
+          if [ -n "$SP_CAR_CAPNP" ]; then
+            SP_IMPORT_ARGS="-I $SP_CAR_CAPNP"
+            echo "Found sunnypilot car.capnp at: $SP_CAR_CAPNP"
+          fi
+          echo "import_args=$SP_IMPORT_ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Checkout upstream openpilot
         uses: actions/checkout@v6
@@ -65,20 +79,19 @@ jobs:
           fi
           echo "import_args=$IMPORT_ARGS" >> "$GITHUB_OUTPUT"
 
-      - name: Install uv
-        run: pip install uv
+      - name: Install pycapnp
+        run: |
+          PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
+          pip install "pycapnp==${PYCAPNP_VER}"
 
       - name: Generate sunnypilot schema
         run: |
-          PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
-          uv run --isolated --with "pycapnp==${PYCAPNP_VER}" \
-            python3 cereal/messaging/tests/validate_sp_cereal_upstream.py \
-            -g -f /tmp/sp_schema.json --cereal-dir cereal
+          python3 openpilot/cereal/messaging/tests/validate_sp_cereal_upstream.py \
+            -g -f /tmp/sp_schema.json --cereal-dir openpilot/cereal \
+            ${{ steps.locate-sp-capnp.outputs.import_args }}
 
       - name: Validate against upstream
         run: |
-          PYCAPNP_VER=$(python3 -c "import re; m=re.search(r'name = \"pycapnp\"\nversion = \"([^\"]+)\"', open('uv.lock').read()); print(m.group(1))")
-          uv run --isolated --with "pycapnp==${PYCAPNP_VER}" \
-            python3 cereal/messaging/tests/validate_sp_cereal_upstream.py \
+          python3 openpilot/cereal/messaging/tests/validate_sp_cereal_upstream.py \
             -r -f /tmp/sp_schema.json --cereal-dir ${{ steps.locate-capnp.outputs.cereal_dir }} \
             ${{ steps.locate-capnp.outputs.import_args }}

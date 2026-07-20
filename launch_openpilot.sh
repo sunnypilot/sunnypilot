@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 # On any failure, run the fallback launcher
 trap 'exec ./launch_chffrplus.sh' ERR
-C3_LAUNCH_SH="./sunnypilot/system/hardware/c3/launch_chffrplus.sh"
+C3_LAUNCH_SH="./openpilot/sunnypilot/system/hardware/c3/launch_chffrplus.sh"
 
 MODEL="$(tr -d '\0' < "/sys/firmware/devicetree/base/model")"
 export MODEL
