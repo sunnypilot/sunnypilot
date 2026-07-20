@@ -11,10 +11,7 @@ authors = [
 dependencies = [
   # multiple users
   "sounddevice",  # micd + soundd
-  "pyserial",     # pigeond + qcomgpsd
   "requests",     # many one-off uses
-  "sympy",        # rednose + friends
-  "crcmod-plus",  # cars + qcomgpsd
   "tqdm",         # cars (fw_versions.py) on start + many one-off uses
 
   # core
@@ -26,32 +23,23 @@ dependencies = [
   "numpy >=2.0",
 
   # vendored native dependencies
-  "bzip2 @ git+https://github.com/commaai/dependencies.git@release-bzip2#subdirectory=bzip2",
-  "bootstrap-icons @ git+https://github.com/commaai/dependencies.git@release-bootstrap-icons#subdirectory=bootstrap-icons",
-  "capnproto @ git+https://github.com/commaai/dependencies.git@release-capnproto#subdirectory=capnproto",
-  "catch2 @ git+https://github.com/commaai/dependencies.git@release-catch2#subdirectory=catch2",
-  "acados @ git+https://github.com/commaai/dependencies.git@release-acados#subdirectory=acados",
-  "eigen @ git+https://github.com/commaai/dependencies.git@release-eigen#subdirectory=eigen",
-  "ffmpeg @ git+https://github.com/commaai/dependencies.git@release-ffmpeg#subdirectory=ffmpeg",
-  "libjpeg @ git+https://github.com/commaai/dependencies.git@release-libjpeg#subdirectory=libjpeg",
-  "libyuv @ git+https://github.com/commaai/dependencies.git@release-libyuv#subdirectory=libyuv",
-  "zstd @ git+https://github.com/commaai/dependencies.git@release-zstd#subdirectory=zstd",
-  "ncurses @ git+https://github.com/commaai/dependencies.git@release-ncurses#subdirectory=ncurses",
-  "zeromq @ git+https://github.com/commaai/dependencies.git@release-zeromq#subdirectory=zeromq",
-  "libusb @ git+https://github.com/commaai/dependencies.git@release-libusb#subdirectory=libusb",
-  "json11 @ git+https://github.com/commaai/dependencies.git@release-json11#subdirectory=json11",
-  "git-lfs @ git+https://github.com/commaai/dependencies.git@release-git-lfs#subdirectory=git-lfs",
-  "gcc-arm-none-eabi @ git+https://github.com/commaai/dependencies.git@release-gcc-arm-none-eabi#subdirectory=gcc-arm-none-eabi",
-  "xvfb @ git+https://github.com/commaai/dependencies.git@release-xvfb#subdirectory=xvfb",
+  "comma-deps-bzip2",
+  "comma-deps-bootstrap-icons",
+  "comma-deps-capnproto",
+  "comma-deps-catch2",
+  "comma-deps-acados",
+  "comma-deps-ffmpeg",
+  "comma-deps-zstd",
+  "comma-deps-ncurses",
+  "comma-deps-zeromq",
+  "comma-deps-libusb",
+  "comma-deps-json11",
+  "comma-deps-git-lfs",
+  "comma-deps-gcc-arm-none-eabi",
 
   # body / webrtcd
   "av",
-  "aiohttp",
   "aiortc",
-
-  # panda
-  "libusb1",
-  "spidev; platform_system == 'Linux'",
 
   # logging
   "pyzmq",
@@ -60,22 +48,19 @@ dependencies = [
 
   # athena
   "PyJWT",
-  "json-rpc",
   "websocket_client",
 
   # joystickd
   "inputs",
 
   # these should be removed
-  "psutil",
-  "pycryptodome", # used in panda, body, and a test
   "setproctitle",
 
   # logreader
   "zstandard",
 
   # ui
-  "raylib @ git+https://github.com/commaai/dependencies.git@release-raylib#subdirectory=raylib",
+  "comma-deps-raylib",
   "qrcode",
   "jeepney",
   "pillow",
@@ -104,32 +89,45 @@ testing = [
 
 dev = [
   "matplotlib",
-  "opencv-python-headless",
 ]
 
 tools = [
-  "imgui @ git+https://github.com/commaai/dependencies.git@release-imgui#subdirectory=imgui",
-  "metadrive-simulator @ git+https://github.com/commaai/metadrive.git@minimal ; (platform_machine != 'aarch64')",
+  "comma-deps-imgui",
+
+  # this can be added back once it's stripped down some more
+  #"metadrive-simulator @ git+https://github.com/commaai/metadrive.git@minimal ; (platform_machine != 'aarch64')",
 ]
 
 [project.urls]
 Homepage = "https://github.com/commaai/openpilot"
+
+[dependency-groups]
+submodules = [
+  "msgq",
+  "opendbc",
+  "pandacan",
+  "rednose",
+  "teleoprtc",
+  "tinygrad",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = [ "." ]
+packages = [
+  "openpilot",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--ignore=openpilot/ --ignore=opendbc/ --ignore=panda/ --ignore=rednose_repo/ --ignore=tinygrad_repo/ --ignore=teleoprtc_repo/ --ignore=msgq/ --ignore=selfdrive/modeld -Werror --strict-config --strict-markers --durations=10 -n auto --dist=loadgroup"
+addopts = "-Werror --strict-config --strict-markers --durations=10 -n auto --dist=loadgroup"
 cpp_files = "test_*"
-cpp_harness = "selfdrive/test/cpp_harness.py"
+cpp_harness = "openpilot/selfdrive/test/cpp_harness.py"
 python_files = "test_*.py"
 markers = [
   "slow: tests that take awhile to run and can be skipped with -m 'not slow'",
@@ -140,12 +138,7 @@ markers = [
   "xdist_group_class_property: group tests by a property of the class that contains them",
 ]
 testpaths = [
-  "common",
-  "selfdrive",
-  "system",
-  "tools",
-  "cereal",
-  "sunnypilot",
+  "openpilot",
 ]
 
 [tool.codespell]
@@ -153,7 +146,7 @@ quiet-level = 3
 # if you've got a short variable name that's getting flagged, add it here
 ignore-words-list = "bu,ro,te,ue,alo,hda,ois,nam,nams,ned,som,parm,setts,inout,warmup,bumb,nd,sie,preints,whit,indexIn,ws,uint,grey,deque,stdio,amin,BA,LITE,atEnd,UIs,errorString,arange,FocusIn,od,tim,relA,hist,copyable,jupyter,thead,TGE,abl,lite,ser"
 builtin = "clear,rare,informal,code,names,en-GB_to_en-US"
-skip = "./third_party/*, ./tinygrad/*, ./tinygrad_repo/*, ./msgq/*, ./panda/*, ./opendbc/*, ./opendbc_repo/*, ./rednose/*, ./rednose_repo/*, ./teleoprtc/*, ./teleoprtc_repo/*, *.po, uv.lock, *.onnx, *.pem, ./cereal/gen/*, */c_generated_code/*, docs/assets/*, tools/plotjuggler/layouts/*, selfdrive/assets/offroad/mici_fcc.html"
+skip = "*.po, uv.lock, *.onnx, *.pem, */c_generated_code/*, docs/assets/*, openpilot/tools/plotjuggler/layouts/*, openpilot/selfdrive/assets/offroad/mici_fcc.html, ./openpilot/third_party/*, ./openpilot/cereal/gen/*"
 
 # https://docs.astral.sh/ruff/configuration/#using-pyprojecttoml
 [tool.ruff]
@@ -179,25 +172,14 @@ lint.ignore = [
 ]
 line-length = 160
 exclude = [
-  "cereal",
-  "panda",
-  "opendbc",
-  "opendbc_repo",
-  "rednose_repo",
-  "tinygrad_repo",
-  "teleoprtc",
-  "teleoprtc_repo",
-  "third_party/copyparty",
+  "openpilot/cereal",
+  "openpilot/third_party",
   "*.ipynb",
   "generated",
 ]
 lint.flake8-implicit-str-concat.allow-multiline = false
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"selfdrive".msg = "Use openpilot.selfdrive"
-"common".msg = "Use openpilot.common"
-"system".msg = "Use openpilot.system"
-"tools".msg = "Use openpilot.tools"
 "pytest.main".msg = "pytest.main requires special handling that is easy to mess up!"
 "unittest".msg = "Use pytest"
 "time.time".msg = "Use time.monotonic"
@@ -214,18 +196,7 @@ quote-style = "preserve"
 
 [tool.ty.src]
 exclude = [
-  "msgq/",
-  "msgq_repo/",
-  "opendbc/",
-  "opendbc_repo/",
-  "panda/",
-  "rednose/",
-  "rednose_repo/",
-  "tinygrad/",
-  "tinygrad_repo/",
-  "teleoprtc/",
-  "teleoprtc_repo/",
-  "third_party/",
+  "openpilot/third_party/",
 ]
 
 [tool.ty.rules]
@@ -242,3 +213,16 @@ not-subscriptable = "ignore" # false positives from dynamic types
 
 [tool.uv]
 python-preference = "only-managed"
+default-groups = ["submodules"]
+override-dependencies = [
+  "opendbc",  # panda pins opendbc from git for standalone use; always use our submodule
+  "av",       # teleoprtc's av<13 pin is stale
+]
+
+[tool.uv.sources]
+msgq = { path = "msgq_repo", editable = true }
+opendbc = { path = "opendbc_repo", editable = true }
+pandacan = { path = "panda", editable = true }
+rednose = { path = "rednose_repo", editable = true }
+teleoprtc = { path = "teleoprtc_repo", editable = true }
+tinygrad = { path = "tinygrad_repo", editable = true }

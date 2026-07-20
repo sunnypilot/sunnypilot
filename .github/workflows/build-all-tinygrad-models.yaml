@@ -30,7 +30,7 @@ jobs:
         run: |
           cd sunnypilot
           export PYTHONPATH=$(pwd)
-          ref=$(python3 sunnypilot/models/tinygrad_ref.py)
+          ref=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)
           echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
           echo "tinygrad_ref is $ref"
 

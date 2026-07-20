@@ -6,7 +6,7 @@ env:
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   UPSTREAM_REPO: "commaai/openpilot"
   TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
-  MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
+  MODELS_DIR: ${{ github.workspace }}/openpilot/selfdrive/modeld/models
 
 on:
   workflow_call:
@@ -92,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
-          path: ${{ github.workspace }}/openpilot/selfdrive/modeld/models/*.onnx
+          path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
 
   build_model:
     runs-on: [self-hosted, tici]
@@ -128,7 +128,10 @@ jobs:
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync
           printenv >> $GITHUB_ENV
           if [[ "${{ runner.debug }}" == "1" ]]; then
             cat $GITHUB_OUTPUT
@@ -148,6 +151,7 @@ jobs:
           if [[ "${{ runner.debug }}" == "1" ]]; then
             printenv
           fi
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
           rm -rf ${{ env.MODELS_DIR }}/*.onnx
 
@@ -155,9 +159,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
-          path: ${{ github.workspace }}/selfdrive/modeld/models
+          path: ${{ env.MODELS_DIR }}
       - run: |
-          rm -f ${{ github.workspace }}/selfdrive/modeld/models/{dmonitoring_model,big_driving_policy,big_driving_vision}.onnx
+          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision}.onnx
 
       - name: Build Model
         run: |
@@ -166,7 +170,7 @@ jobs:
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}:${{ github.workspace }}"
 
-          COMPILE_MODELD="${{ github.workspace }}/sunnypilot/modeld_v2/compile_modeld.py"
+          COMPILE_MODELD="${{ github.workspace }}/openpilot/sunnypilot/modeld_v2/compile_modeld.py"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
           TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
@@ -264,4 +268,5 @@ jobs:
       - name: Re-enable powersave
         if: always()
         run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
