@@ -11,6 +11,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.common.filter_simple import BounceFilter, FirstOrderFilter
 from openpilot.common.hardware import TICI
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
@@ -148,7 +149,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
       return None
 
     # Return current alert
-    ret = Alert(text1=ss.alertText1, text2=ss.alertText2, size=ss.alertSize.raw, status=ss.alertStatus.raw,
+    ret = Alert(text1=tr(ss.alertText1), text2=tr(ss.alertText2), size=ss.alertSize.raw, status=ss.alertStatus.raw,
                 visual_alert=ss.alertHudVisual, alert_type=ss.alertType)
     self._prev_alert = ret
     return ret

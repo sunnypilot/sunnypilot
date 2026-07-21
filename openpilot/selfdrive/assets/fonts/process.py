@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import ast
 from pathlib import Path
 import json
 
@@ -12,6 +13,21 @@ LANGUAGES_FILE = TRANSLATIONS_DIR / "languages.json"
 GLYPH_PADDING = 6
 EXTRA_CHARS = "–‑✓×°§•X⚙✕◀▶✔⌫⇧␣○●↳çêüñ–‑✓×°§•€£¥"
 UNIFONT_LANGUAGES = {"th", "zh-CHT", "zh-CHS", "ko", "ja"}
+C4_TRANSLATIONS_FILE = SELFDRIVE_DIR.parent / "system" / "ui" / "lib" / "multilang.py"
+FONT_OUTPUT_NAMES = {
+  "SourceHanSansTC-Regular": "C4SourceHanSansTC-Regular",
+}
+
+
+def _c4_translation_chars() -> set[str]:
+  if not C4_TRANSLATIONS_FILE.exists():
+    return set()
+  tree = ast.parse(C4_TRANSLATIONS_FILE.read_text(encoding="utf-8"))
+  for node in tree.body:
+    if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "C4_ZH_CHT_TRANSLATIONS" for target in node.targets):
+      translations = ast.literal_eval(node.value)
+      return set("".join(translations) + "".join(translations.values()))
+  return set()
 
 
 def _languages():
@@ -23,7 +39,7 @@ def _languages():
 
 def _char_sets():
   base = set(map(chr, range(32, 127))) | set(EXTRA_CHARS)
-  unifont = set(base)
+  unifont = set(base) | _c4_translation_chars()
 
   for language, code in _languages().items():
     unifont.update(language)
@@ -88,6 +104,7 @@ def _write_bmfont(path: Path, font_size: int, face: str, atlas_name: str, line_h
 
 def _process_font(font_path: Path, codepoints: tuple[int, ...]):
   print(f"Processing {font_path.name}...")
+  output_stem = FONT_OUTPUT_NAMES.get(font_path.stem, font_path.stem)
 
   font_size = {
     "unifont.otf": 16,  # unifont is only 16x8 or 16x16 pixels per glyph
@@ -98,27 +115,37 @@ def _process_font(font_path: Path, codepoints: tuple[int, ...]):
   cp_buffer = rl.ffi.new("int[]", codepoints)
   cp_ptr = rl.ffi.cast("int *", cp_buffer)
   glyph_count = rl.ffi.new("int *", len(codepoints))
-  glyphs = rl.load_font_data(
-    rl.ffi.cast("unsigned char *", file_buf), len(data), font_size, cp_ptr, len(codepoints),
-    rl.FontType.FONT_DEFAULT, glyph_count
-  )
+  try:
+    # openpilot's raylib exposes the loaded glyph count as an output pointer.
+    glyphs = rl.load_font_data(
+      rl.ffi.cast("unsigned char *", file_buf), len(data), font_size, cp_ptr, len(codepoints),
+      rl.FontType.FONT_DEFAULT, glyph_count
+    )
+    loaded_glyph_count = glyph_count[0]
+  except TypeError:
+    # Stock pyray/raylib returns all requested glyphs and has no output pointer.
+    glyphs = rl.load_font_data(
+      rl.ffi.cast("unsigned char *", file_buf), len(data), font_size, cp_ptr, len(codepoints),
+      rl.FontType.FONT_DEFAULT
+    )
+    loaded_glyph_count = len(codepoints)
   if glyphs == rl.ffi.NULL:
     raise RuntimeError("raylib failed to load font data")
 
   rects_ptr = rl.ffi.new("Rectangle **")
-  image = rl.gen_image_font_atlas(glyphs, rects_ptr, glyph_count[0], font_size, GLYPH_PADDING, 0)
+  image = rl.gen_image_font_atlas(glyphs, rects_ptr, loaded_glyph_count, font_size, GLYPH_PADDING, 0)
   if image.width == 0 or image.height == 0:
     raise RuntimeError("raylib returned an empty atlas")
 
   rects = rects_ptr[0]
-  atlas_name = f"{font_path.stem}.png"
+  atlas_name = f"{output_stem}.png"
   atlas_path = FONT_DIR / atlas_name
-  entries, line_height, base = _glyph_metrics(glyphs, rects, glyph_count[0])
+  entries, line_height, base = _glyph_metrics(glyphs, rects, loaded_glyph_count)
 
   if not rl.export_image(image, atlas_path.as_posix()):
     raise RuntimeError("Failed to export atlas image")
 
-  _write_bmfont(FONT_DIR / f"{font_path.stem}.fnt", font_size, font_path.stem, atlas_name, line_height, base, (image.width, image.height), entries)
+  _write_bmfont(FONT_DIR / f"{output_stem}.fnt", font_size, output_stem, atlas_name, line_height, base, (image.width, image.height), entries)
 
 
 def main():
@@ -127,7 +154,8 @@ def main():
   for font in fonts:
     if "emoji" in font.name.lower():
       continue
-    glyphs = unifont_cp if font.stem.lower().startswith("unifont") else base_cp
+    cjk_font = font.stem.lower().startswith(("unifont", "sourcehansanstc"))
+    glyphs = unifont_cp if cjk_font else base_cp
     _process_font(font, glyphs)
   return 0
 

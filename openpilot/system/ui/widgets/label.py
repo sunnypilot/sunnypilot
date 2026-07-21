@@ -11,6 +11,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.utils import GuiStyleContext
 from openpilot.system.ui.lib.emoji import find_emoji, emoji_tex
 from openpilot.system.ui.lib.wrap_text import wrap_text
+from openpilot.system.ui.lib.multilang import tr
 
 ICON_PADDING = 15
 
@@ -318,7 +319,7 @@ class UnifiedLabel(Widget):
   @property
   def text(self) -> str:
     """Get the current text content."""
-    return str(_resolve_value(self._text))
+    return tr(str(_resolve_value(self._text)))
 
   @property
   def font_size(self) -> int:

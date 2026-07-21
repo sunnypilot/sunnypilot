@@ -14,6 +14,7 @@ from openpilot.cereal import log
 from openpilot.common.hardware import HARDWARE
 from openpilot.system.ui.lib.scroll_panel import GuiScrollPanel
 from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle, ButtonRadio
 from openpilot.system.ui.widgets.keyboard import Keyboard
@@ -67,56 +68,55 @@ class Setup(Widget):
     self.warning = gui_app.texture("icons/warning.png", 150, 150)
     self.checkmark = gui_app.texture("icons/circled_check.png", 100, 100)
 
-    self._low_voltage_title_label = Label("WARNING: Low Voltage", TITLE_FONT_SIZE, FontWeight.MEDIUM, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+    self._low_voltage_title_label = Label(tr("WARNING: Low Voltage"), TITLE_FONT_SIZE, FontWeight.MEDIUM, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
                                           text_color=rl.Color(255, 89, 79, 255), text_padding=20)
-    self._low_voltage_body_label = Label("Power your device in a car with a harness or proceed at your own risk.", BODY_FONT_SIZE,
+    self._low_voltage_body_label = Label(tr("Power your device in a car with a harness or proceed at your own risk."), BODY_FONT_SIZE,
                                          text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
-    self._low_voltage_continue_button = Button("Continue", self._low_voltage_continue_button_callback)
-    self._low_voltage_poweroff_button = Button("Power Off", HARDWARE.shutdown)
+    self._low_voltage_continue_button = Button(tr("Continue"), self._low_voltage_continue_button_callback)
+    self._low_voltage_poweroff_button = Button(tr("Power Off"), HARDWARE.shutdown)
 
     self._getting_started_button = Button("", self._getting_started_button_callback, button_style=ButtonStyle.PRIMARY, border_radius=0)
-    self._getting_started_title_label = Label("Getting Started", TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
-    self._getting_started_body_label = Label("Before we get on the road, let's finish installation and cover some details.",
+    self._getting_started_title_label = Label(tr("Getting Started"), TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
+    self._getting_started_body_label = Label(tr("Before we get on the road, let's finish installation and cover some details."),
                                              BODY_FONT_SIZE, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
 
     self._software_selection_openpilot_button = ButtonRadio("openpilot", self.checkmark, font_size=BODY_FONT_SIZE, text_padding=80)
-    self._software_selection_custom_software_button = ButtonRadio("Custom Software", self.checkmark, font_size=BODY_FONT_SIZE, text_padding=80)
-    self._software_selection_continue_button = Button("Continue", self._software_selection_continue_button_callback,
+    self._software_selection_custom_software_button = ButtonRadio(tr("Custom Software"), self.checkmark, font_size=BODY_FONT_SIZE, text_padding=80)
+    self._software_selection_continue_button = Button(tr("Continue"), self._software_selection_continue_button_callback,
                                                       button_style=ButtonStyle.PRIMARY)
     self._software_selection_continue_button.set_enabled(False)
-    self._software_selection_back_button = Button("Back", self._software_selection_back_button_callback)
-    self._software_selection_title_label = Label("Choose Software to Use", TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+    self._software_selection_back_button = Button(tr("Back"), self._software_selection_back_button_callback)
+    self._software_selection_title_label = Label(tr("Choose Software to Use"), TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
                                                  text_padding=20)
 
-    self._download_failed_reboot_button = Button("Reboot device", HARDWARE.reboot)
-    self._download_failed_startover_button = Button("Start over", self._download_failed_startover_button_callback, button_style=ButtonStyle.PRIMARY)
-    self._download_failed_title_label = Label("Download Failed", TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
+    self._download_failed_reboot_button = Button(tr("Reboot device"), HARDWARE.reboot)
+    self._download_failed_startover_button = Button(tr("Start over"), self._download_failed_startover_button_callback, button_style=ButtonStyle.PRIMARY)
+    self._download_failed_title_label = Label(tr("Download Failed"), TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
     self._download_failed_url_label = Label("", 52, FontWeight.NORMAL, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
     self._download_failed_body_label = Label("", BODY_FONT_SIZE, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
 
-    self._network_setup_back_button = Button("Back", self._network_setup_back_button_callback)
-    self._network_setup_continue_button = Button("Waiting for internet", self._network_setup_continue_button_callback,
+    self._network_setup_back_button = Button(tr("Back"), self._network_setup_back_button_callback)
+    self._network_setup_continue_button = Button(tr("Waiting for internet"), self._network_setup_continue_button_callback,
                                                  button_style=ButtonStyle.PRIMARY)
     self._network_setup_continue_button.set_enabled(False)
-    self._network_setup_title_label = Label("Connect to Wi-Fi", TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
+    self._network_setup_title_label = Label(tr("Connect to Wi-Fi"), TITLE_FONT_SIZE, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=20)
 
-    self._custom_software_warning_continue_button = Button("Scroll to continue", self._custom_software_warning_continue_button_callback,
+    self._custom_software_warning_continue_button = Button(tr("Scroll to continue"), self._custom_software_warning_continue_button_callback,
                                                            button_style=ButtonStyle.PRIMARY)
     self._custom_software_warning_continue_button.set_enabled(False)
-    self._custom_software_warning_back_button = Button("Back", self._custom_software_warning_back_button_callback)
-    self._custom_software_warning_title_label = Label("WARNING: Custom Software", 81, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+    self._custom_software_warning_back_button = Button(tr("Back"), self._custom_software_warning_back_button_callback)
+    self._custom_software_warning_title_label = Label(tr("WARNING: Custom Software"), 81, FontWeight.BOLD, rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
                                                       text_color=rl.Color(255, 89, 79, 255),
                                                       text_padding=60)
-    self._custom_software_warning_body_label = Label("Use caution when installing third-party software.\n\n"
-                                                     + "⚠️ It has not been tested by comma.\n\n"
-                                                     + "⚠️ It may not comply with relevant safety standards.\n\n"
-                                                     + "⚠️ It may cause damage to your device and/or vehicle.\n\n"
-                                                     + "If you'd like to proceed, use https://flash.comma.ai "
-                                                     + "to restore your device to a factory state later.",
+    self._custom_software_warning_body_label = Label(tr("Use caution when installing third-party software.") + "\n\n"
+                                                     + tr("⚠️ It has not been tested by comma.") + "\n\n"
+                                                     + tr("⚠️ It may not comply with relevant safety standards.") + "\n\n"
+                                                     + tr("⚠️ It may cause damage to your device and/or vehicle.") + "\n\n"
+                                                     + tr("If you'd like to proceed, use https://flash.comma.ai to restore your device to a factory state later."),
                                                      68, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=60)
     self._custom_software_warning_body_scroll_panel = GuiScrollPanel()
 
-    self._downloading_body_label = Label("Downloading...", TITLE_FONT_SIZE, FontWeight.MEDIUM, text_padding=20)
+    self._downloading_body_label = Label(tr("Downloading..."), TITLE_FONT_SIZE, FontWeight.MEDIUM, text_padding=20)
 
     try:
       with open("/sys/class/hwmon/hwmon1/in1_input") as f:
@@ -245,7 +245,7 @@ class Setup(Widget):
     continue_enabled = self.network_connected.is_set()
     self._network_setup_continue_button.set_enabled(continue_enabled)
     continue_text = ("Continue" if self.wifi_connected.is_set() else "Continue without Wi-Fi") if continue_enabled else "Waiting for internet"
-    self._network_setup_continue_button.set_text(continue_text)
+    self._network_setup_continue_button.set_text(tr(continue_text))
     self._network_setup_continue_button.render(rl.Rectangle(rect.x + MARGIN + button_width + BUTTON_SPACING, button_y, button_width, BUTTON_HEIGHT))
 
   def render_software_selection(self, rect: rl.Rectangle):
@@ -311,7 +311,7 @@ class Setup(Widget):
     self._custom_software_warning_continue_button.render(rl.Rectangle(rect.x + MARGIN * 2 + button_width, button_y, button_width, BUTTON_HEIGHT))
     if offset < (rect.height - warn_rect.height):
       self._custom_software_warning_continue_button.set_enabled(True)
-      self._custom_software_warning_continue_button.set_text("Continue")
+      self._custom_software_warning_continue_button.set_text(tr("Continue"))
 
   def render_custom_software(self):
     def handle_keyboard_result(result):
@@ -327,7 +327,7 @@ class Setup(Widget):
         self.state = SetupState.SOFTWARE_SELECTION
 
     self.keyboard.reset(min_text_size=1)
-    self.keyboard.set_title("Enter URL", "for Custom Software")
+    self.keyboard.set_title(tr("Enter URL"), tr("for Custom Software"))
     self.keyboard.set_callback(handle_keyboard_result)
     gui_app.push_widget(self.keyboard)
 
@@ -377,7 +377,7 @@ class Setup(Widget):
         is_elf = header == b'\x7fELF'
 
       if not is_elf:
-        self.download_failed(self.download_url, "No custom software found at this URL.")
+        self.download_failed(self.download_url, tr("No custom software found at this URL."))
         return
 
       # AGNOS might try to execute the installer before this process exits.
@@ -397,7 +397,7 @@ class Setup(Widget):
         error_msg = e.read().decode("utf-8")
         self.download_failed(self.download_url, error_msg)
     except Exception:
-      error_msg = "Ensure the entered URL is valid, and the device's internet connection is good."
+      error_msg = tr("Ensure the entered URL is valid, and the device's internet connection is good.")
       self.download_failed(self.download_url, error_msg)
 
   def download_failed(self, url: str, reason: str):
@@ -408,7 +408,7 @@ class Setup(Widget):
 
 def main():
   try:
-    gui_app.init_window("Setup", 20)
+    gui_app.init_window(tr("Setup"), 20)
     setup = Setup()
     gui_app.push_widget(setup)
     for _ in gui_app.render():

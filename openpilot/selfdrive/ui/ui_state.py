@@ -323,7 +323,8 @@ class Device(DeviceSP):
     ignition_just_turned_off = not ui_state.ignition and self._ignition
     self._ignition = ui_state.ignition
 
-    if ignition_just_turned_off or any(ev.left_down for ev in gui_app.mouse_events):
+    touch_active = any(ev.left_pressed or ev.left_down for ev in gui_app.mouse_events)
+    if ignition_just_turned_off or touch_active:
       if gui_app.sunnypilot_ui():
         DeviceSP.wake_from_dimmed_onroad_brightness(ui_state, gui_app.mouse_events)
 
@@ -335,7 +336,7 @@ class Device(DeviceSP):
         callback()
     self._prev_timed_out = interaction_timeout
 
-    self._set_awake(ui_state.ignition or not interaction_timeout or PC)
+    self._set_awake((ui_state.ignition and not ui_state.onroad_screen_timeout) or not interaction_timeout or PC)
 
   def _set_awake(self, on: bool):
     if on != self._awake:

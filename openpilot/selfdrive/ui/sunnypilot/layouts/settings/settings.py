@@ -25,7 +25,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.trips import TripsLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle import VehicleLayout
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLayout
 from openpilot.system.ui.lib.application import gui_app, MousePos
-from openpilot.system.ui.lib.multilang import tr_noop
+from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wifi_manager import WifiManager
 from openpilot.system.ui.sunnypilot.lib.styles import style
@@ -71,7 +71,8 @@ class NavButton(Widget):
     is_selected = self.panel_type == self.parent._current_panel
     text_color = OP.TEXT_SELECTED if is_selected else OP.TEXT_NORMAL
     content_x = rect.x + 90
-    text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
+    panel_name = tr(self.panel_info.name)
+    text_size = measure_text_cached(self.parent._font_medium, panel_name, 65)
 
     # Draw background if selected
     if is_selected:
@@ -90,7 +91,7 @@ class NavButton(Widget):
       content_x,
       rect.y + (OP.NAV_BTN_HEIGHT - text_size.y) / 2
     )
-    rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 55, 0, text_color)
+    rl.draw_text_ex(self.parent._font_medium, panel_name, text_pos, 55, 0, text_color)
 
     # Store button rect for click detection
     self.panel_info.button_rect = rect

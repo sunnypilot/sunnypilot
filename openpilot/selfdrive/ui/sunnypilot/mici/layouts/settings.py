@@ -24,7 +24,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     OP.SettingsLayout.__init__(self)
 
     device_panel = DeviceLayoutMici()
-    self._scroller._items[2].set_click_callback(lambda: gui_app.push_widget(device_panel))
+    self._device_btn.set_click_callback(lambda: gui_app.push_widget(device_panel))
 
     self.icon_offroad_enable = gui_app.texture("../../sunnypilot/selfdrive/assets/icons_mici/always_offroad.png", BIG_ICON_SIZE,
                                                BIG_ICON_SIZE)
@@ -56,8 +56,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     items = self._scroller._items.copy()
 
-    items.insert(1, sunnylink_btn)
-    items.insert(2, models_btn)
+    # Keep Advanced Settings immediately after Toggles; append SP-specific pages after it.
+    items.insert(2, sunnylink_btn)
+    items.insert(3, models_btn)
 
     # front slots (only one ever visible at a time): exit-always-offroad, then enable-onroad
     items.insert(0, self._enable_offroad_btn_onroad)

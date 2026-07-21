@@ -43,7 +43,9 @@ class UIStateSP:
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
     self.developer_ui = None
+    self.dark_mode: bool = False
     self.hide_v_ego_ui: bool = False
+    self.onroad_screen_timeout: bool = False
     self.onroad_brightness: int = 0
     self.onroad_brightness_timer: int = 0
     self.onroad_brightness_timer_param: int = 0
@@ -151,7 +153,9 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.developer_ui = self.params.get("DevUIInfo")
+    self.dark_mode = self.params.get_bool("DarkMode")
     self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
+    self.onroad_screen_timeout = self.params.get_bool("DisableScreenTimer")
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
     self.rainbow_path = self.params.get_bool("RainbowMode")

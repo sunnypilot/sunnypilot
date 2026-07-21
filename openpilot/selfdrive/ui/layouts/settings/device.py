@@ -125,8 +125,10 @@ class DeviceLayout(Widget):
         if calib.calStatus != log.LiveCalibrationData.Status.uncalibrated:
           pitch = math.degrees(calib.rpyCalib[1])
           yaw = math.degrees(calib.rpyCalib[2])
-          desc += tr(" Your device is pointed {:.1f}° {} and {:.1f}° {}.").format(abs(pitch), tr("down") if pitch > 0 else tr("up"),
-                                                                                  abs(yaw), tr("left") if yaw > 0 else tr("right"))
+          desc += tr(" Your device is pointed {vertical_direction} {vertical_angle:.1f}° and "
+                     "{horizontal_direction} {horizontal_angle:.1f}°.").format(
+                       vertical_direction=tr("down") if pitch > 0 else tr("up"), vertical_angle=abs(pitch),
+                       horizontal_direction=tr("left") if yaw > 0 else tr("right"), horizontal_angle=abs(yaw))
       except Exception:
         cloudlog.exception("invalid CalibrationParams")
 
