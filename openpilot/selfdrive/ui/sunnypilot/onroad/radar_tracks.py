@@ -109,7 +109,7 @@ def radar_lead_track_colors(radar_state) -> dict[int, rl.Color]:
     return highlighted_tracks
 
   for lead, color in zip((radar_state.leadOne, radar_state.leadTwo), LEAD_TRACK_COLORS, strict=True):
-    if lead.status and lead.radar and lead.radarTrackId >= 0:
+    if lead.present and lead.radar and lead.radarTrackId >= 0:
       highlighted_tracks.setdefault(int(lead.radarTrackId), color)
   return highlighted_tracks
 

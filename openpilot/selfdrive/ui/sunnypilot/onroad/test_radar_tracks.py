@@ -27,8 +27,8 @@ def test_unknown_dbc_motion_uses_neutral_dbc_color():
 
 def test_radar_lead_track_colors_only_highlight_radar_matches():
   radar_state = SimpleNamespace(
-    leadOne=SimpleNamespace(status=True, radar=True, radarTrackId=7),
-    leadTwo=SimpleNamespace(status=True, radar=False, radarTrackId=9),
+    leadOne=SimpleNamespace(present=True, radar=True, radarTrackId=7),
+    leadTwo=SimpleNamespace(present=True, radar=False, radarTrackId=9),
   )
 
   colors = radar_lead_track_colors(radar_state)
