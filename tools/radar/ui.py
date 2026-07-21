@@ -817,7 +817,7 @@ def make_radar_snapshot(radar_data, track_signals: tuple[DisplayTrackSignals, ..
       dRel=float(point.dRel),
       yRel=float(point.yRel),
       vRel=float(point.vRel),
-      aRel=float(point.aRel),
+      aRel=float("nan"),
       canAddress=track_locations.get(int(point.trackId), (-1, -1))[0],
       canBus=track_locations.get(int(point.trackId), (-1, -1))[1],
     ) for point in radar_data.points),

@@ -4,13 +4,13 @@
 
 # Instructions:
 # - connect to a Panda
-# - run selfdrive/pandad/pandad
+# - run openpilot/selfdrive/pandad/pandad
 # - launching this script
 #   Note: it's very important that the car is in stock mode, in order to collect a complete fingerprint
 # - since some messages are published at low frequency, keep this script running for at least 30s,
 #   until all messages are received at least once
 
-import cereal.messaging as messaging
+import openpilot.cereal.messaging as messaging
 
 logcan = messaging.sub_sock('can')
 msgs = {}
