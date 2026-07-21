@@ -100,7 +100,7 @@ class Updater(Widget):
     gui_label(title_rect, tr("Update Required"), TITLE_FONT_SIZE, font_weight=FontWeight.BOLD)
 
     # Description
-    desc_text = tr("An operating system update is required. Connect your device to Wi-Fi for the fastest update experience. "
+    desc_text = tr("An operating system update is required. Connect your device to Wi-Fi for the fastest update experience. " +
                    "The download size is approximately 1GB.")
 
     desc_rect = rl.Rectangle(MARGIN + 50, 250 + TITLE_FONT_SIZE * FONT_SCALE + 75, rect.width - MARGIN * 2 - 100, BODY_FONT_SIZE * FONT_SCALE * 4)

@@ -113,10 +113,6 @@ class FontWeight(StrEnum):
 def font_fallback(font: rl.Font, text: str = "") -> rl.Font:
   """Use a language-appropriate font only when text needs non-ASCII glyphs."""
   if multilang.requires_unifont() and any(ord(char) > 0x7F for char in text):
-    if multilang.language == "zh-CHT":
-      if FONT_DIR.joinpath(FontWeight.SOURCE_HAN_SANS_TC).is_file():
-        return gui_app.font(FontWeight.SOURCE_HAN_SANS_TC)
-      return gui_app.font(FontWeight.UNIFONT)
     return gui_app.font(FontWeight.UNIFONT)
   return font
 

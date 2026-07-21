@@ -112,7 +112,7 @@ class Setup(Widget):
                                                      + tr("⚠️ It has not been tested by comma.") + "\n\n"
                                                      + tr("⚠️ It may not comply with relevant safety standards.") + "\n\n"
                                                      + tr("⚠️ It may cause damage to your device and/or vehicle.") + "\n\n"
-                                                     + tr("If you'd like to proceed, use https://flash.comma.ai to restore your device to a factory state later."),
+                                                     + tr("If you'd like to proceed, use https://flash.comma.ai to restore " + "your device to a factory state later."),
                                                      68, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT, text_padding=60)
     self._custom_software_warning_body_scroll_panel = GuiScrollPanel()
 
