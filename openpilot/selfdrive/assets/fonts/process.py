@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import ast
 from pathlib import Path
 import json
 
@@ -13,22 +12,6 @@ LANGUAGES_FILE = TRANSLATIONS_DIR / "languages.json"
 GLYPH_PADDING = 6
 EXTRA_CHARS = "–‑✓×°§•X⚙✕◀▶✔⌫⇧␣○●↳çêüñ–‑✓×°§•€£¥"
 UNIFONT_LANGUAGES = {"th", "zh-CHT", "zh-CHS", "ko", "ja"}
-C4_TRANSLATIONS_FILE = SELFDRIVE_DIR.parent / "system" / "ui" / "lib" / "multilang.py"
-FONT_OUTPUT_NAMES = {
-  "SourceHanSansTC-Regular": "C4SourceHanSansTC-Regular",
-}
-
-
-def _c4_translation_chars() -> set[str]:
-  if not C4_TRANSLATIONS_FILE.exists():
-    return set()
-  tree = ast.parse(C4_TRANSLATIONS_FILE.read_text(encoding="utf-8"))
-  for node in tree.body:
-    if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "C4_ZH_CHT_TRANSLATIONS" for target in node.targets):
-      translations = ast.literal_eval(node.value)
-      return set("".join(translations) + "".join(translations.values()))
-  return set()
-
 
 def _languages():
   if not LANGUAGES_FILE.exists():
@@ -39,7 +22,7 @@ def _languages():
 
 def _char_sets():
   base = set(map(chr, range(32, 127))) | set(EXTRA_CHARS)
-  unifont = set(base) | _c4_translation_chars()
+  unifont = set(base)
 
   for language, code in _languages().items():
     unifont.update(language)
@@ -104,7 +87,6 @@ def _write_bmfont(path: Path, font_size: int, face: str, atlas_name: str, line_h
 
 def _process_font(font_path: Path, codepoints: tuple[int, ...]):
   print(f"Processing {font_path.name}...")
-  output_stem = FONT_OUTPUT_NAMES.get(font_path.stem, font_path.stem)
 
   font_size = {
     "unifont.otf": 16,  # unifont is only 16x8 or 16x16 pixels per glyph
@@ -138,14 +120,14 @@ def _process_font(font_path: Path, codepoints: tuple[int, ...]):
     raise RuntimeError("raylib returned an empty atlas")
 
   rects = rects_ptr[0]
-  atlas_name = f"{output_stem}.png"
+  atlas_name = f"{font_path.stem}.png"
   atlas_path = FONT_DIR / atlas_name
   entries, line_height, base = _glyph_metrics(glyphs, rects, loaded_glyph_count)
 
   if not rl.export_image(image, atlas_path.as_posix()):
     raise RuntimeError("Failed to export atlas image")
 
-  _write_bmfont(FONT_DIR / f"{output_stem}.fnt", font_size, output_stem, atlas_name, line_height, base, (image.width, image.height), entries)
+  _write_bmfont(FONT_DIR / f"{font_path.stem}.fnt", font_size, font_path.stem, atlas_name, line_height, base, (image.width, image.height), entries)
 
 
 def main():
@@ -154,8 +136,7 @@ def main():
   for font in fonts:
     if "emoji" in font.name.lower():
       continue
-    cjk_font = font.stem.lower().startswith(("unifont", "sourcehansanstc"))
-    glyphs = unifont_cp if cjk_font else base_cp
+    glyphs = unifont_cp if font.stem.lower().startswith("unifont") else base_cp
     _process_font(font, glyphs)
   return 0
 

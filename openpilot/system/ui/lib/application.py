@@ -102,7 +102,6 @@ class FontWeight(StrEnum):
   BOLD = "Inter-Bold.fnt"
   SEMI_BOLD = "Inter-SemiBold.fnt"
   UNIFONT = "unifont.fnt"
-  SOURCE_HAN_SANS_TC = "C4SourceHanSansTC-Regular.fnt"
   AUDIOWIDE = "Audiowide-Regular.fnt"
 
   # Small UI fonts
