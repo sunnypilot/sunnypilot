@@ -22,7 +22,7 @@ class ICTogglesLayoutMici(NavScroller):
     enable_accel_bar            = BigParamControl("Enable Accel Bar", "ShowAccelBar")
     enable_curvatured           = BigParamControl("Enable Dynamic Steering Learner", "EnableCurvatureD")
     show_curvatured_graph       = BigParamControl("Show Dynamic Steering Learner Graph", "ShowDynamicSteeringLearnerGraph")
-    
+
     self._scroller.add_widgets([
       enable_curvature_correction,
       enable_long_comfort_mode,
