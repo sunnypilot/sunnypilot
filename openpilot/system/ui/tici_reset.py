@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os
+import subprocess
 import sys
 import threading
 import time
@@ -38,19 +38,22 @@ class Reset(Widget):
     self._reset_state = ResetState.NONE
     self._cancel_button = Button(tr("Cancel"), gui_app.request_close)
     self._confirm_button = Button(tr("Confirm"), self._confirm, button_style=ButtonStyle.PRIMARY)
-    self._reboot_button = Button(tr("Reboot"), lambda: os.system("sudo reboot"))
+    self._reboot_button = Button(tr("Reboot"), lambda: subprocess.run(["sudo", "reboot"], check=False))
 
   def _do_erase(self):
     if PC:
       return
 
     # Removing data and formatting
-    rm = os.system("sudo rm -rf /data/*")
-    os.system(f"sudo umount {USERDATA}")
-    fmt = os.system(f"yes | sudo mkfs.ext4 {USERDATA}")
+    rm = subprocess.run([
+      "sudo", "find", "/data", "-mindepth", "1", "-maxdepth", "1",
+      "-exec", "rm", "-rf", "--", "{}", "+",
+    ], check=False).returncode
+    subprocess.run(["sudo", "umount", USERDATA], check=False)
+    fmt = subprocess.run(["sudo", "mkfs.ext4", "-F", USERDATA], check=False).returncode
 
     if rm == 0 or fmt == 0:
-      os.system("sudo reboot")
+      subprocess.run(["sudo", "reboot"], check=False)
     else:
       self._reset_state = ResetState.FAILED
 
