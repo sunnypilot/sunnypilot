@@ -119,12 +119,23 @@ class SpeedLimitResolver:
     self._reset_limit_sources(SpeedLimitSource.map)
     self._process_map_data(sm)
 
+  def _gps_fix_age(self, sm: messaging.SubMaster) -> float:
+    # Time since the last GPS message, in the monotonic domain. The message's own
+    # unixTimestampMillis is wall-clock epoch (ms) and must not be mixed with
+    # time.monotonic(); recv_time is the consumer-side monotonic receipt time and
+    # stays large (data treated as stale) until the first fix arrives.
+    recv_time = getattr(sm, 'recv_time', None)
+    if recv_time is None:
+      # The longitudinal maneuver harness (selfdrive/test/longitudinal_maneuvers/plant.py)
+      # passes a plain dict instead of a SubMaster, so there is no receipt time to read.
+      # It synthesizes a fresh message every step, so treat the data as current.
+      return 0.
+    return time.monotonic() - recv_time[self._gps_location_service]
+
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
-    gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    gps_fix_age = time.monotonic() - gps_data.unixTimestampMillis * 1e-3
-    if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
+    if self._gps_fix_age(sm) > LIMIT_MAX_MAP_DATA_AGE:
       return
 
     speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
@@ -133,16 +144,14 @@ class SpeedLimitResolver:
     self._calculate_map_data_limits(sm, speed_limit, next_speed_limit)
 
   def _calculate_map_data_limits(self, sm: messaging.SubMaster, speed_limit: float, next_speed_limit: float) -> None:
-    gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    distance_since_fix = self.v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
+    distance_since_fix = self.v_ego * self._gps_fix_age(sm)
     distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
 
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
-    # FIXME-SP: this is not working as expected
     if 0. < next_speed_limit < self.v_ego:
       adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
       adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2

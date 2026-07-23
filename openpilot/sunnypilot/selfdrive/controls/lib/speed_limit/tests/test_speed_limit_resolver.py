@@ -55,6 +55,10 @@ def setup_sm_mock(mocker: MockerFixture):
     'carStateSP': car_state_sp,
     'gpsLocation': gps_data,
   }[key]
+  # GPS freshness is measured from the monotonic receipt time; a recent value keeps
+  # the map data considered fresh.
+  now = time.monotonic()
+  sm_mock.recv_time = {'gpsLocation': now, 'gpsLocationExternal': now}
   return sm_mock
 
 
@@ -138,7 +142,30 @@ class TestSpeedLimitResolverValidation:
     resolver = resolver_class()
     resolver.policy = policy
     sm_mock = mocker.MagicMock()
-    sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
+    stale = time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE
+    sm_mock.recv_time = {'gpsLocation': stale, 'gpsLocationExternal': stale}
     resolver._get_from_map_data(sm_mock)
     assert resolver.limit_solutions[SpeedLimitSource.map] == 0.
     assert resolver.distance_solutions[SpeedLimitSource.map] == 0.
+
+  @pytest.mark.parametrize("policy", [Policy.map_data_only])
+  def test_upcoming_lower_limit_triggers_adaptation(self, resolver_class, policy, mocker: MockerFixture):
+    # Regression test for the clock-domain bug that made this branch unreachable:
+    # with a fresh GPS fix, an upcoming lower limit within the adapt distance must be applied.
+    resolver = resolver_class()
+    resolver.policy = policy
+    resolver.v_ego = 20.
+    live_map_data = create_mock({
+      'speedLimit': 30., 'speedLimitValid': True,
+      'speedLimitAhead': 10., 'speedLimitAheadValid': True,
+      'speedLimitAheadDistance': 100.,
+    }, mocker)
+    sm_mock = mocker.MagicMock()
+    sm_mock.__getitem__.side_effect = lambda key: {'liveMapDataSP': live_map_data}[key]
+    now = time.monotonic()
+    sm_mock.recv_time = {'gpsLocation': now, 'gpsLocationExternal': now}
+
+    resolver._get_from_map_data(sm_mock)
+
+    assert resolver.limit_solutions[SpeedLimitSource.map] == 10.
+    assert resolver.distance_solutions[SpeedLimitSource.map] == pytest.approx(100., abs=1.)
