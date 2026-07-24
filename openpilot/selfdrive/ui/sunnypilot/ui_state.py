@@ -43,6 +43,7 @@ class UIStateSP:
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
     self.developer_ui = None
+    self.draw_radar_tracks: bool = self.params.get_bool("DrawRadarTracks")
     self.hide_v_ego_ui: bool = False
     self.radar_tracks: int = self.params.get("RadarTracks", return_default=True)
     self.onroad_brightness: int = 0
@@ -152,6 +153,7 @@ class UIStateSP:
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.developer_ui = self.params.get("DevUIInfo")
+    self.draw_radar_tracks = self.params.get_bool("DrawRadarTracks")
     self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
     self.radar_tracks = self.params.get("RadarTracks", return_default=True)
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
