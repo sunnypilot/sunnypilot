@@ -135,7 +135,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     model = sm['modelV2']
     radar_state = sm['radarState'] if sm.valid['radarState'] else None
     lead_one = radar_state.leadOne if radar_state else None
-    render_lead_indicator = ui_state.radar_tracks != 0 and radar_state is not None
+    render_lead_indicator = ui_state.draw_radar_tracks and ui_state.radar_tracks != 0 and radar_state is not None
 
     # Update model data when needed
     model_updated = sm.updated['modelV2']
@@ -158,7 +158,7 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_lane_lines()
       self._draw_path(sm)
 
-    if sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
+    if ui_state.draw_radar_tracks and sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
       if (sm.updated['liveTracks'] or sm.updated['liveCalibration'] or transform_updated or
           not self.radar_tracks.projection_initialized):
         self.radar_tracks.update_radar_tracks(
