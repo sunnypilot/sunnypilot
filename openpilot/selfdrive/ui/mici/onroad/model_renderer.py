@@ -159,10 +159,10 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path(sm)
 
     if ui_state.draw_radar_tracks and sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
-      if (sm.updated['liveTracks'] or sm.updated['liveCalibration'] or transform_updated or
+      if (sm.updated['liveTracks'] or sm.updated['liveCalibration'] or model_updated or transform_updated or
           not self.radar_tracks.projection_initialized):
         self.radar_tracks.update_radar_tracks(
-          sm['liveTracks'], self._map_to_screen, self._path_offset_z,
+          sm['liveTracks'], self._map_to_screen, self._path_offset_z, lane_lines=model.laneLines,
         )
       highlighted_tracks = radar_lead_track_colors(radar_state) if render_lead_indicator else {}
       matched_positions = self.radar_tracks.draw_cached_radar_tracks(

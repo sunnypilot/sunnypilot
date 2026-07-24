@@ -7,6 +7,13 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import draw_radar_lea
   radar_lead_track_colors, radar_track_display
 
 
+def lane_line(lateral):
+  return SimpleNamespace(x=[0.0, 2000.0], y=[lateral, lateral])
+
+
+THREE_LANE_LINES = [lane_line(-5.4), lane_line(-1.8), lane_line(1.8), lane_line(5.4)]
+
+
 def color_tuple(color):
   return color.r, color.g, color.b, color.a
 
@@ -140,6 +147,7 @@ def test_draw_radar_tracks_applies_screen_offset(monkeypatch):
     path_offset_z=1.2,
     track_size=3,
     screen_offset=(100, 7),
+    lane_lines=THREE_LANE_LINES,
   )
 
   assert drawn_circles == [(120, 37, 3)]
@@ -155,7 +163,9 @@ def test_draw_radar_tracks_hides_unknown_motion(monkeypatch):
   drawn_colors = []
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda x, y, size, color: drawn_colors.append(color_tuple(color)))
 
-  radar_tracks.RadarTracks().draw_radar_tracks(live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2)
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, lane_lines=THREE_LANE_LINES,
+  )
 
   assert drawn_colors == []
 
@@ -172,10 +182,43 @@ def test_draw_radar_tracks_hides_unknown_motion_from_other_source(monkeypatch):
   monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda *args: drawn_circles.append(args))
 
   radar_tracks.RadarTracks().draw_radar_tracks(
-    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2,
+    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, lane_lines=THREE_LANE_LINES,
   )
 
   assert drawn_circles == []
+
+
+def test_draw_radar_tracks_only_shows_tofus_in_three_lanes(monkeypatch):
+  live_tracks = car.RadarData.new_message()
+  points = live_tracks.init("points", 5)
+  for point, y_rel in zip(points, (3.6, 0.0, -3.6, -6.1, 6.1), strict=True):
+    point.dRel = 50
+    point.yRel = y_rel
+    point.vRel = 2
+    point.motionState = radar_tracks.DBC_MOTION_MOVING
+
+  drawn_circles = []
+  monkeypatch.setattr(radar_tracks.rl, "draw_circle", lambda *args: drawn_circles.append(args))
+
+  radar_tracks.RadarTracks().draw_radar_tracks(
+    live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, lane_lines=THREE_LANE_LINES,
+  )
+
+  assert len(drawn_circles) == 3
+
+
+def test_radar_track_picks_lane_with_closest_center():
+  def track(y_rel):
+    return SimpleNamespace(dRel=50, yRel=y_rel)
+
+  assert radar_tracks.radar_track_lane_index(track(3.6), THREE_LANE_LINES) == 0
+  assert radar_tracks.radar_track_lane_index(track(2.5), THREE_LANE_LINES) == 0
+  assert radar_tracks.radar_track_lane_index(track(0.0), THREE_LANE_LINES) == 1
+  assert radar_tracks.radar_track_lane_index(track(-1.0), THREE_LANE_LINES) == 1
+  assert radar_tracks.radar_track_lane_index(track(-3.6), THREE_LANE_LINES) == 2
+  assert radar_tracks.radar_track_lane_index(track(6.1), THREE_LANE_LINES) is None
+  assert radar_tracks.radar_track_lane_index(track(-6.1), THREE_LANE_LINES) is None
+  assert radar_tracks.radar_track_lane_index(track(0.0), None) is None
 
 
 def test_draw_radar_tracks_uses_source_shapes_with_preferred_circle(monkeypatch):
@@ -203,6 +246,7 @@ def test_draw_radar_tracks_uses_source_shapes_with_preferred_circle(monkeypatch)
 
   radar_tracks.RadarTracks().draw_radar_tracks(
     live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2, track_size=6,
+    lane_lines=THREE_LANE_LINES,
   )
 
   assert circles == [(0x3A5, 6)]
@@ -227,6 +271,7 @@ def test_draw_camera_objects_uses_triangle(monkeypatch):
 
   radar_tracks.RadarTracks().draw_radar_tracks(
     live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2, track_size=6,
+    lane_lines=THREE_LANE_LINES,
   )
 
   assert polygons == [(25, 3, 6, -90.0)]
@@ -244,6 +289,7 @@ def test_draw_radar_tracks_shrinks_stationary_dots(monkeypatch):
 
   radar_tracks.RadarTracks().draw_radar_tracks(
     live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=6, v_ego=20,
+    lane_lines=THREE_LANE_LINES,
   )
 
   assert drawn_sizes == [1]
@@ -261,6 +307,7 @@ def test_draw_radar_tracks_keeps_matched_speed_dots_large(monkeypatch):
 
   radar_tracks.RadarTracks().draw_radar_tracks(
     live_tracks, lambda d_rel, y_rel, z: (20, 30), path_offset_z=1.2, track_size=6, v_ego=20,
+    lane_lines=THREE_LANE_LINES,
   )
 
   assert drawn_sizes == [6]
@@ -289,7 +336,7 @@ def test_draw_radar_tracks_highlights_and_returns_matched_track(monkeypatch):
 
   matched_positions = radar_tracks.RadarTracks().draw_radar_tracks(
     live_tracks, lambda d_rel, y_rel, z: (d_rel, 30), path_offset_z=1.2,
-    screen_offset=(100, 7), highlighted_tracks={11: highlight_color},
+    screen_offset=(100, 7), highlighted_tracks={11: highlight_color}, lane_lines=THREE_LANE_LINES,
   )
 
   assert drawn_rings == [((111, 37), 9, 12, (255, 215, 0, 255))]
@@ -316,7 +363,7 @@ def test_cached_radar_tracks_only_reproject_on_update(monkeypatch):
     lambda x, y, radius, color: drawn.append((x, y)),
   )
   renderer = radar_tracks.RadarTracks()
-  renderer.update_radar_tracks(live_tracks, map_to_screen, path_offset_z=1.2)
+  renderer.update_radar_tracks(live_tracks, map_to_screen, path_offset_z=1.2, lane_lines=THREE_LANE_LINES)
   renderer.draw_cached_radar_tracks(screen_offset=(100, 7))
   renderer.draw_cached_radar_tracks(screen_offset=(200, 9))
 

@@ -31,6 +31,7 @@ class ProjectedRadarTrack:
   source_index: int
   camera_object: bool
   track_id: int
+  lane_index: int
 
 
 def is_preferred_radar_source(source) -> bool:
@@ -101,6 +102,46 @@ def radar_track_display(motion_state: int) -> tuple[rl.Color, bool]:
   if motion_state == DBC_MOTION_MOVING:
     return rl.Color(*DBC_MOVING_COLOR, 255), False
   return rl.Color(*DBC_UNKNOWN_COLOR, 255), False
+
+
+def lane_line_lateral_at_distance(lane_line, distance: float) -> float | None:
+  points = sorted(
+    (float(x), float(y))
+    for x, y in zip(lane_line.x, lane_line.y, strict=True)
+    if math.isfinite(x) and math.isfinite(y)
+  )
+  if len(points) < 2 or not points[0][0] <= distance <= points[-1][0]:
+    return None
+
+  for (x_0, y_0), (x_1, y_1) in zip(points, points[1:], strict=True):
+    if x_0 <= distance <= x_1:
+      if x_0 == x_1:
+        return y_1
+      return y_0 + (y_1 - y_0) * (distance - x_0) / (x_1 - x_0)
+  return None
+
+
+def radar_track_lane_index(track, lane_lines) -> int | None:
+  if lane_lines is None or len(lane_lines) < 4:
+    return None
+
+  boundaries = [
+    lane_line_lateral_at_distance(lane_lines[lane_index], float(track.dRel))
+    for lane_index in range(4)
+  ]
+  if any(boundary is None for boundary in boundaries):
+    return None
+  ordered_boundaries = sorted(float(boundary) for boundary in boundaries if boundary is not None)
+
+  track_lateral = -float(track.yRel)
+  if not ordered_boundaries[0] <= track_lateral <= ordered_boundaries[-1]:
+    return None
+
+  lane_centers = [
+    (left_boundary + right_boundary) / 2.0
+    for left_boundary, right_boundary in zip(ordered_boundaries, ordered_boundaries[1:], strict=False)
+  ]
+  return min(range(3), key=lambda lane_index: abs(track_lateral - lane_centers[lane_index]))
 
 
 def radar_lead_track_colors(radar_state) -> dict[int, rl.Color]:
@@ -283,7 +324,7 @@ class RadarTracks:
     self._projected_tracks = ()
     self._projection_initialized = False
 
-  def update_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7) -> None:
+  def update_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, lane_lines=None) -> None:
     projected_tracks = []
     sources = sorted_radar_sources(live_tracks)
 
@@ -294,6 +335,9 @@ class RadarTracks:
 
       motion_state = int(track.motionState)
       if motion_state not in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING):
+        continue
+      lane_index = radar_track_lane_index(track, lane_lines)
+      if lane_index is None:
         continue
 
       pt = map_to_screen(d_rel, -y_rel, path_offset_z)
@@ -311,6 +355,7 @@ class RadarTracks:
         source_index=radar_track_source_index(track, sources),
         camera_object=source is not None and is_camera_object_source(source),
         track_id=int(track.trackId),
+        lane_index=lane_index,
       ))
 
     self._projected_tracks = tuple(projected_tracks)
@@ -334,6 +379,6 @@ class RadarTracks:
     return highlighted_positions
 
   def draw_radar_tracks(self, live_tracks, map_to_screen, path_offset_z, track_size=7, screen_offset=(0, 0), v_ego=0.0,
-                        highlighted_tracks=None):
-    self.update_radar_tracks(live_tracks, map_to_screen, path_offset_z, track_size)
+                        highlighted_tracks=None, lane_lines=None):
+    self.update_radar_tracks(live_tracks, map_to_screen, path_offset_z, track_size, lane_lines)
     return self.draw_cached_radar_tracks(screen_offset, highlighted_tracks)
