@@ -138,7 +138,7 @@ class ModelsLayoutMici(NavScroller):
     self._show_selection_view(btns, self._show_folders)
 
   def _reset_main_view(self):
-    self._scroller._items = self.main_items
+    self._scroller._items = self.main_items  # type: ignore[assignment] # ty: ignore[invalid-assignment]
     self.set_back_callback(self.original_back_callback)
     self._scroller.scroll_panel.set_offset(0)
     self._scroller.scroll_to(0)

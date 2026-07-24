@@ -61,7 +61,7 @@ class TestFrameSkipBufferLengthEquivalence:
 
 class TestTemporalSamplingEquivalence:
   def test_non20hz_desire_sampling_identity(self):
-    buf = np.random.randn(100, 1, 8).astype(np.float32)
+    buf = np.random.default_rng(0).standard_normal((100, 1, 8)).astype(np.float32)
     frame_skip = 1
     sampled = buf[::frame_skip].reshape(-1, 8)
     assert sampled.shape == (100, 8)
@@ -150,7 +150,7 @@ class TestOutputSlicePreservation:
   def test_vision_hidden_state_slice_used_for_features(self):
     mock_slices = {'hidden_state': slice(0, 512), 'plan': slice(512, 1024)}
     features_slice = mock_slices['hidden_state']
-    fake_output = np.random.randn(1, 1024).astype(np.float32)
+    fake_output = np.random.default_rng(0).standard_normal((1, 1024)).astype(np.float32)
     features = fake_output[:, features_slice]
     assert features.shape == (1, 512)
 

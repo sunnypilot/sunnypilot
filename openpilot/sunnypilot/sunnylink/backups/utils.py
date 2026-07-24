@@ -183,6 +183,6 @@ def transform_dict(obj):
 
 
 class SnakeCaseEncoder(json.JSONEncoder):
-  def encode(self, obj):
-    transformed_obj = transform_dict(obj)
+  def encode(self, o):
+    transformed_obj = transform_dict(o)
     return super().encode(transformed_obj)

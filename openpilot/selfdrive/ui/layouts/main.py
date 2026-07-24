@@ -34,7 +34,7 @@ class MainLayout(Widget):
     # Initialize layouts
     self._home_layout = HomeLayout()
     self._home_body_layout = BodyLayout()
-    self._layouts = {
+    self._layouts: dict[MainState, Widget] = {
       MainState.HOME: self._home_layout,
       MainState.SETTINGS: SettingsLayout(),
       MainState.ONROAD: AugmentedRoadView(radar_tracks_settings_callback=lambda: self.open_settings(PanelType.TOGGLES)),
