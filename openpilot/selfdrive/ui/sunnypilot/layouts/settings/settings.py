@@ -37,7 +37,7 @@ from openpilot.system.ui.widgets.scroller_tici import Scroller
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
-OP.PanelType = IntEnum(
+OP.PanelType = IntEnum(  # type: ignore[assignment] # ty: ignore[invalid-assignment]
   "PanelType",
   [es.name for es in OP.PanelType] + [
     "SUNNYLINK",
@@ -180,20 +180,18 @@ class SettingsLayoutSP(OP.SettingsLayout):
       self._sidebar_scroller.render(nav_rect)
       return
 
-  def _handle_mouse_release(self, mouse_pos: MousePos) -> bool:
+  def _handle_mouse_release(self, mouse_pos: MousePos) -> None:
     # Check close button
     if rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
       if self._close_callback:
         self._close_callback()
-      return True
+      return
 
     # Check navigation buttons
     for panel_type, panel_info in self._panels.items():
       if rl.check_collision_point_rec(mouse_pos, panel_info.button_rect) and self._sidebar_scroller.scroll_panel.is_touch_valid():
         self.set_current_panel(panel_type)
-        return True
-
-    return False
+        return
 
   def show_event(self):
     super().show_event()
