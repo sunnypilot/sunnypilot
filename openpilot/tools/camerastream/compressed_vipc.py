@@ -109,17 +109,25 @@ class CompressedVipc:
     while min(sm.recv_frame.values()) == 0:
       sm.update(100)
 
+    stream_dimensions = {
+      vst: (sm[ENCODE_SOCKETS[vst]].width, sm[ENCODE_SOCKETS[vst]].height)
+      for vst in vision_streams
+    }
+    # The metadata subscribers are setup-only. Leaving them connected creates a
+    # second unread camera subscription whose TCP queues grow for the entire run.
+    sm.close()
+
     self.vipc_server = VisionIpcServer(server_name)
     for vst in vision_streams:
-      ed = sm[ENCODE_SOCKETS[vst]]
-      self.vipc_server.create_buffers(vst, 4, ed.width, ed.height)
+      width, height = stream_dimensions[vst]
+      self.vipc_server.create_buffers(vst, 4, width, height)
     self.vipc_server.start_listener()
 
     self.procs = []
     process_context = multiprocessing.get_context("fork")
     for vst in vision_streams:
-      ed = sm[ENCODE_SOCKETS[vst]]
-      p = process_context.Process(target=decoder, args=(addr, self.vipc_server, vst, ed.width, ed.height, debug))
+      width, height = stream_dimensions[vst]
+      p = process_context.Process(target=decoder, args=(addr, self.vipc_server, vst, width, height, debug))
       p.start()
       self.procs.append(p)
 
