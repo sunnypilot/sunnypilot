@@ -162,14 +162,19 @@ class AugmentedRoadView(CameraView):
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
-    self._model_status_labels = [
-      UnifiedLabel("", 26, FontWeight.SEMI_BOLD,
-                   alignment=alignment,
+    self._model_status_key_labels = [
+      UnifiedLabel("", 21, FontWeight.ROMAN, text_color=rl.Color(210, 210, 210, 220),
+                   alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
                    alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
                    wrap_text=False)
-      for alignment in (rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-                        rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                        rl.GuiTextAlignment.TEXT_ALIGN_RIGHT)
+      for _ in range(6)
+    ]
+    self._model_status_value_labels = [
+      UnifiedLabel("", 22, FontWeight.SEMI_BOLD,
+                   alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
+                   alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+                   wrap_text=False)
+      for _ in range(6)
     ]
 
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
@@ -265,10 +270,17 @@ class AugmentedRoadView(CameraView):
     model = ui_state.sm["modelV2"]
     if ui_state.sm.seen["modelV2"] and model.timestampEof:
       model_age_ms = max(0., (time.monotonic_ns() - model.timestampEof) / 1e6)
-      lag_text = f"{model_age_ms:.0f} ms"
+      execution_ms = max(0., model.modelExecutionTime * 1e3)
+      io_queue_ms = max(0., model_age_ms - execution_ms)
+      frame_drop = model.frameDropPerc
+      age_text = f"{model_age_ms:.0f} ms"
+      execution_text = f"{execution_ms:.0f} ms"
+      io_queue_text = f"{io_queue_ms:.0f} ms"
+      frame_drop_text = f"{frame_drop:.1f}%"
     else:
       model_age_ms = float("inf")
-      lag_text = "-- ms"
+      age_text = execution_text = io_queue_text = "-- ms"
+      frame_drop_text = "--%"
 
     if ui_state.wgpu_enabled:
       source, model_name = "WGPU", ui_state.wgpu_model_name
@@ -282,17 +294,29 @@ class AugmentedRoadView(CameraView):
     else:
       color = rl.Color(255, 120, 80, 230)
 
-    status_rect = rl.Rectangle(self._content_rect.x + 18, self._content_rect.y + self._content_rect.height - 58, 360, 42)
-    rl.draw_rectangle_rounded(status_rect, 0.35, 8, rl.Color(0, 0, 0, 165))
-    columns = (
-      (source, rl.Rectangle(status_rect.x + 14, status_rect.y, 96, status_rect.height)),
-      (model_name, rl.Rectangle(status_rect.x + 120, status_rect.y, 105, status_rect.height)),
-      (lag_text, rl.Rectangle(status_rect.x + 235, status_rect.y, 110, status_rect.height)),
+    panel_w, panel_h = 250, 178
+    status_rect = rl.Rectangle(self._content_rect.x + self._content_rect.width - panel_w - 18,
+                               self._content_rect.y + 18, panel_w, panel_h)
+    rl.draw_rectangle_rounded(status_rect, 0.14, 8, rl.Color(0, 0, 0, 175))
+
+    rows = (
+      ("SOURCE", source),
+      ("MODEL", model_name),
+      ("AGE", age_text),
+      ("EXEC", execution_text),
+      ("IO/QUEUE", io_queue_text),
+      ("DROPPED", frame_drop_text),
     )
-    for label, (text, rect) in zip(self._model_status_labels, columns, strict=True):
-      label.set_text(text)
-      label.set_text_color(color)
-      label.render(rect)
+    row_h = 26
+    for i, ((key, value), key_label, value_label) in enumerate(
+      zip(rows, self._model_status_key_labels, self._model_status_value_labels, strict=True)
+    ):
+      row_rect = rl.Rectangle(status_rect.x + 14, status_rect.y + 11 + i * row_h, status_rect.width - 28, row_h)
+      key_label.set_text(key)
+      key_label.render(rl.Rectangle(row_rect.x, row_rect.y, 105, row_rect.height))
+      value_label.set_text(value)
+      value_label.set_text_color(color)
+      value_label.render(rl.Rectangle(row_rect.x + 108, row_rect.y, row_rect.width - 108, row_rect.height))
 
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:
