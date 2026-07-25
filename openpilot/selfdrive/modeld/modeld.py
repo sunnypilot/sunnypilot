@@ -77,6 +77,22 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
+def copy_nv12_to_venus(buf: VisionBuf, dst: np.ndarray, nv12: tuple[int, int, int, int]) -> None:
+  stride, y_height, uv_height, _ = nv12
+  if buf.stride < buf.width:
+    raise ValueError(f"invalid VisionIPC stride {buf.stride} for width {buf.width}")
+
+  src = np.frombuffer(buf.data, dtype=np.uint8)
+  src_size = buf.uv_offset + buf.stride * (buf.height // 2)
+  if src.size < src_size:
+    raise ValueError(f"VisionIPC buffer has {src.size} bytes, expected at least {src_size}")
+
+  dst[:stride * y_height].reshape(y_height, stride)[:buf.height, :buf.width] = \
+    src[:buf.stride * buf.height].reshape(buf.height, buf.stride)[:, :buf.width]
+  dst[stride * y_height:stride * (y_height + uv_height)].reshape(uv_height, stride)[:buf.height // 2, :buf.width] = \
+    src[buf.uv_offset:src_size].reshape(buf.height // 2, buf.stride)[:, :buf.width]
+
+
 class ModelState(ModelStateBase):
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
@@ -98,6 +114,7 @@ class ModelState(ModelStateBase):
     self.input_queues, self.npy = make_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
     self.full_frames: dict[str, Tensor] = {}
     self._blob_cache: dict[tuple[str, int], Tensor] = {}
+    self._vision_staging: dict[str, np.ndarray] = {}
     self.parser = Parser()
     self.frame_buf_params = {k: get_nv12_info(cam_w, cam_h) for k in ('img', 'big_img')}
     self.run_policy = jits['run_policy']
@@ -110,14 +127,18 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray] | None:
     for key in bufs.keys():
-      yuv_size = self.frame_buf_params[key][3]
-      frame = np.frombuffer(bufs[key].data, dtype=np.uint8, count=yuv_size)
+      nv12 = self.frame_buf_params[key]
+      yuv_size = nv12[3]
       if self.copy_vision_buffers:
         # VisionIPC supplies a CPU pointer. Metal's external_ptr expects an MTLBuffer object,
-        # so wrapping the CPU pointer with from_blob crashes inside useResources().
-        self.full_frames[key] = Tensor(frame, device=self.WARP_DEV).realize()
+        # so wrap its NV12 pixels in the Venus layout expected by the compiled warp, then copy.
+        if key not in self._vision_staging:
+          self._vision_staging[key] = np.zeros(yuv_size, dtype=np.uint8)
+        copy_nv12_to_venus(bufs[key], self._vision_staging[key], nv12)
+        self.full_frames[key] = Tensor(self._vision_staging[key], device=self.WARP_DEV).realize()
       else:
         # There is a ringbuffer of imgs, just cache tensors pointing to all of them.
+        frame = np.frombuffer(bufs[key].data, dtype=np.uint8, count=yuv_size)
         cache_key = (key, frame.ctypes.data)
         if cache_key not in self._blob_cache:
           self._blob_cache[cache_key] = Tensor.from_blob(frame.ctypes.data, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
