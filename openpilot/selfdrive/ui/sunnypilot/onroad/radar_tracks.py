@@ -195,20 +195,25 @@ class RadarTracksStatus:
     self._settings_callback = settings_callback
     self._right_margin = right_margin
     self._rect = rl.Rectangle()
-    text_args = {
-      "font_size": 26,
-      "font_weight": FontWeight.SEMI_BOLD,
-      "alignment": rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
-      "alignment_vertical": rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
-      "wrap_text": False,
-    }
+
+    def status_label(text: str, color: rl.Color) -> UnifiedLabel:
+      return UnifiedLabel(
+        text,
+        font_size=26,
+        font_weight=FontWeight.SEMI_BOLD,
+        text_color=color,
+        alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
+        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_TOP,
+        wrap_text=False,
+      )
+
     self._labels = (
-      UnifiedLabel("", text_color=rl.Color(0, 255, 64, 255), **text_args),
-      UnifiedLabel("none", text_color=rl.Color(0, 255, 64, 255), **text_args),
-      UnifiedLabel("", text_color=rl.Color(*DBC_MOVING_COLOR, 255), **text_args),
-      UnifiedLabel("", text_color=rl.Color(*NEUTRAL_COLOR, 255), **text_args),
-      UnifiedLabel("", text_color=rl.Color(*DBC_UNKNOWN_COLOR, 255), **text_args),
-      UnifiedLabel("", text_color=rl.Color(*DBC_UNKNOWN_COLOR, 255), **text_args),
+      status_label("", rl.Color(0, 255, 64, 255)),
+      status_label("none", rl.Color(0, 255, 64, 255)),
+      status_label("", rl.Color(*DBC_MOVING_COLOR, 255)),
+      status_label("", rl.Color(*NEUTRAL_COLOR, 255)),
+      status_label("", rl.Color(*DBC_UNKNOWN_COLOR, 255)),
+      status_label("", rl.Color(*DBC_UNKNOWN_COLOR, 255)),
     )
     self._status = ("", "none", "", "", "", "")
     self._status_colors: tuple[tuple[int, int, int], ...] = ()
