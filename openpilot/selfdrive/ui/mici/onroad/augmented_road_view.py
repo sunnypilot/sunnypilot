@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pyray as rl
 from openpilot.cereal import log
@@ -160,6 +162,10 @@ class AugmentedRoadView(CameraView):
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+    self._model_status_label = UnifiedLabel("", 26, FontWeight.SEMI_BOLD,
+                                            alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+                                            alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+                                            wrap_text=False)
 
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
 
@@ -230,6 +236,8 @@ class AugmentedRoadView(CameraView):
     self._driver_state_renderer.set_position(self._rect.x + 16, self._rect.y + 10)
     self._driver_state_renderer.render()
 
+    self._render_model_status()
+
     self._hud_renderer.set_can_draw_top_icons(alert_to_render is None)
     self._hud_renderer.set_wheel_critical_icon(alert_to_render is not None and not not_animating_out and
                                                alert_to_render.visual_alert == car.CarControl.HUDControl.VisualAlert.steerRequired)
@@ -247,6 +255,33 @@ class AugmentedRoadView(CameraView):
     self._confidence_ball.render(self.rect)
 
     self._bookmark_icon.render(self.rect)
+
+  def _render_model_status(self):
+    model = ui_state.sm["modelV2"]
+    if ui_state.sm.seen["modelV2"] and model.timestampEof:
+      model_age_ms = max(0., (time.monotonic_ns() - model.timestampEof) / 1e6)
+      lag_text = f"{model_age_ms:.0f} ms"
+    else:
+      model_age_ms = float("inf")
+      lag_text = "-- ms"
+
+    if ui_state.wgpu_enabled:
+      source, model_name = "WGPU", ui_state.wgpu_model_name
+    else:
+      source, model_name = "LOCAL", "DEVICE"
+
+    if model_age_ms < 200:
+      color = rl.Color(100, 255, 120, 230)
+    elif model_age_ms < 500:
+      color = rl.Color(255, 210, 80, 230)
+    else:
+      color = rl.Color(255, 120, 80, 230)
+
+    status_rect = rl.Rectangle(self._content_rect.x + 18, self._content_rect.y + self._content_rect.height - 58, 330, 42)
+    rl.draw_rectangle_rounded(status_rect, 0.35, 8, rl.Color(0, 0, 0, 165))
+    self._model_status_label.set_text(f"{source} · {model_name} · {lag_text}")
+    self._model_status_label.set_text_color(color)
+    self._model_status_label.render(status_rect)
 
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:

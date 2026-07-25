@@ -112,7 +112,6 @@ class SelfdriveD(CruiseHelper):
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
     self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
     self.wgpu_enabled = self.params.get_bool("WgpuEnabled")
-    self.wgpu_bench_mode = self.params.get_bool("WgpuBenchMode")
 
     car_recognized = self.CP.brand != 'mock'
 
@@ -470,8 +469,8 @@ class SelfdriveD(CruiseHelper):
 
     # TODO: fix simulator
     if not SIMULATION or REPLAY:
-      if self.sm['modelV2'].frameDropPerc > 1:
-        self.events.add(EventName.wgpuModeldLagging if self.wgpu_enabled and self.wgpu_bench_mode else EventName.modeldLagging)
+      if self.sm['modelV2'].frameDropPerc > 1 and not self.wgpu_enabled:
+        self.events.add(EventName.modeldLagging)
 
     # mute canBusMissing event if in Park, as it sometimes may trigger a false alarm with MADS in Paused state
     if CS.gearShifter == car.CarState.GearShifter.park and self.mads.enabled:
@@ -628,7 +627,6 @@ class SelfdriveD(CruiseHelper):
       self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
       self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
       self.wgpu_enabled = self.params.get_bool("WgpuEnabled")
-      self.wgpu_bench_mode = self.params.get_bool("WgpuBenchMode")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.params.get("LongitudinalPersonality", return_default=True)
 
