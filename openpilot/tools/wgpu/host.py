@@ -37,14 +37,14 @@ def main() -> None:
     model_args.append("--big-model")
   model = subprocess.Popen(model_args, cwd=ROOT, start_new_session=True)
 
-  procs = [camera, model]
+  procs = {"camera bridge": camera, "modeld": model}
   try:
-    while all(proc.poll() is None for proc in procs):
+    while all(proc.poll() is None for proc in procs.values()):
       time.sleep(0.25)
-    failed = next(proc for proc in procs if proc.poll() is not None)
-    raise RuntimeError(f"wgpu host process exited with status {failed.returncode}")
+    failed_name, failed = next((name, proc) for name, proc in procs.items() if proc.poll() is not None)
+    raise RuntimeError(f"wgpu {failed_name} exited with status {failed.returncode}")
   finally:
-    for proc in procs:
+    for proc in procs.values():
       if proc.poll() is None:
         stop_process(proc)
     print("wgpu host stopped")
