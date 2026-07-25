@@ -5,6 +5,9 @@ import zmq
 import openpilot.cereal.messaging as messaging
 
 
+WGPU_CAR_PARAMS = "wgpuCarParams"
+
+
 def service_port(endpoint: str) -> int:
   # Keep this in sync with cereal/messaging/bridge_zmq.cc.
   value = 0xcbf29ce484222325

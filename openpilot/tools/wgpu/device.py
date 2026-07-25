@@ -7,7 +7,7 @@ from pathlib import Path
 
 import openpilot.cereal.messaging as messaging
 from openpilot.common.params import Params
-from openpilot.tools.wgpu.zmq import ZmqSubSocket
+from openpilot.tools.wgpu.zmq import WGPU_CAR_PARAMS, ZmqPubMaster, ZmqSubSocket
 
 
 MODEL_OUTPUTS = "modelV2,drivingModelData,cameraOdometry,modelDataV2SP"
@@ -77,14 +77,22 @@ def main() -> None:
   try:
     forward = subprocess.Popen([str(BRIDGE)])
     params.put_bool("WgpuReady", True, block=True)
+    car_params_pub = ZmqPubMaster([WGPU_CAR_PARAMS])
     remote_model = ZmqSubSocket("modelV2", args.host, conflate=True)
     remote_status = ZmqSubSocket(WGPU_STATUS, args.host, conflate=True)
+    car_params = params.get("CarParams") or params.get("CarParamsPersistent")
 
     while True:
       # Keep local modeld publishing while a host connects and warms up.
       print(f"forwarding camera/state to {args.host}; waiting for a fresh remote model")
       model_name = None
       while True:
+        if car_params is None:
+          car_params = params.get("CarParams") or params.get("CarParamsPersistent")
+        if car_params is not None:
+          # This dedicated conflated startup channel lets remote modeld obtain CP
+          # before it connects to VisionIPC and accumulates stale frame metadata.
+          car_params_pub.send_raw(WGPU_CAR_PARAMS, car_params)
         received, model_age = receive_model(remote_model)
         model_name = receive_model_name(remote_status) or model_name
         if received and 0 <= model_age < REMOTE_MODEL_TIMEOUT and model_name is not None:
