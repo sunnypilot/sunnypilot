@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import math
 import os
-import time
 
 from openpilot.cereal import log
 from opendbc.car.structs import car
@@ -189,13 +188,6 @@ def high_cpu_usage_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
 
 def modeld_lagging_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   return NormalPermanentAlert("Driving Model Lagging", f"{sm['modelV2'].frameDropPerc:.1f}% frames dropped")
-
-
-def wgpu_modeld_lagging_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool,
-                              soft_disable_time: int, personality) -> Alert:
-  model_age_ms = max(0., (time.monotonic_ns() - sm['modelV2'].timestampEof) / 1e6)
-  return NormalPermanentAlert("WGPU Model Lagging",
-                              f"{model_age_ms:.0f} ms old · {sm['modelV2'].frameDropPerc:.1f}% frames dropped")
 
 
 def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
@@ -730,10 +722,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Driving Model Lagging"),
     ET.PERMANENT: modeld_lagging_alert,
   },
-  EventName.wgpuModeldLagging: {
-    ET.PERMANENT: wgpu_modeld_lagging_alert,
-  },
-
   # Besides predicting the path, lane lines and lead car data the model also
   # predicts the current velocity and rotation speed of the car. If the model is
   # very uncertain about the current velocity while the car is moving, this

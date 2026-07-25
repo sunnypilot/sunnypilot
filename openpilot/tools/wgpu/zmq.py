@@ -88,3 +88,6 @@ class ZmqPubMaster:
 
   def send(self, service: str, message) -> None:
     self.sockets[service].send(message.to_bytes(), flags=zmq.NOBLOCK)
+
+  def send_raw(self, service: str, data: bytes) -> None:
+    self.sockets[service].send(data, flags=zmq.NOBLOCK)

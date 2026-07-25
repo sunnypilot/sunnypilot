@@ -359,11 +359,10 @@ def main(demo=False, remote_addr: str | None = None, big_model: bool = False):
 
       fill_driving_model_data(drivingdata_send, modelv2_send)
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
-      if remote_addr is not None or not params.get_bool("WgpuEnabled"):
-        pm.send('modelV2', modelv2_send)
-        pm.send('drivingModelData', drivingdata_send)
-        pm.send('cameraOdometry', posenet_send)
-        pm.send('modelDataV2SP', mdv2sp_send)
+      pm.send('modelV2', modelv2_send)
+      pm.send('drivingModelData', drivingdata_send)
+      pm.send('cameraOdometry', posenet_send)
+      pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
 

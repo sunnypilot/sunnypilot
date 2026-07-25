@@ -7,9 +7,12 @@ import sys
 import time
 from pathlib import Path
 
+from openpilot.tools.wgpu.zmq import ZmqPubMaster
+
 
 ROOT = Path(__file__).resolve().parents[3]
 CAMERASTREAM = ROOT / "openpilot/tools/camerastream/compressed_vipc.py"
+WGPU_STATUS = "wgpuStatus"
 
 
 def stop_process(proc: subprocess.Popen) -> None:
@@ -36,10 +39,13 @@ def main() -> None:
   if args.big_model:
     model_args.append("--big-model")
   model = subprocess.Popen(model_args, cwd=ROOT, start_new_session=True)
+  status = ZmqPubMaster([WGPU_STATUS])
+  model_name = b"BIG" if args.big_model else b"SMALL"
 
   procs = {"camera bridge": camera, "modeld": model}
   try:
     while all(proc.poll() is None for proc in procs.values()):
+      status.send_raw(WGPU_STATUS, model_name)
       time.sleep(0.25)
     failed_name, failed = next((name, proc) for name, proc in procs.items() if proc.poll() is not None)
     raise RuntimeError(f"wgpu {failed_name} exited with status {failed.returncode}")
