@@ -94,9 +94,9 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
-                                                  tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
-                                                  1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
-                                                  lambda v: f"{v / 100:.2f} m")
+                                        tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
+                                        1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
+                                        lambda v: f"{v / 100:.2f} m")
 
     self.items = [self.current_model_item, self.cancel_download_item, self.supercombo_label, self.vision_label,
                   self.policy_label, self.off_policy_label, self.on_policy_label, self.refresh_item, self.clear_cache_item,
