@@ -37,6 +37,9 @@ available = probe_devices()
 if 'CUDA' in available:
   tg_backend = 'CUDA'
   tg_flags = f'DEV={tg_backend}'
+elif 'METAL' in available:
+  tg_backend = 'METAL'
+  tg_flags = f'DEV={tg_backend} FLOAT16=1'
 elif 'QCOM' in available:
   tg_backend = 'QCOM'
   tg_flags = f'DEV={tg_backend} IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1'
@@ -55,6 +58,7 @@ tg_devices = { # which device to put jit inputs to at runtime
 }
 
 USBGPU = usbgpu_present() # or release # TODO always build big model on release
+WGPU = os.getenv('WGPU') == '1'
 if USBGPU:
   usbgpu_tg_flags = f'DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV={tg_backend} FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0'
   # the USB+AMD GPU takes an exclusive flock; serialize all targets that touch it
@@ -84,13 +88,13 @@ compile_modeld_script = [
 model_w, model_h = MEDMODEL_INPUT_SIZE
 frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
 
-for usbgpu in [False, True] if USBGPU else [False]:
+for usbgpu in [False, True] if USBGPU or WGPU else [False]:
   target_pkl_path = File(modeld_pkl_path(usbgpu)).abspath
   # BIG_INTO_SMALL=1 builds the default target from the big model, e.g. to test it without a USB GPU
-  file_prefix, cmd_flags = ('big_', usbgpu_tg_flags) if usbgpu else ('big_' if os.getenv('BIG_INTO_SMALL') else '', tg_flags)
+  file_prefix, cmd_flags = ('big_', usbgpu_tg_flags if USBGPU else tg_flags) if usbgpu else ('big_' if os.getenv('BIG_INTO_SMALL') else '', tg_flags)
   driving_onnx_deps = get_existing_chunks(File(f"models/{file_prefix}driving_supercombo.onnx").abspath)
   camera_res_args = ' '.join(f'{cw}x{ch}' for cw, ch in CAMERA_CONFIGS)
-  cmd = (f'{cmd_flags} {mac_brew_string} python3 {modeld_dir}/compile_modeld.py '
+  cmd = (f'{cmd_flags} {mac_brew_string} {sys.executable} {modeld_dir}/compile_modeld.py '
         f'--model-size {model_w}x{model_h} '
         f'--camera-resolutions {camera_res_args} '
         f'--onnx {File(f"models/{file_prefix}driving_supercombo.onnx").abspath} '
@@ -104,7 +108,7 @@ for usbgpu in [False, True] if USBGPU else [False]:
     tinygrad_files + compile_modeld_script + driving_onnx_deps + [Value(chunk_targets), chunker_file],
     [cmd, Action(do_chunk, "  [CHUNK] $TARGET")],
   )
-  if usbgpu:
+  if usbgpu and USBGPU:
     lenv.SideEffect(usbgpu_lock, node)
 
 # get model metadata

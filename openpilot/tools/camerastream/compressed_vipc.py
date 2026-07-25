@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import argparse
 import multiprocessing
 import time
@@ -10,6 +9,7 @@ from collections import deque
 import openpilot.cereal.messaging as messaging
 from msgq.visionipc import VisionIpcServer, VisionStreamType
 from openpilot.tools.camerastream.ffmpeg_decoder import Decoder, FFmpegError
+from openpilot.tools.wgpu.zmq import ZmqSubMaster, ZmqSubSocket
 
 V4L2_BUF_FLAG_KEYFRAME = 8
 
@@ -30,10 +30,7 @@ def decoder(addr, vipc_server, vst, W, H, debug=False):
 
   codec = Decoder("hevc")
 
-  os.environ["ZMQ"] = "1"
-  messaging.reset_context()
-  sock = messaging.sub_sock(sock_name, None, addr=addr, conflate=False)
-  cnt = 0
+  sock = ZmqSubSocket(sock_name, addr)
   last_idx = -1
   seen_iframe = False
 
@@ -46,8 +43,9 @@ def decoder(addr, vipc_server, vst, W, H, debug=False):
     time_q.clear()
 
   while 1:
-    msgs = messaging.drain_sock(sock, wait_for_one=True)
-    for evt in msgs:
+    msgs = sock.drain(wait_for_one=True)
+    for raw in msgs:
+      evt = messaging.log_from_bytes(raw)
       evta = getattr(evt, evt.which())
       if last_idx != -1 and evta.idx.encodeId != (last_idx + 1):
         if debug:
@@ -94,8 +92,9 @@ def decoder(addr, vipc_server, vst, W, H, debug=False):
         continue
 
       frame_start_time = time_q.popleft()
-      vipc_server.send(vst, img_yuv.data, cnt, int(frame_start_time*1e9), int(time.monotonic()*1e9))
-      cnt += 1
+      # Preserve the device camera metadata so remote model outputs line up with
+      # the rest of the device's cereal timeline.
+      vipc_server.send(vst, img_yuv.data, evta.idx.frameId, evta.idx.timestampSof, evta.idx.timestampEof)
 
       pc_latency = (time.monotonic()-frame_start_time)*1000
       if debug:
@@ -105,14 +104,10 @@ def decoder(addr, vipc_server, vst, W, H, debug=False):
 
 class CompressedVipc:
   def __init__(self, addr, vision_streams, server_name, debug=False):
-    print("getting frame sizes")
-    os.environ["ZMQ"] = "1"
-    messaging.reset_context()
-    sm = messaging.SubMaster([ENCODE_SOCKETS[s] for s in vision_streams], addr=addr)
+    print("waiting for remote camera stream metadata", flush=True)
+    sm = ZmqSubMaster([ENCODE_SOCKETS[s] for s in vision_streams], addr)
     while min(sm.recv_frame.values()) == 0:
       sm.update(100)
-    os.environ.pop("ZMQ")
-    messaging.reset_context()
 
     self.vipc_server = VisionIpcServer(server_name)
     for vst in vision_streams:
@@ -121,9 +116,10 @@ class CompressedVipc:
     self.vipc_server.start_listener()
 
     self.procs = []
+    process_context = multiprocessing.get_context("fork")
     for vst in vision_streams:
       ed = sm[ENCODE_SOCKETS[vst]]
-      p = multiprocessing.Process(target=decoder, args=(addr, self.vipc_server, vst, ed.width, ed.height, debug))
+      p = process_context.Process(target=decoder, args=(addr, self.vipc_server, vst, ed.width, ed.height, debug))
       p.start()
       self.procs.append(p)
 

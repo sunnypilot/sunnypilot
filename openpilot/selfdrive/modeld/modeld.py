@@ -26,6 +26,7 @@ from openpilot.common.file_chunker import open_file_chunked, get_manifest_path
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.helpers import usbgpu_present, modeld_pkl_path, get_tg_input_devices, load_oob
 from openpilot.selfdrive.modeld.usbgpu_link import wait_usbgpu_link
+from openpilot.tools.wgpu.zmq import ZmqPubMaster, ZmqSubMaster
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
@@ -79,12 +80,12 @@ class FrameMeta:
 class ModelState(ModelStateBase):
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
-  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool):
+  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool, big_model: bool = False):
     ModelStateBase.__init__(self)
     self.LAT_SMOOTH_SECONDS = LAT_SMOOTH_SECONDS
     input_devices = get_tg_input_devices(PROCESS_NAME, usbgpu)
     self.WARP_DEV, self.QUEUE_DEV = input_devices['WARP_DEV'], input_devices['QUEUE_DEV']
-    jits = load_oob(open_file_chunked(modeld_pkl_path(usbgpu)))
+    jits = load_oob(open_file_chunked(modeld_pkl_path(usbgpu or big_model)))
     metadata = jits['metadata']
     self.input_shapes = metadata['input_shapes']
     self.vision_input_names = [k for k in self.input_shapes if 'img' in k]
@@ -139,12 +140,14 @@ class ModelState(ModelStateBase):
     return outputs_dict
 
 
-def main(demo=False):
+def main(demo=False, remote_addr: str | None = None, big_model: bool = False):
   cloudlog.warning("modeld init")
 
   _present = usbgpu_present()
   _compiled = os.path.isfile(get_manifest_path(modeld_pkl_path(usbgpu=True)))
   USBGPU = _present and _compiled
+  if big_model and not _compiled:
+    raise FileNotFoundError(f"big model is not compiled: {modeld_pkl_path(usbgpu=True)}")
   params = Params()
   params.put_bool("UsbGpuPresent", _present)
   params.put_bool("UsbGpuCompiled", _compiled)
@@ -178,12 +181,16 @@ def main(demo=False):
     wait_usbgpu_link()
   st = time.monotonic()
   cloudlog.warning("loading model")
-  model = ModelState(vipc_client_main.width, vipc_client_main.height, USBGPU)
+  model = ModelState(vipc_client_main.width, vipc_client_main.height, USBGPU, big_model=big_model)
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"])
-  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
+  output_services = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"]
+  pm = ZmqPubMaster(output_services) if remote_addr is not None else PubMaster(output_services)
+  services = ["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"]
+  if remote_addr is not None:
+    services.append("carParams")
+  sm = ZmqSubMaster(services, remote_addr) if remote_addr is not None else SubMaster(services)
 
   publish_state = PublishState()
   params = Params()
@@ -203,6 +210,11 @@ def main(demo=False):
 
   if demo:
     CP = get_demo_car_params()
+  elif remote_addr is not None:
+    cloudlog.warning("waiting for remote carParams")
+    while not sm.seen["carParams"]:
+      sm.update(100)
+    CP = sm["carParams"]
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
@@ -332,7 +344,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true', help='A boolean for demo mode.')
+    parser.add_argument('--remote', metavar='ADDRESS', help='Run against a remote device over the cereal ZMQ bridge.')
+    parser.add_argument('--big-model', action='store_true', help='Use the locally compiled big driving model.')
     args = parser.parse_args()
-    main(demo=args.demo)
+    main(demo=args.demo, remote_addr=args.remote, big_model=args.big_model)
   except KeyboardInterrupt:
     cloudlog.warning("got SIGINT")
