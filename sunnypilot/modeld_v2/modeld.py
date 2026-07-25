@@ -230,8 +230,12 @@ class ModelState(ModelStateBase):
         policy_output = raw_outputs[i + 1].numpy().flatten()
         policy_sliced = {k: policy_output[np.newaxis, v] for k, v in policy_slices.items()}
         parsed = self.parser.parse_policy_outputs(policy_sliced)
-        if 'off' in self._policy_keys[i] and self._has_on_policy:
+        if ('off' in self._policy_keys[i]
+          and self._has_on_policy
+          and any('plan' in self._policy_slices_list[j] for j, k in enumerate(self._policy_keys) if 'on' in k.lower())):
+
           parsed.pop('plan', None)
+
         outputs.update(parsed)
 
       if 'planplus' in outputs and 'plan' in outputs:
