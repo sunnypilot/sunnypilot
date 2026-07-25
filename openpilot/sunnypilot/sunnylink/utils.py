@@ -108,20 +108,22 @@ def _convert_param_to_type(value: bytes, param_type: ParamKeyType) -> bytes | st
   """
 
   # We convert to string anything that isn't bytes first. We later transform further.
-  if param_type != ParamKeyType.BYTES:
-    value = value.decode('utf-8')
+  if param_type == ParamKeyType.BYTES:
+    return value
+
+  decoded = value.decode('utf-8')
 
   if param_type == ParamKeyType.STRING:
-    value = value
+    return decoded
   elif param_type == ParamKeyType.BOOL:
-    value = value.lower() in ('true', '1', 'yes')
+    return decoded.lower() in ('true', '1', 'yes')
   elif param_type == ParamKeyType.INT:
-    value = int(value)
+    return int(decoded)
   elif param_type == ParamKeyType.FLOAT:
-    value = float(value)
+    return float(decoded)
   elif param_type == ParamKeyType.TIME:
-    value = str(value)
+    return str(decoded)
   elif param_type == ParamKeyType.JSON:
-    value = json.loads(value)
+    return json.loads(decoded)
 
-  return value
+  return decoded

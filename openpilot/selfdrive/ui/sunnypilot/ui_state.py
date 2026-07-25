@@ -224,8 +224,7 @@ class UIStateSP:
 
 
 class DeviceSP:
-  @staticmethod
-  def _set_awake(on: bool, _ui_state):
+  def _set_awake(self, on: bool, _ui_state=None):
     if _ui_state.boot_offroad_mode == 1 and not on:
       _ui_state.params.put_bool("OffroadMode", True)
 

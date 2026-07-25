@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from openpilot.cereal import log
@@ -14,7 +16,7 @@ class MockStruct:
 
 
 def test_recovery_power_scaling():
-  state = MockStruct(
+  state: Any = MockStruct(
     PLANPLUS_CONTROL=0.75,
     LONG_SMOOTH_SECONDS=0.3,
     LAT_SMOOTH_SECONDS=0.1,
@@ -35,10 +37,10 @@ def test_recovery_power_scaling():
     recorded_curv_plans.append(plan.copy())
     return 0.0
 
-  modeld.get_accel_from_plan = mock_accel
-  modeld.get_curvature_from_output = mock_curvature
-  plan = np.random.rand(1, 100, 15).astype(np.float32)
-  planplus = np.random.rand(1, 100, 15).astype(np.float32)
+  modeld.get_accel_from_plan = mock_accel  # ty: ignore[invalid-assignment]
+  modeld.get_curvature_from_output = mock_curvature  # ty: ignore[invalid-assignment]
+  plan = np.random.default_rng(0).random((1, 100, 15)).astype(np.float32)
+  planplus = np.random.default_rng(1).random((1, 100, 15)).astype(np.float32)
   merged_plan = plan + planplus
 
   model_output: dict = {
@@ -60,7 +62,7 @@ def test_recovery_power_scaling():
     state.PLANPLUS_CONTROL = control
     recorded_vel.clear()
     recorded_curv_plans.clear()
-    ModelState.get_action_from_model(state, model_output, prev_action, 0.0, 0.0, v_ego)
+    ModelState.get_action_from_model(state, model_output, prev_action, 0.0, 0.0, v_ego)  # type: ignore[arg-type]
 
     expected_accel_plan_vel = plan[0, :, Plan.VELOCITY][:, 0] + planplus[0, :, Plan.VELOCITY][:, 0]
     np.testing.assert_allclose(recorded_vel[0], expected_accel_plan_vel, rtol=1e-5, atol=1e-6)

@@ -78,7 +78,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
                                                                           self.torque_params, gravity_adjusted=False)
     torque_from_measurement = self.torque_from_lateral_accel_in_torque_space(LatControlInputs(self._measurement, self._roll_compensation, CS.vEgo, CS.aEgo),
                                                                              self.torque_params, gravity_adjusted=False)
-    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)
+    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)  # ty: ignore[invalid-assignment]
     self._ff = self.torque_from_lateral_accel_in_torque_space(LatControlInputs(self._gravity_adjusted_lateral_accel, self._roll_compensation,
                                                                                CS.vEgo, CS.aEgo), self.torque_params, gravity_adjusted=True)
     self._ff += get_friction_in_torque_space(self._desired_lateral_accel - self._actual_lateral_accel, self._lateral_accel_deadzone,
@@ -132,7 +132,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
                              + past_rolls + future_rolls
     torque_from_setpoint = self.model.evaluate(nnff_setpoint_input)
     torque_from_measurement = self.model.evaluate(nnff_measurement_input)
-    self._pid_log.error = torque_from_setpoint - torque_from_measurement
+    self._pid_log.error = torque_from_setpoint - torque_from_measurement  # ty: ignore[invalid-assignment]
 
     # The "pure" NNLC error response can be too weak for cars whose models were trained
     # with a lack of high-magnitude lateral acceleration data, for which the NNLC model
@@ -148,7 +148,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
       nnff_error_input = [CS.vEgo, self._setpoint - self._measurement, self.lateral_jerk_setpoint - self.lateral_jerk_measurement, 0.0]
       torque_from_error = self.model.evaluate(nnff_error_input)
       if sign(self._pid_log.error) == sign(torque_from_error) and abs(self._pid_log.error) < abs(torque_from_error):
-        self._pid_log.error = self._pid_log.error * (1.0 - error_blend_factor) + torque_from_error * error_blend_factor
+        self._pid_log.error = self._pid_log.error * (1.0 - error_blend_factor) + torque_from_error * error_blend_factor  # ty: ignore[invalid-assignment]
 
     # compute feedforward (same as nn setpoint output)
     friction_input = self.update_friction_input(self._setpoint, self._measurement)

@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import pyray as rl
 from openpilot.common.params import Params
@@ -126,7 +126,7 @@ class DualButtonActionSP(DualButtonAction):
 
 
 class MultipleButtonActionSP(MultipleButtonAction):
-  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None,
+  def __init__(self, buttons: Sequence[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None,
                param: str | None = None):
     MultipleButtonAction.__init__(self, buttons, button_width, selected_index, callback)
     self.param_key = param
@@ -366,7 +366,7 @@ def toggle_item_sp(title: str | Callable[[], str], description: str | Callable[[
   return ListItemSP(title=title, description=description, action_item=action, icon=icon)
 
 
-def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: list[str | Callable[[], str]],
+def multiple_button_item_sp(title: str | Callable[[], str], description: str | Callable[[], str], buttons: Sequence[str | Callable[[], str]],
                             selected_index: int = 0, button_width: int = style.BUTTON_ACTION_WIDTH, callback: Callable | None = None,
                             icon: str = "", param: str | None = None, inline: bool = False) -> ListItemSP:
   action = MultipleButtonActionSP(buttons, button_width, selected_index, callback=callback, param=param)

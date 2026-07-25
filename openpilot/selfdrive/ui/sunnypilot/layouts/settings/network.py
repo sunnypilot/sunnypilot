@@ -38,8 +38,8 @@ class NetworkUISP(NetworkUI):
       self.scan_button.set_text(tr("Scan"))
       self.scan_button.set_enabled(True)
 
-  def _render(self, rect: rl.Rectangle):
-    super()._render(rect)
+  def _render(self, _):
+    super()._render(_)
 
     if self._current_panel == PanelType.WIFI:
       self.scan_button.set_position(self._rect.x, self._rect.y + 20)
