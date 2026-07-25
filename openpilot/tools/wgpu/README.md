@@ -65,7 +65,8 @@ running and waits for the next host session. Stop the device helper itself with
 Ctrl+C before changing branches or rebooting.
 
 While WGPU is active, model lag does not create an engagement-blocking alert.
-The mici onroad UI instead shows the active source (`LOCAL` or `WGPU`), remote
-model size (`SMALL` or `BIG`), and live model-frame age. The home GPU icon is
-gray while the device helper is ready and waiting, and green while a valid
-remote model is active.
+The fixed-column diagnostics panel at the top-right of the mici onroad UI shows
+the active source (`LOCAL` or `WGPU`), remote model size (`SMALL` or `BIG`),
+total model-frame age, execution time, remaining I/O and queue time, and dropped
+frames. The home GPU icon is gray while the device helper is ready and waiting,
+and green while a valid remote model is active.
