@@ -135,13 +135,13 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
     tfm_dev, big_tfm_dev, desire_dev = npys[:3]
     traffic_conv_dev = npys[3] if traffic_convention is not None else None
 
-    img = shift_and_sample(img_q, frame_prepare(frame, tfm_dev).unsqueeze(0), sample_skip_fn)
-    big_img = shift_and_sample(big_img_q, frame_prepare(big_frame, big_tfm_dev).unsqueeze(0), sample_skip_fn)
+    img = shift_and_sample(img_q, frame_prepare(frame, tfm_dev).unsqueeze(0), sample_skip_fn).realize()
+    big_img = shift_and_sample(big_img_q, frame_prepare(big_frame, big_tfm_dev).unsqueeze(0), sample_skip_fn).realize()
 
     if prepare_only:
       return img, big_img
 
-    desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
+    desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn).realize()
     inputs = {desire_key: desire_buf, **extra_tensors}
 
     if traffic_conv_dev is not None:
