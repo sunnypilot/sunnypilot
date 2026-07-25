@@ -136,6 +136,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"Version", {PERSISTENT, STRING}},
     {"WgpuEnabled", {CLEAR_ON_MANAGER_START | DEVELOPMENT_ONLY, BOOL}},
     {"WgpuModelName", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | DEVELOPMENT_ONLY, STRING}},
+    {"WgpuReady", {CLEAR_ON_MANAGER_START | DEVELOPMENT_ONLY, BOOL}},
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", {PERSISTENT, JSON}},

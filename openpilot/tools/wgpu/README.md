@@ -60,9 +60,12 @@ Add `--big-model` after `COMMA_IP` to use the locally compiled big model.
 
 The first remote `carParams` packet can take up to 50 seconds. Stop either side
 with Ctrl+C. A host disconnect automatically stops remote publication and
-restores local `modeld` after a one-second timeout. Stop the device helper before
-changing branches or rebooting.
+restores local `modeld` after a one-second timeout; the device helper then stays
+running and waits for the next host session. Stop the device helper itself with
+Ctrl+C before changing branches or rebooting.
 
 While WGPU is active, model lag does not create an engagement-blocking alert.
 The mici onroad UI instead shows the active source (`LOCAL` or `WGPU`), remote
-model size (`SMALL` or `BIG`), and live model-frame age.
+model size (`SMALL` or `BIG`), and live model-frame age. The home GPU icon is
+gray while the device helper is ready and waiting, and green while a valid
+remote model is active.

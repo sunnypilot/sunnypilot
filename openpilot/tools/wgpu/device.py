@@ -75,48 +75,61 @@ def main() -> None:
   reverse: subprocess.Popen | None = None
   wgpu_enabled = False
   try:
-    # Keep local modeld publishing while the remote model connects and warms up.
     forward = subprocess.Popen([str(BRIDGE)])
+    params.put_bool("WgpuReady", True, block=True)
     remote_model = ZmqSubSocket("modelV2", args.host, conflate=True)
     remote_status = ZmqSubSocket(WGPU_STATUS, args.host, conflate=True)
-    print(f"forwarding camera/state to {args.host}; waiting for a fresh remote model")
-    model_name = None
-    while True:
-      received, model_age = receive_model(remote_model)
-      model_name = receive_model_name(remote_status) or model_name
-      if received and 0 <= model_age < REMOTE_MODEL_TIMEOUT and model_name is not None:
-        break
-      if forward.poll() is not None:
-        raise RuntimeError(f"forward bridge exited with status {forward.returncode}")
-      time.sleep(0.05)
 
-    # Stop the local publisher before attaching the reverse bridge. msgq permits
-    # only one publisher for each model service.
-    params.put("WgpuModelName", model_name, block=True)
-    params.put_bool("WgpuEnabled", True, block=True)
-    wgpu_enabled = True
-    wait_for_local_modeld_stop()
-    reverse = subprocess.Popen([str(BRIDGE), args.host, MODEL_OUTPUTS])
-    print("wgpu active; Ctrl+C or loss of the remote model restores local modeld")
-
-    last_remote_model = time.monotonic()
     while True:
-      received, _ = receive_model(remote_model)
-      if received:
-        last_remote_model = time.monotonic()
-      if forward.poll() is not None:
-        raise RuntimeError(f"forward bridge exited with status {forward.returncode}")
-      if reverse.poll() is not None:
-        raise RuntimeError(f"reverse bridge exited with status {reverse.returncode}")
-      if time.monotonic() - last_remote_model > REMOTE_MODEL_TIMEOUT:
-        raise RuntimeError("remote model timed out; restoring local modeld")
-      time.sleep(0.05)
+      # Keep local modeld publishing while a host connects and warms up.
+      print(f"forwarding camera/state to {args.host}; waiting for a fresh remote model")
+      model_name = None
+      while True:
+        received, model_age = receive_model(remote_model)
+        model_name = receive_model_name(remote_status) or model_name
+        if received and 0 <= model_age < REMOTE_MODEL_TIMEOUT and model_name is not None:
+          break
+        if forward.poll() is not None:
+          raise RuntimeError(f"forward bridge exited with status {forward.returncode}")
+        time.sleep(0.05)
+
+      # Stop the local publisher before attaching the reverse bridge. msgq permits
+      # only one publisher for each model service.
+      params.put("WgpuModelName", model_name, block=True)
+      params.put_bool("WgpuEnabled", True, block=True)
+      wgpu_enabled = True
+      wait_for_local_modeld_stop()
+      reverse = subprocess.Popen([str(BRIDGE), args.host, MODEL_OUTPUTS])
+      print("wgpu active; Ctrl+C or loss of the remote model restores local modeld")
+
+      last_remote_model = time.monotonic()
+      while True:
+        received, _ = receive_model(remote_model)
+        if received:
+          last_remote_model = time.monotonic()
+        if forward.poll() is not None:
+          raise RuntimeError(f"forward bridge exited with status {forward.returncode}")
+        if reverse.poll() is not None:
+          print(f"reverse bridge exited with status {reverse.returncode}; restoring local modeld")
+          break
+        if time.monotonic() - last_remote_model > REMOTE_MODEL_TIMEOUT:
+          print("remote model timed out; restoring local modeld")
+          break
+        time.sleep(0.05)
+
+      stop_process(reverse)
+      reverse = None
+      params.put_bool("WgpuEnabled", False, block=True)
+      wgpu_enabled = False
+      params.remove("WgpuModelName")
+      print("wgpu disabled; local modeld restored; ready for the next host run")
   finally:
     # Stop remote publication before allowing the local publisher to restart.
     if reverse is not None and reverse.poll() is None:
       stop_process(reverse)
     if wgpu_enabled:
       params.put_bool("WgpuEnabled", False, block=True)
+    params.put_bool("WgpuReady", False, block=True)
     params.remove("WgpuModelName")
     if forward is not None and forward.poll() is None:
       stop_process(forward)
