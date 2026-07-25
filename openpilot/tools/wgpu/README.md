@@ -57,3 +57,20 @@ Add `--big-model` after `COMMA_IP` to use the locally compiled big model.
 
 The first remote `carParams` packet can take up to 50 seconds. Stop either side
 with Ctrl+C. Stop the device helper before changing branches or rebooting.
+
+For stationary bench testing only, model lag can be changed from a blocking
+event to a live warning showing model age and dropped frames. After ignition is
+on and manager is running, enable the temporary override on the device:
+
+```sh
+cd /data/openpilot
+python3 -c 'from openpilot.common.params import Params; Params().put_bool("WgpuBenchMode", True)'
+```
+
+The override requires `WgpuEnabled` and clears on manager restart or the next
+ignition-on transition. Disable it immediately with:
+
+```sh
+cd /data/openpilot
+python3 -c 'from openpilot.common.params import Params; Params().remove("WgpuBenchMode")'
+```
