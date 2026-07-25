@@ -174,7 +174,7 @@ jobs:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ env.MODELS_DIR }}
       - run: |
-          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big-driving-supercombo}.onnx
+          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big_driving_supercombo}.onnx
 
       - name: Build Model
         run: |
