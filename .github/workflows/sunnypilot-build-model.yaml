@@ -210,7 +210,7 @@ jobs:
           OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
           ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
           SUPERCOMBO_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving-supercombo.onnx"; do
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx"; do
             if [ -f "$f" ]; then
               SUPERCOMBO_ONNX="$f"
               break
