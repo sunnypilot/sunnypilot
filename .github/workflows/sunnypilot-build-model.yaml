@@ -230,7 +230,7 @@ jobs:
               MODEL_TYPE=vision_policy
               ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
             fi
-          elif [ -n "$SUPERCOMBO_ONNX" ]; then
+          elif [ -f "$SUPERCOMBO_ONNX" ]; then
             MODEL_TYPE=supercombo
             ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
           fi
