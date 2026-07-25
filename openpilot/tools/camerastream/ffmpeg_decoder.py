@@ -46,10 +46,23 @@ def _bind(fn, restype, *argtypes):
   return fn
 
 
+def _library_path(name: str, major: int) -> str:
+  candidates = (
+    f"lib{name}.so.{major}",
+    f"lib{name}.{major}.dylib",
+    f"lib{name}.dylib",
+  )
+  for candidate in candidates:
+    path = os.path.join(ffmpeg.LIB_DIR, candidate)
+    if os.path.isfile(path):
+      return path
+  raise FileNotFoundError(f"FFmpeg library not found in {ffmpeg.LIB_DIR}: {', '.join(candidates)}")
+
+
 def _load_libraries():
-  avutil = ctypes.CDLL(os.path.join(ffmpeg.LIB_DIR, "libavutil.so.59"), mode=ctypes.RTLD_GLOBAL)
-  avcodec = ctypes.CDLL(os.path.join(ffmpeg.LIB_DIR, "libavcodec.so.61"), mode=ctypes.RTLD_GLOBAL)
-  swscale = ctypes.CDLL(os.path.join(ffmpeg.LIB_DIR, "libswscale.so.8"), mode=ctypes.RTLD_GLOBAL)
+  avutil = ctypes.CDLL(_library_path("avutil", 59), mode=ctypes.RTLD_GLOBAL)
+  avcodec = ctypes.CDLL(_library_path("avcodec", 61), mode=ctypes.RTLD_GLOBAL)
+  swscale = ctypes.CDLL(_library_path("swscale", 8), mode=ctypes.RTLD_GLOBAL)
 
   c_int, c_char_p, c_void_p, c_size_t = ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t
   c_uint8_p = ctypes.POINTER(ctypes.c_uint8)

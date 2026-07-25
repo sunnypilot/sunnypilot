@@ -95,6 +95,9 @@ def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
 
+def not_wgpu(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return not params.get_bool("WgpuEnabled")
+
 def mapd_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
   return bool(os.path.exists(Paths.mapd_root()))
 
@@ -128,7 +131,7 @@ procs = [
   PythonProcess("micd", "openpilot.system.micd", iscar),
   PythonProcess("timed", "openpilot.system.timed", always_run, enabled=not PC),
 
-  PythonProcess("modeld", "openpilot.selfdrive.modeld.modeld", and_(only_onroad, is_stock_model)),
+  PythonProcess("modeld", "openpilot.selfdrive.modeld.modeld", and_(only_onroad, is_stock_model, not_wgpu)),
   PythonProcess("dmonitoringmodeld", "openpilot.selfdrive.modeld.dmonitoringmodeld", driverview, enabled=(WEBCAM or not PC)),
 
   PythonProcess("sensord", "openpilot.system.sensord.sensord", only_onroad, enabled=not PC),
