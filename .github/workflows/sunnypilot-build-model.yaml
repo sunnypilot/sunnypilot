@@ -174,7 +174,7 @@ jobs:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ env.MODELS_DIR }}
       - run: |
-          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision}.onnx
+          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big-driving-supercombo}.onnx
 
       - name: Build Model
         run: |
@@ -209,7 +209,13 @@ jobs:
           POLICY_ONNX="${{ env.MODELS_DIR }}/driving_policy.onnx"
           OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
           ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
-          SUPERCOMBO_ONNX="${{ env.MODELS_DIR }}/supercombo.onnx"
+          SUPERCOMBO_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving-supercombo.onnx"; do
+            if [ -f "$f" ]; then
+              SUPERCOMBO_ONNX="$f"
+              break
+            fi
+          done
 
           MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
           if [ -f "$VISION_ONNX" ]; then
@@ -224,7 +230,7 @@ jobs:
               MODEL_TYPE=vision_policy
               ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
             fi
-          elif [ -f "$SUPERCOMBO_ONNX" ]; then
+          elif [ -n "$SUPERCOMBO_ONNX" ]; then
             MODEL_TYPE=supercombo
             ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
           fi
