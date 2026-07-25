@@ -38,6 +38,7 @@ class BaseApi:
     }
     if payload_extra is not None:
       payload.update(payload_extra)
+    assert self.private_key is not None
     token = jwt.encode(payload, self.private_key, algorithm=self.jwt_algorithm)
     if isinstance(token, bytes):
       token = token.decode('utf8')

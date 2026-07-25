@@ -831,6 +831,7 @@ class GuiApplication(GuiApplicationExt):
     import pstats
 
     self._render_profiler.disable()
+    assert self._render_profile_start_time is not None
     elapsed_ms = (time.monotonic() - self._render_profile_start_time) * 1e3
     avg_frame_time = elapsed_ms / self._frame if self._frame > 0 else 0
 

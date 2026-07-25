@@ -23,14 +23,13 @@ def main():
   cloudlog.info("plannerd got CarParamsSP")
 
   gps_location_service = get_gps_location_service(params)
-  ignore_services = ["liveMapDataSP", gps_location_service]
 
   ldw = LaneDepartureWarning()
   longitudinal_planner = LongitudinalPlanner(CP, CP_SP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
   sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
                             'liveMapDataSP', 'carStateSP', gps_location_service],
-                           poll='carState', ignore_alive=ignore_services, ignore_avg_freq=ignore_services, ignore_valid=ignore_services)
+                           poll='carState')
 
   while True:
     sm.update()
@@ -41,7 +40,7 @@ def main():
 
       ldw.update(sm.frame, sm['modelV2'], sm['carState'], sm['carControl'])
       msg = messaging.new_message('driverAssistance')
-      msg.valid = sm.all_checks()
+      msg.valid = sm.all_checks(['carState', 'carControl', 'modelV2', 'liveParameters'])
       msg.driverAssistance.leftLaneDeparture = ldw.left
       msg.driverAssistance.rightLaneDeparture = ldw.right
       pm.send('driverAssistance', msg)

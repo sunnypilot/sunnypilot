@@ -126,7 +126,7 @@ def get_active_bundle(params: Params | None = None, raw_bundle_dict: dict | byte
   params = params or Params()
   try:
     active_bundle_dict = raw_bundle_dict if raw_bundle_dict is not None else (params.get("ModelManager_ActiveBundle") or {})
-    if active_bundle_dict and is_bundle_version_compatible(active_bundle_dict):
+    if isinstance(active_bundle_dict, dict) and active_bundle_dict and is_bundle_version_compatible(active_bundle_dict):
       return custom.ModelManagerSP.ModelBundle(**active_bundle_dict)
   except Exception:
     pass

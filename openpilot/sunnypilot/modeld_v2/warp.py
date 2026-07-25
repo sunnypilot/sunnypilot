@@ -66,8 +66,8 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
 
   full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
   big_full_buffer = Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize()
-  new_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
-  new_big_frame_np = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  new_frame_np = np.random.default_rng(0).integers(0, 256, yuv_size, dtype=np.uint8)
+  new_big_frame_np = np.random.default_rng(1).integers(0, 256, yuv_size, dtype=np.uint8)
   for i in range(10):
     img_inputs = [full_buffer,
                   Tensor.from_blob(new_frame_np.ctypes.data, (yuv_size,), dtype='uint8').realize(),
@@ -91,8 +91,8 @@ def compile_v2_warp(cam_w, cam_h, buffer_length):
   print(f"  Saved to {pkl_path}")
 
   jit = pickle.load(open(pkl_path, "rb"))
-  verify_frame = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
-  verify_big_frame = np.random.randint(0, 256, yuv_size, dtype=np.uint8)
+  verify_frame = np.random.default_rng(0).integers(0, 256, yuv_size, dtype=np.uint8)
+  verify_big_frame = np.random.default_rng(1).integers(0, 256, yuv_size, dtype=np.uint8)
   fresh_inputs = [
     Tensor.zeros(img_buffer_shape, dtype='uint8').contiguous().realize(),
     Tensor.from_blob(verify_frame.ctypes.data, (yuv_size,), dtype='uint8').realize(),

@@ -129,7 +129,7 @@ def compile_split_policy(nv12: NV12Frame, model_w, model_h, prepare_only, frame_
 
   def random_inputs_run_fn(fn, seed, test_val=None, test_buffers=None, expect_match=True):
     input_queues, npy = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, Device.DEFAULT)
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     Tensor.manual_seed(seed)
 
     testing = test_val is not None or test_buffers is not None
@@ -139,7 +139,7 @@ def compile_split_policy(nv12: NV12Frame, model_w, model_h, prepare_only, frame_
       frame = Tensor.randint(nv12.size, low=0, high=256, dtype='uint8').realize()
       big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype='uint8').realize()
       for v in npy.values():
-        v[:] = np.random.randn(*v.shape).astype(v.dtype)
+        v[:] = rng.standard_normal(v.shape).astype(v.dtype)
       Device.default.synchronize()
       st = time.perf_counter()
       outs = fn(**input_queues, frame=frame, big_frame=big_frame)
@@ -319,11 +319,11 @@ def make_run_vision_multi_policy(vision_runner, policy_runners, nv12: NV12Frame,
 
 def _warmup_and_serialize(run_jit, input_queues, npy, nv12):
   for i in range(3):
-    np.random.seed(42 + i)
+    rng = np.random.default_rng(42 + i)
     frame = Tensor.randint(nv12.size, low=0, high=256, dtype='uint8').realize()
     big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype='uint8').realize()
     for v in npy.values():
-      v[:] = np.random.randn(*v.shape).astype(v.dtype)
+      v[:] = rng.standard_normal(v.shape).astype(v.dtype)
     Device.default.synchronize()
     st = time.perf_counter()
     run_jit(**input_queues, frame=frame, big_frame=big_frame)
