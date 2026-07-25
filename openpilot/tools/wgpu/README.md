@@ -4,9 +4,10 @@ This runs driving `modeld` on a laptop and returns its cereal outputs to a comma
 device over the existing Wi-Fi network. It reuses the existing HEVC camera
 stream, VisionIPC decoder, and cereal ZMQ bridge.
 
-This is for offroad/bench testing only. Wi-Fi has no deterministic latency or
-availability guarantee. The device restores local `modeld` when the device-side
-helper exits, but that is not a seamless onroad failover.
+This is for controlled bench testing only. Wi-Fi has no deterministic latency
+or availability guarantee. Local `modeld` remains warm during a WGPU session;
+the device-side helper switches only after receiving a fresh remote model and
+restores local publication if the remote model is missing for 350 ms.
 
 ## Build
 
@@ -38,8 +39,9 @@ the small model on that class of laptop.
 
 ## Run
 
-Find the laptop's LAN IP address that the comma device can reach. While the
-device is offroad, run:
+Find the laptop's LAN IP address that the comma device can reach. The helper can
+start while onroad: it forwards camera/state while local `modeld` remains active,
+then switches publication after the laptop produces a fresh valid model:
 
 ```sh
 cd /data/openpilot
@@ -56,7 +58,9 @@ python3 -m openpilot.tools.wgpu.host COMMA_IP
 Add `--big-model` after `COMMA_IP` to use the locally compiled big model.
 
 The first remote `carParams` packet can take up to 50 seconds. Stop either side
-with Ctrl+C. Stop the device helper before changing branches or rebooting.
+with Ctrl+C. A host disconnect automatically restores the warm local publisher
+after a 350 ms timeout. Stop the device helper before changing branches or
+rebooting.
 
 For stationary bench testing only, model lag can be changed from a blocking
 event to a live warning showing model age and dropped frames. After ignition is
