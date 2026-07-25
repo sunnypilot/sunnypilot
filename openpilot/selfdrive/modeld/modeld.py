@@ -26,7 +26,7 @@ from openpilot.common.file_chunker import open_file_chunked, get_manifest_path
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.helpers import usbgpu_present, modeld_pkl_path, get_tg_input_devices, load_oob
 from openpilot.selfdrive.modeld.usbgpu_link import wait_usbgpu_link
-from openpilot.tools.wgpu.zmq import ZmqPubMaster, ZmqSubMaster
+from openpilot.tools.wgpu.zmq import WGPU_CAR_PARAMS, ZmqPubMaster, ZmqSubMaster, ZmqSubSocket
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
@@ -181,6 +181,18 @@ def main(demo=False, remote_addr: str | None = None, big_model: bool = False):
 
   config_realtime_process(7, 54)
 
+  remote_CP = None
+  if remote_addr is not None:
+    # Do not attach to VisionIPC until all startup prerequisites are available.
+    # Otherwise its notification queue grows while waiting for the infrequent
+    # bridged carParams message and reconnect starts tens of seconds behind.
+    cloudlog.warning("waiting for remote carParams")
+    car_params_socket = ZmqSubSocket(WGPU_CAR_PARAMS, remote_addr, conflate=True)
+    raw_car_params = car_params_socket.receive()
+    assert raw_car_params is not None
+    remote_CP = messaging.log_from_bytes(raw_car_params, car.CarParams)
+    cloudlog.info("modeld got remote CarParams: %s", remote_CP.brand)
+
   # visionipc clients
   while True:
     available_streams = VisionIpcClient.available_streams("camerad", block=False)
@@ -215,8 +227,6 @@ def main(demo=False, remote_addr: str | None = None, big_model: bool = False):
   output_services = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"]
   pm = ZmqPubMaster(output_services) if remote_addr is not None else PubMaster(output_services)
   services = ["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"]
-  if remote_addr is not None:
-    services.append("carParams")
   sm = ZmqSubMaster(services, remote_addr) if remote_addr is not None else SubMaster(services)
 
   publish_state = PublishState()
@@ -238,10 +248,8 @@ def main(demo=False, remote_addr: str | None = None, big_model: bool = False):
   if demo:
     CP = get_demo_car_params()
   elif remote_addr is not None:
-    cloudlog.warning("waiting for remote carParams")
-    while not sm.seen["carParams"]:
-      sm.update(100)
-    CP = sm["carParams"]
+    assert remote_CP is not None
+    CP = remote_CP
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
