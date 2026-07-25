@@ -43,6 +43,10 @@ class ZmqSubSocket:
       messages.append(message)
     return messages
 
+  def close(self) -> None:
+    self.socket.close(linger=0)
+    self.context.term()
+
 
 class ZmqSubMaster:
   def __init__(self, services: list[str], address: str):
@@ -76,6 +80,11 @@ class ZmqSubMaster:
       self.seen[service] = True
       self.updated[service] = True
       self.recv_frame[service] = self.frame
+
+  def close(self) -> None:
+    for sub in self.sockets.values():
+      self.poller.unregister(sub.socket)
+      sub.close()
 
 
 class ZmqPubMaster:
