@@ -162,10 +162,15 @@ class AugmentedRoadView(CameraView):
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
                                        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
-    self._model_status_label = UnifiedLabel("", 26, FontWeight.SEMI_BOLD,
-                                            alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
-                                            alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
-                                            wrap_text=False)
+    self._model_status_labels = [
+      UnifiedLabel("", 26, FontWeight.SEMI_BOLD,
+                   alignment=alignment,
+                   alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+                   wrap_text=False)
+      for alignment in (rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+                        rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
+                        rl.GuiTextAlignment.TEXT_ALIGN_RIGHT)
+    ]
 
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
 
@@ -277,11 +282,17 @@ class AugmentedRoadView(CameraView):
     else:
       color = rl.Color(255, 120, 80, 230)
 
-    status_rect = rl.Rectangle(self._content_rect.x + 18, self._content_rect.y + self._content_rect.height - 58, 330, 42)
+    status_rect = rl.Rectangle(self._content_rect.x + 18, self._content_rect.y + self._content_rect.height - 58, 360, 42)
     rl.draw_rectangle_rounded(status_rect, 0.35, 8, rl.Color(0, 0, 0, 165))
-    self._model_status_label.set_text(f"{source} · {model_name} · {lag_text}")
-    self._model_status_label.set_text_color(color)
-    self._model_status_label.render(status_rect)
+    columns = (
+      (source, rl.Rectangle(status_rect.x + 14, status_rect.y, 96, status_rect.height)),
+      (model_name, rl.Rectangle(status_rect.x + 120, status_rect.y, 105, status_rect.height)),
+      (lag_text, rl.Rectangle(status_rect.x + 235, status_rect.y, 110, status_rect.height)),
+    )
+    for label, (text, rect) in zip(self._model_status_labels, columns, strict=True):
+      label.set_text(text)
+      label.set_text_color(color)
+      label.render(rect)
 
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:

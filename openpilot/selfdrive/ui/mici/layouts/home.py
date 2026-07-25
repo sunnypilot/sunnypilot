@@ -251,7 +251,7 @@ class MiciHomeLayout(Widget):
     wgpu_running = ui_state.wgpu_enabled and ui_state.sm.alive["modelV2"] and ui_state.sm.valid["modelV2"]
     self._egpu_icon.set_visible((ui_state.usbgpu and ui_state.usbgpu_compiled) or wgpu_running)
     self._egpu_icon_gray.set_visible((ui_state.usbgpu and not ui_state.usbgpu_compiled) or
-                                     (ui_state.wgpu_enabled and not wgpu_running))
+                                     (ui_state.wgpu_ready and not wgpu_running))
     self._mic_icon.set_visible(ui_state.recording_audio)
     self._body_icon.set_visible(bool(ui_state.is_body))
 

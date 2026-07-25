@@ -84,6 +84,7 @@ class UIState(UIStateSP):
     self.usbgpu_compiled: bool = self.params.get_bool("UsbGpuCompiled")
     self.wgpu_enabled: bool = self.params.get_bool("WgpuEnabled")
     self.wgpu_model_name: str = self.params.get("WgpuModelName") or "UNKNOWN"
+    self.wgpu_ready: bool = self.params.get_bool("WgpuReady")
     self.started: bool = False
     self.ignition: bool = False
     self.recording_audio: bool = False
@@ -217,6 +218,7 @@ class UIState(UIStateSP):
     self.usbgpu_compiled = self.params.get_bool("UsbGpuCompiled")
     self.wgpu_enabled = self.params.get_bool("WgpuEnabled")
     self.wgpu_model_name = self.params.get("WgpuModelName") or "UNKNOWN"
+    self.wgpu_ready = self.params.get_bool("WgpuReady")
 
     UIStateSP.update_params(self)
 
