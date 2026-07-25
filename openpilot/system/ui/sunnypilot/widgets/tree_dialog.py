@@ -48,9 +48,9 @@ class TreeItemWidget(Button):
     self.border_radius = 10
     self.is_expanded = is_expanded
 
-  def _render(self, rect):
+  def _render(self, _):
     indent = 60 * self.indent_level
-    self._rect = rl.Rectangle(rect.x + indent, rect.y, rect.width - indent, rect.height)
+    self._rect = rl.Rectangle(_.x + indent, _.y, _.width - indent, _.height)
     if self.is_pressed:
       color = BUTTON_PRESSED_BACKGROUND_COLORS[self._button_style]
     elif self.selected and self.ref != "search_bar":

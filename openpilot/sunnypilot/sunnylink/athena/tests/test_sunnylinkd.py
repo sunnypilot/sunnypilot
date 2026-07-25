@@ -16,10 +16,10 @@ class TestSunnylinkdMethods:
     def mock_save_param(key, value, compression=False):
       self.saved_params.append((key, value, compression))
 
-    sunnylinkd.save_param_from_base64_encoded_string = mock_save_param
+    sunnylinkd.save_param_from_base64_encoded_string = mock_save_param  # ty: ignore[invalid-assignment]
 
   def teardown_method(self):
-    sunnylinkd.save_param_from_base64_encoded_string = self.original_save
+    sunnylinkd.save_param_from_base64_encoded_string = self.original_save  # ty: ignore[invalid-assignment]
 
   def test_saveParams_blocked(self):
     blocked_params = {

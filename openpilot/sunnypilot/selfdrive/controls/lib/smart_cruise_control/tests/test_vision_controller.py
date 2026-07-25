@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -113,7 +115,7 @@ class TestSmartCruiseControlVision:
     mdl = generate_modelV2()
     cs = generate_carState()
     controls_state = generate_controlsState()
-    self.sm = {'modelV2': mdl.modelV2, 'carState': cs.carState, 'controlsState': controls_state.controlsState}
+    self.sm: Any = {'modelV2': mdl.modelV2, 'carState': cs.carState, 'controlsState': controls_state.controlsState}
 
   def reset_params(self):
     self.params.put_bool("SmartCruiseControlVision", True, block=True)

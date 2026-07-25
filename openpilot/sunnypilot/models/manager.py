@@ -69,7 +69,7 @@ class ModelManagerSP:
         total_size = int(response.headers.get("content-length", 0))
         bytes_downloaded = 0
 
-        with open(path, 'wb') as f:
+        with open(path, 'wb') as f:  # noqa: ASYNC230
           async for chunk in response.content.iter_chunked(self._chunk_size):  # type: bytes
             f.write(chunk)
             bytes_downloaded += len(chunk)
@@ -110,7 +110,7 @@ class ModelManagerSP:
         async with session.get(chunk_url) as response:
           response.raise_for_status()
           chunk_size = int(response.headers.get("content-length", 0))
-          with open(chunk_path, 'wb') as f:
+          with open(chunk_path, 'wb') as f:  # noqa: ASYNC230
             async for data in response.content.iter_chunked(self._chunk_size):
               f.write(data)
               chunk_downloaded += len(data)
@@ -124,9 +124,9 @@ class ModelManagerSP:
               self._sync_artifact_progress(artifact)
               self._report_status()
 
-    with open(manifest_path, 'w') as f:
+    with open(manifest_path, 'w') as f:  # noqa: ASYNC230
       f.write(str(num_chunks))
-    if os.path.isfile(base_path):
+    if os.path.isfile(base_path):  # noqa: ASYNC240
       os.remove(base_path)
     del self._download_start_times[artifact.fileName]
 
@@ -165,7 +165,7 @@ class ModelManagerSP:
     except Exception as e:
       cloudlog.error(f"Error downloading {filename}: {str(e)}")
       for f in [full_path] + [p for p in (os.path.join(destination_path, f) for f in os.listdir(destination_path)) if filename in p]:
-        if os.path.isfile(f):
+        if os.path.isfile(f):  # noqa: ASYNC240
           os.remove(f)
       artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
       artifact.downloadProgress.eta = 0
@@ -222,7 +222,8 @@ class ModelManagerSP:
       self.selected_bundle = None
 
     except Exception:
-      self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+      if self.selected_bundle is not None:
+        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
       raise
 
     finally:

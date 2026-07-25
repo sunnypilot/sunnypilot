@@ -16,6 +16,9 @@ class SunnylinkConsentPage(NavScroller):
   def __init__(self, on_accept: Callable | None = None, on_decline: Callable | None = None):
     super().__init__()
 
+    assert on_accept is not None and callable(on_accept)
+    assert on_decline is not None and callable(on_decline)
+
     self._accept_button = BigConfirmationCircleButton("enable\nsunnylink", gui_app.texture("icons_mici/setup/driver_monitoring/dm_check.png", 64, 64),
                                                       on_accept,  exit_on_confirm=False)
 

@@ -679,17 +679,16 @@ def add_log_to_queue(log_path, log_id, is_sunnylink=False):
                      f"after compression: {compressed_size} bytes, " +
                      f"after encoding: {encoded_size} bytes")
 
-    jsonrpc = {
+    params: dict[str, str | bool] = {"logs": payload}
+    if is_sunnylink and is_compressed:
+      params["compressed"] = is_compressed
+
+    jsonrpc: dict = {
       "method": "forwardLogs",
-      "params": {
-        "logs": payload
-      },
+      "params": params,
       "jsonrpc": "2.0",
       "id": log_id
     }
-
-    if is_sunnylink and is_compressed:
-      jsonrpc["params"]["compressed"] = is_compressed
 
     jsonrpc_str = json.dumps(jsonrpc)
     size_in_bytes = len(jsonrpc_str.encode('utf-8'))
@@ -783,17 +782,16 @@ def stat_handler(end_event: threading.Event, stats_dir=None, is_sunnylink=False)
               payload = base64.b64encode(compressed_data).decode()
               is_compressed = True
 
-            jsonrpc = {
+            params: dict[str, str | bool] = {"stats": payload}
+            if is_sunnylink and is_compressed:
+              params["compressed"] = is_compressed
+
+            jsonrpc: dict = {
               "method": "storeStats",
-              "params": {
-                "stats": payload
-              },
+              "params": params,
               "jsonrpc": "2.0",
               "id": stat_filenames[0]
             }
-
-            if is_sunnylink and is_compressed:
-              jsonrpc["params"]["compressed"] = is_compressed
 
             send_queue_push(json.dumps(jsonrpc), SEND_PRIORITY_LOW)
           os.remove(stat_path)
@@ -806,7 +804,10 @@ def stat_handler(end_event: threading.Event, stats_dir=None, is_sunnylink=False)
 def ws_proxy_recv(ws: WebSocket, local_sock: socket.socket, ssock: socket.socket, end_event: threading.Event, global_end_event: threading.Event) -> None:
   while not (end_event.is_set() or global_end_event.is_set()):
     try:
-      r = select.select((ws.sock,), (), (), 30)
+      sock = ws.sock
+      if sock is None:
+        return
+      r = select.select((sock,), (), (), 30)
       if r[0]:
         data = ws.recv()
         if isinstance(data, str):

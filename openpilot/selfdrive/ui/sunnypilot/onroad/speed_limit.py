@@ -198,7 +198,7 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
         self._draw_ahead_info(sign_rect)
 
   def _draw_sign_main(self, rect, alpha=1.0):
-    speed_limit_warning_enabled = ui_state.speed_limit_mode >= SpeedLimitMode.warning
+    speed_limit_warning_enabled = ui_state.speed_limit_mode is not None and ui_state.speed_limit_mode >= SpeedLimitMode.warning
     has_limit = self.speed_limit_valid or self.speed_limit_last_valid
     is_overspeed = has_limit and round(self.speed_limit_final_last) < round(self.speed)
 
