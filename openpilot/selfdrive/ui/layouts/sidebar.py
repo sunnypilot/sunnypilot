@@ -68,7 +68,7 @@ class Sidebar(Widget, SidebarSP):
   def __init__(self):
     Widget.__init__(self)
     SidebarSP.__init__(self)
-    self._net_type = NETWORK_TYPES.get(NetworkType.none)
+    self._net_type = NETWORK_TYPES[NetworkType.none]
     self._net_strength = 0
 
     self._temp_status = MetricData(tr_noop("TEMP"), tr_noop("GOOD"), Colors.GOOD)

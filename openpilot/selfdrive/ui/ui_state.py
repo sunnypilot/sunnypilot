@@ -314,9 +314,9 @@ class Device(DeviceSP):
       brightness = 0
 
     if brightness != self._last_brightness:
-      self._brightness_target = brightness
+      self._brightness_target = int(brightness)
       self._brightness_event.set()
-      self._last_brightness = brightness
+      self._last_brightness = int(brightness)
 
   def _update_wakefulness(self):
     # Handle interactive timeout
@@ -337,9 +337,9 @@ class Device(DeviceSP):
 
     self._set_awake(ui_state.ignition or not interaction_timeout or PC)
 
-  def _set_awake(self, on: bool):
+  def _set_awake(self, on: bool, _ui_state=None):
     if on != self._awake:
-      DeviceSP._set_awake(on, ui_state)
+      super()._set_awake(on, _ui_state or ui_state)
       self._awake = on
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)

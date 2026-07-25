@@ -129,6 +129,10 @@ def validate_rule(rule: dict, path: str, result: ValidationResult,
       return False
     valid = True
     for i, cond in enumerate(rule["conditions"]):
+      if not isinstance(cond, dict):
+        result.error("rule well-formedness", f"{path}.{rule_type}[{i}]: condition must be a dict")
+        valid = False
+        continue
       if not validate_rule(cond, f"{path}.{rule_type}[{i}]", result, capability_fields):
         valid = False
     return valid

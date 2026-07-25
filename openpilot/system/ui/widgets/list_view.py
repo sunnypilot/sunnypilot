@@ -1,6 +1,6 @@
 import os
 import pyray as rl
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from abc import ABC
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.multilang import tr
@@ -207,7 +207,7 @@ class DualButtonAction(ItemAction):
 
 
 class MultipleButtonAction(ItemAction):
-  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None):
+  def __init__(self, buttons: Sequence[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None):
     super().__init__(width=len(buttons) * button_width + (len(buttons) - 1) * RIGHT_ITEM_PADDING, enabled=True)
     self.buttons = buttons
     self.button_width = button_width

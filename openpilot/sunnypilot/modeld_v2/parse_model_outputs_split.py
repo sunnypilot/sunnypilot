@@ -65,6 +65,7 @@ class Parser:
           weights[fidx] = weights[fidx][idxs]
           pred_mu[fidx] = pred_mu[fidx][idxs]
           pred_std[fidx] = pred_std[fidx][idxs]
+      assert out_shape is not None
       full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
       outs[name + '_weights'] = weights
       outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
@@ -82,8 +83,10 @@ class Parser:
       pred_std_final = pred_std
 
     if out_N > 1:
+      assert out_shape is not None
       final_shape = tuple([raw.shape[0], out_N] + list(out_shape))
     else:
+      assert out_shape is not None
       final_shape = tuple([raw.shape[0],] + list(out_shape))
     outs[name] = pred_mu_final.reshape(final_shape)
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
