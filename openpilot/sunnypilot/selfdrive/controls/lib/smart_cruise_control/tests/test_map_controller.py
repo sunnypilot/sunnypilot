@@ -64,9 +64,9 @@ class TestSmartCruiseControlMap:
     # making max_d ~11x too small so the moderate-curve branch never tripped.
     # v_ego=25, a_ego=0, tv=24: fixed max_d≈45m vs buggy ≈4m at a 40m waypoint.
     waypoint_lon_deg = (40.0 / R) * (180.0 / math.pi)
-    self.mem_params.put("LastGPSPosition", json.dumps({"latitude": 0.0, "longitude": 0.0}))
+    self.mem_params.put("LastGPSPosition", json.dumps({"latitude": 0.0, "longitude": 0.0}), block=True)
     self.mem_params.put("MapTargetVelocities",
-                        json.dumps([{"latitude": 0.0, "longitude": waypoint_lon_deg, "velocity": 24.0}]))
+                        json.dumps([{"latitude": 0.0, "longitude": waypoint_lon_deg, "velocity": 24.0}]), block=True)
 
     self.scc_m.update(True, False, 25.0, 0.0, 30.0)
 
