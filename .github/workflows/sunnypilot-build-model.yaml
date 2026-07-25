@@ -174,7 +174,7 @@ jobs:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ env.MODELS_DIR }}
       - run: |
-          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big-driving-supercombo}.onnx
+          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big_driving_supercombo}.onnx
 
       - name: Build Model
         run: |
@@ -211,7 +211,7 @@ jobs:
           OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
           ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
           SUPERCOMBO_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving-supercombo.onnx"; do
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx"; do
             if [ -f "$f" ]; then
               SUPERCOMBO_ONNX="$f"
               break
