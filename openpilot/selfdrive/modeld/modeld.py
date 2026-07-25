@@ -92,6 +92,7 @@ class ModelState(ModelStateBase):
     self.output_slices = metadata['output_slices']
 
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    self.copy_vision_buffers = self.WARP_DEV.split(":")[0] == "METAL"
 
     self.frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
     self.input_queues, self.npy = make_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
@@ -109,13 +110,18 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray] | None:
     for key in bufs.keys():
-      ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data
       yuv_size = self.frame_buf_params[key][3]
-      # There is a ringbuffer of imgs, just cache tensors pointing to all of them
-      cache_key = (key, ptr)
-      if cache_key not in self._blob_cache:
-        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
-      self.full_frames[key] = self._blob_cache[cache_key]
+      frame = np.frombuffer(bufs[key].data, dtype=np.uint8, count=yuv_size)
+      if self.copy_vision_buffers:
+        # VisionIPC supplies a CPU pointer. Metal's external_ptr expects an MTLBuffer object,
+        # so wrapping the CPU pointer with from_blob crashes inside useResources().
+        self.full_frames[key] = Tensor(frame, device=self.WARP_DEV).realize()
+      else:
+        # There is a ringbuffer of imgs, just cache tensors pointing to all of them.
+        cache_key = (key, frame.ctypes.data)
+        if cache_key not in self._blob_cache:
+          self._blob_cache[cache_key] = Tensor.from_blob(frame.ctypes.data, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
+        self.full_frames[key] = self._blob_cache[cache_key]
 
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire_pulse'][0] = 0
