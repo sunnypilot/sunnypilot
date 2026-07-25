@@ -181,6 +181,7 @@ jobs:
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}:${{ github.workspace }}"
 
           COMPILE_MODELD="${{ github.workspace }}/openpilot/sunnypilot/modeld_v2/compile_modeld.py"
