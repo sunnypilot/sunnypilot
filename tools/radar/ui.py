@@ -14,10 +14,12 @@ import struct
 import subprocess
 import sys
 import termios
+import threading
 import time
 import warnings
 from dataclasses import dataclass
 import fcntl
+from typing import Any
 
 import numpy as np
 import pyray as rl
@@ -120,6 +122,7 @@ RADAR_DETAIL_SIGNALS = {
 }
 TABLE_MODES = ("motion", "kinematics", "object", "signals")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
+AUDIO_MAX_BUFFER_SECONDS = 0.5
 TRACK_COUNT_FIELD_WIDTH = 3
 SOURCE_CIRCLE_RADIUS_SCALE = 0.8
 
@@ -211,6 +214,109 @@ class ManagedReplay:
     if self.master_fd >= 0:
       os.close(self.master_fd)
       self.master_fd = -1
+
+
+def resample_audio_for_speed(data: bytes, playback_speed: float) -> bytes:
+  samples = np.frombuffer(data, dtype=np.int16)
+  if samples.size <= 1 or playback_speed == 1.0:
+    return data
+  output_size = max(1, round(samples.size / max(playback_speed, 0.01)))
+  source_positions = np.linspace(0, samples.size - 1, output_size)
+  return np.interp(source_positions, np.arange(samples.size), samples).astype(np.int16).tobytes()
+
+
+class ReplayAudioPlayer:
+  def __init__(self) -> None:
+    self.enabled = False
+    self.available = False
+    self.error = ""
+    self._stream: Any = None
+    self._sample_rate = 0
+    self._last_log_mono_time = 0
+    self._buffer = bytearray()
+    self._lock = threading.Lock()
+
+  def _callback(self, outdata, frames, time_info, status) -> None:
+    del frames, time_info, status
+    output_size = len(outdata)
+    with self._lock:
+      chunk_size = min(output_size, len(self._buffer))
+      chunk = bytes(self._buffer[:chunk_size])
+      del self._buffer[:chunk_size]
+    outdata[:] = bytes(output_size)
+    if chunk:
+      outdata[:chunk_size] = chunk
+
+  def _close_stream(self) -> None:
+    if self._stream is not None:
+      try:
+        self._stream.stop()
+        self._stream.close()
+      except Exception:
+        pass
+      self._stream = None
+    self._sample_rate = 0
+
+  def _open_stream(self, sample_rate: int) -> bool:
+    if self._stream is not None and self._sample_rate == sample_rate:
+      return True
+    self._close_stream()
+    try:
+      import sounddevice as sd
+      self._stream = sd.RawOutputStream(
+        samplerate=sample_rate,
+        channels=1,
+        dtype="int16",
+        callback=self._callback,
+      )
+      self._stream.start()
+      self._sample_rate = sample_rate
+      self.error = ""
+      return True
+    except Exception as exc:
+      self.error = str(exc)
+      self._close_stream()
+      return False
+
+  def clear(self) -> None:
+    with self._lock:
+      self._buffer.clear()
+    self._last_log_mono_time = 0
+
+  def reset(self) -> None:
+    self.clear()
+    self._close_stream()
+    self.available = False
+    self.error = ""
+
+  def close(self) -> None:
+    self.enabled = False
+    self.reset()
+
+  def toggle(self) -> None:
+    self.enabled = not self.enabled
+    self.clear()
+    if not self.enabled:
+      self._close_stream()
+    self.error = ""
+
+  def push(self, data: bytes, sample_rate: int, log_mono_time: int, playback_speed: float) -> None:
+    self.available = True
+    if not self.enabled or not data or sample_rate <= 0 or self.error:
+      return
+    if (self._last_log_mono_time
+        and (log_mono_time <= self._last_log_mono_time
+             or log_mono_time - self._last_log_mono_time > 500_000_000)):
+      self.clear()
+    self._last_log_mono_time = log_mono_time
+    if not self._open_stream(sample_rate):
+      return
+    audio = resample_audio_for_speed(data, playback_speed)
+    max_buffer_size = round(sample_rate * np.dtype(np.int16).itemsize * AUDIO_MAX_BUFFER_SECONDS)
+    with self._lock:
+      self._buffer.extend(audio)
+      if len(self._buffer) > max_buffer_size:
+        del self._buffer[:len(self._buffer) - max_buffer_size]
 
 
 @dataclass(frozen=True)
@@ -1224,6 +1330,7 @@ def replay_keyboard_command() -> str | None:
     (rl.KeyboardKey.KEY_S, "S" if shift_down else "s"),
     (rl.KeyboardKey.KEY_M, "M" if shift_down else "m"),
     (rl.KeyboardKey.KEY_SPACE, " "),
+    (rl.KeyboardKey.KEY_A, "audio"),
     (rl.KeyboardKey.KEY_E, "e"),
     (rl.KeyboardKey.KEY_D, "d"),
     (rl.KeyboardKey.KEY_T, "t"),
@@ -2009,13 +2116,30 @@ def draw_replay_timeline(font, bounds: rl.Rectangle, timeline: ReplayTimeline,
 
 def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, route_seconds: float,
                             route_fingerprint: str, timeline: ReplayTimeline, v_ego: float, loading: bool, seek_input: str,
-                            seek_active: bool, scrub: ReplayScrubState) -> str | None:
+                            seek_active: bool, scrub: ReplayScrubState, audio_player: ReplayAudioPlayer) -> str | None:
   rl.draw_rectangle_rec(bounds, rl.Color(8, 12, 18, 248))
   rl.draw_line_ex(rl.Vector2(bounds.x, bounds.y), rl.Vector2(bounds.x + bounds.width, bounds.y), 1.0, MUTED)
+  if audio_player.error:
+    audio_label = "AUDIO ERR"
+    audio_color = RED
+    audio_tooltip = f"Audio output failed: {audio_player.error}"
+  elif audio_player.enabled and audio_player.available:
+    audio_label = "AUDIO ON"
+    audio_color = GREEN
+    audio_tooltip = "A: disable recorded video audio"
+  elif audio_player.enabled:
+    audio_label = "AUDIO WAIT"
+    audio_color = ORANGE
+    audio_tooltip = "Waiting for recorded audio in this route"
+  else:
+    audio_label = "AUDIO"
+    audio_color = MUTED
+    audio_tooltip = "A: play recorded audio from the route video"
   controls = (
     ("-60s", "M", CYAN, "Shift+M: back 60 seconds"),
     ("-10s", "S", CYAN, "Shift+S: back 10 seconds"),
     ("PAUSE", " ", GREEN, "Space: pause / resume"),
+    (audio_label, "audio", audio_color, audio_tooltip),
     ("+10s", "s", CYAN, "S: forward 10 seconds"),
     ("+60s", "m", CYAN, "M: forward 60 seconds"),
     ("SPD-", "-", MUTED, "-: slower playback"),
@@ -2083,9 +2207,13 @@ def draw_replay_control_bar(font, bounds: rl.Rectangle, replay: ManagedReplay, r
   return clicked_action
 
 
-def apply_replay_control(replay: ManagedReplay, action: str | None, seek_input: str,
-                         seek_active: bool) -> tuple[str, bool]:
+def apply_replay_control(replay: ManagedReplay, audio_player: ReplayAudioPlayer, action: str | None,
+                         seek_input: str, seek_active: bool) -> tuple[str, bool]:
+  if action == "audio":
+    audio_player.toggle()
+    return seek_input, False
   if action is not None and action.startswith("seek-time:"):
+    audio_player.clear()
     replay.send(f"\n{action.removeprefix('seek-time:')}\n")
     return "", False
   if action == "seek-focus":
@@ -2094,9 +2222,12 @@ def apply_replay_control(replay: ManagedReplay, action: str | None, seek_input: 
     return seek_input, False
   if action == "seek":
     if seek_input:
+      audio_player.clear()
       replay.send(f"\n{seek_input}\n")
     return "", False
   if action is not None:
+    if action in {" ", "+", "-", "s", "S", "m", "M", "e", "d", "t", "i", "w", "c", "q"}:
+      audio_player.clear()
     replay.send(action)
     return seek_input, False
   return seek_input, seek_active
@@ -2323,6 +2454,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     "liveTracks",
     "modelV2",
     "radarState",
+    "rawAudioData",
     "roadCameraState",
     "wideRoadCameraState",
   ], addr=messaging_addr)
@@ -2370,6 +2502,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   replay_seek_input = ""
   replay_seek_active = False
   replay_scrub = ReplayScrubState()
+  audio_player = ReplayAudioPlayer()
   route_message_start_mono: int | None = None
   route_fingerprint = ""
   current_route_seconds = route_start_seconds(route_input)
@@ -2414,6 +2547,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     decoded_motion_states = {}
     replay_timeline = ReplayTimeline()
     replay_scrub = ReplayScrubState()
+    audio_player.reset()
     replay_seek_input = ""
     replay_seek_active = False
     route_loading = False
@@ -2549,7 +2683,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
         replay_seek_input = replay_seek_input[:-1]
       elif rl.is_key_pressed(rl.KeyboardKey.KEY_ENTER) and replay_process is not None:
         replay_seek_input, replay_seek_active = apply_replay_control(
-          replay_process, "seek", replay_seek_input, replay_seek_active,
+          replay_process, audio_player, "seek", replay_seek_input, replay_seek_active,
         )
       elif rl.is_key_pressed(rl.KeyboardKey.KEY_ESCAPE):
         replay_seek_active = False
@@ -2566,13 +2700,23 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     elif replay_process is not None and rl.is_key_pressed(rl.KeyboardKey.KEY_ENTER):
       replay_seek_active = True
     elif replay_process is not None and (replay_command := replay_keyboard_command()) is not None:
-      replay_process.send(replay_command)
+      replay_seek_input, replay_seek_active = apply_replay_control(
+        replay_process, audio_player, replay_command, replay_seek_input, replay_seek_active,
+      )
     if open_entered_route:
       route_error = open_target(route_input)
       route_dialog_open = bool(route_error)
       route_select_all = False
 
     sm.update(0)
+    if replay_process is not None and sm.updated["rawAudioData"]:
+      raw_audio = sm["rawAudioData"]
+      audio_player.push(
+        bytes(raw_audio.data),
+        int(raw_audio.sampleRate),
+        sm.logMonoTime["rawAudioData"],
+        replay_process.playback_speed,
+      )
     if remote_address is not None and any(sm.updated.values()):
       remote_bridge_last_message = time.monotonic()
     if sm.updated["carParams"]:
@@ -2795,10 +2939,10 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       if replay_process is not None:
         replay_action = draw_replay_control_bar(
           font, replay_bar_rect, replay_process, current_route_seconds, route_fingerprint,
-          replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub,
+          replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub, audio_player,
         )
         replay_seek_input, replay_seek_active = apply_replay_control(
-          replay_process, replay_action, replay_seek_input, replay_seek_active,
+          replay_process, audio_player, replay_action, replay_seek_input, replay_seek_active,
         )
       rl.end_drawing()
       continue
@@ -2935,16 +3079,17 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     if replay_process is not None and not route_dialog_open:
       replay_action = draw_replay_control_bar(
         font, replay_bar_rect, replay_process, current_route_seconds, route_fingerprint,
-        replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub,
+        replay_timeline, v_ego, route_loading, replay_seek_input, replay_seek_active, replay_scrub, audio_player,
       )
       replay_seek_input, replay_seek_active = apply_replay_control(
-        replay_process, replay_action, replay_seek_input, replay_seek_active,
+        replay_process, audio_player, replay_action, replay_seek_input, replay_seek_active,
       )
     if table_hover_id is not None and not route_dialog_open:
       rl.set_mouse_cursor(rl.MouseCursor.MOUSE_CURSOR_POINTING_HAND)
     rl.end_drawing()
 
   stop_route_replay(replay_process)
+  audio_player.close()
   stop_timeline_process(timeline_process)
   stop_remote_relays(remote_relays)
   decoder_process.terminate()
