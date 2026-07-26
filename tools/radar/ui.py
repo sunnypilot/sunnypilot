@@ -122,7 +122,10 @@ RADAR_DETAIL_SIGNALS = {
 }
 TABLE_MODES = ("motion", "kinematics", "object", "signals")
 PLAYBACK_SPEEDS = (0.2, 0.5, 1.0, 2.0, 4.0, 8.0)
-AUDIO_MAX_BUFFER_SECONDS = 0.5
+AUDIO_PACKET_SECONDS = 0.05
+AUDIO_PREBUFFER_SECONDS = 0.15
+AUDIO_FADE_SECONDS = 0.005
+AUDIO_MAX_BUFFER_SECONDS = 0.75
 TRACK_COUNT_FIELD_WIDTH = 3
 SOURCE_CIRCLE_RADIUS_SCALE = 0.8
 
@@ -235,17 +238,53 @@ class ReplayAudioPlayer:
     self._last_log_mono_time = 0
     self._buffer = bytearray()
     self._lock = threading.Lock()
+    self._prebuffer_size = 0
+    self._fade_samples = 0
+    self._rebuffering = True
+    self._fade_out_pending = False
+    self._last_output_sample = 0
 
   def _callback(self, outdata, frames, time_info, status) -> None:
-    del frames, time_info, status
+    del frames, time_info
+    output = np.frombuffer(outdata, dtype=np.int16)
+    output.fill(0)
     output_size = len(outdata)
+    chunk = b""
+    fade_in = False
+    fade_out_from = 0
     with self._lock:
-      chunk_size = min(output_size, len(self._buffer))
-      chunk = bytes(self._buffer[:chunk_size])
-      del self._buffer[:chunk_size]
-    outdata[:] = bytes(output_size)
+      if status:
+        self._rebuffering = True
+        self._fade_out_pending = True
+
+      if self._fade_out_pending:
+        fade_out_from = self._last_output_sample
+        self._last_output_sample = 0
+        self._fade_out_pending = False
+      else:
+        if self._rebuffering and len(self._buffer) >= self._prebuffer_size:
+          self._rebuffering = False
+          fade_in = True
+        if not self._rebuffering:
+          if len(self._buffer) >= output_size:
+            chunk = bytes(self._buffer[:output_size])
+            del self._buffer[:output_size]
+            self._last_output_sample = int(np.frombuffer(chunk, dtype=np.int16)[-1])
+          else:
+            self._rebuffering = True
+            fade_out_from = self._last_output_sample
+            self._last_output_sample = 0
+
     if chunk:
-      outdata[:chunk_size] = chunk
+      output[:] = np.frombuffer(chunk, dtype=np.int16)
+      if fade_in:
+        fade_samples = min(self._fade_samples, output.size)
+        output[:fade_samples] = (
+          output[:fade_samples].astype(np.float64) * np.linspace(0.0, 1.0, fade_samples)
+        ).astype(np.int16)
+    elif fade_out_from:
+      fade_samples = min(self._fade_samples, output.size)
+      output[:fade_samples] = np.linspace(fade_out_from, 0, fade_samples).astype(np.int16)
 
   def _close_stream(self) -> None:
     if self._stream is not None:
@@ -263,10 +302,16 @@ class ReplayAudioPlayer:
     self._close_stream()
     try:
       import sounddevice as sd
+      with self._lock:
+        self._prebuffer_size = round(sample_rate * np.dtype(np.int16).itemsize * AUDIO_PREBUFFER_SECONDS)
+        self._fade_samples = max(1, round(sample_rate * AUDIO_FADE_SECONDS))
+        self._rebuffering = True
       self._stream = sd.RawOutputStream(
         samplerate=sample_rate,
         channels=1,
         dtype="int16",
+        blocksize=round(sample_rate * AUDIO_PACKET_SECONDS),
+        latency="high",
         callback=self._callback,
       )
       self._stream.start()
@@ -281,11 +326,16 @@ class ReplayAudioPlayer:
   def clear(self) -> None:
     with self._lock:
       self._buffer.clear()
+      self._rebuffering = True
+      self._fade_out_pending = self._stream is not None
     self._last_log_mono_time = 0
 
   def reset(self) -> None:
     self.clear()
     self._close_stream()
+    with self._lock:
+      self._fade_out_pending = False
+      self._last_output_sample = 0
     self.available = False
     self.error = ""
 
@@ -309,14 +359,26 @@ class ReplayAudioPlayer:
              or log_mono_time - self._last_log_mono_time > 500_000_000)):
       self.clear()
     self._last_log_mono_time = log_mono_time
-    if not self._open_stream(sample_rate):
-      return
+    if self._sample_rate not in (0, sample_rate):
+      self.reset()
+      self.available = True
+    if self._sample_rate == 0:
+      self._sample_rate = sample_rate
     audio = resample_audio_for_speed(data, playback_speed)
     max_buffer_size = round(sample_rate * np.dtype(np.int16).itemsize * AUDIO_MAX_BUFFER_SECONDS)
+    open_stream = False
     with self._lock:
       self._buffer.extend(audio)
       if len(self._buffer) > max_buffer_size:
-        del self._buffer[:len(self._buffer) - max_buffer_size]
+        overflow = len(self._buffer) - max_buffer_size
+        overflow += overflow % np.dtype(np.int16).itemsize
+        del self._buffer[:overflow]
+        self._rebuffering = True
+        self._fade_out_pending = self._stream is not None
+      prebuffer_size = round(sample_rate * np.dtype(np.int16).itemsize * AUDIO_PREBUFFER_SECONDS)
+      open_stream = self._stream is None and len(self._buffer) >= prebuffer_size
+    if open_stream:
+      self._open_stream(sample_rate)
 
 
 @dataclass(frozen=True)
@@ -2454,10 +2516,11 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     "liveTracks",
     "modelV2",
     "radarState",
-    "rawAudioData",
     "roadCameraState",
     "wideRoadCameraState",
   ], addr=messaging_addr)
+  # SubMaster conflates messages, but every 50 ms audio packet is needed for gapless playback.
+  audio_socket = messaging.sub_sock("rawAudioData", addr=messaging_addr, conflate=False)
 
   process_context = multiprocessing.get_context("spawn")
   decoder_output = process_context.Queue(maxsize=1)
@@ -2548,6 +2611,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     replay_timeline = ReplayTimeline()
     replay_scrub = ReplayScrubState()
     audio_player.reset()
+    messaging.drain_sock(audio_socket)
     replay_seek_input = ""
     replay_seek_active = False
     route_loading = False
@@ -2709,14 +2773,15 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       route_select_all = False
 
     sm.update(0)
-    if replay_process is not None and sm.updated["rawAudioData"]:
-      raw_audio = sm["rawAudioData"]
-      audio_player.push(
-        bytes(raw_audio.data),
-        int(raw_audio.sampleRate),
-        sm.logMonoTime["rawAudioData"],
-        replay_process.playback_speed,
-      )
+    for audio_event in messaging.drain_sock(audio_socket):
+      if replay_process is not None:
+        raw_audio = audio_event.rawAudioData
+        audio_player.push(
+          bytes(raw_audio.data),
+          int(raw_audio.sampleRate),
+          int(audio_event.logMonoTime),
+          replay_process.playback_speed,
+        )
     if remote_address is not None and any(sm.updated.values()):
       remote_bridge_last_message = time.monotonic()
     if sm.updated["carParams"]:
