@@ -22,7 +22,7 @@ import fcntl
 import numpy as np
 import pyray as rl
 
-import cereal.messaging as messaging
+import openpilot.cereal.messaging as messaging
 from msgq.visionipc import VisionStreamType
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, view_frame_from_device_frame
@@ -48,15 +48,15 @@ MAX_LATERAL_DISTANCE = 30.0
 FUSED_CAMERA_ZOOM = 1.7
 FUSED_STREAM_GRACE_SECONDS = 1.0
 REMOTE_BRIDGE_TIMEOUT_SECONDS = 1.5
-REPLAY_EXECUTABLE = os.path.join(BASEDIR, "tools/replay/replay")
-MESSAGING_BRIDGE_EXECUTABLE = os.path.join(BASEDIR, "cereal/messaging/bridge")
-CAMERA_RELAY_EXECUTABLE = os.path.join(BASEDIR, "tools/camerastream/compressed_vipc.py")
-CAMERA_RELAY_BOOTSTRAP = "".join((
-  "import multiprocessing, runpy, sys; ",
-  "multiprocessing.set_start_method('fork', force=True); ",
-  "path = sys.argv.pop(1); ",
-  "runpy.run_path(path, run_name='__main__')",
-))
+REPLAY_EXECUTABLE = os.path.join(BASEDIR, "openpilot/tools/replay/replay")
+MESSAGING_BRIDGE_EXECUTABLE = os.path.join(BASEDIR, "openpilot/cereal/messaging/bridge")
+CAMERA_RELAY_EXECUTABLE = os.path.join(BASEDIR, "openpilot/tools/camerastream/compressed_vipc.py")
+CAMERA_RELAY_BOOTSTRAP = "from tools.radar.ui import run_camera_relay; run_camera_relay()"
+DARWIN_FFMPEG_LIBRARY_NAMES = {
+  "libavutil.so.59": "libavutil.59.dylib",
+  "libavcodec.so.61": "libavcodec.61.dylib",
+  "libswscale.so.8": "libswscale.8.dylib",
+}
 REMOTE_SERVICES = (
   "can", "carParams", "carState", "liveCalibration", "liveTracks", "modelV2", "radarState",
   "roadCameraState", "wideRoadCameraState", "roadEncodeData", "wideRoadEncodeData",
@@ -293,6 +293,25 @@ def stop_remote_relays(processes: list[subprocess.Popen]) -> None:
   ]
   if processes is not ACTIVE_REMOTE_RELAYS:
     processes.clear()
+
+
+def run_camera_relay() -> None:
+  import ctypes
+  import runpy
+
+  original_cdll = ctypes.CDLL
+
+  def load_library(name, *args, **kwargs):
+    if sys.platform == "darwin" and isinstance(name, str):
+      directory, filename = os.path.split(name)
+      if dylib_name := DARWIN_FFMPEG_LIBRARY_NAMES.get(filename):
+        name = os.path.join(directory, dylib_name)
+    return original_cdll(name, *args, **kwargs)
+
+  ctypes.CDLL = load_library  # ty: ignore[invalid-assignment]  # macOS library-name compatibility shim
+  multiprocessing.set_start_method("fork", force=True)
+  script_path = sys.argv.pop(1)
+  runpy.run_path(script_path, run_name="__main__")
 
 
 def start_remote_relays(address: str) -> list[subprocess.Popen]:
@@ -2283,7 +2302,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   rl.set_window_focused()
   rl.set_target_fps(max(60, rl.get_monitor_refresh_rate(0)))
 
-  font_path = os.path.join(BASEDIR, "selfdrive/assets/fonts/JetBrainsMono-Medium.ttf")
+  font_path = os.path.join(BASEDIR, "openpilot/selfdrive/assets/fonts/JetBrainsMono-Medium.ttf")
   font = rl.load_font_ex(font_path, 64, None, 0)
   rl.gen_texture_mipmaps(font.texture)
   rl.set_texture_filter(font.texture, rl.TextureFilter.TEXTURE_FILTER_TRILINEAR)
@@ -2944,7 +2963,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
     description="Decode live or replay CAN with Hyundai auto radar discovery and visualize the resulting tracks.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   )
-  parser.add_argument("ip_address", nargs="?", default="127.0.0.1", help="Address publishing replay or on-car messages.")
+  parser.add_argument("target", nargs="?", default="127.0.0.1", help="Route, segment ID, or live-car IP address.")
   parser.add_argument("--route", help="Route or segment ID to open in replay when the debugger starts.")
   parser.add_argument("--wide", action="store_true", help="Start with the wide/full field-of-view road camera.")
   parser.add_argument("--fused", action="store_true", help="Start with the full-screen fused road and wide cameras.")
@@ -2953,7 +2972,11 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
   args = get_arg_parser().parse_args(sys.argv[1:])
+  address = args.target
+  route = args.route
+  if route is None and parse_live_ip(address) is None:
+    address, route = "127.0.0.1", address
   try:
-    ui_thread(args.ip_address, args.wide, args.fused, args.route)
+    ui_thread(address, args.wide, args.fused, route)
   except KeyboardInterrupt:
     pass
