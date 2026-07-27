@@ -1,12 +1,15 @@
 import numpy as np
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
+
 def safe_exp(x, out=None):
   # -11 is around 10**14, more causes float16 overflow
   return np.exp(np.clip(x, -np.inf, 11), out=out)
 
+
 def sigmoid(x):
   return 1. / (1. + safe_exp(-x))
+
 
 def softmax(x, axis=-1):
   x -= np.max(x, axis=axis, keepdims=True)
@@ -17,17 +20,34 @@ def softmax(x, axis=-1):
   x /= np.sum(x, axis=axis, keepdims=True)
   return x
 
-class Parser:
-  def __init__(self, ignore_missing=False, mhp_config=None):
-    self.ignore_missing = ignore_missing
-    # Optional MHP overrides keyed by head: 'plan_mhp_n', 'plan_mhp_selection',
-    # 'lead_mhp_n', 'lead_mhp_selection'. ``None`` (or missing keys) keeps the
-    # legacy ``ModelConstants`` values so existing models behave identically.
-    self.mhp = mhp_config or {}
 
-  def _mhp(self, head, default_in, default_out):
-    return (self.mhp.get(f'{head}_mhp_n', default_in),
-            self.mhp.get(f'{head}_mhp_selection', default_out))
+def _infer_mhp(slice_size: int, prod_out_shape: int, max_in_n: int = 16, max_out_n: int = 6) -> tuple[int, int]:
+  """Derive ``(in_N, out_N)`` from a packed MDN slice.
+
+  Layout (combined supercombo): for each hypothesis we have ``mu``, ``std``,
+  and an optional scalar ``weight`` block. So:
+
+    slice_size = in_N * (2 * prod_out_shape + out_N)
+
+  We scan small ``out_N`` values (no weights is most common in modern models,
+  one or three weights in the legacy) and accept the first division that
+  yields an integer ``in_N`` in ``[1, max_in_n]``. The candidates are spaced
+  wide enough that there's no ambiguity for the bands we care about.
+  """
+  for out_n in range(max_out_n + 1):
+    per = 2 * prod_out_shape + out_n
+    if per <= 0:
+      continue
+    if slice_size % per == 0:
+      in_n = slice_size // per
+      if 1 <= in_n <= max_in_n:
+        return in_n, out_n
+  return 1, 0  # single hypothesis, no weights — matches a non-MDN output
+
+
+class Parser:
+  def __init__(self, ignore_missing=False):
+    self.ignore_missing = ignore_missing
 
   def check_missing(self, outs, name):
     if name not in outs and not self.ignore_missing:
@@ -48,85 +68,92 @@ class Parser:
     raw = outs[name]
     outs[name] = sigmoid(raw)
 
-  def parse_mdn(self, name, outs, in_N=0, out_N=1, out_shape=None):
+  def parse_mdn(self, name, outs, out_shape, in_N=0, out_N=0):
+    """Parse a packed MDN output. Pass ``in_N``/``out_N`` explicitly for the
+    legacy layout; pass neither (defaults of 0) to auto-detect from the
+    slice size, which transparently supports newer supercombos that drop the
+    per-hypothesis weight block or change the hypothesis count."""
     if self.check_missing(outs, name):
       return
     raw = outs[name]
-    raw = raw.reshape((raw.shape[0], max(in_N, 1), -1))
+
+    if in_N == 0 and out_N == 0:
+      prod = int(np.prod(out_shape))
+      in_N, out_N = _infer_mhp(raw.shape[1], prod)
+
+    raw = raw.reshape((raw.shape[0], in_N, -1))
 
     n_values = (raw.shape[2] - out_N)//2
     pred_mu = raw[:,:,:n_values]
     pred_std = safe_exp(raw[:,:,n_values: 2*n_values])
 
-    if in_N > 1:
-      if out_N > 0:
-        weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
-        for i in range(out_N):
-          weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
+    if in_N > 1 and out_N > 0:
+      weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
+      for i in range(out_N):
+        weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
 
-        if out_N == 1:
-          for fidx in range(weights.shape[0]):
-            idxs = np.argsort(weights[fidx][:,0])[::-1]
-            weights[fidx] = weights[fidx][idxs]
-            pred_mu[fidx] = pred_mu[fidx][idxs]
-            pred_std[fidx] = pred_std[fidx][idxs]
-        assert out_shape is not None
-        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
-        outs[name + '_weights'] = weights
-        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
-        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
-
-        pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
-        pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      if out_N == 1:
         for fidx in range(weights.shape[0]):
-          for hidx in range(out_N):
-            idxs = np.argsort(weights[fidx,:,hidx])[::-1]
-            pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
-            pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
-      else:
-        # MHP without weights: keep every hypothesis intact, surface them as
-        # ``*_hypotheses`` outputs and use the same shape for the primary
-        # output so downstream consumers can iterate over the full set.
-        assert out_shape is not None
-        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
-        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
-        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
-        pred_mu_final = pred_mu
-        pred_std_final = pred_std
+          idxs = np.argsort(weights[fidx][:,0])[::-1]
+          weights[fidx] = weights[fidx][idxs]
+          pred_mu[fidx] = pred_mu[fidx][idxs]
+          pred_std[fidx] = pred_std[fidx][idxs]
+      full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
+      outs[name + '_weights'] = weights
+      outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
+      outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
+
+      pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      for fidx in range(weights.shape[0]):
+        for hidx in range(out_N):
+          idxs = np.argsort(weights[fidx,:,hidx])[::-1]
+          pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
+          pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
+    elif in_N > 1 and out_N == 0:
+      # MHP without weights: keep every hypothesis intact, surface them as
+      # ``*_hypotheses`` and propagate the full multi-hypothesis tensor.
+      full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
+      outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
+      outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
+      pred_mu_final = pred_mu
+      pred_std_final = pred_std
     else:
       pred_mu_final = pred_mu
       pred_std_final = pred_std
 
+    # Final-shape selector: keep an extra hypothesis axis only when
+    # multi-hypothesis data must survive — i.e. when out_N > 1 (legacy
+    # multiple-selection) OR when in_N > 1 with no weights (newer MHP). For
+    # single-hypothesis / collapsed cases (lane_lines, pose, etc.) drop the
+    # extra axis so the consumer sees the historical ``(batch, *out_shape)``.
     if out_N > 1 or (in_N > 1 and out_N == 0):
-      assert out_shape is not None
       n_selections = out_N if out_N > 1 else in_N
       final_shape = tuple([raw.shape[0], n_selections] + list(out_shape))
     else:
-      assert out_shape is not None
       final_shape = tuple([raw.shape[0],] + list(out_shape))
     outs[name] = pred_mu_final.reshape(final_shape)
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    plan_in, plan_out = self._mhp('plan', ModelConstants.PLAN_MHP_N, ModelConstants.PLAN_MHP_SELECTION)
-    lead_in, lead_out = self._mhp('lead', ModelConstants.LEAD_MHP_N, ModelConstants.LEAD_MHP_SELECTION)
-    self.parse_mdn('plan', outs, in_N=plan_in, out_N=plan_out,
-                   out_shape=(ModelConstants.IDX_N,ModelConstants.PLAN_WIDTH))
-    self.parse_mdn('lane_lines', outs, in_N=0, out_N=0, out_shape=(ModelConstants.NUM_LANE_LINES,ModelConstants.IDX_N,ModelConstants.LANE_LINES_WIDTH))
-    self.parse_mdn('road_edges', outs, in_N=0, out_N=0, out_shape=(ModelConstants.NUM_ROAD_EDGES,ModelConstants.IDX_N,ModelConstants.LANE_LINES_WIDTH))
-    self.parse_mdn('pose', outs, in_N=0, out_N=0, out_shape=(ModelConstants.POSE_WIDTH,))
-    self.parse_mdn('road_transform', outs, in_N=0, out_N=0, out_shape=(ModelConstants.POSE_WIDTH,))
+    # Pass no explicit ``in_N``/``out_N`` for plan/lead — ``parse_mdn`` infers
+    # them from the raw slice size, which naturally handles both the legacy
+    # supercombo (4955 / 102) and newer variants (e.g. 990 / 144).
+    self.parse_mdn('plan',   outs, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
+    self.parse_mdn('lane_lines', outs, out_shape=(ModelConstants.NUM_LANE_LINES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
+    self.parse_mdn('road_edges', outs, out_shape=(ModelConstants.NUM_ROAD_EDGES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
+    self.parse_mdn('pose',         outs, out_shape=(ModelConstants.POSE_WIDTH,))
+    self.parse_mdn('road_transform', outs, out_shape=(ModelConstants.POSE_WIDTH,))
     if 'sim_pose' in outs:
-      self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(ModelConstants.POSE_WIDTH,))
-    self.parse_mdn('wide_from_device_euler', outs, in_N=0, out_N=0, out_shape=(ModelConstants.WIDE_FROM_DEVICE_WIDTH,))
-    self.parse_mdn('lead', outs, in_N=lead_in, out_N=lead_out,
-                   out_shape=(ModelConstants.LEAD_TRAJ_LEN,ModelConstants.LEAD_WIDTH))
+      self.parse_mdn('sim_pose', outs, out_shape=(ModelConstants.POSE_WIDTH,))
+    self.parse_mdn('wide_from_device_euler', outs, out_shape=(ModelConstants.WIDE_FROM_DEVICE_WIDTH,))
+    self.parse_mdn('lead', outs, out_shape=(ModelConstants.LEAD_TRAJ_LEN, ModelConstants.LEAD_WIDTH))
     if 'lat_planner_solution' in outs:
-      self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(ModelConstants.IDX_N,ModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
+      self.parse_mdn('lat_planner_solution', outs, out_shape=(ModelConstants.IDX_N, ModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
     if 'desired_curvature' in outs:
-      self.parse_mdn('desired_curvature', outs, in_N=0, out_N=0, out_shape=(ModelConstants.DESIRED_CURV_WIDTH,))
+      self.parse_mdn('desired_curvature', outs, out_shape=(ModelConstants.DESIRED_CURV_WIDTH,))
     for k in ['lead_prob', 'lane_lines_prob', 'meta']:
       self.parse_binary_crossentropy(k, outs)
     self.parse_categorical_crossentropy('desire_state', outs, out_shape=(ModelConstants.DESIRE_PRED_WIDTH,))
-    self.parse_categorical_crossentropy('desire_pred', outs, out_shape=(ModelConstants.DESIRE_PRED_LEN,ModelConstants.DESIRE_PRED_WIDTH))
+    self.parse_categorical_crossentropy('desire_pred',  outs, out_shape=(ModelConstants.DESIRE_PRED_LEN, ModelConstants.DESIRE_PRED_WIDTH))
     return outs

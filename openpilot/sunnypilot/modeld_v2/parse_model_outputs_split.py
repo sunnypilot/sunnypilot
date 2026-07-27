@@ -22,16 +22,8 @@ def softmax(x, axis=-1):
 
 
 class Parser:
-  def __init__(self, ignore_missing=False, mhp_config=None):
+  def __init__(self, ignore_missing=False):
     self.ignore_missing = ignore_missing
-    # Optional overrides for plan/lead ``in_N`` / ``out_N``. ``None`` or any
-    # missing key falls back to ``SplitModelConstants`` so previously compiled
-    # pkls continue to behave identically.
-    self.mhp = mhp_config or {}
-
-  def _mhp(self, head, default_in, default_out):
-    return (self.mhp.get(f'{head}_mhp_n', default_in),
-            self.mhp.get(f'{head}_mhp_selection', default_out))
 
   def check_missing(self, outs, name):
     if name not in outs and not self.ignore_missing:
@@ -63,46 +55,36 @@ class Parser:
     pred_std = safe_exp(raw[:,:,n_values: 2*n_values])
 
     if in_N > 1:
-      if out_N > 0:
-        weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
-        for i in range(out_N):
-          weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
+      weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
+      for i in range(out_N):
+        weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
 
-        if out_N == 1:
-          for fidx in range(weights.shape[0]):
-            idxs = np.argsort(weights[fidx][:,0])[::-1]
-            weights[fidx] = weights[fidx][idxs]
-            pred_mu[fidx] = pred_mu[fidx][idxs]
-            pred_std[fidx] = pred_std[fidx][idxs]
-        assert out_shape is not None
-        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
-        outs[name + '_weights'] = weights
-        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
-        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
-
-        pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
-        pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      if out_N == 1:
         for fidx in range(weights.shape[0]):
-          for hidx in range(out_N):
-            idxs = np.argsort(weights[fidx,:,hidx])[::-1]
-            pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
-            pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
-      else:
-        # MHP without weights: keep every hypothesis intact.
-        assert out_shape is not None
-        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
-        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
-        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
-        pred_mu_final = pred_mu
-        pred_std_final = pred_std
+          idxs = np.argsort(weights[fidx][:,0])[::-1]
+          weights[fidx] = weights[fidx][idxs]
+          pred_mu[fidx] = pred_mu[fidx][idxs]
+          pred_std[fidx] = pred_std[fidx][idxs]
+      assert out_shape is not None
+      full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
+      outs[name + '_weights'] = weights
+      outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
+      outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
+
+      pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+      for fidx in range(weights.shape[0]):
+        for hidx in range(out_N):
+          idxs = np.argsort(weights[fidx,:,hidx])[::-1]
+          pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
+          pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
     else:
       pred_mu_final = pred_mu
       pred_std_final = pred_std
 
-    if out_N > 1 or (in_N > 1 and out_N == 0):
+    if out_N > 1:
       assert out_shape is not None
-      n_selections = out_N if out_N > 1 else in_N
-      final_shape = tuple([raw.shape[0], n_selections] + list(out_shape))
+      final_shape = tuple([raw.shape[0], out_N] + list(out_shape))
     else:
       assert out_shape is not None
       final_shape = tuple([raw.shape[0],] + list(out_shape))
@@ -118,26 +100,15 @@ class Parser:
 
   def parse_dynamic_outputs(self, outs: dict[str, np.ndarray]) -> None:
     if 'lead' in outs:
-      # Prefer explicit overrides in ``mhp``; otherwise fall back to the
-      # legacy `is_mhp` heuristic that inspects the raw tensor's last axis.
-      if self.mhp.get('lead_mhp_n') is not None or self.mhp.get('lead_mhp_selection') is not None:
-        lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION)
-        lead_in_N = self.mhp.get('lead_mhp_n', lead_in_N)
-        lead_out_N = self.mhp.get('lead_mhp_selection', lead_out_N)
-        lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
-      else:
-        lead_mhp = self.is_mhp(outs, 'lead',
-                               SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH)
-        lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION) if lead_mhp else (0, 0)
-        lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH) if lead_mhp else \
-          (SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
+      lead_mhp = self.is_mhp(outs, 'lead',
+                             SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH)
+      lead_in_N, lead_out_N = (SplitModelConstants.LEAD_MHP_N, SplitModelConstants.LEAD_MHP_SELECTION) if lead_mhp else (0, 0)
+      lead_out_shape = (SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH) if lead_mhp else \
+        (SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH)
       self.parse_mdn('lead', outs, in_N=lead_in_N, out_N=lead_out_N, out_shape=lead_out_shape)
     if 'plan' in outs:
-      if self.mhp.get('plan_mhp_n') is not None or self.mhp.get('plan_mhp_selection') is not None:
-        plan_in_N, plan_out_N = self._mhp('plan', SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION)
-      else:
-        plan_mhp = self.is_mhp(outs, 'plan', SplitModelConstants.IDX_N * SplitModelConstants.PLAN_WIDTH)
-        plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
+      plan_mhp = self.is_mhp(outs, 'plan', SplitModelConstants.IDX_N * SplitModelConstants.PLAN_WIDTH)
+      plan_in_N, plan_out_N = (SplitModelConstants.PLAN_MHP_N, SplitModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
       self.parse_mdn('plan', outs, in_N=plan_in_N, out_N=plan_out_N,
                      out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
     if 'planplus' in outs:
@@ -165,7 +136,7 @@ class Parser:
       self.parse_mdn('road_edges', outs, in_N=0, out_N=0,
                     out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
     if 'sim_pose' in outs:
-      self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
+        self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
     if 'action' in outs:
       self.parse_mdn('action', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.ACTION_WIDTH,))
 
