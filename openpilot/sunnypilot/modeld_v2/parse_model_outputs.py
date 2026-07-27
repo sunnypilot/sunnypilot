@@ -18,8 +18,16 @@ def softmax(x, axis=-1):
   return x
 
 class Parser:
-  def __init__(self, ignore_missing=False):
+  def __init__(self, ignore_missing=False, mhp_config=None):
     self.ignore_missing = ignore_missing
+    # Optional MHP overrides keyed by head: 'plan_mhp_n', 'plan_mhp_selection',
+    # 'lead_mhp_n', 'lead_mhp_selection'. ``None`` (or missing keys) keeps the
+    # legacy ``ModelConstants`` values so existing models behave identically.
+    self.mhp = mhp_config or {}
+
+  def _mhp(self, head, default_in, default_out):
+    return (self.mhp.get(f'{head}_mhp_n', default_in),
+            self.mhp.get(f'{head}_mhp_selection', default_out))
 
   def check_missing(self, outs, name):
     if name not in outs and not self.ignore_missing:
@@ -51,36 +59,48 @@ class Parser:
     pred_std = safe_exp(raw[:,:,n_values: 2*n_values])
 
     if in_N > 1:
-      weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
-      for i in range(out_N):
-        weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
+      if out_N > 0:
+        weights = np.zeros((raw.shape[0], in_N, out_N), dtype=raw.dtype)
+        for i in range(out_N):
+          weights[:,:,i - out_N] = softmax(raw[:,:,i - out_N], axis=-1)
 
-      if out_N == 1:
+        if out_N == 1:
+          for fidx in range(weights.shape[0]):
+            idxs = np.argsort(weights[fidx][:,0])[::-1]
+            weights[fidx] = weights[fidx][idxs]
+            pred_mu[fidx] = pred_mu[fidx][idxs]
+            pred_std[fidx] = pred_std[fidx][idxs]
+        assert out_shape is not None
+        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
+        outs[name + '_weights'] = weights
+        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
+        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
+
+        pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
+        pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
         for fidx in range(weights.shape[0]):
-          idxs = np.argsort(weights[fidx][:,0])[::-1]
-          weights[fidx] = weights[fidx][idxs]
-          pred_mu[fidx] = pred_mu[fidx][idxs]
-          pred_std[fidx] = pred_std[fidx][idxs]
-      assert out_shape is not None
-      full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
-      outs[name + '_weights'] = weights
-      outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
-      outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
-
-      pred_mu_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
-      pred_std_final = np.zeros((raw.shape[0], out_N, n_values), dtype=raw.dtype)
-      for fidx in range(weights.shape[0]):
-        for hidx in range(out_N):
-          idxs = np.argsort(weights[fidx,:,hidx])[::-1]
-          pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
-          pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
+          for hidx in range(out_N):
+            idxs = np.argsort(weights[fidx,:,hidx])[::-1]
+            pred_mu_final[fidx, hidx] = pred_mu[fidx, idxs[0]]
+            pred_std_final[fidx, hidx] = pred_std[fidx, idxs[0]]
+      else:
+        # MHP without weights: keep every hypothesis intact, surface them as
+        # ``*_hypotheses`` outputs and use the same shape for the primary
+        # output so downstream consumers can iterate over the full set.
+        assert out_shape is not None
+        full_shape = tuple([raw.shape[0], in_N] + list(out_shape))
+        outs[name + '_hypotheses'] = pred_mu.reshape(full_shape)
+        outs[name + '_stds_hypotheses'] = pred_std.reshape(full_shape)
+        pred_mu_final = pred_mu
+        pred_std_final = pred_std
     else:
       pred_mu_final = pred_mu
       pred_std_final = pred_std
 
-    if out_N > 1:
+    if out_N > 1 or (in_N > 1 and out_N == 0):
       assert out_shape is not None
-      final_shape = tuple([raw.shape[0], out_N] + list(out_shape))
+      n_selections = out_N if out_N > 1 else in_N
+      final_shape = tuple([raw.shape[0], n_selections] + list(out_shape))
     else:
       assert out_shape is not None
       final_shape = tuple([raw.shape[0],] + list(out_shape))
@@ -88,7 +108,9 @@ class Parser:
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    self.parse_mdn('plan', outs, in_N=ModelConstants.PLAN_MHP_N, out_N=ModelConstants.PLAN_MHP_SELECTION,
+    plan_in, plan_out = self._mhp('plan', ModelConstants.PLAN_MHP_N, ModelConstants.PLAN_MHP_SELECTION)
+    lead_in, lead_out = self._mhp('lead', ModelConstants.LEAD_MHP_N, ModelConstants.LEAD_MHP_SELECTION)
+    self.parse_mdn('plan', outs, in_N=plan_in, out_N=plan_out,
                    out_shape=(ModelConstants.IDX_N,ModelConstants.PLAN_WIDTH))
     self.parse_mdn('lane_lines', outs, in_N=0, out_N=0, out_shape=(ModelConstants.NUM_LANE_LINES,ModelConstants.IDX_N,ModelConstants.LANE_LINES_WIDTH))
     self.parse_mdn('road_edges', outs, in_N=0, out_N=0, out_shape=(ModelConstants.NUM_ROAD_EDGES,ModelConstants.IDX_N,ModelConstants.LANE_LINES_WIDTH))
@@ -97,7 +119,7 @@ class Parser:
     if 'sim_pose' in outs:
       self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(ModelConstants.POSE_WIDTH,))
     self.parse_mdn('wide_from_device_euler', outs, in_N=0, out_N=0, out_shape=(ModelConstants.WIDE_FROM_DEVICE_WIDTH,))
-    self.parse_mdn('lead', outs, in_N=ModelConstants.LEAD_MHP_N, out_N=ModelConstants.LEAD_MHP_SELECTION,
+    self.parse_mdn('lead', outs, in_N=lead_in, out_N=lead_out,
                    out_shape=(ModelConstants.LEAD_TRAJ_LEN,ModelConstants.LEAD_WIDTH))
     if 'lat_planner_solution' in outs:
       self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(ModelConstants.IDX_N,ModelConstants.LAT_PLANNER_SOLUTION_WIDTH))

@@ -148,10 +148,6 @@ class ModelState(ModelStateBase):
     self._road_key = next(key for key in self._vision_input_names if 'big' not in key)
     self._wide_key = next(key for key in self._vision_input_names if 'big' in key)
 
-    from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
-    from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
-    self.parser = SplitParser() if self._combined_model_type != 'supercombo' else CombinedParser()
-
     is_20hz = bundle.is20hz if bundle else self._combined_model_type in ('split', 'multi_policy')
     if is_20hz:
       from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
@@ -159,6 +155,26 @@ class ModelState(ModelStateBase):
     else:
       from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
       self.constants = ModelConstants()
+
+    # Derive the parser's per-head MHP values from the appropriate output
+    # slices. Legacy pkls fall back to the constants values (Priority 1 in
+    # ``mhp_inference.infer_mhp``), so this is fully backwards compatible.
+    # Supercombo pkls carry plan/lead in the vision tensor; split/multi-policy
+    # pkls carry them on the policy tensor (and even there we use the first
+    # policy's slices -- the existing code only tracks one ``policy_output_slices``).
+    from openpilot.sunnypilot.modeld_v2.mhp_inference import infer_mhp_for_outputs
+
+    if self._combined_model_type == 'supercombo':
+      mhp_config = infer_mhp_for_outputs(self.vision_output_slices, self.constants)
+    else:
+      mhp_config = infer_mhp_for_outputs(self.policy_output_slices, self.constants)
+
+    from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
+    from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
+    if self._combined_model_type != 'supercombo':
+      self.parser = SplitParser(mhp_config=mhp_config)
+    else:
+      self.parser = CombinedParser(mhp_config=mhp_config)
 
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
     self.full_frames: dict = {}
