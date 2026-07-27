@@ -1,0 +1,78 @@
+name: Debug Discourse Posting
+
+on:
+  push:
+
+jobs:
+  test-discourse-post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post test message to Discourse
+        uses: ./.github/workflows/post-to-discourse
+        with:
+          discourse-url: ${{ vars.DISCOURSE_URL }}
+          api-key: ${{ secrets.DISCOURSE_API_KEY }}
+          api-username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          topic-id: ${{ vars.DISCOURSE_UPDATES_TOPIC_ID }}
+          message: |
+            ## 🧪 Test Post from GitHub Actions
+            
+            **This is a test post to verify Discourse integration**
+            
+            - **Workflow**: ${{ github.workflow }}
+            - **Run Number**: #${{ github.run_number }}
+            - **Branch**: `${{ github.ref_name }}`
+            - **Commit**: ${{ github.sha }}
+            - **Actor**: @${{ github.actor }}
+            - **Timestamp**: ${{ github.event.head_commit.timestamp }}
+            
+            ---
+            
+            ### Fake Build Info (for testing)
+            - **Version**: 0.9.8-test
+            - **Build**: #42
+            - **Branch**: release-test
+            
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            *This is an automated test message. Drive safe! 🚗💨*
+      
+      
+      - name: Create topic on Discourse
+        uses: ./.github/workflows/post-to-discourse
+        with:
+          discourse-url: ${{ vars.DISCOURSE_URL }}
+          api-key: ${{ secrets.DISCOURSE_API_KEY }}
+          api-username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          #topic-id: ${{ vars.DISCOURSE_UPDATES_TOPIC_ID }}
+          category-id: 4
+          title: "This is a test of a new topic instead of a reply"
+          message: |
+            ## 🧪 Test Post from GitHub Actions
+            
+            **This is a test post to verify Discourse integration**
+            
+            - **Workflow**: ${{ github.workflow }}
+            - **Run Number**: #${{ github.run_number }}
+            - **Branch**: `${{ github.ref_name }}`
+            - **Commit**: ${{ github.sha }}
+            - **Actor**: @${{ github.actor }}
+            - **Timestamp**: ${{ github.event.head_commit.timestamp }}
+            
+            ---
+            
+            ### Fake Build Info (for testing)
+            - **Version**: 0.9.8-test
+            - **Build**: #42
+            - **Branch**: release-test
+            
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            *This is an automated test message. Drive safe! 🚗💨*
+      - name: Display results
+        if: always()
+        run: |
+          echo "::notice::Discourse post test completed"
+          echo "Check your Discourse topic to verify the post appeared correctly"

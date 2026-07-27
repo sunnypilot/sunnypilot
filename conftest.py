@@ -2,23 +2,21 @@ import contextlib
 import gc
 import os
 import pytest
-import random
 
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.system.manager import manager
-from openpilot.system.hardware import TICI, HARDWARE
+from openpilot.common.hardware import TICI, HARDWARE
 
-# TODO: pytest-cpp doesn't support FAIL, and we need to create test translations in sessionstart
-# pending https://github.com/pytest-dev/pytest-cpp/pull/147
+# these are heavy CI-only tests, invoked explicitly in .github/workflows/tests.yaml
 collect_ignore = [
-  "selfdrive/ui/tests/test_translations",
-  "selfdrive/test/process_replay/test_processes.py",
-  "selfdrive/test/process_replay/test_regen.py",
-]
-collect_ignore_glob = [
-  "selfdrive/debug/*.py",
-  "selfdrive/modeld/*.py",
-  "sunnypilot/modeld*/*.py",
+  "openpilot/selfdrive/test/process_replay/test_processes.py",
+  "openpilot/selfdrive/test/process_replay/test_regen.py",
+
+  "openpilot/tools/sim/",
+
+  # tinygrad JIT has process-global state. Other test files import modeld → tinygrad,
+  # which corrupts JIT captures for test_warp.py in the same process. Run separately in CI.
+  "openpilot/sunnypilot/modeld_v2/tests/test_warp.py",
 ]
 
 
@@ -49,8 +47,6 @@ def clean_env():
 
 @pytest.fixture(scope="function", autouse=True)
 def openpilot_function_fixture(request):
-  random.seed(0)
-
   with clean_env():
     # setup a clean environment for each test
     with OpenpilotPrefix(shared_download_cache=request.node.get_closest_marker("shared_download_cache") is not None) as prefix:
@@ -101,15 +97,3 @@ def pytest_collection_modifyitems(config, items):
       class_property_name = item.get_closest_marker('xdist_group_class_property').args[0]
       class_property_value = getattr(item.cls, class_property_name)
       item.add_marker(pytest.mark.xdist_group(class_property_value))
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_configure(config):
-  config_line = "xdist_group_class_property: group tests by a property of the class that contains them"
-  config.addinivalue_line("markers", config_line)
-
-  config_line = "nocapture: don't capture test output"
-  config.addinivalue_line("markers", config_line)
-
-  config_line = "shared_download_cache: share download cache between tests"
-  config.addinivalue_line("markers", config_line)

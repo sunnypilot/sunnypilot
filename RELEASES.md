@@ -1,5 +1,66 @@
-Version 0.9.10 (2025-06-30)
+Version 0.11.2 (2026-06-15)
 ========================
+
+
+Version 0.11.1 (2026-05-18)
+========================
+* New driver monitoring model
+* Improved image processing pipeline for driver camera
+* Improved thermal policy for comma four
+* Acura MDX 2022-24 support thanks to mvl-boston!
+* Rivian R1S and R1T 2025 support thanks to lukasloetkolben!
+
+Version 0.11.0 (2026-03-17)
+========================
+* New driving model #36798
+  * Fully trained using a learned simulator
+  * Improved longitudinal performance in Experimental mode
+* Reduce comma four standby power usage by 77% to 52 mW
+* Kia K7 2017 support thanks to royjr!
+* Lexus LS 2018 support thanks to Hacheoy!
+
+Version 0.10.3 (2025-12-17)
+========================
+* New driving model #36249
+  * New temporal policy architecture
+  * New on-policy training physics noise model
+* New driver monitoring model #36409
+  * Trained on a new dataset, including comma four data
+* Improved inter-process communication memory efficiency
+
+Version 0.10.2 (2025-11-19)
+========================
+* comma four support
+
+Version 0.10.1 (2025-09-08)
+========================
+* New driving model #36276
+  * World Model: removed global localization inputs
+  * World Model: 2x the number of parameters
+  * World Model: trained on 4x the number of segments
+  * VAE Compression Model: new architecture and training objective
+  * Driving Vision Model: trained on 4x the number of segments
+* New Driver Monitoring model #36198
+* Acura TLX 2021 support thanks to MVL!
+* Honda City 2023 support thanks to vanillagorillaa and drFritz!
+* Honda N-Box 2018 support thanks to miettal!
+* Honda Odyssey 2021-25 support thanks to csouers and MVL!
+* Honda Passport 2026 support thanks to vanillagorillaa and MVL!
+
+Version 0.10.0 (2025-08-05)
+========================
+* New driving model
+  * New training architecture
+     * Described in our CVPR paper: "Learning to Drive from a World Model"
+     * Longitudinal MPC replaced by E2E planning from World Model in Experimental Mode
+     * Action from lateral MPC as training objective replaced by E2E planning from World Model
+  * Low-speed lead car ground-truth fixes
+* Enable live-learned steering actuation delay
+* Opt-in audio recording for dashcam video
+* Acura MDX 2025 support thanks to vanillagorillaa and MVL!
+* Honda Accord 2023-25 support thanks to vanillagorillaa and MVL!
+* Honda CR-V 2023-25 support thanks to vanillagorillaa and MVL!
+* Honda Pilot 2023-25 support thanks to vanillagorillaa and MVL!
 
 Version 0.9.9 (2025-05-23)
 ========================
@@ -1043,7 +1104,7 @@ Version 0.2.1  (2016-12-14)
 
 Version 0.2  (2016-12-12)
 =========================
- * Car/Radar abstraction layers have shipped, see cereal/car.capnp
+ * Car/Radar abstraction layers have shipped, see openpilot/cereal/car.capnp
  * controlsd has been refactored
  * Shipped plant model and testing maneuvers
  * visiond exits more gracefully now
