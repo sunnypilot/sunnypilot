@@ -121,7 +121,7 @@ class LongitudinalPlannerSP:
     self._radar_fresh_this_cycle = self._update_radar_freshness(sm)
     self.accel_controller.update_params()
     self.events_sp.clear()
-    self.dec.update(sm)
+    self.dec.update(sm, radar_fresh=self._radar_fresh_this_cycle, planner_accel=self.output_a_target)
     self.e2e_alerts_helper.update(sm, self.events_sp)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:

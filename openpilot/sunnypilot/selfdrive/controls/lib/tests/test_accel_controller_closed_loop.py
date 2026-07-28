@@ -394,6 +394,65 @@ def test_e2e_to_radar_acc_handoff_keeps_braking_continuous():
   assert active[transition]
 
 
+def test_dec_retains_acc_through_route_like_radar_marker_dropout():
+  dropout_start = 1.0
+  reacquisition_time = 1.8
+
+  def observe(current_time: float, lead_name: str, truth: LeadObservation) -> LeadObservation:
+    frame = round(current_time / DT_MDL)
+    if current_time < dropout_start:
+      marked_slot = "leadOne" if frame % 2 == 0 else "leadTwo"
+      return truth | {"radar": lead_name == marked_slot, "radarTrackId": 985 + frame if lead_name == marked_slot else -1}
+    if current_time < reacquisition_time:
+      return truth | {"radar": False, "radarTrackId": -1}
+    return truth | {"radar": lead_name == "leadOne", "radarTrackId": 1263 if lead_name == "leadOne" else -1}
+
+  trace = _run(
+    duration=2.5, controller_enabled=True, dec_enabled=True, e2e=True, lead_relevancy=True, speed=20.0,
+    distance_lead=35.0, v_lead=18.0, v_cruise=30.0, lead_observation_fn=observe,
+    model_action_fn=lambda _current_time, _v_ego, _a_ego: (-2.0, False), actuator_delay=0.15, actuator_lag=0.20,
+  )
+  response = (trace.time >= dropout_start - DT_MDL) & (trace.time <= reacquisition_time + 0.5)
+
+  assert all(mode == "acc" for mode in trace.dec_mode)
+  assert all(str(source) != "e2e" for source in trace.source)
+  assert not trace.fcw.any()
+  assert not _has_propulsion_brake_cycle(trace.a_target[response])
+  assert np.max(np.abs(np.diff(trace.a_target[response]) / DT_MDL)) < 3.0
+  assert trace.raw_radar_passthrough.all()
+  assert np.all(trace.mpc_calls == 1)
+  assert trace.solver_failures == 0
+
+
+def test_dec_uses_confirmed_model_slowdown_while_the_handoff_is_still_gentle():
+  def model_action(current_time: float, _v_ego: float, _a_ego: float) -> tuple[float, bool]:
+    if current_time < 1.0:
+      return 0.0, False
+    if current_time < 1.75:
+      return -0.5 * (current_time - 1.0), False
+    if current_time < 3.25:
+      return -0.375, False
+    return -0.375 - 0.5 * (current_time - 3.25), False
+
+  trace = _run(
+    duration=4.5, controller_enabled=True, dec_enabled=True, e2e=True, lead_relevancy=False, speed=22.0,
+    v_cruise=22.0, model_action_fn=model_action, actuator_delay=0.15, actuator_lag=0.20,
+  )
+  mode_changes = np.flatnonzero(np.asarray(trace.dec_mode)[1:] != np.asarray(trace.dec_mode)[:-1]) + 1
+  response = trace.time >= 0.5
+
+  assert len(mode_changes) == 1
+  assert trace.dec_mode[mode_changes[0]] == "blended"
+  assert trace.time[mode_changes[0]] <= 1.20 + 1e-9
+  assert -0.10 < trace.a_target[mode_changes[0]] < 0.0
+  assert np.all(np.asarray(trace.dec_mode)[(trace.time >= 1.75) & (trace.time < 3.25)] == "blended")
+  assert np.max(np.abs(_command_jerk(trace)[response[1:]])) < 3.0
+  assert not trace.fcw.any()
+  assert trace.raw_radar_passthrough.all()
+  assert np.all(trace.mpc_calls == 1)
+  assert trace.solver_failures == 0
+
+
 def test_clear_road_launch_is_prompt_and_profiles_separate_above_launch_speed():
   traces = [
     _run(
