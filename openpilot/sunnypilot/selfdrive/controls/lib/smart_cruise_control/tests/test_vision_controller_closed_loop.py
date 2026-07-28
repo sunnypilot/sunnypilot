@@ -8,9 +8,9 @@ import gc
 
 import numpy as np
 
-from openpilot.sunnypilot.selfdrive.test.longitudinal_maneuvers.plant import PlantSP as Plant
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanSource
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import _A_LAT_REG_MAX
+from openpilot.sunnypilot.selfdrive.test.longitudinal_maneuvers.plant import PlantSP as Plant
 
 
 def _run_constant_curve(*, scc_enabled: bool, cruise: float, duration: float = 70.) -> dict[str, np.ndarray]:
