@@ -9,6 +9,7 @@ from openpilot.common.swaglog import cloudlog
 # WARNING: imports outside of constants will not trigger a rebuild
 from openpilot.selfdrive.modeld.constants import index_function
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
+from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpcSP
 
 if __name__ == '__main__':  # generating code
   from acados.acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
@@ -213,8 +214,9 @@ def gen_long_ocp():
   return ocp
 
 
-class LongitudinalMpc:
+class LongitudinalMpc(LongitudinalMpcSP):
   def __init__(self, dt=DT_MDL):
+    LongitudinalMpcSP.__init__(self)
     self.dt = dt
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.reset()
@@ -266,7 +268,8 @@ class LongitudinalMpc:
   def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard):
     jerk_factor = get_jerk_factor(personality)
     a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
-    cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost, jerk_factor * J_EGO_COST]
+    cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost,
+                    LongitudinalMpcSP.scale_jerk_cost(self, jerk_factor * J_EGO_COST)]
     constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     self.set_cost_weights(cost_weights, constraint_cost_weights)
 
@@ -326,7 +329,7 @@ class LongitudinalMpc:
     # when the leads are no factor.
     v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 1.05)
     # TODO does this make sense when max_a is negative?
-    v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 1.05)
+    v_upper = v_ego + (T_IDXS * self.cruise_accel_max(CRUISE_MAX_ACCEL) * 1.05)
     v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
     cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow)
 
@@ -340,6 +343,7 @@ class LongitudinalMpc:
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
+    LongitudinalMpcSP.apply_accel_limits(self)
     self.params[:,2] = np.min(x_obstacles, axis=1)
     self.params[:,3] = np.copy(self.a_prev)
     self.params[:,4] = t_follow
@@ -359,6 +363,7 @@ class LongitudinalMpc:
     self.solver.constraints_set(0, "ubx", self.x0)
 
     self.solution_status = self.solver.solve()
+    LongitudinalMpcSP.save_solution_status(self)
     self.solve_time = float(self.solver.get_stats('time_tot')[0])
 
     for i in range(N+1):

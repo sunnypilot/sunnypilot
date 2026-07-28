@@ -520,12 +520,6 @@
               ]
             },
             {
-              "key": "RoadEdgeLaneChangeEnabled",
-              "widget": "toggle",
-              "title": "Block Lane Change: Road Edge Detection",
-              "description": "Blocks lane change when the model sees a road edge on the side you signal."
-            },
-            {
               "key": "AutoLaneChangeBsmDelay",
               "widget": "toggle",
               "title": "Auto Lane Change: Delay with Blind Spot",
@@ -629,8 +623,8 @@
             {
               "key": "AccelPersonalityEnabled",
               "widget": "toggle",
-              "title": "Enable Acceleration Profiles",
-              "description": "Enables acceleration profile selection for longitudinal control.",
+              "title": "Enable Accel Controller",
+              "description": "Begin slowing early and smoothly behind lead vehicles. Stock longitudinal control retains braking and stopping authority.",
               "visibility": [
                 {
                   "type": "capability",
@@ -650,10 +644,10 @@
               "key": "AccelPersonality",
               "widget": "multiple_button",
               "title": "Acceleration Profile",
-              "description": "Controls how quickly sunnypilot accelerates while preserving braking and stop behavior.",
+              "description": "Eco slows earliest and recovers gently, Normal balances comfort and response, and Sport reacts and recovers more quickly.",
               "options": [
                 {
-                  "value": 2,
+                  "value": 0,
                   "label": "Eco"
                 },
                 {
@@ -661,7 +655,7 @@
                   "label": "Normal"
                 },
                 {
-                  "value": 0,
+                  "value": 2,
                   "label": "Sport"
                 }
               ],
@@ -2059,6 +2053,22 @@
                   "equals": true
                 }
               ]
+            },
+            {
+              "key": "PlanplusControl",
+              "widget": "option",
+              "title": "Plan Plus Controls",
+              "description": "Adjust planplus model recentering strength. The higher this number the more aggressively the model will recover to lane center; too high and it will ping-pong.",
+              "min": 0.0,
+              "max": 2.0,
+              "step": 0.1,
+              "enablement": [
+                {
+                  "type": "param",
+                  "key": "ShowAdvancedControls",
+                  "equals": true
+                }
+              ]
             }
           ]
         },
@@ -2262,6 +2272,50 @@
       "title": "Toyota / Lexus Settings",
       "description": "",
       "items": [
+        {
+          "key": "ToyotaAutoHold",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaEnhancedBsm",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Prius TSS2 BSM and some tssp",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaTSS2Long",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: custom longitudinal for TSS2",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaDriveMode",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Enable drive mode btn link",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
         {
           "key": "ToyotaEnforceStockLongitudinal",
           "widget": "toggle",

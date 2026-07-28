@@ -112,12 +112,16 @@ class TestParams:
   def test_params_default_value(self):
     self.params.remove("LanguageSetting")
     self.params.remove("LongitudinalPersonality")
+    self.params.remove("AccelPersonalityEnabled")
+    self.params.remove("AccelPersonality")
     self.params.remove("LiveParametersV2")
 
     assert self.params.get("LanguageSetting") is None
     assert self.params.get("LanguageSetting", return_default=False) is None
     assert isinstance(self.params.get("LanguageSetting", return_default=True), str)
     assert isinstance(self.params.get("LongitudinalPersonality", return_default=True), int)
+    assert self.params.get("AccelPersonalityEnabled", return_default=True) is False
+    assert self.params.get("AccelPersonality", return_default=True) == 1
     assert self.params.get("LiveParametersV2") is None
     assert self.params.get("LiveParametersV2", return_default=True) is None
 

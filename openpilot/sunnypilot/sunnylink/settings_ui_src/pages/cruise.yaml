@@ -43,19 +43,32 @@ sections:
       label: Relaxed
     enablement:
     - $ref: '#/macros/longitudinal'
+  - key: AccelPersonalityEnabled
+    widget: toggle
+    title: Enable Accel Controller
+    description: Begin slowing early and smoothly behind lead vehicles. Stock longitudinal control retains braking
+      and stopping authority.
+    visibility:
+    - $ref: '#/macros/longitudinal'
+    enablement:
+    - $ref: '#/macros/longitudinal'
   - key: AccelPersonality
     widget: multiple_button
     title: Acceleration Profile
-    description: Controls how quickly sunnypilot accelerates while preserving braking and stop behavior.
+    description: Eco slows earliest and recovers gently, Normal balances comfort and response, and Sport reacts
+      and recovers more quickly.
     options:
-    - value: 2
+    - value: 0
       label: Eco
     - value: 1
       label: Normal
-    - value: 0
+    - value: 2
       label: Sport
     enablement:
     - $ref: '#/macros/longitudinal'
+    - type: param
+      key: AccelPersonalityEnabled
+      equals: true
   - key: IntelligentCruiseButtonManagement
     widget: toggle
     title: Intelligent Cruise Button Management (ICBM) (Alpha)

@@ -8,7 +8,9 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
-from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController, AccelControllerState
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
@@ -22,9 +24,10 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 
 class LongitudinalPlannerSP:
-  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc, dt: float = DT_MDL):
+    self.mpc = mpc
+    self.accel_controller = AccelController(CP, dt=dt)
     self.events_sp = EventsSP()
-    self.resolver = SpeedLimitResolver()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
@@ -32,6 +35,8 @@ class LongitudinalPlannerSP:
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
+    self._radar_log_mono_time = None
+    self._radar_fresh_this_cycle = True
 
     self.output_v_target = 0.
     self.output_a_target = 0.
@@ -42,6 +47,37 @@ class LongitudinalPlannerSP:
       return experimental_mode
 
     return experimental_mode and self.dec.mode() == "blended"
+
+  def update_accel_controller(self, sm: messaging.SubMaster, v_cruise: float, prev_accel_constraint: bool,
+                              stock_accel_max: float, reset_state: bool) -> tuple[bool, float]:
+    is_e2e = self.is_e2e(sm)
+    force_decel = sm['controlsState'].forceDecel
+    previous_mpc_failed = self.mpc.last_solution_status != 0
+    if previous_mpc_failed:
+      self.accel_controller.reset()
+
+    self.accel_controller.update(
+      sm['radarState'], base_speed=self.output_v_target, v_ego=sm['carState'].vEgo, a_ego=sm['carState'].aEgo,
+      follow_personality=sm['selfdriveState'].personality, acc_selected=not is_e2e and not previous_mpc_failed,
+      engaged=not reset_state and not force_decel, cruise_initialized=sm['carState'].vCruise != V_CRUISE_UNSET,
+      stock_accel_max=stock_accel_max if self.allow_throttle else 0.0, previous_should_stop=self.output_should_stop,
+      radar_fresh=self._radar_fresh_this_cycle, previous_mpc_source=self.mpc.source, planner_speed=self.v_desired_filter.x,
+      planner_accel=self.a_desired,
+    )
+    controller = self.accel_controller
+    actuating = controller.is_active and not is_e2e and not force_decel and not previous_mpc_failed
+    valid_lead_stop_hold = actuating and controller.state == AccelControllerState.stopHold and controller.selected_lead >= 0
+    controller_v_cruise = v_cruise if valid_lead_stop_hold else min(v_cruise, controller.output_v_target) if actuating else v_cruise
+    accel_max = controller.mpc_accel_max if actuating else None
+    cruise_accel_max = controller.cruise_accel_max if actuating else None
+    jerk_cost_multiplier = controller.get_jerk_cost_multiplier(
+      actuating, prev_accel_constraint, v_cruise - controller_v_cruise, previous_mpc_failed,
+    )
+    self.mpc.set_accel_controller_params(accel_max, jerk_cost_multiplier, cruise_accel_max)
+    return is_e2e, controller_v_cruise
+
+  def update_should_stop(self, should_stop: bool) -> bool:
+    return self.accel_controller.update_should_stop(should_stop)
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
@@ -73,7 +109,17 @@ class LongitudinalPlannerSP:
     self.output_v_target, self.output_a_target = targets[self.source]
     return self.output_v_target, self.output_a_target
 
+  def _update_radar_freshness(self, sm: messaging.SubMaster) -> bool:
+    radar_log_mono_time = sm.logMonoTime['radarState']
+    radar_healthy = sm.valid['radarState'] and sm.alive['radarState']
+    radar_advanced = self._radar_log_mono_time is None or radar_log_mono_time > self._radar_log_mono_time
+    if radar_advanced:
+      self._radar_log_mono_time = radar_log_mono_time
+    return radar_healthy and radar_advanced
+
   def update(self, sm: messaging.SubMaster) -> None:
+    self._radar_fresh_this_cycle = self._update_radar_freshness(sm)
+    self.accel_controller.update_params()
     self.events_sp.clear()
     self.dec.update(sm)
     self.e2e_alerts_helper.update(sm, self.events_sp)
@@ -94,6 +140,12 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+
+    accelController = longitudinalPlanSP.accelController
+    accelController.enabled = self.accel_controller.is_enabled
+    accelController.active = self.accel_controller.is_active
+    accelController.profile = self.accel_controller.profile
+    accelController.state = self.accel_controller.state
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl

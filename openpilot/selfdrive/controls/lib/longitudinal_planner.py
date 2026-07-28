@@ -51,7 +51,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
   def __init__(self, CP, CP_SP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
     self.mpc = LongitudinalMpc(dt=dt)
-    LongitudinalPlannerSP.__init__(self, self.CP, CP_SP, self.mpc)
+    LongitudinalPlannerSP.__init__(self, self.CP, CP_SP, self.mpc, dt=dt)
     self.fcw = False
     self.dt = dt
     self.allow_throttle = True
@@ -110,12 +110,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       clipped_accel_coast = max(accel_coast, accel_clip[0])
       clipped_accel_coast_interp = np.interp(v_ego, [MIN_ALLOW_THROTTLE_SPEED, MIN_ALLOW_THROTTLE_SPEED*2], [accel_clip[1], clipped_accel_coast])
       accel_clip[1] = min(accel_clip[1], clipped_accel_coast_interp)
-
     # Get new v_cruise and a_desired from Smart Cruise Control and Speed Limit Assist
     v_cruise, self.a_desired = LongitudinalPlannerSP.update_targets(self, sm, self.v_desired_filter.x, self.a_desired, v_cruise)
-
     if force_slow_decel:
       v_cruise = 0.0
+
+    is_e2e, v_cruise = LongitudinalPlannerSP.update_accel_controller(self, sm, v_cruise, prev_accel_constraint, accel_clip[1], reset_state)
 
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
@@ -135,13 +135,13 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.a_desired = float(np.interp(self.dt, CONTROL_N_T_IDX, self.a_desired_trajectory))
     self.v_desired_filter.x = self.v_desired_filter.x + self.dt * (self.a_desired + a_prev) / 2.0
 
-    action_t =  self.CP.longitudinalActuatorDelay + DT_MDL
+    action_t = self.CP.longitudinalActuatorDelay + DT_MDL
     output_a_target_mpc, output_should_stop_mpc = get_accel_from_plan(self.v_desired_trajectory, self.a_desired_trajectory, CONTROL_N_T_IDX,
                                                                         action_t=action_t)
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.is_e2e(sm):
+    if is_e2e:
       output_a_target = min(output_a_target_e2e, output_a_target_mpc)
       self.output_should_stop = output_should_stop_e2e or output_should_stop_mpc
       if output_a_target < output_a_target_mpc:
@@ -149,6 +149,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     else:
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
+    self.output_should_stop = LongitudinalPlannerSP.update_should_stop(self, self.output_should_stop)
 
     for idx in range(2):
       accel_clip[idx] = np.clip(accel_clip[idx], self.prev_accel_clip[idx] - 0.05, self.prev_accel_clip[idx] + 0.05)

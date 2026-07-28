@@ -272,6 +272,22 @@ class TestKnownPanels:
     nnlc_enable_keys = {r.get("key") for r in nnlc.get("enablement", []) if r.get("type") == "param"}
     assert "EnforceTorqueControl" in nnlc_enable_keys
 
+  def test_accel_controller_profile_mapping_and_enablement(self, schema):
+    cruise = next(p for p in schema["panels"] if p["id"] == "cruise")
+    items = {item["key"]: item for item in _iter_panel_items(cruise)}
+
+    assert items["AccelPersonalityEnabled"]["widget"] == "toggle"
+    assert items["AccelPersonality"]["options"] == [
+      {"value": 0, "label": "Eco"},
+      {"value": 1, "label": "Normal"},
+      {"value": 2, "label": "Sport"},
+    ]
+    assert {
+      "type": "param",
+      "key": "AccelPersonalityEnabled",
+      "equals": True,
+    } in items["AccelPersonality"]["enablement"]
+
 
 class TestKnownVehicleSettings:
   def test_hyundai_has_longitudinal_tuning(self, schema):
