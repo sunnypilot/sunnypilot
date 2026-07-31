@@ -10,7 +10,7 @@ from typing import NamedTuple
 
 import numpy as np
 
-from cereal import log
+from openpilot.cereal import log
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import (
   LongitudinalMpc, LongitudinalPlanSource, STOP_DISTANCE, T_IDXS, get_T_FOLLOW, get_stopped_equivalence_factor,
 )

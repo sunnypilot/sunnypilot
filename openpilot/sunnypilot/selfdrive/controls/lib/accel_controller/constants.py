@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from cereal import custom
+from openpilot.cereal import custom
 
 
 AccelProfile = custom.LongitudinalPlanSP.AccelController.Profile

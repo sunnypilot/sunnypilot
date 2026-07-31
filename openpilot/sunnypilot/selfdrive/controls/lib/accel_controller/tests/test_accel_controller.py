@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from cereal import log
+from openpilot.cereal import log
 from opendbc.car.interfaces import ACCEL_MAX, ACCEL_MIN
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import (

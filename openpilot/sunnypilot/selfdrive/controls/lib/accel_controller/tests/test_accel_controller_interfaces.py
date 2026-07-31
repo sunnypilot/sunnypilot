@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from cereal import custom, log, messaging
+from openpilot.cereal import custom, log, messaging
 from opendbc.car.interfaces import ACCEL_MAX, ACCEL_MIN
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanner

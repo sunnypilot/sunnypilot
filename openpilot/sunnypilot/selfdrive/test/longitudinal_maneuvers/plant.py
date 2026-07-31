@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from cereal import log
+from openpilot.cereal import log
 import cereal.messaging as messaging
 from openpilot.common.realtime import DT_MDL, Ratekeeper
 from openpilot.selfdrive.modeld.constants import ModelConstants

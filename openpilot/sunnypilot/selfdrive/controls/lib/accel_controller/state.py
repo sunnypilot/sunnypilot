@@ -3,7 +3,7 @@ from statistics import median
 
 import numpy as np
 
-from cereal import custom
+from openpilot.cereal import custom
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.constants import (
   CAP_FILTER_FRAMES, DEPARTURE_MOTION_NOISE_FLOOR, DEPARTURE_MOTION_STEP_MIN, SPEED_RELIEF_DEADBAND, STOP_HOLD_CREEP_DISTANCE,
   STOP_HOLD_CREEP_SPEED, STOP_HOLD_EXIT_FRAMES,

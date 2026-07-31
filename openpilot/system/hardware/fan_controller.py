@@ -15,8 +15,13 @@ class FanController:
     self.controller = PIDController(k_p=0, k_i=4e-3, rate=rate)
 
   def update(self, cur_temp: float, ignition: bool) -> int:
-    self.controller.pos_limit = 100 if ignition else 30
-    self.controller.neg_limit = 30 if ignition else 0
+    if ignition:
+      # always run fan at max onroad, prioritize cooling over noise
+      self.last_ignition = ignition
+      return 100
+
+    self.controller.pos_limit = 30
+    self.controller.neg_limit = 0
 
     if ignition != self.last_ignition:
       self.controller.reset()
