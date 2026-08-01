@@ -179,11 +179,11 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
   queues, npy_arrays = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT)
 
   for i in range(3):
-    np.random.default_rng(seed=(42 + i))
+    rng = np.random.default_rng(42 + i)
     frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     for arr in npy_arrays.values():
-      arr[:] = np.random.randn(*arr.shape).astype(arr.dtype)
+      arr[:] = rng.standard_normal(arr.shape).astype(arr.dtype)
 
     Device.default.synchronize()
     start_time = time.perf_counter()
