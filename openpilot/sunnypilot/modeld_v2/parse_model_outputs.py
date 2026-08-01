@@ -22,18 +22,6 @@ def softmax(x, axis=-1):
 
 
 def _infer_mhp(slice_size: int, prod_out_shape: int, max_in_n: int = 16, max_out_n: int = 6) -> tuple[int, int]:
-  """Derive ``(in_N, out_N)`` from a packed MDN slice.
-
-  Layout (combined supercombo): for each hypothesis we have ``mu``, ``std``,
-  and an optional scalar ``weight`` block. So:
-
-    slice_size = in_N * (2 * prod_out_shape + out_N)
-
-  We scan small ``out_N`` values (no weights is most common in modern models,
-  one or three weights in the legacy) and accept the first division that
-  yields an integer ``in_N`` in ``[1, max_in_n]``. The candidates are spaced
-  wide enough that there's no ambiguity for the bands we care about.
-  """
   for out_n in range(max_out_n + 1):
     per = 2 * prod_out_shape + out_n
     if per <= 0:
@@ -69,10 +57,6 @@ class Parser:
     outs[name] = sigmoid(raw)
 
   def parse_mdn(self, name, outs, out_shape, in_N=0, out_N=0):
-    """Parse a packed MDN output. Pass ``in_N``/``out_N`` explicitly for the
-    legacy layout; pass neither (defaults of 0) to auto-detect from the
-    slice size, which transparently supports newer supercombos that drop the
-    per-hypothesis weight block or change the hypothesis count."""
     if self.check_missing(outs, name):
       return
     raw = outs[name]
@@ -122,11 +106,6 @@ class Parser:
       pred_mu_final = pred_mu
       pred_std_final = pred_std
 
-    # Final-shape selector: keep an extra hypothesis axis only when
-    # multi-hypothesis data must survive — i.e. when out_N > 1 (legacy
-    # multiple-selection) OR when in_N > 1 with no weights (newer MHP). For
-    # single-hypothesis / collapsed cases (lane_lines, pose, etc.) drop the
-    # extra axis so the consumer sees the historical ``(batch, *out_shape)``.
     if out_N > 1 or (in_N > 1 and out_N == 0):
       n_selections = out_N if out_N > 1 else in_N
       final_shape = tuple([raw.shape[0], n_selections] + list(out_shape))
@@ -136,8 +115,6 @@ class Parser:
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    # Pass no explicit ``in_N``/``out_N`` for plan/lead — ``parse_mdn`` infers
-    # them from the raw slice size, which naturally handles both the legacy
     # supercombo (4955 / 102) and newer variants (e.g. 990 / 144).
     self.parse_mdn('plan',   outs, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
     self.parse_mdn('lane_lines', outs, out_shape=(ModelConstants.NUM_LANE_LINES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
