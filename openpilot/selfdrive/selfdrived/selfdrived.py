@@ -127,6 +127,8 @@ class SelfdriveD(CruiseHelper):
     self.initialized = False
     self.enabled = False
     self.active = False
+    self.buttons_pressed = 0
+    self.buttons_release_toggle = 0
     self.mismatch_counter = 0
     self.cruise_mismatch_counter = 0
     self.last_steering_pressed_frame = 0
@@ -597,6 +599,9 @@ class SelfdriveD(CruiseHelper):
     icbm.sendButton = self.icbm.cruise_button
     icbm.vTarget = self.icbm.v_target
 
+    ss_sp.buttonsPressed = self.buttons_pressed
+    ss_sp.buttonsReleaseToggle = self.buttons_release_toggle
+
     self.pm.send('selfdriveStateSP', ss_sp_msg)
 
     # onroadEventsSP - logged every second or on change
@@ -609,6 +614,13 @@ class SelfdriveD(CruiseHelper):
 
   def step(self):
     CS = self.data_sample()
+    for b in CS.buttonEvents:
+      bit = 1 << b.type.raw
+      if b.pressed:
+        self.buttons_pressed |= bit
+      else:
+        self.buttons_pressed &= ~bit
+        self.buttons_release_toggle ^= bit
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
