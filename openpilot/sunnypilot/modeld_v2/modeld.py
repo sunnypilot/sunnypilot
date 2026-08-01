@@ -24,6 +24,11 @@ from setproctitle import setproctitle
 from openpilot.cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
+
+from tinygrad.tensor import Tensor
+from tinygrad.device import Device
+
+from openpilot.common.file_chunker import open_file_chunked
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -31,6 +36,7 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
+from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 
@@ -38,6 +44,7 @@ from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_p
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
@@ -100,13 +107,6 @@ class ModelState(ModelStateBase):
     self._init_combined(pkl_path, cam_w, cam_h, model_bundle)
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
-    from tinygrad.tensor import Tensor
-    from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-    from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
-    from tinygrad.device import Device
-
-    from openpilot.common.file_chunker import open_file_chunked
-
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
     jits = pickle.load(open_file_chunked(pkl_path))
 
@@ -121,7 +121,7 @@ class ModelState(ModelStateBase):
       self.policy_output_slices = {}
       self._policy_slices_list = []
       self._combined_model_type = 'supercombo'
-      self._vision_input_names = [k for k in model_metadata['input_shapes'] if 'img' in k]
+      self._vision_input_names = [key for key in model_metadata['input_shapes'] if 'img' in key]
       from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
       self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.QUEUE_DEV)
@@ -158,12 +158,12 @@ class ModelState(ModelStateBase):
 
     # Combined parsers auto-detect ``(in_N, out_N)`` for plan/lead from the raw
     # slice size, so they transparently support both legacy and newer
-    # supercombo ONNXes without any per-model configuration.
-    from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
-    from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
+    # supercombo ONNX's without any per-model configuration.
     if self._combined_model_type != 'supercombo':
+      from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
       self.parser = SplitParser()
     else:
+      from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
       self.parser = CombinedParser()
 
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
