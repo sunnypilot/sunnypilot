@@ -156,9 +156,6 @@ class ModelState(ModelStateBase):
       from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
       self.constants = ModelConstants()
 
-    # Combined parsers auto-detect ``(in_N, out_N)`` for plan/lead from the raw
-    # slice size, so they transparently support both legacy and newer
-    # supercombo ONNX's without any per-model configuration.
     if self._combined_model_type != 'supercombo':
       from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
       self.parser = SplitParser()
