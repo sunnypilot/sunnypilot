@@ -64,8 +64,6 @@ class ModelParser:
 
     model.type = model_data.get("type")
     model.artifact = ModelParser._parse_artifact(model_data.get("artifact", {}))
-    if metadata := model_data.get("metadata"):
-      model.metadata = ModelParser._parse_artifact(metadata)
     return model
 
   @staticmethod
@@ -211,5 +209,3 @@ if __name__ == "__main__":
       # Print metadata details
       if model.artifact.chunks:
         print(f"Contains {len(model.artifact.chunks)} chunks.")
-      if hasattr(model, 'metadata') and model.metadata and model.metadata.fileName:
-        print(f"Metadata: {model.metadata.fileName}, Download URI: {model.metadata.downloadUri.uri}")

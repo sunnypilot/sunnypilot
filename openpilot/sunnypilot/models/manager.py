@@ -38,11 +38,11 @@ class ModelManagerSP:
     if not self.selected_bundle:
       return
     for model in self.selected_bundle.models:
-      for artifact in (model.artifact, model.metadata):
-        if artifact is not source_artifact and artifact.fileName == source_artifact.fileName:
-          artifact.downloadProgress.status = source_artifact.downloadProgress.status
-          artifact.downloadProgress.progress = source_artifact.downloadProgress.progress
-          artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
+      artifact = model.artifact
+      if artifact is not source_artifact and artifact.fileName == source_artifact.fileName:
+        artifact.downloadProgress.status = source_artifact.downloadProgress.status
+        artifact.downloadProgress.progress = source_artifact.downloadProgress.progress
+        artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
     """Calculate ETA based on elapsed time and current progress"""
@@ -136,7 +136,22 @@ class ModelManagerSP:
     full_path = os.path.join(destination_path, filename)
 
     try:
-      if await verify_file(full_path, expected_hash):
+      is_cached = False
+      if len(artifact.chunks) > 0:
+        from openpilot.common.file_chunker import get_chunk_name
+        chunks_valid = True
+        for i, chunk in enumerate(artifact.chunks):
+          chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
+          if not await verify_file(chunk_path, chunk.sha256):
+            chunks_valid = False
+            break
+        if chunks_valid and len(artifact.chunks) > 0:
+          is_cached = True
+      else:
+        if await verify_file(full_path, expected_hash):
+          is_cached = True
+
+      if is_cached:
         artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
         artifact.downloadProgress.progress = 100
         artifact.downloadProgress.eta = 0
@@ -146,11 +161,15 @@ class ModelManagerSP:
 
       if len(artifact.chunks) > 0:
         await self._download_chunked(url, full_path, artifact)
+        from openpilot.common.file_chunker import get_chunk_name
+        for i, chunk in enumerate(artifact.chunks):
+          chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
+          if not await verify_file(chunk_path, chunk.sha256):
+            raise ValueError(f"Hash validation failed for chunk {i+1} of {filename}")
       else:
         await self._download_file(url, full_path, artifact)
-
-      if not await verify_file(full_path, expected_hash):
-        raise ValueError(f"Hash validation failed for {filename}")
+        if not await verify_file(full_path, expected_hash):
+          raise ValueError(f"Hash validation failed for {filename}")
 
       artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
       artifact.downloadProgress.progress = 100
@@ -198,16 +217,16 @@ class ModelManagerSP:
     try:
       seen_artifacts: set[str] = set()
       for model in self.selected_bundle.models:
-        for artifact in (model.metadata, model.artifact):
-          if not artifact.fileName:
-            continue
-          if artifact.fileName in seen_artifacts:
-            artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
-            artifact.downloadProgress.progress = 100
-            artifact.downloadProgress.eta = 0
-          else:
-            seen_artifacts.add(artifact.fileName)
-            await self._process_artifact(artifact, destination_path)
+        artifact = model.artifact
+        if not artifact.fileName:
+          continue
+        if artifact.fileName in seen_artifacts:
+          artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
+          artifact.downloadProgress.progress = 100
+          artifact.downloadProgress.eta = 0
+        else:
+          seen_artifacts.add(artifact.fileName)
+          await self._process_artifact(artifact, destination_path)
 
       self.active_bundle = self.selected_bundle
       self.active_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
@@ -268,8 +287,6 @@ class ModelManagerSP:
       for model in self.active_bundle.models:
         if hasattr(model, 'artifact') and model.artifact.fileName:
           active_files.append(model.artifact.fileName)
-        if hasattr(model, 'metadata') and model.metadata.fileName:
-          active_files.append(model.metadata.fileName)
 
     # Remove all files except active ones (including their chunk files)
     model_dir = Paths.model_root()
