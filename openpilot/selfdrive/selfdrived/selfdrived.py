@@ -30,6 +30,7 @@ from openpilot.sunnypilot import get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
 from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
+from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 REPLAY = "REPLAY" in os.environ
@@ -127,8 +128,6 @@ class SelfdriveD(CruiseHelper):
     self.initialized = False
     self.enabled = False
     self.active = False
-    self.buttons_pressed = 0
-    self.buttons_release_toggle = 0
     self.mismatch_counter = 0
     self.cruise_mismatch_counter = 0
     self.last_steering_pressed_frame = 0
@@ -179,6 +178,7 @@ class SelfdriveD(CruiseHelper):
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.CP_SP)
 
     CruiseHelper.__init__(self, self.CP)
+    self.button_state_tracker = ButtonStateTracker()
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
@@ -599,8 +599,7 @@ class SelfdriveD(CruiseHelper):
     icbm.sendButton = self.icbm.cruise_button
     icbm.vTarget = self.icbm.v_target
 
-    ss_sp.buttonsPressed = self.buttons_pressed
-    ss_sp.buttonsReleaseToggle = self.buttons_release_toggle
+    self.button_state_tracker.publish(ss_sp)
 
     self.pm.send('selfdriveStateSP', ss_sp_msg)
 
@@ -614,13 +613,6 @@ class SelfdriveD(CruiseHelper):
 
   def step(self):
     CS = self.data_sample()
-    for b in CS.buttonEvents:
-      bit = 1 << b.type.raw
-      if b.pressed:
-        self.buttons_pressed |= bit
-      else:
-        self.buttons_pressed &= ~bit
-        self.buttons_release_toggle ^= bit
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
@@ -628,6 +620,7 @@ class SelfdriveD(CruiseHelper):
       self.mads.update(CS)
     self.update_alerts(CS)
 
+    self.button_state_tracker.update(CS)
     self.publish_selfdriveState(CS)
 
     self.CS_prev = CS
