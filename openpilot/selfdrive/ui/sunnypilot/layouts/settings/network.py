@@ -101,7 +101,7 @@ class NetworkUISP(NetworkUI):
 
     threading.Thread(target=self._wifi_manager._update_networks, daemon=True).start()
     self._wifi_manager._request_scan()
-    self._wifi_manager._last_network_update = time.monotonic()
+    self._wifi_manager._last_network_scan = time.monotonic()
 
   def _on_networks_updated(self, networks):
     if self._scanning:
