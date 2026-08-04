@@ -102,8 +102,7 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   split_indices = np.cumsum(sizes[:-1]) if len(sizes) > 1 else []
   split_views = np.split(packed_npy_inputs, split_indices) if len(sizes) > 0 else []
   for (k, s), v in zip(shapes.items(), split_views, strict=True):
-    actual_key = desire_key if k == 'desire' else k
-    npy_arrays[actual_key] = v.reshape(s)
+    npy_arrays[k] = v.reshape(s)
 
   queues = {
     'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),

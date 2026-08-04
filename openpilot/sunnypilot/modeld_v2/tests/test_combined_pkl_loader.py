@@ -70,10 +70,8 @@ class TestStockEquivalence:
     stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
     stock_queues, stock_npy = make_input_queues(stock_shapes, frame_skip, device='NPY')
 
-    assert set(state.input_queues.keys()) - {'desire', 'traffic_convention'} == \
-      set(stock_queues.keys()) - {'packed_npy_inputs'}
-    assert {'desire', 'traffic_convention'} <= set(state.input_queues.keys())
-    # We generate action_t and prev_feat dynamically based on the metadata
+    assert set(state.input_queues.keys()) == set(stock_queues.keys())
+    assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
     assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - {'action_t', 'prev_feat'}
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
