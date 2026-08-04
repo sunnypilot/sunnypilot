@@ -254,6 +254,7 @@ class ModelState(ModelStateBase):
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
+    # TODO-SP: This is a hack to prevent GPU corruption by calculating in CPU space, it can be removed on next recompile
     if 'prev_feat' not in self.numpy_inputs and 'feat_q' in self.input_queues:
       feat_val = self.input_queues['feat_q'].numpy()
       self.input_queues['feat_q'].assign(feat_val).realize()
