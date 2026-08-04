@@ -108,6 +108,7 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
+    # TODO-SP: switch to load_oob from openpilot/selfdrive/helpers on next full recompile of all models
     jits = pickle.load(open_file_chunked(pkl_path))
 
     self.DEV = Device.DEFAULT
@@ -223,10 +224,15 @@ class ModelState(ModelStateBase):
       model_output = raw_outputs.numpy().flatten()
       sliced = {k: model_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_outputs(sliced)
+      if 'prev_feat' in self.numpy_inputs:
+        self.numpy_inputs['prev_feat'][:] = model_output[self.vision_output_slices['hidden_state']]
     else:
       vision_output = raw_outputs[0].numpy().flatten()
       vision_sliced = {k: vision_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_vision_outputs(vision_sliced)
+
+      if 'prev_feat' in self.numpy_inputs and 'hidden_state' in self.vision_output_slices:
+        self.numpy_inputs['prev_feat'][:] = vision_output[self.vision_output_slices['hidden_state']]
 
       for i, policy_slices in enumerate(self._policy_slices_list):
         policy_output = raw_outputs[i + 1].numpy().flatten()
@@ -248,7 +254,7 @@ class ModelState(ModelStateBase):
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
-    if 'feat_q' in self.input_queues:
+    if 'prev_feat' not in self.numpy_inputs and 'feat_q' in self.input_queues:
       feat_val = self.input_queues['feat_q'].numpy()
       self.input_queues['feat_q'].assign(feat_val).realize()
 
