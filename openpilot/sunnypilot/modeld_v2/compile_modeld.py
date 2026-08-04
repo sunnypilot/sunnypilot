@@ -75,7 +75,8 @@ def get_policy_npy_shapes(input_shapes: dict, is_supercombo: bool = False) -> tu
   return shapes, sizes
 
 
-def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT, is_supercombo: bool = False, use_packed: bool = True) -> tuple[dict, dict]:
+def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT,
+                            is_supercombo: bool = False, use_packed: bool = True) -> tuple[dict, dict]:
   road_key, _ = _detect_vision_keys(input_shapes)
   if not road_key:
     raise ValueError("Vision road key missing from input shapes.")
@@ -146,11 +147,13 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   return queues, npy_arrays
 
 
-def make_split_input_queues(vision_input_shapes: dict, policy_input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
+def make_split_input_queues(vision_input_shapes: dict, policy_input_shapes: dict,
+                            frame_skip: int, device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
   return generate_queues_and_npy({**vision_input_shapes, **policy_input_shapes}, frame_skip, device, is_supercombo=False, use_packed=use_packed)
 
 
-def make_supercombo_input_queues(input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
+def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
+                                 device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
   return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True, use_packed=use_packed)
 
 
