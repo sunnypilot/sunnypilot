@@ -116,6 +116,17 @@ class ModelState(ModelStateBase):
     self.QUEUE_DEV = self.DEV
 
     metadata = jits['metadata']
+
+    self._run_policy = jits[(cam_w, cam_h)]['run_policy']
+    self._warp_enqueue = jits[(cam_w, cam_h)]['warp_enqueue']
+
+    # TODO-SP: Remove legacy use_packed detection block after all models are recompiled
+    captured = getattr(self._run_policy, 'captured', None)
+    if captured is not None:
+      use_packed = 'packed_npy_inputs' in getattr(captured, 'expected_names', [])
+    else:
+      use_packed = True
+
     if 'model' in metadata:
       model_metadata = metadata['model']
       self.vision_output_slices = model_metadata['output_slices']
@@ -125,7 +136,7 @@ class ModelState(ModelStateBase):
       self._vision_input_names = [key for key in model_metadata['input_shapes'] if 'img' in key]
       from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
-      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.QUEUE_DEV)
+      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'], frame_skip, device=self.QUEUE_DEV, use_packed=use_packed)
     else:
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k != 'vision']
@@ -143,7 +154,7 @@ class ModelState(ModelStateBase):
       policy_input_shapes = first_policy_metadata['input_shapes']
       self._vision_input_names = [k for k in vision_input_shapes if 'img' in k]
       frame_skip = derive_frame_skip(vision_input_shapes, policy_input_shapes)
-      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.QUEUE_DEV)
+      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes, frame_skip, device=self.QUEUE_DEV, use_packed=use_packed)
 
     self._desire_key = next(key for key in self.numpy_inputs if key.startswith('desire'))
     self._road_key = next(key for key in self._vision_input_names if 'big' not in key)
@@ -170,8 +181,6 @@ class ModelState(ModelStateBase):
     nv12_info = get_nv12_info(cam_w, cam_h)
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
-    self._run_policy = jits[(cam_w, cam_h)]['run_policy']
-    self._warp_enqueue = jits[(cam_w, cam_h)]['warp_enqueue']
     yuv_size = self.frame_buf_params[self._road_key][3]
     self._warp_enqueue(
       **self.input_queues,
