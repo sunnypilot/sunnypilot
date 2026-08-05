@@ -1,0 +1,130 @@
+# Page: display
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: display
+label: Display
+icon: display
+order: 3
+remote_configurable: true
+description: Screen brightness, timeout, and interactivity settings
+sections:
+- id: brightness_timeout
+  title: Brightness & Timeout
+  description: Screen dimming and sleep behavior while driving
+  items:
+  - key: OnroadScreenOffBrightness
+    widget: multiple_button
+    title: Onroad Brightness
+    options:
+    - value: 0
+      label: Auto (Default)
+    - value: 1
+      label: Auto (Dark)
+    - value: 2
+      label: Screen Off
+    - value: 3
+      label: 5 %
+    - value: 4
+      label: 10 %
+    - value: 5
+      label: 15 %
+    - value: 6
+      label: 20 %
+    - value: 7
+      label: 25 %
+    - value: 8
+      label: 30 %
+    - value: 9
+      label: 35 %
+    - value: 10
+      label: 40 %
+    - value: 11
+      label: 45 %
+    - value: 12
+      label: 50 %
+    - value: 13
+      label: 55 %
+    - value: 14
+      label: 60 %
+    - value: 15
+      label: 65 %
+    - value: 16
+      label: 70 %
+    - value: 17
+      label: 75 %
+    - value: 18
+      label: 80 %
+    - value: 19
+      label: 85 %
+    - value: 20
+      label: 90 %
+    - value: 21
+      label: 95 %
+    - value: 22
+      label: 100 %
+  - key: OnroadScreenOffTimer
+    widget: multiple_button
+    title: Onroad Brightness Delay
+    options:
+    - value: 0
+      label: Always On
+    - value: 3
+      label: 3s
+    - value: 5
+      label: 5s
+    - value: 10
+      label: 10s
+    - value: 15
+      label: 15s
+    - value: 30
+      label: 30s
+    - value: 60
+      label: 1m
+    - value: 180
+      label: 3m
+    - value: 300
+      label: 5m
+    - value: 600
+      label: 10m
+    enablement:
+    - type: not
+      condition:
+        type: any
+        conditions:
+        - type: param
+          key: OnroadScreenOffBrightness
+          equals: 0
+        - type: param
+          key: OnroadScreenOffBrightness
+          equals: 1
+  - key: InteractivityTimeout
+    widget: multiple_button
+    title: Interactivity Timeout
+    description: Apply a custom timeout for settings UI. This is the time after which settings UI closes automatically if
+      user is not interacting with the screen.
+    options:
+    - value: 0
+      label: Default
+    - value: 10
+      label: 10 s
+    - value: 20
+      label: 20 s
+    - value: 30
+      label: 30 s
+    - value: 40
+      label: 40 s
+    - value: 50
+      label: 50 s
+    - value: 60
+      label: 1 m
+    - value: 70
+      label: 1 m
+    - value: 80
+      label: 1 m
+    - value: 90
+      label: 1 m
+    - value: 100
+      label: 1 m
+    - value: 110
+      label: 1 m
+    - value: 120
+      label: 2 m
