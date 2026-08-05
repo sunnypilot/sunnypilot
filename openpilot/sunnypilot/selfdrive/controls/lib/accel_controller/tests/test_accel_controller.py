@@ -22,7 +22,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.lead import Le
 
 
 def make_lead(*, status=False, d_rel=0.0, v_lead_k=0.0, a_lead_k=0.0, a_lead_tau=1.5, radar_track_id=-1):
-  return SimpleNamespace(status=status, dRel=d_rel, vLeadK=v_lead_k, aLeadK=a_lead_k, aLeadTau=a_lead_tau,
+  return SimpleNamespace(present=status, dRel=d_rel, vLeadK=v_lead_k, aLeadK=a_lead_k, aLeadTau=a_lead_tau,
                          radarTrackId=radar_track_id)
 
 

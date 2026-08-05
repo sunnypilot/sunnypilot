@@ -46,7 +46,7 @@ def is_lead_source(source) -> bool:
 
 
 def has_radar_lead(radar_state) -> bool:
-  return bool(radar_state.leadOne.status or radar_state.leadTwo.status)
+  return bool(radar_state.leadOne.present or radar_state.leadTwo.present)
 
 
 def _project_ego(v_ego: float, a_ego: float, delay: float) -> tuple[float, float]:
@@ -59,7 +59,7 @@ def _project_ego(v_ego: float, a_ego: float, delay: float) -> tuple[float, float
 
 
 def _lead_values(lead) -> tuple[float, float, float, float] | None:
-  if not lead.status:
+  if not lead.present:
     return None
   d_rel, v_lead = float(lead.dRel), float(lead.vLeadK)
   if not math.isfinite(d_rel) or d_rel < 0.0 or not math.isfinite(v_lead) or v_lead < MIN_LEAD_SPEED:
@@ -80,7 +80,7 @@ def calculate_lead_plan(radar_state, v_ego: float, a_ego: float, delay: float, p
     return LeadPlan()
 
   leads = (radar_state.leadOne, radar_state.leadTwo)
-  lead_status = any(lead.status for lead in leads)
+  lead_status = any(lead.present for lead in leads)
   t_follow = get_T_FOLLOW(follow_personality)
   if not math.isfinite(t_follow) or t_follow < 0.0:
     return LeadPlan(lead_status=lead_status)
