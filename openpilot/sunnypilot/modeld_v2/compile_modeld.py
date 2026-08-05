@@ -235,9 +235,10 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
   features_slice = feat_meta['output_slices']['hidden_state']
   WARP_DEV = 'CPU' if "USBGPU" in os.environ else Device.DEFAULT
 
+  is_supercombo = vision_runner is None
   run_func = create_jit_runner(vision_runner, policy_runners, nv12, model_size, features_slice, frame_skip, all_shapes, prepare_only)
   run_jit = TinyJit(run_func, prune=True)
-  queues, npy_arrays = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT)
+  queues, npy_arrays = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT, is_supercombo=is_supercombo)
 
   for i in range(3):
     rng = np.random.default_rng(42 + i)
