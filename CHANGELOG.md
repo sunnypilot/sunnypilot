@@ -1,3 +1,9 @@
+sunnypilot Version 2026.002.002 (2026-08-05)
+========================
+* What's Changed
+  * plannerd: ignore mapd in health check by @sunnyhaibin in https://github.com/sunnypilot/sunnypilot/pull/1880
+  * plannerd & selfdriveStateSP: poll modelV2, relay button state via bitmask by @sunnyhaibin in https://github.com/sunnypilot/sunnypilot/pull/1893
+
 sunnypilot Version 2026.002.001 (2026-06-28)
 ========================
 * What's Changed
