@@ -90,7 +90,7 @@ class SpeedLimitAssist:
 
     self._plus_hold = 0.
     self._minus_hold = 0.
-    self._last_carstate_ts = 0.
+    self._release_toggle_prev = 0
 
     # TODO-SP: SLA's own output_a_target for planner
     # Solution functions mapped to respective states
@@ -145,16 +145,16 @@ class SpeedLimitAssist:
       set_speed_limit_assist_availability(self.CP, self.CP_SP, self.params)
       self.enabled = self.params.get("SpeedLimitMode", return_default=True) == Mode.assist
 
-  def update_car_state(self, CS: car.CarState) -> None:
+  def update_buttons(self, release_toggle: int) -> None:
+    released = self._release_toggle_prev ^ release_toggle
+    self._release_toggle_prev = release_toggle
+    if not released:
+      return
     now = time.monotonic()
-    self._last_carstate_ts = now
-
-    for b in CS.buttonEvents:
-      if not b.pressed:
-        if b.type in CRUISE_BUTTONS_PLUS:
-          self._plus_hold = max(self._plus_hold, now + CRUISE_BUTTON_CONFIRM_HOLD)
-        elif b.type in CRUISE_BUTTONS_MINUS:
-          self._minus_hold = max(self._minus_hold, now + CRUISE_BUTTON_CONFIRM_HOLD)
+    if any((released >> b) & 1 for b in CRUISE_BUTTONS_PLUS):
+      self._plus_hold = max(self._plus_hold, now + CRUISE_BUTTON_CONFIRM_HOLD)
+    if any((released >> b) & 1 for b in CRUISE_BUTTONS_MINUS):
+      self._minus_hold = max(self._minus_hold, now + CRUISE_BUTTON_CONFIRM_HOLD)
 
   def _get_button_release(self, req_plus: bool, req_minus: bool) -> bool:
     now = time.monotonic()
