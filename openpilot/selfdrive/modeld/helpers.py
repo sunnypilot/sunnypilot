@@ -6,10 +6,11 @@ import struct
 import tempfile
 from pathlib import Path
 
+from openpilot.common.file_chunker import get_manifest_path
+from openpilot.common.hardware.usb import CHESTNUT_VENDOR_ID, CHESTNUT_PRODUCT_ID, USB_DEVICES_PATH
+
 MODELS_DIR = Path(__file__).resolve().parent / 'models'
 TG_INPUT_DEVICES_PATH = MODELS_DIR / 'tg_input_devices.json'
-USBGPU_VID = 0xADD1
-USBGPU_PID = 0x0001
 
 
 def get_tg_input_devices(process_name: str, usbgpu: bool):
@@ -38,22 +39,21 @@ def dump_oob(obj, f):
 def load_oob(f):
   opcodes = f.read(struct.unpack('<q', f.read(8))[0])
   def buffers():
-    prev = None
     while (h := f.read(8)):
-      if prev is not None:
-        prev.release()
-      buf = bytearray(struct.unpack('<q', h)[0])
-      f.readinto(buf)
-      prev = pickle.PickleBuffer(buf)
-      yield prev
+      pb = pickle.PickleBuffer(bytearray(struct.unpack('<q', h)[0]))
+      f.readinto(pb)
+      yield pb
   return pickle.load(io.BytesIO(opcodes), buffers=buffers())
 
 def usbgpu_present() -> bool:
-  for d in Path("/sys/bus/usb/devices").glob("*"):
+  for d in USB_DEVICES_PATH.glob("*"):
     try:
-      if int((d / "idVendor").read_text(), 16) == USBGPU_VID and \
-          int((d / "idProduct").read_text(), 16) == USBGPU_PID:
+      usb_id = (int((d / "idVendor").read_text(), 16), int((d / "idProduct").read_text(), 16))
+      if usb_id == (CHESTNUT_VENDOR_ID, CHESTNUT_PRODUCT_ID):
         return True
     except Exception:
       pass
   return False
+
+def usbgpu_compiled() -> bool:
+  return Path(get_manifest_path(modeld_pkl_path(usbgpu=True))).is_file()

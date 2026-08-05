@@ -34,6 +34,14 @@ on:
         required: false
         default: true
         type: boolean
+      target_hardware:
+        description: 'Hardware target to compile for'
+        required: false
+        type: choice
+        default: 'qcom'
+        options:
+          - qcom
+          - usbgpu
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -81,9 +89,17 @@ on:
         description: 'Minimum selector version'
         required: false
         type: string
+      target_hardware:
+        description: 'Hardware target to compile for'
+        required: false
+        type: choice
+        default: 'qcom'
+        options:
+          - qcom
+          - usbgpu
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
-  JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
+  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_v' || 'v' }}${{ inputs.json_version }}.json
 
 jobs:
   build_model:
@@ -93,6 +109,7 @@ jobs:
       custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
       is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
+      target_hardware: ${{ inputs.target_hardware }}
     secrets: inherit
 
   publish_model:

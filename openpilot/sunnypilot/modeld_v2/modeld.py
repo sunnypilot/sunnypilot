@@ -10,11 +10,14 @@ import os
 os.environ['GMMU'] = '0'
 from openpilot.common.hardware import TICI
 os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
-USBGPU = "USBGPU" in os.environ
+
+from openpilot.selfdrive.modeld.helpers import usbgpu_present, load_oob
+from openpilot.selfdrive.modeld.usbgpu_link import wait_usbgpu_link
+
+USBGPU = usbgpu_present()
 if USBGPU:
   os.environ['DEV'] = 'AMD'
   os.environ['AMD_IFACE'] = 'USB'
-import pickle
 import time
 import numpy as np
 import openpilot.cereal.messaging as messaging
@@ -108,24 +111,16 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    # TODO-SP: switch to load_oob from openpilot/selfdrive/helpers on next full recompile of all models
-    jits = pickle.load(open_file_chunked(pkl_path))
+    jits = load_oob(open_file_chunked(pkl_path))
 
     self.DEV = Device.DEFAULT
-    self.WARP_DEV = 'CPU' if USBGPU else self.DEV
+    self.WARP_DEV = ('QCOM' if TICI else 'CPU') if USBGPU else self.DEV
     self.QUEUE_DEV = self.DEV
 
     metadata = jits['metadata']
 
     self._run_policy = jits[(cam_w, cam_h)]['run_policy']
     self._warp_enqueue = jits[(cam_w, cam_h)]['warp_enqueue']
-
-    # TODO-SP: Remove legacy use_packed detection block after all models are recompiled
-    captured = getattr(self._run_policy, 'captured', None)
-    if captured is not None:
-      use_packed = 'packed_npy_inputs' in getattr(captured, 'expected_names', [])
-    else:
-      use_packed = True
 
     if 'model' in metadata:
       model_metadata = metadata['model']
@@ -137,7 +132,7 @@ class ModelState(ModelStateBase):
       from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
       self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'],
-                                                                          frame_skip, device=self.QUEUE_DEV, use_packed=use_packed)
+                                                                          frame_skip, device=self.QUEUE_DEV)
     else:
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k != 'vision']
@@ -156,7 +151,7 @@ class ModelState(ModelStateBase):
       self._vision_input_names = [k for k in vision_input_shapes if 'img' in k]
       frame_skip = derive_frame_skip(vision_input_shapes, policy_input_shapes)
       self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes,
-                                                                     frame_skip, device=self.QUEUE_DEV, use_packed=use_packed)
+                                                                     frame_skip, device=self.QUEUE_DEV)
 
     self._desire_key = next(key for key in self.numpy_inputs if key.startswith('desire'))
     self._road_key = next(key for key in self._vision_input_names if 'big' not in key)
@@ -188,6 +183,26 @@ class ModelState(ModelStateBase):
       **self.input_queues,
       frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize(),
       big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize())
+
+    if USBGPU:
+      self.warmup()
+
+  def warmup(self) -> None:
+    dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
+    transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
+
+    dummy_inputs = {}
+    for k, v in self.numpy_inputs.items():
+      if k not in ['tfm', 'big_tfm', 'prev_feat']:
+        dummy_inputs[k] = np.zeros(v.shape, dtype=v.dtype)
+
+    self.run(dummy_frames, transforms, dummy_inputs, prepare_only=False)
+
+    for v in self.numpy_inputs.values():
+      v[:] = 0
+    self.prev_desire[:] = 0
+    self.full_frames.clear()
+    self._blob_cache.clear()
 
 
   @property
@@ -265,11 +280,6 @@ class ModelState(ModelStateBase):
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
-    # TODO-SP: This is a hack to prevent GPU corruption by calculating in CPU space, it can be removed on next recompile
-    if 'prev_feat' not in self.numpy_inputs and 'feat_q' in self.input_queues:
-      feat_val = self.input_queues['feat_q'].numpy()
-      self.input_queues['feat_q'].assign(feat_val).realize()
-
     return outputs
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
@@ -306,6 +316,9 @@ def main(demo=False):
   setproctitle(PROCESS_NAME)
   config_realtime_process(7, 54)
 
+  if USBGPU:
+    wait_usbgpu_link()
+
   # visionipc clients
   while True:
     available_streams = VisionIpcClient.available_streams("camerad", block=False)
@@ -339,6 +352,9 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
+
+  params.put_bool("UsbGpuPresent", USBGPU)
+  params.put_bool("UsbGpuCompiled", USBGPU)
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
