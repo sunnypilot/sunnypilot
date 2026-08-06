@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
-from collections.abc import Callable
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
@@ -54,9 +53,8 @@ class SunnylinkInfo(Widget):
     self.sponsor_text.render()
 
 class SunnylinkLayoutMici(NavScroller):
-  def __init__(self, back_callback: Callable):
+  def __init__(self):
     super().__init__()
-    self.set_back_callback(back_callback)
     self._restore_in_progress = False
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
