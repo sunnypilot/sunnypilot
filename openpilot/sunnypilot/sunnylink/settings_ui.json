@@ -2295,6 +2295,18 @@
           ]
         },
         {
+          "key": "ToyotaPriusTss2Pid",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Prius TSS2 PID Lateral Control (Alpha)",
+          "description": "Use a PID lateral controller instead of torque control on Prius TSS2. Overrides Neural Network Lateral Control and Enforce Torque Control for this car. Starting gains are unvalidated on a real Prius TSS2 \u2014 expect to need on-road tuning. Use at your own risk.",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
           "key": "ToyotaTSS2Long",
           "widget": "toggle",
           "needs_onroad_cycle": true,
