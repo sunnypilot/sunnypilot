@@ -4,6 +4,7 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol import LongControlSP
 
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
@@ -39,7 +40,7 @@ def long_control_state_trans(CP_SP, active, long_control_state,
 
   return long_control_state
 
-class LongControl:
+class LongControl(LongControlSP):
   def __init__(self, CP, CP_SP):
     self.CP = CP
     self.CP_SP = CP_SP
@@ -66,7 +67,7 @@ class LongControl:
 
     elif self.long_control_state == LongCtrlState.stopping:
       output_accel = self.last_output_accel
-      if output_accel > self.CP.stopAccel:
+      if output_accel > self.CP.stopAccel and not LongControlSP.should_hold_stopping(self, CS, a_target):
         output_accel = min(output_accel, 0.0)
         # TODO: can we just go straight to stopAccel?
         output_accel -= 1.0 * DT_CTRL  # m/s^2/s while trying to stop

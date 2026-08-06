@@ -14,8 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from openpilot.cereal import log
-import cereal.messaging as messaging
+from openpilot.cereal import log, messaging
 from openpilot.common.realtime import DT_MDL, Ratekeeper
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
@@ -251,14 +250,10 @@ class PlantSP(Plant):
       "dRel": float(d_rel),
       "yRel": 0.0,
       "vRel": float(v_rel),
-      "aRel": float(a_lead - self.acceleration),
       "vLead": float(v_lead),
-      "dPath": 0.0,
-      "vLat": 0.0,
       "vLeadK": float(v_lead),
       "aLeadK": float(a_lead),
-      "fcw": False,
-      "status": bool(status),
+      "present": bool(status),
       # TODO use real radard logic for this
       "aLeadTau": float(_LEAD_ACCEL_TAU),
       "modelProb": float(prob_lead),

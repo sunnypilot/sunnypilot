@@ -1,5 +1,6 @@
 from collections.abc import Callable
 import math
+from typing import cast
 
 import pytest
 
@@ -14,15 +15,19 @@ def departing_lead(current_time: float) -> float:
   return 0.0 if current_time < 1.0 else min(2.0, 2.0 * (current_time - 1.0))
 
 
+def stopped_lead(_current_time: float) -> float:
+  return 0.0
+
+
 PARITY_SCENARIOS = {
-  "approach_stopped_lead": dict(lead_relevancy=True, speed=15.0, distance_lead=60.0, v_cruise=20.0, v_lead=0.0, steps=80),
-  "stop_then_depart": dict(lead_relevancy=True, speed=0.0, distance_lead=6.0, v_cruise=8.0, v_lead=departing_lead, steps=120),
+  "approach_stopped_lead": {"lead_relevancy": True, "speed": 15.0, "distance_lead": 60.0, "v_cruise": 20.0, "v_lead": stopped_lead, "steps": 80},
+  "stop_then_depart": {"lead_relevancy": True, "speed": 0.0, "distance_lead": 6.0, "v_cruise": 8.0, "v_lead": departing_lead, "steps": 120},
 }
 
 
-def _drive(cls, *, v_cruise: float, v_lead: float | Callable[[float], float], steps: int, **kwargs):
+def _drive(cls, *, v_cruise: float, v_lead: Callable[[float], float], steps: int, **kwargs):
   plant = cls(**kwargs)
-  plant.v_lead_prev = float(v_lead(0.0)) if callable(v_lead) else float(v_lead)
+  plant.v_lead_prev = v_lead(0.0)
   solver_failures = 0
   original_reset = plant.planner.mpc.reset
 
@@ -35,16 +40,18 @@ def _drive(cls, *, v_cruise: float, v_lead: float | Callable[[float], float], st
   plant.planner.mpc.reset = counting_reset
   results = []
   for _ in range(steps):
-    lead_speed = float(v_lead(plant.current_time)) if callable(v_lead) else v_lead
+    lead_speed = v_lead(plant.current_time)
     result = plant.step(v_lead=lead_speed, v_cruise=v_cruise)
     results.append((result, plant.planner.mpc.source, plant.planner.output_a_target))
   return results, solver_failures
 
 
 @pytest.mark.parametrize("scenario", PARITY_SCENARIOS, ids=list(PARITY_SCENARIOS))
-def test_plant_sp_matches_stock_plant_on_shared_kwargs(scenario):
+def test_plant_sp_matches_stock_plant_on_shared_kwargs(scenario: str):
   kwargs = dict(PARITY_SCENARIOS[scenario])
-  v_cruise, v_lead, steps = kwargs.pop("v_cruise"), kwargs.pop("v_lead"), kwargs.pop("steps")
+  v_cruise = cast(float, kwargs.pop("v_cruise"))
+  v_lead = cast(Callable[[float], float], kwargs.pop("v_lead"))
+  steps = cast(int, kwargs.pop("steps"))
 
   stock_results, stock_failures = _drive(Plant, v_cruise=v_cruise, v_lead=v_lead, steps=steps, **kwargs)
   sp_results, sp_failures = _drive(PlantSP, v_cruise=v_cruise, v_lead=v_lead, steps=steps, **kwargs)
@@ -91,7 +98,7 @@ def test_full_lead_observation_is_independent_from_truth():
         "vLeadK": 5.5,
         "aLeadK": -1.25,
         "aLeadTau": 0.7,
-        "status": True,
+        "present": True,
         "modelProb": 0.9,
         "radarTrackId": 42,
       }
