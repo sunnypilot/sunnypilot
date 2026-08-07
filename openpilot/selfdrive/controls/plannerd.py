@@ -28,14 +28,62 @@ def main():
   ldw = LaneDepartureWarning()
   longitudinal_planner = LongitudinalPlanner(CP, CP_SP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
-  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
-                            'liveMapDataSP', 'carStateSP', gps_location_service],
-                           poll='carState', ignore_alive=ignore_services, ignore_avg_freq=ignore_services, ignore_valid=ignore_services)
+  sm = messaging.SubMaster(
+    [
+      'carControl',
+      'carState',
+      'controlsState',
+      'liveParameters',
+      'radarState',
+      'modelV2',
+      'selfdriveState',
+      'liveMapDataSP',
+      'carStateSP',
+      gps_location_service,
+    ],
+    poll='carState',
+    ignore_alive=ignore_services,
+    ignore_avg_freq=ignore_services,
+    ignore_valid=ignore_services,
+  )
+
+  output_dependencies = {
+    'longitudinalPlan': ('carState', 'controlsState', 'selfdriveState', 'radarState'),
+    'driverAssistance': ('carState', 'carControl', 'modelV2', 'liveParameters'),
+    'longitudinalPlanSP': ('carState', 'controlsState'),
+  }
+  last_comm_diagnostics = None
 
   while True:
     sm.update()
     longitudinal_planner.sla.update_car_state(sm['carState'])
     if sm.updated['modelV2']:
+      failed_outputs = {
+        output: {
+          service: {
+            'valid': sm.valid[service],
+            'alive': sm.alive[service],
+            'freqOk': sm.freq_ok[service],
+            'frameAge': sm.frame - sm.recv_frame[service],
+          }
+          for service in dependencies
+          if not (sm.valid[service] and sm.alive[service] and sm.freq_ok[service])
+        }
+        for output, dependencies in output_dependencies.items()
+        if not sm.all_checks(list(dependencies))
+      }
+      comm_diagnostics = tuple(
+        (output, tuple((service, values['valid'], values['alive'], values['freqOk'], values['frameAge']) for service, values in services.items()))
+        for output, services in failed_outputs.items()
+      )
+
+      if comm_diagnostics != last_comm_diagnostics:
+        if failed_outputs:
+          cloudlog.event('plannerdCommDiagnostics', error=True, failedOutputs=failed_outputs, frame=sm.frame)
+        elif last_comm_diagnostics:
+          cloudlog.event('plannerdCommDiagnosticsRecovered', frame=sm.frame)
+        last_comm_diagnostics = comm_diagnostics
+
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
 
