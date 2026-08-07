@@ -15,9 +15,10 @@ from typing import Any
 import numpy as np
 
 from openpilot.cereal import log, messaging
-from openpilot.common.realtime import DT_MDL, Ratekeeper
+from opendbc.car.interfaces import ACCEL_MAX, ACCEL_MIN
+from openpilot.common.realtime import DT_CTRL, DT_MDL, Ratekeeper
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
+from openpilot.selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanner
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
 from openpilot.selfdrive.test.longitudinal_maneuvers.plant import Plant, PlannerSM
@@ -87,6 +88,7 @@ class PlantSP(Plant):
     actuator_delay: float | None = None,
     actuator_lag: float = 0.0,
     actuator_model: ActuatorModel | None = None,
+    run_long_control: bool = False,
   ):
     if actuator_delay is not None and (not math.isfinite(actuator_delay) or actuator_delay < 0.0):
       raise ValueError("actuator_delay must be finite and non-negative")
@@ -132,7 +134,7 @@ class PlantSP(Plant):
     self.transport_delay = actuator_model.transport_delay if actuator_model is not None else actuator_delay
     self.actuator_lag = actuator_model.actuator_lag if actuator_model is not None else actuator_lag
     self.publish_realized_a_ego = any((lead_observation_fn is not None, model_action_fn is not None, ego_observation_fn is not None,
-                                      actuator_delay is not None, actuator_lag > 0.0, actuator_model is not None))
+                                      actuator_delay is not None, actuator_lag > 0.0, actuator_model is not None, run_long_control))
 
     self.rk = Ratekeeper(self.rate, print_delay_threshold=100.0)
     self.ts = 1.0 / self.rate
@@ -147,10 +149,12 @@ class PlantSP(Plant):
       CP.longitudinalActuatorDelay = self.actuator_delay
     CP_SP = CarInterface.get_non_essential_params_sp(CP, CAR.HONDA_CIVIC)
     self.planner = LongitudinalPlanner(CP, CP_SP, init_v=self.speed)
+    self.long_control = LongControl(CP, CP_SP) if run_long_control else None
 
     if self.actuator_model is not None and self.speed >= 0.01:
       self.breakaway_confirmed = True
-    delay_steps = 0 if self.transport_delay is None else round(self.transport_delay / self.ts)
+    self.integration_dt = DT_CTRL if run_long_control else self.ts
+    delay_steps = 0 if self.transport_delay is None else round(self.transport_delay / self.integration_dt)
     self._actuator_delay_queue = deque([self.acceleration] * delay_steps)
 
   @staticmethod
@@ -180,7 +184,7 @@ class PlantSP(Plant):
       delayed_command = command
 
     if self.actuator_model is not None:
-      max_command_delta = self.actuator_model.command_rate_limit * self.ts
+      max_command_delta = self.actuator_model.command_rate_limit * self.integration_dt
       self.applied_actuator_command = float(np.clip(delayed_command,
                                                    self.applied_actuator_command - max_command_delta,
                                                    self.applied_actuator_command + max_command_delta))
@@ -192,7 +196,7 @@ class PlantSP(Plant):
         elif not self.breakaway_confirmed:
           breakaway_ready = self.applied_actuator_command + 1e-9 >= self.actuator_model.standstill_breakaway_acceleration
           if breakaway_ready:
-            self._breakaway_timer += self.ts
+            self._breakaway_timer += self.integration_dt
           else:
             self._breakaway_timer = 0.0
 
@@ -209,11 +213,17 @@ class PlantSP(Plant):
       response_command = delayed_command
 
     if self.actuator_lag > 0.0:
-      alpha = 1.0 - math.exp(-self.ts / self.actuator_lag)
+      alpha = 1.0 - math.exp(-self.integration_dt / self.actuator_lag)
       self.acceleration += alpha * (response_command - self.acceleration)
     else:
       self.acceleration = response_command
     return delayed_command, self.acceleration
+
+  def _integrate_ego(self, dt: float, stop_at_standstill: bool = False) -> None:
+    self.speed += self.acceleration * dt
+    if self.speed <= 0.0 or stop_at_standstill and self.speed < 0.01 and self.actuator_command <= 0.0:
+      self.speed = self.acceleration = 0.0
+    self.distance += self.speed * dt
 
   def step(self, v_lead=0.0, prob_lead=1.0, v_cruise=50.0, pitch=0.0, prob_throttle=1.0):
     # ******** publish a fake model going straight and fake calibration ********
@@ -288,7 +298,8 @@ class PlantSP(Plant):
     model.modelV2.acceleration = acceleration
     model.modelV2.meta.disengagePredictions.gasPressProbs = [float(prob_throttle) for _ in range(6)]
 
-    control.controlsState.longControlState = LongCtrlState.pid if self.enabled else LongCtrlState.off
+    control.controlsState.longControlState = self.long_control.long_control_state if self.long_control is not None else (
+      LongCtrlState.pid if self.enabled else LongCtrlState.off)
     ss.selfdriveState.experimentalMode = self.e2e
     ss.selfdriveState.personality = self.personality
     control.controlsState.forceDecel = self.force_decel
@@ -319,22 +330,26 @@ class PlantSP(Plant):
     })
     self.planner.update(sm)
     self.a_target = self.planner.output_a_target
-    self.actuator_command = self.a_target
-    if self.planner.output_should_stop:
-      stopping_acceleration = -0.5 if self.actuator_model is None else self.actuator_model.stopping_acceleration
-      self.actuator_command = min(stopping_acceleration, self.actuator_command)
-    delayed_actuator_command, _ = self._update_actuator(self.actuator_command)
-    self.speed = self.speed + self.acceleration * self.ts
+    if self.long_control is None:
+      self.actuator_command = self.a_target
+      if self.planner.output_should_stop:
+        stopping_acceleration = -0.5 if self.actuator_model is None else self.actuator_model.stopping_acceleration
+        self.actuator_command = min(stopping_acceleration, self.actuator_command)
+      self._update_actuator(self.actuator_command)
+      self._integrate_ego(self.ts)
+    else:
+      for _ in range(round(self.ts / DT_CTRL)):
+        car_state.carState.vEgo = self.speed
+        car_state.carState.aEgo = self.acceleration
+        car_state.carState.standstill = self.speed < 0.01
+        self.actuator_command = self.long_control.update(
+          self.enabled, car_state.carState, self.a_target, self.planner.output_should_stop, (ACCEL_MIN, ACCEL_MAX),
+        )
+        self._update_actuator(self.actuator_command)
+        self._integrate_ego(DT_CTRL, stop_at_standstill=True)
     self.should_stop = self.planner.output_should_stop
     fcw = self.planner.fcw
     self.distance_lead = self.distance_lead + v_lead * self.ts
-
-    # ******** run the car ********
-    # print(self.distance, speed)
-    if self.speed <= 0:
-      self.speed = 0
-      self.acceleration = 0
-    self.distance = self.distance + self.speed * self.ts
 
     # *** radar model ***
     if self.lead_relevancy:
@@ -361,23 +376,14 @@ class PlantSP(Plant):
       "acceleration": self.acceleration,
       "realized_acceleration": self.acceleration,
       "a_target": self.a_target,
-      "planner_acceleration": self.a_target,
       "actuator_command": self.actuator_command,
-      "stop_clamped_actuator_command": self.actuator_command,
-      "delayed_actuator_command": delayed_actuator_command,
       "applied_actuator_command": self.applied_actuator_command,
-      "vehicle_actuator_command": self.applied_actuator_command,
-      "true_v_ego": true_v_ego,
-      "true_a_ego": true_a_ego,
       "published_a_ego": published_a_ego,
       "published_v_ego": published_v_ego,
-      "observed_a_ego": published_a_ego,
-      "observed_v_ego": published_v_ego,
-      "planner_delay": self.actuator_delay,
-      "transport_delay": self.transport_delay,
       "breakaway_confirmed": self.breakaway_confirmed,
-      "breakaway_time": self._breakaway_timer,
       "should_stop": self.should_stop,
+      "long_control_state": (int(self.long_control.long_control_state) if self.long_control is not None
+                             else control.controlsState.longControlState.raw),
       "distance_lead": self.distance_lead,
       "fcw": fcw,
       "mpc_source": self.planner.mpc.source,
@@ -386,7 +392,6 @@ class PlantSP(Plant):
       "base_target": self.planner.output_v_target,
       "raw_energy_cap": lead_plan.cap if lead_plan is not None else math.inf,
       "live_filtered_cap": target_state.filtered_cap,
-      "accel_controller_selected_lead": accel_controller.selected_lead,
       "model_action": {
         "desiredAcceleration": float(model_acceleration),
         "shouldStop": bool(model_should_stop),

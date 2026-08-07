@@ -53,12 +53,10 @@ class LongitudinalPlannerSP:
     is_e2e = self.is_e2e(sm)
     force_decel = sm['controlsState'].forceDecel
     previous_mpc_failed = self.mpc.last_solution_status != 0
-    if previous_mpc_failed:
-      self.accel_controller.reset()
 
     self.accel_controller.update(
       sm['radarState'], base_speed=self.output_v_target, v_ego=sm['carState'].vEgo, a_ego=sm['carState'].aEgo,
-      follow_personality=sm['selfdriveState'].personality, acc_selected=not is_e2e and not previous_mpc_failed,
+      follow_personality=sm['selfdriveState'].personality, acc_selected=not is_e2e,
       engaged=not reset_state and not force_decel, cruise_initialized=sm['carState'].vCruise != V_CRUISE_UNSET,
       stock_accel_max=stock_accel_max if self.allow_throttle else 0.0, previous_should_stop=self.output_should_stop,
       radar_fresh=self._radar_fresh_this_cycle, previous_mpc_source=self.mpc.source, planner_speed=self.v_desired_filter.x,

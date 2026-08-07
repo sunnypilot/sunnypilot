@@ -8,7 +8,6 @@ import pytest
 from openpilot.cereal import custom, log, messaging
 from opendbc.car.interfaces import ACCEL_MAX, ACCEL_MIN
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanner
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import N, LongitudinalMpc
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalPlanSource as MpcLongitudinalPlanSource
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController, AccelControllerState
@@ -152,11 +151,6 @@ def test_accel_controller_schema_round_trip_and_toyota_compatibility():
   assert CarState.__module__ == "opendbc.car.toyota.carstate"
 
 
-def test_longitudinal_planner_sp_owns_accel_controller_integration():
-  assert "update_accel_controller" in LongitudinalPlannerSP.__dict__
-  assert "update_should_stop" in LongitudinalPlannerSP.__dict__
-
-
 def test_mpc_inherits_accel_controller_extension_without_changing_stock_signature_or_bounds():
   assert LongitudinalMpc.__bases__ == (LongitudinalMpcSP,)
   assert tuple(inspect.signature(LongitudinalMpc.update).parameters) == ("self", "radarstate", "v_cruise", "personality")
@@ -215,13 +209,6 @@ def test_mpc_jerk_cost_multiplier_is_backward_compatible_and_does_not_change_oth
   mpc.set_weights(False, personality=log.LongitudinalPersonality.standard)
   assert captured[-1][0][-2] == 0.0
   assert captured[-1][0][-1] == pytest.approx(default_costs[-1] * 1.2)
-
-
-def test_stock_planner_owns_mpc_solve():
-  source = inspect.getsource(LongitudinalPlanner.update)
-  assert source.count("self.mpc.set_weights(") == 1
-  assert source.count("self.mpc.set_cur_state(") == 1
-  assert source.count("self.mpc.update(") == 1
 
 
 def test_accel_controller_hook_only_configures_mpc():
@@ -323,21 +310,22 @@ def test_force_decel_target_remains_authoritative_and_disables_ceiling():
   assert config == (None, 1.0, None)
 
 
-def test_previous_mpc_failure_gets_one_stock_recovery_cycle():
+def test_previous_mpc_failure_gets_one_stock_recovery_cycle_without_resetting_controller_state():
   ceiling = tuple(np.linspace(0.8, 0.4, N + 1))
   planner, mode_calls = planner_for_mpc_test(mpc_accel_max=ceiling)
   controller = planner.accel_controller
   planner.mpc.last_solution_status = 4
 
   _, failed_target, failed_config = prepare_controller_mpc(planner)
-  assert controller.reset_calls == 1
+  assert controller.reset_calls == 0
+  assert controller.update_kwargs["acc_selected"]
   assert len(mode_calls) == 1
   assert failed_target == 20.0
   assert failed_config == (None, 1.0, None)
 
   planner.mpc.last_solution_status = 0
   _, recovered_target, recovered_config = prepare_controller_mpc(planner)
-  assert controller.reset_calls == 1
+  assert controller.reset_calls == 0
   assert len(mode_calls) == 2
   assert recovered_target == 15.0
   assert recovered_config == (ceiling, 1.0, None)

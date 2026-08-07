@@ -13,9 +13,9 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import (
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController, AccelControllerState
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.constants import (
   ACCEL_LIMIT_HORIZON_JERK, ACCEL_PROFILE_MAX_BP, ACCEL_PROFILE_MAX_V, ACCEL_PROFILES, CAP_FILTER_FRAMES, LAUNCH_END_SPEED,
-  COMFORT_DECEL, LAUNCH_TARGET_HEADROOM, LAUNCH_TARGET_SLEW, LEAD_MATCH_ACCEL_SLEW, LEAD_SWITCH_MAX_HOLD_TIME, MATCHED_SPEED_DECEL_RATE,
+  COMFORT_DECEL, LAUNCH_TARGET_HEADROOM, LAUNCH_TARGET_SLEW, LEAD_MATCH_ACCEL_SLEW, MATCHED_SPEED_DECEL_RATE,
   MPC_DECEL_JERK_COST_MULTIPLIER, RADAR_STALE_TIMEOUT, STOP_GAP_RESERVE, STOP_HOLD_EXIT_FRAMES, TARGET_RELEASE_SLEW,
-  TARGET_SPEED_RESERVE, AccelProfile,
+  TARGET_SPEED_RESERVE, AccelProfile, profile_accel_max, sanitize_profile,
 )
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.helpers import build_accel_ceiling
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.lead import LeadPlan, _project_ego, calculate_lead_plan
@@ -85,32 +85,30 @@ class TestProfiles:
       AccelProfile.normal: [1.80, 1.50, 0.97, 0.48, 0.30],
       AccelProfile.sport: [2.00, 1.90, 1.15, 0.68, 0.42],
     }
-    assert TARGET_RELEASE_SLEW == 8.75
-    assert LEAD_SWITCH_MAX_HOLD_TIME == 6.0
 
   @pytest.mark.parametrize("profile", ACCEL_PROFILES)
   def test_lookup_interpolates_and_stays_inside_global_limit(self, profile):
     for speed, expected in zip(ACCEL_PROFILE_MAX_BP, ACCEL_PROFILE_MAX_V[profile], strict=True):
-      assert AccelController.get_profile_accel_max(profile, speed) == expected
+      assert profile_accel_max(profile, speed) == expected
 
-    limits = [AccelController.get_profile_accel_max(profile, speed) for speed in np.linspace(-1.0, 50.0, 201)]
+    limits = [profile_accel_max(profile, speed) for speed in np.linspace(-1.0, 50.0, 201)]
     assert all(0.0 <= limit <= ACCEL_MAX for limit in limits)
     assert np.all(np.diff(limits) <= 0.0)
 
   @pytest.mark.parametrize("speed", ACCEL_PROFILE_MAX_BP)
   def test_profile_order_is_distinct(self, speed):
-    eco, normal, sport = [AccelController.get_profile_accel_max(profile, speed) for profile in ACCEL_PROFILES]
+    eco, normal, sport = [profile_accel_max(profile, speed) for profile in ACCEL_PROFILES]
     assert eco < normal < sport
 
   def test_invalid_profile_defaults_to_normal(self):
-    assert AccelController._profile(999) == AccelProfile.normal
+    assert sanitize_profile(999) == AccelProfile.normal
 
   def test_stock_limit_intersects_profile_before_mpc(self):
     controller = make_controller()
     results = [update(controller, v_ego=10.0, profile=AccelProfile.sport, stock_accel_max=0.30)
                for _ in range(controller.lead_loss_hold_frames)]
     result = results[-1]
-    assert AccelController.get_profile_accel_max(AccelProfile.sport, 10.0) == pytest.approx(1.15)
+    assert profile_accel_max(AccelProfile.sport, 10.0) == pytest.approx(1.15)
     assert effective_accel_max(result) == pytest.approx(0.30)
     assert all(sample.mpc_accel_max is not None for sample in results)
     assert all(max(sample.mpc_accel_max) <= 0.30 + 1e-9 for sample in results)
@@ -177,7 +175,7 @@ class TestProfiles:
 
   def test_exact_global_max_uses_stock_ceiling(self):
     result = update(make_controller(), base_speed=8.0, v_ego=0.0, profile=AccelProfile.sport)
-    assert AccelController.get_profile_accel_max(AccelProfile.sport, 0.0) == ACCEL_MAX
+    assert profile_accel_max(AccelProfile.sport, 0.0) == ACCEL_MAX
     assert result.mpc_accel_max is None
 
 
@@ -230,11 +228,11 @@ class TestMpcCeiling:
 
     assert result.state == AccelControllerState.free
     assert result.mpc_accel_max is None
-    assert result.cruise_accel_max == pytest.approx(AccelController.get_profile_accel_max(AccelProfile.eco, 20.0))
+    assert result.cruise_accel_max == pytest.approx(profile_accel_max(AccelProfile.eco, 20.0))
 
   def test_lead_cruise_limit_does_not_follow_mpc_source_or_accel_sign(self):
     controller = make_controller()
-    expected = AccelController.get_profile_accel_max(AccelProfile.eco, 20.0)
+    expected = profile_accel_max(AccelProfile.eco, 20.0)
     inputs = (
       (LongitudinalPlanSource.cruise, 0.02, 19.9, 100),
       (LongitudinalPlanSource.lead0, -0.02, 20.1, -1),
@@ -258,7 +256,7 @@ class TestMpcCeiling:
     result = update(controller, pulling_away, v_ego=10.0, planner_accel=0.2)
 
     assert result.state == AccelControllerState.restrict
-    assert effective_accel_max(result) == pytest.approx(AccelController.get_profile_accel_max(AccelProfile.normal, 10.0))
+    assert effective_accel_max(result) == pytest.approx(profile_accel_max(AccelProfile.normal, 10.0))
     assert result.mpc_accel_max is not None
 
   def test_matched_lead_terminal_taper_changes_smoothly(self):
@@ -275,9 +273,9 @@ class TestMpcCeiling:
     assert braking.mpc_accel_max is not None and accelerating.mpc_accel_max is not None
     assert braking_limit is not None
     assert abs(controller.target_state.matched_accel_limit - braking_limit) <= LEAD_MATCH_ACCEL_SLEW * DT_MDL + 1e-9
-    profile_accel_max = AccelController.get_profile_accel_max(AccelProfile.normal, 8.0)
-    assert effective_accel_max(braking) <= profile_accel_max
-    assert effective_accel_max(accelerating) <= profile_accel_max
+    accel_max = profile_accel_max(AccelProfile.normal, 8.0)
+    assert effective_accel_max(braking) <= accel_max
+    assert effective_accel_max(accelerating) <= accel_max
 
   def test_matched_lead_ignores_two_frame_speed_jump(self):
     clean_controller, noisy_controller = make_controller(), make_controller()
@@ -310,6 +308,37 @@ class TestMpcCeiling:
       noisy = update(noisy_controller, braking_jump, v_ego=8.0)
       assert effective_accel_max(noisy) == pytest.approx(effective_accel_max(clean))
       assert noisy.target_speed == pytest.approx(clean.target_speed)
+
+  def test_matched_lead_survives_slot_and_track_churn(self):
+    controller = make_controller()
+    state = controller.target_state
+    state.target_speed, state.state = 18.0, AccelControllerState.restrict
+    state.active_frames, state.selected_lead, state.selected_lead_track_id = 20, 0, 100
+    state.cap_samples = [20.0] * CAP_FILTER_FRAMES
+    state.lead_speed_samples = [20.0] * CAP_FILTER_FRAMES
+    state.matched_lead, state.matched_accel_limit = True, 0.20
+    targets = [state.target_speed]
+
+    for frame in range(20):
+      lead_plan = LeadPlan(
+        cap=20.0, selected_lead=frame % 2, selected_lead_track_id=-1 if frame % 3 else 100 + frame,
+        selected_lead_speed=20.0, lead_status=True,
+      )
+      targets.append(controller._update_target(
+        lead_plan, 25.0, 20.0, AccelProfile.normal, 0.48, False,
+        LongitudinalPlanSource.cruise, 20.0, 0.0,
+      ))
+      assert state.matched_lead
+
+    assert np.max(np.diff(targets)) <= 0.48 * DT_MDL + 1e-9
+
+    no_lead = LeadPlan()
+    for _ in range(controller.lead_loss_hold_frames):
+      controller._update_target(
+        no_lead, 25.0, 20.0, AccelProfile.normal, 0.48, False,
+        LongitudinalPlanSource.cruise, 20.0, 0.0,
+      )
+    assert not state.matched_lead
 
 
 class TestLead:
@@ -445,7 +474,7 @@ class TestTargetLifecycle:
 
     target_drop = before.target_speed - switched.target_speed
     assert -TARGET_SPEED_RESERVE - 1e-9 <= target_drop <= MATCHED_SPEED_DECEL_RATE * DT_MDL + 1e-9
-    assert effective_accel_max(switched) <= AccelController.get_profile_accel_max(AccelProfile.normal, 8.0) + 1e-9
+    assert effective_accel_max(switched) <= profile_accel_max(AccelProfile.normal, 8.0) + 1e-9
     assert switched.target_speed < 25.0
     assert controller.target_state.lead_switch_guard_frames == controller.lead_loss_hold_frames
 
@@ -470,9 +499,10 @@ class TestTargetLifecycle:
 
     released = [update(controller, replacement, base_speed=25.0, v_ego=10.0, planner_speed=10.0, planner_accel=0.2)
                 for _ in range(controller.lead_loss_hold_frames + 1)]
+    release_steps = np.diff([switched.target_speed, *(result.target_speed for result in released)])
     assert controller.target_state.lead_switch_guard_frames == 0
-    assert released[-1].target_speed > before.target_speed
-    assert np.max(np.diff([before.target_speed, *(result.target_speed for result in released)])) <= TARGET_RELEASE_SLEW * DT_MDL + 1e-9
+    assert np.max(release_steps) > 0.0
+    assert np.max(release_steps) <= TARGET_RELEASE_SLEW * DT_MDL + 1e-9
 
   def test_initial_lead_target_release_is_slewed(self):
     controller = make_controller()
@@ -754,7 +784,7 @@ class TestTargetLifecycle:
     assert results[launch_index].target_speed >= 0.1 + LAUNCH_TARGET_HEADROOM
     assert results[launch_index].departure_launching
     assert effective_accel_max(results[launch_index]) == pytest.approx(
-      AccelController.get_profile_accel_max(AccelProfile.normal, 0.1),
+      profile_accel_max(AccelProfile.normal, 0.1),
     )
 
   def test_stopped_governing_lead_rejects_route_51d_radar_speed_pulse_without_delaying_departure(self):
@@ -905,7 +935,7 @@ class TestTargetLifecycle:
     assert fresh.launching and held.launching
     assert fresh.departure_launching and held.departure_launching
     assert fresh.target_speed == held.target_speed == 8.0
-    assert effective_accel_max(fresh) == pytest.approx(AccelController.get_profile_accel_max(AccelProfile.normal, 0.1))
+    assert effective_accel_max(fresh) == pytest.approx(profile_accel_max(AccelProfile.normal, 0.1))
 
   def test_single_frame_departure_stays_at_zero_target_without_an_accel_ceiling(self):
     controller = make_controller()

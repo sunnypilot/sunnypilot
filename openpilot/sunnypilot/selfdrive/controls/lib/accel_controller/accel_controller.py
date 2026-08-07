@@ -66,14 +66,6 @@ class AccelController:
       self.profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
     self._param_frame += 1
 
-  @staticmethod
-  def _profile(profile: int) -> int:
-    return sanitize_profile(profile)
-
-  @staticmethod
-  def get_profile_accel_max(profile: int, v_ego: float) -> float:
-    return profile_accel_max(profile, v_ego)
-
   def _update_target(self, lead_plan: LeadPlan, base_speed: float, v_ego: float, profile: int, profile_max_accel: float,
                      previous_should_stop: bool, previous_mpc_source, planner_speed: float, planner_accel: float) -> float:
     state = self.target_state
@@ -93,9 +85,6 @@ class AccelController:
                         and lead_plan.cap >= state.target_speed + SPEED_RELIEF_DEADBAND))
     state.update_lead_switch_guard(switched_to_relief, confirmed_relief, slot_changed or track_changed or false_relief,
                                    self.lead_loss_hold_frames, self.lead_switch_max_hold_frames)
-    if slot_changed or track_changed:
-      state.matched_lead = False
-      state.matched_accel_limit = None
     if has_lead:
       state.selected_lead = lead_plan.selected_lead
       state.selected_lead_track_id = lead_plan.selected_lead_track_id
@@ -240,11 +229,13 @@ class AccelController:
     state.matched_accel_limit = None
 
     ceiling = min(base_speed, filtered_cap)
-    if lead_filter_ready and state.active_frames == CAP_FILTER_FRAMES // 2 + 1 and not state.launching and planner_speed < state.target_speed:
+    synced_to_planner = lead_filter_ready and not state.launching and planner_speed < state.target_speed
+    if synced_to_planner:
       state.target_speed = max(planner_speed, state.target_speed - comfort_decel * self.dt)
 
     if ceiling <= state.target_speed - SPEED_RESTRICT_DEADBAND or (state.state == AccelControllerState.restrict and ceiling < state.target_speed):
-      state.target_speed = max(ceiling, state.target_speed - comfort_decel * self.dt)
+      if not synced_to_planner:
+        state.target_speed = max(ceiling, state.target_speed - comfort_decel * self.dt)
       state.arm_release_slew()
       state.state = AccelControllerState.restrict
       return state.target_speed
@@ -305,9 +296,9 @@ class AccelController:
   def update(self, radar_state, *, base_speed: float, v_ego: float, a_ego: float, follow_personality, acc_selected: bool,
              engaged: bool, cruise_initialized: bool, stock_accel_max: float, previous_should_stop: bool, radar_fresh: bool = True,
              previous_mpc_source=None, planner_speed: float | None = None, planner_accel: float = 0.0) -> None:
-    self.profile = self._profile(self.profile)
+    self.profile = sanitize_profile(self.profile)
     sanitized_v_ego = max(v_ego, 0.0) if math.isfinite(v_ego) and v_ego >= -VEGO_NOISE_TOLERANCE else v_ego
-    profile_max_accel = self.get_profile_accel_max(self.profile, sanitized_v_ego)
+    profile_max_accel = profile_accel_max(self.profile, sanitized_v_ego)
     stock_accel_max = float(stock_accel_max)
     positive_accel_max = (max(0.0, min(profile_max_accel, stock_accel_max, ACCEL_MAX))
                           if math.isfinite(profile_max_accel) and math.isfinite(stock_accel_max) else math.nan)
@@ -359,18 +350,13 @@ class AccelController:
     reserve_eligible = active and lead_context and not stop_hold_active and not state.launching and not state.e2e_braking_handoff
     reserve_can_arm = reserve_eligible and state.lead_switch_guard_frames == 0
     if not lead_context:
-      state.speed_reserve_armed = state.speed_reserve_suppressed = False
-    else:
-      if state.lead_switch_guard_frames > 0 and planner_accel <= PLANNER_BRAKING_ACCEL_THRESHOLD:
-        state.speed_reserve_suppressed = True
-      elif state.lead_switch_guard_frames == 0 and state.state != AccelControllerState.restrict:
-        state.speed_reserve_suppressed = False
-      if (reserve_can_arm and not state.speed_reserve_armed and math.isfinite(state.filtered_cap)
-        and state.filtered_cap <= target_speed + TARGET_SPEED_ARM_MARGIN):
-        state.speed_reserve_armed = True
+      state.speed_reserve_armed = False
+    elif (reserve_can_arm and not state.speed_reserve_armed and math.isfinite(state.filtered_cap)
+          and state.filtered_cap <= target_speed + TARGET_SPEED_ARM_MARGIN):
+      state.speed_reserve_armed = True
 
     output_target = 0.0 if stop_hold_active else target_speed
-    if reserve_eligible and state.speed_reserve_armed and not state.speed_reserve_suppressed:
+    if reserve_eligible and state.speed_reserve_armed:
       output_target = max(0.0, output_target - TARGET_SPEED_RESERVE)
 
     self.is_active = active

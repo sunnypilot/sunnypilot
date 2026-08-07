@@ -103,7 +103,6 @@ class TargetState:
     self.selected_lead = self.selected_lead_track_id = -1
     self.launching = self.departure_launch = self.matched_lead = self.lead_dropout = self.release_slew_armed = False
     self.lead_braking = self.e2e_braking_handoff = self.speed_reserve_armed = False
-    self.speed_reserve_suppressed = False
     self.matched_accel_limit: float | None = None
     self.release_settle_speed: float | None = None
 
@@ -186,6 +185,6 @@ class TargetState:
     self.departure_frames = 0
     self.launching = self.departure_launch = False
     self.reset_release_slew()
-    self.matched_lead = self.speed_reserve_armed = self.speed_reserve_suppressed = False
+    self.matched_lead = self.speed_reserve_armed = False
     self.matched_accel_limit = None
     self.reset_lead_switch_guard()

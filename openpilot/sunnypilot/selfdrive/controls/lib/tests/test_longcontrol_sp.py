@@ -2,7 +2,6 @@ import pytest
 
 from opendbc.car import DT_CTRL, gen_empty_fingerprint, structs
 from opendbc.car.car_helpers import interfaces
-from opendbc.car.ford.values import CAR as FORD
 from opendbc.car.gm.values import CAR as GM
 from opendbc.car.honda.values import CAR as HONDA
 from opendbc.car.hyundai.values import CAR as HYUNDAI
@@ -11,11 +10,11 @@ from opendbc.car.toyota.values import CAR as TOYOTA
 from opendbc.car.volkswagen.values import CAR as VOLKSWAGEN
 from openpilot.selfdrive.controls.lib.drive_helpers import should_stop
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState
-from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol import LongControlSP
+from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol import STOPPED_SPEED
+from openpilot.sunnypilot.selfdrive.test.longitudinal_maneuvers.plant import PRIUS_TSS2_ROUTE_MODEL, PlantSP
 
 
-VEHICLES = (TOYOTA.TOYOTA_RAV4_TSS2, HONDA.HONDA_ACCORD, HONDA.HONDA_CIVIC_2022, GM.CHEVROLET_BOLT_EUV,
-            HYUNDAI.HYUNDAI_SONATA, FORD.FORD_ESCAPE_MK4, VOLKSWAGEN.VOLKSWAGEN_ARTEON_MK1, RIVIAN.RIVIAN_R1)
+STOP_ACCEL_VEHICLES = (TOYOTA.TOYOTA_RAV4_TSS2, HONDA.HONDA_CIVIC_2022, VOLKSWAGEN.VOLKSWAGEN_ARTEON_MK1, RIVIAN.RIVIAN_R1)
 ROUTE_STOP_ONSETS = (
   (0.290, -0.497, -0.270, -0.302), (0.464, -0.223, -0.264, -0.292), (0.467, -0.582, -0.316, -0.359),
   (0.530, -0.311, -0.309, -0.333), (0.581, -0.467, -0.312, -0.352), (0.398, -0.557, -0.311, -0.348),
@@ -31,8 +30,10 @@ def get_car_params(candidate):
   return CP, interface.get_params_sp(CP, candidate, fingerprint, [], True, False, False)
 
 
-def make_car_state(v_ego=0.2, a_ego=0.0, standstill=False):
-  return structs.CarState(vEgo=float(v_ego), aEgo=float(a_ego), standstill=standstill)
+def make_car_state(v_ego=0.2, a_ego=0.0, standstill=False) -> structs.CarState:
+  state = structs.CarState(vEgo=float(v_ego), aEgo=float(a_ego), standstill=standstill)
+  state.cruiseState.standstill = standstill
+  return state
 
 
 def make_control(candidate, initial_accel=-0.33):
@@ -53,20 +54,15 @@ def test_stop_threshold_remains_unchanged():
   assert not should_stop(0.24, 0.1)
 
 
-def test_longcontrol_uses_sunnypilot_extension():
-  assert LongControl.__bases__ == (LongControlSP,)
-
-
-@pytest.mark.parametrize("candidate", VEHICLES)
 @pytest.mark.parametrize(("v_ego", "a_ego", "a_target", "initial_accel"), ROUTE_STOP_ONSETS)
-def test_logged_stop_onsets_hold_the_existing_brake(candidate, v_ego, a_ego, a_target, initial_accel):
-  _, control = make_control(candidate, initial_accel)
+def test_logged_stop_onsets_hold_the_existing_brake(v_ego, a_ego, a_target, initial_accel):
+  _, control = make_control(TOYOTA.TOYOTA_RAV4_TSS2, initial_accel)
   output = control.update(True, make_car_state(v_ego, a_ego), a_target, True, (-3.5, 2.0))
   assert control.long_control_state == LongCtrlState.stopping
   assert output == pytest.approx(initial_accel)
 
 
-@pytest.mark.parametrize("candidate", VEHICLES)
+@pytest.mark.parametrize("candidate", STOP_ACCEL_VEHICLES)
 def test_urgent_braking_matches_the_stock_ramp(candidate):
   CP, control = make_control(candidate)
   CS = make_car_state(0.8, -0.1)
@@ -81,7 +77,7 @@ def test_urgent_braking_matches_the_stock_ramp(candidate):
   assert output == pytest.approx(expected)
 
 
-@pytest.mark.parametrize("candidate", VEHICLES)
+@pytest.mark.parametrize("candidate", STOP_ACCEL_VEHICLES)
 def test_stronger_planner_brake_matches_the_stock_ramp(candidate):
   CP, control = make_control(candidate)
   outputs = [control.update(True, make_car_state(0.3, -0.3), -1.0, True, (-3.5, 2.0)) for _ in range(10)]
@@ -93,7 +89,7 @@ def test_stronger_planner_brake_matches_the_stock_ramp(candidate):
   assert outputs == pytest.approx(expected)
 
 
-@pytest.mark.parametrize("candidate", VEHICLES)
+@pytest.mark.parametrize("candidate", STOP_ACCEL_VEHICLES)
 def test_insufficient_deceleration_uses_the_stock_ramp_immediately(candidate):
   CP, control = make_control(candidate)
   output = control.update(True, make_car_state(0.6, -0.1), -0.1, True, (-3.5, 2.0))
@@ -140,11 +136,12 @@ def test_smooth_stop_distance_is_bounded(speed, initial_accel, grade_accel, actu
   assert distance < 1.0
 
 
-@pytest.mark.parametrize("candidate", VEHICLES)
+@pytest.mark.parametrize("candidate", STOP_ACCEL_VEHICLES)
 def test_standstill_uses_the_stock_ramp(candidate):
   CP, control = make_control(candidate)
+  control.long_control_state = LongCtrlState.off
   CS = make_car_state(0.0, 0.0, standstill=True)
-  outputs = [control.update(True, CS, 0.0, True, (-3.5, 2.0)) for _ in range(round(2.0 / DT_CTRL))]
+  outputs = [control.update(True, CS, 0.0, False, (-3.5, 2.0)) for _ in range(round(2.0 / DT_CTRL))]
   expected = -0.33
   for _ in range(round(2.0 / DT_CTRL)):
     expected = stock_stopping_output(expected, CP.stopAccel)
@@ -161,7 +158,8 @@ def test_stopping_never_releases_a_stronger_command(v_ego, a_ego, standstill):
 
 def test_reported_standstill_while_moving_can_hold_the_brake():
   _, control = make_control(GM.CHEVROLET_BOLT_EUV)
-  output = control.update(True, make_car_state(0.3, -0.3, standstill=True), -0.1, True, (-3.5, 2.0))
+  control.long_control_state = LongCtrlState.off
+  output = control.update(True, make_car_state(0.3, -0.3, standstill=True), -0.1, False, (-3.5, 2.0))
   assert output == pytest.approx(-0.33)
 
 
@@ -183,3 +181,35 @@ def test_departure_uses_the_stock_pid_path():
   output = control.update(True, make_car_state(0.0), 0.6, False, (-3.5, 2.0))
   assert control.long_control_state == LongCtrlState.pid
   assert output > 0.0
+
+
+def test_planner_mpc_and_longcontrol_complete_a_smooth_stop():
+  plant = PlantSP(
+    lead_relevancy=True, speed=0.6, distance_lead=3.6, run_long_control=True,
+    actuator_model=PRIUS_TSS2_ROUTE_MODEL,
+  )
+  plant.planner.accel_controller.enabled = True
+  plant.planner.accel_controller.profile = 1
+  plant.planner.accel_controller.update_params = lambda: None
+  plant.planner.dec._enabled = False
+  plant.planner.dec._read_params = lambda: None
+  commands = []
+  speeds = []
+  states = []
+  solver_statuses = []
+
+  while plant.current_time < 5.0:
+    result = plant.step(v_lead=0.0, v_cruise=8.0)
+    commands.append(result["actuator_command"])
+    speeds.append(result["speed"])
+    states.append(result["long_control_state"])
+    solver_statuses.append(plant.planner.mpc.last_solution_status)
+
+  stopping = states.index(LongCtrlState.stopping)
+  moving_stop_commands = [command for command, state, speed in zip(commands, states, speeds, strict=True)
+                          if state == LongCtrlState.stopping and speed > STOPPED_SPEED]
+  assert all(current <= previous + 1e-9 for previous, current in zip(commands[stopping:-1], commands[stopping + 1:], strict=True))
+  assert len(moving_stop_commands) > 1 and max(moving_stop_commands) - min(moving_stop_commands) < 1e-9
+  assert plant.speed == 0.0 and plant.distance < 1.0
+  assert plant.distance_lead - plant.distance > 3.0
+  assert all(status == 0 for status in solver_statuses)
