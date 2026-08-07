@@ -67,22 +67,12 @@ class TestStockEquivalence:
     state = model_state_factory(ARCHETYPES['vision_policy_split'])
 
     frame_skip = derive_frame_skip(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES)
-    # action_t is a deep-model prerequisite the SP loader doesn't provide yet; see skip_keys below
     stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
     stock_queues, stock_npy = make_input_queues(stock_shapes, frame_skip, device='NPY')
 
-    # TODO-SP: remove action_t skip once SP adds prerequisite for deep models (action_t input queue)
-    # prev_feat is a stock QCOM corruption workaround handled inside the SP loader's JIT path
-    skip_keys = {'action_t', 'prev_feat'}
-    # stock packs the per-key policy inputs into packed_npy_inputs; the npy views carry the individual keys
-    stock_queue_keys = set(stock_queues.keys())
-    if 'packed_npy_inputs' in stock_queue_keys:
-      stock_queue_keys.remove('packed_npy_inputs')
-      stock_queue_keys |= set(stock_npy.keys())
-    assert set(state.input_queues.keys()) == stock_queue_keys - skip_keys, \
-      f"Queue keys differ: v2={set(state.input_queues.keys())}, stock={stock_queue_keys}"
-    assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - skip_keys, \
-      f"Npy keys differ: v2={set(state.numpy_inputs.keys())}, stock={set(stock_npy.keys())}"
+    assert set(state.input_queues.keys()) == set(stock_queues.keys())
+    assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
+    assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - {'action_t', 'prev_feat'}
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues

@@ -18,7 +18,7 @@ from openpilot.sunnypilot.models.constants import Meta, MetaSimPose, MetaTombRai
 from openpilot.common.hardware.hw import Paths
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 15
+REQUIRED_JSON_VERSION = 16
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
@@ -56,12 +56,20 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
 
 def _bundle_artifacts(bundle: custom.ModelManagerSP.ModelBundle) -> list[tuple[str, str]]:
   artifacts = []
+  from openpilot.common.file_chunker import get_chunk_name
   for model in getattr(bundle, 'models', []) or []:
-    for artifact in (getattr(model, 'artifact', None), getattr(model, 'metadata', None)):
-      if artifact and getattr(artifact, 'fileName', None) and getattr(artifact, 'downloadUri', None):
-        sha256 = getattr(artifact.downloadUri, 'sha256', None)
-        if sha256:
-          artifacts.append((artifact.fileName, sha256))
+    for artifact in (getattr(model, 'artifact', None),):
+      if artifact and getattr(artifact, 'fileName', None):
+        if len(artifact.chunks) > 0:
+          for i, chunk in enumerate(artifact.chunks):
+            chunk_name = get_chunk_name(artifact.fileName, i, len(artifact.chunks))
+            if getattr(chunk, 'sha256', None):
+              artifacts.append((chunk_name, chunk.sha256))
+        else:
+          if getattr(artifact, 'downloadUri', None):
+            sha256 = getattr(artifact.downloadUri, 'sha256', None)
+            if sha256:
+              artifacts.append((artifact.fileName, sha256))
   return artifacts
 
 
@@ -156,8 +164,7 @@ def _get_model():
 
 
 def load_metadata():
-  model = _get_model()
-  metadata_path = f"{CUSTOM_MODEL_PATH}/{model.metadata.fileName}" if model else METADATA_PATH
+  metadata_path = METADATA_PATH
 
   with open(metadata_path, 'rb') as f:
     return pickle.load(f)
