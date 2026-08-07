@@ -28,35 +28,21 @@ def main():
   ldw = LaneDepartureWarning()
   longitudinal_planner = LongitudinalPlanner(CP, CP_SP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
-  sm = messaging.SubMaster(
-    [
-      'carControl',
-      'carState',
-      'controlsState',
-      'liveParameters',
-      'radarState',
-      'modelV2',
-      'selfdriveState',
-      'liveMapDataSP',
-      'carStateSP',
-      gps_location_service,
-    ],
-    poll='carState',
-    ignore_alive=ignore_services,
-    ignore_avg_freq=ignore_services,
-    ignore_valid=ignore_services,
-  )
+  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
+                            'liveMapDataSP', 'carStateSP', 'selfdriveStateSP', gps_location_service],
+                           poll='modelV2', ignore_alive=ignore_services, ignore_avg_freq=ignore_services, ignore_valid=ignore_services)
 
+  checked_services = tuple(service for service in sm.services if service not in ignore_services)
   output_dependencies = {
-    'longitudinalPlan': ('carState', 'controlsState', 'selfdriveState', 'radarState'),
-    'driverAssistance': ('carState', 'carControl', 'modelV2', 'liveParameters'),
+    'longitudinalPlan': checked_services,
+    'driverAssistance': checked_services,
     'longitudinalPlanSP': ('carState', 'controlsState'),
   }
   last_comm_diagnostics = None
 
   while True:
     sm.update()
-    longitudinal_planner.sla.update_car_state(sm['carState'])
+    longitudinal_planner.sla.update_buttons(sm['selfdriveStateSP'].buttonsReleaseToggle)
     if sm.updated['modelV2']:
       failed_outputs = {
         output: {
@@ -97,7 +83,7 @@ def main():
       # Only propagate payload validity here. Transport health remains available through
       # plannerdCommDiagnostics, without cascading a transient local frequency check into
       # a commIssue on all plannerd outputs.
-      msg.valid = sm.all_valid(['carState', 'carControl', 'modelV2', 'liveParameters'])
+      msg.valid = sm.all_valid()
       msg.driverAssistance.leftLaneDeparture = ldw.left
       msg.driverAssistance.rightLaneDeparture = ldw.right
       pm.send('driverAssistance', msg)

@@ -159,7 +159,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     plan_send = messaging.new_message('longitudinalPlan')
 
     # Transport health is diagnosed separately; this message represents payload validity.
-    plan_send.valid = sm.all_valid(service_list=['carState', 'controlsState', 'selfdriveState', 'radarState'])
+    plan_send.valid = sm.all_valid()
 
     longitudinalPlan = plan_send.longitudinalPlan
     longitudinalPlan.modelMonoTime = sm.logMonoTime['modelV2']

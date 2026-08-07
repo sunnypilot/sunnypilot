@@ -13,7 +13,7 @@ from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
-from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
+from opendbc.sunnypilot.car.tesla.values import MadsScreenButtonType, TeslaFlagsSP
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
@@ -36,6 +36,12 @@ def make_panda_state(mocker, controls_allowed_lateral=True):
   ps.controlsAllowedLateral = controls_allowed_lateral
   ps.safetyModel = SafetyModel.hyundai
   return ps
+
+
+def make_params_mock(mocker, values):
+  params = mocker.MagicMock()
+  params.get = mocker.MagicMock(side_effect=lambda k, **kwargs: values[k])
+  return params
 
 
 def make_mads(mocker, steering_mode):
@@ -223,14 +229,26 @@ class TestBrandSteeringModeRestrictions:
     params = mocker.MagicMock()
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
 
-  def test_tesla_with_vehicle_bus_uses_param(self, mocker):
+  @pytest.mark.parametrize("screen_button", [MadsScreenButtonType.THREE_FINGER,
+                                             MadsScreenButtonType.FOUR_FINGER,
+                                             MadsScreenButtonType.FIVE_FINGER])
+  def test_tesla_with_vehicle_bus_uses_param(self, mocker, screen_button):
     CP = structs.CarParams()
     CP.brand = "tesla"
     CP_SP = structs.CarParamsSP()
     CP_SP.flags = TeslaFlagsSP.HAS_VEHICLE_BUS
-    params = mocker.MagicMock()
-    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+    params = make_params_mock(mocker, {"TeslaMadsScreenButton": screen_button,
+                                       "MadsSteeringMode": MadsSteeringModeOnBrake.REMAIN_ACTIVE})
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
+
+  def test_tesla_with_vehicle_bus_screen_button_off_forced_to_disengage(self, mocker):
+    CP = structs.CarParams()
+    CP.brand = "tesla"
+    CP_SP = structs.CarParamsSP()
+    CP_SP.flags = TeslaFlagsSP.HAS_VEHICLE_BUS
+    params = make_params_mock(mocker, {"TeslaMadsScreenButton": MadsScreenButtonType.OFF,
+                                       "MadsSteeringMode": MadsSteeringModeOnBrake.REMAIN_ACTIVE})
+    assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
 
   @pytest.mark.parametrize("brand", ["hyundai", "toyota", "honda", "gm"])
   def test_other_brands_use_param(self, mocker, brand):
