@@ -1,0 +1,89 @@
+# Page: models
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: models
+label: Models
+icon: models
+order: 10
+remote_configurable: false
+description: Driving model behavior and camera calibration
+sections:
+- id: model_behavior
+  title: Model Behavior
+  description: Lane desire and lead-vehicle awareness tuning
+  items:
+  - key: LaneTurnDesire
+    widget: toggle
+    title: Use Lane Turn Desires
+    description: If you are driving at 20 mph (32 km/h) or below and have your blinker on, the car will plan a turn in that
+      direction at the nearest drivable path. This prevents situations (like at red lights) where the car might plan the wrong
+      turn direction.
+  - key: LaneTurnValue
+    widget: option
+    title: Adjust Lane Turn Speed
+    description: Set the maximum speed for lane turn desires.
+    min: 0
+    max: 20
+    step: 1
+    unit:
+      metric: km/h
+      imperial: mph
+    enablement:
+    - type: param
+      key: LaneTurnDesire
+      equals: true
+    - $ref: '#/macros/advanced_only'
+  - key: LagdToggle
+    widget: toggle
+    title: Live Learning Steer Delay
+    description: Allow device to learn and adapt car's steering response time
+  - key: LagdToggleDelay
+    widget: option
+    title: Adjust Software Delay
+    description: Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value
+      is 0.2
+    min: 0.05
+    max: 0.5
+    step: 0.01
+    enablement:
+    - type: not
+      condition:
+        type: param
+        key: LagdToggle
+        equals: true
+    - $ref: '#/macros/advanced_only'
+- id: lateral_control
+  title: Lateral Control
+  description: Neural network lateral control for supported models
+  items:
+  - key: NeuralNetworkLateralControl
+    widget: toggle
+    title: Neural Network Lateral Control (NNLC)
+    description: Use a neural network for lateral control instead of the default torque controller.
+    visibility:
+    - type: not
+      condition:
+        type: capability
+        field: steer_control_type
+        equals: angle
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: capability
+      field: torque_allowed
+      equals: true
+    - type: param
+      key: EnforceTorqueControl
+      equals: false
+- id: camera
+  title: Camera
+  description: Camera position and calibration
+  items:
+  - key: CameraOffset
+    widget: option
+    title: Adjust Camera Offset
+    description: Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)
+    min: -0.35
+    max: 0.35
+    step: 0.01
+    unit: meters
+    enablement:
+    - $ref: '#/macros/advanced_only'
