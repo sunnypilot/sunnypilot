@@ -81,7 +81,8 @@ class LongitudinalPlannerSP:
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
 
-    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
+    # Transport health is diagnosed separately; this message represents payload validity.
+    plan_sp_send.valid = sm.all_valid(service_list=['carState', 'controlsState'])
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source

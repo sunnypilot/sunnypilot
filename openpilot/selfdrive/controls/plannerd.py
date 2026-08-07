@@ -79,7 +79,12 @@ def main():
 
       if comm_diagnostics != last_comm_diagnostics:
         if failed_outputs:
-          cloudlog.event('plannerdCommDiagnostics', error=True, failedOutputs=failed_outputs, frame=sm.frame)
+          published_valid = {
+            output: sm.all_valid(list(output_dependencies[output]))
+            for output in failed_outputs
+          }
+          cloudlog.event('plannerdCommDiagnostics', error=True, failedOutputs=failed_outputs,
+                         publishedValid=published_valid, frame=sm.frame)
         elif last_comm_diagnostics:
           cloudlog.event('plannerdCommDiagnosticsRecovered', frame=sm.frame)
         last_comm_diagnostics = comm_diagnostics
@@ -89,7 +94,10 @@ def main():
 
       ldw.update(sm.frame, sm['modelV2'], sm['carState'], sm['carControl'])
       msg = messaging.new_message('driverAssistance')
-      msg.valid = sm.all_checks(['carState', 'carControl', 'modelV2', 'liveParameters'])
+      # Only propagate payload validity here. Transport health remains available through
+      # plannerdCommDiagnostics, without cascading a transient local frequency check into
+      # a commIssue on all plannerd outputs.
+      msg.valid = sm.all_valid(['carState', 'carControl', 'modelV2', 'liveParameters'])
       msg.driverAssistance.leftLaneDeparture = ldw.left
       msg.driverAssistance.rightLaneDeparture = ldw.right
       pm.send('driverAssistance', msg)
