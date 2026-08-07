@@ -20,7 +20,7 @@ class SunnylinkConsentPage(Widget):
     self._done_callback = done_callback
     self._step = 0
 
-    self._title = self._child(Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.BOLD, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
+    self._title = self._child(Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.AUDIOWIDE, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
 
     self._content = [
       {
