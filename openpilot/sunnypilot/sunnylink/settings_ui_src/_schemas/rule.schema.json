@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sunnypilot.com/schemas/sdui/rule.schema.json",
+  "title": "Rule",
+  "description": "Visibility/enablement rule. Discriminated union on 'type'. Macro reference is also accepted via {$ref: '#/macros/<name>'}.",
+  "oneOf": [
+    {"$ref": "#/$defs/MacroRef"},
+    {"$ref": "#/$defs/RuleOffroadOnly"},
+    {"$ref": "#/$defs/RuleNotEngaged"},
+    {"$ref": "#/$defs/RuleCapability"},
+    {"$ref": "#/$defs/RuleParam"},
+    {"$ref": "#/$defs/RuleParamCompare"},
+    {"$ref": "#/$defs/RuleNot"},
+    {"$ref": "#/$defs/RuleAny"},
+    {"$ref": "#/$defs/RuleAll"}
+  ],
+  "$defs": {
+    "MacroRef": {
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/macros/[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Reference to a macro defined in _macros.yaml under #/macros/<name>."
+        }
+      }
+    },
+    "RuleOffroadOnly": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {"type": {"const": "offroad_only"}}
+    },
+    "RuleNotEngaged": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {"type": {"const": "not_engaged"}}
+    },
+    "RuleCapability": {
+      "type": "object",
+      "required": ["type", "field", "equals"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "capability"},
+        "field": {"type": "string"},
+        "equals": {}
+      }
+    },
+    "RuleParam": {
+      "type": "object",
+      "required": ["type", "key", "equals"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "param"},
+        "key": {"type": "string"},
+        "equals": {}
+      }
+    },
+    "RuleParamCompare": {
+      "type": "object",
+      "required": ["type", "key", "op", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "param_compare"},
+        "key": {"type": "string"},
+        "op": {"type": "string", "enum": [">", "<", ">=", "<="]},
+        "value": {"type": "number"}
+      }
+    },
+    "RuleNot": {
+      "type": "object",
+      "required": ["type", "condition"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "not"},
+        "condition": {"$ref": "#"}
+      }
+    },
+    "RuleAny": {
+      "type": "object",
+      "required": ["type", "conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "any"},
+        "conditions": {"type": "array", "items": {"$ref": "#"}, "minItems": 1}
+      }
+    },
+    "RuleAll": {
+      "type": "object",
+      "required": ["type", "conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"const": "all"},
+        "conditions": {"type": "array", "items": {"$ref": "#"}, "minItems": 1}
+      }
+    }
+  }
+}
