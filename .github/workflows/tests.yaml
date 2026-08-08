@@ -133,9 +133,9 @@ jobs:
   process_replay:
     name: process replay
     runs-on: ${{
-      (github.repository == 'sunnypilot/sunnypilot') &&
+      (github.repository == 'commaai/openpilot') &&
       ((github.event_name != 'pull_request') ||
-      (github.event.pull_request.head.repo.full_name == 'sunnypilot/sunnypilot'))
+      (github.event.pull_request.head.repo.full_name == 'commaai/openpilot'))
       && fromJSON('["namespace-profile-amd64-8x16"]')
       || fromJSON('["ubuntu-24.04"]') }}
     steps:
