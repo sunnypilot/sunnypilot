@@ -145,7 +145,7 @@ jobs:
       run: scons
     - name: Run replay
       timeout-minutes: ${{ contains(runner.name, 'nsc') && 2 || 20 }}
-      continue-on-error: true  # temporary: seed initial baseline
+      continue-on-error: ${{ github.ref == 'refs/heads/master' }}
       run: openpilot/selfdrive/test/process_replay/test_processes.py -j$(nproc)
     - name: Print diff
       id: print-diff
@@ -168,14 +168,14 @@ jobs:
         name: diff_report_${{ github.event.number }}
         path: openpilot/selfdrive/test/process_replay/diff_report.txt
     - name: Checkout ci-artifacts
-      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
+      if: github.repository == 'sunnypilot/sunnypilot' && github.ref == 'refs/heads/master'
       uses: actions/checkout@v7
       with:
         repository: sunnypilot/ci-artifacts
         ssh-key: ${{ secrets.CI_ARTIFACTS_DEPLOY_KEY }}
         path: ${{ github.workspace }}/ci-artifacts
     - name: Prepare refs
-      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
+      if: github.repository == 'sunnypilot/sunnypilot' && github.ref == 'refs/heads/master'
       working-directory: ${{ github.workspace }}/ci-artifacts
       run: |
         git config user.name "GitHub Actions Bot"
@@ -187,7 +187,7 @@ jobs:
         git add .
         git commit -m "process-replay refs for ${{ github.repository }}@${{ github.sha }}" || echo "No changes to commit"
     - name: Push refs
-      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
+      if: github.repository == 'sunnypilot/sunnypilot' && github.ref == 'refs/heads/master'
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60
       with:
         timeout_minutes: 2
