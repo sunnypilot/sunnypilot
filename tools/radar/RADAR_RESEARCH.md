@@ -150,7 +150,7 @@ forwarded copies.
    associations with `3A5`. Production RadarData must continue to exclude it.
 5. Decode the active polynomial/path fields in `360/361/363/364`. Treat
    `365/366` constant payloads as unavailable lane slots, not missing radar.
-6. Resolve `235–248` `UNKNOWN_2/3`, identify every checksum variant, and
+6. Resolve `235–248` `UNKNOWN_1/2/3`, identify every checksum variant, and
    validate native camera classification/motion values against video. Confirm
    the camera-source assignment and forwarding path on each platform carrying
    the range.

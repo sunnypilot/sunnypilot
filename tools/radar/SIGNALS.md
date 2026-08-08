@@ -275,9 +275,9 @@ kinematics with persistence, hysteresis, and lane plausibility.
 ## 235-248 forward-camera object layout
 
 Each 32-byte message is one camera-object slot. `OBJECT_ID=0` is unused in the
-observed routes. The production parser marks `CLASSIFICATION=4` as oncoming
-and leaves other values unknown. The research debugger classifies moving
-versus stationary directly from `ABS_SPEED`.
+observed routes. The production parser normalizes the native camera motion
+enum to the shared `unknown/stationary/moving` display enum, but preserves the
+raw DBC value.
 
 | Signal | Start bit | Size | Scale / offset | Status |
 | --- | ---: | ---: | --- | --- |
@@ -285,23 +285,24 @@ versus stationary directly from `ABS_SPEED`.
 | `COUNTER` | 16 | 8 | 1 / 0 | Transmit-cycle counter. |
 | `QUALITY` | 24 | 7 | 1 / 0 | Camera-object quality/reliability level. |
 | `AGE` | 32 | 8 | 1 / 0 | Object alive age. |
-| `OBJECT_ID` | 40 | 11 | 1 / 0 | Persistent object ID; zero is unused. The former 7-bit decode collided in 19.9% of 82,482 simultaneous active slots; the 11-bit decode had zero collisions. |
+| `MOTION_STATE` | 40 | 4 | 1 / 0 | Native camera motion class. |
+| `OBJECT_ID` | 44 | 7 | 1 / 0 | Persistent object ID; zero is unused. |
 | `WIDTH` | 52 | 7 | 0.05 / 0 m | Estimated width. |
-| `CLASSIFICATION` | 60 | 3 | 1 / 0 | Motion/direction candidate; value 4 is route-confirmed oncoming and all other values are unknown. |
+| `CLASSIFICATION` | 60 | 3 | 1 / 0 | Unknown, truck, car, motorcycle, bicycle, pedestrian, undecided. |
 | `LONG_DIST` | 64 | 13 | 0.05 / 0 m | Longitudinal relative position. |
 | `LAT_DIST` | 78 | 12 | 0.05 / -102.4 m | Lateral relative position. |
 | `REL_SPEED` | 91 | 12 | 0.05 / -100 m/s | Longitudinal relative velocity. |
 | `REL_LAT_SPEED` | 104 | 10 | 0.05 / -25 m/s | Lateral relative velocity. |
 | `REL_ACCEL` | 115 | 9 signed | 0.05 / 0 m/s² | Longitudinal relative acceleration. |
-| `ABS_SPEED` | 125 | 12 | 0.05 / -100 m/s | Absolute longitudinal target speed. Against lane-filtered `LONG_DIST` derivatives it had 0.861 correlation, 0.009 m/s median absolute error, and 1.506 m/s 90th-percentile error across 13,545 samples. |
+| `UNKNOWN_1` | 125 | 12 | raw | Active extension; semantics unknown. |
 | `UNKNOWN_2` | 138 | 12 | raw | Active extension; semantics unknown. |
 | `UNKNOWN_3` | 151 | 10 | raw | Active extension; semantics unknown. |
 | `AZIMUTH` | 176 | 14 | 360/16384 / -180 deg | Route-validated high-resolution object azimuth. |
 
-On route `56190b7782883f74/00000008--0daecce463`, `CLASSIFICATION=4` tracked
-opposing traffic. Lane membership plus consecutive `LONG_DIST` derivatives,
-without using `REL_SPEED`, independently validated `ABS_SPEED` and the 11-bit
-object ID. Other classification values remain research-only.
+Native motion values are: 0 undefined, 1 standing, 2 parked, 3 stopped,
+4 unknown movable, 5 moving, 6 stopped oncoming, 7 unknown oncoming,
+8 moving oncoming, and 9 crossing bicycle. This is the only newly decoded
+family with explicit oncoming moving and stopped-oncoming values.
 
 ## 240/270-28F candidate corner-radar layout
 

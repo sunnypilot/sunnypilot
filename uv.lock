@@ -1041,7 +1041,7 @@ wheels = [
 
 [[package]]
 name = "pytest-xdist"
-version = "3.7.1.dev24+g2b4372bd6"
+version = "3.7.1.dev24+g2b4372b"
 source = { git = "https://github.com/sshane/pytest-xdist?rev=2b4372bd62699fb412c4fe2f95bf9f01bd2018da#2b4372bd62699fb412c4fe2f95bf9f01bd2018da" }
 dependencies = [
     { name = "execnet" },
@@ -1302,7 +1302,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "tinygrad"
-version = "0.13.0"
+version = "0.12.0"
 source = { editable = "tinygrad_repo" }
 
 [package.metadata]
