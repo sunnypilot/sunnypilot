@@ -1,0 +1,20 @@
+libusb1
+libusb-package
+opendbc @ git+https://github.com/sunnypilot/opendbc.git@master#egg=opendbc
+
+[:platform_system == "Linux"]
+spidev
+
+[dev]
+scons
+pycryptodome>=3.9.8
+cffi
+flaky
+pytest
+pytest-xdist
+pytest-mock
+pytest-timeout
+ruff
+setuptools
+gcc-arm-none-eabi @ git+https://github.com/commaai/dependencies.git@release-gcc-arm-none-eabi#subdirectory=gcc-arm-none-eabi
+cppcheck @ git+https://github.com/commaai/dependencies.git@release-cppcheck#subdirectory=cppcheck
