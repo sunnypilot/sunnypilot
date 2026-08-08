@@ -132,7 +132,6 @@ jobs:
 
   process_replay:
     name: process replay
-    if: false  # disable process_replay for forks
     runs-on: ${{
       (github.repository == 'commaai/openpilot') &&
       ((github.event_name != 'pull_request') ||
@@ -146,7 +145,7 @@ jobs:
       run: scons
     - name: Run replay
       timeout-minutes: ${{ contains(runner.name, 'nsc') && 2 || 20 }}
-      continue-on-error: ${{ github.ref == 'refs/heads/master' }}
+      continue-on-error: true  # temporary: seed initial baseline
       run: openpilot/selfdrive/test/process_replay/test_processes.py -j$(nproc)
     - name: Print diff
       id: print-diff
@@ -169,14 +168,14 @@ jobs:
         name: diff_report_${{ github.event.number }}
         path: openpilot/selfdrive/test/process_replay/diff_report.txt
     - name: Checkout ci-artifacts
-      if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
+      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
       uses: actions/checkout@v7
       with:
-        repository: commaai/ci-artifacts
+        repository: sunnypilot/ci-artifacts
         ssh-key: ${{ secrets.CI_ARTIFACTS_DEPLOY_KEY }}
         path: ${{ github.workspace }}/ci-artifacts
     - name: Prepare refs
-      if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
+      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
       working-directory: ${{ github.workspace }}/ci-artifacts
       run: |
         git config user.name "GitHub Actions Bot"
@@ -188,7 +187,7 @@ jobs:
         git add .
         git commit -m "process-replay refs for ${{ github.repository }}@${{ github.sha }}" || echo "No changes to commit"
     - name: Push refs
-      if: github.repository == 'commaai/openpilot' && github.ref == 'refs/heads/master'
+      if: github.repository == 'sunnypilot/sunnypilot'  # temporary: seed initial baseline
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60
       with:
         timeout_minutes: 2
