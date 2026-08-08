@@ -186,10 +186,16 @@ class AccelController:
       state.matched_lead = False
 
     lost_lead_source = is_lead_source(previous_mpc_source) and not has_lead and planner_speed < state.target_speed
-    if not has_lead and (state.matched_lead or lost_lead_source):
+    lost_braking_lead = (state.lead_braking and not state.lead_dropout and not has_lead and planner_accel <= PLANNER_BRAKING_ACCEL_THRESHOLD
+                         and planner_speed < state.target_speed)
+    if not has_lead and (state.matched_lead or lost_lead_source or lost_braking_lead):
       if lost_lead_source:
         state.lead_dropout = True
         state.target_speed = planner_speed
+        state.arm_release_slew()
+      elif lost_braking_lead:
+        state.lead_dropout = True
+        state.target_speed = min(planner_speed, v_ego)
         state.arm_release_slew()
       state.state = AccelControllerState.hold
       return state.target_speed
@@ -241,13 +247,16 @@ class AccelController:
       return state.target_speed
 
     filter_warmup = has_lead and not math.isfinite(filtered_cap)
-    guarded_lead_loss = not has_lead and state.lead_loss_frames < (self.lead_dropout_coast_frames if state.lead_dropout else self.lead_loss_hold_frames)
+    guarded_lead_loss = not has_lead and state.lead_loss_frames < self.lead_loss_hold_frames
+    if state.lead_dropout:
+      guarded_lead_loss = not has_lead and state.lead_loss_frames <= self.lead_dropout_coast_frames
     if (filter_warmup or guarded_lead_loss) and state.target_speed < base_speed - SPEED_RESTRICT_DEADBAND:
       state.state = AccelControllerState.hold
       return state.target_speed
 
     confirmed_clear_road = not math.isfinite(filtered_cap) and not guarded_lead_loss
-    relief = (not has_lead or lead_plan.closing_speed <= 0.0) and planner_accel > PLANNER_BRAKING_ACCEL_THRESHOLD
+    dropout_coast_complete = not has_lead and state.lead_dropout and state.lead_loss_frames > self.lead_dropout_coast_frames
+    relief = (not has_lead or lead_plan.closing_speed <= 0.0) and (planner_accel > PLANNER_BRAKING_ACCEL_THRESHOLD or dropout_coast_complete)
     continuing_release = state.release_slew_armed and ceiling > state.target_speed
     if relief and (continuing_release or ceiling >= state.target_speed + SPEED_RELIEF_DEADBAND
                    or (confirmed_clear_road and ceiling > state.target_speed)):

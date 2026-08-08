@@ -14,7 +14,7 @@ from openpilot.sunnypilot.selfdrive.test.longitudinal_maneuvers.plant import PRI
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller import accel_controller as accel_controller_module
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelControllerState
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.constants import (
-  LEAD_LOSS_HOLD_TIME, MATCHED_SPEED_DECEL_RATE, MPC_DECEL_JERK_COST_MULTIPLIER, MPC_DECEL_JERK_MAX_REQUIRED_DECEL,
+  LEAD_DROPOUT_COAST_TIME, LEAD_LOSS_HOLD_TIME, MATCHED_SPEED_DECEL_RATE, MPC_DECEL_JERK_COST_MULTIPLIER, MPC_DECEL_JERK_MAX_REQUIRED_DECEL,
   MPC_DECEL_JERK_MAX_REQUIRED_DECEL_RATE, MPC_DECEL_TREND_FRAMES, TARGET_RELEASE_SLEW, TARGET_SPEED_RESERVE, STOP_HOLD_EXIT_FRAMES, AccelProfile,
   profile_accel_max,
 )
@@ -545,6 +545,31 @@ def test_route_537_lead_dropout_does_not_pulse_throttle_before_reacquisition(act
   assert np.max(trace.a_target[dropout]) <= 0.2
   assert not _has_propulsion_brake_cycle(trace.a_target[response])
   assert np.min(trace.distance_lead[response] - trace.distance[response]) > 5.0 * STOP_DISTANCE
+  assert trace.raw_radar_passthrough.all() and np.all(trace.mpc_calls == 1)
+  assert not trace.fcw.any() and trace.solver_failures == 0
+
+
+@pytest.mark.parametrize(("actuator_delay", "actuator_lag"), ACTUATOR_DYNAMICS, ids=ACTUATOR_IDS)
+def test_route_554_braking_lead_dropout_coasts_before_release(actuator_delay, actuator_lag):
+  dropout_time = 5.0
+
+  def observe(current_time: float, lead_name: str, truth: LeadObservation) -> LeadObservation | None:
+    return truth if lead_name == "leadOne" and current_time < dropout_time else None
+
+  trace = _run(
+    duration=10.0, controller_enabled=True, profile=AccelProfile.eco, lead_relevancy=True, speed=10.0,
+    distance_lead=50.0, v_lead=6.0, v_cruise=18.0, lead_observation_fn=observe,
+    actuator_delay=actuator_delay, actuator_lag=actuator_lag,
+  )
+  before = np.flatnonzero(trace.time < dropout_time)[-1]
+  coast = (trace.time >= dropout_time) & (trace.time <= dropout_time + LEAD_DROPOUT_COAST_TIME)
+  release = np.flatnonzero((trace.time > dropout_time + LEAD_DROPOUT_COAST_TIME) & (trace.state == int(AccelControllerState.release)))
+
+  assert trace.source[before] == LongitudinalPlanSource.cruise
+  assert trace.state[before] == int(AccelControllerState.restrict)
+  assert np.max(trace.a_target[coast]) <= 0.0
+  assert len(release) and trace.time[release[0]] <= dropout_time + LEAD_DROPOUT_COAST_TIME + 2 * DT_MDL
+  assert not _has_propulsion_brake_cycle(trace.a_target[trace.time >= dropout_time])
   assert trace.raw_radar_passthrough.all() and np.all(trace.mpc_calls == 1)
   assert not trace.fcw.any() and trace.solver_failures == 0
 

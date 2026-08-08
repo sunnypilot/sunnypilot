@@ -82,8 +82,8 @@ class TestProfiles:
     assert ACCEL_PROFILE_MAX_BP == [0.0, 3.0, 10.0, 25.0, 40.0]
     assert ACCEL_PROFILE_MAX_V == {
       AccelProfile.eco: [1.65, 1.30, 0.72, 0.32, 0.16],
-      AccelProfile.normal: [1.80, 1.50, 0.97, 0.48, 0.30],
-      AccelProfile.sport: [2.00, 1.90, 1.15, 0.68, 0.42],
+      AccelProfile.normal: [1.80, 1.51, 0.98, 0.49, 0.31],
+      AccelProfile.sport: [2.00, 1.91, 1.16, 0.69, 0.43],
     }
 
   @pytest.mark.parametrize("profile", ACCEL_PROFILES)
@@ -108,7 +108,7 @@ class TestProfiles:
     results = [update(controller, v_ego=10.0, profile=AccelProfile.sport, stock_accel_max=0.30)
                for _ in range(controller.lead_loss_hold_frames)]
     result = results[-1]
-    assert profile_accel_max(AccelProfile.sport, 10.0) == pytest.approx(1.15)
+    assert profile_accel_max(AccelProfile.sport, 10.0) == pytest.approx(1.16)
     assert effective_accel_max(result) == pytest.approx(0.30)
     assert all(sample.mpc_accel_max is not None for sample in results)
     assert all(max(sample.mpc_accel_max) <= 0.30 + 1e-9 for sample in results)
@@ -119,7 +119,7 @@ class TestProfiles:
              for _ in range(controller.lead_loss_hold_frames)][-1]
     eco = update(controller, v_ego=10.0, profile=AccelProfile.eco, stock_accel_max=1.20)
 
-    assert effective_accel_max(sport) == pytest.approx(1.15)
+    assert effective_accel_max(sport) == pytest.approx(1.16)
     assert effective_accel_max(eco) == pytest.approx(0.72)
 
   def test_matched_lead_waits_until_ego_catches_the_lead(self):
@@ -673,6 +673,33 @@ class TestTargetLifecycle:
     assert controller.target_state.target_speed == planner_speed
     assert synchronized.target_speed <= planner_speed
     assert synchronized.state == AccelControllerState.hold
+
+  def test_braking_lead_dropout_synchronizes_after_mpc_returns_to_cruise(self):
+    controller = make_controller()
+    for _ in range(CAP_FILTER_FRAMES + controller.lead_loss_hold_frames):
+      update(controller, restrictive_radar(), base_speed=20.0, v_ego=10.0, planner_speed=9.5, planner_accel=-0.5,
+             previous_mpc_source=LongitudinalPlanSource.cruise)
+    assert controller.target_state.lead_braking
+
+    dropped = update(controller, base_speed=20.0, v_ego=10.0, planner_speed=9.0, planner_accel=-0.5,
+                     previous_mpc_source=LongitudinalPlanSource.cruise)
+    assert controller.target_state.target_speed == 9.0
+    assert controller.target_state.lead_dropout
+    assert dropped.target_speed <= 9.0
+    assert dropped.state == AccelControllerState.hold
+
+    synchronized_speed = controller.target_state.target_speed
+    held_targets = []
+    for _ in range(controller.lead_dropout_coast_frames - 1):
+      update(controller, base_speed=20.0, v_ego=10.0, planner_speed=8.0, planner_accel=-0.2,
+             previous_mpc_source=LongitudinalPlanSource.cruise)
+      held_targets.append(controller.target_state.target_speed)
+    assert all(target == synchronized_speed for target in held_targets)
+
+    released = update(controller, base_speed=20.0, v_ego=10.0, planner_speed=9.0, planner_accel=-0.2,
+                      previous_mpc_source=LongitudinalPlanSource.cruise)
+    assert released.target_speed > dropped.target_speed
+    assert released.state == AccelControllerState.release
 
   def test_matched_lead_dropout_synchronizes_down_to_planner(self):
     controller = make_controller()
