@@ -34,7 +34,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.tools.replay.lib.ui_helpers import Calibration, plot_model
 from opendbc.can import CANParser
 from opendbc.car import structs
-from opendbc.car.hyundai.radar_interface import HYUNDAI_RADAR_TRACK_SPECS, RadarInterface
+from opendbc.car.hyundai.radar_interface import HYUNDAI_RADAR_TRACK_SPECS, RadarInterface, get_radar_track_motion_state
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 os.environ["BASEDIR"] = BASEDIR
@@ -84,7 +84,8 @@ SPEC_BY_RANGE = {
 }
 SPEC_BY_NAME = {spec.name: spec for spec in HYUNDAI_RADAR_TRACK_SPECS}
 PREFERRED_RADAR_SOURCE = "RADAR_3A5_3C4"
-DEFAULT_SOURCE_FILTERS = (False, True, True)  # hide moving, stationary, unknown
+DEFAULT_SOURCE_FILTERS = (False, False, True, True)  # hide moving, oncoming, stationary, unknown
+CAMERA_STATIONARY_SPEED_THRESHOLD = 1.5
 RESEARCH_BUSES = (0, 1, 2)
 RadarSourceKey = tuple[int, int, int]
 RADAR_DETAIL_SIGNALS = {
@@ -103,8 +104,8 @@ RADAR_DETAIL_SIGNALS = {
     )
   } | {"CHECKSUM", "COUNTER"},
   "RADAR_235_248": {
-    "CHECKSUM", "COUNTER", "QUALITY", "AGE", "MOTION_STATE", "OBJECT_ID", "WIDTH", "CLASSIFICATION",
-    "LONG_DIST", "LAT_DIST", "REL_SPEED", "REL_LAT_SPEED", "REL_ACCEL", "UNKNOWN_1", "UNKNOWN_2",
+    "CHECKSUM", "COUNTER", "QUALITY", "AGE", "OBJECT_ID", "WIDTH", "CLASSIFICATION",
+    "LONG_DIST", "LAT_DIST", "REL_SPEED", "REL_LAT_SPEED", "REL_ACCEL", "ABS_SPEED", "UNKNOWN_2",
     "UNKNOWN_3", "AZIMUTH",
   },
   "RADAR_3A5_3C4": {
@@ -1051,16 +1052,16 @@ def radar_source_key(source) -> RadarSourceKey:
   return int(source.startAddress), int(source.endAddress), int(source.bus)
 
 
-def source_filter_state(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
-                        source_key: RadarSourceKey) -> tuple[bool, bool, bool]:
+def source_filter_state(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool, bool]],
+                        source_key: RadarSourceKey) -> tuple[bool, bool, bool, bool]:
   return source_filters.get(source_key, DEFAULT_SOURCE_FILTERS)
 
 
-def toggle_source_filter(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
+def toggle_source_filter(source_filters: dict[RadarSourceKey, tuple[bool, bool, bool, bool]],
                          source_key: RadarSourceKey, filter_index: int) -> None:
   filters = list(source_filter_state(source_filters, source_key))
   filters[filter_index] = not filters[filter_index]
-  source_filters[source_key] = (filters[0], filters[1], filters[2])
+  source_filters[source_key] = (filters[0], filters[1], filters[2], filters[3])
 
 
 def dbc_motion_class(motion_state: int | None) -> str:
@@ -1071,8 +1072,16 @@ def dbc_motion_class(motion_state: int | None) -> str:
   )
 
 
+def camera_motion_display_state(message) -> int:
+  if int(message["CLASSIFICATION"]) == 4:
+    return 4
+  return 1 if abs(float(message["ABS_SPEED"])) <= CAMERA_STATIONARY_SPEED_THRESHOLD else 2
+
+
 def dbc_motion_category(motion_state: int | None) -> str:
-  if motion_state in (2, 4):
+  if motion_state == 4:
+    return "oncoming"
+  if motion_state == 2:
     return "moving"
   if motion_state in (1, 3):
     return "stationary"
@@ -1080,7 +1089,7 @@ def dbc_motion_category(motion_state: int | None) -> str:
 
 
 def dbc_motion_color(motion_state: int | None) -> rl.Color:
-  return {"moving": PURPLE, "stationary": WHITE}.get(dbc_motion_category(motion_state), MUTED)
+  return {"moving": CYAN, "oncoming": PURPLE, "stationary": WHITE}.get(dbc_motion_category(motion_state), MUTED)
 
 
 def dbc_unknown_raw_label(motion_state: int | None) -> str | None:
@@ -1094,7 +1103,7 @@ def display_track_color(track, motion_states: dict[int, int]) -> rl.Color:
 
 
 def filter_tracks(tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]], sources,
-                  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]]):
+                  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool, bool]]):
   filtered_tracks = []
   for track in tracks:
     address, bus = track_locations.get(int(track.trackId), (-1, -1))
@@ -1105,8 +1114,9 @@ def filter_tracks(tracks, motion_states: dict[int, int], track_locations: dict[i
     filters = source_filter_state(source_filters, radar_source_key(source)) if source is not None else DEFAULT_SOURCE_FILTERS
     category = dbc_motion_category(motion_states.get(int(track.trackId)))
     if ((filters[0] and category == "moving")
-        or (filters[1] and category == "stationary")
-        or (filters[2] and category == "unknown")):
+        or (filters[1] and category == "oncoming")
+        or (filters[2] and category == "stationary")
+        or (filters[3] and category == "unknown")):
       continue
     filtered_tracks.append(track)
   return filtered_tracks
@@ -1186,11 +1196,10 @@ def get_dbc_track_details(
     prefix = f"{stored_address % 2 + 1}_" if len(spec.track_prefixes) > 1 else ""
     message = radar_parser.parser.vl[f"RADAR_TRACK_{can_address:x}"]
     motion_signal = f"{prefix}MOTION_STATE"
-    if motion_signal in message:
-      motion_state = int(message[motion_signal])
-      if spec.name == "RADAR_235_248":
-        motion_state = 1 if motion_state in (1, 2, 3, 6) else 2 if motion_state in (5, 8, 9) else 0
-      states[int(point.trackId)] = motion_state
+    if spec.name == "RADAR_235_248":
+      states[int(point.trackId)] = camera_motion_display_state(message)
+    elif motion_signal in message:
+      states[int(point.trackId)] = get_radar_track_motion_state(spec, message, prefix)
     elif spec.name == "RADAR_500_53F" and int(message.get("ONCOMING_ESR", 0)):
       states[int(point.trackId)] = 4
 
@@ -1659,7 +1668,7 @@ def draw_model_line(points_x, points_y, center_x: float, car_y: float, longitudi
 
 
 def draw_top_down(font, rect: rl.Rectangle, tracks, show_labels: bool, model,
-                  motion_states: dict[int, int], hide_moving: bool, hide_stationary: bool,
+                  motion_states: dict[int, int], hide_moving: bool, hide_oncoming: bool, hide_stationary: bool,
                   hide_unknown: bool, track_locations: dict[int, tuple[int, int]], sources,
                   hovered_id: int | None, selected_id: int | None,
                   preview_id: int | None = None) -> None:
@@ -1681,7 +1690,8 @@ def draw_top_down(font, rect: rl.Rectangle, tracks, show_labels: bool, model,
     draw_text(font, label, scale_x - label_size.x - 10, y - 7, 14, MUTED)
 
   legend = (
-    (PURPLE, "moving", hide_moving),
+    (CYAN, "moving", hide_moving),
+    (PURPLE, "oncoming", hide_oncoming),
     (WHITE, "stationary", hide_stationary),
     (MUTED, "unknown", hide_unknown),
   )
@@ -2314,7 +2324,7 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
                        show_labels: bool, data_source: str, camera_mode: str,
                        both_cameras_available: bool, remote_address: str | None, bridge_connected: bool,
                        visible_tracks, motion_states: dict[int, int], track_locations: dict[int, tuple[int, int]],
-                       source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]],
+                       source_filters: dict[RadarSourceKey, tuple[bool, bool, bool, bool]],
                        table_mode: str, fps: int, show_inactive_sources: bool) -> str | tuple[str, RadarSourceKey] | None:
   rl.draw_rectangle_rec(rect, rl.Color(11, 16, 24, 225))
   tracks = live_tracks.points if valid else ()
@@ -2356,7 +2366,7 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
         top_hovered_tooltip = source_hovered_tooltip
 
       source_key = radar_source_key(source)
-      hide_moving, hide_stationary, hide_unknown = source_filter_state(source_filters, source_key)
+      hide_moving, hide_oncoming, hide_stationary, hide_unknown = source_filter_state(source_filters, source_key)
       source_text = " / ".join(text for text, _ in source_parts)
       source_track_ids = [
         int(track.trackId)
@@ -2369,10 +2379,11 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
         )
       ]
       moving_count = sum(dbc_motion_category(motion_states.get(track_id)) == "moving" for track_id in source_track_ids)
+      oncoming_count = sum(dbc_motion_category(motion_states.get(track_id)) == "oncoming" for track_id in source_track_ids)
       stationary_count = sum(
         dbc_motion_category(motion_states.get(track_id)) == "stationary" for track_id in source_track_ids
       )
-      unknown_count = max(0, source.trackCount - moving_count - stationary_count)
+      unknown_count = max(0, source.trackCount - moving_count - oncoming_count - stationary_count)
       visible_source_tracks = sum(
         source.startAddress <= address <= source.endAddress and bus == source.bus
         for track in visible_tracks
@@ -2391,7 +2402,9 @@ def draw_source_status(font, rect: rl.Rectangle, live_tracks, valid: bool, alive
       filter_x = count_rect.x + count_rect.width + 9
       filter_specs = (
         (f"MOVING {moving_count:>{TRACK_COUNT_FIELD_WIDTH}}",
-         PURPLE, "moving", hide_moving, moving_count),
+         CYAN, "moving", hide_moving, moving_count),
+        (f"ONCOMING {oncoming_count:>{TRACK_COUNT_FIELD_WIDTH}}",
+         PURPLE, "oncoming", hide_oncoming, oncoming_count),
         (f"STATIONARY {stationary_count:>{TRACK_COUNT_FIELD_WIDTH}}",
          WHITE, "stationary", hide_stationary, stationary_count),
         (f"UNKNOWN {unknown_count:>{TRACK_COUNT_FIELD_WIDTH}}",
@@ -2544,7 +2557,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
   camera_projection_height = float(CAMERA_BUFFER_HEIGHT)
   show_labels = False
   show_inactive_sources = False
-  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool]] = {}
+  source_filters: dict[RadarSourceKey, tuple[bool, bool, bool, bool]] = {}
   use_can_source = True
   table_mode_index = 0
   table_scroll = 0
@@ -2899,8 +2912,9 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       for source in selected_tracks.trackSources
     ] or [DEFAULT_SOURCE_FILTERS]
     hide_moving = all(filters[0] for filters in source_filter_values)
-    hide_stationary = all(filters[1] for filters in source_filter_values)
-    hide_unknown = all(filters[2] for filters in source_filter_values)
+    hide_oncoming = all(filters[1] for filters in source_filter_values)
+    hide_stationary = all(filters[2] for filters in source_filter_values)
+    hide_unknown = all(filters[3] for filters in source_filter_values)
     tracks = filter_tracks(
       tracks, motion_states, track_locations, selected_tracks.trackSources, source_filters,
     )
@@ -2972,7 +2986,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
       )
       if isinstance(clicked_action, tuple):
         action, source_key = clicked_action
-        toggle_source_filter(source_filters, source_key, {"moving": 0, "stationary": 1, "unknown": 2}[action])
+        toggle_source_filter(source_filters, source_key, {"moving": 0, "oncoming": 1, "stationary": 2, "unknown": 3}[action])
         table_scroll = 0
       elif clicked_action == "source":
         use_can_source = not use_can_source
@@ -3082,7 +3096,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
                        camera_projection_height, camera_hovered_id, selected_track_id, table_hover_id)
     draw_top_down(
       font, radar_rect, tracks, show_labels, model, motion_states,
-      hide_moving, hide_stationary, hide_unknown, track_locations, selected_tracks.trackSources,
+      hide_moving, hide_oncoming, hide_stationary, hide_unknown, track_locations, selected_tracks.trackSources,
       top_down_hovered_id, selected_track_id, table_hover_id,
     )
     table_mode = TABLE_MODES[table_mode_index]
@@ -3097,7 +3111,7 @@ def ui_thread(addr: str, start_wide: bool = False, start_fused: bool = False, st
     )
     if isinstance(clicked_action, tuple):
       action, source_key = clicked_action
-      toggle_source_filter(source_filters, source_key, {"moving": 0, "stationary": 1, "unknown": 2}[action])
+      toggle_source_filter(source_filters, source_key, {"moving": 0, "oncoming": 1, "stationary": 2, "unknown": 3}[action])
       table_scroll = 0
     elif clicked_action == "source":
       use_can_source = not use_can_source
