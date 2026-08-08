@@ -13,6 +13,7 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware.hw import Paths
 from openpilot.sunnypilot.models.helpers import is_bundle_version_compatible
+from openpilot.selfdrive.modeld.helpers import usbgpu_present
 
 from openpilot.cereal import custom
 
@@ -103,11 +104,11 @@ class ModelParser:
 class ModelCache:
   """Handles caching of model data to avoid frequent remote fetches"""
 
-  def __init__(self, params: Params, cache_timeout: int = int(3600 * 1e9)):
+  def __init__(self, params: Params, cache_timeout: int = int(3600 * 1e9), suffix: str = ""):
     self.params = params
     self.cache_timeout = cache_timeout
-    self._LAST_SYNC_KEY = "ModelManager_LastSyncTime"
-    self._CACHE_KEY = "ModelManager_ModelsCache"
+    self._LAST_SYNC_KEY = f"ModelManager_LastSyncTime{suffix}"
+    self._CACHE_KEY = f"ModelManager_ModelsCache{suffix}"
 
   def _is_expired(self) -> bool:
     """Checks if the cache has expired"""
@@ -139,24 +140,28 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v18.json"
 
   def __init__(self, params: Params):
     self.params = params
-    self.model_cache = ModelCache(params)
     self.model_parser = ModelParser()
+    if usbgpu_present():
+      self.model_cache = ModelCache(params, suffix="_USBGPU")
+      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v18.json"
+    else:
+      self.model_cache = ModelCache(params)
+      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v18.json"
 
   def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
     Returns None on transport errors. Raises on 404 and other fatal HTTP errors.
     """
     try:
-      response = requests.get(self.MODEL_URL, timeout=10)
+      response = requests.get(self.model_url, timeout=10)
 
       # Explicitly handle 404 differently
       if response.status_code == 404:
-        cloudlog.error(f"Models URL returned 404 Not Found: {self.MODEL_URL}")
-        raise HTTPError(f"404 Not Found: {self.MODEL_URL}", response=response)
+        cloudlog.error(f"Models URL returned 404 Not Found: {self.model_url}")
+        raise HTTPError(f"404 Not Found: {self.model_url}", response=response)
 
       # Raise for any other 4xx/5xx
       response.raise_for_status()

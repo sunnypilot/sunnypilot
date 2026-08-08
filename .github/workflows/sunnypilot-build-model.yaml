@@ -191,7 +191,7 @@ jobs:
           if [ "${{ inputs.target_hardware }}" == "usbgpu" ]; then
             echo "USBGPU build"
             export USBGPU=1
-            TG_FLAGS="DEV=AMD USBGPU=1 IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            TG_FLAGS="DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0"
             OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
           else
             echo "QCOM build"
