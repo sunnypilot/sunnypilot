@@ -36,12 +36,13 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     super().__init__(lac_torque, CP, CP_SP, CI)
     self.params = Params()
     self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
-    self.has_nn_model = CP_SP.neuralNetworkLateralControl.model.path != MOCK_MODEL_PATH
+    model_path = CP_SP.neuralNetworkLateralControl.model.path
+    self.has_nn_model = model_path not in (MOCK_MODEL_PATH, '')
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.model.path)
+    self.model = NNTorqueModel(model_path) if self.has_nn_model else None
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
