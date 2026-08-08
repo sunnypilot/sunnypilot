@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ChevronMetrics, ModelRendererSP
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import draw_radar_lead_connectors, radar_lead_track_colors
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -42,6 +43,9 @@ class LeadVehicle:
   glow: list[tuple[float, float]] = field(default_factory=list)
   chevron: list[tuple[float, float]] = field(default_factory=list)
   fill_alpha: int = 0
+  position: tuple[float, float] | None = None
+  radar_track_id: int = -1
+  radar: bool = False
 
 
 class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
@@ -115,11 +119,12 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     model = sm['modelV2']
     radar_state = sm['radarState'] if sm.valid['radarState'] else None
     lead_one = radar_state.leadOne if radar_state else None
-    render_lead_indicator = self._longitudinal_control and radar_state is not None
+    render_lead_indicator = ui_state.draw_radar_tracks and ui_state.radar_tracks != 0 and radar_state is not None
 
     # Update model data when needed
     model_updated = sm.updated['modelV2']
-    if model_updated or sm.updated['radarState'] or self._transform_dirty:
+    transform_updated = self._transform_dirty
+    if model_updated or sm.updated['radarState'] or transform_updated:
       if model_updated:
         self._update_raw_points(model)
 
@@ -135,6 +140,21 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     # Draw elements
     self._draw_lane_lines()
     self._draw_path(sm)
+
+    if ui_state.draw_radar_tracks and sm.valid['liveTracks'] and sm.recv_frame['liveTracks'] >= ui_state.started_frame:
+      if (sm.updated['liveTracks'] or sm.updated['liveCalibration'] or transform_updated or
+          not self.radar_tracks.projection_initialized):
+        self.radar_tracks.update_radar_tracks(
+          sm['liveTracks'], self._map_to_screen, self._path_offset_z,
+        )
+      highlighted_tracks = radar_lead_track_colors(radar_state) if render_lead_indicator else {}
+      matched_positions = self.radar_tracks.draw_cached_radar_tracks(
+        highlighted_tracks=highlighted_tracks,
+      )
+      if render_lead_indicator:
+        draw_radar_lead_connectors(self._lead_vehicles, matched_positions, highlighted_tracks)
+    else:
+      self.radar_tracks.clear_projection()
 
     if render_lead_indicator and radar_state:
       self._draw_lead_indicator()
@@ -168,7 +188,11 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
         z = self._path.raw_points[idx, 2] if idx < len(self._path.raw_points) else 0.0
         point = self._map_to_screen(d_rel, -y_rel + self._camera_offset, z + self._path_offset_z)
         if point:
-          self._lead_vehicles[i] = self._update_lead_vehicle(d_rel, v_rel, point, self._rect)
+          lead_vehicle = self._update_lead_vehicle(d_rel, v_rel, point, self._rect)
+          lead_vehicle.position = lead_vehicle.chevron[1]
+          lead_vehicle.radar_track_id = int(lead_data.radarTrackId)
+          lead_vehicle.radar = lead_data.radar
+          self._lead_vehicles[i] = lead_vehicle
 
   def _update_model(self, lead, path_x_array):
     """Update model visualization data based on model message"""

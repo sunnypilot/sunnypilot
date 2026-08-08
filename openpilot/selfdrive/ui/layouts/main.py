@@ -38,7 +38,7 @@ class MainLayout(Widget):
     self._layouts: dict[MainState, Widget] = {
       MainState.HOME: self._home_layout,
       MainState.SETTINGS: SettingsLayout(),
-      MainState.ONROAD: AugmentedRoadView(),
+      MainState.ONROAD: AugmentedRoadView(radar_tracks_settings_callback=lambda: self.open_settings(PanelType.TOGGLES)),
     }
 
     self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)

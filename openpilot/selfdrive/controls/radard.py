@@ -26,6 +26,8 @@ SPEED, ACCEL = 0, 1     # Kalman filter states enum
 
 # stationary qualification parameters
 V_EGO_STATIONARY = 4.   # no stationary object flag below this speed
+DBC_MOTION_STATIONARY = 1
+DBC_MOTION_MOVING = 2
 
 RADAR_TO_CAMERA = 1.52  # RADAR is ~ 1.5m ahead from center of mesh frame
 
@@ -191,8 +193,14 @@ def get_custom_yrel(CP: structs.CarParams, CP_SP: structs.CarParamsSP, lead_dict
   return lead_dict
 
 
+def radar_point_eligible_for_fusion(CP: structs.CarParams, CP_SP: structs.CarParamsSP,
+                                    point: car.RadarData.RadarPoint) -> bool:
+  use_dbc_motion = CP.brand == "hyundai" and CP_SP.flags & HyundaiFlagsSP.RADAR_FULL_RADAR
+  return not use_dbc_motion or point.motionState in (DBC_MOTION_STATIONARY, DBC_MOTION_MOVING)
+
+
 class RadarD:
-  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParams, delay: float = 0.0):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, delay: float = 0.0):
     self.CP = CP
     self.CP_SP = CP_SP
 
@@ -220,7 +228,11 @@ class RadarD:
       self.v_ego_hist.append(self.v_ego)
       self.last_v_ego_frame = sm.recv_frame['carState']
 
-    ar_pts = {pt.trackId: [pt.dRel, pt.yRel, pt.vRel] for pt in rr.points}
+    ar_pts = {
+      pt.trackId: [pt.dRel, pt.yRel, pt.vRel]
+      for pt in rr.points
+      if radar_point_eligible_for_fusion(self.CP, self.CP_SP, pt)
+    }
 
     # *** remove missing points from meta data ***
     for ids in list(self.tracks.keys()):

@@ -33,7 +33,8 @@ class MiciMainLayout(Scroller):
     self._home_layout = MiciHomeLayout()
     self._alerts_layout = MiciOffroadAlerts()
     self._settings_layout = SettingsLayout()
-    self._car_onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked)
+    self._car_onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked,
+                                                radar_tracks_settings_callback=self._settings_layout.open_toggles)
     self._body_onroad_layout = BodyLayout()
 
     # Initialize widget rects

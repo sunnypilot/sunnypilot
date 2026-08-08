@@ -106,7 +106,24 @@ class TogglesLayout(Widget):
       icon="speed_limit.png"
     )
 
+    self._radar_tracks_setting = None
     self._toggles = {}
+    if gui_app.sunnypilot_ui():
+      self._radar_tracks_setting = multiple_button_item(
+        lambda: tr("Radar Tracks"),
+        "",
+        buttons=[lambda: tr("Off"), lambda: tr("Lead Only"), lambda: tr("Full Radar")],
+        button_width=250,
+        callback=self._set_radar_tracks,
+        selected_index=self._params.get("RadarTracks", return_default=True),
+      )
+      self._toggles["RadarTracks"] = self._radar_tracks_setting
+      self._toggle_defs["DrawRadarTracks"] = (
+        lambda: tr("Draw Radar Tracks"),
+        tr_noop("Show radar tracks on the driving screen. Disabling this does not disable radar processing."),
+        "",
+        False,
+      )
     self._locked_toggles = set()
     for param, (title, desc, icon, needs_restart) in self._toggle_defs.items():
       toggle = toggle_item(
@@ -203,6 +220,8 @@ class TogglesLayout(Widget):
     # refresh toggles from params to mirror external changes
     for param in self._toggle_defs:
       self._toggles[param].action_item.set_state(self._params.get_bool(param))
+    if self._radar_tracks_setting is not None:
+      self._radar_tracks_setting.action_item.set_selected_button(self._params.get("RadarTracks", return_default=True))
 
     # these toggles need restart, block while engaged
     for toggle_def in self._toggle_defs:
@@ -247,3 +266,6 @@ class TogglesLayout(Widget):
 
   def _set_longitudinal_personality(self, button_index: int):
     self._params.put("LongitudinalPersonality", button_index, block=True)
+
+  def _set_radar_tracks(self, button_index: int):
+    self._params.put("RadarTracks", button_index, block=True)

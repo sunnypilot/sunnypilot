@@ -18,6 +18,7 @@ if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.onroad.augmented_road_view import BORDER_COLORS_SP, AugmentedRoadViewSP
   from openpilot.selfdrive.ui.sunnypilot.onroad.driver_state import DriverStateRendererSP as DriverStateRenderer
   from openpilot.selfdrive.ui.sunnypilot.onroad.hud_renderer import HudRendererSP as HudRenderer
+  from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import RadarTracksStatus
   from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
 
 OpState = log.SelfdriveState.OpenpilotState
@@ -39,7 +40,7 @@ INF_POINT = np.array([1000.0, 0.0, 0.0])
 
 
 class AugmentedRoadView(CameraView, AugmentedRoadViewSP):
-  def __init__(self, stream_type: VisionStreamType = VisionStreamType.VISION_STREAM_ROAD):
+  def __init__(self, stream_type: VisionStreamType = VisionStreamType.VISION_STREAM_ROAD, radar_tracks_settings_callback=None):
     CameraView.__init__(self, "camerad", stream_type)
     AugmentedRoadViewSP.__init__(self)
     self._set_placeholder_color(BORDER_COLORS[UIStatus.DISENGAGED])
@@ -51,11 +52,23 @@ class AugmentedRoadView(CameraView, AugmentedRoadViewSP):
     self._matrix_cache_key = (0, 0.0, 0.0, stream_type)
     self._cached_matrix: np.ndarray | None = None
     self._content_rect = rl.Rectangle()
+    self._radar_tracks_status = RadarTracksStatus(radar_tracks_settings_callback, right_margin=240) if gui_app.sunnypilot_ui() else None
 
     self.model_renderer = ModelRenderer()
     self._hud_renderer = HudRenderer()
     self.alert_renderer = AlertRenderer()
     self.driver_state_renderer = DriverStateRenderer()
+
+  def _update_state(self):
+    super()._update_state()
+    if self._radar_tracks_status is None:
+      return
+    if ui_state.sm.updated["liveTracks"]:
+      self._radar_tracks_status.update(
+        ui_state.sm["liveTracks"], ui_state.sm.valid["liveTracks"], ui_state.radar_tracks, ui_state.sm["carState"].vEgo,
+      )
+    elif not ui_state.sm.alive["liveTracks"]:
+      self._radar_tracks_status.reset()
 
   def _render(self, rect):
     # Only render when system is started to avoid invalid data access
@@ -90,6 +103,8 @@ class AugmentedRoadView(CameraView, AugmentedRoadViewSP):
     # Draw all UI overlays
     self.model_renderer.render(self._content_rect)
     AugmentedRoadViewSP.update_fade_out_bottom_overlay(self, self._content_rect)
+    if self._radar_tracks_status is not None:
+      self._radar_tracks_status.render(self._content_rect)
     self._hud_renderer.render(self._content_rect)
     self.alert_renderer.render(self._content_rect)
     self.driver_state_renderer.render(self._content_rect)
@@ -103,7 +118,9 @@ class AugmentedRoadView(CameraView, AugmentedRoadViewSP):
     # Draw colored border based on driving state
     self._draw_border(rect)
 
-  def _handle_mouse_press(self, _):
+  def _handle_mouse_press(self, mouse_pos):
+    if self._radar_tracks_status is not None and self._radar_tracks_status.handle_mouse(mouse_pos):
+      return
     if not self._hud_renderer.user_interacting() and self._click_callback is not None:
       self._click_callback()
 
