@@ -12,14 +12,14 @@ from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
 
 
-class LatControlTorqueEnhancedLateralAccel(LatControlTorqueExtBase):
+class LatControlTorqueJerkAware(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP, CI):
     super().__init__(lac_torque, CP, CP_SP, CI)
     self.params = Params()
-    self._enhanced_lat_accel_enabled = self.params.get_bool("LatTorqueControlEnhancedLateralAccel")
+    self._jerk_aware_enabled = self.params.get_bool("LateralJerkTorqueController")
 
-  def update_custom_lateral_acceleration(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
-    if not self._enhanced_lat_accel_enabled:
+  def update_jerk_aware_torque_control(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
+    if not self._jerk_aware_enabled:
       return
 
     torque_from_setpoint = self.torque_from_lateral_accel_in_torque_space(

@@ -77,7 +77,7 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
     cloudlog.warning("SteerControlType is angle, cleaning up params")
     params.remove("NeuralNetworkLateralControl")
     params.remove("EnforceTorqueControl")
-    params.remove("LatTorqueControlEnhancedLateralAccel")
+    params.remove("LateralJerkTorqueController")
 
   if not CP_SP.intelligentCruiseButtonManagementAvailable or CP.openpilotLongitudinalControl:
     cloudlog.warning("ICBM not available or openpilot Longitudinal Control enabled, cleaning up params")

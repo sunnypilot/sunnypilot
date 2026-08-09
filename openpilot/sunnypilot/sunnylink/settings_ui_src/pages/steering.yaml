@@ -118,10 +118,10 @@ sections:
     - type: param
       key: NeuralNetworkLateralControl
       equals: false
-  - key: LatTorqueControlEnhancedLateralAccel
+  - key: LateralJerkTorqueController
     widget: toggle
-    title: Enhanced Lateral Acceleration
-    description: Compute PID error in torque space for more consistent gain behavior across varying lateral acceleration magnitudes.
+    title: Lateral Jerk Torque Controller
+    description: Smoother steering by anticipating sudden corrections before they happen — no model training needed. Contributed by @twilsonco.
     visibility:
     - type: not
       condition:

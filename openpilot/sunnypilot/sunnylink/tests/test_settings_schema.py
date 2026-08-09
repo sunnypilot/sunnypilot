@@ -265,16 +265,16 @@ class TestKnownPanels:
           torque = item
         elif item["key"] == "NeuralNetworkLateralControl":
           nnlc = item
-        elif item["key"] == "LatTorqueControlEnhancedLateralAccel":
+        elif item["key"] == "LateralJerkTorqueController":
           enhanced = item
     assert torque is not None, "EnforceTorqueControl item missing"
     assert nnlc is not None, "NeuralNetworkLateralControl item missing"
-    assert enhanced is not None, "LatTorqueControlEnhancedLateralAccel item missing"
+    assert enhanced is not None, "LateralJerkTorqueController item missing"
     torque_enable_keys = {r.get("key") for r in torque.get("enablement", []) if r.get("type") == "param"}
     assert "NeuralNetworkLateralControl" in torque_enable_keys
     nnlc_enable_keys = {r.get("key") for r in nnlc.get("enablement", []) if r.get("type") == "param"}
     assert "EnforceTorqueControl" in nnlc_enable_keys
-    assert "LatTorqueControlEnhancedLateralAccel" in nnlc_enable_keys
+    assert "LateralJerkTorqueController" in nnlc_enable_keys
     enhanced_enable_keys = {r.get("key") for r in enhanced.get("enablement", []) if r.get("type") == "param"}
     assert "NeuralNetworkLateralControl" in enhanced_enable_keys
 

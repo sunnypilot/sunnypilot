@@ -74,7 +74,7 @@ sections:
       key: EnforceTorqueControl
       equals: false
     - type: param
-      key: LatTorqueControlEnhancedLateralAccel
+      key: LateralJerkTorqueController
       equals: false
 - id: camera
   title: Camera
