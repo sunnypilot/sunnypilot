@@ -142,7 +142,7 @@ class SteeringLayout(Widget):
     jerk_aware_enabled = ui_state.params.get_bool("LateralJerkTorqueController")
     self._nnlc_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not enforce_torque_enabled and not jerk_aware_enabled)
     self._torque_control_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not nnlc_enabled)
-    self._torque_customization_button.action_item.set_enabled(torque_allowed)
+    self._torque_customization_button.action_item.set_enabled(self._torque_control_toggle.action_item.get_state())
 
   def _render(self, rect):
     if self._current_panel == PanelType.LANE_CHANGE:
