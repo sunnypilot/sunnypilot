@@ -87,6 +87,7 @@ class NeuralNetworkLateralControl(LatControlTorqueJerkAware):
     self._ff += get_friction_in_torque_space(self._desired_lateral_accel - self._actual_lateral_accel, self._lateral_accel_deadzone,
                                              FRICTION_THRESHOLD, self.torque_params)
 
+  # TODO: this method belongs on ExtBase — JerkAware depends on MRO to reach it here
   def update_output_torque(self, CS):
     freeze_integrator = self._steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
     self._output_torque = self._pid.update(self._pid_log.error,
