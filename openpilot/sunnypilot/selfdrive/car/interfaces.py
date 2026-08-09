@@ -73,7 +73,11 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
   if params is None:
     params = Params()
 
-  # TODO: enforce jerk-aware vs NNLC mutual exclusion here, not just in UI
+  if params.get_bool("LateralJerkTorqueController") and params.get_bool("NeuralNetworkLateralControl"):
+    cloudlog.warning("LateralJerkTorqueController and NeuralNetworkLateralControl both enabled, disabling both")
+    params.put_bool("LateralJerkTorqueController", False, block=True)
+    params.put_bool("NeuralNetworkLateralControl", False, block=True)
+
   if CP.steerControlType == structs.CarParams.SteerControlType.angle:
     cloudlog.warning("SteerControlType is angle, cleaning up params")
     params.remove("NeuralNetworkLateralControl")
