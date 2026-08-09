@@ -9,11 +9,11 @@ on:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
   push:
     branches:
-      - 'master-new'
+      - 'master'
   pull_request:
     branches:
-      - 'master-new'
-  workflow_dispatch:  # enables manual triggering
+      - 'master'
+  workflow_dispatch: # enables manual triggering
     inputs:
       upstream_branch:
         default: 'master'
@@ -30,7 +30,7 @@ jobs:
         with:
           repository: 'commaai/openpilot'
           ref: ${{ inputs.upstream_branch }}
-      
+
       - name: LFS Fetch
         run: |
           git lfs fetch
@@ -48,7 +48,7 @@ jobs:
       - name: Add GitLab public keys
         run: |
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-      
+
       - name: Ensure branch
         run: |
           if git symbolic-ref -q HEAD >/dev/null; then
@@ -65,8 +65,21 @@ jobs:
           echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
           echo '    locksverify = false' >> .lfsconfig
 
+      - name: Configure LFS transfer settings
+        run: |
+          git config lfs.activitytimeout 300
+          git config lfs.transfer.maxretries 5
+          git config lfs.concurrenttransfers 4
+
       - name: Push LFS
         id: sync-and-commit
         run: |
           git lfs ls-files -l
-          git lfs push --all origin
+          for attempt in 1 2 3; do
+            echo "Push attempt $attempt..."
+            git lfs push --all origin && exit 0
+            echo "Attempt $attempt failed, retrying in 30s..."
+            sleep 30
+          done
+          echo "All push attempts failed"
+          exit 1

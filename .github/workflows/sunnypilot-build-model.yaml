@@ -5,8 +5,36 @@ env:
   OUTPUT_DIR: ${{ github.workspace }}/output
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   UPSTREAM_REPO: "commaai/openpilot"
+  TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
+  MODELS_DIR: ${{ github.workspace }}/openpilot/selfdrive/modeld/models
 
 on:
+  workflow_call:
+    inputs:
+      upstream_branch:
+        description: 'Upstream branch to build from'
+        required: true
+        default: 'master'
+        type: string
+      custom_name:
+        description: 'Custom name for the model (no date, only name)'
+        required: false
+        type: string
+      is_20hz:
+        description: 'Is this a 20Hz model'
+        required: false
+        type: boolean
+        default: true
+      artifact_suffix:
+        description: 'Suffix for artifact name'
+        required: false
+        type: string
+        default: ''
+      target_hardware:
+        description: 'Hardware target to compile for (qcom or usbgpu)'
+        required: false
+        type: string
+        default: 'qcom'
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -15,41 +43,88 @@ on:
         default: 'master'
         type: string
       custom_name:
-        description: 'Custom name for the model'
-        required: false
-        type: string
-      file_name:
-        description: 'File name prefix for the model files'
+        description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
         type: boolean
-        default: false
+        default: true
+      target_hardware:
+        description: 'Hardware target to compile for'
+        required: true
+        type: choice
+        options:
+          - qcom
+          - usbgpu
+        default: 'qcom'
 
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
 
 jobs:
-  build_model:
-    runs-on: self-hosted
+  get_model:
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ inputs.upstream_branch }}
+    outputs:
+      model_date: ${{ steps.commit-date.outputs.model_date }}
+    steps:
+      # Note: To allow dynamic models from both openpilot and sunnypilot (merges/mashups), we try commaai as default,
+      # and fallback to sunnypilot if the ref checkout fails.
+      - name: Checkout commaai/openpilot
+        id: checkout_upstream
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: commaai/openpilot
+          ref: ${{ inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
 
+      - name: Fallback to sunnypilot/sunnypilot
+        if: steps.checkout_upstream.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/sunnypilot
+          ref: ${{ inputs.upstream_branch }}
+          submodules: recursive
+          path: openpilot
+      - name: Get commit date
+        id: commit-date
+        run: |
+          cd ${{ github.workspace }}/openpilot
+          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
+          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+      - run: |
+          cd ${{ github.workspace }}/openpilot
+          git lfs pull
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
+          path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
+
+  build_model:
+    runs-on: [self-hosted, tici]
+    needs: get_model
+    env:
+      MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
+      REF: ${{ inputs.upstream_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ env.UPSTREAM_REPO }}
-          ref: ${{ github.event.inputs.upstream_branch }}
           submodules: recursive
 
       - run: git lfs pull
-
       - name: Cache SCons
         uses: actions/cache@v4
         with:
           path: ${{env.SCONS_CACHE_DIR}}
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.) 
+          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-model
@@ -60,74 +135,159 @@ jobs:
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
+          fi
+
       - name: Setup build environment
         run: |
           mkdir -p "${BUILD_DIR}/"
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
-          echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
-      
-      - name: Patch SConstruct to pass arbitrary cache
-        run: |
-          sed -i.bak 's#cache_dir =#default_cache_dir =#' ${{ github.workspace }}/SConstruct
-          printf '/default_cache_dir/a\\\ncache_dir = ARGUMENTS.get("cache_dir", default_cache_dir)\n' | sed -i.bak -f - ${{ github.workspace }}/SConstruct
-          cat ${{ github.workspace }}/SConstruct
+          echo "BUILD_DIR: ${BUILD_DIR}"
+          echo "CI_DIR: ${CI_DIR}"
+          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
+          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
+          echo "-------"
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            printenv
+          fi
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx
+
+      - name: Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
+          path: ${{ env.MODELS_DIR }}
+      - run: |
+          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big_driving_supercombo}.onnx
 
       - name: Build Model
         run: |
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          scons -j$(nproc) cache_dir=${{ env.SCONS_CACHE_DIR }} ${{ github.workspace }}/selfdrive/modeld
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}:${{ github.workspace }}"
+
+          COMPILE_MODELD="${{ github.workspace }}/openpilot/sunnypilot/modeld_v2/compile_modeld.py"
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+
+          if [ "${{ inputs.target_hardware }}" == "usbgpu" ]; then
+            echo "USBGPU build"
+            export USBGPU=1
+            TG_FLAGS="DEV=AMD USBGPU=1 IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
+          else
+            echo "QCOM build"
+            TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            OUTPUT_PKL="${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
+          fi
+
+          # Generate metadata for all ONNX files
+          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            echo "Generating metadata: $onnx_file"
+            env ${TG_FLAGS} python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+          done
+
+          # Detect model type and build compile args
+          VISION_ONNX="${{ env.MODELS_DIR }}/driving_vision.onnx"
+          POLICY_ONNX="${{ env.MODELS_DIR }}/driving_policy.onnx"
+          OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
+          ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
+          SUPERCOMBO_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx"; do
+            if [ -f "$f" ]; then
+              SUPERCOMBO_ONNX="$f"
+              break
+            fi
+          done
+
+          MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
+          if [ -f "$VISION_ONNX" ]; then
+            ONNX_ARGS="--vision-onnx $VISION_ONNX"
+            if [ -f "$ON_POLICY_ONNX" ] && [ -f "$OFF_POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_multi_policy
+              ONNX_ARGS="$ONNX_ARGS --off-policy-onnx $OFF_POLICY_ONNX --on-policy-onnx $ON_POLICY_ONNX"
+            elif [ -f "$OFF_POLICY_ONNX" ] && [ -f "$POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_multi_policy
+              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX --off-policy-onnx $OFF_POLICY_ONNX"
+            elif [ -f "$POLICY_ONNX" ]; then
+              MODEL_TYPE=vision_policy
+              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
+            fi
+          elif [ -f "$SUPERCOMBO_ONNX" ]; then
+            MODEL_TYPE=supercombo
+            ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
+          fi
+
+          if [ -n "$MODEL_TYPE" ]; then
+            echo "Detected: $MODEL_TYPE -> $OUTPUT_PKL"
+            env ${TG_FLAGS} python3 "$COMPILE_MODELD" \
+              --model-type $MODEL_TYPE \
+              --model-size $MODEL_SIZE \
+              --camera-resolutions $CAMERA_RES \
+              $ONNX_ARGS \
+              --output "$OUTPUT_PKL"
+          fi
 
       - name: Prepare Output
         run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
-          
+          sudo rm -rf ${{ env.OUTPUT_DIR }}
+          mkdir -p ${{ env.OUTPUT_DIR }}
+
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*.thneed' \
             --include='*.pkl' \
+            --include='*.chunk*' \
+            --include='*.chunkmanifest' \
             --include='*.onnx' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
-            ./selfdrive/modeld/models/ ${OUTPUT_DIR}/
-          
-          # Rename files if file_name is provided
-          if [ ! -z "${{ inputs.file_name }}" ]; then
-            mv ${OUTPUT_DIR}/supercombo.thneed ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}.thneed
-            mv ${OUTPUT_DIR}/supercombo_metadata.pkl ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}_metadata.pkl
-          fi
-          
-          # Calculate SHA256 hashes
-          HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*.thneed | cut -d' ' -f1)
-          METADATA_HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*_metadata.pkl | cut -d' ' -f1)
-          
-          # Create metadata.json
-          cat > ${OUTPUT_DIR}/metadata.json << EOF
-          {
-            "display_name": "${{ inputs.custom_name || inputs.upstream_branch }}",
-            "full_name": "${{ inputs.file_name || 'default' }}",
-            "is_20hz": ${{ inputs.is_20hz || false }},
-            "files": {
-              "drive_model": {
-                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*.thneed)",
-                "sha256": "${HASH}"
-              },
-              "metadata": {
-                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*_metadata.pkl)",
-                "sha256": "${METADATA_HASH}"
-              }
-            },
-            "ref": "${{ inputs.upstream_branch }}",
-            "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }     
+            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "${{ env.MODELS_DIR }}" \
+            --output-dir "${{ env.OUTPUT_DIR }}" \
+            --custom-name "${{ env.MODEL_NAME }}" \
+            --upstream-branch "${{ inputs.upstream_branch }}" \
+            ${{ inputs.is_20hz && '--is-20hz' || '' }}
+
+      - name: Write artifact name to file
+        run: echo "model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}" > ${{ env.OUTPUT_DIR }}/artifact_name.txt
 
       - name: Upload Build Artifacts
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ github.event.inputs.custom_name || github.event.inputs.upstream_branch }}-${{ github.run_number }}
+          name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ inputs.custom_name || inputs.upstream_branch }}
+          path: ${{ env.OUTPUT_DIR }}/artifact_name.txt
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
