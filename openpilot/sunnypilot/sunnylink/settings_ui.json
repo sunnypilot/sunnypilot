@@ -310,37 +310,6 @@
                   "equals": false
                 }
               ]
-            },
-            {
-              "key": "LateralJerkTorqueController",
-              "widget": "toggle",
-              "title": "Lateral Jerk Torque Controller",
-              "description": "Smoother steering by anticipating sudden corrections before they happen \u2014 no model training needed. Contributed by @twilsonco.",
-              "visibility": [
-                {
-                  "type": "not",
-                  "condition": {
-                    "type": "capability",
-                    "field": "steer_control_type",
-                    "equals": "angle"
-                  }
-                }
-              ],
-              "enablement": [
-                {
-                  "type": "offroad_only"
-                },
-                {
-                  "type": "capability",
-                  "field": "torque_allowed",
-                  "equals": true
-                },
-                {
-                  "type": "param",
-                  "key": "NeuralNetworkLateralControl",
-                  "equals": false
-                }
-              ]
             }
           ],
           "sub_panels": [
@@ -354,6 +323,32 @@
                 "equals": true
               },
               "items": [
+                {
+                  "key": "LateralJerkTorqueController",
+                  "widget": "toggle",
+                  "title": "Lateral Jerk Torque Controller",
+                  "description": "Looks ahead at planned steering to reduce sudden corrections, so the wheel moves more smoothly through turns. Works with Self-Tune and custom tuning. Thanks to @twilsonco for the implementation.",
+                  "visibility": [
+                    {
+                      "type": "not",
+                      "condition": {
+                        "type": "capability",
+                        "field": "steer_control_type",
+                        "equals": "angle"
+                      }
+                    }
+                  ],
+                  "enablement": [
+                    {
+                      "type": "offroad_only"
+                    },
+                    {
+                      "type": "param",
+                      "key": "NeuralNetworkLateralControl",
+                      "equals": false
+                    }
+                  ]
+                },
                 {
                   "key": "LiveTorqueParamsToggle",
                   "widget": "toggle",

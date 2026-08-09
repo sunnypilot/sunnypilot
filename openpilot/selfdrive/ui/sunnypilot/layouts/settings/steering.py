@@ -91,11 +91,6 @@ class SteeringLayout(Widget):
       button_width=850,
       callback=lambda: self._set_current_panel(PanelType.TORQUE_CONTROL)
     )
-    self._jerk_aware_toggle = toggle_item_sp(
-      param="LateralJerkTorqueController",
-      title=lambda: tr("Lateral Jerk Torque Controller"),
-      description=lambda: tr("Smoother steering by anticipating sudden corrections before they happen — no model training needed. Contributed by @twilsonco."),
-    )
     self._nnlc_toggle = toggle_item_sp(
       param="NeuralNetworkLateralControl",
       title=lambda: tr("Neural Network Lateral Control (NNLC)"),
@@ -114,8 +109,6 @@ class SteeringLayout(Widget):
       LineSeparatorSP(40),
       self._torque_control_toggle,
       self._torque_customization_button,
-      LineSeparatorSP(40),
-      self._jerk_aware_toggle,
       LineSeparatorSP(40),
       self._nnlc_toggle,
     ]
@@ -140,22 +133,16 @@ class SteeringLayout(Widget):
     self._blinker_reengage_delay.set_visible(self._blinker_control_toggle.action_item.get_state())
 
     enforce_torque_enabled = self._torque_control_toggle.action_item.get_state()
-    jerk_aware_enabled = self._jerk_aware_toggle.action_item.get_state()
     nnlc_enabled = self._nnlc_toggle.action_item.get_state()
     if enforce_torque_enabled and nnlc_enabled:
       self._torque_control_toggle.action_item.set_state(False)
       self._nnlc_toggle.action_item.set_state(False)
       enforce_torque_enabled = False
       nnlc_enabled = False
-    if jerk_aware_enabled and nnlc_enabled:
-      self._jerk_aware_toggle.action_item.set_state(False)
-      self._nnlc_toggle.action_item.set_state(False)
-      jerk_aware_enabled = False
-      nnlc_enabled = False
-    self._jerk_aware_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not nnlc_enabled)
+    jerk_aware_enabled = ui_state.params.get_bool("LateralJerkTorqueController")
     self._nnlc_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not enforce_torque_enabled and not jerk_aware_enabled)
     self._torque_control_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not nnlc_enabled)
-    self._torque_customization_button.action_item.set_enabled(self._torque_control_toggle.action_item.get_state())
+    self._torque_customization_button.action_item.set_enabled(torque_allowed)
 
   def _render(self, rect):
     if self._current_panel == PanelType.LANE_CHANGE:
