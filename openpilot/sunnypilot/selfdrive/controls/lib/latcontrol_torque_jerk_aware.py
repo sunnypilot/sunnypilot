@@ -18,6 +18,11 @@ class LatControlTorqueJerkAware(LatControlTorqueExtBase):
     self.params = Params()
     self._jerk_aware_enabled = self.params.get_bool("LateralJerkTorqueController")
 
+  def update_limits(self):
+    if not self._jerk_aware_enabled:
+      return
+    self._pid.set_limits(self.lac_torque.steer_max, -self.lac_torque.steer_max)
+
   def update_jerk_aware_torque_control(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
     if not self._jerk_aware_enabled:
       return
