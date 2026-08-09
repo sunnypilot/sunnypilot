@@ -29,7 +29,7 @@ class LatControlTorqueEnhancedLateralAccel(LatControlTorqueExtBase):
       LatControlInputs(self._measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params, gravity_adjusted=False
     )
 
-    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)
+    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)  # ty: ignore[invalid-assignment]
     self._ff = self.torque_from_lateral_accel_in_torque_space(
       LatControlInputs(gravity_adjusted_lateral_accel, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params, gravity_adjusted=True
     )

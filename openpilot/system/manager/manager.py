@@ -41,17 +41,6 @@ def manager_init() -> None:
   if params.get("DeviceBootMode") == 1:  # start in Always Offroad mode
     params.put_bool("OffroadMode", True, block=True)
 
-  sunnypilot_default_params: list[tuple[str, str | bytes]] = [
-    ("DynamicExperimentalControl", "0"),
-    ("LatTorqueControlEnhancedLateralAccel", "0"),
-    ("Mads", "1"),
-    ("MadsMainCruiseAllowed", "1"),
-    ("MadsSteeringMode", "0"),
-    ("MadsUnifiedEngagementMode", "1"),
-    ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", ""),
-  ]
-
   # quick boot
   if params.get_bool("QuickBootToggle") and not PC:
     prebuilt_path = "/data/openpilot/prebuilt"

@@ -23,6 +23,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 
 def _make_controller(enhanced=False, nnlc=False):
   params = Params()
+  params.put_bool("EnforceTorqueControl", True, block=True)
   params.put_bool("LatTorqueControlEnhancedLateralAccel", enhanced, block=True)
   params.put_bool("NeuralNetworkLateralControl", nnlc, block=True)
 
