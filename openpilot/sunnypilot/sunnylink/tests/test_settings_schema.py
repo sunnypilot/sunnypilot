@@ -257,20 +257,26 @@ class TestKnownPanels:
     assert "mads_settings" in sub_ids
 
   def test_mutual_exclusion_torque_nnlc(self, schema):
-    """EnforceTorqueControl and NNLC must reference each other in enablement."""
-    torque = nnlc = None
+    """EnforceTorqueControl, EnhancedLatAccel, and NNLC must reference each other in enablement."""
+    torque = nnlc = enhanced = None
     for panel in schema["panels"]:
       for item in _iter_panel_items(panel):
         if item["key"] == "EnforceTorqueControl":
           torque = item
         elif item["key"] == "NeuralNetworkLateralControl":
           nnlc = item
+        elif item["key"] == "LatTorqueControlEnhancedLateralAccel":
+          enhanced = item
     assert torque is not None, "EnforceTorqueControl item missing"
     assert nnlc is not None, "NeuralNetworkLateralControl item missing"
+    assert enhanced is not None, "LatTorqueControlEnhancedLateralAccel item missing"
     torque_enable_keys = {r.get("key") for r in torque.get("enablement", []) if r.get("type") == "param"}
     assert "NeuralNetworkLateralControl" in torque_enable_keys
     nnlc_enable_keys = {r.get("key") for r in nnlc.get("enablement", []) if r.get("type") == "param"}
     assert "EnforceTorqueControl" in nnlc_enable_keys
+    assert "LatTorqueControlEnhancedLateralAccel" in nnlc_enable_keys
+    enhanced_enable_keys = {r.get("key") for r in enhanced.get("enablement", []) if r.get("type") == "param"}
+    assert "NeuralNetworkLateralControl" in enhanced_enable_keys
 
 
 class TestKnownVehicleSettings:

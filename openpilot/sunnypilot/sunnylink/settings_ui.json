@@ -310,6 +310,37 @@
                   "equals": false
                 }
               ]
+            },
+            {
+              "key": "LatTorqueControlEnhancedLateralAccel",
+              "widget": "toggle",
+              "title": "Enhanced Lateral Acceleration",
+              "description": "Compute PID error in torque space for more consistent gain behavior across varying lateral acceleration magnitudes.",
+              "visibility": [
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "steer_control_type",
+                    "equals": "angle"
+                  }
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "offroad_only"
+                },
+                {
+                  "type": "capability",
+                  "field": "torque_allowed",
+                  "equals": true
+                },
+                {
+                  "type": "param",
+                  "key": "NeuralNetworkLateralControl",
+                  "equals": false
+                }
+              ]
             }
           ],
           "sub_panels": [
@@ -2036,6 +2067,11 @@
                 {
                   "type": "param",
                   "key": "EnforceTorqueControl",
+                  "equals": false
+                },
+                {
+                  "type": "param",
+                  "key": "LatTorqueControlEnhancedLateralAccel",
                   "equals": false
                 }
               ]

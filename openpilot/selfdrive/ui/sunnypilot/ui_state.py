@@ -184,10 +184,15 @@ class UIStateSP:
         self.params.put_bool("EnforceTorqueControl", False, block=True)
         self.params.put_bool("NeuralNetworkLateralControl", False, block=True)
 
+      if self.params.get_bool("LatTorqueControlEnhancedLateralAccel") and self.params.get_bool("NeuralNetworkLateralControl"):
+        self.params.put_bool("LatTorqueControlEnhancedLateralAccel", False, block=True)
+        self.params.put_bool("NeuralNetworkLateralControl", False, block=True)
+
       # Angle steering: no torque-based lateral controls
       if CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.params.remove("EnforceTorqueControl")
         self.params.remove("NeuralNetworkLateralControl")
+        self.params.remove("LatTorqueControlEnhancedLateralAccel")
 
       # Alpha longitudinal: clear if not available
       if not CP.alphaLongitudinalAvailable:
@@ -200,6 +205,7 @@ class UIStateSP:
       # No CarParams: clear all car-dependent params as safety default
       self.params.remove("EnforceTorqueControl")
       self.params.remove("NeuralNetworkLateralControl")
+      self.params.remove("LatTorqueControlEnhancedLateralAccel")
       self.params.remove("AlphaLongitudinalEnabled")
 
     # No longitudinal control: no experimental mode or DEC

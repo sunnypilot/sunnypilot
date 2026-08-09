@@ -73,6 +73,9 @@ sections:
     - type: param
       key: EnforceTorqueControl
       equals: false
+    - type: param
+      key: LatTorqueControlEnhancedLateralAccel
+      equals: false
 - id: camera
   title: Camera
   description: Camera position and calibration
