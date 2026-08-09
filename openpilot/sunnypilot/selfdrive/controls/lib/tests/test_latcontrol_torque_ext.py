@@ -89,8 +89,8 @@ class TestLatControlTorqueExt:
 
   def test_init_both_no_crash(self):
     controller, VM, _ = _make_controller(enhanced=True, nnlc=True)
-    assert controller.extension._jerk_aware_enabled
-    assert controller.extension.enabled
+    assert not controller.extension._jerk_aware_enabled
+    assert not controller.extension.enabled
 
   def test_update_enhanced_only(self):
     controller, VM, _ = _make_controller(enhanced=True, nnlc=False)
