@@ -35,13 +35,10 @@ on:
         default: true
         type: boolean
       target_hardware:
-        description: 'Hardware target to compile for'
+        description: 'Hardware target to compile for (qcom or usbgpu)'
         required: false
-        type: choice
+        type: string
         default: 'qcom'
-        options:
-          - qcom
-          - usbgpu
   workflow_dispatch:
     inputs:
       upstream_branch:
