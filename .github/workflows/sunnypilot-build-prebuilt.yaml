@@ -79,7 +79,7 @@ jobs:
             is_stable_branch="$(echo "$CONFIG" | jq -r '.stable_branch // false')";
             echo "is_stable_branch=$is_stable_branch" >> $GITHUB_OUTPUT
 
-            stable_version=$(cat sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g');
+            stable_version=$(cat openpilot/sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g');
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=${environment}" >> $GITHUB_OUTPUT
           fi
@@ -152,7 +152,10 @@ jobs:
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync
           printenv >> $GITHUB_ENV
           if [[ "${{ runner.debug }}" == "1" ]]; then
             cat $GITHUB_OUTPUT
@@ -172,20 +175,26 @@ jobs:
           if [[ "${{ runner.debug }}" == "1" ]]; then
             printenv
           fi
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
       - name: Build Main Project
         run: |
           export PYTHONPATH="$BUILD_DIR"
-          ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+          ./tools/release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
+          ln -sfn msgq_repo/msgq msgq
+          ln -sfn opendbc_repo/opendbc opendbc
+          ln -sfn rednose_repo/rednose rednose
+          ln -sfn teleoprtc_repo/teleoprtc teleoprtc
+          ln -sfn tinygrad_repo/tinygrad tinygrad
           sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
           echo "Building sunnypilot's modeld_v2..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/modeld_v2
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/modeld_v2
           echo "Building sunnypilot's locationd..."
-          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal sunnypilot/selfdrive/locationd
+          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/selfdrive/locationd
           echo "Building openpilot's locationd..."
-          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal selfdrive/locationd
+          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
           scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
@@ -208,17 +217,17 @@ jobs:
             --exclude='Jenkinsfile' \
             --exclude='**/release/' \
             --exclude='**/.github/' \
-            --exclude='**/selfdrive/ui/replay/' \
+            --exclude='**/openpilot/selfdrive/ui/replay/' \
             --exclude='**/__pycache__/' \
             --exclude='${{env.SCONS_CACHE_DIR}}' \
             --exclude='**/.git/' \
             --exclude='**/SConstruct' \
             --exclude='**/SConscript' \
             --exclude='**/.venv/' \
-            --exclude='selfdrive/modeld/models/*.onnx*' \
-            --exclude='sunnypilot/modeld*/models/*.onnx*' \
-            --exclude='third_party/*x86*' \
-            --exclude='third_party/*Darwin*' \
+            --exclude='openpilot/selfdrive/modeld/models/*.onnx*' \
+            --exclude='openpilot/sunnypilot/modeld*/models/*.onnx*' \
+            --exclude='openpilot/third_party/*x86*' \
+            --exclude='openpilot/third_party/*Darwin*' \
             --delete-excluded \
             --chown=comma:comma \
             ${BUILD_DIR}/ ${OUTPUT_DIR}/
@@ -237,6 +246,7 @@ jobs:
       - name: Re-enable powersave
         if: always()
         run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
 
@@ -363,7 +373,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              name: process.env.LABEL
+              name: process.env.LABELf
             });
 
             console.log(`Removed '${process.env.LABEL}' label from PR #${prNumber}`);
