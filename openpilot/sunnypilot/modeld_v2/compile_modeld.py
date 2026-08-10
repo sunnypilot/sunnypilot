@@ -213,9 +213,11 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
   is_supercombo = vision_runner is None
   run_func = create_jit_runner(vision_runner, policy_runners, nv12, model_size, features_slice, frame_skip, all_shapes, prepare_only)
   run_jit = TinyJit(run_func, prune=True)
-  def run_once(seed):
-    queues, npy = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT, is_supercombo=is_supercombo)
+  def run_once(seed, queues=None, npy=None):
+    if queues is None or npy is None:
+      queues, npy = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT, is_supercombo=is_supercombo)
     rng = np.random.default_rng(seed)
+    Tensor.manual_seed(seed)
     frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
     for value in npy.values():
@@ -225,8 +227,9 @@ def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_onl
     Device.default.synchronize()
     return [np.copy(value.numpy()) for value in (outs if isinstance(outs, tuple) else [outs])] if outs is not None else []
 
+  warmup_queues, warmup_npy = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT, is_supercombo=is_supercombo)
   for i in range(3):
-    run_once(42 + i)
+    run_once(42 + i, warmup_queues, warmup_npy)
 
   if not prepare_only:
     baseline = run_once(42)
