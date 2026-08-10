@@ -40,6 +40,13 @@ class TorqueSettingsLayout(Widget):
       self.cached_torque_versions = json.load(f)
 
   def _initialize_items(self):
+    self._jerk_aware_toggle = toggle_item_sp(
+      param="LateralJerkTorqueController",
+      title=lambda: tr("Lateral Jerk Torque Controller"),
+      description=lambda: tr("Looks ahead at planned steering to reduce sudden corrections, so the wheel moves " +
+                             "more smoothly through turns. Works with Self-Tune and custom tuning. " +
+                             "Thanks to @twilsonco for the implementation."),
+    )
     self._torque_control_versions = ListItemSP(
       title=tr("Torque Control Tune Version"),
       description="Select the version of Torque Control Tune to use.",
@@ -95,6 +102,7 @@ class TorqueSettingsLayout(Widget):
     )
 
     items = [
+      self._jerk_aware_toggle,
       self._torque_control_versions,
       self._self_tune_toggle,
       self._relaxed_tune_toggle,
@@ -107,6 +115,8 @@ class TorqueSettingsLayout(Widget):
 
   def _update_state(self):
     super()._update_state()
+    nnlc_enabled = ui_state.params.get_bool("NeuralNetworkLateralControl")
+    self._jerk_aware_toggle.action_item.set_enabled(ui_state.is_offroad() and not nnlc_enabled)
     if not ui_state.params.get_bool("LiveTorqueParamsToggle"):
       ui_state.params.remove("LiveTorqueParamsRelaxedToggle")
       self._relaxed_tune_toggle.action_item.set_state(False)
