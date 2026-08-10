@@ -25,6 +25,8 @@ from openpilot.tools.lib.logreader import LogReader, LogsUnavailable, openpilotc
 from openpilot.tools.lib.file_sources import Source
 from openpilot.tools.lib.route import SegmentName
 
+from openpilot.sunnypilot.tools.lib.sunnypilot_car_segments import sunnypilot_car_segments_source
+
 SafetyModel = car.CarParams.SafetyModel
 SteerControlType = structs.CarParams.SteerControlType
 
@@ -132,7 +134,7 @@ class TestCarModelBase(unittest.TestCase):
       segment_range = f"{cls.test_route.route}/{seg}"
 
       try:
-        sources: list[Source] = [internal_source] if len(INTERNAL_SEG_LIST) else [openpilotci_source, comma_api_source]
+        sources: list[Source] = [internal_source] if len(INTERNAL_SEG_LIST) else [openpilotci_source, comma_api_source, sunnypilot_car_segments_source]
         lr = LogReader(segment_range, sources=sources, sort_by_time=True)
         return cls.get_testing_data_from_logreader(lr)
       except (LogsUnavailable, AssertionError):

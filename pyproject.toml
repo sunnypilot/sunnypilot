@@ -75,6 +75,7 @@ testing = [
 ]
 
 dev = [
+  "huggingface_hub",
   "matplotlib",
 ]
 
