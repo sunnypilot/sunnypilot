@@ -1,7 +1,13 @@
-Version 0.11.1 (2026-04-22)
+Version 0.11.2 (2026-06-15)
+========================
+
+
+Version 0.11.1 (2026-05-18)
 ========================
 * New driver monitoring model
 * Improved image processing pipeline for driver camera
+* Improved thermal policy for comma four
+* Acura MDX 2022-24 support thanks to mvl-boston!
 * Rivian R1S and R1T 2025 support thanks to lukasloetkolben!
 
 Version 0.11.0 (2026-03-17)
@@ -1098,7 +1104,7 @@ Version 0.2.1  (2016-12-14)
 
 Version 0.2  (2016-12-12)
 =========================
- * Car/Radar abstraction layers have shipped, see cereal/car.capnp
+ * Car/Radar abstraction layers have shipped, see openpilot/cereal/car.capnp
  * controlsd has been refactored
  * Shipped plant model and testing maneuvers
  * visiond exits more gracefully now
