@@ -7,6 +7,14 @@ on:
         description: 'Minimum selector version required for the models (see helpers.py or readme.md)'
         required: true
         type: string
+      target_hardware:
+        description: 'Hardware target to compile for (qcom or usbgpu)'
+        required: true
+        type: choice
+        default: 'qcom'
+        options:
+          - qcom
+          - usbgpu
 
 jobs:
   setup:
@@ -46,13 +54,14 @@ jobs:
         id: get-json
         run: |
           cd docs/docs
-          latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
+          PREFIX="driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_' || '' }}v"
+          latest=$(ls ${PREFIX}*.json | sed -E "s/${PREFIX}([0-9]+)\.json/\1/" | sort -n | tail -1)
           next=$((latest+1))
-          json_file="driving_models_v${next}.json"
-          cp "driving_models_v${latest}.json" "$json_file"
+          json_file="${PREFIX}${next}.json"
+          cp "${PREFIX}${latest}.json" "$json_file"
           echo "json_file=docs/docs/$json_file" >> $GITHUB_OUTPUT
           echo "json_version=$((next+0))" >> $GITHUB_OUTPUT
-          echo "SRC_JSON_FILE=docs/docs/driving_models_v${latest}.json" >> $GITHUB_ENV
+          echo "SRC_JSON_FILE=docs/docs/${PREFIX}${latest}.json" >> $GITHUB_ENV
 
       - name: Extract tinygrad models
         id: set-matrix
@@ -123,6 +132,7 @@ jobs:
       is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
+      target_hardware: ${{ github.event.inputs.target_hardware }}
     secrets: inherit
 
   retry_failed_models:
@@ -161,6 +171,7 @@ jobs:
       is_20hz: ${{ matrix.model.is_20hz }}
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
+      target_hardware: ${{ github.event.inputs.target_hardware }}
       artifact_suffix: -retry
     secrets: inherit
 

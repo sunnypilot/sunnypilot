@@ -146,10 +146,10 @@ class ModelFetcher:
     self.model_parser = ModelParser()
     if usbgpu_present():
       self.model_cache = ModelCache(params, suffix="_USBGPU")
-      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v18.json"
+      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v19.json"
     else:
       self.model_cache = ModelCache(params)
-      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v18.json"
+      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v19.json"
 
   def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
