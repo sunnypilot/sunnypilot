@@ -251,7 +251,7 @@ class DeviceSP:
       elif _ui_state.screensaver.is_active:
         self._blocked_by_screensaver = True
       else:
-        _ui_state.screensaver.initialize(dismiss_callback=lambda: self._set_awake(False))
+        _ui_state.screensaver.initialize()
         gui_app.push_widget(_ui_state.screensaver)
         self._blocked_by_screensaver = True
 

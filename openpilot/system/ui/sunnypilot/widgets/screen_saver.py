@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 import os
 import time
-from collections.abc import Callable
 
 import pyray as rl
 
@@ -37,7 +36,6 @@ class ScreenSaverSP(Widget):
     self._dismiss = False
     self._screensaver_timeout = 300
     self._hit_last_frame = False
-    self.dismiss_callback = None
 
   @property
   def is_active(self) -> bool:
@@ -47,24 +45,21 @@ class ScreenSaverSP(Widget):
   def was_dismissed(self) -> bool:
     return self._dismiss
 
-  def initialize(self, dismiss_callback: Callable):
+  def initialize(self):
     self._screensaver_timeout = self._params.get("ScreenSaverTimeout", return_default=True)
     if self._start_time is None:
       self._start_time = time.monotonic()
-    self.dismiss_callback = dismiss_callback
     self._dismiss = False
 
   def hide_event(self):
     super().hide_event()
     self._dismiss = False
     self._start_time = None
-    self.dismiss_callback = None
 
   def _handle_mouse_release(self, mouse_pos):
     self._dismiss = True
     self._start_time = None
-    if self.dismiss_callback:
-      self.dismiss_callback()
+    gui_app.pop_widget()
     return super()._handle_mouse_release(mouse_pos)
 
   def _update_state(self):
