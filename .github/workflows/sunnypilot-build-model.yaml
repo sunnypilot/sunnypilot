@@ -101,7 +101,7 @@ jobs:
       - run: |
           cd ${{ github.workspace }}/openpilot
           if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
-            git lfs pull -I "selfdrive/modeld/models/*.onnx" -X "selfdrive/modeld/models/big_*.onnx,selfdrive/modeld/models/dmonitoring_*.onnx"
+            git lfs pull -I "selfdrive/modeld/models/*.onnx" -X "selfdrive/modeld/models/big_*.onnx" -X "selfdrive/modeld/models/dmonitoring_*.onnx"
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
           else
             git lfs pull -I "selfdrive/modeld/models/big_*.onnx" -X "selfdrive/modeld/models/dmonitoring_*.onnx"
