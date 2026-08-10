@@ -324,6 +324,32 @@
               },
               "items": [
                 {
+                  "key": "LateralJerkTorqueController",
+                  "widget": "toggle",
+                  "title": "Lateral Jerk Torque Controller",
+                  "description": "Looks ahead at planned steering to reduce sudden corrections, so the wheel moves more smoothly through turns. Works with Self-Tune and custom tuning. Thanks to @twilsonco for the implementation.",
+                  "visibility": [
+                    {
+                      "type": "not",
+                      "condition": {
+                        "type": "capability",
+                        "field": "steer_control_type",
+                        "equals": "angle"
+                      }
+                    }
+                  ],
+                  "enablement": [
+                    {
+                      "type": "offroad_only"
+                    },
+                    {
+                      "type": "param",
+                      "key": "NeuralNetworkLateralControl",
+                      "equals": false
+                    }
+                  ]
+                },
+                {
                   "key": "LiveTorqueParamsToggle",
                   "widget": "toggle",
                   "title": "Self-Tune",
@@ -2036,6 +2062,11 @@
                 {
                   "type": "param",
                   "key": "EnforceTorqueControl",
+                  "equals": false
+                },
+                {
+                  "type": "param",
+                  "key": "LateralJerkTorqueController",
                   "equals": false
                 }
               ]
