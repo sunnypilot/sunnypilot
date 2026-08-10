@@ -94,12 +94,12 @@ jobs:
       - name: Get commit date
         id: commit-date
         run: |
-          cd ${{ github.workspace }}/openpilot
+          cd ${{ github.workspace }}/openpilot/openpilot
           commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
       - run: |
-          cd ${{ github.workspace }}/openpilot
+          cd ${{ github.workspace }}/openpilot/openpilot
           if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
             git lfs pull -X "selfdrive/modeld/models/big_*.onnx" -X "selfdrive/modeld/models/dmonitoring_*.onnx"
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
