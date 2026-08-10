@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import os
 import time
 from collections.abc import Callable
@@ -30,6 +36,7 @@ class ScreenSaverSP(Widget):
     self._start_time = None
     self._dismiss = False
     self._screensaver_timeout = 300
+    self._hit_last_frame = False
     self.dismiss_callback = None
 
   @property
@@ -96,11 +103,13 @@ class ScreenSaverSP(Widget):
       self.y = 0
       hit_y = True
 
-    if hit_x or hit_y:
+    hit = hit_x or hit_y
+    if hit and not self._hit_last_frame:
       while self._hue_dist((new_hue := rl.get_random_value(0, 360)), self._hue) < 120:
         pass
       self._hue = new_hue
       self.color = rl.color_from_hsv(self._hue, 1, 1)
+    self._hit_last_frame = hit
 
   @staticmethod
   def _hue_dist(a, b):
