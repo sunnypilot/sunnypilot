@@ -353,7 +353,8 @@ def main(demo=False):
   model = None
   if USBGPU:
     import threading
-    def load(): nonlocal model; model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
+    def load(): nonlocal model
+    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
     t = threading.Thread(target=load, daemon=True)
     t.start()
     t.join(60)
