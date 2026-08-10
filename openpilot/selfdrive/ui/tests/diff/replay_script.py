@@ -338,8 +338,11 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
 
   settings_cases: Cases = [
     lambda: scroll_through_cases(toggle_cases),
+    None,  # sunnylink (just open and close)
+    None,  # models (just open and close)
     lambda: scroll_through_cases(network_cases),
     lambda: scroll_through_cases(device_cases),
+    lambda: script.wait(WAIT_SHORT),  # software
     lambda: script.wait(WAIT_SHORT),  # pairing
     lambda: run_actions(lambda: swipe_up(height * 3), lambda: swipe_down(height * 3)),  # firehose (scroll down and back up)
     lambda: scroll_through_cases(developer_cases),
