@@ -69,6 +69,8 @@ struct LeadData {
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
   intelligentCruiseButtonManagement @1 :IntelligentCruiseButtonManagement;
+  buttonsPressed @2 :UInt16;
+  buttonsReleaseToggle @3 :UInt16;
 
   enum AudibleAlert {
     none @0;
@@ -137,10 +139,16 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     eta @2 :UInt32;
   }
 
+  struct Chunk {
+    fileName @0 :Text;
+    sha256 @1 :Text;
+  }
+
   struct Artifact {
     fileName @0 :Text;
     downloadUri @1 :DownloadUri;
     downloadProgress @2 :DownloadProgress;
+    chunks @3 :List(Chunk);
   }
 
   struct Model {
@@ -155,6 +163,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
       policy @3;
       offPolicy @4;
       onPolicy @5;
+      chunked @6;
     }
   }
 

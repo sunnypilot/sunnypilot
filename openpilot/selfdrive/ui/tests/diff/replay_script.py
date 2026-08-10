@@ -338,8 +338,11 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
 
   settings_cases: Cases = [
     lambda: scroll_through_cases(toggle_cases),
+    None,  # sunnylink (just open and close)
+    None,  # models (just open and close)
     lambda: scroll_through_cases(network_cases),
     lambda: scroll_through_cases(device_cases),
+    lambda: script.wait(WAIT_SHORT),  # software
     lambda: script.wait(WAIT_SHORT),  # pairing
     lambda: run_actions(lambda: swipe_up(height * 3), lambda: swipe_down(height * 3)),  # firehose (scroll down and back up)
     lambda: scroll_through_cases(developer_cases),
@@ -357,7 +360,7 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
     params = Params()
     main_layout._alerts_layout._pending_params = ({"UpdaterNewDescription": params.get("UpdaterNewDescription")} |
                                                   {alert_data.key: params.get(alert_data.key) for alert_data in main_layout._alerts_layout.sorted_alerts})
-    main_layout._alerts_layout._refresh()
+    main_layout._alerts_layout._update_state()
 
   swipe_right(width, wait_after=WAIT_SHORT)  # open alerts
   script.setup(setup_offroad_alerts_and_refresh)  # show alerts

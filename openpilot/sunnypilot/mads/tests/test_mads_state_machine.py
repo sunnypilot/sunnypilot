@@ -29,7 +29,7 @@ def make_event(event_types):
   event = {}
   for ev in event_types:
     event[ev] = NormalPermanentAlert("alert")
-  EVENTS_SP[0] = event
+  EVENTS_SP[0] = event  # type: ignore[assignment] # ty: ignore[invalid-assignment]
   return 0
 
 

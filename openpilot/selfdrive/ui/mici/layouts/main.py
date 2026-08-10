@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.application import gui_app
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings import SettingsLayoutSP as SettingsLayout
+  from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP as MiciHomeLayout
 
 ONROAD_DELAY = 2.5  # seconds
 
@@ -148,4 +149,4 @@ class MiciMainLayout(Scroller):
 
   def _on_body_changed(self):
     self._car_onroad_layout.set_visible(not ui_state.is_body)
-    self._body_onroad_layout.set_visible(ui_state.is_body)
+    self._body_onroad_layout.set_visible(bool(ui_state.is_body))

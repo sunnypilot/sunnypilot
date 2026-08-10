@@ -13,6 +13,7 @@ from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.settings import SettingsLayoutSP as SettingsLayout
+  from openpilot.selfdrive.ui.sunnypilot.layouts.home import HomeLayoutSP as HomeLayout
 
 
 class MainState(IntEnum):
@@ -34,7 +35,11 @@ class MainLayout(Widget):
     # Initialize layouts
     self._home_layout = HomeLayout()
     self._home_body_layout = BodyLayout()
-    self._layouts = {MainState.HOME: self._home_layout, MainState.SETTINGS: SettingsLayout(), MainState.ONROAD: AugmentedRoadView()}
+    self._layouts: dict[MainState, Widget] = {
+      MainState.HOME: self._home_layout,
+      MainState.SETTINGS: SettingsLayout(),
+      MainState.ONROAD: AugmentedRoadView(),
+    }
 
     self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)
     self._content_rect = rl.Rectangle(0, 0, 0, 0)

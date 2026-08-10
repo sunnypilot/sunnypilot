@@ -82,18 +82,3 @@ if os.path.isfile(supercombo_onnx):
   compile_combined('supercombo',
                    f'--supercombo-onnx {supercombo_onnx}',
                    'driving_combined_supercombo_tinygrad.pkl')
-
-if PC:
-  inputs = tinygrad_files + [File(Dir("#openpilot/sunnypilot/modeld_v2").File("install_models_pc.py").abspath)]
-  outputs = []
-  model_dir = Dir("models").abspath
-  cmd = f'python3 {Dir("#openpilot/sunnypilot/modeld_v2").abspath}/install_models_pc.py {model_dir}'
-
-  for model_name in ['supercombo', 'driving_vision', 'driving_off_policy', 'driving_on_policy', 'driving_policy']:
-    if File(f"models/{model_name}.onnx").exists():
-        inputs.append(File(f"models/{model_name}.onnx"))
-        inputs.append(File(f"models/{model_name}_tinygrad.pkl"))
-        outputs.append(File(f"models/{model_name}_metadata.pkl"))
-  if outputs:
-    lenv.Command(outputs, inputs, cmd)
-

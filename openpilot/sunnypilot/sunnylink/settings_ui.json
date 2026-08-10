@@ -324,6 +324,32 @@
               },
               "items": [
                 {
+                  "key": "LateralJerkTorqueController",
+                  "widget": "toggle",
+                  "title": "Lateral Jerk Torque Controller",
+                  "description": "Looks ahead at planned steering to reduce sudden corrections, so the wheel moves more smoothly through turns. Works with Self-Tune and custom tuning. Thanks to @twilsonco for the implementation.",
+                  "visibility": [
+                    {
+                      "type": "not",
+                      "condition": {
+                        "type": "capability",
+                        "field": "steer_control_type",
+                        "equals": "angle"
+                      }
+                    }
+                  ],
+                  "enablement": [
+                    {
+                      "type": "offroad_only"
+                    },
+                    {
+                      "type": "param",
+                      "key": "NeuralNetworkLateralControl",
+                      "equals": false
+                    }
+                  ]
+                },
+                {
                   "key": "LiveTorqueParamsToggle",
                   "widget": "toggle",
                   "title": "Self-Tune",
@@ -2043,6 +2069,11 @@
                   "type": "param",
                   "key": "EnforceTorqueControl",
                   "equals": false
+                },
+                {
+                  "type": "param",
+                  "key": "LateralJerkTorqueController",
+                  "equals": false
                 }
               ]
             }
@@ -2162,6 +2193,42 @@
           "key": "TeslaCoopSteering",
           "widget": "toggle",
           "title": "Cooperative Steering (Beta)",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
+        },
+        {
+          "key": "TeslaMadsScreenButton",
+          "widget": "multiple_button",
+          "title": "MADS Screen Activation",
+          "description": "Use a multi-finger press on the infotainment screen to toggle MADS. This allows the use of full MADS functionality when enabled. Selecting a higher finger count may reduce accidental activations. Note: Setting this to Off will reset your MADS settings to default.",
+          "options": [
+            {
+              "value": 0,
+              "label": "Off"
+            },
+            {
+              "value": 1,
+              "label": "3-Finger"
+            },
+            {
+              "value": 2,
+              "label": "4-Finger"
+            },
+            {
+              "value": 3,
+              "label": "5-Finger"
+            }
+          ],
+          "visibility": [
+            {
+              "type": "capability",
+              "field": "tesla_has_vehicle_bus",
+              "equals": true
+            }
+          ],
           "enablement": [
             {
               "type": "offroad_only"

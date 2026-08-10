@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from collections.abc import Callable
 import pyray as rl
 
 from openpilot.cereal import custom
@@ -48,10 +47,8 @@ class CurrentModelInfo(Widget):
     self.info_text.render()
 
 class ModelsLayoutMici(NavScroller):
-  def __init__(self, back_callback: Callable):
+  def __init__(self):
     super().__init__()
-    self.set_back_callback(back_callback)
-    self.original_back_callback = back_callback
     self.focused_widget = None
 
     self.current_model_info = CurrentModelInfo()
@@ -85,12 +82,10 @@ class ModelsLayoutMici(NavScroller):
 
     return folders
 
-  def _show_selection_view(self, items, back_callback: Callable):
-    self._scroller._items = items
-    for item in items:
-      item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
-    self._scroller.scroll_panel.set_offset(0)
-    self.set_back_callback(back_callback)
+  def _push_selection_view(self, items):
+    scroller = NavScroller()
+    scroller._scroller.add_widgets(items)
+    gui_app.push_widget(scroller)
 
   def _show_folders(self):
     self.focused_widget = self.select_model_btn
@@ -112,15 +107,18 @@ class ModelsLayoutMici(NavScroller):
           folder_buttons.insert(0, btn)
         else:
           folder_buttons.append(btn)
-    self._show_selection_view(folder_buttons, self._reset_main_view)
+    self._push_selection_view(folder_buttons)
+
+  def _pop_to_main(self):
+    gui_app.pop_widgets_to(self)
 
   def _select_model(self, bundle):
     ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
-    self._reset_main_view()
+    self._pop_to_main()
 
   def _select_default(self):
     ui_state.params.remove("ModelManager_ActiveBundle")
-    self._reset_main_view()
+    self._pop_to_main()
 
   def _select_folder(self, folder_name):
     favs = ui_state.params.get("ModelManager_Favs")
@@ -135,13 +133,7 @@ class ModelsLayoutMici(NavScroller):
       btn = BigButton(txt)
       btn.set_click_callback(lambda b=bundle: self._select_model(b))
       btns.append(btn)
-    self._show_selection_view(btns, self._show_folders)
-
-  def _reset_main_view(self):
-    self._scroller._items = self.main_items
-    self.set_back_callback(self.original_back_callback)
-    self._scroller.scroll_panel.set_offset(0)
-    self._scroller.scroll_to(0)
+    self._push_selection_view(btns)
 
   def hide_event(self):
     super().hide_event()

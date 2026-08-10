@@ -84,7 +84,7 @@ def test_radarless_slowdown_triggers_blended(mock_cp, mock_mpc, default_sm):
   controller = DynamicExperimentalController(mock_cp, mock_mpc, params=MockParams())
 
   # Force conditions to simulate slowdown
-  controller._slow_down_filter = FakeKalman(value=1.0)  # Ensure urgency triggers slowdown
+  controller._slow_down_filter = FakeKalman(value=1.0)  # ty: ignore[invalid-assignment]
   controller._v_ego_kph = 35.0
   default_sm['modelV2'] = MockModelData(valid=False)  # Incomplete trajectory
 
