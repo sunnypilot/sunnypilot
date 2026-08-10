@@ -12,7 +12,6 @@ from openpilot.common.hardware import TICI
 os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
 
 from openpilot.selfdrive.modeld.helpers import usbgpu_present, load_oob
-from openpilot.selfdrive.modeld.usbgpu_link import wait_usbgpu_link
 
 USBGPU = usbgpu_present()
 if USBGPU:
@@ -23,6 +22,7 @@ import numpy as np
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log
 from opendbc.car.structs import car
+from openpilot.cereal.services import SERVICE_LIST
 from setproctitle import setproctitle
 from openpilot.cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
@@ -42,6 +42,7 @@ from openpilot.system import sentry
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
+from openpilot.selfdrive.modeld.modeld import ChestnutState
 
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.constants import Plan
@@ -317,7 +318,11 @@ def main(demo=False):
   config_realtime_process(7, 54)
 
   if USBGPU:
-    wait_usbgpu_link()
+    os.environ['HCQDEV_WAIT_TIMEOUT_MS'] = '3000'
+
+  params = Params()
+  params.put_bool("UsbGpuLoading", USBGPU)
+  params.remove("UsbGpuActive")
 
   # visionipc clients
   while True:
@@ -343,15 +348,30 @@ def main(demo=False):
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
   cloudlog.warning("loading model")
-  model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
-  cloudlog.warning("models loaded, modeld starting")
+  st = time.monotonic()
+
+  model = None
+  if USBGPU:
+    import threading
+    def load(): nonlocal model; model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
+    t = threading.Thread(target=load, daemon=True)
+    t.start()
+    t.join(60)
+    assert model, "eGPU timeout (60s)"
+    params.put_bool("UsbGpuActive", True)
+  else:
+    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
+
+  params.put_bool("UsbGpuLoading", False)
+  cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if USBGPU else [])
+  pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
-  params = Params()
+  chestnut_state = ChestnutState(pm) if USBGPU else None
 
   params.put_bool("UsbGpuPresent", USBGPU)
   params.put_bool("UsbGpuCompiled", USBGPU)
@@ -509,6 +529,8 @@ def main(demo=False):
       pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
+    if chestnut_state is not None and run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0:
+      chestnut_state.send()
 
 if __name__ == "__main__":
   try:

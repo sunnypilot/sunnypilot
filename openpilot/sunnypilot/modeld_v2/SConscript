@@ -25,16 +25,7 @@ def get_camera_configs():
 
 CAMERA_CONFIGS = get_camera_configs()
 
-def probe_devices():
-  return set(subprocess.run(
-    [sys.executable, '-c', 'from tinygrad import Device\nprint("\\n".join(Device.get_available_devices()))'],
-    capture_output=True, text=True, check=True).stdout.strip().splitlines())
-
-available = probe_devices()
-if 'CUDA' in available:
-  tg_backend = 'CUDA'
-  tg_flags = f'DEV={tg_backend}'
-elif 'QCOM' in available:
+if arch == 'comma_arm64':
   tg_backend = 'QCOM'
   tg_flags = f'DEV={tg_backend} IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1'
 else:
@@ -53,7 +44,7 @@ script_deps = [File("compile_modeld.py"), upstream_compile_script]
 
 USBGPU = usbgpu_present()
 if USBGPU:
-  usbgpu_tg_flags = f'DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV={tg_backend} FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0'
+  usbgpu_tg_flags = f'DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV={tg_backend} FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2'
   usbgpu_lock = File("models/.usb_gpu.lock").abspath
 
 def compile_combined(model_type, onnx_args, output_name):
