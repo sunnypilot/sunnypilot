@@ -100,7 +100,14 @@ jobs:
           cat $GITHUB_OUTPUT
       - run: |
           cd ${{ github.workspace }}/openpilot
-          git lfs pull
+          if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
+            git lfs pull -I "selfdrive/modeld/models/*.onnx" -X "selfdrive/modeld/models/big_*.onnx,selfdrive/modeld/models/dmonitoring_*.onnx"
+            rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
+          else
+            git lfs pull -I "selfdrive/modeld/models/big_*.onnx" -X "selfdrive/modeld/models/dmonitoring_*.onnx"
+            find selfdrive/modeld/models -name "*.onnx" ! -name "big_*.onnx" -delete
+            rm -f selfdrive/modeld/models/dmonitoring_*.onnx
+          fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
@@ -173,8 +180,6 @@ jobs:
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix }}
           path: ${{ env.MODELS_DIR }}
-      - run: |
-          rm -f ${{ env.MODELS_DIR }}/{dmonitoring_model,big_driving_policy,big_driving_vision,big_driving_supercombo}.onnx
 
       - name: Build Model
         run: |
