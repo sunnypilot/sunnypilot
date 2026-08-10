@@ -15,11 +15,12 @@ EDGE_PROB = 0.35
 EDGE_REACTION_TIME = 1.0
 EDGE_CLEAR_TIME = 0.3
 MIN_SPEED = 20 * CV.MPH_TO_MS
+VEHICLE_EDGE_MARGIN = 1.08
+EDGE_CLEARANCE = 3.7
 
 
 class RoadEdgeLaneChangeController:
-  def __init__(self, desire_helper):
-    self.DH = desire_helper
+  def __init__(self):
     self.params = Params()
     self.enabled = self.params.get_bool("RoadEdgeLaneChangeEnabled")
     self.param_read_counter = 0
@@ -46,7 +47,7 @@ class RoadEdgeLaneChangeController:
     self.left_clear_timer = 0.0
     self.right_clear_timer = 0.0
 
-  def update(self, road_edge_stds, lane_line_probs, v_ego: float) -> None:
+  def update(self, road_edge_stds, lane_line_probs, v_ego: float, road_edges=None) -> None:
     self.update_params()
 
     if not self.enabled or v_ego < MIN_SPEED:
@@ -58,8 +59,15 @@ class RoadEdgeLaneChangeController:
     left_lane_prob = lane_line_probs[0]
     right_lane_prob = lane_line_probs[3]
 
-    left_cond = left_edge_prob > EDGE_PROB and left_lane_prob < NEARSIDE_PROB and right_lane_prob >= left_lane_prob
-    right_cond = right_edge_prob > EDGE_PROB and right_lane_prob < NEARSIDE_PROB and left_lane_prob >= right_lane_prob
+    if road_edges is not None and len(road_edges) == 2 and len(road_edges[0].y) > 0 and len(road_edges[1].y) > 0:
+      left_clearance = abs(road_edges[0].y[0]) - VEHICLE_EDGE_MARGIN
+      right_clearance = abs(road_edges[1].y[0]) - VEHICLE_EDGE_MARGIN
+    else:
+      left_clearance = 0.0
+      right_clearance = 0.0
+
+    left_cond = left_edge_prob > EDGE_PROB and left_lane_prob < NEARSIDE_PROB and left_clearance < EDGE_CLEARANCE
+    right_cond = right_edge_prob > EDGE_PROB and right_lane_prob < NEARSIDE_PROB and right_clearance < EDGE_CLEARANCE
 
     if left_cond:
       self.left_edge_timer = min(self.left_edge_timer + DT_MDL, EDGE_REACTION_TIME + EDGE_CLEAR_TIME)

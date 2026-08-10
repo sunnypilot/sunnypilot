@@ -368,7 +368,7 @@ def main(demo=False):
 
   DH = DesireHelper()
   meta_constants = load_meta_constants()
-  RELC = RoadEdgeLaneChangeController(DH)
+  RELC = RoadEdgeLaneChangeController()
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -481,7 +481,7 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      RELC.update(modelv2_send.modelV2.roadEdgeStds, modelv2_send.modelV2.laneLineProbs, v_ego)
+      RELC.update(modelv2_send.modelV2.roadEdgeStds, modelv2_send.modelV2.laneLineProbs, v_ego, modelv2_send.modelV2.roadEdges)
       mdv2sp_send.modelDataV2SP.leftLaneChangeEdgeBlock = RELC.left_edge_detected
       mdv2sp_send.modelDataV2SP.rightLaneChangeEdgeBlock = RELC.right_edge_detected
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, RELC.left_edge_detected, RELC.right_edge_detected)

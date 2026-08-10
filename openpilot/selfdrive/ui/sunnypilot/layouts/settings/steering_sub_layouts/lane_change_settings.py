@@ -61,6 +61,7 @@ class LaneChangeSettingsLayout(Widget):
       self._lane_change_timer,
       LineSeparatorSP(40),
       self._bsm_delay,
+      LineSeparatorSP(40),
       self._road_edge_block,
     ]
 
