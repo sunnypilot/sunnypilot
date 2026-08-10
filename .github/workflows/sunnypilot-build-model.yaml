@@ -256,7 +256,6 @@ jobs:
             --include='*.dlc' \
             --include='*.chunk*' \
             --include='*.chunkmanifest' \
-            --include='*.onnx' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
