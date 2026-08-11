@@ -546,6 +546,12 @@
               ]
             },
             {
+              "key": "RoadEdgeLaneChangeEnabled",
+              "widget": "toggle",
+              "title": "Block Lane Change: Road Edge Detection",
+              "description": "Blocks lane change when the model sees a road edge on the side you signal."
+            },
+            {
               "key": "AutoLaneChangeBsmDelay",
               "widget": "toggle",
               "title": "Auto Lane Change: Delay with Blind Spot",
@@ -1284,6 +1290,67 @@
                 {
                   "value": 120,
                   "label": "2 m"
+                }
+              ]
+            },
+            {
+              "key": "ScreenSaverEnabled",
+              "widget": "toggle",
+              "title": "Screen Saver",
+              "description": "Show a screen saver when the device is offroad and idle, instead of turning the screen off."
+            },
+            {
+              "key": "ScreenSaverTimeout",
+              "widget": "multiple_button",
+              "title": "Screen Saver Duration",
+              "description": "How long the screen saver runs before the screen turns off.",
+              "options": [
+                {
+                  "value": 60,
+                  "label": "1 m"
+                },
+                {
+                  "value": 120,
+                  "label": "2 m"
+                },
+                {
+                  "value": 180,
+                  "label": "3 m"
+                },
+                {
+                  "value": 240,
+                  "label": "4 m"
+                },
+                {
+                  "value": 300,
+                  "label": "5 m"
+                },
+                {
+                  "value": 360,
+                  "label": "6 m"
+                },
+                {
+                  "value": 420,
+                  "label": "7 m"
+                },
+                {
+                  "value": 480,
+                  "label": "8 m"
+                },
+                {
+                  "value": 540,
+                  "label": "9 m"
+                },
+                {
+                  "value": 600,
+                  "label": "10 m"
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "param",
+                  "key": "ScreenSaverEnabled",
+                  "equals": true
                 }
               ]
             }

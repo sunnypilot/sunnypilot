@@ -340,6 +340,8 @@ class Device(DeviceSP):
   def _set_awake(self, on: bool, _ui_state=None):
     if on != self._awake:
       super()._set_awake(on, _ui_state or ui_state)
+      if self._blocked_by_screensaver:
+        return
       self._awake = on
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)

@@ -12,6 +12,7 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -37,6 +38,9 @@ class UIStateSP:
     ]
 
     self.sunnylink_state = SunnylinkState()
+
+    self.screensaver = ScreenSaverSP(params=self.params)
+    self.screensaver_enabled: bool = False
 
     self.active_bundle = None
     self.blindspot: bool = False
@@ -170,6 +174,7 @@ class UIStateSP:
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
     self.always_offroad = self.params.get_bool("OffroadMode")
+    self.screensaver_enabled = self.params.get_bool("ScreenSaverEnabled")
 
     if not self._sp_initialized:
       self._sp_initialized = True
@@ -230,9 +235,25 @@ class UIStateSP:
 
 
 class DeviceSP:
+  def __init__(self):
+    self._blocked_by_screensaver: bool = False
+
   def _set_awake(self, on: bool, _ui_state=None):
+    self._blocked_by_screensaver = False
+
     if _ui_state.boot_offroad_mode == 1 and not on:
       _ui_state.params.put_bool("OffroadMode", True)
+
+    if not on and _ui_state.screensaver_enabled:
+      if _ui_state.screensaver.was_dismissed:
+        if gui_app.get_active_widget() == _ui_state.screensaver:
+          gui_app.pop_widget()
+      elif _ui_state.screensaver.is_active:
+        self._blocked_by_screensaver = True
+      else:
+        _ui_state.screensaver.initialize()
+        gui_app.push_widget(_ui_state.screensaver)
+        self._blocked_by_screensaver = True
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
