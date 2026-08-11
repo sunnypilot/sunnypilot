@@ -90,3 +90,9 @@ class RoadEdgeLaneChangeController:
       if self.right_clear_timer > EDGE_CLEAR_TIME:
         self.right_edge_timer = 0.0
         self.right_edge_detected = False
+
+  def update_and_fill(self, modelv2, mdv2sp, v_ego):
+    self.update(modelv2.roadEdgeStds, modelv2.laneLineProbs, v_ego, modelv2.roadEdges)
+    mdv2sp.leftLaneChangeEdgeBlock = self.left_edge_detected
+    mdv2sp.rightLaneChangeEdgeBlock = self.right_edge_detected
+    return self.left_edge_detected, self.right_edge_detected
