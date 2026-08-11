@@ -16,13 +16,14 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose, fft_next_good_size, parabolic_peak_interp
 from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 
-BLOCK_SIZE = 100
-BLOCK_NUM = 50
-BLOCK_NUM_NEEDED = 5
-MOVING_WINDOW_SEC = 60.0
-MIN_OKAY_WINDOW_SEC = 25.0
+BLOCK_SIZE = 8
+BLOCK_NUM = 30
+BLOCK_NUM_NEEDED = 3
+MOVING_WINDOW_SEC = 20.0
+MIN_OKAY_WINDOW_SEC = 5.0
 MIN_RECOVERY_BUFFER_SEC = 2.0
 MIN_VEGO = 50.0 * CV.MPH_TO_MS
+SPEED_BUCKET_EDGES = np.arange(0.0, 90.0, 10.0) * CV.MPH_TO_MS
 MIN_ABS_YAW_RATE = 0.0
 MAX_YAW_RATE_SANITY_CHECK = 1.0
 MIN_NCC = 0.95
@@ -31,14 +32,14 @@ MIN_LAG = 0.15
 MAX_LAG_STD = 0.1
 MAX_LAT_ACCEL = 2.0
 MAX_LAT_ACCEL_DIFF = 0.6
-MIN_LAT_ACCEL_RANGE = 0.5
+MIN_LAT_ACCEL_RANGE = 0.1
 MIN_CONFIDENCE = 0.7
 CORR_BORDER_OFFSET = 5
 LAG_CANDIDATE_CORR_THRESHOLD = 0.9
 SMOOTH_K = 5
 SMOOTH_SIGMA = 1.0
 
-VERSION = 1  # bump this to invalidate old parameter caches
+VERSION = 3  # bump this to invalidate old parameter caches
 
 
 def masked_symmetric_moving_average(x: np.ndarray, mask: np.ndarray, k: int, sigma: float) -> np.ndarray:
@@ -152,6 +153,12 @@ class BlockAverage:
       self.block_idx = (self.block_idx + 1) % self.num_blocks
       self.valid_blocks = min(self.valid_blocks + 1, self.num_blocks)
 
+  def restore(self, values: list[float], block_idx: int, idx: int):
+    assert len(values) == self.num_blocks and 0 <= block_idx < self.num_blocks and 0 <= idx < self.block_size
+    self.values = np.asarray(values, dtype=float).reshape(self.num_blocks, 1)
+    self.block_idx = block_idx
+    self.idx = idx
+
   def get(self) -> tuple[float, float, float, float]:
     valid_block_idx = [i for i in range(self.valid_blocks) if i != self.block_idx]
     valid_and_current_idx = valid_block_idx + ([self.block_idx] if self.idx > 0 else [])
@@ -178,7 +185,8 @@ class LateralLagEstimator:
                block_count: int = BLOCK_NUM, min_valid_block_count: int = BLOCK_NUM_NEEDED, block_size: int = BLOCK_SIZE,
                window_sec: float = MOVING_WINDOW_SEC, okay_window_sec: float = MIN_OKAY_WINDOW_SEC, min_recovery_buffer_sec: float = MIN_RECOVERY_BUFFER_SEC,
                min_vego: float = MIN_VEGO, min_yr: float = MIN_ABS_YAW_RATE, min_ncc: float = MIN_NCC,
-               max_lat_accel: float = MAX_LAT_ACCEL, max_lat_accel_diff: float = MAX_LAT_ACCEL_DIFF, min_confidence: float = MIN_CONFIDENCE):
+               max_lat_accel: float = MAX_LAT_ACCEL, max_lat_accel_diff: float = MAX_LAT_ACCEL_DIFF, min_confidence: float = MIN_CONFIDENCE,
+               speed_bucket_edges: np.ndarray | None = None):
     self.dt = dt
     self.window_sec = window_sec
     self.okay_window_sec = okay_window_sec
@@ -193,6 +201,8 @@ class LateralLagEstimator:
     self.min_confidence = min_confidence
     self.max_lat_accel = max_lat_accel
     self.max_lat_accel_diff = max_lat_accel_diff
+    self.speed_bucket_edges = np.asarray(speed_bucket_edges if speed_bucket_edges is not None else [0.0], dtype=float)
+    assert len(self.speed_bucket_edges) > 0 and self.speed_bucket_edges[0] == 0.0 and np.all(np.diff(self.speed_bucket_edges) > 0)
 
     self.t = 0.0
     self.lat_active = False
@@ -208,7 +218,9 @@ class LateralLagEstimator:
     self.last_steering_pressed_t = 0.0
     self.last_steering_saturated_t = 0.0
     self.last_pose_invalid_t = 0.0
-    self.last_estimate_t = 0.0
+    self.last_estimate_ts = [0.0] * len(self.speed_bucket_edges)
+    self.consecutive_okay = [0] * len(self.speed_bucket_edges)
+    self.learning_reset_reasons = ["not started"] * len(self.speed_bucket_edges)
 
     self.calibrator = PoseCalibrator()
 
@@ -216,8 +228,12 @@ class LateralLagEstimator:
 
   def reset(self, initial_lag: float, valid_blocks: int):
     window_len = int(self.window_sec / self.dt)
-    self.points = Points(window_len)
-    self.block_avg = BlockAverage(self.block_count, self.block_size, valid_blocks, initial_lag)
+    self.points = [Points(window_len) for _ in self.speed_bucket_edges]
+    self.block_avgs = [BlockAverage(self.block_count, self.block_size, valid_blocks, initial_lag) for _ in self.speed_bucket_edges]
+
+  @property
+  def speed_bucket(self) -> int:
+    return max(0, int(np.searchsorted(self.speed_bucket_edges, self.v_ego, side="right") - 1))
 
   def get_msg(self, valid: bool, debug: bool = False) -> capnp._DynamicStructBuilder:
     msg = messaging.new_message('liveDelay')
@@ -226,19 +242,23 @@ class LateralLagEstimator:
 
     liveDelay = msg.liveDelay
 
-    valid_mean_lag, valid_std, current_mean_lag, current_std = self.block_avg.get()
-    if self.block_avg.valid_blocks >= self.min_valid_block_count and not np.isnan(valid_mean_lag) and not np.isnan(valid_std):
-      if valid_std > MAX_LAG_STD:
-        liveDelay.status = log.LiveDelayData.Status.invalid
+    bucket_values = [avg.get() for avg in self.block_avgs]
+    bucket_statuses = []
+    bucket_applied = []
+    for avg, (valid_mean, valid_std, _, _) in zip(self.block_avgs, bucket_values, strict=True):
+      if avg.valid_blocks < self.min_valid_block_count or np.isnan(valid_mean) or np.isnan(valid_std):
+        status = "unestimated"
+      elif valid_std > MAX_LAG_STD:
+        status = "invalid"
       else:
-        liveDelay.status = log.LiveDelayData.Status.estimated
-    else:
-      liveDelay.status = log.LiveDelayData.Status.unestimated
+        status = "estimated"
+      bucket_statuses.append(status)
+      bucket_applied.append(min(MAX_LAG, max(MIN_LAG, valid_mean)) if status == "estimated" else self.initial_lag)
 
-    if liveDelay.status == log.LiveDelayData.Status.estimated:
-      liveDelay.lateralDelay = min(MAX_LAG, max(MIN_LAG, valid_mean_lag))
-    else:
-      liveDelay.lateralDelay = self.initial_lag
+    block_avg = self.block_avgs[self.speed_bucket]
+    _, _, current_mean_lag, current_std = bucket_values[self.speed_bucket]
+    liveDelay.status = bucket_statuses[self.speed_bucket]
+    liveDelay.lateralDelay = bucket_applied[self.speed_bucket]
 
     if not np.isnan(current_mean_lag) and not np.isnan(current_std):
       liveDelay.lateralDelayEstimate = current_mean_lag
@@ -247,11 +267,25 @@ class LateralLagEstimator:
       liveDelay.lateralDelayEstimate = self.initial_lag
       liveDelay.lateralDelayEstimateStd = 0.0
 
-    liveDelay.validBlocks = self.block_avg.valid_blocks
-    liveDelay.calPerc = min(100 * (self.block_avg.valid_blocks * self.block_size + self.block_avg.idx) //
+    liveDelay.validBlocks = block_avg.valid_blocks
+    liveDelay.calPerc = min(100 * (block_avg.valid_blocks * self.block_size + block_avg.idx) //
                             (self.min_valid_block_count * self.block_size), 100)
+    liveDelay.speedBucket = self.speed_bucket
+    liveDelay.speedBucketEdges = self.speed_bucket_edges.tolist()
+    liveDelay.lateralDelayBuckets = [min(MAX_LAG, max(MIN_LAG, value[2])) if not np.isnan(value[2]) else self.initial_lag for value in bucket_values]
+    liveDelay.lateralDelayEstimateStdBuckets = [value[3] if not np.isnan(value[3]) else 0.0 for value in bucket_values]
+    liveDelay.validBlocksBuckets = [avg.valid_blocks for avg in self.block_avgs]
+    liveDelay.calPercBuckets = [min(100 * (avg.valid_blocks * self.block_size + avg.idx) //
+                                        (self.min_valid_block_count * self.block_size), 100) for avg in self.block_avgs]
+    liveDelay.statusBuckets = bucket_statuses
+    liveDelay.lateralDelayAppliedBuckets = bucket_applied
+    liveDelay.blockIdxBuckets = [avg.block_idx for avg in self.block_avgs]
+    liveDelay.sampleIdxBuckets = [avg.idx for avg in self.block_avgs]
+    liveDelay.blockValuesBuckets = [avg.values.flatten().tolist() for avg in self.block_avgs]
+    liveDelay.learningCountdownBuckets = [max(0.0, self.okay_window_sec - count * self.dt) for count in self.consecutive_okay]
+    liveDelay.learningResetReasonBuckets = self.learning_reset_reasons
     if debug:
-      liveDelay.points = self.block_avg.values.flatten().tolist()
+      liveDelay.points = np.concatenate([avg.values.flatten() for avg in self.block_avgs]).tolist()
     liveDelay.version = VERSION
 
     return msg
@@ -275,11 +309,12 @@ class LateralLagEstimator:
       self.pose_valid = msg.angularVelocityDevice.valid and msg.posenetOK and msg.inputsOK
     self.t = t
 
-  def points_enough(self):
-    return self.points.num_points >= int(self.okay_window_sec / self.dt)
+  def points_enough(self, points: Points):
+    return points.num_points >= int(self.okay_window_sec / self.dt)
 
-  def points_valid(self):
-    return self.points.num_okay >= int(self.okay_window_sec / self.dt)
+  def points_valid(self, points: Points, speed_bucket: int):
+    required_points = int(self.okay_window_sec / self.dt)
+    return points.num_okay >= required_points and self.consecutive_okay[speed_bucket] >= required_points
 
   def update_points(self):
     la_desired = self.desired_curvature * self.v_ego * self.v_ego
@@ -307,17 +342,47 @@ class LateralLagEstimator:
     okay = self.lat_active and not self.steering_pressed and not self.steering_saturated and \
            fast and turning and has_recovered and calib_valid and sensors_valid and la_valid
 
-    self.points.update(self.t, la_desired, la_actual_pose, okay)
+    speed_bucket = self.speed_bucket
+    for i, points in enumerate(self.points):
+      in_bucket_okay = okay and i == speed_bucket
+      points.update(self.t, la_desired, la_actual_pose, in_bucket_okay)
+      if in_bucket_okay:
+        self.consecutive_okay[i] += 1
+        if self.consecutive_okay[i] >= int(self.okay_window_sec / self.dt):
+          self.learning_reset_reasons[i] = ""
+      else:
+        self.consecutive_okay[i] = 0
+        if i != speed_bucket:
+          self.learning_reset_reasons[i] = "outside speed band"
+        elif self.steering_pressed:
+          self.learning_reset_reasons[i] = "driver steering"
+        elif not self.lat_active:
+          self.learning_reset_reasons[i] = "lateral inactive"
+        elif self.steering_saturated:
+          self.learning_reset_reasons[i] = "steering saturated"
+        elif not calib_valid:
+          self.learning_reset_reasons[i] = "calibration invalid"
+        elif not sensors_valid:
+          self.learning_reset_reasons[i] = "pose invalid"
+        elif not la_valid:
+          self.learning_reset_reasons[i] = "lateral error"
+        elif not fast:
+          self.learning_reset_reasons[i] = "speed too low"
+        elif not turning:
+          self.learning_reset_reasons[i] = "insufficient yaw"
 
   def update_estimate(self):
-    if not self.points_enough():
+    speed_bucket = self.speed_bucket
+    points = self.points[speed_bucket]
+    if not self.points_enough(points):
       return
 
-    times, desired, actual, okay = self.points.get()
+    times, desired, actual, okay = points.get()
     # check if there are any new valid data points since the last update
-    is_valid = self.points_valid() and (actual.max() - actual.min() >= MIN_LAT_ACCEL_RANGE)
-    if self.last_estimate_t != 0 and times[0] <= self.last_estimate_t:
-      new_values_start_idx = next(-i for i, t in enumerate(reversed(times)) if t <= self.last_estimate_t)
+    is_valid = self.points_valid(points, speed_bucket) and (actual.max() - actual.min() >= MIN_LAT_ACCEL_RANGE)
+    last_estimate_t = self.last_estimate_ts[speed_bucket]
+    if last_estimate_t != 0 and times[0] <= last_estimate_t:
+      new_values_start_idx = next(-i for i, t in enumerate(reversed(times)) if t <= last_estimate_t)
       is_valid = is_valid and not (new_values_start_idx == 0 or not np.any(okay[new_values_start_idx:]))
 
     desired = masked_symmetric_moving_average(desired, okay, SMOOTH_K, SMOOTH_SIGMA)
@@ -327,8 +392,8 @@ class LateralLagEstimator:
     if corr < self.min_ncc or confidence < self.min_confidence or not is_valid:
       return
 
-    self.block_avg.update(delay)
-    self.last_estimate_t = self.t
+    self.block_avgs[speed_bucket].update(delay)
+    self.last_estimate_ts[speed_bucket] = self.t
 
   @staticmethod
   def actuator_delay(expected_sig: np.ndarray, actual_sig: np.ndarray, mask: np.ndarray,
@@ -373,11 +438,24 @@ def retrieve_initial_lag(params: Params, CP: car.CarParams):
         if last_CP.carFingerprint != CP.carFingerprint:
           raise Exception("Car model mismatch")
 
-        lag, valid_blocks, status, version = ld.lateralDelayEstimate, ld.validBlocks, ld.status, ld.version
-        assert valid_blocks <= BLOCK_NUM, "Invalid number of valid blocks"
+        lags, valid_blocks, status, version = list(ld.lateralDelayBuckets), list(ld.validBlocksBuckets), ld.status, ld.version
+        assert len(lags) == len(SPEED_BUCKET_EDGES) and len(valid_blocks) == len(SPEED_BUCKET_EDGES), "Invalid number of speed buckets"
+        assert all(blocks <= BLOCK_NUM for blocks in valid_blocks), "Invalid number of valid blocks"
         assert status != log.LiveDelayData.Status.invalid, "Lag estimate is invalid"
         assert version == VERSION, f"Lag estimate is from a different version (got {version}, expected {VERSION})"
-        return lag, valid_blocks
+        values = [list(v) for v in ld.blockValuesBuckets]
+        if len(values) == len(SPEED_BUCKET_EDGES):
+          block_indices, sample_indices = list(ld.blockIdxBuckets), list(ld.sampleIdxBuckets)
+          assert len(block_indices) == len(values) and len(sample_indices) == len(values), "Invalid saved bucket state"
+          assert all(len(v) == BLOCK_NUM for v in values), "Invalid saved block values"
+        else:  # migrate version 3 state saved before per-bucket progress persistence
+          values = [[lag] * BLOCK_NUM for lag in lags]
+          block_indices = [blocks % BLOCK_NUM for blocks in valid_blocks]
+          sample_indices = [0] * len(valid_blocks)
+          active_bucket = ld.speedBucket
+          accepted = round(ld.calPerc * (BLOCK_NUM_NEEDED * BLOCK_SIZE) / 100) - valid_blocks[active_bucket] * BLOCK_SIZE
+          sample_indices[active_bucket] = min(max(accepted, 0), BLOCK_SIZE - 1)
+        return list(zip(values, block_indices, sample_indices, valid_blocks, strict=True))
     except Exception as e:
       cloudlog.error(f"Failed to retrieve initial lag: {e}")
       params.remove("LiveDelay")
@@ -396,12 +474,15 @@ def main():
   params = Params()
   CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
 
-  lag_learner = LateralLagEstimator(CP, 1. / SERVICE_LIST['livePose'].frequency)
+  lag_learner = LateralLagEstimator(CP, 1. / SERVICE_LIST['livePose'].frequency, min_vego=0.0, speed_bucket_edges=SPEED_BUCKET_EDGES)
   if (initial_lag_params := retrieve_initial_lag(params, CP)) is not None:
-    lag, valid_blocks = initial_lag_params
-    lag_learner.reset(lag, valid_blocks)
+    for avg, (values, block_idx, idx, valid_blocks) in zip(lag_learner.block_avgs, initial_lag_params, strict=True):
+      avg.valid_blocks = valid_blocks
+      avg.restore(values, block_idx, idx)
 
   lagd_toggle = LagdToggle(CP)
+  last_cache_t = 0.0
+  last_cached_progress = None
 
   while True:
     sm.update()
@@ -419,8 +500,11 @@ def main():
       lag_msg_dat = lag_msg.to_bytes()
       pm.send('liveDelay', lag_msg_dat)
 
-      if sm.frame % 1200 == 0: # cache every 60 seconds
+      progress = tuple((avg.valid_blocks, avg.idx) for avg in lag_learner.block_avgs)
+      if progress != last_cached_progress and lag_learner.t - last_cache_t >= 5.0:
         params.put("LiveDelay", lag_msg_dat)
+        last_cache_t = lag_learner.t
+        last_cached_progress = progress
 
       if sm.frame % 60 == 0:  # read from and write to params every 3 seconds
         lagd_toggle.update(lag_msg)

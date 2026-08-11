@@ -6,11 +6,13 @@ import pytest
 from openpilot.cereal import messaging, log
 from opendbc.car.structs import car
 from openpilot.selfdrive.locationd.lagd import LateralLagEstimator, retrieve_initial_lag, masked_normalized_cross_correlation, \
-                                               BLOCK_NUM_NEEDED, BLOCK_SIZE, MIN_OKAY_WINDOW_SEC, VERSION, MIN_LAG, MAX_LAG
+                                               BLOCK_NUM, BLOCK_NUM_NEEDED, BLOCK_SIZE, MIN_OKAY_WINDOW_SEC, VERSION, MIN_LAG, MAX_LAG
+from openpilot.selfdrive.locationd.lagd import SPEED_BUCKET_EDGES
 from openpilot.selfdrive.test.process_replay.migration import migrate, migrate_carParams
 from openpilot.selfdrive.locationd.test.test_locationd_scenarios import TEST_ROUTE
 from openpilot.common.params import Params
 from openpilot.tools.lib.logreader import LogReader
+from openpilot.tools.lagd_buckets import line_graph
 from openpilot.common.hardware import PC
 
 MAX_ERR_FRAMES = 1
@@ -18,9 +20,9 @@ DT = 0.05
 LAGD_MIN_LAG_FRAMES, LAGD_MAX_LAG_FRAMES = int(round(MIN_LAG / DT)), int(round(MAX_LAG / DT))
 
 
-def process_messages(estimator, lag_frames, n_frames, vego=25.0, rejection_threshold=0.0):
+def process_messages(estimator, lag_frames, n_frames, vego=25.0, rejection_threshold=0.0, start_frame=0):
   for i in range(n_frames):
-    t = i * estimator.dt
+    t = (start_frame + i) * estimator.dt
     desired_la = np.cos(10 * t) * 0.3
     actual_la = np.cos(10 * (t - lag_frames * estimator.dt)) * 0.3
 
@@ -46,6 +48,13 @@ def process_messages(estimator, lag_frames, n_frames, vego=25.0, rejection_thres
 
 
 class TestLagd:
+  def test_line_graph(self):
+    graph = line_graph([0.15, 0.4, 0.65], ["estimated", "unestimated", "invalid"], 1)
+    assert all(marker in graph for marker in ["●", "◆", "×"])
+    assert "0.65s" in graph and "0.15s" in graph
+    assert any("⠀" < char <= "⣿" for char in graph)
+    assert "⠒" in line_graph([0.3, 0.3], ["estimated", "estimated"], -1)
+
   def test_read_saved_params(self):
     params = Params()
 
@@ -53,8 +62,11 @@ class TestLagd:
     CP = next(m for m in lr if m.which() == "carParams").carParams
 
     msg = messaging.new_message('liveDelay')
-    msg.liveDelay.lateralDelayEstimate = random.random()
-    msg.liveDelay.validBlocks = random.randint(1, 10)
+    msg.liveDelay.lateralDelayBuckets = [random.random() for _ in SPEED_BUCKET_EDGES]
+    msg.liveDelay.validBlocksBuckets = [random.randint(1, 10) for _ in SPEED_BUCKET_EDGES]
+    msg.liveDelay.blockValuesBuckets = [[random.random() for _ in range(BLOCK_NUM)] for _ in SPEED_BUCKET_EDGES]
+    msg.liveDelay.blockIdxBuckets = [random.randrange(BLOCK_NUM) for _ in SPEED_BUCKET_EDGES]
+    msg.liveDelay.sampleIdxBuckets = [random.randrange(BLOCK_SIZE) for _ in SPEED_BUCKET_EDGES]
     msg.liveDelay.version = VERSION
     params.put("LiveDelay", msg.to_bytes(), block=True)
     params.put("CarParamsPrevRoute", CP.as_builder().to_bytes(), block=True)
@@ -62,9 +74,20 @@ class TestLagd:
     saved_lag_params = retrieve_initial_lag(params, CP)
     assert saved_lag_params is not None
 
-    lag, valid_blocks = saved_lag_params
-    assert lag == msg.liveDelay.lateralDelayEstimate
-    assert valid_blocks == msg.liveDelay.validBlocks
+    for state, values, block_idx, sample_idx, valid_blocks in zip(saved_lag_params, msg.liveDelay.blockValuesBuckets,
+                                                                  msg.liveDelay.blockIdxBuckets, msg.liveDelay.sampleIdxBuckets,
+                                                                  msg.liveDelay.validBlocksBuckets, strict=True):
+      assert np.allclose(state[0], values)
+      assert state[1:] == (block_idx, sample_idx, valid_blocks)
+
+    old_msg = messaging.new_message('liveDelay')
+    old_msg.liveDelay.version = VERSION
+    old_msg.liveDelay.speedBucket = 4
+    old_msg.liveDelay.calPerc = 12
+    old_msg.liveDelay.lateralDelayBuckets = [0.3] * len(SPEED_BUCKET_EDGES)
+    old_msg.liveDelay.validBlocksBuckets = [0] * len(SPEED_BUCKET_EDGES)
+    params.put("LiveDelay", old_msg.to_bytes(), block=True)
+    assert retrieve_initial_lag(params, CP)[4][2] == 3
 
   def test_read_invalid_saved_params(self, subtests):
     params = Params()
@@ -72,7 +95,9 @@ class TestLagd:
     lr = migrate(LogReader(TEST_ROUTE), [migrate_carParams])
     CP = next(m for m in lr if m.which() == "carParams").carParams
 
-    for msg_dict in [{'version': 0}, {'status': 'invalid'}, {'validBlocks': 100}]:
+    valid = {'version': VERSION, 'lateralDelayBuckets': [0.3] * len(SPEED_BUCKET_EDGES),
+             'validBlocksBuckets': [1] * len(SPEED_BUCKET_EDGES)}
+    for msg_dict in [valid | {'version': 0}, valid | {'status': 'invalid'}, valid | {'validBlocksBuckets': [100] * 4}]:
       with subtests.test(msg=f"liveDelay={msg_dict}"):
         msg = messaging.new_message('liveDelay')
         msg.liveDelay = msg_dict
@@ -131,11 +156,39 @@ class TestLagd:
   def test_estimator_masking(self):
     mocked_CP, lag_frames = car.CarParams(steerActuatorDelay=0.5), random.randint(LAGD_MIN_LAG_FRAMES, LAGD_MAX_LAG_FRAMES - 1)
     estimator = LateralLagEstimator(mocked_CP, DT, min_recovery_buffer_sec=0.0, min_yr=0.0, min_valid_block_count=1)
-    process_messages(estimator, lag_frames, (int(MIN_OKAY_WINDOW_SEC / DT) + BLOCK_SIZE) * 2, rejection_threshold=0.4)
+    masked_frames = int(MIN_OKAY_WINDOW_SEC / DT)
+    process_messages(estimator, lag_frames, masked_frames, rejection_threshold=0.4)
+    process_messages(estimator, lag_frames, masked_frames + BLOCK_SIZE * 2, start_frame=masked_frames)
     msg = estimator.get_msg(True)
     assert np.allclose(msg.liveDelay.lateralDelayEstimate, lag_frames * DT, atol=0.01)
     assert np.allclose(msg.liveDelay.lateralDelayEstimateStd, 0.0, atol=0.01)
     assert msg.liveDelay.calPerc == 100
+
+  def test_learning_countdown_resets(self):
+    mocked_CP = car.CarParams(steerActuatorDelay=0.3)
+    estimator = LateralLagEstimator(mocked_CP, DT, window_sec=10.0, okay_window_sec=5.0,
+                                    min_recovery_buffer_sec=0.0, min_vego=0.0, min_yr=0.0)
+    process_messages(estimator, 5, 80)
+    assert np.allclose(estimator.get_msg(True).liveDelay.learningCountdownBuckets, [1.0])
+
+    process_messages(estimator, 5, 1, rejection_threshold=1.0, start_frame=80)
+    msg = estimator.get_msg(True).liveDelay
+    assert np.allclose(msg.learningCountdownBuckets, [5.0])
+    assert list(msg.learningResetReasonBuckets) == ["lateral inactive"]
+
+  def test_speed_buckets(self):
+    mocked_CP = car.CarParams(steerActuatorDelay=0.3)
+    estimator = LateralLagEstimator(mocked_CP, DT, block_size=10, min_valid_block_count=1, window_sec=5.0,
+                                    okay_window_sec=2.0, min_recovery_buffer_sec=0.0, min_vego=0.0, min_yr=0.0,
+                                    speed_bucket_edges=np.array([0.0, 20.0]))
+    frame_count = int(5.0 / DT) + 10
+    process_messages(estimator, 5, frame_count, vego=15.0)
+    process_messages(estimator, 9, frame_count, vego=25.0, start_frame=frame_count)
+
+    msg = estimator.get_msg(True).liveDelay
+    assert msg.speedBucket == 1
+    assert np.allclose(msg.lateralDelayBuckets, [5 * DT, 9 * DT], atol=0.01)
+    assert all(blocks > 0 for blocks in msg.validBlocksBuckets)
 
   @pytest.mark.skipif(PC, reason="only on device")
   def test_estimator_performance(self):

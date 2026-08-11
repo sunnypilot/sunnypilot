@@ -2309,6 +2309,19 @@ struct LiveDelayData {
   points @4 :List(Float32);
   calPerc @6 :Int8;
   version @7 :Int32;
+  speedBucket @8 :Int8;
+  speedBucketEdges @9 :List(Float32);
+  lateralDelayBuckets @10 :List(Float32);
+  lateralDelayEstimateStdBuckets @11 :List(Float32);
+  validBlocksBuckets @12 :List(Int32);
+  calPercBuckets @13 :List(Int8);
+  statusBuckets @14 :List(Status);
+  lateralDelayAppliedBuckets @15 :List(Float32);
+  blockIdxBuckets @16 :List(Int8);
+  sampleIdxBuckets @17 :List(Int8);
+  blockValuesBuckets @18 :List(List(Float32));
+  learningCountdownBuckets @19 :List(Float32);
+  learningResetReasonBuckets @20 :List(Text);
 
   enum Status {
     unestimated @0;
