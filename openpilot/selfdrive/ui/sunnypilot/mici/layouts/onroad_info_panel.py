@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import pyray as rl
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -45,14 +45,14 @@ COLUMN_GAP = 12
 class OnroadInfoPanelColors:
   white: rl.Color = rl.WHITE
   black: rl.Color = rl.BLACK
-  red: rl.Color = rl.Color(255, 0, 0, 255)
-  green: rl.Color = rl.Color(0, 255, 0, 255)
-  grey: rl.Color = rl.Color(190, 195, 190, 255)
-  light_grey: rl.Color = rl.Color(200, 200, 200, 255)
-  dark_grey: rl.Color = rl.Color(100, 100, 100, 255)
-  bg_dark: rl.Color = rl.Color(0, 0, 0, 255)
-  card_bg: rl.Color = rl.Color(50, 50, 50, 200)
-  badge_bg: rl.Color = rl.Color(60, 60, 60, 255)
+  red: rl.Color = field(default_factory=lambda: rl.Color(255, 0, 0, 255))
+  green: rl.Color = field(default_factory=lambda: rl.Color(0, 255, 0, 255))
+  grey: rl.Color = field(default_factory=lambda: rl.Color(190, 195, 190, 255))
+  light_grey: rl.Color = field(default_factory=lambda: rl.Color(200, 200, 200, 255))
+  dark_grey: rl.Color = field(default_factory=lambda: rl.Color(100, 100, 100, 255))
+  bg_dark: rl.Color = field(default_factory=lambda: rl.Color(0, 0, 0, 255))
+  card_bg: rl.Color = field(default_factory=lambda: rl.Color(50, 50, 50, 200))
+  badge_bg: rl.Color = field(default_factory=lambda: rl.Color(60, 60, 60, 255))
 
 
 COLORS = OnroadInfoPanelColors()
