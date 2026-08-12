@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from collections.abc import Callable
 import pyray as rl
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.scroller_sp import ScrollerSP
@@ -43,9 +44,9 @@ class OnroadViewContainerSP(ScrollerSP):
   def is_swiping_left(self) -> bool:
     return self.road_view.is_swiping_left() or self.onroad_info_panel.is_swiping_left()
 
-  def set_click_callback(self, callback) -> None:
-    self.road_view.set_click_callback(callback)
-    self.onroad_info_panel.set_click_callback(callback)
+  def set_click_callback(self, click_callback: Callable[[], None] | None) -> None:
+    self.road_view.set_click_callback(click_callback)
+    self.onroad_info_panel.set_click_callback(click_callback)
 
   def is_on_info_panel(self) -> bool:
     """True when scrolled past halfway toward onroad_info_panel (used by main layout

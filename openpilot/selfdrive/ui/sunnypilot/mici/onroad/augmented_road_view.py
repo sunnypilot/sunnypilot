@@ -5,7 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import pyray as rl
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
 
 
@@ -24,7 +23,7 @@ class AugmentedRoadViewSP(AugmentedRoadView):
   def set_show_confidence_ball(self, show: bool) -> None:
     self._show_confidence_ball = show
 
-  def _render(self, rect: rl.Rectangle) -> None:
-    super()._render(rect)
+  def _render(self, _) -> None:
+    super()._render(_)
     if self._show_confidence_ball:
       self._real_confidence_ball.render(self.rect)

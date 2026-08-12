@@ -45,7 +45,7 @@ def test_vertical_snap_items_are_supported(monkeypatch):
 
   monkeypatch.setattr(scroller.scroll_panel, "update", update)
 
-  visible_items = [
+  visible_items: list[Widget] = [
     DummyWidget(rl.Rectangle(0, -60, 100, 100)),
     DummyWidget(rl.Rectangle(0, 40, 100, 100)),
   ]
