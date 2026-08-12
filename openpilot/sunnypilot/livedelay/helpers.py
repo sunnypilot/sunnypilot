@@ -8,7 +8,7 @@ from openpilot.common.params import Params
 
 
 def get_lat_delay(params: Params, stock_lat_delay: float) -> float:
-  # live learning on: use what lagd publishes. 
+  # live learning on: use what lagd publishes.
   # off: use the fixed steerActuatorDelay + software delay sum that LagdToggle caches.
   if params.get_bool("LagdToggle"):
     return stock_lat_delay
