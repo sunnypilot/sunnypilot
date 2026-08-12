@@ -1,3 +1,4 @@
+import math
 import random
 import numpy as np
 import time
@@ -7,12 +8,12 @@ from openpilot.cereal import messaging, log
 from opendbc.car.structs import car
 from openpilot.selfdrive.locationd.lagd import LateralLagEstimator, retrieve_initial_lag, masked_normalized_cross_correlation, \
                                                BLOCK_NUM, BLOCK_NUM_NEEDED, BLOCK_SIZE, MIN_OKAY_WINDOW_SEC, VERSION, MIN_LAG, MAX_LAG
-from openpilot.selfdrive.locationd.lagd import SPEED_BUCKET_EDGES
+from openpilot.selfdrive.locationd.lagd import SPEED_BUCKET_EDGES, interpolate_bucket_values
 from openpilot.selfdrive.test.process_replay.migration import migrate, migrate_carParams
 from openpilot.selfdrive.locationd.test.test_locationd_scenarios import TEST_ROUTE
 from openpilot.common.params import Params
 from openpilot.tools.lib.logreader import LogReader
-from openpilot.tools.lagd_buckets import line_graph
+from openpilot.tools.lagd_buckets import line_graph, ping_pong_metrics
 from openpilot.common.hardware import PC
 
 MAX_ERR_FRAMES = 1
@@ -48,10 +49,27 @@ def process_messages(estimator, lag_frames, n_frames, vego=25.0, rejection_thres
 
 
 class TestLagd:
+  def test_interpolate_bucket_values(self):
+    edges = np.array([0.0, 10.0, 20.0])
+    values = [.2, .4, .3]
+    assert interpolate_bucket_values(0, edges, values) == .2
+    assert interpolate_bucket_values(10, edges, values) == pytest.approx(.3)
+    assert interpolate_bucket_values(20, edges, values) == pytest.approx(.35)
+    assert interpolate_bucket_values(30, edges, values) == .3
+
+  def test_ping_pong_metrics(self):
+    samples = [(i / 10, .12 * math.sin(2 * math.pi * .17 * i / 10)) for i in range(301)]
+    severity, sway, cycles, duration = ping_pong_metrics(samples)
+    assert severity == "MODERATE"
+    assert .09 < sway < .13
+    assert 8 < cycles < 13
+    assert duration == 30
+
   def test_line_graph(self):
     graph = line_graph([0.15, 0.4, 0.65], ["estimated", "unestimated", "invalid"], 1)
     assert all(marker in graph for marker in ["●", "◆", "×"])
     assert "0.65s" in graph and "0.15s" in graph
+    assert "centers" in graph and "5" in graph
     assert any("⠀" < char <= "⣿" for char in graph)
     assert "⠒" in line_graph([0.3, 0.3], ["estimated", "estimated"], -1)
 

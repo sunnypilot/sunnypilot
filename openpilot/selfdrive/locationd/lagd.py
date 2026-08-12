@@ -24,6 +24,13 @@ MIN_OKAY_WINDOW_SEC = 5.0
 MIN_RECOVERY_BUFFER_SEC = 2.0
 MIN_VEGO = 50.0 * CV.MPH_TO_MS
 SPEED_BUCKET_EDGES = np.arange(0.0, 90.0, 10.0) * CV.MPH_TO_MS
+
+
+def interpolate_bucket_values(speed: float, edges: np.ndarray, values: list[float]) -> float:
+  if len(values) == 1:
+    return values[0]
+  widths = np.append(np.diff(edges), edges[-1] - edges[-2])
+  return float(np.interp(speed, edges + widths / 2, values))
 MIN_ABS_YAW_RATE = 0.0
 MAX_YAW_RATE_SANITY_CHECK = 1.0
 MIN_NCC = 0.95
@@ -258,7 +265,7 @@ class LateralLagEstimator:
     block_avg = self.block_avgs[self.speed_bucket]
     _, _, current_mean_lag, current_std = bucket_values[self.speed_bucket]
     liveDelay.status = bucket_statuses[self.speed_bucket]
-    liveDelay.lateralDelay = bucket_applied[self.speed_bucket]
+    liveDelay.lateralDelay = interpolate_bucket_values(self.v_ego, self.speed_bucket_edges, bucket_applied)
 
     if not np.isnan(current_mean_lag) and not np.isnan(current_std):
       liveDelay.lateralDelayEstimate = current_mean_lag
