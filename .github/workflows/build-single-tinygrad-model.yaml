@@ -162,7 +162,7 @@ jobs:
           except Exception as e:
               print('HF validation failed:', e)
               sys.exit(1)
-          " "$RECOMPILED_DIR" "$HF_OIDC_RESOURCE"
+          " "$RECOMPILED_DIR" "${{ inputs.hf_repo }}"
 
       - name: Download artifact name file
         uses: actions/download-artifact@v4
@@ -195,7 +195,7 @@ jobs:
           HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          huggingface-cli upload $HF_OIDC_RESOURCE \
+          huggingface-cli upload ${{ inputs.hf_repo }} \
             output/ \
             models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/ \
             --repo-type=dataset
