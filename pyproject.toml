@@ -65,11 +65,6 @@ dev = [
 testing = [
   "coverage",
   "ty",
-  "pytest",
-  "pytest-cpp",
-  "pytest-subtests",
-  "pytest-xdist @ git+https://github.com/sshane/pytest-xdist@2b4372bd62699fb412c4fe2f95bf9f01bd2018da",
-  "pytest-mock",
   "ruff",
   "codespell",
 ]
@@ -115,24 +110,6 @@ packages = [
 [tool.hatch.metadata]
 allow-direct-references = true
 
-# TODO-SP: upstream replaced pytest with a custom unittest runner (tools/test_runner.py).
-#  Remove this section and the pytest deps once sunnypilot tests are migrated to unittest.
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-Werror --strict-config --strict-markers --durations=10 -n auto --dist=loadgroup"
-python_files = "test_*.py"
-markers = [
-  "slow: tests that take awhile to run and can be skipped with -m 'not slow'",
-  "tici: tests that are only meant to run on the C3/C3X",
-  "skip_tici_setup: mark test to skip tici setup fixture",
-  "nocapture: don't capture test output",
-  "shared_download_cache: share download cache between tests",
-  "xdist_group_class_property: group tests by a property of the class that contains them",
-]
-testpaths = [
-  "openpilot",
-]
-
 [tool.codespell]
 quiet-level = 3
 # if you've got a short variable name that's getting flagged, add it here
@@ -171,7 +148,6 @@ exclude = [
 lint.flake8-implicit-str-concat.allow-multiline = false
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"pytest.main".msg = "pytest.main requires special handling that is easy to mess up!"
 "time.time".msg = "Use time.monotonic. time.time can skip due to its reference clock, you probably want a monotonic clock"
 "pyray.measure_text_ex".msg = "Use openpilot.system.ui.lib.text_measure"
 "pyray.is_mouse_button_pressed".msg = "This can miss events. Use Widget._handle_mouse_press"

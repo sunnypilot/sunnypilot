@@ -19,6 +19,7 @@ from openpilot.selfdrive.locationd.helpers import Pose
 from openpilot.common.mock.generators import generate_deviceMotion
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.common.test import OpenpilotTestCase
 
 
 def _make_controller(enhanced=False, nnlc=False):
@@ -71,7 +72,7 @@ def _run_update(controller, VM):
   return controller.update(True, CS, VM, params, False, 0.5, pose, False, 0.2)
 
 
-class TestLatControlTorqueExt:
+class TestLatControlTorqueExt(OpenpilotTestCase):
   def test_init_enhanced_only(self):
     controller, VM, _ = _make_controller(enhanced=True, nnlc=False)
     assert controller.extension._jerk_aware_enabled

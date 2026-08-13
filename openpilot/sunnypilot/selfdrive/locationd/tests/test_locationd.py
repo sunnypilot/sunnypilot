@@ -1,5 +1,5 @@
-import pytest
 import platform
+import unittest
 import json
 import random
 import time
@@ -11,13 +11,11 @@ from openpilot.common.params import Params
 from openpilot.common.transformations.coordinates import ecef2geodetic
 
 from openpilot.system.manager.process_config import managed_processes
+from openpilot.common.test import OpenpilotTestCase
 
 
-if platform.system() == 'Darwin':
-  pytest.skip("Skipping locationd test on macOS due to unsupported msgq.", allow_module_level=True)
-
-
-class TestLocationdProc:
+@unittest.skipIf(platform.system() == 'Darwin', "msgq unsupported on macOS")
+class TestLocationdProc(OpenpilotTestCase):
   LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'extrinsicsCalibration',
               'accelerometer', 'gyroscope']
 
@@ -88,6 +86,6 @@ class TestLocationdProc:
     time.sleep(1)  # wait for async params write
 
     lastGPS = json.loads(self.params.get('LastGPSPositionLLK'))
-    assert lastGPS['latitude'] == pytest.approx(self.lat, abs=0.001)
-    assert lastGPS['longitude'] == pytest.approx(self.lon, abs=0.001)
-    assert lastGPS['altitude'] == pytest.approx(self.alt, abs=0.001)
+    self.assertAlmostEqual(lastGPS['latitude'], self.lat, delta=0.001)
+    self.assertAlmostEqual(lastGPS['longitude'], self.lon, delta=0.001)
+    self.assertAlmostEqual(lastGPS['altitude'], self.alt, delta=0.001)

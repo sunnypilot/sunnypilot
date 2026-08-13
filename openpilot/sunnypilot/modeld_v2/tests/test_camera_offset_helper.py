@@ -9,6 +9,7 @@ import numpy as np
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.common.test import OpenpilotTestCase
 
 
 class MockStruct:
@@ -20,7 +21,7 @@ class MockStruct:
     return getattr(self, item)
 
 
-class TestCameraOffset:
+class TestCameraOffset(OpenpilotTestCase):
   def setup_method(self):
     self.camera_offset = CameraOffsetHelper()
     self.dc = DEVICE_CAMERAS[('mici', 'os04c10')]
