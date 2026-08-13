@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 from collections import deque
+import math
 import time
 
 from openpilot.cereal import messaging
 from openpilot.common.constants import CV
+from openpilot.common.params import Params
+from opendbc.car.structs import car
+from opendbc.car.vehicle_model import VehicleModel
 
 
-PING_PONG_WINDOW = 30.0
-PING_PONG_MIN_WINDOW = 15.0
+PING_PONG_WINDOW = 5.0
+PING_PONG_MIN_WINDOW = 3.0
+PING_PONG_ERROR_DEG = 1.0
 
 
 def ping_pong_metrics(samples: list[tuple[float, float]]) -> tuple[str, float, float, float]:
@@ -16,30 +21,28 @@ def ping_pong_metrics(samples: list[tuple[float, float]]) -> tuple[str, float, f
     return "COLLECTING", 0.0, 0.0, duration
 
   values = [sample[1] for sample in samples]
-  smoothed = [sum(values[max(0, i - 5):i + 6]) / len(values[max(0, i - 5):i + 6]) for i in range(len(values))]
-  center = sum(smoothed) / len(smoothed)
-  residual = [value - center for value in smoothed]
-  ordered = sorted(residual)
-  amplitude = (ordered[int(.9 * (len(ordered) - 1))] - ordered[int(.1 * (len(ordered) - 1))]) / 2
-  hysteresis = max(.01, amplitude * .3)
+  center = sum(values) / len(values)
+  residual = [value - center for value in values]
+  amplitude = (max(residual) - min(residual)) / 2
   state = 0
-  reversals = 0
-  for value in residual:
-    new_state = 1 if value > hysteresis else -1 if value < -hysteresis else state
+  transition_times = []
+  for (sample_time, _), value in zip(samples, residual, strict=True):
+    new_state = 1 if value >= PING_PONG_ERROR_DEG else -1 if value <= -PING_PONG_ERROR_DEG else state
     if state and new_state != state:
-      reversals += 1
+      transition_times.append(sample_time)
     state = new_state
-  cycles_per_min = reversals * 30 / duration
+  transition_duration = transition_times[-1] - transition_times[0] if len(transition_times) > 1 else 0.0
+  frequency = (len(transition_times) - 1) / (2 * transition_duration) if transition_duration else 0.0
 
-  if not 5 <= cycles_per_min <= 20 or amplitude < .03:
+  if frequency < 1 or amplitude < PING_PONG_ERROR_DEG:
     severity = "NONE"
-  elif amplitude < .07:
+  elif amplitude < 2:
     severity = "MILD"
-  elif amplitude < .15:
+  elif amplitude < 3:
     severity = "MODERATE"
   else:
     severity = "SEVERE"
-  return severity, amplitude, cycles_per_min, duration
+  return severity, amplitude, frequency, duration
 
 
 def line_graph(values, statuses, active_bucket: int, edges=None, low: float = .15, high: float = .65, height: int = 11, step: int = 8) -> str:
@@ -104,7 +107,9 @@ def line_graph(values, statuses, active_bucket: int, edges=None, low: float = .1
 
 
 def main() -> None:
-  sm = messaging.SubMaster(["carControl", "carState", "controlsState", "liveCalibration", "liveDelay"])
+  CP = messaging.log_from_bytes(Params().get("CarParams", block=True), car.CarParams)
+  VM = VehicleModel(CP)
+  sm = messaging.SubMaster(["carControl", "carState", "controlsState", "liveCalibration", "liveDelay", "liveParameters"])
   ping_pong_samples: deque[tuple[float, float]] = deque()
   ping_pong_waiting = "lateral inactive"
   last_sample = 0.0
@@ -114,19 +119,20 @@ def main() -> None:
     sm.update(500)
     now = time.monotonic()
     speed_mps = sm["carState"].vEgo
-    desired_lat_accel = sm["controlsState"].desiredCurvature * speed_mps ** 2
-    if now - last_sample >= .1:
+    lp = sm["liveParameters"]
+    VM.update_params(max(lp.stiffnessFactor, .1), max(lp.steerRatio, .1))
+    desired_angle = math.degrees(VM.get_steer_from_curvature(-sm["controlsState"].desiredCurvature, speed_mps, lp.roll))
+    actual_angle = sm["carState"].steeringAngleDeg - lp.angleOffsetDeg
+    if now - last_sample >= .05:
       if not sm["carControl"].latActive:
         ping_pong_waiting = "lateral inactive"
       elif sm["carState"].steeringPressed:
         ping_pong_waiting = "driver steering"
       elif speed_mps < 2:
         ping_pong_waiting = "speed below 5 mph"
-      elif abs(desired_lat_accel) > .5:
-        ping_pong_waiting = "not a straight segment"
       else:
         ping_pong_waiting = ""
-        ping_pong_samples.append((now, sm["controlsState"].curvature * speed_mps ** 2))
+        ping_pong_samples.append((now, desired_angle - actual_angle))
         while ping_pong_samples and now - ping_pong_samples[0][0] > PING_PONG_WINDOW:
           ping_pong_samples.popleft()
       if ping_pong_waiting:
@@ -142,12 +148,12 @@ def main() -> None:
     speed = sm["carState"].vEgo * CV.MS_TO_MPH
     calibration = sm["liveCalibration"].calStatus
     lines = [f"speed {speed:5.1f} mph   calibration {calibration}   status {ld.status}   applied {ld.lateralDelay:.3f} s"]
-    severity, sway, cycles, duration = ping_pong_metrics(list(ping_pong_samples))
-    ping_pong = f"PING-PONG {severity:<10}  sway {sway:.3f} m/s²   {cycles:.1f} cycles/min   window {duration:.0f}s"
+    severity, amplitude, frequency, duration = ping_pong_metrics(list(ping_pong_samples))
+    ping_pong = f"PING-PONG {severity:<10}  angle-error amplitude ±{amplitude:.2f}°   {frequency:.2f} Hz   window {duration:.0f}s"
     if ping_pong_waiting:
       ping_pong = f"PING-PONG WAITING     {ping_pong_waiting}"
     elif severity == "COLLECTING":
-      ping_pong = f"PING-PONG COLLECTING  {duration:.0f}/{PING_PONG_MIN_WINDOW:.0f}s of straight driving"
+      ping_pong = f"PING-PONG COLLECTING  {duration:.0f}/{PING_PONG_MIN_WINDOW:.0f}s of steering-angle error"
     lines.extend([ping_pong, "", "APPLIED LAG BY SPEED (INTERPOLATED)",
                   *line_graph(ld.lateralDelayAppliedBuckets, ld.statusBuckets, ld.speedBucket, edges).splitlines(), "",
                   "    range       estimate   applied    std    blocks   progress   starts in   state      last reset"])

@@ -58,12 +58,12 @@ class TestLagd:
     assert interpolate_bucket_values(30, edges, values) == .3
 
   def test_ping_pong_metrics(self):
-    samples = [(i / 10, .12 * math.sin(2 * math.pi * .17 * i / 10)) for i in range(301)]
-    severity, sway, cycles, duration = ping_pong_metrics(samples)
+    samples = [(i / 20, 2.5 * math.sin(2 * math.pi * 1.2 * i / 20)) for i in range(101)]
+    severity, amplitude, frequency, duration = ping_pong_metrics(samples)
     assert severity == "MODERATE"
-    assert .09 < sway < .13
-    assert 8 < cycles < 13
-    assert duration == 30
+    assert 2.4 < amplitude < 2.6
+    assert 1.0 < frequency < 1.3
+    assert duration == 5
 
   def test_line_graph(self):
     graph = line_graph([0.15, 0.4, 0.65], ["estimated", "unestimated", "invalid"], 1)
