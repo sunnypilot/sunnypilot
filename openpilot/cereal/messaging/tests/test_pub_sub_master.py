@@ -3,13 +3,14 @@ import time
 from typing import cast
 from collections.abc import Sized
 
+from openpilot.common.test import OpenpilotTestCase
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal.messaging.tests.test_messaging import events, random_sock, random_socks, \
                                                   random_bytes, random_carstate, assert_carstate
 from openpilot.cereal.services import SERVICE_LIST
 
 
-class TestSubMaster:
+class TestSubMaster(OpenpilotTestCase):
 
   def test_init(self):
     sm = messaging.SubMaster(events)
@@ -59,17 +60,17 @@ class TestSubMaster:
   def test_update_timeout(self):
     sock = random_sock()
     sm = messaging.SubMaster([sock,])
-    timeout = random.randrange(1000, 3000)
+    timeout = random.randrange(10, 30)
     start_time = time.monotonic()
     sm.update(timeout)
     t = time.monotonic() - start_time
     assert t >= timeout/1000.
-    assert t < 3
+    assert t < 0.1
     assert not any(sm.updated.values())
 
   def test_avg_frequency_checks(self):
     for poll in (True, False):
-      sm = messaging.SubMaster(["modelV2", "carParams", "carState", "cameraOdometry", "liveCalibration"],
+      sm = messaging.SubMaster(["modelV2", "carParams", "carState", "cameraOdometry", "extrinsicsCalibration"],
                                poll=("modelV2" if poll else None),
                                frequency=(20. if not poll else None))
 
@@ -77,7 +78,7 @@ class TestSubMaster:
         "carState": (20, 20),
         "modelV2": (20, 20 if poll else 10),
         "cameraOdometry": (20, 10),
-        "liveCalibration": (4, 4),
+        "extrinsicsCalibration": (4, 4),
         "carParams": (None, None),
         "userBookmark": (None, None),
       }
@@ -97,17 +98,19 @@ class TestSubMaster:
     pub_sock = messaging.pub_sock(sock)
     sm = messaging.SubMaster([sock,])
 
+    pub_sock.send(messaging.new_message(sock).to_bytes())
+    sm.update(1000)  # synchronize the PUB/SUB connection
+
     n = 10
     for i in range(n+1):
       msg = messaging.new_message(sock)
       msg.carState.vEgo = i
       pub_sock.send(msg.to_bytes())
-      time.sleep(0.01)
     sm.update(1000)
     assert sm[sock].vEgo == n
 
 
-class TestPubMaster:
+class TestPubMaster(OpenpilotTestCase):
 
   def test_init(self):
     messaging.PubMaster(events)
