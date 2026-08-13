@@ -80,6 +80,7 @@ jobs:
         with:
           repository: commaai/openpilot
           ref: ${{ inputs.upstream_branch }}
+          fetch-depth: 1
           submodules: recursive
           path: openpilot
 
@@ -89,6 +90,7 @@ jobs:
         with:
           repository: sunnypilot/sunnypilot
           ref: ${{ inputs.upstream_branch }}
+          fetch-depth: 1
           submodules: recursive
           path: openpilot
       - name: Get commit date
@@ -122,6 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 1
           submodules: recursive
 
       - run: git lfs pull
@@ -135,7 +138,7 @@ jobs:
           export UV_PYTHON_PREFERENCE=managed
           export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          uv sync
+          uv sync --frozen
           printenv >> $GITHUB_ENV
           if [[ "${{ runner.debug }}" == "1" ]]; then
             cat $GITHUB_OUTPUT
