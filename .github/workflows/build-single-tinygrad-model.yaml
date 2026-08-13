@@ -197,7 +197,7 @@ jobs:
         run: |
           hf upload ${{ inputs.hf_repo }} \
             output/ \
-            models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/ \
+            "models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/" \
             --repo-type=dataset
 
       - name: Pull gh-pages
