@@ -195,7 +195,7 @@ jobs:
           HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          huggingface-cli upload ${{ inputs.hf_repo }} \
+          hf upload ${{ inputs.hf_repo }} \
             output/ \
             models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/ \
             --repo-type=dataset
