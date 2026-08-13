@@ -255,6 +255,10 @@ class DeviceSP:
         gui_app.push_widget(_ui_state.screensaver)
         self._blocked_by_screensaver = True
 
+    elif on and _ui_state.screensaver.is_active and gui_app.get_active_widget() == _ui_state.screensaver:
+      gui_app.pop_widget()
+      _ui_state.screensaver.hide_event()
+
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
     if not awake or not _ui_state.started:
