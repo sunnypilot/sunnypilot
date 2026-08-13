@@ -15,6 +15,11 @@ on:
         options:
           - qcom
           - usbgpu
+      hf_repo:
+        description: 'Hugging Face dataset repository'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot_models_v1'
 
 jobs:
   setup:
@@ -70,44 +75,22 @@ jobs:
           jq -c '[.bundles[] | select(.runner=="tinygrad") | {ref, display_name: (.display_name | gsub(" \\([^)]*\\)"; "")), is_20hz}]' "$(basename "${SRC_JSON_FILE}")" > matrix.json
           echo "model_matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-      - run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-
-      - name: Clone GitLab docs repo and create new recompiled dir
+      - name: Get next recompiled dir number
         id: create-recompiled-dir
         env:
-          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
+          HF_REPO: ${{ github.event.inputs.hf_repo }}
         run: |
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
-          cd gitlab_docs
-          git checkout main
-          git sparse-checkout set --no-cone models/
-          cd models
-          latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
-          if [[ -z "$latest_dir" ]]; then
-            next_dir=1
-          else
-            next_dir=$((latest_dir+1))
-          fi
-          recompiled_dir="${next_dir}"
-          mkdir -p "recompiled${recompiled_dir}"
-          touch "recompiled${recompiled_dir}/.gitkeep"
-          cd ../..
+          pip install huggingface_hub
+          recompiled_dir=$(python3 -c "
+          from huggingface_hub import HfApi
+          import re, sys
+          api = HfApi()
+          files = api.list_repo_files(repo_id=sys.argv[1], repo_type='dataset')
+          dirs = [re.search(r'models/recompiled([0-9]+)', f) for f in files]
+          nums = [int(m.group(1)) for m in dirs if m]
+          print(max(nums) + 1)
+          " "$HF_REPO")
           echo "recompiled_dir=$recompiled_dir" >> $GITHUB_OUTPUT
-
-      - name: Push empty recompiled dir to GitLab
-        run: |
-          cd gitlab_docs
-          git add models/recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }}
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git commit -m "Add recompiled${{ steps.create-recompiled-dir.outputs.recompiled_dir }} for build-all" || echo "No changes to commit"
-          git push origin main
 
       - name: Push new JSON to GitHub docs repo
         run: |
@@ -133,6 +116,7 @@ jobs:
       recompiled_dir: ${{ needs.setup.outputs.recompiled_dir }}
       json_version: ${{ needs.setup.outputs.json_version }}
       target_hardware: ${{ github.event.inputs.target_hardware }}
+      hf_repo: ${{ github.event.inputs.hf_repo }}
     secrets: inherit
 
   retry_failed_models:
@@ -174,6 +158,7 @@ jobs:
       json_version: ${{ needs.setup.outputs.json_version }}
       target_hardware: ${{ github.event.inputs.target_hardware }}
       artifact_suffix: -retry
+      hf_repo: ${{ github.event.inputs.hf_repo }}
     secrets: inherit
 
   publish_models:
@@ -181,6 +166,9 @@ jobs:
     needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
     if: ${{ !cancelled() && needs.setup.result == 'success' && (needs.get_and_build.result == 'success' || needs.get_and_build.result == 'failure') && (needs.retry_failed_models.result == 'success' || needs.retry_failed_models.result == 'failure' || needs.retry_failed_models.result == 'skipped') && (needs.retry_get_and_build.result == 'success' || needs.retry_get_and_build.result == 'failure' || needs.retry_get_and_build.result == 'skipped') }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -190,29 +178,8 @@ jobs:
       RECOMPILED_DIR: recompiled${{ needs.setup.outputs.recompiled_dir }}
       JSON_FILE: ${{ needs.setup.outputs.json_file }}
       ARTIFACT_NAME_INPUT: ${{ matrix.model.display_name }}
+      HF_REPO: ${{ github.event.inputs.hf_repo }}
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-
-      - name: Add GitLab.com SSH key to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-
-      - name: Clone GitLab docs repo
-        env:
-          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
-        run: |
-          echo "Cloning GitLab"
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
-          cd gitlab_docs
-          echo "checkout models/${RECOMPILED_DIR}"
-          git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
-          git checkout main
-          cd ..
-
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
@@ -221,16 +188,31 @@ jobs:
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
+      - name: Install huggingface_hub
+        run: pip install --upgrade "huggingface_hub>=0.22.0"
+
       - name: Validate recompiled dir and JSON version
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
         run: |
-          if [ ! -d "gitlab_docs/models/$RECOMPILED_DIR" ]; then
-            echo "Recompiled dir $RECOMPILED_DIR does not exist in GitLab repo"
-            exit 1
-          fi
           if [ ! -f "$JSON_FILE" ]; then
             echo "JSON file $JSON_FILE does not exist!"
             exit 1
           fi
+          python3 -c "
+          import sys
+          from huggingface_hub import HfApi
+          try:
+              api = HfApi()
+              files = api.list_repo_files(repo_id=sys.argv[2], repo_type='dataset')
+              if not any(f.startswith('models/' + sys.argv[1] + '/') for f in files):
+                  print(f'Error: Recompiled dir models/{sys.argv[1]} does not exist in Hugging Face dataset {sys.argv[2]}!')
+                  sys.exit(1)
+              print(f'Success: Validated that models/{sys.argv[1]} exists on Hugging Face dataset {sys.argv[2]}!')
+          except Exception as e:
+              print('HF validation failed:', e)
+              sys.exit(1)
+          " "$RECOMPILED_DIR" "$HF_REPO"
 
       - name: Download artifact name file
         id: download-name
@@ -254,44 +236,26 @@ jobs:
           name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
-      - name: Copy model artifacts to gitlab
+      - name: Create models folder
         if: steps.download-name.outcome == 'success'
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          mkdir -p "$ARTIFACT_DIR"
-          for path in output/*; do
-            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
-              continue
-            fi
-            name="$(basename "$path")"
-            if [ -d "$path" ]; then
-              mkdir -p "$ARTIFACT_DIR/$name"
-              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
-              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
-            else
-              cp "$path" "$ARTIFACT_DIR/"
-              echo "Copied file $name -> $ARTIFACT_DIR/"
-            fi
-          done
+          mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
+          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
+          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
 
-      - name: Push recompiled dir to GitLab
+
+      - name: Upload to Hugging Face
         if: steps.download-name.outcome == 'success'
         env:
-          GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          cd gitlab_docs
-          git checkout main
-          git pull origin main
-          for d in models/"$RECOMPILED_DIR"/*/; do
-            git sparse-checkout add "$d"
-          done
-          git add models/"$RECOMPILED_DIR"
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git commit -m "Update $RECOMPILED_DIR with model from build-all-tinygrad-models" || echo "No changes to commit"
-          git push origin main
+          hf upload $HF_REPO \
+            output/ \
+            "models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/" \
+            --repo-type=dataset
       - name: Pull gh-pages
         if: steps.download-name.outcome == 'success'
         run: |
@@ -307,7 +271,7 @@ jobs:
           ARGS="$ARGS --tinygrad-ref \"${{ needs.setup.outputs.tinygrad_ref }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
-            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --recompiled-dir "local_models/$RECOMPILED_DIR" \
             $ARGS
 
       - name: Push updated json to GitHub

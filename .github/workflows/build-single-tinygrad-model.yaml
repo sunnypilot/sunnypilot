@@ -182,7 +182,7 @@ jobs:
           name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
-      - name: make models folder
+      - name: Create models folder
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
