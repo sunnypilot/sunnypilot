@@ -17,6 +17,7 @@ from openpilot.selfdrive.locationd.helpers import Pose
 from openpilot.common.mock.generators import generate_deviceMotion
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.common.test import OpenpilotTestCase
 
 
 def generate_modelV2():
@@ -42,7 +43,7 @@ def generate_modelV2():
   return model
 
 
-class TestNeuralNetworkLateralControl:
+class TestNeuralNetworkLateralControl(OpenpilotTestCase):
 
   @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN, GM.CHEVROLET_BOLT_EUV])
   def test_saturation(self, car_name):
@@ -81,7 +82,7 @@ class TestNeuralNetworkLateralControl:
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
       controller.extension.update_lateral_lag(test_lag)
-      controller.update_live_torque_params(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
+      controller.update_torque_parameters(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
       controller.extension.update_limits()
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, True, 0.2)
     assert lac_log.saturated
@@ -89,7 +90,7 @@ class TestNeuralNetworkLateralControl:
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
       controller.extension.update_lateral_lag(test_lag)
-      controller.update_live_torque_params(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
+      controller.update_torque_parameters(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
       controller.extension.update_limits()
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, False, 0.2)
     assert not lac_log.saturated
@@ -97,7 +98,7 @@ class TestNeuralNetworkLateralControl:
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
       controller.extension.update_lateral_lag(test_lag)
-      controller.update_live_torque_params(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
+      controller.update_torque_parameters(torque_params.latAccelFactor, torque_params.latAccelOffset, torque_params.friction)
       controller.extension.update_limits()
       _, _, lac_log = controller.update(True, CS, VM, params, False, 1, pose, False, 0.2)
     assert lac_log.saturated

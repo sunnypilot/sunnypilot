@@ -1,4 +1,4 @@
-import pytest
+from openpilot.common.parameterized import parameterized
 
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log
@@ -251,28 +251,30 @@ def _build_sm(selfdrive_enabled, lat_active, steering_pressed, gas_pressed):
   }
 
 
-@pytest.mark.parametrize("selfdrive_enabled, lat_active, steering, gas, expected_op_engaged, expected_driver_engaged", [
-  (False, False, False, False, False, False),  # disabled
-  (True,  False, False, False, True,  False),  # OP enabled
-  (False, True,  False, False, True,  False),  # MADS lat-only
-  (True,  True,  False, False, True,  False),  # both active
-  (False, True,  False, True,  True,  False),  # MADS lat-only + gas
-  (True,  True,  False, True,  True,  True),   # full op + gas: override
-  (False, True,  True,  False, True,  True),   # MADS lat-only + wheel touch: override
-])
-def test_run_step_engagement(selfdrive_enabled, lat_active, steering, gas,
-                             expected_op_engaged, expected_driver_engaged):
-  sm = _build_sm(selfdrive_enabled, lat_active, steering, gas)
-  dm = DriverMonitoring()
-  captured = {}
-  orig = dm._update_events
+class TestRunStepEngagement(OpenpilotTestCase):
+  @parameterized.expand([
+    (False, False, False, False, False, False),  # disabled
+    (True,  False, False, False, True,  False),  # OP enabled
+    (False, True,  False, False, True,  False),  # MADS lat-only
+    (True,  True,  False, False, True,  False),  # both active
+    (False, True,  False, True,  True,  False),  # MADS lat-only + gas
+    (True,  True,  False, True,  True,  True),   # full op + gas: override
+    (False, True,  True,  False, True,  True),   # MADS lat-only + wheel touch: override
+  ], names=["selfdrive_enabled", "lat_active", "steering", "gas",
+            "expected_op_engaged", "expected_driver_engaged"])
+  def test_run_step_engagement(self, selfdrive_enabled, lat_active, steering, gas,
+                               expected_op_engaged, expected_driver_engaged):
+    sm = _build_sm(selfdrive_enabled, lat_active, steering, gas)
+    dm = DriverMonitoring()
+    captured = {}
+    orig = dm._update_events
 
-  def spy(driver_engaged, op_engaged, lowspeed, wrong_gear):
-    captured['driver_engaged'] = driver_engaged
-    captured['op_engaged'] = op_engaged
-    return orig(driver_engaged, op_engaged, lowspeed, wrong_gear)
+    def spy(driver_engaged, op_engaged, lowspeed, wrong_gear):
+      captured['driver_engaged'] = driver_engaged
+      captured['op_engaged'] = op_engaged
+      return orig(driver_engaged, op_engaged, lowspeed, wrong_gear)
 
-  object.__setattr__(dm, '_update_events', spy)
-  dm.run_step(sm, demo=False)
-  assert captured['op_engaged'] == expected_op_engaged
-  assert captured['driver_engaged'] == expected_driver_engaged
+    object.__setattr__(dm, '_update_events', spy)
+    dm.run_step(sm, demo=False)
+    assert captured['op_engaged'] == expected_op_engaged
+    assert captured['driver_engaged'] == expected_driver_engaged

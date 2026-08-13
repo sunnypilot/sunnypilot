@@ -5,8 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import pathlib
 import pickle
-import pytest
+import tempfile
 
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
@@ -181,16 +182,19 @@ def make_bundle(archetype):
   )
 
 
-@pytest.fixture
+def tmp_path():
+  with tempfile.TemporaryDirectory() as d:
+    yield pathlib.Path(d)
+
+
 def patch_modeld(monkeypatch):
   def _patch(bundle):
-    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle, raising=False)
-    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle, raising=False)
+    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle)
+    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle)
 
   return _patch
 
 
-@pytest.fixture
 def model_state_factory(tmp_path, monkeypatch, patch_modeld):
   from openpilot.common.hardware import hw
 

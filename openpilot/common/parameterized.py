@@ -83,6 +83,7 @@ def parameterized_class(attrs, input_list=None):
       new_cls = type(name, (cls,), dict(params))
       new_cls.__module__ = cls.__module__
       new_cls.__unittest_skip__ = False
+      new_cls.__unittest_skip_why__ = ""  # else inherited from the base and the collector drops it
       globs[name] = new_cls
     # Don't collect the un-parametrised base.
     cls.__unittest_skip__ = True
