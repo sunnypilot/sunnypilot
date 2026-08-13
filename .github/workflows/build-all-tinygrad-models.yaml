@@ -138,20 +138,21 @@ jobs:
   retry_failed_models:
     needs: [setup, get_and_build]
     runs-on: ubuntu-latest
-    if: ${{ needs.setup.result != 'failure' && !cancelled() }}
+    if: ${{ !cancelled() && needs.setup.result == 'success' && (needs.get_and_build.result == 'success' || needs.get_and_build.result == 'failure') }}
     outputs:
       retry_matrix: ${{ steps.set-retry-matrix.outputs.retry_matrix }}
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: model-*
+          pattern: artifact-name-*
           path: output
+        continue-on-error: true
 
       - id: set-retry-matrix
         run: |
           echo '${{ needs.setup.outputs.model_matrix }}' > matrix.json
-          built=(); while IFS= read -r line; do built+=("$line"); done < <(
-            find output -maxdepth 1 -name 'model-*' -printf "%f\n" | sed -E 's/^model-//' | sed -E 's/-[0-9]+$//' | sed -E 's/ \([^)]*\)//' | awk '{gsub(/^ +| +$/, ""); print}'
+          built=(); while IFS= read -r line; do [ -n "$line" ] && built+=("$line"); done < <(
+            find output -maxdepth 1 -name 'artifact-name-*' -printf "%f\n" 2>/dev/null | sed -E 's/^artifact-name-//' | awk '{gsub(/^ +| +$/, ""); print}'
           )
           jq -c --argjson built "$(printf '%s\n' "${built[@]}" | jq -R . | jq -s .)" \
             'map(select(.display_name as $n | ($built | index($n | gsub("^ +| +$"; "")) | not)))' matrix.json > retry_matrix.json
@@ -159,7 +160,7 @@ jobs:
 
   retry_get_and_build:
     needs: [setup, get_and_build, retry_failed_models]
-    if: ${{ needs.get_and_build.result == 'failure' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '') }}
+    if: ${{ !cancelled() && needs.retry_failed_models.result == 'success' && needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '' }}
     strategy:
       matrix:
         model: ${{ fromJson(needs.retry_failed_models.outputs.retry_matrix) }}
@@ -178,7 +179,7 @@ jobs:
   publish_models:
     name: Publish models sequentially
     needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
-    if: ${{ !cancelled() && (needs.get_and_build.result != 'failure' || needs.retry_get_and_build.result == 'success' || (needs.retry_failed_models.outputs.retry_matrix != '[]' && needs.retry_failed_models.outputs.retry_matrix != '')) }}
+    if: ${{ !cancelled() && needs.setup.result == 'success' && (needs.get_and_build.result == 'success' || needs.get_and_build.result == 'failure') && (needs.retry_failed_models.result == 'success' || needs.retry_failed_models.result == 'failure' || needs.retry_failed_models.result == 'skipped') && (needs.retry_get_and_build.result == 'success' || needs.retry_get_and_build.result == 'failure' || needs.retry_get_and_build.result == 'skipped') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -232,24 +233,29 @@ jobs:
           fi
 
       - name: Download artifact name file
+        id: download-name
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: artifact-name-${{ env.ARTIFACT_NAME_INPUT }}
           path: artifact_name
 
       - name: Read artifact name
         id: read-artifact-name
+        if: steps.download-name.outcome == 'success'
         run: |
           ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Download model artifact
+        if: steps.download-name.outcome == 'success'
         uses: actions/download-artifact@v4
         with:
           name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
       - name: Copy model artifacts to gitlab
+        if: steps.download-name.outcome == 'success'
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
@@ -271,6 +277,7 @@ jobs:
           done
 
       - name: Push recompiled dir to GitLab
+        if: steps.download-name.outcome == 'success'
         env:
           GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
         run: |
@@ -285,11 +292,14 @@ jobs:
           git config --global user.email "action@github.com"
           git commit -m "Update $RECOMPILED_DIR with model from build-all-tinygrad-models" || echo "No changes to commit"
           git push origin main
-      - run: |
+      - name: Pull gh-pages
+        if: steps.download-name.outcome == 'success'
+        run: |
           cd docs
           git pull origin gh-pages
 
       - name: update json
+        if: steps.download-name.outcome == 'success'
         run: |
           ARGS=""
           [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
@@ -301,6 +311,7 @@ jobs:
             $ARGS
 
       - name: Push updated json to GitHub
+        if: steps.download-name.outcome == 'success'
         run: |
           cd docs
           git config --global user.name "GitHub Action"
