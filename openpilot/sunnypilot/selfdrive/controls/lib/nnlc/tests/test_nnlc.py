@@ -14,7 +14,7 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.locationd.helpers import Pose
-from openpilot.common.mock.generators import generate_livePose
+from openpilot.common.mock.generators import generate_deviceMotion
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -66,10 +66,10 @@ class TestNeuralNetworkLateralControl:
     CS.vEgo = 30
     CS.steeringPressed = False
 
-    params = log.LiveParametersData.new_message()
+    params = log.VehicleParameters.new_message()
 
-    lp = generate_livePose()
-    pose = Pose.from_live_pose(lp.livePose)
+    lp = generate_deviceMotion()
+    pose = Pose.from_device_motion(lp.deviceMotion)
 
     mdl = generate_modelV2()
     sm = {'modelV2': mdl.modelV2}

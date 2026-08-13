@@ -18,7 +18,7 @@ if platform.system() == 'Darwin':
 
 
 class TestLocationdProc:
-  LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'liveCalibration',
+  LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'extrinsicsCalibration',
               'accelerometer', 'gyroscope']
 
   def setup_method(self):

@@ -85,24 +85,24 @@ class TestAutoLaneChangeController:
 
   @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
   def test_timers(self, timer_state, timer_delay):
-      self._reset_states()
-      self.alc.lane_change_bsm_delay = False  # BSM delay off
-      self.alc.lane_change_set_timer = timer_state
+    self._reset_states()
+    self.alc.lane_change_bsm_delay = False  # BSM delay off
+    self.alc.lane_change_set_timer = timer_state
 
-      # Update controller once
+    # Update controller once
+    self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
+
+    # The timer should still be below the threshold after one update
+    assert not self.alc.auto_lane_change_allowed
+
+    # Update enough times to exceed the threshold (seconds / DT_MDL)
+    num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
+    for _ in range(num_updates):
       self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-      # The timer should still be below the threshold after one update
-      assert not self.alc.auto_lane_change_allowed
-
-      # Update enough times to exceed the threshold (seconds / DT_MDL)
-      num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
-      for _ in range(num_updates):
-        self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
-
-      # Now lane change should be allowed
-      assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
-      assert self.alc.auto_lane_change_allowed
+    # Now lane change should be allowed
+    assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
+    assert self.alc.auto_lane_change_allowed
 
   @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
   def test_brake_pressed_disables_auto_lane_change(self, timer_state, timer_delay):
@@ -169,32 +169,32 @@ class TestAutoLaneChangeController:
 
   @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
   def test_disallow_continuous_auto_lane_change(self, timer_state, timer_delay):
-      self._reset_states()
-      self.alc.lane_change_bsm_delay = False  # BSM delay off
-      self.alc.lane_change_set_timer = timer_state
-      num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
+    self._reset_states()
+    self.alc.lane_change_bsm_delay = False  # BSM delay off
+    self.alc.lane_change_set_timer = timer_state
+    num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
 
-      # Update enough times to exceed the threshold (seconds / DT_MDL)
-      for _ in range(num_updates):
-        self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
+    # Update enough times to exceed the threshold (seconds / DT_MDL)
+    for _ in range(num_updates):
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-      # Now lane change should be allowed
-      assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
-      assert self.alc.auto_lane_change_allowed
+    # Now lane change should be allowed
+    assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
+    assert self.alc.auto_lane_change_allowed
 
-      # Simulate lane change is initiated
-      self.DH.lane_change_state = LaneChangeState.laneChangeStarting
-      self.alc.update_state()
+    # Simulate lane change is initiated
+    self.DH.lane_change_state = LaneChangeState.laneChangeStarting
+    self.alc.update_state()
 
-      # Simulate lane change is completed, and one_blinker stays on
-      self.DH.lane_change_state = LaneChangeState.preLaneChange
-      self.alc.update_state()
+    # Simulate lane change is completed, and one_blinker stays on
+    self.DH.lane_change_state = LaneChangeState.preLaneChange
+    self.alc.update_state()
 
-      # Update enough times to exceed the threshold (seconds / DT_MDL)
-      for _ in range(num_updates):
-        self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
+    # Update enough times to exceed the threshold (seconds / DT_MDL)
+    for _ in range(num_updates):
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-      assert not self.alc.auto_lane_change_allowed
+    assert not self.alc.auto_lane_change_allowed
 
   def test_auto_lane_change_mode_off_disallows_lane_change(self):
     """Test that OFF mode never allows auto lane change."""

@@ -1,3 +1,5 @@
+# TODO-SP: upstream migrated from pytest to unittest with a custom test runner (tools/test_runner.py).
+#  Once sunnypilot test files are converted to unittest, this conftest and the pytest deps can be removed.
 import contextlib
 import gc
 import os
@@ -5,7 +7,7 @@ import pytest
 
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.system.manager import manager
-from openpilot.common.hardware import TICI, HARDWARE
+from openpilot.common.hardware import COMMA_HARDWARE, HARDWARE
 
 # these are heavy CI-only tests, invoked explicitly in .github/workflows/tests.yaml
 collect_ignore = [
@@ -88,7 +90,7 @@ def pytest_collection_modifyitems(config, items):
   skipper = pytest.mark.skip(reason="Skipping tici test on PC")
   for item in items:
     if "tici" in item.keywords:
-      if not TICI:
+      if not COMMA_HARDWARE:
         item.add_marker(skipper)
       else:
         item.fixturenames.append('tici_setup_fixture')

@@ -1,5 +1,6 @@
 import pytest
 
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.common.realtime import DT_DMON
@@ -49,7 +50,7 @@ always_distracted = [msg_DISTRACTED] * int(TEST_TIMESPAN / DT_DMON)
 always_true = [True] * int(TEST_TIMESPAN / DT_DMON)
 always_false = [False] * int(TEST_TIMESPAN / DT_DMON)
 
-class TestMonitoring:
+class TestMonitoring(OpenpilotTestCase):
   def _run_seq(self, msgs, interaction, engaged, lowspeed):
     DM = DriverMonitoring()
     alert_lvls = []
@@ -242,11 +243,11 @@ def _build_sm(selfdrive_enabled, lat_active, steering_pressed, gas_pressed):
   cc.latActive = lat_active
   mv2 = log.ModelDataV2.new_message()
   mv2.meta.disengagePredictions.brakeDisengageProbs = [0.0]
-  lc = log.LiveCalibrationData.new_message()
+  lc = log.ExtrinsicsCalibration.new_message()
   lc.rpyCalib = [0.0, 0.0, 0.0]
   return {
     'carState': cs, 'selfdriveState': ss, 'carControl': cc,
-    'modelV2': mv2, 'liveCalibration': lc, 'driverStateV2': make_msg(False),
+    'modelV2': mv2, 'extrinsicsCalibration': lc, 'driverStateV2': make_msg(False),
   }
 
 
