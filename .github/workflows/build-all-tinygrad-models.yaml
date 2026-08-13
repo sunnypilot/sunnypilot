@@ -117,6 +117,8 @@ jobs:
       json_version: ${{ needs.setup.outputs.json_version }}
       target_hardware: ${{ github.event.inputs.target_hardware }}
       hf_repo: ${{ github.event.inputs.hf_repo }}
+      set_min_version: ${{ github.event.inputs.set_min_version }}
+      tinygrad_ref: ${{ needs.setup.outputs.tinygrad_ref }}
     secrets: inherit
 
   retry_failed_models:
@@ -159,128 +161,6 @@ jobs:
       target_hardware: ${{ github.event.inputs.target_hardware }}
       artifact_suffix: -retry
       hf_repo: ${{ github.event.inputs.hf_repo }}
+      set_min_version: ${{ github.event.inputs.set_min_version }}
+      tinygrad_ref: ${{ needs.setup.outputs.tinygrad_ref }}
     secrets: inherit
-
-  publish_models:
-    name: Publish models sequentially
-    needs: [setup, get_and_build, retry_failed_models, retry_get_and_build]
-    if: ${{ !cancelled() && needs.setup.result == 'success' && (needs.get_and_build.result == 'success' || needs.get_and_build.result == 'failure') && (needs.retry_failed_models.result == 'success' || needs.retry_failed_models.result == 'failure' || needs.retry_failed_models.result == 'skipped') && (needs.retry_get_and_build.result == 'success' || needs.retry_get_and_build.result == 'failure' || needs.retry_get_and_build.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        model: ${{ fromJson(needs.setup.outputs.model_matrix) }}
-    env:
-      RECOMPILED_DIR: recompiled${{ needs.setup.outputs.recompiled_dir }}
-      JSON_FILE: ${{ needs.setup.outputs.json_file }}
-      ARTIFACT_NAME_INPUT: ${{ matrix.model.display_name }}
-      HF_REPO: ${{ github.event.inputs.hf_repo }}
-    steps:
-      - name: Checkout docs repo
-        uses: actions/checkout@v4
-        with:
-          repository: sunnypilot/sunnypilot-models
-          ref: gh-pages
-          path: docs
-          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
-
-      - name: Install huggingface_hub
-        run: pip install --upgrade "huggingface_hub>=0.22.0"
-
-      - name: Validate recompiled dir and JSON version
-        env:
-          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
-        run: |
-          if [ ! -f "$JSON_FILE" ]; then
-            echo "JSON file $JSON_FILE does not exist!"
-            exit 1
-          fi
-          python3 -c "
-          import sys
-          from huggingface_hub import HfApi
-          try:
-              api = HfApi()
-              files = api.list_repo_files(repo_id=sys.argv[2], repo_type='dataset')
-              if not any(f.startswith('models/' + sys.argv[1] + '/') for f in files):
-                  print(f'Error: Recompiled dir models/{sys.argv[1]} does not exist in Hugging Face dataset {sys.argv[2]}!')
-                  sys.exit(1)
-              print(f'Success: Validated that models/{sys.argv[1]} exists on Hugging Face dataset {sys.argv[2]}!')
-          except Exception as e:
-              print('HF validation failed:', e)
-              sys.exit(1)
-          " "$RECOMPILED_DIR" "$HF_REPO"
-
-      - name: Download artifact name file
-        id: download-name
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: artifact-name-${{ env.ARTIFACT_NAME_INPUT }}
-          path: artifact_name
-
-      - name: Read artifact name
-        id: read-artifact-name
-        if: steps.download-name.outcome == 'success'
-        run: |
-          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
-          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-
-      - name: Download model artifact
-        if: steps.download-name.outcome == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
-          path: output
-
-      - name: Create models folder
-        if: steps.download-name.outcome == 'success'
-        env:
-          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
-        run: |
-          mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
-          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
-
-
-      - name: Upload to Hugging Face
-        if: steps.download-name.outcome == 'success'
-        env:
-          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
-          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
-        run: |
-          hf upload $HF_REPO \
-            output/ \
-            "models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/" \
-            --repo-type=dataset
-      - name: Pull gh-pages
-        if: steps.download-name.outcome == 'success'
-        run: |
-          cd docs
-          git pull origin gh-pages
-
-      - name: update json
-        if: steps.download-name.outcome == 'success'
-        run: |
-          ARGS=""
-          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
-          ARGS="$ARGS --sort-by-date"
-          ARGS="$ARGS --tinygrad-ref \"${{ needs.setup.outputs.tinygrad_ref }}\""
-          eval python3 docs/json_parser.py \
-            --json-path "$JSON_FILE" \
-            --recompiled-dir "local_models/$RECOMPILED_DIR" \
-            $ARGS
-
-      - name: Push updated json to GitHub
-        if: steps.download-name.outcome == 'success'
-        run: |
-          cd docs
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git checkout gh-pages
-          git add docs/"$(basename $JSON_FILE)"
-          git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
-          git push origin gh-pages

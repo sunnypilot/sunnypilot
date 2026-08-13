@@ -29,11 +29,6 @@ on:
         required: false
         type: boolean
         default: true
-      bypass_push:
-        description: 'Bypass pushing to GitLab for build-all'
-        required: false
-        default: true
-        type: boolean
       target_hardware:
         description: 'Hardware target to compile for (qcom or usbgpu)'
         required: false
@@ -44,6 +39,14 @@ on:
         required: false
         type: string
         default: 'sunnypilot/sunnypilot_models_v1'
+      set_min_version:
+        description: 'Minimum selector version'
+        required: false
+        type: string
+      tinygrad_ref:
+        description: 'Tinygrad reference'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -120,7 +123,7 @@ jobs:
     secrets: inherit
 
   publish_model:
-    if: ${{ !inputs.bypass_push && !cancelled() }}
+    if: ${{ !cancelled() && needs.build_model.result == 'success' }}
     concurrency:
       group: hf-push-${{ inputs.recompiled_dir }}
       cancel-in-progress: false
@@ -141,7 +144,7 @@ jobs:
       - name: Install huggingface_hub
         run: pip install --upgrade "huggingface_hub>=0.22.0"
 
-      - name: Validate recompiled dir and JSON version
+      - name: Validate hf_repo and JSON version
         env:
           HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
         run: |
@@ -154,15 +157,12 @@ jobs:
           from huggingface_hub import HfApi
           try:
               api = HfApi()
-              files = api.list_repo_files(repo_id=sys.argv[2], repo_type='dataset')
-              if not any(f.startswith('models/' + sys.argv[1] + '/') for f in files):
-                  print(f'Error: Recompiled dir models/{sys.argv[1]} does not exist in Hugging Face dataset {sys.argv[2]}!')
-                  sys.exit(1)
-              print(f'Success: Validated that models/{sys.argv[1]} exists on Hugging Face dataset {sys.argv[2]}!')
+              api.repo_info(repo_id=sys.argv[1], repo_type='dataset')
+              print(f'Success: Repo {sys.argv[1]} exists.')
           except Exception as e:
               print('HF validation failed:', e)
               sys.exit(1)
-          " "$RECOMPILED_DIR" "${{ inputs.hf_repo }}"
+          " "${{ inputs.hf_repo }}"
 
       - name: Download artifact name file
         uses: actions/download-artifact@v4
@@ -217,6 +217,8 @@ jobs:
           fi
           [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
           [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
+          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
+          [ -n "${{ inputs.tinygrad_ref }}" ] && ARGS="$ARGS --tinygrad-ref \"${{ inputs.tinygrad_ref }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
             --recompiled-dir "local_models/$RECOMPILED_DIR" \
