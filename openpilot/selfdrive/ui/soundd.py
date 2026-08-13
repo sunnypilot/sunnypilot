@@ -187,32 +187,41 @@ class Soundd(QuietMode):
 
     sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure'])
 
-    with self.get_stream(sd) as stream:
-      rk = Ratekeeper(20)
+    # Outer recovery loop — same rationale as system/micd.py.
+    # Losing soundd silences audible alerts (warning chimes, takeover prompts)
+    # — a UX/safety regression that can mask other safety alerts. Keep the
+    # daemon alive across stream failures.
+    while True:
+      try:
+        with self.get_stream(sd) as stream:
+          rk = Ratekeeper(20)
 
-      cloudlog.info(f"soundd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
-      while True:
-        sm.update(0)
+          cloudlog.info(f"soundd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
+          while True:
+            sm.update(0)
 
-        self.load_param()
+            self.load_param()
 
-        # freeze volume during alerts to avoid mic feedback increasing volume
-        if sm.updated['soundPressure']:
-          self.spl_filter_weighted.update(sm["soundPressure"].soundPressureWeightedDb)
-          if self.current_alert == AudibleAlert.none:
-            self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
+            # freeze volume during alerts to avoid mic feedback increasing volume
+            if sm.updated['soundPressure']:
+              self.spl_filter_weighted.update(sm["soundPressure"].soundPressureWeightedDb)
+              if self.current_alert == AudibleAlert.none:
+                self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
 
-        self.get_audible_alert(sm)
+            self.get_audible_alert(sm)
 
-        # Ramp up immediate warning sound over 4s
-        if self.current_alert == AudibleAlert.warningImmediate:
-          elapsed = time.monotonic() - self.ramp_start_time
-          ramp_vol = float(np.interp(elapsed, [0, ALERT_RAMP_TIME], [self.ramp_start_volume, MAX_VOLUME]))
-          self.current_volume = max(self.current_volume, ramp_vol)
+            # Ramp up immediate warning sound over 4s
+            if self.current_alert == AudibleAlert.warningImmediate:
+              elapsed = time.monotonic() - self.ramp_start_time
+              ramp_vol = float(np.interp(elapsed, [0, ALERT_RAMP_TIME], [self.ramp_start_volume, MAX_VOLUME]))
+              self.current_volume = max(self.current_volume, ramp_vol)
 
-        rk.keep_time()
+            rk.keep_time()
 
-        assert stream.active
+            assert stream.active
+      except Exception:
+        cloudlog.exception("soundd stream failed; restarting after backoff")
+        time.sleep(5)
 
 
 def main():
