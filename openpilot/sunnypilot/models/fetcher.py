@@ -207,10 +207,7 @@ if __name__ == "__main__":
   for bundle in bundles:
     for model in bundle.models:
       model_overrides = {override.key: override.value for override in bundle.overrides}
-      # Print model details
       print(f"Bundle: {bundle.internalName}, Type: {model.type}, Status: {bundle.status}, Overrides: {model_overrides}")
-      # Print artifact details
       print(f"Artifact: {model.artifact.fileName}, Download URI: {model.artifact.downloadUri.uri}")
-      # Print metadata details
       if model.artifact.chunks:
         print(f"Contains {len(model.artifact.chunks)} chunks.")
