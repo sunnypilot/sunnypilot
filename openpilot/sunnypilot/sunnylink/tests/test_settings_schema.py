@@ -5,7 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import json
-import pytest
 
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import (
@@ -16,6 +15,7 @@ from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import (
   collect_capability_refs,
 )
 from openpilot.sunnypilot.sunnylink.capabilities import CAPABILITY_FIELDS
+from openpilot.common.test import OpenpilotTestCase
 
 
 VALID_WIDGET_TYPES = {"toggle", "option", "multiple_button", "button", "info"}
@@ -55,18 +55,16 @@ def _brand_items(brand_data) -> list[dict]:
   return []
 
 
-@pytest.fixture(scope="module")
 def schema():
   return generate_schema()
 
 
-@pytest.fixture(scope="module")
 def all_param_keys():
   """All keys registered in the device param store."""
   return {k.decode("utf-8") for k in Params().all_keys()}
 
 
-class TestSchemaStructure:
+class TestSchemaStructure(OpenpilotTestCase):
   def test_schema_is_valid_json(self):
     """Schema serializes to valid JSON."""
     raw = generate_schema_json()
@@ -141,16 +139,16 @@ class TestSchemaStructure:
       for item in _iter_panel_items(panel):
         key = item["key"]
         if key in seen:
-          pytest.fail(f"Key '{key}' appears in both panel '{seen[key]}' and '{panel['id']}'")
+          self.fail(f"Key '{key}' appears in both panel '{seen[key]}' and '{panel['id']}'")
         seen[key] = panel["id"]
         for sub in item.get("sub_items", []):
           sub_key = sub["key"]
           if sub_key in seen:
-            pytest.fail(f"Sub-item key '{sub_key}' appears in both '{seen[sub_key]}' and '{panel['id']}'")
+            self.fail(f"Sub-item key '{sub_key}' appears in both '{seen[sub_key]}' and '{panel['id']}'")
           seen[sub_key] = panel["id"]
 
 
-class TestSchemaCoverage:
+class TestSchemaCoverage(OpenpilotTestCase):
   def test_all_schema_keys_exist_in_params(self, schema, all_param_keys):
     """Schema keys must exist in Params().all_keys()."""
     schema_keys = collect_all_keys(schema)
@@ -169,7 +167,7 @@ class TestSchemaCoverage:
     assert set(schema["capability_fields"]) == set(CAPABILITY_FIELDS)
 
 
-class TestRuleWellFormedness:
+class TestRuleWellFormedness(OpenpilotTestCase):
   def _validate_rule(self, rule: dict, context: str = ""):
     """Recursively validate a single rule dict."""
     assert "type" in rule, f"Rule missing 'type' in {context}"
@@ -232,7 +230,7 @@ class TestRuleWellFormedness:
       key = item.get("key")
       for rule in item.get(rules_field, []):
         if rule.get("type") == "param" and rule.get("key") == key:
-          pytest.fail(f"Item {key} has self-referencing {rules_field} rule")
+          self.fail(f"Item {key} has self-referencing {rules_field} rule")
 
     for panel in schema["panels"]:
       for item in _iter_panel_items(panel):
@@ -245,7 +243,7 @@ class TestRuleWellFormedness:
         _check_self_ref(item, "enablement")
 
 
-class TestKnownPanels:
+class TestKnownPanels(OpenpilotTestCase):
   def test_expected_panels_exist(self, schema):
     panel_ids = {p["id"] for p in schema["panels"]}
     expected = {"steering", "cruise", "display", "visuals", "device", "software", "developer"}
@@ -279,7 +277,7 @@ class TestKnownPanels:
     assert "NeuralNetworkLateralControl" in enhanced_enable_keys
 
 
-class TestKnownVehicleSettings:
+class TestKnownVehicleSettings(OpenpilotTestCase):
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
@@ -299,7 +297,7 @@ class TestKnownVehicleSettings:
     assert "SubaruStopAndGoManualParkingBrake" in keys
 
 
-class TestItemCompleteness:
+class TestItemCompleteness(OpenpilotTestCase):
   def _collect_all_items(self, schema):
     """Collect all items and sub_items from panels and vehicle_settings."""
     items = []
@@ -319,7 +317,7 @@ class TestItemCompleteness:
     """All items must have titles."""
     missing = [i["key"] for i in self._collect_all_items(schema) if "title" not in i]
     if len(missing) > MAX_ALLOWED_MISSING_TITLES:
-      pytest.fail(f"Items without titles ({len(missing)}): {missing[:10]}")
+      self.fail(f"Items without titles ({len(missing)}): {missing[:10]}")
 
   def test_no_default_titles(self, schema):
     """Item titles must differ from keys."""

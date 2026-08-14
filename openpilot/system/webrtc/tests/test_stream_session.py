@@ -3,6 +3,7 @@ import json
 import time
 
 import capnp
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import messaging, log
 from teleoprtc.tracks import VIDEO_CLOCK_RATE
 
@@ -10,7 +11,7 @@ from openpilot.system.webrtc.webrtcd import CerealOutgoingMessageProxy, CerealIn
 from openpilot.system.webrtc.device.video import LiveStreamVideoStreamTrack
 
 
-class TestStreamSession:
+class TestStreamSession(OpenpilotTestCase):
   def setup_method(self):
     self.loop = asyncio.new_event_loop()
 
@@ -64,7 +65,7 @@ class TestStreamSession:
       mocked_pubmaster.reset_mock()
 
   def test_livestream_track(self, mocker):
-    fake_msg = messaging.new_message("livestreamDriverEncodeData")
+    fake_msg = messaging.new_message("livestreamCabinEncodeData")
 
     config = {"receive.return_value": fake_msg.to_bytes()}
     mocker.patch("msgq.SubSocket", spec=True, **config)

@@ -7,6 +7,7 @@ from opendbc.car.tesla.values import CAR as TESLA
 from openpilot.common.parameterized import parameterized
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
+from openpilot.common.test import OpenpilotTestCase
 
 
 FINGERPRINT_EXACT_MATCH = [HONDA.HONDA_CIVIC_BOSCH, TOYOTA.TOYOTA_RAV4_TSS2_2022, HYUNDAI.HYUNDAI_IONIQ_5]
@@ -14,7 +15,7 @@ FINGERPRINT_FUZZY_MATCH = [HONDA.HONDA_CIVIC_BOSCH_DIESEL, HYUNDAI.GENESIS_G70_2
 FINGERPRINT_ANGLE_NO_MATCH = [TOYOTA.TOYOTA_RAV4_TSS2_2023, NISSAN.NISSAN_LEAF, TESLA.TESLA_MODEL_3]
 
 
-class TestNNLCFingerprintBase:
+class TestNNLCFingerprintBase(OpenpilotTestCase):
 
   @staticmethod
   def _setup_platform(car_name):
