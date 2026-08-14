@@ -114,8 +114,13 @@ class ModelState(ModelStateBase):
     self.QUEUE_DEV = self.DEV
     metadata = jits['metadata']
 
-    self.run_policy = jits['run_policy']
-    self.warp = jits[(cam_w, cam_h)]
+    self.is_legacy_model = 'run_policy' not in jits  # remove after next recompile
+    if self.is_legacy_model:
+      self.warp = jits[(cam_w, cam_h)]['warp_enqueue']
+      self.run_policy = jits[(cam_w, cam_h)]['run_policy']
+    else:
+      self.run_policy = jits['run_policy']
+      self.warp = jits[(cam_w, cam_h)]
 
     if 'model' in metadata:
       model_metadata = metadata['model']
@@ -234,11 +239,17 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 
-    if prepare_only:
-      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-      return None
-    warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-    raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+    if self.is_legacy_model:  # remove after next recompile
+      if prepare_only:
+        self.warp(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+        return None
+      raw_outputs = self.run_policy(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+    else:
+      if prepare_only:
+        self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+        return None
+      warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+      raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
     if self._combined_model_type == 'supercombo':
       model_output = raw_outputs.numpy().flatten()
