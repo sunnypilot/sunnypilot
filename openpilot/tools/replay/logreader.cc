@@ -32,16 +32,6 @@ bool LogReader::load(const std::string &url, std::atomic<bool> *abort, bool loca
   }
   compressed_size_ = data.size();
   download_seconds_ = std::chrono::duration<double>(download_end - download_start).count();
-  if (!data.empty()) {
-    const auto decompress_start = Clock::now();
-    if (url.find(".bz2") != std::string::npos || util::starts_with(data, "BZh9")) {
-      data = decompressBZ2(data, abort);
-    } else if (url.find(".zst") != std::string::npos || util::starts_with(data, "\x28\xB5\x2F\xFD")) {
-      data = decompressZST(data, abort);
-    }
-    const auto decompress_end = Clock::now();
-    decompress_seconds_ = std::chrono::duration<double>(decompress_end - decompress_start).count();
-  }
   decompressed_size_ = data.size();
 
   bool success = !data.empty() && load(data.data(), data.size(), abort, progress);
@@ -84,8 +74,8 @@ bool LogReader::load(const char *data, size_t size, std::atomic<bool> *abort,
       uint64_t mono_time = event.getLogMonoTime();
       const Event &evt = events.emplace_back(which, mono_time, event_data);
       // Add encodeIdx packet again as a frame packet for the video stream
-      if (evt.which == cereal::Event::ROAD_ENCODE_IDX ||
-          evt.which == cereal::Event::DRIVER_ENCODE_IDX ||
+      if (evt.which == cereal::Event::NARROW_ROAD_ENCODE_IDX ||
+          evt.which == cereal::Event::CABIN_ENCODE_IDX ||
           evt.which == cereal::Event::WIDE_ROAD_ENCODE_IDX) {
         auto idx = capnp::AnyStruct::Reader(event).getPointerSection()[0].getAs<cereal::EncodeIndex>();
         if (idx.getType() == cereal::EncodeIndex::Type::FULL_H_E_V_C) {

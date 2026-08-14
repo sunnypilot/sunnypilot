@@ -23,7 +23,7 @@ class LagdToggle:
     self.lagd_toggle = self.params.get_bool("LagdToggle")
     self.software_delay = self.params.get("LagdToggleDelay", return_default=True)
 
-  def update(self, lag_msg: log.LiveDelayData) -> None:
+  def update(self, lag_msg: log.LateralDelay) -> None:
     self.read_params()
 
     if not self.lagd_toggle:
@@ -33,6 +33,6 @@ class LagdToggle:
       self.params.put("LagdValueCache", self.lag)
       return
 
-    lateral_delay = lag_msg.liveDelay.lateralDelay
+    lateral_delay = lag_msg.lateralDelay.lateralDelay
     self.lag = lateral_delay
     self.params.put("LagdValueCache", self.lag)

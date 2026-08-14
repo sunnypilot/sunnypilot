@@ -16,9 +16,10 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.locationd.helpers import Pose
-from openpilot.common.mock.generators import generate_livePose
+from openpilot.common.mock.generators import generate_deviceMotion
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.common.test import OpenpilotTestCase
 
 
 def _make_controller(enhanced=False, nnlc=False):
@@ -62,16 +63,16 @@ def _run_update(controller, VM):
   CS = car.CarState.new_message()
   CS.vEgo = 30
   CS.steeringPressed = False
-  lp = generate_livePose()
-  pose = Pose.from_live_pose(lp.livePose)
-  params = log.LiveParametersData.new_message()
+  lp = generate_deviceMotion()
+  pose = Pose.from_device_motion(lp.deviceMotion)
+  params = log.VehicleParameters.new_message()
   model_v2 = _make_model_v2().modelV2
   controller.extension.update_model_v2(model_v2)
   controller.extension.update_lateral_lag(0.2)
   return controller.update(True, CS, VM, params, False, 0.5, pose, False, 0.2)
 
 
-class TestLatControlTorqueExt:
+class TestLatControlTorqueExt(OpenpilotTestCase):
   def test_init_enhanced_only(self):
     controller, VM, _ = _make_controller(enhanced=True, nnlc=False)
     assert controller.extension._jerk_aware_enabled

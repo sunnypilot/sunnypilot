@@ -7,9 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.sunnypilot import get_file_hash
 from openpilot.sunnypilot.mapd import MAPD_PATH
 from openpilot.sunnypilot.mapd.update_version import MAPD_HASH_PATH
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestMapdVersion:
+class TestMapdVersion(OpenpilotTestCase):
   def test_compare_versions(self):
     mapd_hash = get_file_hash(MAPD_PATH)
 
