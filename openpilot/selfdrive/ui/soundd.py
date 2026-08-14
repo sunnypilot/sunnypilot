@@ -53,18 +53,12 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.promptDistracted: ("dm_warning.wav", None, MAX_VOLUME),
 
   AudibleAlert.preAlert: ("pre_alert.wav", 1, MAX_VOLUME),
-  AudibleAlert.complete: ("complete.wav", 1, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("critical.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("dm_critical.wav", None, MAX_VOLUME),
 
   **sound_list_sp,
 }
-if HARDWARE.get_device_type() == "tizi":
-  sound_list.update({
-    AudibleAlert.engage: ("engage_tizi.wav", 1, MAX_VOLUME),
-    AudibleAlert.disengage: ("disengage_tizi.wav", 1, MAX_VOLUME),
-  })
 
 def check_selfdrive_timeout_alert(sm):
   ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
@@ -184,6 +178,7 @@ class Soundd(QuietMode):
   def soundd_thread(self):
     # sounddevice must be imported after forking processes
     import sounddevice as sd
+    micd.patch_sounddevice(sd)
 
     sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure'])
 

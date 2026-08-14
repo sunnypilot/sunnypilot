@@ -1,13 +1,16 @@
+#!/usr/bin/env python3
+
 import math
 import json
 import os
-import pytest
 import shutil
 import subprocess
 import time
+import unittest
 import numpy as np
 from collections import Counter, defaultdict
 from pathlib import Path
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.utils import tabulate
 
 from openpilot.cereal import log
@@ -54,7 +57,6 @@ PROCS = {
   "openpilot.selfdrive.locationd.paramsd": 9.0,
   "openpilot.selfdrive.locationd.lagd": 11.0,
   "openpilot.selfdrive.ui.soundd": 3.0,
-  "openpilot.selfdrive.ui.feedback.feedbackd": 1.0,
   "openpilot.selfdrive.monitoring.dmonitoringd": 4.0,
   "openpilot.system.proclogd": 7.0,
   "openpilot.system.logmessaged": 1.0,
@@ -67,7 +69,7 @@ PROCS = {
   "openpilot.system.loggerd.deleter": 1.0,
   "./pandad": 19.0,
   "openpilot.system.qcomgpsd.qcomgpsd": 1.0,
-  "openpilot.common.hardware.tici.modem": 10.0,
+  "openpilot.common.hardware.comma.modem": 10.0,
 }
 
 TIMINGS = {
@@ -81,12 +83,12 @@ TIMINGS = {
   "controlsState": [2.5, 0.35],
   "longitudinalPlan": [2.5, 0.5],
   "driverAssistance": [2.5, 0.5],
-  "roadCameraState": [2.5, 0.35],
-  "driverCameraState": [2.5, 0.35],
+  "narrowRoadCameraState": [2.5, 0.35],
+  "cabinCameraState": [2.5, 0.35],
   "modelV2": [2.5, 0.35],
   "driverStateV2": [2.5, 0.40],
-  "livePose": [2.5, 0.35],
-  "liveParameters": [2.5, 0.35],
+  "deviceMotion": [2.5, 0.35],
+  "vehicleParameters": [2.5, 0.35],
   "wideRoadCameraState": [1.5, 0.35],
 }
 
@@ -102,9 +104,8 @@ def cputime_total(ct):
   return ct.cpuUser + ct.cpuSystem + ct.cpuChildrenUser + ct.cpuChildrenSystem
 
 
-@pytest.mark.tici
-@pytest.mark.skip_tici_setup
-class TestOnroad:
+class TestOnroad(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
 
   @classmethod
   def setup_class(cls):
@@ -303,7 +304,7 @@ class TestOnroad:
     result += "------------------------------------------------\n"
     result += "-----------------  SOF Timing ------------------\n"
     result += "------------------------------------------------\n"
-    for name in ['roadCameraState', 'wideRoadCameraState', 'driverCameraState']:
+    for name in ['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']:
       ts = self.ts[name]['timestampSof']
       d_ms = np.diff(ts) / 1e6
       d50 = np.abs(d_ms-50)
@@ -316,8 +317,8 @@ class TestOnroad:
     print(result)
 
   def test_camera_sync(self, subtests):
-    cam_states = ['roadCameraState', 'wideRoadCameraState', 'driverCameraState']
-    encode_cams = ['roadEncodeIdx', 'wideRoadEncodeIdx', 'driverEncodeIdx']
+    cam_states = ['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']
+    encode_cams = ['narrowRoadEncodeIdx', 'wideRoadEncodeIdx', 'cabinEncodeIdx']
     for cams in (cam_states, encode_cams):
       with subtests.test(cams=cams):
         # sanity checks within a single cam
@@ -348,15 +349,15 @@ class TestOnroad:
           diff = (max(ts.values()) - min(ts.values()))
           assert diff < 2, f"Cameras not synced properly: frame_id={start+i}, {diff=:.1f}ms, {ts=}"
 
-          # driver camera should be staggered ~25ms from road camera
+          # cabin camera should be staggered ~25ms from road camera
           offset_ms = abs(self.ts[cams[2]]['timestampSof'][i] - self.ts[cams[0]]['timestampSof'][i]) / 1e6
-          assert 20 < offset_ms < 30, f"driver camera stagger out of range at frame {start+i}: {offset_ms:.1f}ms"
+          assert 20 < offset_ms < 30, f"cabin camera stagger out of range at frame {start+i}: {offset_ms:.1f}ms"
 
   def test_camera_encoder_matches(self, subtests):
     # sanity check that the frame metadata is consistent with the encoded frames
-    pairs = [('roadCameraState', 'roadEncodeIdx'),
+    pairs = [('narrowRoadCameraState', 'narrowRoadEncodeIdx'),
              ('wideRoadCameraState', 'wideRoadEncodeIdx'),
-             ('driverCameraState', 'driverEncodeIdx')]
+             ('cabinCameraState', 'cabinEncodeIdx')]
     for cam, enc in pairs:
       with subtests.test(camera=cam, encoder=enc):
         cam_frames = {fid: (sof, eof) for fid, sof, eof in zip(
@@ -442,3 +443,7 @@ class TestOnroad:
     eng = [m.selfdriveState.engageable for m in self.msgs['selfdriveState'][offset:]]
     assert all(eng), \
            f"Not engageable for whole segment:\n- selfdriveState.engageable: {Counter(eng)}\n- No entry events: {no_entries}"
+
+
+if __name__ == "__main__":
+  unittest.main()

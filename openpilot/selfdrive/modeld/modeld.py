@@ -13,7 +13,8 @@ from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.cereal.messaging import PubMaster, SubMaster
 from openpilot.cereal.services import SERVICE_LIST
-from msgq.visionipc import VisionIpcClient, VisionBuf, VisionStreamType
+from openpilot.cereal.visionipc import VisionStreamType
+from msgq.visionipc import VisionIpcClient, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
@@ -30,6 +31,9 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_drivi
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.helpers import usbgpu_present, usbgpu_compiled, modeld_pkl_path, get_tg_input_devices, load_oob
+
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
 PROCESS_NAME = "openpilot.selfdrive.modeld.modeld"
@@ -71,9 +75,12 @@ def get_action_from_model(model_output: dict[str, np.ndarray], prev_action: log.
 
 class ChestnutState:
   # only modeld can access chestnut
-  def __init__(self, pm: PubMaster):
+  def __init__(self, pm: PubMaster, big: bool):
     self.pm = pm
+    self.big = big
     self.valid = True
+    self.sends = 0
+    self.metrics = {}
 
   @cached_property
   def power_limit(self) -> int:
@@ -83,33 +90,41 @@ class ChestnutState:
   def send(self) -> None:
     msg = messaging.new_message('chestnutState')
     state = msg.chestnutState
-    valid = False
-    if "AMD" in Device._opened_devices:
+    self.sends += 1
+    if self.big and "AMD" in Device._opened_devices and self.sends % 100 == 1:
       try:
         smu = Device["AMD"].iface.dev_impl.smu
         smu._send_msg(smu.smu_mod.PPSMC_MSG_TransferTableSmu2Dram, smu.smu_mod.TABLE_SMU_METRICS, timeout=100)
         metrics = smu.read_table(smu.smu_mod.SmuMetricsExternal_t, smu.smu_mod.TABLE_SMU_METRICS).SmuMetrics
-        state.tempC = metrics.AvgTemperature[smu.smu_mod.TEMP_HOTSPOT]
-        state.memoryTempC = metrics.AvgTemperature[smu.smu_mod.TEMP_MEM]
-        state.powerDrawW = metrics.AverageSocketPower
-        state.powerLimitW = self.power_limit
-        state.gpuUsagePercent = metrics.AverageGfxActivity
-        state.gpuClockMhz = metrics.AverageGfxclkFrequencyPostDs
-        state.fanSpeedRpm = metrics.AvgFanRpm
-        valid = True
+        self.metrics = {'tempC': metrics.AvgTemperature[smu.smu_mod.TEMP_HOTSPOT],
+                        'memoryTempC': metrics.AvgTemperature[smu.smu_mod.TEMP_MEM],
+                        'powerDrawW': metrics.AverageSocketPower,
+                        'powerLimitW': self.power_limit,
+                        'gpuUsagePercent': metrics.AverageGfxActivity,
+                        'gpuClockMhz': metrics.AverageGfxclkFrequencyPostDs,
+                        'fanSpeedRpm': metrics.AvgFanRpm}
+        self.valid = True
       except Exception:
         if self.valid:
           cloudlog.exception("chestnut state read failed")
+        self.valid = False
+        self.metrics.clear()
+    if self.big:
+      for k, v in self.metrics.items():
+        setattr(state, k, v)
+
+    asm_valid = False
+    if "AMD" in Device._opened_devices:
       try:
         # ASM runs on USB-C power, these still read without a gpu
         asm = Device["AMD"].iface.pci_dev.usb
         state.pcieLtssm = asm.read(0xB450, 1)[0]
         state.supplyVoltage, state.supplyCurrent = struct.unpack('<Hh', bytes(asm.usb.control_read(0xC0, 5))[:4])
+        asm_valid = True
       except Exception:
         pass
 
-    self.valid = valid
-    msg.valid = valid
+    msg.valid = asm_valid and (not self.big or self.valid)
     self.pm.send('chestnutState', msg)
 
 
@@ -123,10 +138,11 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
-class ModelState:
+class ModelState(ModelStateBase):
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, cam_w: int, cam_h: int, usbgpu: bool):
+    ModelStateBase.__init__(self)
     input_devices = get_tg_input_devices(PROCESS_NAME, usbgpu)
     self.WARP_DEV, self.QUEUE_DEV = input_devices['WARP_DEV'], input_devices['QUEUE_DEV']
     jits = load_oob(open_file_chunked(modeld_pkl_path(usbgpu)))
@@ -257,16 +273,17 @@ def main(demo=False):
   if model is None:
     model = small_model
   params.put_bool("UsbGpuLoading", False)
+  assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry"] + (["chestnutState"] if USBGPU else [])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if USBGPU else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
   publish_state = PublishState()
   params = Params()
-  chestnut_state = ChestnutState(pm) if USBGPU else None
+  chestnut_state = ChestnutState(pm, model.usbgpu) if USBGPU else None
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / ModelConstants.MODEL_RUN_FREQ)
@@ -333,6 +350,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["narrowRoadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
+    model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
     lat_delay = sm["lateralDelay"].lateralDelay + LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -382,7 +400,10 @@ def main(demo=False):
       # fallback to small model
       cloudlog.exception("big model failed, fall back to small")
       params.put_bool("UsbGpuActive", False)
+      assert small_model is not None
       model = small_model
+      if chestnut_state is not None:
+        chestnut_state.big = False
       run_count = 0
       model_output = None
     mt2 = time.perf_counter()
@@ -392,7 +413,6 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      mdv2sp_send = messaging.new_message('modelDataV2SP')
 
       action = get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego)
       prev_action = action
@@ -405,10 +425,12 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
+
+      mdv2sp_send = messaging.new_message('modelDataV2SP')
+      left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
       mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
 
       fill_driving_model_data(drivingdata_send, modelv2_send)

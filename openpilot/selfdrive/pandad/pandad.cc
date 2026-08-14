@@ -143,8 +143,8 @@ void fill_panda_state(cereal::PandaState::Builder &ps, cereal::PandaState::Panda
   ps.setSbu1Voltage(health.sbu1_voltage_mV / 1000.0f);
   ps.setSbu2Voltage(health.sbu2_voltage_mV / 1000.0f);
   ps.setSoundOutputLevel(health.sound_output_level_pkt);
-  ps.setControlsAllowedLateral(health.controls_allowed_lateral_pkt);
-  ps.setControlsAllowedLongitudinal(health.controls_allowed_longitudinal_pkt);
+  ps.setControlsAllowedLateral(health.controls_allowed_sp_pkt & 1);
+  ps.setControlsAllowedLongitudinal((health.controls_allowed_sp_pkt >> 1) & 1);
 }
 
 void fill_panda_can_state(cereal::PandaState::PandaCanState::Builder &cs, const can_health_t &can_health) {
@@ -292,9 +292,9 @@ void process_panda_state(Panda *panda, PubMaster *pm, bool engaged, bool engaged
 
 void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control, bool is_onroad) {
   static Params params;
-  static SubMaster sm({"deviceState", "driverCameraState"});
+  static SubMaster sm({"deviceState", "cabinCameraState"});
 
-  static uint64_t last_driver_camera_t = 0;
+  static uint64_t last_cabin_camera_t = 0;
   static uint16_t prev_fan_speed = 999;
   static int ir_pwr = 0;
   static int prev_ir_pwr = 999;
@@ -318,20 +318,20 @@ void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control, 
       }
     }
 
-    if (sm.updated("driverCameraState")) {
-      auto event = sm["driverCameraState"];
-      int cur_integ_lines = event.getDriverCameraState().getIntegLines();
+    if (sm.updated("cabinCameraState")) {
+      auto event = sm["cabinCameraState"];
+      int cur_integ_lines = event.getCabinCameraState().getIntegLines();
 
       // reset the filter when camerad restarts
-      if (event.getDriverCameraState().getFrameId() < prev_frame_id) {
+      if (event.getCabinCameraState().getFrameId() < prev_frame_id) {
         integ_lines_filter.reset(0);
         integ_lines_filter_driver_view.reset(0);
         driver_view = params.getBool("IsDriverViewEnabled");
       }
-      prev_frame_id = event.getDriverCameraState().getFrameId();
+      prev_frame_id = event.getCabinCameraState().getFrameId();
 
       cur_integ_lines = (driver_view ? integ_lines_filter_driver_view : integ_lines_filter).update(cur_integ_lines);
-      last_driver_camera_t = event.getLogMonoTime();
+      last_cabin_camera_t = event.getLogMonoTime();
 
       if (cur_integ_lines <= CUTOFF_IL) {
         ir_pwr = 0;
@@ -343,7 +343,7 @@ void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control, 
     }
 
     // Disable IR on input timeout
-    if (nanos_since_boot() - last_driver_camera_t > 1e9) {
+    if (nanos_since_boot() - last_cabin_camera_t > 1e9) {
       ir_pwr = 0;
     }
 
