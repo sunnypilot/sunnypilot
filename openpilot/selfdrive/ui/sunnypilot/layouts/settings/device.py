@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.layouts.settings.device import DeviceLayout
-from openpilot.selfdrive.ui.onroad.driver_camera_dialog import DriverCameraDialog
+from openpilot.selfdrive.ui.onroad.cabin_camera_dialog import CabinCameraDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.common.hardware import HARDWARE
 from openpilot.system.ui.lib.application import gui_app
@@ -82,7 +82,7 @@ class DeviceLayoutSP(DeviceLayout):
       left_text=lambda: tr("Quiet Mode"),
       right_text=lambda: tr("Driver Camera Preview"),
       left_callback=lambda: ui_state.params.put_bool("QuietMode", not ui_state.params.get_bool("QuietMode")),
-      right_callback=lambda: gui_app.push_widget(DriverCameraDialog())
+      right_callback=lambda: gui_app.push_widget(CabinCameraDialog())
     )
     self._quiet_mode_and_dcam.action_item.right_button.set_button_style(ButtonStyle.NORMAL)
 

@@ -7,26 +7,26 @@ See the LICENSE.md file in the root directory for more details.
 import random
 import time
 
-import pytest
-from pytest_mock import MockerFixture
+from openpilot.common.parameterized import parameterized
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import LIMIT_MAX_MAP_DATA_AGE
 
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver, ALL_SOURCES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Policy
+from openpilot.common.test import OpenpilotTestCase
 
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 
-def create_mock(properties, mocker: MockerFixture):
+def create_mock(properties, mocker):
   mock = mocker.MagicMock()
   for _property, value in properties.items():
     setattr(mock, _property, value)
   return mock
 
 
-def setup_sm_mock(mocker: MockerFixture):
+def setup_sm_mock(mocker):
   cruise_speed_limit = random.uniform(0, 120)
   live_map_data_limit = random.uniform(0, 120)
 
@@ -58,21 +58,24 @@ def setup_sm_mock(mocker: MockerFixture):
   return sm_mock
 
 
-parametrized_policies = pytest.mark.parametrize(
-  "policy, sm_key, function_key", [
+parametrized_policies = parameterized.expand(
+  [
     (Policy.car_state_only, 'carStateSP', SpeedLimitSource.car),
     (Policy.car_state_priority, 'carStateSP', SpeedLimitSource.car),
     (Policy.map_data_only, 'liveMapDataSP', SpeedLimitSource.map),
     (Policy.map_data_priority, 'liveMapDataSP', SpeedLimitSource.map),
   ],
-  ids=lambda val: val.name if hasattr(val, 'name') else str(val)
+  names=["policy", "sm_key", "function_key"]
 )
 
 
-@pytest.mark.parametrize("resolver_class", [SpeedLimitResolver])
-class TestSpeedLimitResolverValidation:
+def resolver_class():
+  return SpeedLimitResolver
 
-  @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
+
+class TestSpeedLimitResolverValidation(OpenpilotTestCase):
+
+  @parameterized.expand(list(Policy), names=["policy"])
   def test_initial_state(self, resolver_class, policy):
     resolver = resolver_class()
     resolver.policy = policy
@@ -82,7 +85,7 @@ class TestSpeedLimitResolverValidation:
         assert resolver.distance_solutions[source] == 0.
 
   @parametrized_policies
-  def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
+  def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker):
     resolver = resolver_class()
     resolver.policy = policy
     sm_mock = setup_sm_mock(mocker)
@@ -93,7 +96,7 @@ class TestSpeedLimitResolverValidation:
     assert resolver.speed_limit == source_speed_limit
     assert resolver.source == ALL_SOURCES[function_key]
 
-  def test_resolver_combined(self, resolver_class, mocker: MockerFixture):
+  def test_resolver_combined(self, resolver_class, mocker):
     resolver = resolver_class()
     resolver.policy = Policy.combined
     sm_mock = setup_sm_mock(mocker)
@@ -108,7 +111,7 @@ class TestSpeedLimitResolverValidation:
     assert resolver.source == socket_to_source[minimum_key]
 
   @parametrized_policies
-  def test_parser(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
+  def test_parser(self, resolver_class, policy, sm_key, function_key, mocker):
     resolver = resolver_class()
     resolver.policy = policy
     sm_mock = setup_sm_mock(mocker)
@@ -119,8 +122,8 @@ class TestSpeedLimitResolverValidation:
     assert resolver.limit_solutions[ALL_SOURCES[function_key]] == source_speed_limit
     assert resolver.distance_solutions[ALL_SOURCES[function_key]] == 0.
 
-  @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
-  def test_resolve_interaction_in_update(self, resolver_class, policy, mocker: MockerFixture):
+  @parameterized.expand(list(Policy), names=["policy"])
+  def test_resolve_interaction_in_update(self, resolver_class, policy, mocker):
     v_ego = 50
     resolver = resolver_class()
     resolver.policy = policy
@@ -133,8 +136,8 @@ class TestSpeedLimitResolverValidation:
     assert resolver.distance is not None
     assert resolver.source is not None
 
-  @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
-  def test_old_map_data_ignored(self, resolver_class, policy, mocker: MockerFixture):
+  @parameterized.expand(list(Policy), names=["policy"])
+  def test_old_map_data_ignored(self, resolver_class, policy, mocker):
     resolver = resolver_class()
     resolver.policy = policy
     sm_mock = mocker.MagicMock()
