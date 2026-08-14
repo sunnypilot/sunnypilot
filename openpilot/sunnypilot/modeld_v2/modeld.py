@@ -106,6 +106,7 @@ class ModelState(ModelStateBase):
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
     self.PLANPLUS_CONTROL: float = 1.0
+    self.usbgpu = USBGPU
 
     pkl_path = _find_driving_pkl(model_bundle)
     assert pkl_path is not None, "No driving pkl found — all models must be compiled with compile_modeld.py"
@@ -282,6 +283,10 @@ class ModelState(ModelStateBase):
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
+    if self.usbgpu and not np.all(np.isfinite(outputs.get('plan', np.array([0.])))):
+      cloudlog.error("model output not finite, dropping frame")
+      return None
+
     return outputs
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
@@ -360,7 +365,9 @@ def main(demo=False):
     t = threading.Thread(target=load, daemon=True)
     t.start()
     t.join(60)
-    assert model, "eGPU timeout (60s)"
+    if model is None:
+      params.put_bool("UsbGpuActive", False)
+      raise RuntimeError("eGPU model load failed or timed out (60s)")
     params.put_bool("UsbGpuActive", True)
   else:
     model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
@@ -515,6 +522,7 @@ def main(demo=False):
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, meta_constants)
+      modelv2_send.modelV2.big = model.usbgpu
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
