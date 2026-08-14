@@ -50,7 +50,7 @@ class LatControlTorque(LatControl):
 
     self.extension = LatControlTorqueExt(self, CP, CP_SP, CI)
 
-  def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
+  def update_torque_parameters(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
     self.torque_params.friction = friction

@@ -75,7 +75,6 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     driverUnresponsive2 @37;
     driverUnresponsive3 @38;
     belowSteerSpeed @39;
-    lowBattery @40;
     accFaulted @41;
     sensorDataInvalid @42;
     commIssue @43;
@@ -107,18 +106,17 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     noGps @68;
     wrongCruiseMode @69;
     modeldLagging @70;
-    deviceFalling @71;
     fanMalfunction @72;
     cameraMalfunction @73;
     cameraFrameRate @74;
     processNotRunning @75;
     dashcamMode @76;
     selfdriveInitializing @77;
-    usbError @78;
     cruiseMismatch @79;
     canBusMissing @80;
     selfdrivedLagging @81;
     resumeBlocked @82;
+    carNotReady @103;
     steerTimeLimit @83;
     vehicleSensorsInvalid @84;
     locationdTemporaryError @85;
@@ -131,9 +129,15 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     aeb @92;
     userBookmark @95;
     excessiveActuation @96;
-    audioFeedback @97;
+    bigModelLoading @100;
+    bigModelFailed @102;
 
+    lowBatteryDEPRECATED @40;
     soundsUnavailableDEPRECATED @47;
+    deviceFallingDEPRECATED @71;
+    usbErrorDEPRECATED @78;
+    audioFeedbackDEPRECATED @97;
+    bigModelReadyDEPRECATED @101;
   }
 }
 
@@ -176,13 +180,13 @@ struct InitData {
 
   enum DeviceType {
     unknown @0;
-    neo @1;
+    neo @1;   # NEO, EON, & comma two
     chffrAndroid @2;
     chffrIos @3;
-    tici @4;
+    tici @4;  # comma three
     pc @5;
-    tizi @6;
-    mici @7;
+    tizi @6;  # comma 3X
+    mici @7;  # comma four
   }
 
   struct PandaInfo {
@@ -700,7 +704,27 @@ struct UsbState {
     manufacturer @6 :Text;
     product @5 :Text;
     linkErrorCount @7 :UInt16;
+    usb3Lane @8 :Usb3Lane;
+
+    enum Usb3Lane {
+      unknown @0;
+      a @1;
+      b @2;
+    }
   }
+}
+
+struct ChestnutState {
+  tempC @0 :Float32;
+  memoryTempC @1 :Float32;
+  powerDrawW @2 :Float32;
+  powerLimitW @3 :Float32;
+  gpuUsagePercent @4 :UInt8;
+  gpuClockMhz @5 :UInt16;
+  fanSpeedRpm @6 :UInt16;
+  pcieLtssm @7 :UInt8;
+  supplyVoltage @8 :UInt16;  # mV
+  supplyCurrent @9 :Int16;  # mA
 }
 
 struct RadarState @0x9a185389d6fdd05f {
@@ -746,7 +770,7 @@ struct RadarState @0x9a185389d6fdd05f {
   }
 }
 
-struct LiveCalibrationData {
+struct ExtrinsicsCalibration @0x96df70754d8390bc {
   calStatus @11 :Status;
   calCycle @2 :Int32;
   calPerc @3 :Int8;
@@ -1026,6 +1050,7 @@ struct ModelDataV2 {
   timestampEof @3 :UInt64;
   modelExecutionTime @15 :Float32;
   rawPredictions @16 :Data;
+  big @27 :Bool;
 
   # predicted future position, orientation, etc..
   position @4 :XYZTData;
@@ -1366,7 +1391,7 @@ struct LiveLocationKalman {
 }
 
 
-struct LivePose {
+struct DeviceMotion @0xc24ca2b57206b44d {
   # More info on reference frames:
   # https://github.com/commaai/openpilot/tree/master/openpilot/common/transformations
   orientationNED @0 :XYZMeasurement;
@@ -2248,7 +2273,7 @@ struct Boot {
   }
 }
 
-struct LiveParametersData {
+struct VehicleParameters @0xd9058dcb967c2753 {
   valid @0 :Bool;
   gyroBias @1 :Float32;
   angleOffsetDeg @2 :Float32;
@@ -2282,8 +2307,8 @@ struct LiveParametersData {
   }
 }
 
-struct LiveTorqueParametersData {
-  liveValid @0 :Bool;
+struct LateralTorqueParameters @0xe61690eb0b091692 {
+  valid @0 :Bool;
   latAccelFactorRaw @1 :Float32;
   latAccelOffsetRaw @2 :Float32;
   frictionCoefficientRaw @3 :Float32;
@@ -2299,7 +2324,7 @@ struct LiveTorqueParametersData {
   calPerc @13 :Int8;
 }
 
-struct LiveDelayData {
+struct LateralDelay @0x98dfdb22c44df8d4 {
   lateralDelay @0 :Float32;
   validBlocks @1 :Int32;
   status @2 :Status;
@@ -2485,11 +2510,6 @@ struct AudioData {
   sampleRate @1 :UInt32;
 }
 
-struct AudioFeedback {
-  audio @0 :AudioData;
-  blockNum @1 :UInt16;
-}
-
 struct Touch {
   sec @0 :Int64;
   usec @1 :Int64;
@@ -2522,9 +2542,9 @@ struct Event {
     pandaStates @81 :List(PandaState);
     peripheralState @80 :PeripheralState;
     radarState @13 :RadarState;
-    liveTracks @131 :Car.RadarData;
+    radarTracks @131 :Car.RadarData;
     sendcan @17 :List(CanData);
-    liveCalibration @19 :LiveCalibrationData;
+    extrinsicsCalibration @19 :ExtrinsicsCalibration;
     carState @22 :Car.CarState;
     carControl @23 :Car.CarControl;
     carOutput @127 :Car.CarOutput;
@@ -2535,31 +2555,31 @@ struct Event {
     qcomGnss @31 :QcomGnss;
     gpsLocationExternal @48 :GpsLocationData;
     gpsLocation @21 :GpsLocationData;
-    liveParameters @61 :LiveParametersData;
-    liveTorqueParameters @94 :LiveTorqueParametersData;
-    liveDelay @146 : LiveDelayData;
+    vehicleParameters @61 :VehicleParameters;
+    lateralTorqueParameters @94 :LateralTorqueParameters;
+    lateralDelay @146 : LateralDelay;
     cameraOdometry @63 :CameraOdometry;
     thumbnail @66: Thumbnail;
     onroadEvents @134: List(OnroadEvent);
     carParams @69: Car.CarParams;
     driverMonitoringState @151 :DriverMonitoringState;
-    livePose @129 :LivePose;
+    deviceMotion @129 :DeviceMotion;
     modelV2 @75 :ModelDataV2;
     drivingModelData @128 :DrivingModelData;
     driverStateV2 @92 :DriverStateV2;
 
     # camera stuff, each camera state has a matching encode idx
-    roadCameraState @2 :FrameData;
-    driverCameraState @70: FrameData;
+    narrowRoadCameraState @2 :FrameData;
+    cabinCameraState @70: FrameData;
     wideRoadCameraState @74: FrameData;
-    roadEncodeIdx @15 :EncodeIndex;
-    driverEncodeIdx @76 :EncodeIndex;
+    narrowRoadEncodeIdx @15 :EncodeIndex;
+    cabinEncodeIdx @76 :EncodeIndex;
     wideRoadEncodeIdx @77 :EncodeIndex;
-    qRoadEncodeIdx @90 :EncodeIndex;
+    qNarrowRoadEncodeIdx @90 :EncodeIndex;
 
-    livestreamRoadEncodeIdx @117 :EncodeIndex;
+    livestreamNarrowRoadEncodeIdx @117 :EncodeIndex;
     livestreamWideRoadEncodeIdx @118 :EncodeIndex;
-    livestreamDriverEncodeIdx @119 :EncodeIndex;
+    livestreamCabinEncodeIdx @119 :EncodeIndex;
 
     # microphone data
     soundPressure @103 :SoundPressure;
@@ -2571,6 +2591,7 @@ struct Event {
     procLog @33 :ProcLog;
     clocks @35 :Clocks;
     deviceState @6 :DeviceState;
+    chestnutState @152 :ChestnutState;
     logMessage @18 :Text;
     errorLogMessage @85 :Text;
 
@@ -2583,21 +2604,20 @@ struct Event {
     # driving feedback
     userBookmark @93 :UserBookmark;
     bookmarkButton @148 :UserBookmark;
-    audioFeedback @149 :AudioFeedback;
 
     lateralManeuverPlan @150 :LateralManeuverPlan;
 
     # *********** debug ***********
     testJoystick @52 :Joystick;
-    roadEncodeData @86 :EncodeData;
-    driverEncodeData @87 :EncodeData;
+    narrowRoadEncodeData @86 :EncodeData;
+    cabinEncodeData @87 :EncodeData;
     wideRoadEncodeData @88 :EncodeData;
-    qRoadEncodeData @89 :EncodeData;
+    qNarrowRoadEncodeData @89 :EncodeData;
     alertDebug @133 :DebugAlert;
 
-    livestreamRoadEncodeData @120 :EncodeData;
+    livestreamNarrowRoadEncodeData @120 :EncodeData;
     livestreamWideRoadEncodeData @121 :EncodeData;
-    livestreamDriverEncodeData @122 :EncodeData;
+    livestreamCabinEncodeData @122 :EncodeData;
 
     # *********** Custom: reserved for forks ***********
 
@@ -2633,6 +2653,7 @@ struct Event {
 
     # *********** legacy + deprecated ***********
     model @9 :Deprecated.ModelData; # TODO: rename modelV2 and mark this as deprecated
+    audioFeedbackDEPRECATED @149 :Deprecated.AudioFeedbackDEPRECATED;
     liveMpcDEPRECATED @36 :Deprecated.LiveMpcData;
     liveLongitudinalMpcDEPRECATED @37 :Deprecated.LiveLongitudinalMpcData;
     liveLocationKalmanDeprecatedDEPRECATED @51 :Deprecated.LiveLocationData;

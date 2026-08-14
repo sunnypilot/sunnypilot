@@ -8,18 +8,18 @@ import json
 import math
 import platform
 
-import pytest
 
 from openpilot.cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.map_controller import R, SmartCruiseControlMap
+from openpilot.common.test import OpenpilotTestCase
 
 MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
 
 
-class TestSmartCruiseControlMap:
+class TestSmartCruiseControlMap(OpenpilotTestCase):
 
   def setup_method(self):
     self.params = Params()
@@ -70,6 +70,6 @@ class TestSmartCruiseControlMap:
 
     self.scc_m.update(True, False, 25.0, 0.0, 30.0)
 
-    assert self.scc_m.v_target == pytest.approx(24.0)
+    self.assertAlmostEqual(self.scc_m.v_target, 24.0, delta=24.0 * 1e-6)
 
   # TODO-SP: mock data from modelV2 to test other states

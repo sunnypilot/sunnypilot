@@ -23,7 +23,7 @@ def compare_cluster_target(v_cruise_cluster: float, target_set_speed: float, is_
   return req_plus, req_minus
 
 
-def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarParamsSP, params: Params = None) -> bool:
+def set_speed_limit_assist_availability(CP: car.CarParams, CP_SP: custom.CarParamsSP, params: Params | None = None) -> bool:
   if params is None:
     params = Params()
 
