@@ -41,7 +41,7 @@ from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_p
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
+from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues, make_supercombo_input_queues, WARP_INPUTS, POLICY_INPUTS
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
@@ -112,11 +112,10 @@ class ModelState(ModelStateBase):
     self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
     self.DEV = 'AMD' if self.usbgpu else self.WARP_DEV
     self.QUEUE_DEV = self.DEV
-
     metadata = jits['metadata']
 
-    self._run_policy = jits[(cam_w, cam_h)]['run_policy']
-    self._warp_enqueue = jits[(cam_w, cam_h)]['warp_enqueue']
+    self.run_policy = jits['run_policy']
+    self.warp = jits[(cam_w, cam_h)]
 
     if 'model' in metadata:
       model_metadata = metadata['model']
@@ -125,7 +124,6 @@ class ModelState(ModelStateBase):
       self._policy_slices_list = []
       self._combined_model_type = 'supercombo'
       self._vision_input_names = [key for key in model_metadata['input_shapes'] if 'img' in key]
-      from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues
       frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
       self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'],
                                                                           frame_skip, device=self.QUEUE_DEV)
@@ -141,12 +139,11 @@ class ModelState(ModelStateBase):
       self._policy_slices_list = [metadata[k]['output_slices'] for k in policy_keys]
       self.policy_output_slices = self._policy_slices_list[0]
       self._has_on_policy = any('on' in k.lower() for k in policy_keys)
-      first_policy_metadata = metadata[policy_keys[0]]
-      vision_input_shapes = vision_metadata['input_shapes']
-      policy_input_shapes = first_policy_metadata['input_shapes']
-      self._vision_input_names = [k for k in vision_input_shapes if 'img' in k]
-      frame_skip = derive_frame_skip(vision_input_shapes, policy_input_shapes)
-      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_input_shapes, policy_input_shapes,
+      self._vision_input_names = [key for key in vision_metadata['input_shapes'] if 'img' in key]
+      first_policy_meta = metadata[policy_keys[0]]
+      frame_skip = derive_frame_skip(vision_metadata['input_shapes'], first_policy_meta['input_shapes'])
+      self.input_queues, self.numpy_inputs = make_split_input_queues(vision_metadata['input_shapes'],
+                                                                     first_policy_meta['input_shapes'],
                                                                      frame_skip, device=self.QUEUE_DEV)
 
     self._desire_key = next(key for key in self.numpy_inputs if key.startswith('desire'))
@@ -175,8 +172,9 @@ class ModelState(ModelStateBase):
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
     yuv_size = self.frame_buf_params[self._road_key][3]
-    self._warp_enqueue(
-      **self.input_queues,
+    self.warp(
+      tfm=self.input_queues['tfm'],
+      big_tfm=self.input_queues['big_tfm'],
       frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize(),
       big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize())
 
@@ -237,10 +235,10 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 
     if prepare_only:
-      self._warp_enqueue(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
       return None
-
-    raw_outputs = self._run_policy(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+    warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+    raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
     if self._combined_model_type == 'supercombo':
       model_output = raw_outputs.numpy().flatten()

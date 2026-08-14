@@ -163,7 +163,8 @@ ARCHETYPES = {
 def make_pkl_data(archetype):
   return {
     'metadata': archetype.metadata_structure,
-    (CAM_W, CAM_H): {'run_policy': _noop_jit, 'warp_enqueue': _noop_jit},
+    'run_policy': _noop_jit,
+    (CAM_W, CAM_H): _noop_jit,
   }
 
 
