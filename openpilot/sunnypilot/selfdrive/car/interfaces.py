@@ -25,7 +25,7 @@ def log_fingerprint(CP: structs.CarParams) -> None:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
 
-def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params = None, enabled: bool = False) -> bool:
+def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params | None = None, enabled: bool = False) -> bool:
   if params is None:
     params = Params()
 
@@ -36,7 +36,7 @@ def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params = None
 
 
 def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP,
-                                               params: Params = None, enabled: bool = False) -> bool:
+                                               params: Params | None = None, enabled: bool = False) -> bool:
   if params is None:
     params = Params()
 
@@ -55,7 +55,7 @@ def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: str
   return enabled
 
 
-def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params | None = None) -> None:
   if params is None:
     params = Params()
 
@@ -69,7 +69,7 @@ def _initialize_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarPara
     CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
 
-def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params | None = None) -> None:
   if params is None:
     params = Params()
 
@@ -98,7 +98,7 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
   set_speed_limit_assist_availability(CP, CP_SP, params)
 
 
-def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
+def setup_interfaces(CI: CarInterfaceBase, params: Params | None = None) -> None:
   enforce_torque = _enforce_torque_lateral_control(CI.CP, params)
   nnlc_enabled = _initialize_neural_network_lateral_control(CI.CP, CI.CP_SP, params)
   _initialize_intelligent_cruise_button_management(CI.CP, CI.CP_SP, params)

@@ -8,9 +8,10 @@ from opendbc.car.structs import car
 
 from openpilot.common.constants import CV
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestBlinkerPauseLateral:
+class TestBlinkerPauseLateral(OpenpilotTestCase):
 
   def setup_method(self):
     self.blinker_pause_lateral = BlinkerPauseLateral()

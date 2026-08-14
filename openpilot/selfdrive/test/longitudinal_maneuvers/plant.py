@@ -66,7 +66,7 @@ class Plant:
     control = messaging.new_message('controlsState')
     ss = messaging.new_message('selfdriveState')
     car_state = messaging.new_message('carState')
-    lp = messaging.new_message('liveParameters')
+    lp = messaging.new_message('vehicleParameters')
     car_control = messaging.new_message('carControl')
     model = messaging.new_message('modelV2')
     car_state_sp = messaging.new_message('carStateSP')
@@ -112,7 +112,7 @@ class Plant:
     position = log.XYZTData.new_message()
     position.x = [float(x) for x in (self.speed + 0.5) * np.array(ModelConstants.T_IDXS)]
     model.modelV2.position = position
-    model.modelV2.action.desiredAcceleration = float(self.acceleration + 0.1)
+    model.modelV2.action.desiredAcceleration = float(self.acceleration + 0.5)
     velocity = log.XYZTData.new_message()
     velocity.x = [float(x) for x in (self.speed + 0.5) * np.ones_like(ModelConstants.T_IDXS)]
     velocity.x[0] = float(self.speed) # always start at current speed
@@ -137,7 +137,7 @@ class Plant:
           'carControl': car_control.carControl,
           'controlsState': control.controlsState,
           'selfdriveState': ss.selfdriveState,
-          'liveParameters': lp.liveParameters,
+          'vehicleParameters': lp.vehicleParameters,
           'modelV2': model.modelV2,
           'carStateSP': car_state_sp.carStateSP,
           'liveMapDataSP': live_map_data_sp.liveMapDataSP,

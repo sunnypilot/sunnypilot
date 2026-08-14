@@ -9,29 +9,29 @@ from openpilot.common.transformations.orientation import rot_from_euler, euler_f
 
 @cache
 def fft_next_good_size(n: int) -> int:
-    """
-    smallest composite of 2, 3, 5, 7, 11 that is >= n
-    inspired by pocketfft
-    """
-    if n <= 6:
-      return n
-    best, f2 = 2 * n, 1
-    while f2 < best:
-        f23 = f2
-        while f23 < best:
-            f235 = f23
-            while f235 < best:
-                f2357 = f235
-                while f2357 < best:
-                    f235711 = f2357
-                    while f235711 < best:
-                        best = f235711 if f235711 >= n else best
-                        f235711 *= 11
-                    f2357 *= 7
-                f235 *= 5
-            f23 *= 3
-        f2 *= 2
-    return best
+  """
+  smallest composite of 2, 3, 5, 7, 11 that is >= n
+  inspired by pocketfft
+  """
+  if n <= 6:
+    return n
+  best, f2 = 2 * n, 1
+  while f2 < best:
+    f23 = f2
+    while f23 < best:
+      f235 = f23
+      while f235 < best:
+        f2357 = f235
+        while f2357 < best:
+          f235711 = f2357
+          while f235711 < best:
+            best = f235711 if f235711 >= n else best
+            f235711 *= 11
+          f2357 *= 7
+        f235 *= 5
+      f23 *= 3
+    f2 *= 2
+  return best
 
 
 def parabolic_peak_interp(R, max_index):
@@ -130,7 +130,7 @@ class Measurement:
     self.xyz_std: np.ndarray = xyz_std
 
   @classmethod
-  def from_measurement_xyz(cls, measurement: log.LivePose.XYZMeasurement) -> 'Measurement':
+  def from_measurement_xyz(cls, measurement: log.DeviceMotion.XYZMeasurement) -> 'Measurement':
     return cls(
       xyz=np.array([measurement.x, measurement.y, measurement.z]),
       xyz_std=np.array([measurement.xStd, measurement.yStd, measurement.zStd])
@@ -145,12 +145,12 @@ class Pose:
     self.angular_velocity = angular_velocity
 
   @classmethod
-  def from_live_pose(cls, live_pose: log.LivePose) -> 'Pose':
+  def from_device_motion(cls, device_motion: log.DeviceMotion) -> 'Pose':
     return Pose(
-      orientation=Measurement.from_measurement_xyz(live_pose.orientationNED),
-      velocity=Measurement.from_measurement_xyz(live_pose.velocityDevice),
-      acceleration=Measurement.from_measurement_xyz(live_pose.accelerationDevice),
-      angular_velocity=Measurement.from_measurement_xyz(live_pose.angularVelocityDevice)
+      orientation=Measurement.from_measurement_xyz(device_motion.orientationNED),
+      velocity=Measurement.from_measurement_xyz(device_motion.velocityDevice),
+      acceleration=Measurement.from_measurement_xyz(device_motion.accelerationDevice),
+      angular_velocity=Measurement.from_measurement_xyz(device_motion.angularVelocityDevice)
     )
 
 
@@ -178,8 +178,8 @@ class PoseCalibrator:
 
     return Pose(ned_from_calib_euler, velocity_calib, acceleration_calib, angular_velocity_calib)
 
-  def feed_live_calib(self, live_calib: log.LiveCalibrationData):
-    calib_rpy = np.array(live_calib.rpyCalib)
+  def feed_extrinsics_calibration(self, extrinsics_calibration: log.ExtrinsicsCalibration):
+    calib_rpy = np.array(extrinsics_calibration.rpyCalib)
     device_from_calib = rot_from_euler(calib_rpy)
     self.calib_from_device = device_from_calib.T
-    self.calib_valid = live_calib.calStatus == log.LiveCalibrationData.Status.calibrated
+    self.calib_valid = extrinsics_calibration.calStatus == log.ExtrinsicsCalibration.Status.calibrated

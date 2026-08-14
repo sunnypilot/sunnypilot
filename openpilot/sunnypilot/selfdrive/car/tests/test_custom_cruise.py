@@ -1,8 +1,6 @@
-import pytest
-
 from opendbc.car.structs import car
 from openpilot.common.constants import CV
-from openpilot.common.parameterized import parameterized_class
+from openpilot.common.parameterized import parameterized, parameterized_class
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.cruise import V_CRUISE_INITIAL
 from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper
@@ -15,7 +13,7 @@ ButtonType = car.CarState.ButtonEvent.Type
 @parameterized_class(('pcm_cruise', 'pcm_cruise_speed'), [(False, True)])
 class TestCustomAccIncrements(TestVCruiseHelper):
   def setup_method(self):
-    TestVCruiseHelper.setup_method(self)
+    TestVCruiseHelper.openpilot_setup_method(self)
     self.params = Params()
     self.reset_custom_params()
 
@@ -67,7 +65,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
     self.press_button_short(ButtonType.accelCruise)
     assert self.v_cruise_helper.v_cruise_kph == initial_speed + 1
 
-  @pytest.mark.parametrize("increment", (1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+  @parameterized.expand((1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
   def test_custom_short_press_increments(self, increment):
     """Test custom short press increments (1-10)"""
     self.set_custom_increments(enabled=True, short_inc=increment, long_inc=5)
@@ -84,7 +82,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
     assert self.v_cruise_helper.v_cruise_kph == expected_speed
 
-  @pytest.mark.parametrize("increment", (1, 5, 10))
+  @parameterized.expand((1, 5, 10))
   def test_custom_long_press_increments(self, increment):
     """Test custom long press increments (1, 5, 10)"""
     self.set_custom_increments(enabled=True, short_inc=1, long_inc=increment)
@@ -101,7 +99,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
     assert self.v_cruise_helper.v_cruise_kph == expected_speed
 
-  @pytest.mark.parametrize("button_type", [ButtonType.accelCruise, ButtonType.decelCruise])
+  @parameterized.expand([ButtonType.accelCruise, ButtonType.decelCruise])
   def test_accel_decel_symmetry(self, button_type):
     """Test that acceleration and deceleration work symmetrically"""
     self.set_custom_increments(enabled=True, short_inc=3, long_inc=5)
