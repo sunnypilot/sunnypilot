@@ -1,8 +1,7 @@
 import colorsys
 import numpy as np
 import pyray as rl
-from openpilot.cereal import messaging
-from opendbc.car.structs import car
+from cereal import messaging, car
 from dataclasses import dataclass, field
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
@@ -39,8 +38,8 @@ class ModelPoints:
 
 @dataclass
 class LeadVehicle:
-  glow: list[tuple[float, float]] = field(default_factory=list)
-  chevron: list[tuple[float, float]] = field(default_factory=list)
+  glow: list[float] = field(default_factory=list)
+  chevron: list[float] = field(default_factory=list)
   fill_alpha: int = 0
 
 
@@ -52,7 +51,6 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
-    # Filter for smooth transition between thick (0.9m) and thin (0.40m) path width
     self._width_filter = FirstOrderFilter(0.9, 0.25, 1 / gui_app.target_fps)
     self._prev_allow_throttle = True
     self._lane_line_probs = np.zeros(4, dtype=np.float32)
@@ -86,7 +84,6 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
 
   @property
   def _lateral_active(self) -> bool:
-    """True when lateral control (steering) is actively engaged (MADS or stock openpilot)."""
     return ui_state.status in (UIStatus.ENGAGED, UIStatus.LAT_ONLY)
 
   def set_transform(self, transform: np.ndarray):
@@ -143,7 +140,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._draw_lane_lines()
     self._draw_path(sm)
 
-    if render_lead_indicator:
+    if render_lead_indicator and radar_state:
       self._draw_lead_indicator()
       self.chevron_metrics.draw_lead_status(sm, radar_state, self._rect, self._lead_vehicles)
 
@@ -167,7 +164,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     leads = [radar_state.leadOne, radar_state.leadTwo]
 
     for i, lead_data in enumerate(leads):
-      if lead_data and lead_data.present:
+      if lead_data and lead_data.status:
         d_rel, y_rel, v_rel = lead_data.dRel, lead_data.yRel, lead_data.vRel
         idx = self._get_path_length_idx(path_x_array, d_rel)
 
@@ -193,12 +190,11 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
       road_edge.projected_points = self._map_line_to_polygon(road_edge.raw_points, 0.025, 0.0, max_idx, max_distance)
 
     # Update path using raw points
-    if lead and lead.present:
+    if lead and lead.status:
       lead_d = lead.dRel * 2.0
       max_distance = np.clip(lead_d - min(lead_d * 0.35, 10.0), 0.0, max_distance)
 
     max_idx = self._get_path_length_idx(path_x_array, max_distance)
-    # Dynamic path half-width: 0.9m when lateral control is active, smoothly transitioning to 0.40m when off
     target_half_width = 0.9 if self._lateral_active else 0.40
     current_half_width = self._width_filter.update(target_half_width)
     self._path.projected_points = self._map_line_to_polygon(
@@ -295,11 +291,10 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
       draw_polygon(self._rect, road_edge.projected_points, color)
 
   def _draw_path(self, sm):
-    """Draw path with dynamic coloring based on lateral engagement status and Rainbow mode."""
+    """Draw path with dynamic coloring based on mode and throttle state."""
     if not self._path.projected_points.size:
       return
 
-    # Filter path color based on lateral active state (1.0 = Green when steering active, 0.0 = Gray when off)
     self._blend_filter.update(int(self._lateral_active))
 
     if ui_state.rainbow_path and self._lateral_active:
@@ -307,13 +302,13 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
       return
 
     if self._experimental_mode and self._lateral_active:
-      # Draw with acceleration coloring when lateral control is active
+      # Draw with acceleration coloring
       if len(self._exp_gradient.colors) > 1:
         draw_polygon(self._rect, self._path.projected_points, gradient=self._exp_gradient)
       else:
         draw_polygon(self._rect, self._path.projected_points, rl.Color(255, 255, 255, 30))
     else:
-      # Blend throttle/no-throttle (green/gray) colors smoothly based on lateral engagement
+      # Blend throttle/no throttle colors based on transition
       blend_factor = round(self._blend_filter.x * 100) / 100
       blended_colors = self._blend_colors(NO_THROTTLE_COLORS, THROTTLE_COLORS, blend_factor)
       gradient = Gradient(
