@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import time
 
-import pytest
+from openpilot.common.parameterized import parameterized
 
 from openpilot.cereal import custom
 from opendbc.car.car_helpers import interfaces
@@ -27,6 +27,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist 
   PRE_ACTIVE_GUARD_PERIOD, ACTIVE_STATES, CRUISE_BUTTON_CONFIRM_HOLD
 from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.common.test import OpenpilotTestCase
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
@@ -45,21 +46,10 @@ SPEED_LIMITS = {
 DEFAULT_CAR = TOYOTA.TOYOTA_RAV4_TSS2
 
 
-@pytest.fixture
-def car_name(request):
-  return getattr(request, "param", DEFAULT_CAR)
+class TestSpeedLimitAssist(OpenpilotTestCase):
+  car_name = DEFAULT_CAR
 
-
-@pytest.fixture(autouse=True)
-def set_car_name_on_instance(request, car_name):
-  instance = getattr(request, "instance", None)
-  if instance:
-    instance.car_name = car_name
-
-
-class TestSpeedLimitAssist:
-
-  def setup_method(self, method):
+  def setup_method(self):
     self.params = Params()
     self.reset_custom_params()
     self.events_sp = EventsSP()
@@ -69,7 +59,7 @@ class TestSpeedLimitAssist:
     self.pcm_long_max_set_speed = PCM_LONG_REQUIRED_MAX_SET_SPEED[self.sla.is_metric][1]  # use 80 MPH for now
     self.speed_conv = CV.MS_TO_KPH if self.sla.is_metric else CV.MS_TO_MPH
 
-  def teardown_method(self, method):
+  def teardown_method(self):
     self.reset_state()
 
   def _setup_platform(self, car_name):
@@ -112,13 +102,16 @@ class TestSpeedLimitAssist:
     assert not self.sla.is_active
     assert V_CRUISE_UNSET == self.sla.get_v_target_from_control()
 
-  @pytest.mark.parametrize("car_name", [RIVIAN.RIVIAN_R1, TESLA.TESLA_MODEL_Y], indirect=True)
+  @parameterized.expand([RIVIAN.RIVIAN_R1, TESLA.TESLA_MODEL_Y], names=["car_name"])
   def test_disallowed_brands(self, car_name):
     """
       Speed Limit Assist is disabled for the following brands and conditions:
       - All Tesla and is a release branch;
       - All Rivian
     """
+    self.car_name = car_name
+    self.openpilot_setup_method()  # rebuild the platform for this brand
+
     assert not self.sla.enabled
 
     # stay disallowed even when the param may have changed from somewhere else
@@ -285,9 +278,10 @@ class TestSpeedLimitAssist:
         assert self.sla.state in ACTIVE_STATES
 
 
-class TestButtonStateTrackerSLAIntegration:
+class TestButtonStateTrackerSLAIntegration(OpenpilotTestCase):
 
-  def setup_method(self, method):
+  def setup_method(self):
+
     self.tracker = ButtonStateTracker()
     self.params = Params()
     self.params.put("IsReleaseSpBranch", True, block=True)

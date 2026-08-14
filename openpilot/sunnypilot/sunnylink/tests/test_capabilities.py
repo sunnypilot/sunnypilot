@@ -12,7 +12,6 @@ the same commit so the bump shows up in code review.
 """
 from __future__ import annotations
 
-import pytest
 
 from openpilot.sunnypilot.sunnylink.capabilities import (
   CAPABILITY_DEFAULTS,
@@ -21,18 +20,18 @@ from openpilot.sunnypilot.sunnylink.capabilities import (
   PROTOCOL_VERSION,
   generate_capabilities,
 )
+from openpilot.common.test import OpenpilotTestCase
 
 
 KNOWN_PROTOCOL_VERSIONS = (1,)
 LATEST_KNOWN = max(KNOWN_PROTOCOL_VERSIONS)
 
 
-@pytest.fixture(scope="module")
 def caps():
   return generate_capabilities()
 
 
-class TestProtocolVersion:
+class TestProtocolVersion(OpenpilotTestCase):
   def test_protocol_version_in_capability_fields(self):
     assert "protocol_version" in CAPABILITY_FIELDS
 
@@ -63,7 +62,7 @@ class TestProtocolVersion:
     )
 
 
-class TestOpaquePerBrandFlags:
+class TestOpaquePerBrandFlags(OpenpilotTestCase):
   def test_subaru_has_sng_field_present(self):
     assert "subaru_has_sng" in CAPABILITY_FIELDS
 
@@ -77,7 +76,7 @@ class TestOpaquePerBrandFlags:
     assert caps["hyundai_alpha_long_available"] is False
 
 
-class TestCapabilitiesShape:
+class TestCapabilitiesShape(OpenpilotTestCase):
   def test_all_fields_present(self, caps):
     for field in CAPABILITY_FIELDS:
       assert field in caps, f"capabilities missing {field}"

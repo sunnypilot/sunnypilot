@@ -9,7 +9,7 @@ from openpilot.cereal import messaging, log
 from opendbc.car.structs import car
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.common.filter_simple import BounceFilter, FirstOrderFilter
-from openpilot.common.hardware import TICI
+from openpilot.common.hardware import COMMA_HARDWARE
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
@@ -136,7 +136,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
         return ALERT_STARTUP_PENDING
 
       # 2. Lost communication with selfdriveState after receiving it
-      if TICI and not waiting_for_startup:
+      if COMMA_HARDWARE and not waiting_for_startup:
         ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
         if ss_missing > SELFDRIVE_STATE_TIMEOUT:
           if ss.enabled and (ss_missing - SELFDRIVE_STATE_TIMEOUT) < SELFDRIVE_UNRESPONSIVE_TIMEOUT:
@@ -310,13 +310,10 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
 
     # TODO: hack
     alert_text1 = alert.text1.lower().replace('calibrating: ', 'calibrating:\n')
-    can_draw_second_line = False
     # TODO: there should be a common way to determine font size based on text length to maximize rect
     if len(alert_text1) <= 12:
-      can_draw_second_line = True
       font_size = 92 - 10
     elif len(alert_text1) <= 16:
-      can_draw_second_line = True
       font_size = 70
     else:
       font_size = 64 - 10
@@ -348,13 +345,13 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
         self._text_gen_time = time.monotonic()
       alert_text2 = self._alert_text2_gen or alert_text2
 
-    if can_draw_second_line and alert_text2:
+    if alert_text2:
       last_line_h = self._alert_text1_label.rect.y + self._alert_text1_label.get_content_height(int(alert_layout.text_rect.width))
       last_line_h -= 4
-      if len(alert_text2) > 18:
-        small_font_size = 36
-      elif len(alert_text2) > 24:
+      if len(alert_text2) > 24:
         small_font_size = 32
+      elif len(alert_text2) > 18:
+        small_font_size = 36
       else:
         small_font_size = 40
       text_rect2 = rl.Rectangle(

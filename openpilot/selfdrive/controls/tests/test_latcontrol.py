@@ -1,3 +1,4 @@
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.parameterized import parameterized
 
 from openpilot.cereal import log
@@ -14,11 +15,11 @@ from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle
 from openpilot.selfdrive.locationd.helpers import Pose
-from openpilot.common.mock.generators import generate_livePose
+from openpilot.common.mock.generators import generate_deviceMotion
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 
 
-class TestLatControl:
+class TestLatControl(OpenpilotTestCase):
 
   @parameterized.expand([(HONDA.HONDA_CIVIC, LatControlPID), (TOYOTA.TOYOTA_RAV4, LatControlTorque),
                          (NISSAN.NISSAN_LEAF, LatControlAngle), (GM.CHEVROLET_BOLT_EUV, LatControlTorque)])
@@ -37,10 +38,10 @@ class TestLatControl:
     CS.vEgo = 30
     CS.steeringPressed = False
 
-    params = log.LiveParametersData.new_message()
+    params = log.VehicleParameters.new_message()
 
-    lp = generate_livePose()
-    pose = Pose.from_live_pose(lp.livePose)
+    lp = generate_deviceMotion()
+    pose = Pose.from_device_motion(lp.deviceMotion)
 
     # Saturate for curvature limited and controller limited
     for _ in range(1000):
