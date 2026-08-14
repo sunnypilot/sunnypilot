@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import pathlib
-import pickle
 import tempfile
 
 import openpilot.sunnypilot.models.helpers as helpers
