@@ -383,9 +383,6 @@ def main(demo=False):
   publish_state = PublishState()
   chestnut_state = ChestnutState(pm, USBGPU) if USBGPU else None
 
-  params.put_bool("UsbGpuPresent", USBGPU)
-  params.put_bool("UsbGpuCompiled", USBGPU)
-
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
   frame_id = 0
