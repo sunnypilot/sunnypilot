@@ -9,13 +9,7 @@ See the LICENSE.md file in the root directory for more details.
 import os
 os.environ['GMMU'] = '0'
 from openpilot.common.hardware import COMMA_HARDWARE
-os.environ['DEV'] = 'QCOM' if COMMA_HARDWARE else 'CPU'
 from openpilot.selfdrive.modeld.helpers import usbgpu_present, load_oob
-
-USBGPU = usbgpu_present()
-if USBGPU:
-  os.environ['DEV'] = 'AMD'
-  os.environ['AMD_IFACE'] = 'USB'
 import time
 import numpy as np
 import openpilot.cereal.messaging as messaging
@@ -29,7 +23,6 @@ from msgq.visionipc import VisionIpcClient, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
 
 from tinygrad.tensor import Tensor
-from tinygrad.device import Device
 
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.common.swaglog import cloudlog
@@ -91,7 +84,7 @@ class ModelState(ModelStateBase):
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray
 
-  def __init__(self, cam_w: int, cam_h: int):
+  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool = False):
     ModelStateBase.__init__(self)
 
     env_pkl = os.environ.get('COMBINED_MODEL_PKL')
@@ -106,7 +99,7 @@ class ModelState(ModelStateBase):
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
     self.PLANPLUS_CONTROL: float = 1.0
-    self.usbgpu = USBGPU
+    self.usbgpu = usbgpu
 
     pkl_path = _find_driving_pkl(model_bundle)
     assert pkl_path is not None, "No driving pkl found — all models must be compiled with compile_modeld.py"
@@ -116,8 +109,8 @@ class ModelState(ModelStateBase):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
     jits = load_oob(open_file_chunked(pkl_path))
 
-    self.DEV = Device.DEFAULT
-    self.WARP_DEV = ('QCOM' if COMMA_HARDWARE else 'CPU') if USBGPU else self.DEV
+    self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
+    self.DEV = 'AMD' if self.usbgpu else self.WARP_DEV
     self.QUEUE_DEV = self.DEV
 
     metadata = jits['metadata']
@@ -187,7 +180,7 @@ class ModelState(ModelStateBase):
       frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize(),
       big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize())
 
-    if USBGPU:
+    if self.usbgpu:
       self.warmup()
 
   def warmup(self) -> None:
@@ -323,6 +316,7 @@ def main(demo=False):
   setproctitle(PROCESS_NAME)
   config_realtime_process(7, 54)
 
+  USBGPU = usbgpu_present()
   if USBGPU:
     os.environ['HCQDEV_WAIT_TIMEOUT_MS'] = '3000'
 
@@ -361,7 +355,7 @@ def main(demo=False):
     import threading
     def load():
       nonlocal model
-      model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
+      model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, usbgpu=True)
     t = threading.Thread(target=load, daemon=True)
     t.start()
     t.join(60)
@@ -370,7 +364,7 @@ def main(demo=False):
       raise RuntimeError("eGPU model load failed or timed out (60s)")
     params.put_bool("UsbGpuActive", True)
   else:
-    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height)
+    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, usbgpu=False)
 
   params.put_bool("UsbGpuLoading", False)
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")

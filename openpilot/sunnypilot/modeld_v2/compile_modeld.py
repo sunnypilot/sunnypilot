@@ -283,6 +283,16 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
 
 
 if __name__ == "__main__":
+  if 'USB' in os.getenv('DEV', '') or os.getenv('USBGPU'):
+    import time
+    from openpilot.system.hardware.chestnut.flash import link_up
+    for _ in range(10):
+      if link_up():
+        break
+      time.sleep(1)
+    else:
+      raise RuntimeError("Chestnut not ready, skipping big model build")
+
   from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
   from tinygrad.nn.onnx import OnnxRunner
 
