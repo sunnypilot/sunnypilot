@@ -116,7 +116,7 @@ class ModelState(ModelStateBase):
     jits = load_oob(open_file_chunked(pkl_path))
 
     self.DEV = Device.DEFAULT
-    self.WARP_DEV = ('QCOM' if TICI else 'CPU') if USBGPU else self.DEV
+    self.WARP_DEV = ('QCOM' if COMMA_HARDWARE else 'CPU') if USBGPU else self.DEV
     self.QUEUE_DEV = self.DEV
 
     metadata = jits['metadata']
