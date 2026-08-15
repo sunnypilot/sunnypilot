@@ -177,11 +177,13 @@ class ModelState(ModelStateBase):
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
     yuv_size = self.frame_buf_params[self._road_key][3]
-    self.warp(
-      tfm=self.input_queues['tfm'],
-      big_tfm=self.input_queues['big_tfm'],
-      frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize(),
-      big_frame=Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize())
+    frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+    big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+
+    if self.is_legacy_model: # Remove this conditional hack after recompile
+      self.warp(**self.input_queues, frame=frame_tensor, big_frame=big_frame_tensor)
+    else:
+      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
 
     if self.usbgpu:
       self.warmup()
