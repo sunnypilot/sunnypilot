@@ -1,0 +1,11 @@
+
+[dev]
+setuptools
+Cython
+scons
+ruff
+cppcheck
+cpplint
+codespell
+ty
+lefthook
