@@ -9,7 +9,7 @@ import asyncio
 import os
 import time
 
-import aiohttp
+import requests
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
@@ -18,6 +18,9 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.cereal import messaging, custom
 from openpilot.sunnypilot.models.fetcher import ModelFetcher
 from openpilot.sunnypilot.models.helpers import get_active_bundle, validate_active_bundle, verify_file
+
+# (connect, read) seconds. read is per-request inactivity, not a total cap
+DOWNLOAD_TIMEOUT = (30, 30)
 
 
 class ModelManagerSP:
@@ -63,30 +66,29 @@ class ModelManagerSP:
     """Downloads a file with progress tracking"""
     self._download_start_times[model.fileName] = time.monotonic()
 
-    async with aiohttp.ClientSession() as session:
-      async with session.get(url) as response:
-        response.raise_for_status()
-        total_size = int(response.headers.get("content-length", 0))
-        bytes_downloaded = 0
+    with requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:  # noqa: ASYNC210
+      response.raise_for_status()
+      total_size = int(response.headers.get("content-length", 0))
+      bytes_downloaded = 0
 
-        with open(path, 'wb') as f:  # noqa: ASYNC230
-          async for chunk in response.content.iter_chunked(self._chunk_size):  # type: bytes
-            f.write(chunk)
-            bytes_downloaded += len(chunk)
+      with open(path, 'wb') as f:  # noqa: ASYNC230
+        for chunk in response.iter_content(chunk_size=self._chunk_size):  # type: bytes
+          f.write(chunk)
+          bytes_downloaded += len(chunk)
 
-            if self.params.get("ModelManager_DownloadIndex") is None:
-              raise Exception("Download cancelled")
+          if self.params.get("ModelManager_DownloadIndex") is None:
+            raise Exception("Download cancelled")
 
-            if total_size > 0:
-              progress = (bytes_downloaded / total_size) * 100
-              model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
-              model.downloadProgress.progress = progress
-              model.downloadProgress.eta = self._calculate_eta(model.fileName, progress)
-              self._sync_artifact_progress(model)
-              self._report_status()
+          if total_size > 0:
+            progress = (bytes_downloaded / total_size) * 100
+            model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
+            model.downloadProgress.progress = progress
+            model.downloadProgress.eta = self._calculate_eta(model.fileName, progress)
+            self._sync_artifact_progress(model)
+            self._report_status()
 
-        # Clean up start time after download completes
-        del self._download_start_times[model.fileName]
+    # Clean up start time after download completes
+    del self._download_start_times[model.fileName]
 
   async def _download_chunked(self, base_url: str, base_path: str, artifact) -> None:
     from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
@@ -98,16 +100,18 @@ class ModelManagerSP:
     manifest_path = get_manifest_path(base_path)
     self._download_start_times[artifact.fileName] = time.monotonic()
 
-    for i, _ in enumerate(artifact.chunks):
-      chunk_url = get_chunk_name(base_url, i, num_chunks)
-      chunk_path = get_chunk_name(base_path, i, num_chunks)
-      chunk_downloaded = 0
-      async with aiohttp.ClientSession() as session:
-        async with session.get(chunk_url) as response:
+    # Shared connection saves a TCP+TLS handshake per chunk.
+    # Keep sequential: the link saturates on one stream and Session is not thread-safe.
+    with requests.Session() as session:
+      for i, _ in enumerate(artifact.chunks):
+        chunk_url = get_chunk_name(base_url, i, num_chunks)
+        chunk_path = get_chunk_name(base_path, i, num_chunks)
+        chunk_downloaded = 0
+        with session.get(chunk_url, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
           response.raise_for_status()
           chunk_size = int(response.headers.get("content-length", 0))
           with open(chunk_path, 'wb') as f:  # noqa: ASYNC230
-            async for data in response.content.iter_chunked(self._chunk_size):
+            for data in response.iter_content(chunk_size=self._chunk_size):
               f.write(data)
               chunk_downloaded += len(data)
               if self.params.get("ModelManager_DownloadIndex") is None:

@@ -5,20 +5,27 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import pytest
+from openpilot.common.parameterized import parameterized
 
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 from openpilot.sunnypilot.modeld_v2.modeld import _find_driving_pkl
-from openpilot.sunnypilot.modeld_v2.tests.conftest import DummyModel, DummyBundle, ARCHETYPES, CAM_W, CAM_H, \
+from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
+from openpilot.sunnypilot.modeld_v2.tests.helpers import DummyModel, DummyBundle, ARCHETYPES, CAM_W, CAM_H, \
   SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES
+from openpilot.common.test import OpenpilotTestCase
+
+# resolved by name from this module when a test asks for them
+tmp_path = tests_helpers.tmp_path
+patch_modeld = tests_helpers.patch_modeld
+model_state_factory = tests_helpers.model_state_factory
 
 ModelState = modeld_module.ModelState
 
 
 # Pkl discovery
 
-class TestFindDrivingPkl:
+class TestFindDrivingPkl(OpenpilotTestCase):
   def test_returns_none_when_no_bundle(self):
     assert _find_driving_pkl(None) is None
 
@@ -49,16 +56,16 @@ class TestFindDrivingPkl:
 
 # Init — assertion guard
 
-class TestModelStateCombinedInit:
+class TestModelStateCombinedInit(OpenpilotTestCase):
   def test_asserts_when_no_pkl(self, monkeypatch):
     bundle = DummyBundle(models=[], is_20hz=True)
-    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle, raising=False)
-    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle, raising=False)
-    with pytest.raises(AssertionError, match="No driving pkl found"):
+    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle)
+    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle)
+    with self.assertRaisesRegex(AssertionError, "No driving pkl found"):
       ModelState(cam_w=CAM_W, cam_h=CAM_H)
 
 
-class TestStockEquivalence:
+class TestStockEquivalence(OpenpilotTestCase):
 
   def test_split_queue_keys_match_stock(self, model_state_factory):
     from openpilot.selfdrive.modeld.compile_modeld import make_input_queues
@@ -100,8 +107,8 @@ class TestStockEquivalence:
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())
 
 
-class TestModelTypeDetection:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestModelTypeDetection(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_combined_model_type(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -109,8 +116,8 @@ class TestModelTypeDetection:
       f"{arch.name}: got {state._combined_model_type}, expected {arch.expected_model_type}"
 
 
-class TestConstantsSelection:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestConstantsSelection(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_constants_class(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -118,8 +125,8 @@ class TestConstantsSelection:
       f"{arch.name}: got {type(state.constants).__name__}, expected {arch.expected_constants_class.__name__}"
 
 
-class TestParserSelection:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestParserSelection(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_parser_module(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -128,8 +135,8 @@ class TestParserSelection:
       f"{arch.name}: parser from {parser_module}, expected module ending with {arch.expected_parser_module}"
 
 
-class TestDesireKeyDetection:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestDesireKeyDetection(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_desire_key(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -137,8 +144,8 @@ class TestDesireKeyDetection:
       f"{arch.name}: got {state.desire_key}, expected {arch.expected_desire_key}"
 
 
-class TestVisionInputNames:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestVisionInputNames(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_vision_names_contain_img(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -147,14 +154,14 @@ class TestVisionInputNames:
       assert 'img' in name, f"{arch.name}: vision input name '{name}' missing 'img'"
 
 
-class TestOutputSlices:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestOutputSlices(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_vision_slices_populated(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
     assert len(state.vision_output_slices) > 0, f"{arch.name}: vision_output_slices empty"
 
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_policy_slices_match_type(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -164,14 +171,14 @@ class TestOutputSlices:
       assert len(state.policy_output_slices) > 0, f"{arch.name}: split/multi should have policy slices"
 
 
-class TestInputQueueCreation:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestInputQueueCreation(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_queues_not_empty(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
     assert len(state.input_queues) > 0, f"{arch.name}: input_queues empty"
 
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_npy_contains_transforms(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -180,7 +187,7 @@ class TestInputQueueCreation:
     assert state.numpy_inputs['tfm'].shape == (3, 3)
     assert state.numpy_inputs['big_tfm'].shape == (3, 3)
 
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_npy_contains_desire(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -188,8 +195,8 @@ class TestInputQueueCreation:
       f"{arch.name}: '{arch.expected_desire_key}' missing from npy"
 
 
-class TestFrameBufferParams:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestFrameBufferParams(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_frame_buf_params_per_vision_input(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
@@ -199,29 +206,29 @@ class TestFrameBufferParams:
       assert len(nv12_info) >= 4, f"{arch.name}: nv12_info for '{name}' too short"
 
 
-class TestBundleOverrides:
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+class TestBundleOverrides(OpenpilotTestCase):
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_smoothing_params_from_overrides(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
     assert state.LAT_SMOOTH_SECONDS == 0.1
     assert state.LONG_SMOOTH_SECONDS == 0.3
 
-  @pytest.mark.parametrize("archetype_name", ARCHETYPE_NAMES)
+  @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_generation_from_bundle(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
     assert state.generation == 10
 
 
-class TestMlsimProperty:
+class TestMlsimProperty(OpenpilotTestCase):
   def test_mlsim_false_for_gen10(self, model_state_factory):
     state = model_state_factory(ARCHETYPES['supercombo_non20hz'])
     assert state.mlsim is False
 
   def test_mlsim_true_for_gen11(self, tmp_path, monkeypatch, patch_modeld):
     from openpilot.common.hardware import hw
-    from openpilot.sunnypilot.modeld_v2.tests.conftest import write_pkl, ARCHETYPES as A
+    from openpilot.sunnypilot.modeld_v2.tests.helpers import write_pkl, ARCHETYPES as A
 
     arch = A['supercombo_non20hz']
     write_pkl(tmp_path, arch)
@@ -233,10 +240,10 @@ class TestMlsimProperty:
     assert state.mlsim is True
 
 
-class TestCrossArchetypeMismatch:
+class TestCrossArchetypeMismatch(OpenpilotTestCase):
   def test_wrong_is_20hz_changes_constants(self, tmp_path, monkeypatch, patch_modeld):
     from openpilot.common.hardware import hw
-    from openpilot.sunnypilot.modeld_v2.tests.conftest import write_pkl
+    from openpilot.sunnypilot.modeld_v2.tests.helpers import write_pkl
     from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
     arch = ARCHETYPES['vision_policy_split']
