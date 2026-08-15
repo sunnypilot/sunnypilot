@@ -6,12 +6,13 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import numpy as np
-import pytest
+from openpilot.common.parameterized import parameterized
 
 from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestDeriveFrameSkip:
+class TestDeriveFrameSkip(OpenpilotTestCase):
   def test_non20hz_supercombo(self):
     vision = {}
     policy = {'features_buffer': (1, 99, 512), 'desire': (1, 100, 8)}
@@ -31,21 +32,21 @@ class TestDeriveFrameSkip:
     assert derive_frame_skip({}, {}) == 1
 
 
-class TestFrameSkipBufferLengthEquivalence:
-  @pytest.mark.parametrize("frame_skip,expected_buffer_length", [
+class TestFrameSkipBufferLengthEquivalence(OpenpilotTestCase):
+  @parameterized.expand([
     (1, 2),
     (4, 5),
-  ])
+  ], names=["frame_skip", "expected_buffer_length"])
   def test_img_buffer_size_matches_warp_buffer_length(self, frame_skip, expected_buffer_length):
     n_frames = 2
     img_buf_dim0 = frame_skip * (n_frames - 1) + 1
     assert img_buf_dim0 == expected_buffer_length, \
       f"frame_skip={frame_skip}: img_buf[0]={img_buf_dim0}, expected {expected_buffer_length}"
 
-  @pytest.mark.parametrize("is_20hz,expected_frame_skip,expected_buffer_length", [
+  @parameterized.expand([
     (False, 1, 2),
     (True, 4, 5),
-  ])
+  ], names=["is_20hz", "expected_frame_skip", "expected_buffer_length"])
   def test_is_20hz_to_frame_skip_to_buffer_length(self, is_20hz, expected_frame_skip, expected_buffer_length):
     if is_20hz:
       policy_shapes = {'features_buffer': (1, 24, 512)}
@@ -59,7 +60,7 @@ class TestFrameSkipBufferLengthEquivalence:
     assert img_buf_dim0 == expected_buffer_length
 
 
-class TestTemporalSamplingEquivalence:
+class TestTemporalSamplingEquivalence(OpenpilotTestCase):
   def test_non20hz_desire_sampling_identity(self):
     buf = np.random.default_rng(0).standard_normal((100, 1, 8)).astype(np.float32)
     frame_skip = 1
@@ -94,12 +95,12 @@ class TestTemporalSamplingEquivalence:
     np.testing.assert_array_equal(sampled, buf[:, 0, :])
 
 
-class TestTemporalIdxEquivalence:
-  @pytest.mark.parametrize("mode,desire_shape,fb_shape,frame_skip", [
+class TestTemporalIdxEquivalence(OpenpilotTestCase):
+  @parameterized.expand([
     ('non20hz', (1, 100, 8), (1, 99, 512), 1),
     ('20hz', (1, 25, 8), (1, 24, 512), 4),
     ('split', (1, 25, 8), (1, 25, 512), 4),
-  ])
+  ], names=["mode", "desire_shape", "fb_shape", "frame_skip"])
   def test_features_buffer_idx_equivalence(self, mode, desire_shape, fb_shape, frame_skip):
     history = fb_shape[1]
 
@@ -118,11 +119,11 @@ class TestTemporalIdxEquivalence:
     assert len(modelstate_idxs) == fb_shape[1], \
       f"{mode}: ModelState idx count {len(modelstate_idxs)} != input shape {fb_shape[1]}"
 
-  @pytest.mark.parametrize("mode,desire_shape,fb_shape,frame_skip", [
+  @parameterized.expand([
     ('non20hz', (1, 100, 8), (1, 99, 512), 1),
     ('20hz', (1, 25, 8), (1, 24, 512), 4),
     ('split', (1, 25, 8), (1, 25, 512), 4),
-  ])
+  ], names=["mode", "desire_shape", "fb_shape", "frame_skip"])
   def test_desire_idx_equivalence(self, mode, desire_shape, fb_shape, frame_skip):
     history = desire_shape[1]
 
@@ -132,7 +133,7 @@ class TestTemporalIdxEquivalence:
       f"{mode}: compile desire samples {compile_sampled_count} != model input {history}"
 
 
-class TestDetectDesireKey:
+class TestDetectDesireKey(OpenpilotTestCase):
   def test_finds_desire(self):
     shapes = {'features_buffer': (1, 99, 512), 'desire': (1, 100, 8), 'traffic_convention': (1, 2)}
     assert _detect_desire_key(shapes) == 'desire'
@@ -146,7 +147,7 @@ class TestDetectDesireKey:
     assert _detect_desire_key(shapes) is None
 
 
-class TestOutputSlicePreservation:
+class TestOutputSlicePreservation(OpenpilotTestCase):
   def test_vision_hidden_state_slice_used_for_features(self):
     mock_slices = {'hidden_state': slice(0, 512), 'plan': slice(512, 1024)}
     features_slice = mock_slices['hidden_state']

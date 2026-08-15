@@ -9,6 +9,7 @@ import numpy as np
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.common.test import OpenpilotTestCase
 
 
 class MockStruct:
@@ -20,7 +21,7 @@ class MockStruct:
     return getattr(self, item)
 
 
-class TestCameraOffset:
+class TestCameraOffset(OpenpilotTestCase):
   def setup_method(self):
     self.camera_offset = CameraOffsetHelper()
     self.dc = DEVICE_CAMERAS[('mici', 'os04c10')]
@@ -30,12 +31,12 @@ class TestCameraOffset:
 
     sm = MockStruct(
       deviceState=MockStruct(deviceType='mici'),
-      roadCameraState=MockStruct(sensor='os04c10'),
-      liveCalibration=MockStruct(rpyCalib=[0.0, 0.0, 0.0], height=[1.22])
+      narrowRoadCameraState=MockStruct(sensor='os04c10'),
+      extrinsicsCalibration=MockStruct(rpyCalib=[0.0, 0.0, 0.0], height=[1.22])
     )
 
-    intrinsics_main = self.dc.fcam.intrinsics
-    intrinsics_extra = self.dc.ecam.intrinsics
+    intrinsics_main = self.dc.narrow_road.intrinsics
+    intrinsics_extra = self.dc.wide_road.intrinsics
     device_from_calib_euler = np.array([0.0, 0.0, 0.0], dtype=np.float32)
     main_transform = get_warp_matrix(device_from_calib_euler, intrinsics_main, False).astype(np.float32)
     extra_transform = get_warp_matrix(device_from_calib_euler, intrinsics_extra, True).astype(np.float32)
@@ -46,7 +47,7 @@ class TestCameraOffset:
     np.testing.assert_almost_equal(self.camera_offset.actual_camera_offset, 0.038)
 
   def test_camera_offset_(self):
-    intrinsics = self.dc.fcam.intrinsics
+    intrinsics = self.dc.narrow_road.intrinsics
     transform = np.eye(3, dtype=np.float32)
     height = 1.22
     offset = 0.1
@@ -62,11 +63,11 @@ class TestCameraOffset:
   def test_update(self):
     sm = MockStruct(
       deviceState=MockStruct(deviceType='mici'),
-      roadCameraState=MockStruct(sensor='os04c10'),
-      liveCalibration=MockStruct(rpyCalib=[0.0, 0.0, 0.0], height=[1.22])
+      narrowRoadCameraState=MockStruct(sensor='os04c10'),
+      extrinsicsCalibration=MockStruct(rpyCalib=[0.0, 0.0, 0.0], height=[1.22])
     )
-    intrinsics_main = self.dc.fcam.intrinsics
-    intrinsics_extra = self.dc.ecam.intrinsics
+    intrinsics_main = self.dc.narrow_road.intrinsics
+    intrinsics_extra = self.dc.wide_road.intrinsics
     device_from_calib_euler = np.array([0.0, 0.0, 0.0], dtype=np.float32)
     main_transform = get_warp_matrix(device_from_calib_euler, intrinsics_main, False).astype(np.float32)
     extra_transform = get_warp_matrix(device_from_calib_euler, intrinsics_extra, True).astype(np.float32)
