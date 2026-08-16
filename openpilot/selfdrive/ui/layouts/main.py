@@ -44,9 +44,8 @@ class MainLayout(Widget):
     self._custom_button_callbacks = {
       CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
       CustomButtonAction.QUIET_MODE: self._toggle_quiet_mode,
-      CustomButtonAction.ONROAD: self._show_onroad,
-      CustomButtonAction.HOME: self._show_home,
-      CustomButtonAction.SETTINGS: self._on_settings_clicked,
+      CustomButtonAction.ONROAD_HOME: self._toggle_home,
+      CustomButtonAction.ONROAD_SETTINGS: self._toggle_settings,
     }
 
     self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)
@@ -131,9 +130,18 @@ class MainLayout(Widget):
     self._set_current_layout(MainState.ONROAD)
     self._sidebar.set_visible(False)
 
-  def _show_home(self):
-    self._set_current_layout(MainState.HOME)
-    self._sidebar.set_visible(True)
+  def _toggle_home(self):
+    if self._current_mode == MainState.HOME:
+      self._show_onroad()
+    else:
+      self._set_current_layout(MainState.HOME)
+      self._sidebar.set_visible(True)
+
+  def _toggle_settings(self):
+    if self._current_mode == MainState.SETTINGS:
+      self._show_onroad()
+    else:
+      self._on_settings_clicked()
 
   def _on_bookmark_clicked(self):
     for service in ('bookmarkButton', 'userBookmark'):
