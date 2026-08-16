@@ -29,7 +29,7 @@ source .venv/bin/activate
 
 **4. Build openpilot**
 ``` bash
-scons -u -j$(nproc)
+scons -u
 ```
 
 ## WSL on Windows
@@ -38,12 +38,20 @@ scons -u -j$(nproc)
 
 Follow [these instructions](https://docs.microsoft.com/en-us/windows/wsl/install) to setup the WSL and install the `Ubuntu-24.04` distribution. Once your Ubuntu WSL environment is setup, follow the Linux setup instructions to finish setting up your environment. See [these instructions](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps) for running GUI apps.
 
-**NOTE**: If you are running WSL and any GUIs are failing (segfaulting or other strange issues) even after following the steps above, you may need to enable software rendering with `LIBGL_ALWAYS_SOFTWARE=1`, e.g. `LIBGL_ALWAYS_SOFTWARE=1 selfdrive/ui/ui`.
+**NOTE**: If you are running WSL 2 and experiencing performance issues with the UI or simulator, you may need to explicitly enable hardware acceleration by setting `GALLIUM_DRIVER=d3d12` before commands. Add `export GALLIUM_DRIVER=d3d12` to your `~/.bashrc` file to make it automatic for future sessions.
 
 ## CTF
 Learn about the openpilot ecosystem and tools by playing our [CTF](/tools/CTF.md).
 
 ## Directory Structure
+
+```
+├── car_porting/        # Tools for porting new cars
+├── release/            # Scripts for building openpilot releases
+└── scripts/            # Miscellaneous scripts
+```
+
+Development tools such as cabana, plotjuggler, and replay live in [openpilot/tools/](/openpilot/tools/):
 
 ```
 ├── cabana/             # View and plot CAN messages from drives or in realtime
@@ -52,8 +60,5 @@ Learn about the openpilot ecosystem and tools by playing our [CTF](/tools/CTF.md
 ├── lib/                # Libraries to support the tools and reading openpilot logs
 ├── plotjuggler/        # A tool to plot openpilot logs
 ├── replay/             # Replay drives and mock openpilot services
-├── scripts/            # Miscellaneous scripts
-├── serial/             # Tools for using the comma serial
-├── sim/                # Run openpilot in a simulator
-└── webcam/             # Run openpilot on a PC with webcams
+└── sim/                # Run openpilot in a simulator
 ```
