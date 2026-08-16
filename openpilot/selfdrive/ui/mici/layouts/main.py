@@ -38,7 +38,6 @@ class MiciMainLayout(Scroller):
     self._body_onroad_layout = BodyLayout()
     self._custom_button_callbacks = {
       CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
-      CustomButtonAction.QUIET_MODE: self._toggle_quiet_mode,
       CustomButtonAction.CYCLE_UI: self._cycle_ui,
     }
 
@@ -157,10 +156,6 @@ class MiciMainLayout(Scroller):
     for service in ('bookmarkButton', 'userBookmark'):
       msg = messaging.new_message(service, valid=True)
       self._pm.send(service, msg)
-
-  @staticmethod
-  def _toggle_quiet_mode():
-    ui_state.params.put_bool('QuietMode', not ui_state.params.get_bool('QuietMode'))
 
   def _show_layout(self, layout: Widget):
     if gui_app.widget_in_stack(self._onboarding_window):

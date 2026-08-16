@@ -6,7 +6,6 @@ from opendbc.car.structs import car
 class CustomButtonAction(IntEnum):
   NONE = 0
   BOOKMARK = 1
-  QUIET_MODE = 2
   CYCLE_UI = 3
 
 

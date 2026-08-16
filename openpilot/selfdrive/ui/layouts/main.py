@@ -43,7 +43,6 @@ class MainLayout(Widget):
     }
     self._custom_button_callbacks = {
       CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
-      CustomButtonAction.QUIET_MODE: self._toggle_quiet_mode,
       CustomButtonAction.CYCLE_UI: self._cycle_ui,
     }
 
@@ -120,10 +119,6 @@ class MainLayout(Widget):
 
   def _on_settings_clicked(self):
     self.open_settings(PanelType.DEVICE)
-
-  @staticmethod
-  def _toggle_quiet_mode():
-    ui_state.params.put_bool('QuietMode', not ui_state.params.get_bool('QuietMode'))
 
   def _show_onroad(self):
     self._set_current_layout(MainState.ONROAD)

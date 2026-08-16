@@ -19,8 +19,6 @@ sections:
       label: None
     - value: 1
       label: Bookmark
-    - value: 2
-      label: Quiet Mode
     - value: 3
       label: Cycle UI
   - key: HyundaiLongitudinalTuning
