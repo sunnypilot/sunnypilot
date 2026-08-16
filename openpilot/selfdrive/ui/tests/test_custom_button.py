@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from opendbc.car.structs import car
 
-from openpilot.selfdrive.ui.custom_button import CustomButtonAction, handle_custom_button
+from openpilot.selfdrive.ui.sunnypilot.custom_button import CustomButtonAction, handle_custom_button
 
 
 class FakeSubMaster:

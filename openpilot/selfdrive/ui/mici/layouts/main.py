@@ -4,7 +4,7 @@ from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsLayout
 from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
-from openpilot.selfdrive.ui.custom_button import handle_custom_button
+from openpilot.selfdrive.ui.sunnypilot.custom_button import handle_custom_button
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
 from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
