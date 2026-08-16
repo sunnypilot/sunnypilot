@@ -17,19 +17,15 @@ class FakeSubMaster:
 
 def test_custom_button_actions():
   params = Mock()
-  params.get_bool.return_value = False
   sm = FakeSubMaster({
     'carState': SimpleNamespace(buttonEvents=[SimpleNamespace(
       type=car.CarState.ButtonEvent.Type.altButton2,
       pressed=True,
     )]),
   })
-  bookmark_callback = Mock()
+  callbacks = {action: Mock() for action in CustomButtonAction if action != CustomButtonAction.NONE}
 
-  params.get.return_value = CustomButtonAction.BOOKMARK
-  handle_custom_button(sm, params, bookmark_callback)
-  bookmark_callback.assert_called_once()
-
-  params.get.return_value = CustomButtonAction.QUIET_MODE
-  handle_custom_button(sm, params, bookmark_callback)
-  params.put_bool.assert_called_once_with('QuietMode', True)
+  for action, callback in callbacks.items():
+    params.get.return_value = action
+    handle_custom_button(sm, params, callbacks)
+    callback.assert_called_once()

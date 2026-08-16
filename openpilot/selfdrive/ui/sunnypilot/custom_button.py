@@ -7,9 +7,12 @@ class CustomButtonAction(IntEnum):
   NONE = 0
   BOOKMARK = 1
   QUIET_MODE = 2
+  ONROAD = 3
+  HOME = 4
+  SETTINGS = 5
 
 
-def handle_custom_button(sm, params, bookmark_callback):
+def handle_custom_button(sm, params, callbacks):
   if not sm.updated['carState']:
     return
 
@@ -18,8 +21,6 @@ def handle_custom_button(sm, params, bookmark_callback):
   if not custom_pressed:
     return
 
-  action = CustomButtonAction(params.get('SteeringCustomButtonMapping', return_default=True))
-  if action == CustomButtonAction.BOOKMARK:
-    bookmark_callback()
-  elif action == CustomButtonAction.QUIET_MODE:
-    params.put_bool('QuietMode', not params.get_bool('QuietMode'))
+  action = CustomButtonAction(params.get('CustomButtonAction', return_default=True))
+  if callback := callbacks.get(action):
+    callback()

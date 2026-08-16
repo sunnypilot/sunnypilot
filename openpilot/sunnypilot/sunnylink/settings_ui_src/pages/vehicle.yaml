@@ -10,7 +10,7 @@ sections:
   title: Hyundai / Kia / Genesis Settings
   description: ''
   items:
-  - key: SteeringCustomButtonMapping
+  - key: CustomButtonAction
     widget: multiple_button
     title: Steering Custom Button
     description: Choose the openpilot action for the steering wheel custom/star button. OEM functionality is unchanged.
@@ -21,6 +21,12 @@ sections:
       label: Bookmark
     - value: 2
       label: Quiet Mode
+    - value: 3
+      label: Onroad
+    - value: 4
+      label: Home
+    - value: 5
+      label: Settings
   - key: HyundaiLongitudinalTuning
     widget: multiple_button
     title: Custom Longitudinal Tuning

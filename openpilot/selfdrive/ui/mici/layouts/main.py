@@ -4,7 +4,7 @@ from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsLayout
 from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
-from openpilot.selfdrive.ui.sunnypilot.custom_button import handle_custom_button
+from openpilot.selfdrive.ui.sunnypilot.custom_button import CustomButtonAction, handle_custom_button
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
 from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
@@ -36,6 +36,13 @@ class MiciMainLayout(Scroller):
     self._settings_layout = SettingsLayout()
     self._car_onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked)
     self._body_onroad_layout = BodyLayout()
+    self._custom_button_callbacks = {
+      CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
+      CustomButtonAction.QUIET_MODE: self._toggle_quiet_mode,
+      CustomButtonAction.ONROAD: lambda: self._show_layout(self._onroad_layout),
+      CustomButtonAction.HOME: lambda: self._show_layout(self._home_layout),
+      CustomButtonAction.SETTINGS: self._show_settings,
+    }
 
     # Initialize widget rects
     for widget in (self._home_layout, self._alerts_layout, self._settings_layout,
@@ -96,7 +103,7 @@ class MiciMainLayout(Scroller):
     self._alerts_layout._update_state()
 
   def _render(self, _):
-    handle_custom_button(ui_state.sm, ui_state.params, self._on_bookmark_clicked)
+    handle_custom_button(ui_state.sm, ui_state.params, self._custom_button_callbacks)
 
     if not self._setup:
       if self._alerts_layout.active_alerts() > 0:
@@ -152,6 +159,19 @@ class MiciMainLayout(Scroller):
     for service in ('bookmarkButton', 'userBookmark'):
       msg = messaging.new_message(service, valid=True)
       self._pm.send(service, msg)
+
+  @staticmethod
+  def _toggle_quiet_mode():
+    ui_state.params.put_bool('QuietMode', not ui_state.params.get_bool('QuietMode'))
+
+  def _show_layout(self, layout: Widget):
+    if gui_app.widget_in_stack(self._onboarding_window):
+      return
+    gui_app.pop_widgets_to(self, lambda: self._scroll_to(layout))
+
+  def _show_settings(self):
+    if not gui_app.widget_in_stack(self._onboarding_window):
+      gui_app.push_widget(self._settings_layout)
 
   def _on_body_changed(self):
     self._car_onroad_layout.set_visible(not ui_state.is_body)
