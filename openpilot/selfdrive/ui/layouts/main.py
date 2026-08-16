@@ -1,9 +1,9 @@
 import pyray as rl
 from enum import IntEnum
 import openpilot.cereal.messaging as messaging
-from opendbc.car.structs import car
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.custom_button import handle_custom_button
 from openpilot.selfdrive.ui.layouts.sidebar import Sidebar, SIDEBAR_WIDTH
 from openpilot.selfdrive.ui.layouts.home import HomeLayout
 from openpilot.selfdrive.ui.layouts.settings.settings import SettingsLayout, PanelType
@@ -21,12 +21,6 @@ class MainState(IntEnum):
   HOME = 0
   SETTINGS = 1
   ONROAD = 2
-
-
-class CustomButtonAction(IntEnum):
-  NONE = 0
-  BOOKMARK = 1
-  QUIET_MODE = 2
 
 
 class MainLayout(Widget):
@@ -62,7 +56,7 @@ class MainLayout(Widget):
       gui_app.push_widget(self._onboarding_window)
 
   def _render(self, _):
-    self._handle_custom_button()
+    handle_custom_button(ui_state.sm, ui_state.params, self._on_bookmark_clicked)
     self._handle_onroad_transition()
     self._render_main_content()
 
@@ -126,21 +120,6 @@ class MainLayout(Widget):
     for service in ('bookmarkButton', 'userBookmark'):
       msg = messaging.new_message(service, valid=True)
       self._pm.send(service, msg)
-
-  def _handle_custom_button(self):
-    if not ui_state.sm.updated['carState']:
-      return
-
-    custom_pressed = any(be.type == car.CarState.ButtonEvent.Type.altButton2 and be.pressed
-                         for be in ui_state.sm['carState'].buttonEvents)
-    if not custom_pressed:
-      return
-
-    action = CustomButtonAction(ui_state.params.get('SteeringCustomButtonMapping', return_default=True))
-    if action == CustomButtonAction.BOOKMARK:
-      self._on_bookmark_clicked()
-    elif action == CustomButtonAction.QUIET_MODE:
-      ui_state.params.put_bool('QuietMode', not ui_state.params.get_bool('QuietMode'))
 
   def _on_onroad_clicked(self):
     self._sidebar.set_visible(not self._sidebar.is_visible)

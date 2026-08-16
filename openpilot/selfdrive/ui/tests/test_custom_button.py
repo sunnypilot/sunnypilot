@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from opendbc.car.structs import car
 
-from openpilot.selfdrive.ui.layouts import main
+from openpilot.selfdrive.ui.custom_button import CustomButtonAction, handle_custom_button
 
 
 class FakeSubMaster:
@@ -15,7 +15,7 @@ class FakeSubMaster:
     return self.messages[key]
 
 
-def test_custom_button_actions(monkeypatch):
+def test_custom_button_actions():
   params = Mock()
   params.get_bool.return_value = False
   sm = FakeSubMaster({
@@ -24,15 +24,12 @@ def test_custom_button_actions(monkeypatch):
       pressed=True,
     )]),
   })
-  monkeypatch.setattr(main, 'ui_state', SimpleNamespace(sm=sm, params=params))
+  bookmark_callback = Mock()
 
-  layout = main.MainLayout.__new__(main.MainLayout)
-  layout._on_bookmark_clicked = Mock()
+  params.get.return_value = CustomButtonAction.BOOKMARK
+  handle_custom_button(sm, params, bookmark_callback)
+  bookmark_callback.assert_called_once()
 
-  params.get.return_value = main.CustomButtonAction.BOOKMARK
-  layout._handle_custom_button()
-  layout._on_bookmark_clicked.assert_called_once()
-
-  params.get.return_value = main.CustomButtonAction.QUIET_MODE
-  layout._handle_custom_button()
+  params.get.return_value = CustomButtonAction.QUIET_MODE
+  handle_custom_button(sm, params, bookmark_callback)
   params.put_bool.assert_called_once_with('QuietMode', True)
