@@ -140,16 +140,25 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
+  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v19.json"
+  MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v19.json"
 
   def __init__(self, params: Params):
     self.params = params
     self.model_parser = ModelParser()
-    if usbgpu_present():
-      self.model_cache = ModelCache(params, suffix="_USBGPU")
-      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v19.json"
-    else:
-      self.model_cache = ModelCache(params)
-      self.model_url = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v19.json"
+    self._is_usbgpu: bool | None = None
+    self.model_cache = ModelCache(params)
+    self.model_url = self.MODEL_URL
+    self._update_model_source()
+
+  def _update_model_source(self) -> None:
+    """Updates what json to use based on usbgpu availability"""
+    is_usbgpu = usbgpu_present()
+    if is_usbgpu != self._is_usbgpu:
+      self._is_usbgpu = is_usbgpu
+      self.model_cache = ModelCache(self.params, suffix="_USBGPU" if is_usbgpu else "")
+      self.model_url = self.MODEL_URL_USBGPU if is_usbgpu else self.MODEL_URL
+      self.params.put("ModelManager_ActiveJson", self.model_url, block=True)
 
   def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
@@ -184,6 +193,7 @@ class ModelFetcher:
 
   def get_available_bundles(self) -> list[custom.ModelManagerSP.ModelBundle]:
     """Gets the list of available models, with smart cache handling"""
+    self._update_model_source()
     cached_data, is_expired = self.model_cache.get()
 
     if cached_data and not is_expired:
