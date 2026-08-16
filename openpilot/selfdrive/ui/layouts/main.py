@@ -130,13 +130,12 @@ class MainLayout(Widget):
     self._sidebar.set_visible(False)
 
   def _cycle_ui(self):
-    if self._current_mode == MainState.ONROAD:
-      self._set_current_layout(MainState.HOME)
+    if self._current_mode == MainState.ONROAD and not self._sidebar.is_visible:
       self._sidebar.set_visible(True)
-    elif self._current_mode == MainState.HOME:
-      self._on_settings_clicked()
-    else:
+    elif self._current_mode == MainState.SETTINGS:
       self._show_onroad()
+    else:
+      self._on_settings_clicked()
 
   def _on_bookmark_clicked(self):
     for service in ('bookmarkButton', 'userBookmark'):
