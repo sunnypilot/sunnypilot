@@ -22,9 +22,7 @@ sections:
     - value: 2
       label: Quiet Mode
     - value: 3
-      label: Onroad / Home
-    - value: 4
-      label: Onroad / Settings
+      label: Cycle Onroad / Home / Settings
   - key: HyundaiLongitudinalTuning
     widget: multiple_button
     title: Custom Longitudinal Tuning

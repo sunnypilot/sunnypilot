@@ -39,8 +39,7 @@ class MiciMainLayout(Scroller):
     self._custom_button_callbacks = {
       CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
       CustomButtonAction.QUIET_MODE: self._toggle_quiet_mode,
-      CustomButtonAction.ONROAD_HOME: self._toggle_home,
-      CustomButtonAction.ONROAD_SETTINGS: self._toggle_settings,
+      CustomButtonAction.CYCLE_UI: self._cycle_ui,
     }
 
     # Initialize widget rects
@@ -171,17 +170,14 @@ class MiciMainLayout(Scroller):
   def _layout_visible(self, layout: Widget) -> bool:
     return abs(layout.rect.x - self._rect.x) < self._rect.width / 2
 
-  def _toggle_home(self):
-    if gui_app.get_active_widget() is self and self._layout_visible(self._home_layout):
-      self._show_layout(self._onroad_layout)
-    else:
-      self._show_layout(self._home_layout)
-
-  def _toggle_settings(self):
+  def _cycle_ui(self):
     if gui_app.widget_in_stack(self._settings_layout):
       self._show_layout(self._onroad_layout)
-    elif not gui_app.widget_in_stack(self._onboarding_window):
-      gui_app.push_widget(self._settings_layout)
+    elif gui_app.get_active_widget() is self and self._layout_visible(self._home_layout):
+      if not gui_app.widget_in_stack(self._onboarding_window):
+        gui_app.push_widget(self._settings_layout)
+    else:
+      self._show_layout(self._home_layout)
 
   def _on_body_changed(self):
     self._car_onroad_layout.set_visible(not ui_state.is_body)

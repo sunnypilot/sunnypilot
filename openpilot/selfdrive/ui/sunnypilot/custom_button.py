@@ -7,8 +7,7 @@ class CustomButtonAction(IntEnum):
   NONE = 0
   BOOKMARK = 1
   QUIET_MODE = 2
-  ONROAD_HOME = 3
-  ONROAD_SETTINGS = 4
+  CYCLE_UI = 3
 
 
 def handle_custom_button(sm, params, callbacks):
