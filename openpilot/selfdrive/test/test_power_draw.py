@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+
 from collections import defaultdict, deque
-import pytest
 import time
+import unittest
 import numpy as np
 from dataclasses import dataclass
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.utils import tabulate
 
 import openpilot.cereal.messaging as messaging
@@ -10,7 +13,7 @@ from openpilot.cereal.services import SERVICE_LIST
 from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.mock import mock_messages
 from openpilot.common.params import Params
-from openpilot.common.hardware.tici.power_monitor import get_power
+from openpilot.common.hardware.comma.power_monitor import get_power
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.system.manager.manager import manager_cleanup
 
@@ -31,15 +34,15 @@ class Proc:
 
 
 PROCS = [
-  Proc(['camerad'], 1.65, atol=0.4, msgs=['roadCameraState', 'wideRoadCameraState', 'driverCameraState']),
+  Proc(['camerad'], 1.65, atol=0.4, msgs=['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']),
   Proc(['modeld'], 1.5, atol=0.2, msgs=['modelV2']),
   Proc(['dmonitoringmodeld'], 0.65, atol=0.35, msgs=['driverStateV2']),
   Proc(['encoderd'], 0.23, msgs=[]),
 ]
 
 
-@pytest.mark.tici
-class TestPowerDraw:
+class TestPowerDraw(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
 
   def setup_method(self):
     Params().put("CarParams", get_demo_car_params().to_bytes(), block=True)
@@ -92,7 +95,7 @@ class TestPowerDraw:
 
     return now, msg_counts, time.monotonic() - start_time - SAMPLE_TIME
 
-  @mock_messages(['livePose'])
+  @mock_messages(['deviceMotion'])
   def test_camera_procs(self, subtests):
     baseline = get_power()
 
@@ -123,3 +126,7 @@ class TestPowerDraw:
         assert self.valid_power_draw(proc, cur), f"expected {expected:.2f}W, got {cur:.2f}W"
     print(tabulate(tab))
     print(f"Baseline {baseline:.2f}W\n")
+
+
+if __name__ == "__main__":
+  unittest.main()

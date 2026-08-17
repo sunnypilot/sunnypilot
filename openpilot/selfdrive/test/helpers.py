@@ -3,7 +3,6 @@ import http.server
 import os
 import threading
 import time
-import pytest
 
 from functools import wraps
 
@@ -23,16 +22,16 @@ def set_params_enabled():
   params.put_bool("OpenpilotEnabledToggle", True, block=True)
 
   # valid calib
-  msg = messaging.new_message('liveCalibration')
-  msg.liveCalibration.validBlocks = 20
-  msg.liveCalibration.rpyCalib = [0.0, 0.0, 0.0]
+  msg = messaging.new_message('extrinsicsCalibration')
+  msg.extrinsicsCalibration.validBlocks = 20
+  msg.extrinsicsCalibration.rpyCalib = [0.0, 0.0, 0.0]
   params.put("CalibrationParams", msg.to_bytes(), block=True)
 
 def release_only(f):
   @wraps(f)
   def wrap(self, *args, **kwargs):
     if "RELEASE" not in os.environ:
-      pytest.skip("This test is only for release branches")
+      self.skipTest("This test is only for release branches")
     f(self, *args, **kwargs)
   return wrap
 

@@ -6,12 +6,13 @@ See the LICENSE.md file in the root directory for more details.
 """
 from opendbc.car.structs import car
 from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
+from openpilot.common.test import OpenpilotTestCase
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
 
-class TestButtonStateTracker:
+class TestButtonStateTracker(OpenpilotTestCase):
   def setup_method(self) -> None:
     self.tracker = ButtonStateTracker()
 

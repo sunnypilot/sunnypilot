@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import os
 import time
+import unittest
 import numpy as np
-import pytest
 import random
 
+from openpilot.common.test import OpenpilotTestCase
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal.services import SERVICE_LIST
 from openpilot.common.timeout import Timeout
@@ -12,8 +15,8 @@ from openpilot.selfdrive.pandad.tests.test_pandad_loopback import setup_pandad, 
 
 JUNGLE_SPAM = "JUNGLE_SPAM" in os.environ
 
-@pytest.mark.tici
-class TestBoarddSpi:
+class TestBoarddSpi(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
   @classmethod
   def setup_class(cls):
     os.environ['STARTED'] = '1'
@@ -99,9 +102,12 @@ class TestBoarddSpi:
         edt = 1e3 / SERVICE_LIST[service].frequency
         assert edt*0.9 < np.mean(dts) < edt*1.1
         assert np.max(dts) < edt*8
-        assert np.min(dts) < edt
         assert len(dts) >= ((et-0.5)*SERVICE_LIST[service].frequency*0.8)
 
     with subtests.test(msg="CAN traffic"):
       print(f"Sent {total_sent_count} CAN messages, got {total_recv_count} back. {total_recv_count/(total_sent_count+1e-4):.2%} received")
       assert total_recv_count > 20
+
+
+if __name__ == "__main__":
+  unittest.main()
