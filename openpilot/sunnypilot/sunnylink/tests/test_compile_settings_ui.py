@@ -19,7 +19,6 @@ import difflib
 import json
 import os
 
-import pytest
 import yaml
 
 from openpilot.sunnypilot.sunnylink.tools.compile_settings_ui import (
@@ -29,20 +28,19 @@ from openpilot.sunnypilot.sunnylink.tools.compile_settings_ui import (
   _resolve_refs,
   compile_schema,
 )
+from openpilot.common.test import OpenpilotTestCase
 
 
-@pytest.fixture(scope="module")
 def compiled() -> dict:
   return compile_schema(DEFAULT_SRC)
 
 
-@pytest.fixture(scope="module")
 def committed() -> dict:
   with open(DEFAULT_OUT) as f:
     return json.load(f)
 
 
-class TestRoundtrip:
+class TestRoundtrip(OpenpilotTestCase):
   def test_compiled_matches_committed(self, compiled, committed):
     """Compiled output must match the checked-in JSON."""
     if compiled == committed:
@@ -54,7 +52,7 @@ class TestRoundtrip:
       tofile="settings_ui.json (freshly compiled)",
       lineterm="",
     ))
-    pytest.fail(f"settings_ui.json schema mismatch — run compile_settings_ui.py\n\n{diff}")
+    self.fail(f"settings_ui.json schema mismatch — run compile_settings_ui.py\n\n{diff}")
 
   def test_committed_file_is_canonical(self):
     """Compiled output must byte-match the checked-in file (including trailing newline).
@@ -72,10 +70,10 @@ class TestRoundtrip:
       tofile="settings_ui.json (freshly compiled)",
       lineterm="",
     ))
-    pytest.fail(f"settings_ui.json out of sync — run compile_settings_ui.py\n\n{diff}")
+    self.fail(f"settings_ui.json out of sync — run compile_settings_ui.py\n\n{diff}")
 
 
-class TestRefResolution:
+class TestRefResolution(OpenpilotTestCase):
   def test_list_context_splices(self):
     macros = {"a": [{"type": "offroad_only"}], "b": [{"type": "not_engaged"}]}
     out = _resolve_refs([{"$ref": "#/macros/a"}, {"$ref": "#/macros/b"}], macros)
@@ -95,12 +93,12 @@ class TestRefResolution:
     assert out == [{"type": "offroad_only"}]
 
   def test_unknown_macro_raises(self):
-    with pytest.raises(CompileError, match="unknown macro"):
+    with self.assertRaisesRegex(CompileError, "unknown macro"):
       _resolve_refs([{"$ref": "#/macros/missing"}], {})
 
   def test_cycle_raises(self):
     macros = {"a": [{"$ref": "#/macros/b"}], "b": [{"$ref": "#/macros/a"}]}
-    with pytest.raises(CompileError, match="cycle"):
+    with self.assertRaisesRegex(CompileError, "cycle"):
       _resolve_refs([{"$ref": "#/macros/a"}], macros)
 
   def test_depth_limit(self):
@@ -111,20 +109,20 @@ class TestRefResolution:
       "l3": [{"$ref": "#/macros/l4"}],
       "l4": [{"type": "offroad_only"}],
     }
-    with pytest.raises(CompileError, match="depth"):
+    with self.assertRaisesRegex(CompileError, "depth"):
       _resolve_refs([{"$ref": "#/macros/l1"}], macros)
 
   def test_invalid_ref_scheme(self):
-    with pytest.raises(CompileError, match="unsupported"):
+    with self.assertRaisesRegex(CompileError, "unsupported"):
       _resolve_refs([{"$ref": "https://example.com/x"}], {})
 
   def test_scalar_macro_in_list_context_raises(self):
     macros = {"x": {"type": "offroad_only"}}  # macro is a single rule (dict), not a list
-    with pytest.raises(CompileError, match="must resolve to a list"):
+    with self.assertRaisesRegex(CompileError, "must resolve to a list"):
       _resolve_refs([{"$ref": "#/macros/x"}], macros)
 
 
-class TestCompiledShape:
+class TestCompiledShape(OpenpilotTestCase):
   def test_panels_present(self, compiled):
     assert isinstance(compiled["panels"], list)
     assert len(compiled["panels"]) == 9
@@ -145,7 +143,7 @@ class TestCompiledShape:
     def walk(node):
       if isinstance(node, dict):
         if "$ref" in node:
-          pytest.fail(f"unresolved $ref: {node}")
+          self.fail(f"unresolved $ref: {node}")
         for v in node.values():
           walk(v)
       elif isinstance(node, list):
@@ -154,7 +152,7 @@ class TestCompiledShape:
     walk(compiled)
 
 
-class TestSourceTreeIntegrity:
+class TestSourceTreeIntegrity(OpenpilotTestCase):
   def test_macros_yaml_well_formed(self):
     with open(os.path.join(DEFAULT_SRC, "_macros.yaml")) as f:
       doc = yaml.safe_load(f)

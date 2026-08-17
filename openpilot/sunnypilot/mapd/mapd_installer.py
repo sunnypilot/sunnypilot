@@ -26,7 +26,7 @@ VERSION = "v1.12.0"
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
 
 
-def update_installed_version(version: str, params: Params = None) -> None:
+def update_installed_version(version: str, params: Params | None = None) -> None:
   if params is None:
     params = Params()
 

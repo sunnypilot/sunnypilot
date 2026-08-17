@@ -492,7 +492,7 @@ void Localizer::handle_cam_odo(double current_time, const cereal::CameraOdometry
   this->camodo_yawrate_distribution = Vector2d(rot_device[2], rotate_std(this->device_from_calib, rot_calib_std)[2]);
 }
 
-void Localizer::handle_live_calib(double current_time, const cereal::LiveCalibrationData::Reader& log) {
+void Localizer::handle_live_calib(double current_time, const cereal::ExtrinsicsCalibration::Reader& log) {
   if (!this->is_timestamp_valid(current_time)) {
     this->observation_timings_invalid = true;
     return;
@@ -501,15 +501,15 @@ void Localizer::handle_live_calib(double current_time, const cereal::LiveCalibra
   if (log.getRpyCalib().size() > 0) {
     auto live_calib = floatlist2vector(log.getRpyCalib());
     if ((live_calib.minCoeff() < -CALIB_RPY_SANITY_CHECK) || (live_calib.maxCoeff() > CALIB_RPY_SANITY_CHECK)) {
-      this->observation_values_invalid["liveCalibration"] += 1.0;
+      this->observation_values_invalid["extrinsicsCalibration"] += 1.0;
       return;
     }
 
     this->calib = live_calib;
     this->device_from_calib = euler2rot(this->calib);
     this->calib_from_device = this->device_from_calib.transpose();
-    this->calibrated = log.getCalStatus() == cereal::LiveCalibrationData::Status::CALIBRATED;
-    this->observation_values_invalid["liveCalibration"] *= DECAY;
+    this->calibrated = log.getCalStatus() == cereal::ExtrinsicsCalibration::Status::CALIBRATED;
+    this->observation_values_invalid["extrinsicsCalibration"] *= DECAY;
   }
 }
 
@@ -604,8 +604,8 @@ void Localizer::handle_msg(const cereal::Event::Reader& log) {
     this->handle_car_state(t, log.getCarState());
   } else if (log.isCameraOdometry()) {
     this->handle_cam_odo(t, log.getCameraOdometry());
-  } else if (log.isLiveCalibration()) {
-    this->handle_live_calib(t, log.getLiveCalibration());
+  } else if (log.isExtrinsicsCalibration()) {
+    this->handle_live_calib(t, log.getExtrinsicsCalibration());
   }
   this->finite_check();
   this->update_reset_tracker();
@@ -688,7 +688,7 @@ int Localizer::locationd_thread() {
   }
 
   this->configure_gnss_source(source);
-  const std::initializer_list<const char *> service_list = {gps_location_socket, "cameraOdometry", "liveCalibration",
+  const std::initializer_list<const char *> service_list = {gps_location_socket, "cameraOdometry", "extrinsicsCalibration",
                                                           "carState", "accelerometer", "gyroscope"};
 
   SubMaster sm(service_list, {}, nullptr, {gps_location_socket});
@@ -696,7 +696,7 @@ int Localizer::locationd_thread() {
 
   uint64_t cnt = 0;
   bool filterInitialized = false;
-  const std::vector<std::string> critical_input_services = {"cameraOdometry", "liveCalibration", "accelerometer", "gyroscope"};
+  const std::vector<std::string> critical_input_services = {"cameraOdometry", "extrinsicsCalibration", "accelerometer", "gyroscope"};
   for (std::string service : critical_input_services) {
     this->observation_values_invalid.insert({service, 0.0});
   }

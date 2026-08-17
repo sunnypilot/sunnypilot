@@ -8,9 +8,10 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestNNTorqueModel:
+class TestNNTorqueModel(OpenpilotTestCase):
 
   @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN])
   def test_load_model(self, car_name):
