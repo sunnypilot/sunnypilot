@@ -29,11 +29,24 @@ on:
         required: false
         type: boolean
         default: true
-      bypass_push:
-        description: 'Bypass pushing to GitLab for build-all'
+      target_hardware:
+        description: 'Hardware target to compile for (qcom or usbgpu)'
         required: false
-        default: true
-        type: boolean
+        type: string
+        default: 'qcom'
+      hf_repo:
+        description: 'Hugging Face dataset repository (e.g. sunnypilot/sunnypilot_models_v1)'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot_models_v1'
+      set_min_version:
+        description: 'Minimum selector version'
+        required: false
+        type: string
+      tinygrad_ref:
+        description: 'Tinygrad reference'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -65,8 +78,8 @@ on:
           - None
           - Master Models
           - Release Models
-          - 2025 World Models
           - 2026 World Models
+          - 2026 Deep RL Models
           - Custom Merge Models
           - Other
       custom_model_folder:
@@ -81,9 +94,22 @@ on:
         description: 'Minimum selector version'
         required: false
         type: string
+      target_hardware:
+        description: 'Hardware target to compile for'
+        required: false
+        type: choice
+        default: 'qcom'
+        options:
+          - qcom
+          - usbgpu
+      hf_repo:
+        description: 'Hugging Face dataset repository'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot_models_v1'
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
-  JSON_FILE: docs/docs/driving_models_v${{ inputs.json_version }}.json
+  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_v' || 'v' }}${{ inputs.json_version }}.json
 
 jobs:
   build_model:
@@ -93,38 +119,20 @@ jobs:
       custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
       is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
+      target_hardware: ${{ inputs.target_hardware }}
     secrets: inherit
 
   publish_model:
-    if: ${{ !inputs.bypass_push && !cancelled() }}
+    if: ${{ !cancelled() && needs.build_model.result == 'success' }}
     concurrency:
-      group: gitlab-push-${{ inputs.recompiled_dir }}
+      group: hf-push-${{ inputs.recompiled_dir }}
       cancel-in-progress: false
     needs: build_model
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
-
-      - name: Add GitLab.com SSH key to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-
-      - name: Clone GitLab docs repo
-        env:
-          GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
-        run: |
-          echo "Cloning GitLab"
-          git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/${{ vars.MODELS_GITLAB }} gitlab_docs
-          cd gitlab_docs
-          echo "checkout models/${RECOMPILED_DIR}"
-          git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
-          git checkout main
-          cd ..
-
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
@@ -133,16 +141,28 @@ jobs:
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
-      - name: Validate recompiled dir and JSON version
+      - name: Install huggingface_hub
+        run: pip install --upgrade "huggingface_hub>=0.22.0"
+
+      - name: Validate hf_repo and JSON version
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
         run: |
-          if [ ! -d "gitlab_docs/models/$RECOMPILED_DIR" ]; then
-            echo "Recompiled dir $RECOMPILED_DIR does not exist in GitLab repo"
-            exit 1
-          fi
           if [ ! -f "$JSON_FILE" ]; then
             echo "JSON file $JSON_FILE does not exist!"
             exit 1
           fi
+          python3 -c "
+          import sys
+          from huggingface_hub import HfApi
+          try:
+              api = HfApi()
+              api.repo_info(repo_id=sys.argv[1], repo_type='dataset')
+              print(f'Success: Repo {sys.argv[1]} exists.')
+          except Exception as e:
+              print('HF validation failed:', e)
+              sys.exit(1)
+          " "${{ inputs.hf_repo }}"
 
       - name: Download artifact name file
         uses: actions/download-artifact@v4
@@ -162,49 +182,26 @@ jobs:
           name: ${{ steps.read-artifact-name.outputs.artifact_name }}
           path: output
 
-      - name: Remove unwanted files
-        run: |
-          find output -type f -name 'dmonitoring_model_tinygrad.pkl' -delete
-          find output -type f -name 'dmonitoring_model.onnx' -delete
-
-      - name: Copy model artifact(s) to GitLab recompiled dir
+      - name: Create models folder
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          ARTIFACT_DIR="gitlab_docs/models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          mkdir -p "$ARTIFACT_DIR"
-          for path in output/*; do
-            if [ "$(basename "$path")" = "artifact_name.txt" ]; then
-              continue
-            fi
-            name="$(basename "$path")"
-            if [ -d "$path" ]; then
-              mkdir -p "$ARTIFACT_DIR/$name"
-              cp -r "$path"/* "$ARTIFACT_DIR/$name/"
-              echo "Copied dir $name -> $ARTIFACT_DIR/$name"
-            else
-              cp "$path" "$ARTIFACT_DIR/"
-              echo "Copied file $name -> $ARTIFACT_DIR/"
-            fi
-          done
+          mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
+          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
+          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
 
-      - name: Push recompiled dir to GitLab
+      - name: Upload to Hugging Face
         env:
-          GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
-          cd gitlab_docs
-          git checkout main
-          git pull origin main
-          for d in models/"$RECOMPILED_DIR"/*/; do
-            git sparse-checkout add "$d"
-          done
-          git add models/"$RECOMPILED_DIR"
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git commit -m "Create/Update $RECOMPILED_DIR with new/updated model from build-single-tinygrad-model" || echo "No changes to commit"
-          git push origin main
+          hf upload ${{ inputs.hf_repo }} \
+            output/ \
+            "models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/" \
+            --repo-type=dataset
 
-      - run: |
+      - name: Pull gh-pages
+        run: |
           cd docs
           git pull origin gh-pages
 
@@ -220,9 +217,11 @@ jobs:
           fi
           [ -n "${{ inputs.generation }}" ] && ARGS="$ARGS --generation \"${{ inputs.generation }}\""
           [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
+          [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
+          [ -n "${{ inputs.tinygrad_ref }}" ] && ARGS="$ARGS --tinygrad-ref \"${{ inputs.tinygrad_ref }}\""
           eval python3 docs/json_parser.py \
             --json-path "$JSON_FILE" \
-            --recompiled-dir "gitlab_docs/models/$RECOMPILED_DIR" \
+            --recompiled-dir "local_models/$RECOMPILED_DIR" \
             --sort-by-date \
             $ARGS
 

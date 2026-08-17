@@ -52,7 +52,7 @@ class ControlsExt(ModelStateBase):
       self.blinker_pause_lateral.get_params()
 
       if self.CP.lateralTuning.which() == 'torque':
-        self.lat_delay = get_lat_delay(self.params, sm["liveDelay"].lateralDelay)
+        self.lat_delay = get_lat_delay(self.params, sm["lateralDelay"].lateralDelay)
 
       self._param_update_time = time.monotonic()
 
