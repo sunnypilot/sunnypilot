@@ -3,6 +3,7 @@ from enum import IntEnum
 import openpilot.cereal.messaging as messaging
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.sunnypilot.custom_button import CustomButtonAction, handle_custom_button
 from openpilot.selfdrive.ui.layouts.sidebar import Sidebar, SIDEBAR_WIDTH
 from openpilot.selfdrive.ui.layouts.home import HomeLayout
 from openpilot.selfdrive.ui.layouts.settings.settings import SettingsLayout, PanelType
@@ -40,6 +41,10 @@ class MainLayout(Widget):
       MainState.SETTINGS: SettingsLayout(),
       MainState.ONROAD: AugmentedRoadView(),
     }
+    self._custom_button_callbacks = {
+      CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
+      CustomButtonAction.CYCLE_UI: self._cycle_ui,
+    }
 
     self._sidebar_rect = rl.Rectangle(0, 0, 0, 0)
     self._content_rect = rl.Rectangle(0, 0, 0, 0)
@@ -55,6 +60,7 @@ class MainLayout(Widget):
       gui_app.push_widget(self._onboarding_window)
 
   def _render(self, _):
+    handle_custom_button(ui_state.sm, ui_state.params, self._custom_button_callbacks)
     self._handle_onroad_transition()
     self._render_main_content()
 
@@ -113,6 +119,18 @@ class MainLayout(Widget):
 
   def _on_settings_clicked(self):
     self.open_settings(PanelType.DEVICE)
+
+  def _show_onroad(self):
+    self._set_current_layout(MainState.ONROAD)
+    self._sidebar.set_visible(False)
+
+  def _cycle_ui(self):
+    if self._current_mode == MainState.ONROAD and not self._sidebar.is_visible:
+      self._sidebar.set_visible(True)
+    elif self._current_mode == MainState.SETTINGS:
+      self._show_onroad()
+    else:
+      self._on_settings_clicked()
 
   def _on_bookmark_clicked(self):
     for service in ('bookmarkButton', 'userBookmark'):

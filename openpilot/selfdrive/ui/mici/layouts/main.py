@@ -4,6 +4,7 @@ from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsLayout
 from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
+from openpilot.selfdrive.ui.sunnypilot.custom_button import CustomButtonAction, handle_custom_button
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
 from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
@@ -35,6 +36,10 @@ class MiciMainLayout(Scroller):
     self._settings_layout = SettingsLayout()
     self._car_onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked)
     self._body_onroad_layout = BodyLayout()
+    self._custom_button_callbacks = {
+      CustomButtonAction.BOOKMARK: self._on_bookmark_clicked,
+      CustomButtonAction.CYCLE_UI: self._cycle_ui,
+    }
 
     # Initialize widget rects
     for widget in (self._home_layout, self._alerts_layout, self._settings_layout,
@@ -95,6 +100,8 @@ class MiciMainLayout(Scroller):
     self._alerts_layout._update_state()
 
   def _render(self, _):
+    handle_custom_button(ui_state.sm, ui_state.params, self._custom_button_callbacks)
+
     if not self._setup:
       if self._alerts_layout.active_alerts() > 0:
         self._scroller.scroll_to(self._alerts_layout.rect.x)
@@ -149,6 +156,23 @@ class MiciMainLayout(Scroller):
     for service in ('bookmarkButton', 'userBookmark'):
       msg = messaging.new_message(service, valid=True)
       self._pm.send(service, msg)
+
+  def _show_layout(self, layout: Widget):
+    if gui_app.widget_in_stack(self._onboarding_window):
+      return
+    gui_app.pop_widgets_to(self, lambda: self._scroll_to(layout))
+
+  def _layout_visible(self, layout: Widget) -> bool:
+    return abs(layout.rect.x - self._rect.x) < self._rect.width / 2
+
+  def _cycle_ui(self):
+    if gui_app.widget_in_stack(self._settings_layout):
+      self._show_layout(self._onroad_layout)
+    elif gui_app.get_active_widget() is self and self._layout_visible(self._home_layout):
+      if not gui_app.widget_in_stack(self._onboarding_window):
+        gui_app.push_widget(self._settings_layout)
+    else:
+      self._show_layout(self._home_layout)
 
   def _on_body_changed(self):
     self._car_onroad_layout.set_visible(not ui_state.is_body)
