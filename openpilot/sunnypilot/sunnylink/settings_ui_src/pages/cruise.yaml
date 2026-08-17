@@ -77,6 +77,14 @@ sections:
     - type: capability
       field: has_icbm
       equals: true
+    - type: all
+      conditions:
+      - type: capability
+        field: toyota_virtual_cruise_speed_available
+        equals: true
+      - type: param
+        key: ToyotaVirtualCruiseSpeed
+        equals: true
   items:
   - key: CustomAccIncrementsEnabled
     widget: toggle
@@ -98,6 +106,14 @@ sections:
       - type: capability
         field: has_icbm
         equals: true
+      - type: all
+        conditions:
+        - type: capability
+          field: toyota_virtual_cruise_speed_available
+          equals: true
+        - type: param
+          key: ToyotaVirtualCruiseSpeed
+          equals: true
   sub_panels:
   - id: custom_acc_intervals
     label: Custom ACC Speed Intervals Settings

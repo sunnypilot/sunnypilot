@@ -712,6 +712,21 @@
                   "type": "capability",
                   "field": "has_icbm",
                   "equals": true
+                },
+                {
+                  "type": "all",
+                  "conditions": [
+                    {
+                      "type": "capability",
+                      "field": "toyota_virtual_cruise_speed_available",
+                      "equals": true
+                    },
+                    {
+                      "type": "param",
+                      "key": "ToyotaVirtualCruiseSpeed",
+                      "equals": true
+                    }
+                  ]
                 }
               ]
             }
@@ -750,6 +765,21 @@
                       "type": "capability",
                       "field": "has_icbm",
                       "equals": true
+                    },
+                    {
+                      "type": "all",
+                      "conditions": [
+                        {
+                          "type": "capability",
+                          "field": "toyota_virtual_cruise_speed_available",
+                          "equals": true
+                        },
+                        {
+                          "type": "param",
+                          "key": "ToyotaVirtualCruiseSpeed",
+                          "equals": true
+                        }
+                      ]
                     }
                   ]
                 }
@@ -2303,6 +2333,50 @@
       "description": "",
       "items": [
         {
+          "key": "ToyotaAutoHold",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaEnhancedBsm",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Prius TSS2 BSM and some tssp",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaTSS2Long",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: custom longitudinal for TSS2",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaDriveMode",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Enable drive mode btn link",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
           "key": "ToyotaEnforceStockLongitudinal",
           "widget": "toggle",
           "needs_onroad_cycle": true,
@@ -2311,6 +2385,40 @@
           "enablement": [
             {
               "type": "not_engaged"
+            },
+            {
+              "type": "param",
+              "key": "ToyotaVirtualCruiseSpeed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "key": "ToyotaVirtualCruiseSpeed",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Virtual Cruise Speed (Alpha)",
+          "description": "Uses a sunnypilot-owned cruise target with the Toyota RES/SET buttons and unlocks Custom ACC Speed Intervals. Set the short interval to 5 for next-5-unit tap behavior. The Toyota cluster continues to show the factory target and may differ from sunnypilot. The direct button signals are route-validated on Corolla Cross and Prius TSS2, but held-button timing differs by platform. Validate acceleration above the factory target in a controlled setting.",
+          "visibility": [
+            {
+              "type": "capability",
+              "field": "toyota_virtual_cruise_speed_available",
+              "equals": true
+            }
+          ],
+          "enablement": [
+            {
+              "type": "not_engaged"
+            },
+            {
+              "type": "capability",
+              "field": "has_longitudinal_control",
+              "equals": true
+            },
+            {
+              "type": "param",
+              "key": "ToyotaEnforceStockLongitudinal",
+              "equals": false
             }
           ]
         },

@@ -115,7 +115,7 @@ class IntelligentCruiseButtonManagement:
     self.is_ready = ready and not button_pressed
 
   def run(self, CS: car.CarState, CC: car.CarControl, LP_SP: custom.LongitudinalPlanSP, is_metric: bool) -> None:
-    if self.CP_SP.pcmCruiseSpeed:
+    if self.CP_SP.pcmCruiseSpeed or not self.CP_SP.intelligentCruiseButtonManagementAvailable:
       return
 
     self.is_metric = is_metric

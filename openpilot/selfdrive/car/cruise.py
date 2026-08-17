@@ -19,6 +19,7 @@ IMPERIAL_INCREMENT = round(CV.MPH_TO_KPH, 1)  # round here to avoid rounding err
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 CRUISE_LONG_PRESS = 50
+TOYOTA_VIRTUAL_CRUISE_LONG_PRESS = 65
 CRUISE_NEAREST_FUNC = {
   ButtonType.accelCruise: math.ceil,
   ButtonType.decelCruise: math.floor,
@@ -43,6 +44,30 @@ class VCruiseHelper(VCruiseHelperSP):
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
+  @property
+  def software_pcm_cruise_speed(self) -> bool:
+    return self.CP.brand == "toyota" and self.CP.pcmCruise and self.CP.openpilotLongitudinalControl and not self.CP_SP.pcmCruiseSpeed
+
+  @property
+  def cruise_long_press_frames(self) -> int:
+    return TOYOTA_VIRTUAL_CRUISE_LONG_PRESS if self.software_pcm_cruise_speed else CRUISE_LONG_PRESS
+
+  @property
+  def software_pcm_cruise_initialized(self) -> bool:
+    return 0 < self.v_cruise_kph < V_CRUISE_UNSET and 0 < self.v_cruise_cluster_kph < V_CRUISE_UNSET
+
+  def _apply_software_pcm_cruise_delta(self, delta_kph: float, is_metric: bool) -> None:
+    """Move Toyota's planner/display targets together while respecting both targets' bounds."""
+    cluster_min_kph = self.v_cruise_min if is_metric else self.v_cruise_min * CV.MPH_TO_KPH
+    min_delta = max(V_CRUISE_MIN - self.v_cruise_kph, cluster_min_kph - self.v_cruise_cluster_kph)
+    max_delta = min(V_CRUISE_MAX - self.v_cruise_kph, V_CRUISE_MAX - self.v_cruise_cluster_kph)
+    if delta_kph > 0:
+      applied_delta = min(delta_kph, max(0., max_delta))
+    else:
+      applied_delta = max(delta_kph, min(0., min_delta))
+    self.v_cruise_kph = round(self.v_cruise_kph + applied_delta, 1)
+    self.v_cruise_cluster_kph = round(self.v_cruise_cluster_kph + applied_delta, 1)
+
   def update_v_cruise(self, CS, enabled, is_metric):
     self.v_cruise_kph_last = self.v_cruise_kph
 
@@ -51,11 +76,21 @@ class VCruiseHelper(VCruiseHelperSP):
     _enabled = self.update_enabled_state(CS, enabled)
 
     if CS.cruiseState.available:
-      if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed and _enabled):
+      software_pcm_enabled = not self.CP_SP.pcmCruiseSpeed and _enabled
+      if self.software_pcm_cruise_speed:
+        software_pcm_enabled = software_pcm_enabled and self.software_pcm_cruise_initialized
+
+      if not self.CP.pcmCruise or software_pcm_enabled:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, _enabled, is_metric)
+        v_cruise_kph_before_sla = self.v_cruise_kph
         self.update_speed_limit_assist_v_cruise_non_pcm()
-        self.v_cruise_cluster_kph = self.v_cruise_kph
+        if self.software_pcm_cruise_speed:
+          sla_delta_kph = self.v_cruise_kph - v_cruise_kph_before_sla
+          self.v_cruise_kph = v_cruise_kph_before_sla
+          self._apply_software_pcm_cruise_delta(sla_delta_kph, is_metric)
+        else:
+          self.v_cruise_cluster_kph = self.v_cruise_kph
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
         self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
@@ -85,13 +120,13 @@ class VCruiseHelper(VCruiseHelperSP):
 
     for b in CS.buttonEvents:
       if b.type.raw in self.button_timers and not b.pressed:
-        if self.button_timers[b.type.raw] > CRUISE_LONG_PRESS:
+        if self.button_timers[b.type.raw] > self.cruise_long_press_frames:
           return  # end long press
         button_type = b.type.raw
         break
     else:
       for k, timer in self.button_timers.items():
-        if timer and timer % CRUISE_LONG_PRESS == 0:
+        if timer and timer % self.cruise_long_press_frames == 0:
           button_type = k
           long_press = True
           break
@@ -115,10 +150,26 @@ class VCruiseHelper(VCruiseHelperSP):
       return
 
     long_press, v_cruise_delta = VCruiseHelperSP.update_v_cruise_delta(self, long_press, v_cruise_delta)
-    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
-      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
+    # Toyota's canonical PCM set speed and displayed cluster set speed can differ. In
+    # software-owned PCM mode, round the value the driver sees and apply the same delta
+    # to both targets so the planner/cluster calibration offset remains intact.
+    v_cruise_reference = self.v_cruise_cluster_kph if self.software_pcm_cruise_speed else self.v_cruise_kph
+    if long_press and v_cruise_reference % v_cruise_delta != 0:  # partial interval
+      v_cruise_reference_new = CRUISE_NEAREST_FUNC[button_type](v_cruise_reference / v_cruise_delta) * v_cruise_delta
     else:
-      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+      v_cruise_reference_new = v_cruise_reference + v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+
+    if self.software_pcm_cruise_speed:
+      delta_kph = v_cruise_reference_new - v_cruise_reference
+
+      # If SET is pressed while overriding, do not lower the target below the current speed.
+      if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
+        delta_kph = max(delta_kph, CS.vEgo * CV.MS_TO_KPH - self.v_cruise_kph)
+
+      self._apply_software_pcm_cruise_delta(delta_kph, is_metric)
+      return
+
+    self.v_cruise_kph += v_cruise_reference_new - v_cruise_reference
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
@@ -127,6 +178,12 @@ class VCruiseHelper(VCruiseHelperSP):
     self.v_cruise_kph = np.clip(round(self.v_cruise_kph, 1), self.v_cruise_min, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
+    if self.software_pcm_cruise_speed and (not enabled or not CS.cruiseState.available or not self.software_pcm_cruise_initialized):
+      for k in self.button_timers:
+        self.button_timers[k] = 0
+        self.button_change_states[k] = {"standstill": False, "enabled": False}
+      return
+
     # increment timer for buttons still pressed
     for k in self.button_timers:
       if self.button_timers[k] > 0:
