@@ -52,6 +52,12 @@ git fetch origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --all
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 
+# a gitlink here publishes a tree devices cannot resolve
+if git ls-files -s | awk '$1 == "160000" { found = 1; print } END { exit !found }'; then
+    echo "Error: submodules found in release tree."
+    exit 1
+fi
+
 # include source commit hash and build date in commit
 GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse HEAD)
 DATETIME=$(date '+%Y-%m-%dT%H:%M:%S')

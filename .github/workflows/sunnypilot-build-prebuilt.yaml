@@ -180,14 +180,9 @@ jobs:
 
       - name: Build Main Project
         run: |
-          export PYTHONPATH="$BUILD_DIR"
+          export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
           ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
           cd $BUILD_DIR
-          ln -sfn msgq_repo/msgq msgq
-          ln -sfn opendbc_repo/opendbc opendbc
-          ln -sfn rednose_repo/rednose rednose
-          ln -sfn teleoprtc_repo/teleoprtc teleoprtc
-          ln -sfn tinygrad_repo/tinygrad tinygrad
           echo "Building locationd, serialized to keep the rednose generator from OOMing..."
           scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal \
             openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
