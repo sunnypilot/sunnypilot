@@ -1,7 +1,7 @@
 name: Debug Discourse Posting
 
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   test-discourse-post:
