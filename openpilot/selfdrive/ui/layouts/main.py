@@ -28,6 +28,7 @@ class MainLayout(Widget):
     super().__init__()
 
     self._pm = messaging.PubMaster(['bookmarkButton', 'userBookmark'])
+    self._custom_button_sock = messaging.sub_sock('carState')
 
     self._sidebar = Sidebar()
     self._current_mode = MainState.HOME
@@ -60,7 +61,7 @@ class MainLayout(Widget):
       gui_app.push_widget(self._onboarding_window)
 
   def _render(self, _):
-    handle_custom_button(ui_state.sm, ui_state.params, self._custom_button_callbacks)
+    handle_custom_button(messaging.drain_sock(self._custom_button_sock), ui_state.params, self._custom_button_callbacks)
     self._handle_onroad_transition()
     self._render_main_content()
 

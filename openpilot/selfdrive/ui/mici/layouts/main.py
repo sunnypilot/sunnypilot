@@ -24,6 +24,7 @@ class MiciMainLayout(Scroller):
     super().__init__(snap_items=True, spacing=0, pad=0, scroll_indicator=False, edge_shadows=False)
 
     self._pm = messaging.PubMaster(['bookmarkButton', 'userBookmark'])
+    self._custom_button_sock = messaging.sub_sock('carState')
 
     self._prev_onroad = False
     self._prev_standstill = False
@@ -100,7 +101,7 @@ class MiciMainLayout(Scroller):
     self._alerts_layout._update_state()
 
   def _render(self, _):
-    handle_custom_button(ui_state.sm, ui_state.params, self._custom_button_callbacks)
+    handle_custom_button(messaging.drain_sock(self._custom_button_sock), ui_state.params, self._custom_button_callbacks)
 
     if not self._setup:
       if self._alerts_layout.active_alerts() > 0:
