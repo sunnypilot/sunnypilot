@@ -35,8 +35,13 @@ def get_max_accel(v_ego):
 def get_coast_accel(pitch):
   return np.sin(pitch) * -5.65 - 0.3  # fitted from data using xx/projects/allow_throttle/compute_coast_accel.py
 
-def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, accel_coast, allow_throttle):
-  max_accel = ACCEL_MAX if e2e else get_max_accel(v_ego)
+def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, accel_coast, allow_throttle,
+                      max_accel_override=None, min_accel_override=None):
+  if max_accel_override is not None:
+    max_accel = max_accel_override
+  else:
+    max_accel = ACCEL_MAX if e2e else get_max_accel(v_ego)
+  min_accel = A_CRUISE_MIN if e2e or min_accel_override is None else min_accel_override
 
   if not e2e:
     a_total_max = np.interp(v_ego, _A_TOTAL_MAX_BP, _A_TOTAL_MAX_V)
@@ -48,7 +53,7 @@ def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, 
       coast_limit = np.interp(v_ego, [MIN_ALLOW_THROTTLE_SPEED, MIN_ALLOW_THROTTLE_SPEED*2], [max_accel, clipped_accel_coast])
       max_accel = min(max_accel, coast_limit)
 
-  target_accel = np.clip(v_cruise - v_ego, A_CRUISE_MIN, max_accel)
+  target_accel = np.clip(v_cruise - v_ego, min_accel, max_accel)
   j_cruise = np.interp(v_ego, A_CRUISE_MAX_BP, J_CRUISE_VALS)
   target_accel = float(np.clip(target_accel, a_cruise_prev - j_cruise * dt, a_cruise_prev + j_cruise * dt))
 
@@ -68,6 +73,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.a_cruise = init_a
     self.output_a_target = init_a
     self.output_should_stop = False
+    self.accel_controller_active = False
 
     self.v_desired_trajectory = np.zeros(CONTROL_N)
     self.a_desired_trajectory = np.zeros(CONTROL_N)
@@ -84,7 +90,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     v_ego = sm['carState'].vEgo
     v_cruise_kph = min(sm['carState'].vCruise, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
-    if sm['controlsState'].forceDecel:
+    force_decel = sm['controlsState'].forceDecel
+    if force_decel:
       v_cruise = 0.0
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
@@ -140,9 +147,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     is_e2e = self.is_e2e(sm)
 
+    max_accel_override = self.get_max_accel_override(v_ego)
+    min_accel_override = self.get_min_accel_override(v_ego, is_e2e, force_decel)
+    self.accel_controller_active = max_accel_override is not None or min_accel_override is not None
     self.a_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego,
                                      self.a_cruise, steer_angle_without_offset, self.CP, self.dt,
-                                     accel_coast, self.allow_throttle)
+                                     accel_coast, self.allow_throttle, max_accel_override, min_accel_override)
     cruise_should_stop = should_stop(v_ego, self.a_cruise)
 
     candidates = [(output_a_target_mpc, self.mpc.source, output_should_stop_mpc),

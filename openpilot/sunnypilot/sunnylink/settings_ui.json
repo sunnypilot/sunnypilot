@@ -653,6 +653,53 @@
               ]
             },
             {
+              "key": "AccelPersonalityEnabled",
+              "widget": "toggle",
+              "title": "Enable Accel Controller",
+              "description": "Sets your preferred acceleration and cruise-deceleration limits by profile. Lead following, braking, and stopping behavior remain independent of this setting.",
+              "visibility": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
+              "key": "AccelPersonality",
+              "widget": "multiple_button",
+              "title": "Acceleration Profile",
+              "description": "Select the vehicle acceleration response. Chauffeur braking and stopping behavior remain the same across profiles.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Eco"
+                },
+                {
+                  "value": 1,
+                  "label": "Normal"
+                },
+                {
+                  "value": 2,
+                  "label": "Sport"
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",

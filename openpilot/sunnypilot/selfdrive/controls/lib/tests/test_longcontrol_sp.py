@@ -613,8 +613,7 @@ class TestLongControlSP(OpenpilotTestCase):
       run_long_control=True,
       actuator_model=PRIUS_TSS2_ROUTE_MODEL,
     )
-    plant.planner.accel_controller.enabled = True
-    plant.planner.accel_controller.profile = 1
+    plant.planner.accel_controller._enabled = True
     plant.planner.dec._enabled = False
     commands = []
     speeds = []
@@ -622,7 +621,7 @@ class TestLongControlSP(OpenpilotTestCase):
     solver_statuses = []
 
     with (
-      mock.patch.object(plant.planner.accel_controller, "update_params", return_value=None),
+      mock.patch.object(plant.planner.accel_controller, "update", return_value=None),
       mock.patch.object(plant.planner.dec, "_read_params", return_value=None),
     ):
       while plant.current_time < 5.0:

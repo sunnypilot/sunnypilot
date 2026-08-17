@@ -9,6 +9,7 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
@@ -23,8 +24,8 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
+    self.accel_controller = AccelController()
     self.events_sp = EventsSP()
-    self.resolver = SpeedLimitResolver()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
@@ -42,6 +43,16 @@ class LongitudinalPlannerSP:
       return experimental_mode
 
     return experimental_mode and self.dec.mode() == "blended"
+
+  def get_max_accel_override(self, v_ego: float) -> float | None:
+    if not self.accel_controller.is_enabled():
+      return None
+    return self.accel_controller.get_max_accel(v_ego)
+
+  def get_min_accel_override(self, v_ego: float, e2e: bool, force_decel: bool) -> float | None:
+    if e2e or force_decel or not self.accel_controller.is_enabled():
+      return None
+    return self.accel_controller.get_min_accel(v_ego)
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
@@ -74,6 +85,7 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update(self, sm: messaging.SubMaster) -> None:
+    self.accel_controller.update(sm)
     self.events_sp.clear()
     self.dec.update(sm)
     self.e2e_alerts_helper.update(sm, self.events_sp)
@@ -94,6 +106,11 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+
+    accel_controller = longitudinalPlanSP.accelController
+    accel_controller.enabled = self.accel_controller.is_enabled()
+    accel_controller.active = self.accel_controller_active
+    accel_controller.profile = self.accel_controller.profile
 
     # Smart Cruise Control
     smartCruiseControl = longitudinalPlanSP.smartCruiseControl

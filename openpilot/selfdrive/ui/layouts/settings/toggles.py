@@ -27,6 +27,13 @@ DESCRIPTIONS = {
     "In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with " +
     "your steering wheel distance button."
   ),
+  "AccelPersonalityEnabled": tr_noop(
+    "Sets your preferred acceleration and cruise-deceleration limits by profile. Lead following, braking, and stopping behavior remain " +
+    "independent of this setting."
+  ),
+  "AccelPersonality": tr_noop(
+    "Select the vehicle acceleration response. Chauffeur braking and stopping behavior remain the same across profiles."
+  ),
   "IsLdwEnabled": tr_noop(
     "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line " +
     "without a turn signal activated while driving over 31 mph (50 km/h)."
@@ -106,6 +113,24 @@ class TogglesLayout(Widget):
       icon="speed_limit.png"
     )
 
+    self._accel_controller_enabled = toggle_item(
+      lambda: tr("Enable Accel Controller"),
+      lambda: tr(DESCRIPTIONS["AccelPersonalityEnabled"]),
+      self._params.get_bool("AccelPersonalityEnabled"),
+      callback=self._set_accel_controller_enabled,
+      icon="speed_limit.png",
+    )
+
+    self._accel_personality_setting = multiple_button_item(
+      lambda: tr("Acceleration Profile"),
+      lambda: tr(DESCRIPTIONS["AccelPersonality"]),
+      buttons=[lambda: tr("Eco"), lambda: tr("Normal"), lambda: tr("Sport")],
+      button_width=300,
+      callback=self._set_accel_personality,
+      selected_index=self._params.get("AccelPersonality", return_default=True),
+      icon="speed_limit.png"
+    )
+
     self._toggles = {}
     self._locked_toggles = set()
     for param, (title, desc, icon, needs_restart) in self._toggle_defs.items():
@@ -135,9 +160,11 @@ class TogglesLayout(Widget):
 
       self._toggles[param] = toggle
 
-      # insert longitudinal personality after NDOG toggle
+      # insert longitudinal personality and Accel Controller settings after NDOG toggle
       if param == "DisengageOnAccelerator":
         self._toggles["LongitudinalPersonality"] = self._long_personality_setting
+        self._toggles["AccelPersonalityEnabled"] = self._accel_controller_enabled
+        self._toggles["AccelPersonality"] = self._accel_personality_setting
 
     self._update_experimental_mode_icon()
     self._scroller = Scroller(list(self._toggles.values()), line_separator=True, spacing=0)
@@ -158,6 +185,7 @@ class TogglesLayout(Widget):
 
   def _update_toggles(self):
     ui_state.update_params()
+    accel_controller_enabled = self._params.get_bool("AccelPersonalityEnabled")
 
     e2e_description = tr(
       "sunnypilot defaults to driving in chill mode. Experimental mode enables alpha-level features that aren't ready for chill mode. " +
@@ -176,11 +204,15 @@ class TogglesLayout(Widget):
         self._toggles["ExperimentalMode"].action_item.set_enabled(True)
         self._toggles["ExperimentalMode"].set_description(e2e_description)
         self._long_personality_setting.action_item.set_enabled(True)
+        self._accel_controller_enabled.action_item.set_enabled(True)
+        self._accel_personality_setting.action_item.set_enabled(True)
       else:
         # no long for now
         self._toggles["ExperimentalMode"].action_item.set_enabled(False)
         self._toggles["ExperimentalMode"].action_item.set_state(False)
         self._long_personality_setting.action_item.set_enabled(False)
+        self._accel_controller_enabled.action_item.set_enabled(False)
+        self._accel_personality_setting.action_item.set_enabled(False)
         self._params.remove("ExperimentalMode")
 
         unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.")
@@ -203,6 +235,8 @@ class TogglesLayout(Widget):
     # refresh toggles from params to mirror external changes
     for param in self._toggle_defs:
       self._toggles[param].action_item.set_state(self._params.get_bool(param))
+    self._accel_controller_enabled.action_item.set_state(accel_controller_enabled)
+    self._accel_personality_setting.action_item.set_selected_button(self._params.get("AccelPersonality", return_default=True))
 
     # these toggles need restart, block while engaged
     for toggle_def in self._toggle_defs:
@@ -247,3 +281,9 @@ class TogglesLayout(Widget):
 
   def _set_longitudinal_personality(self, button_index: int):
     self._params.put("LongitudinalPersonality", button_index, block=True)
+
+  def _set_accel_personality(self, button_index: int):
+    self._params.put("AccelPersonality", button_index, block=True)
+
+  def _set_accel_controller_enabled(self, state: bool):
+    self._params.put_bool("AccelPersonalityEnabled", state, block=True)
