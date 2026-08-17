@@ -10,7 +10,7 @@ import numpy as np
 import SCons.Errors
 from SCons.Defaults import _stripixes
 
-TICI = os.path.isfile('/TICI')
+COMMA_HARDWARE = os.path.isfile('/AGNOS')
 
 SCons.Warnings.warningAsException(True)
 
@@ -24,7 +24,7 @@ release = not os.path.exists(File('#.gitattributes').abspath) # file absent on r
 AddOption('--minimal',
           action='store_false',
           dest='extras',
-          default=(not TICI and not release),
+          default=(not COMMA_HARDWARE and not release),
           help='the minimum build to run openpilot. no tests, tools, etc.')
 
 submodule_python_paths = [
@@ -46,22 +46,22 @@ if external_pythonpath := os.environ.get("PYTHONPATH"):
 arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
 if platform.system() == "Darwin":
   arch = "Darwin"
-elif arch == "aarch64" and TICI:
-  arch = "larch64"
+elif arch == "aarch64" and COMMA_HARDWARE:
+  arch = "comma_arm64"
 assert arch in [
-  "larch64",  # linux tici arm64
-  "aarch64",  # linux pc arm64
-  "x86_64",   # linux pc x64
-  "Darwin",   # macOS arm64 (x86 not supported)
+  "comma_arm64",  # linux comma hardware (AGNOS) arm64
+  "aarch64",      # linux pc arm64
+  "x86_64",       # linux pc x64
+  "Darwin",       # macOS arm64 (x86 not supported)
 ]
 
-pkg_names = ['acados', 'bzip2', 'capnproto', 'catch2', 'eigen', 'ffmpeg', 'json11', 'ncurses', 'zeromq', 'zstd']
+pkg_names = ['acados', 'capnproto', 'eigen', 'ffmpeg', 'json11', 'ncurses', 'zeromq', 'zstd']
 pkgs = [importlib.import_module(name) for name in pkg_names]
 acados = pkgs[pkg_names.index('acados')]
 ffmpeg = pkgs[pkg_names.index('ffmpeg')]
 # Shared package ships .so/.dylib; older device venvs still have static .a only.
 # Keep static link deps (x264/z/va/drm) when the installed package is static so
-# TICI CI works without upgrading the device venv yet.
+# COMMA_HARDWARE CI works without upgrading the device venv yet.
 # TODO: drop the static fallback once device venvs have comma-deps-ffmpeg>=7.1.0.post94
 _ffmpeg_lib_names = os.listdir(ffmpeg.LIB_DIR) if os.path.isdir(ffmpeg.LIB_DIR) else []
 ffmpeg_shared = any(
@@ -129,10 +129,11 @@ env = Environment(
   CCFLAGS=[
     "-g",
     "-fPIC",
+    "-pipe",
     "-O2",
     "-Wunused",
     "-Werror",
-    "-Wshadow" if arch in ("Darwin", "larch64") else "-Wshadow=local",
+    "-Wshadow" if arch in ("Darwin", "comma_arm64") else "-Wshadow=local",
     "-Wno-unknown-warning-option",
     "-Wno-inconsistent-missing-override",
     "-Wno-c99-designator",
@@ -164,24 +165,24 @@ env = Environment(
   COMPILATIONDB_USE_ABSPATH=True,
   REDNOSE_ROOT="#rednose_repo",
   tools=["default", "cython", "compilation_db", "rednose_filter"],
-  toolpath=["#site_scons/site_tools", "#rednose_repo/site_scons/site_tools"],
+  toolpath=["#msgq_repo/site_scons/site_tools", "#rednose_repo/site_scons/site_tools"],
 )
 # SCons' Darwin linker tool doesn't define the variables used to expand RPATH.
 if arch == "Darwin":
   env["RPATHPREFIX"] = "-Wl,-rpath,"
   env["RPATHSUFFIX"] = ""
   env["_RPATH"] = "${_concat(RPATHPREFIX, RPATH, RPATHSUFFIX, __env__)}"
-if arch != "larch64":
+if arch != "comma_arm64":
   env['_LIBFLAGS'] = _libflags
 
 # Arch-specific flags and paths
-if arch == "larch64":
+if arch == "comma_arm64":
   env["CC"] = "clang"
   env["CXX"] = "clang++"
   env.Append(LIBPATH=[
     "/usr/lib/aarch64-linux-gnu",
   ])
-  arch_flags = ["-D__TICI__", "-mcpu=cortex-a57", "-DQCOM2"]
+  arch_flags = ["-D__COMMA_HARDWARE__", "-mcpu=cortex-a57"]
   env.Append(CCFLAGS=arch_flags)
   env.Append(CXXFLAGS=arch_flags)
 elif arch == "Darwin":
@@ -233,7 +234,7 @@ Export('envCython', 'np_version')
 Export('env', 'arch', 'acados', 'release', 'ffmpeg_libs')
 
 # Setup cache dir
-default_cache_dir = '/data/scons_cache' if arch == "larch64" else '/tmp/scons_cache'
+default_cache_dir = '/data/scons_cache' if arch == "comma_arm64" else '/tmp/scons_cache'
 cache_dir = ARGUMENTS.get('cache_dir', default_cache_dir)
 cache_size_limit = 4e9 if "CI" in os.environ else 2e9
 CacheDir(cache_dir)
@@ -280,7 +281,7 @@ SConscript([
   'openpilot/system/loggerd/SConscript',
 ])
 
-if arch == "larch64":
+if arch == "comma_arm64":
   SConscript(['openpilot/system/camerad/SConscript'])
 
 # Build selfdrive
@@ -295,7 +296,7 @@ SConscript([
 SConscript(['openpilot/sunnypilot/SConscript'])
 
 # Build desktop-only tools
-if GetOption('extras') and arch != "larch64":
+if GetOption('extras') and arch != "comma_arm64":
   SConscript([
     'openpilot/tools/replay/SConscript',
     'openpilot/tools/cabana/SConscript',
