@@ -113,28 +113,6 @@ sections:
     description: sunnypilot will not take over control of gas and brakes. Factory Toyota longitudinal control will be used.
     enablement:
     - $ref: '#/macros/not_engaged'
-    - type: param
-      key: ToyotaVirtualCruiseSpeed
-      equals: false
-  - key: ToyotaVirtualCruiseSpeed
-    widget: toggle
-    needs_onroad_cycle: true
-    title: 'Toyota: Virtual Cruise Speed (Alpha)'
-    description: Uses a sunnypilot-owned cruise target with the Toyota RES/SET buttons and unlocks Custom ACC Speed
-      Intervals. Set the short interval to 5 for next-5-unit tap behavior. The Toyota cluster continues to show the
-      factory target and may differ from sunnypilot. The direct button signals are route-validated on Corolla Cross
-      and Prius TSS2, but held-button timing differs by platform. Validate acceleration above the factory target in a
-      controlled setting.
-    visibility:
-    - type: capability
-      field: toyota_virtual_cruise_speed_available
-      equals: true
-    enablement:
-    - $ref: '#/macros/not_engaged'
-    - $ref: '#/macros/longitudinal'
-    - type: param
-      key: ToyotaEnforceStockLongitudinal
-      equals: false
   - key: ToyotaStopAndGoHack
     widget: toggle
     needs_onroad_cycle: true

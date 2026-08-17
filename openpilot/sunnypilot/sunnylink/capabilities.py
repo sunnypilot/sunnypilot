@@ -11,7 +11,6 @@ from opendbc.car.structs import car
 from opendbc.car.hyundai.values import CAR as HYUNDAI_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
-from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP, VIRTUAL_CRUISE_SPEED_CAR
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware import HARDWARE
@@ -20,7 +19,6 @@ from openpilot.common.hardware import HARDWARE
 # Wire-protocol version for the capabilities payload. Bump on breaking changes
 # only; additive fields are backward-compatible and do not require a bump.
 PROTOCOL_VERSION = 1
-TOYOTA_VIRTUAL_CRUISE_SPEED_PLATFORMS = {str(platform) for platform in VIRTUAL_CRUISE_SPEED_CAR}
 
 # All capability fields that rules may reference.
 # Non-boolean fields must have defaults in CAPABILITY_DEFAULTS.
@@ -44,7 +42,6 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
-  "toyota_virtual_cruise_speed_available",
 )
 
 CAPABILITY_LABELS: dict[str, str] = {
@@ -67,7 +64,6 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
-  "toyota_virtual_cruise_speed_available": "Toyota Virtual Cruise Speed available",
 }
 
 # Explicit defaults for non-boolean capability fields
@@ -113,12 +109,6 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
     elif CP is not None:
       caps["subaru_has_sng"] = not bool(CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
       caps["has_stop_and_go"] = caps["subaru_has_sng"]
-
-  elif brand == "toyota":
-    if bundle_platform:
-      caps["toyota_virtual_cruise_speed_available"] = bundle_platform in TOYOTA_VIRTUAL_CRUISE_SPEED_PLATFORMS
-    elif CP is not None:
-      caps["toyota_virtual_cruise_speed_available"] = str(CP.carFingerprint) in TOYOTA_VIRTUAL_CRUISE_SPEED_PLATFORMS
 
 
 def generate_capabilities(params: Params | None = None) -> dict:
@@ -184,8 +174,6 @@ def generate_capabilities(params: Params | None = None) -> dict:
       caps["icbm_available"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable)
       caps["has_icbm"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable) and params.get_bool("IntelligentCruiseButtonManagement")
       caps["tesla_has_vehicle_bus"] = bool(CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
-      if caps["brand"] == "toyota":
-        caps["toyota_virtual_cruise_speed_available"] = bool(CP_SP.flags & ToyotaFlagsSP.VIRTUAL_CRUISE_SPEED_AVAILABLE)
     except Exception:
       cloudlog.exception("capabilities: failed to deserialize CarParamsSPPersistent")
 

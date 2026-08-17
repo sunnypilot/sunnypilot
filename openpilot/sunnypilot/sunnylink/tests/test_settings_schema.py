@@ -305,11 +305,10 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
 
-  def test_toyota_has_enforce_stock_stop_go_and_virtual_cruise(self, schema):
+  def test_toyota_has_enforce_stock_stop_go(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("toyota"))}
     assert "ToyotaEnforceStockLongitudinal" in keys
     assert "ToyotaStopAndGoHack" in keys
-    assert "ToyotaVirtualCruiseSpeed" in keys
 
   def test_tesla_has_coop_steering(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("tesla"))}

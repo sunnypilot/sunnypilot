@@ -106,26 +106,6 @@ def _references_capability_field(rules: list[dict[str, Any]] | None, field: str)
   return found
 
 
-def _has_toyota_virtual_cruise_gate(rules: list[dict[str, Any]] | None) -> bool:
-  def _walk(rule: dict[str, Any]) -> bool:
-    if rule.get("type") == "all":
-      conditions = rule.get("conditions", [])
-      has_capability = any(
-        c.get("type") == "capability" and c.get("field") == "toyota_virtual_cruise_speed_available" and c.get("equals") is True for c in conditions
-      )
-      has_param = any(c.get("type") == "param" and c.get("key") == "ToyotaVirtualCruiseSpeed" and c.get("equals") is True for c in conditions)
-      if has_capability and has_param:
-        return True
-
-    if rule.get("type") == "not" and "condition" in rule:
-      return _walk(rule["condition"])
-    if rule.get("type") in ("any", "all"):
-      return any(_walk(c) for c in rule.get("conditions", []))
-    return False
-
-  return any(_walk(rule) for rule in rules or [])
-
-
 def schema():
   return generate_schema()
 
@@ -237,23 +217,3 @@ class TestNotEngagedReplacement(OpenpilotTestCase):
     assert "not_engaged" in rule_types, f"{key} missing not_engaged"
 
 
-class TestToyotaVirtualCruiseSpeed(OpenpilotTestCase):
-  def test_vehicle_toggle_contract(self, schema):
-    toyota = schema["vehicle_settings"]["toyota"]
-    item = next((item for item in toyota["items"] if item.get("key") == "ToyotaVirtualCruiseSpeed"), None)
-
-    assert item is not None
-    assert item["widget"] == "toggle"
-    assert item.get("needs_onroad_cycle") is True
-    assert _references_capability_field(item.get("visibility"), "toyota_virtual_cruise_speed_available")
-    assert _references_capability_field(item.get("enablement"), "has_longitudinal_control")
-    assert "not_engaged" in _flatten_rule_types(item.get("enablement"))
-
-  def test_custom_acc_section_links_virtual_cruise_opt_in(self, schema):
-    section = _find_section(schema, "cruise", "custom_acc_increments")
-    assert section is not None
-    assert _has_toyota_virtual_cruise_gate(section.get("enablement"))
-
-    item = _find_item(schema, "CustomAccIncrementsEnabled")
-    assert item is not None
-    assert _has_toyota_virtual_cruise_gate(item.get("enablement"))

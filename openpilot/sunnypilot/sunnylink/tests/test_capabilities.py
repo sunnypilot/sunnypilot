@@ -13,15 +13,7 @@ the same commit so the bump shows up in code review.
 
 from __future__ import annotations
 
-from typing import cast
-
-from openpilot.cereal import custom
-from openpilot.common.params import Params
-from openpilot.common.parameterized import parameterized
 from openpilot.common.test import OpenpilotTestCase
-from opendbc.car.structs import car
-from opendbc.car.toyota.values import CAR as TOYOTA_CAR
-from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 from openpilot.sunnypilot.sunnylink.capabilities import (
   CAPABILITY_DEFAULTS,
   CAPABILITY_FIELDS,
@@ -44,24 +36,6 @@ class FakeParams:
 
   def get_bool(self, key):
     return bool(self.values.get(key, False))
-
-
-def build_persistent_toyota_params(platform, *, sp_flags=0) -> Params:
-  CP = car.CarParams.new_message()
-  CP.brand = "toyota"
-  CP.carFingerprint = str(platform)
-  CP.pcmCruise = True
-  CP.openpilotLongitudinalControl = True
-
-  CP_SP = custom.CarParamsSP.new_message()
-  CP_SP.flags = int(sp_flags)
-
-  return cast(Params, FakeParams(
-    {
-      "CarParamsPersistent": CP.to_bytes(),
-      "CarParamsSPPersistent": CP_SP.to_bytes(),
-    }
-  ))
 
 
 def caps():
@@ -109,66 +83,6 @@ class TestOpaquePerBrandFlags(OpenpilotTestCase):
 
   def test_hyundai_alpha_long_available_default_false(self, caps):
     assert caps["hyundai_alpha_long_available"] is False
-
-
-class TestToyotaVirtualCruiseSpeedCapability(OpenpilotTestCase):
-  def test_field_present_and_labeled(self):
-    assert "toyota_virtual_cruise_speed_available" in CAPABILITY_FIELDS
-    assert "toyota_virtual_cruise_speed_available" in CAPABILITY_LABELS
-
-  def test_default_false(self):
-    caps = generate_capabilities(cast(Params, FakeParams()))
-    assert caps["toyota_virtual_cruise_speed_available"] is False
-
-  @parameterized.expand(
-    (
-      (TOYOTA_CAR.TOYOTA_COROLLA_TSS2, True),
-      (TOYOTA_CAR.TOYOTA_PRIUS_TSS2, True),
-      (TOYOTA_CAR.TOYOTA_RAV4_TSS2, False),
-    )
-  )
-  def test_bundle_platform_gating(self, platform, expected):
-    params = FakeParams(
-      {
-        "CarPlatformBundle": {
-          "brand": "toyota",
-          "platform": str(platform),
-        },
-      }
-    )
-    caps = generate_capabilities(cast(Params, params))
-    assert caps["toyota_virtual_cruise_speed_available"] is expected
-
-  @parameterized.expand(
-    (
-      (TOYOTA_CAR.TOYOTA_COROLLA_TSS2, ToyotaFlagsSP.VIRTUAL_CRUISE_SPEED_AVAILABLE, True),
-      (TOYOTA_CAR.TOYOTA_COROLLA_TSS2, 0, True),
-      (TOYOTA_CAR.TOYOTA_PRIUS_TSS2, ToyotaFlagsSP.VIRTUAL_CRUISE_SPEED_AVAILABLE, True),
-      (TOYOTA_CAR.TOYOTA_PRIUS_TSS2, 0, True),
-      (TOYOTA_CAR.TOYOTA_RAV4_TSS2, ToyotaFlagsSP.VIRTUAL_CRUISE_SPEED_AVAILABLE, False),
-    )
-  )
-  def test_persistent_car_params_platform_gating(self, platform, sp_flags, expected):
-    caps = generate_capabilities(build_persistent_toyota_params(platform, sp_flags=sp_flags))
-    assert caps["toyota_virtual_cruise_speed_available"] is expected
-
-  @parameterized.expand(
-    (
-      (TOYOTA_CAR.TOYOTA_COROLLA_TSS2, TOYOTA_CAR.TOYOTA_RAV4_TSS2, True),
-      (TOYOTA_CAR.TOYOTA_PRIUS_TSS2, TOYOTA_CAR.TOYOTA_RAV4_TSS2, True),
-      (TOYOTA_CAR.TOYOTA_RAV4_TSS2, TOYOTA_CAR.TOYOTA_COROLLA_TSS2, False),
-      (TOYOTA_CAR.TOYOTA_RAV4_TSS2, TOYOTA_CAR.TOYOTA_PRIUS_TSS2, False),
-    )
-  )
-  def test_bundle_platform_takes_precedence_over_stale_persistent_params(self, bundle_platform, persistent_platform, expected):
-    params = build_persistent_toyota_params(persistent_platform, sp_flags=ToyotaFlagsSP.VIRTUAL_CRUISE_SPEED_AVAILABLE)
-    params.values["CarPlatformBundle"] = {
-      "brand": "toyota",
-      "platform": str(bundle_platform),
-    }
-
-    caps = generate_capabilities(params)
-    assert caps["toyota_virtual_cruise_speed_available"] is expected
 
 
 class TestCapabilitiesShape(OpenpilotTestCase):

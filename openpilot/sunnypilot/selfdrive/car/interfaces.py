@@ -139,7 +139,6 @@ def initialize_params(params) -> list[dict[str, Any]]:
     "ToyotaTSS2Long",
     "ToyotaEnhancedBsm",
     "ToyotaAutoHold",
-    "ToyotaVirtualCruiseSpeed",
   ])
 
   return [{k: params.get(k, return_default=True)} for k in keys]
