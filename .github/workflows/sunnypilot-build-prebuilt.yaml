@@ -181,22 +181,18 @@ jobs:
       - name: Build Main Project
         run: |
           export PYTHONPATH="$BUILD_DIR"
-          ./tools/release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+          ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
           cd $BUILD_DIR
           ln -sfn msgq_repo/msgq msgq
           ln -sfn opendbc_repo/opendbc opendbc
           ln -sfn rednose_repo/rednose rednose
           ln -sfn teleoprtc_repo/teleoprtc teleoprtc
           ln -sfn tinygrad_repo/tinygrad tinygrad
-          sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
-          echo "Building sunnypilot's modeld_v2..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/modeld_v2
-          echo "Building sunnypilot's locationd..."
-          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/selfdrive/locationd
-          echo "Building openpilot's locationd..."
-          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/selfdrive/locationd
+          echo "Building locationd, serialized to keep the rednose generator from OOMing..."
+          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal \
+            openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
+          /usr/bin/time -v scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
@@ -204,33 +200,25 @@ jobs:
 
       - name: Prepare Output
         run: |
+          cd $BUILD_DIR
+          find . -name '*.a' -delete
+          find . -name '*.o' -delete
+          find . -name '*.os' -delete
+          find . -name '*.pyc' -delete
+          find . -name 'moc_*' -delete
+          find . -name '__pycache__' -type d -exec rm -rf {} +
+          find . -name 'SConstruct' -delete
+          find . -name 'SConscript' -delete
+          rm -rf .sconsign.dblite Jenkinsfile tools/release/ release/
+          rm -f openpilot/selfdrive/modeld/models/*.onnx*
+          rm -f openpilot/sunnypilot/modeld*/models/*.onnx*
+          find openpilot/third_party/ -name '*x86*' -exec rm -r {} +
+          find openpilot/third_party/ -name '*Darwin*' -exec rm -r {} +
+          cd -
           sudo rm -rf ${OUTPUT_DIR}
           mkdir -p ${OUTPUT_DIR}
-          rsync -am${RUNNER_DEBUG:+v} \
-            --exclude='.sconsign.dblite' \
-            --exclude='*.a' \
-            --exclude='*.o' \
-            --exclude='*.os' \
-            --exclude='*.pyc' \
-            --exclude='moc_*' \
-            --exclude='__pycache__' \
-            --exclude='Jenkinsfile' \
-            --exclude='**/release/' \
-            --exclude='**/.github/' \
-            --exclude='**/openpilot/selfdrive/ui/replay/' \
-            --exclude='**/__pycache__/' \
-            --exclude='${{env.SCONS_CACHE_DIR}}' \
-            --exclude='**/.git/' \
-            --exclude='**/SConstruct' \
-            --exclude='**/SConscript' \
-            --exclude='**/.venv/' \
-            --exclude='openpilot/selfdrive/modeld/models/*.onnx*' \
-            --exclude='openpilot/sunnypilot/modeld*/models/*.onnx*' \
-            --exclude='openpilot/third_party/*x86*' \
-            --exclude='openpilot/third_party/*Darwin*' \
-            --delete-excluded \
-            --chown=comma:comma \
-            ${BUILD_DIR}/ ${OUTPUT_DIR}/
+          cp -a ${BUILD_DIR}/. ${OUTPUT_DIR}/
+          sudo chown -R comma:comma ${OUTPUT_DIR}/
 
       - name: 'Tar.gz files'
         run: |
@@ -242,6 +230,7 @@ jobs:
         with:
           name: prebuilt
           path: prebuilt.tar.gz
+          compression-level: 0
 
       - name: Re-enable powersave
         if: always()
