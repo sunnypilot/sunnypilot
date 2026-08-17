@@ -26,7 +26,12 @@ from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_con
   _ENTERING_PRED_LAT_ACC_TH,
   _MIN_ACTIVATION_SPEED,
   _RELIEF_CONFIRMATION_FRAMES,
+  _TARGET_RELEASE_CONFIRMATION_FRAMES,
   _TARGET_RELEASE_RATE,
+  _TARGET_TIGHTEN_CONFIRMATION_FRAMES,
+  _TARGET_TIGHTEN_RATE,
+  _TURNING_LAT_ACC_TH,
+  _URGENT_PRED_LAT_ACC_TH,
   SmartCruiseControlVision,
 )
 from openpilot.common.test import OpenpilotTestCase
@@ -176,13 +181,14 @@ class TestSmartCruiseControlVision(OpenpilotTestCase):
       self.scc_v.update(self.sm, True, False, 0.0, 0.0, 0.0)
     assert self.scc_v.state == VisionState.enabled
 
-  def test_unconfirmed_leaving_and_reentry_only_shape_speed(self):
+  def test_unconfirmed_release_holds_but_urgent_reentry_tightens(self):
     self.enter_curve()
     targets = [self.scc_v.output_v_target]
 
     self.update_lat_accels(2.0, 2.2, a_ego=-0.8)
     assert self.scc_v.state == VisionState.turning
     assert self.scc_v.output_a_target == -0.8
+    turning_demand = self.scc_v._v_demand()
     targets.append(self.scc_v.output_v_target)
 
     self.update_lat_accels(1.2, 1.2, a_ego=0.3)
@@ -193,12 +199,15 @@ class TestSmartCruiseControlVision(OpenpilotTestCase):
     self.update_lat_accels(1.0, 3.0, a_ego=-1.2)
     assert self.scc_v.state == VisionState.entering
     assert self.scc_v.output_a_target == -1.2
+    reentry_demand = self.scc_v._v_demand()
     targets.append(self.scc_v.output_v_target)
 
     entering, turning, leaving, reentering = targets
-    self.assert_approx(turning, entering)
-    assert 0.0 < leaving - turning <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9
+    assert turning < entering
+    self.assert_approx(turning, turning_demand)
+    self.assert_approx(leaving, turning)
     assert reentering < leaving
+    self.assert_approx(reentering, reentry_demand)
 
   def test_new_curve_interrupts_confirmed_release_immediately(self):
     self.enter_curve()
@@ -271,18 +280,18 @@ class TestSmartCruiseControlVision(OpenpilotTestCase):
     self.assert_approx(active_v_targets[-1], release_cruise)
     assert np.all((np.diff(active_v_targets) >= 0.0) & (np.diff(active_v_targets) <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9))
 
-  def test_target_release_slows_after_reaching_ego_speed(self):
+  def test_target_release_waits_for_relief_above_ego_speed(self):
     self.enter_curve()
+    held_v_target = self.scc_v.output_v_target
+    self.assert_approx(held_v_target, self.scc_v.v_ego)
 
-    for _ in range(100):
-      previous_v_target = self.scc_v.output_v_target
+    for _ in range(_RELIEF_CONFIRMATION_FRAMES + _TARGET_RELEASE_CONFIRMATION_FRAMES - 2):
       self.update_lat_accels(0.8, 0.8)
-      if previous_v_target >= self.scc_v.v_ego:
-        rise = self.scc_v.output_v_target - previous_v_target
-        assert 0.0 < rise <= _TARGET_RELEASE_RATE * DT_MDL + 1e-9
-        break
-    else:
-      self.fail("curve target did not release to ego speed")
+      self.assert_approx(self.scc_v.output_v_target, held_v_target)
+
+    self.update_lat_accels(0.8, 0.8)
+    rise = self.scc_v.output_v_target - held_v_target
+    assert 0.0 < rise <= _TARGET_RELEASE_RATE * DT_MDL + 1e-9
 
   def test_curve_target_is_independent_of_ego_speed(self):
     model_speed = 24.0
@@ -354,20 +363,79 @@ class TestSmartCruiseControlVision(OpenpilotTestCase):
     assert self.scc_v.state == VisionState.entering
     assert self.scc_v.is_active
 
-  def test_sequential_curve_tightens_immediately_and_releases_bounded(self):
+  def test_nonurgent_activation_has_no_target_cliff(self):
+    v_ego = _MIN_ACTIVATION_SPEED + 0.01
+    model_speed = 8.0
+    self.update_lat_accels(0.5, 2.0, v_ego=v_ego, model_speed=model_speed)
+    self.update_lat_accels(0.5, 2.0, v_ego=v_ego, model_speed=model_speed)
+
+    self.assert_approx(self.scc_v.v_target, 8.0)
+    self.assert_approx(self.scc_v.output_v_target, v_ego)
+
+  def test_nonurgent_tightening_is_confirmed_and_rate_limited(self):
+    self.enter_curve()
+    initial_v_target = self.scc_v.output_v_target
+
+    for _ in range(_TARGET_TIGHTEN_CONFIRMATION_FRAMES - 1):
+      self.update_lat_accels(0.5, 2.8)
+      self.assert_approx(self.scc_v.output_v_target, initial_v_target)
+
+    self.update_lat_accels(0.5, 2.8)
+    drop = initial_v_target - self.scc_v.output_v_target
+    assert 0.0 < drop <= _TARGET_TIGHTEN_RATE * DT_MDL + 1e-9
+
+  def test_one_frame_curve_prediction_does_not_pulse_target(self):
+    self.enter_curve()
+    for _ in range(10):
+      self.update_lat_accels(0.5, 2.2)
+    stable_v_target = self.scc_v.output_v_target
+
+    self.update_lat_accels(0.5, 2.8)
+    self.assert_approx(self.scc_v.output_v_target, stable_v_target)
+    self.update_lat_accels(0.5, 2.2)
+
+    self.assert_approx(self.scc_v.output_v_target, stable_v_target)
+
+  def test_one_frame_release_does_not_reverse_target(self):
+    self.enter_curve(_URGENT_PRED_LAT_ACC_TH)
+    stable_v_target = self.scc_v.output_v_target
+
+    self.update_lat_accels(0.5, 2.2)
+    self.assert_approx(self.scc_v.output_v_target, stable_v_target)
+    self.update_lat_accels(0.5, _URGENT_PRED_LAT_ACC_TH)
+
+    self.assert_approx(self.scc_v.output_v_target, stable_v_target)
+
+  def test_urgent_predicted_curve_is_not_delayed(self):
+    self.enter_curve()
+    self.update_lat_accels(0.5, _URGENT_PRED_LAT_ACC_TH)
+
+    self.assert_approx(self.scc_v.output_v_target, self.scc_v._v_demand())
+
+  def test_current_curve_is_not_delayed(self):
+    self.enter_curve()
+    self.update_lat_accels(_TURNING_LAT_ACC_TH, 2.8)
+
+    self.assert_approx(self.scc_v.output_v_target, self.scc_v._v_demand())
+
+  def test_sequential_curve_confirms_release_and_tightens_urgently(self):
     self.enter_curve(3.0)
     for _ in range(20):
       self.update_lat_accels(0.5, 3.0)
     restrictive_v_target = self.scc_v.output_v_target
 
     self.update_lat_accels(0.5, 1.4, a_ego=0.4)
-    first_relief_v_target = self.scc_v.output_v_target
     assert self.scc_v.state == VisionState.entering
-    assert 0.0 < first_relief_v_target - restrictive_v_target <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9
+    self.assert_approx(self.scc_v.output_v_target, restrictive_v_target)
     assert self.scc_v.output_a_target == 0.4
 
+    for _ in range(_TARGET_RELEASE_CONFIRMATION_FRAMES - 2):
+      self.update_lat_accels(0.5, 1.4)
+      self.assert_approx(self.scc_v.output_v_target, restrictive_v_target)
+
     self.update_lat_accels(0.5, 1.4)
-    assert 0.0 <= self.scc_v.output_v_target - first_relief_v_target <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9
+    released_v_target = self.scc_v.output_v_target
+    assert 0.0 < released_v_target - restrictive_v_target <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9
 
     self.update_lat_accels(0.5, 3.0, a_ego=-0.6)
     assert self.scc_v.state == VisionState.entering
@@ -376,7 +444,7 @@ class TestSmartCruiseControlVision(OpenpilotTestCase):
 
     for _ in range(4):
       self.update_lat_accels(0.5, 1.4)
-      assert 0.0 < self.scc_v.output_v_target - restrictive_v_target <= _BELOW_EGO_TARGET_RELEASE_RATE * DT_MDL + 1e-9
+      self.assert_approx(self.scc_v.output_v_target, restrictive_v_target)
       self.update_lat_accels(0.5, 3.0)
       self.assert_approx(self.scc_v.output_v_target, restrictive_v_target)
 

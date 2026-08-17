@@ -23,6 +23,7 @@ _ENTERING_PRED_LAT_ACC_TH = 1.3  # Predicted Lat Acc threshold to trigger enteri
 _ABORT_ENTERING_PRED_LAT_ACC_TH = 1.1  # Predicted Lat Acc threshold to abort entering state if speed drops.
 
 _TURNING_LAT_ACC_TH = 1.6  # Lat Acc threshold to trigger turning state.
+_URGENT_PRED_LAT_ACC_TH = 3.  # Predicted Lat Acc threshold that requires an immediate speed reduction.
 
 _LEAVING_LAT_ACC_TH = 1.3  # Lat Acc threshold to trigger leaving turn state.
 _FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of the turn cycle.
@@ -30,6 +31,9 @@ _FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of the turn cyc
 _A_LAT_REG_MAX = 2.  # Maximum lateral acceleration
 
 _RELIEF_CONFIRMATION_FRAMES = max(1, int(round(0.5 / DT_MDL)))
+_TARGET_TIGHTEN_CONFIRMATION_FRAMES = max(1, int(round(0.1 / DT_MDL)))
+_TARGET_RELEASE_CONFIRMATION_FRAMES = max(1, int(round(0.15 / DT_MDL)))
+_TARGET_TIGHTEN_RATE = 5.  # m/s^2
 _TARGET_RELEASE_RATE = 1.  # m/s^2
 _BELOW_EGO_TARGET_RELEASE_RATE = 3.  # m/s^2
 _MIN_PRED_SPEED = 1.  # m/s
@@ -58,15 +62,50 @@ class SmartCruiseControlVision:
     self.current_lat_acc = 0.
     self.max_pred_lat_acc = 0.
     self.relief_frames = 0
+    self.tighten_frames = 0
+    self.release_frames = 0
 
   def _v_demand(self) -> float:
     return max(MIN_V, min(self.v_target, self.v_cruise_setpoint))
 
-  def _released_v_target(self) -> float:
+  def _curve_is_urgent(self) -> bool:
+    return self.current_lat_acc >= _TURNING_LAT_ACC_TH or self.max_pred_lat_acc >= _URGENT_PRED_LAT_ACC_TH
+
+  def _filtered_v_target(self) -> float:
     demand = self._v_demand()
+
+    if self.output_v_target == V_CRUISE_UNSET:
+      self.tighten_frames = 0
+      self.release_frames = 0
+      if self._curve_is_urgent():
+        return demand
+      return max(demand, min(self.v_ego, self.v_cruise_setpoint))
+
     if demand < self.output_v_target:
-      return demand
-    release_rate = _BELOW_EGO_TARGET_RELEASE_RATE if self.output_v_target < min(self.v_ego, demand) else _TARGET_RELEASE_RATE
+      self.release_frames = 0
+      if self._curve_is_urgent():
+        self.tighten_frames = 0
+        return demand
+
+      self.tighten_frames += 1
+      if self.tighten_frames < _TARGET_TIGHTEN_CONFIRMATION_FRAMES:
+        return self.output_v_target
+      return max(demand, self.output_v_target - _TARGET_TIGHTEN_RATE * DT_MDL)
+
+    self.tighten_frames = 0
+    releasing_brake = self.output_v_target < min(self.v_ego, demand)
+    if not releasing_brake and self.relief_frames < _RELIEF_CONFIRMATION_FRAMES:
+      self.release_frames = 0
+      return self.output_v_target
+
+    if demand > self.output_v_target:
+      self.release_frames += 1
+      if self.release_frames < _TARGET_RELEASE_CONFIRMATION_FRAMES:
+        return self.output_v_target
+    else:
+      self.release_frames = 0
+
+    release_rate = _BELOW_EGO_TARGET_RELEASE_RATE if releasing_brake else _TARGET_RELEASE_RATE
     return min(demand, self.output_v_target + release_rate * DT_MDL)
 
   def get_a_target_from_control(self) -> float:
@@ -74,10 +113,10 @@ class SmartCruiseControlVision:
 
   def get_v_target_from_control(self) -> float:
     if self.is_active:
-      if self.output_v_target == V_CRUISE_UNSET:
-        return self._v_demand()
-      return self._released_v_target()
+      return self._filtered_v_target()
 
+    self.tighten_frames = 0
+    self.release_frames = 0
     return V_CRUISE_UNSET
 
   def _update_params(self) -> None:
