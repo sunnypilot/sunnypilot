@@ -52,7 +52,7 @@ git fetch origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --all
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 
-# a gitlink here publishes a tree devices cannot resolve
+# gitlinks break the release tree on device
 if git ls-files -s | awk '$1 == "160000" { found = 1; print } END { exit !found }'; then
     echo "Error: submodules found in release tree."
     exit 1

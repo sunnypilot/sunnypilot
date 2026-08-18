@@ -152,12 +152,16 @@ jobs:
         run: |
           export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
           ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
+          # outside the checkout, which is wiped each run. /data/scons_cache is the device's, not ours.
+          SCONS_CACHE="$RUNNER_WORKSPACE/scons_cache"
+          mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
-          echo "Building locationd, serialized to keep the rednose generator from OOMing..."
-          scons -j1 --minimal \
+          echo "Building locationd..."
+          # -j1: parallel rednose generators OOM the device
+          scons -j1 cache_dir="$SCONS_CACHE" --minimal \
             openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
-          /usr/bin/time -v scons -j$(nproc) --minimal
+          /usr/bin/time -v scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
