@@ -117,7 +117,8 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   }
 
   if features_buffer:
-    queues['feat_q'] = Tensor(np.zeros((frame_skip * (features_buffer[1] - 1) + 1, features_buffer[0], features_buffer[2]),
+    feat_q_len = frame_skip * features_buffer[1] if is_supercombo else frame_skip * (features_buffer[1] - 1) + 1
+    queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], features_buffer[2]),
                        dtype=np.float32), device=device).contiguous().realize()
 
   queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
