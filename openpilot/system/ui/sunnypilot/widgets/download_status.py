@@ -98,13 +98,13 @@ class DownloadStatusAction(ItemAction):
 
   def _sweep_gradient(self, width: float) -> Gradient:
     # clearance at both ends keeps the wrap offscreen
-    centre = (self._sweep % (width + 2 * SWEEP_BAND)) - SWEEP_BAND
+    center = (self._sweep % (width + 2 * SWEEP_BAND)) - SWEEP_BAND
 
     def band(x: float) -> float:
-      return max(0.0, 1.0 - abs(x - centre) / SWEEP_BAND)
+      return max(0.0, 1.0 - abs(x - center) / SWEEP_BAND)
 
     # sampling the corners is exact for a piecewise linear band
-    xs = sorted({0.0, width} | {min(max(centre + o, 0.0), width) for o in (-SWEEP_BAND, 0.0, SWEEP_BAND)}, reverse=True)
+    xs = sorted({0.0, width} | {min(max(center + o, 0.0), width) for o in (-SWEEP_BAND, 0.0, SWEEP_BAND)}, reverse=True)
     # the gradient axis runs right-to-left in screen space
     stops = [1.0 - x / width for x in xs]
     # alpha here is the lift over the SWEEP_DIM base, not the final opacity

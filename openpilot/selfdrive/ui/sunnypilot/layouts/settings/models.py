@@ -170,13 +170,13 @@ class ModelsLayout(Widget):
 
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
-      return dict(name=name, status_text=tr("download failed"), text_color=rl.RED, icon="icons/close2.png")
+      return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
     if ds.downloading in statuses:
-      return dict(name=name, downloading=True, progress=progress)
+      return {"name": name, "downloading": True, "progress": progress}
     if statuses <= {ds.downloaded, ds.cached}:
-      return dict(name=name, text_color=ON_COLOR, icon="icons/checkmark.png")
+      return {"name": name, "text_color": ON_COLOR, "icon": "icons/checkmark.png"}
     # circled_slash is authored grey; tinting it again only darkens it
-    return dict(name=name, text_color=rl.GRAY, icon="icons/circled_slash.png", icon_color=rl.WHITE)
+    return {"name": name, "text_color": rl.GRAY, "icon": "icons/circled_slash.png", "icon_color": rl.WHITE}
 
   @staticmethod
   def _show_reset_params_dialog():
