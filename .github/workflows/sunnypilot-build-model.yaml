@@ -116,7 +116,7 @@ jobs:
           path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
 
   build_model:
-    runs-on: [self-hosted, tici]
+    runs-on: [self-hosted, usbgpu]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
