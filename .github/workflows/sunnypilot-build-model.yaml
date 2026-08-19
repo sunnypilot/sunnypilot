@@ -127,7 +127,7 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - run: git lfs pull
+      - run: git lfs pull -X "*.onnx"
 
       - name: Set environment variables
         id: set-env
