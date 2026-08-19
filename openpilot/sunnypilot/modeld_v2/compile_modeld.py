@@ -8,10 +8,10 @@ See the LICENSE.md file in the root directory for more details.
 
 import argparse
 import os
-import pickle
+import tempfile
 import time
-from collections import defaultdict
 from functools import partial
+from openpilot.selfdrive.modeld.helpers import dump_oob, load_oob
 import numpy as np
 os.environ['GMMU'] = '0'
 
@@ -38,6 +38,9 @@ from tinygrad.engine.jit import TinyJit
 from tinygrad.tensor import Tensor
 
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
+WARP_INPUTS = ['tfm', 'big_tfm']
+POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
+WARP_DEV = os.getenv('WARP_DEV')
 
 
 def _detect_desire_key(shapes: dict) -> str | None:
@@ -76,7 +79,7 @@ def get_policy_npy_shapes(input_shapes: dict, is_supercombo: bool = False) -> tu
 
 
 def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT,
-                            is_supercombo: bool = False, use_packed: bool = True) -> tuple[dict, dict]:
+                            is_supercombo: bool = False) -> tuple[dict, dict]:
   road_key, _ = _detect_vision_keys(input_shapes)
   if not road_key:
     raise ValueError("Vision road key missing from input shapes.")
@@ -92,74 +95,76 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   desire_shape = input_shapes[desire_key]
   features_buffer = input_shapes.get('features_buffer')
 
-  if use_packed:  # remove packed detection block after all models are recompiled
-    npy_arrays = {
-      'tfm': np.zeros((3, 3), dtype=np.float32),
-      'big_tfm': np.zeros((3, 3), dtype=np.float32)
-    }
+  npy_arrays = {
+    'tfm': np.zeros((3, 3), dtype=np.float32),
+    'big_tfm': np.zeros((3, 3), dtype=np.float32)
+  }
 
-    shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=is_supercombo)
-    packed_npy_inputs = np.zeros(sum(sizes), dtype=np.float32)
+  shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=is_supercombo)
+  packed_npy_inputs = np.zeros(sum(sizes), dtype=np.float32)
 
-    split_indices = np.cumsum(sizes[:-1]) if len(sizes) > 1 else []
-    split_views = np.split(packed_npy_inputs, split_indices) if len(sizes) > 0 else []
-    for (k, s), v in zip(shapes.items(), split_views, strict=True):
-      npy_arrays[k] = v.reshape(s)
+  split_indices = np.cumsum(sizes[:-1]) if len(sizes) > 1 else []
+  split_views = np.split(packed_npy_inputs, split_indices) if len(sizes) > 0 else []
+  for (k, s), v in zip(shapes.items(), split_views, strict=True):
+    npy_arrays[k] = v.reshape(s)
 
-    queues = {
-      'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
-      'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
-      'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
-                    dtype=np.float32), device=device).contiguous().realize(),
-      'packed_npy_inputs': Tensor(packed_npy_inputs, device='NPY').realize(),
-    }
+  queues = {
+    'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
+    'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
+    'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
+                  dtype=np.float32), device=device).contiguous().realize(),
+    'packed_npy_inputs': Tensor(packed_npy_inputs, device='NPY').realize(),
+  }
 
-    if features_buffer:
-      queues['feat_q'] = Tensor(np.zeros((frame_skip * (features_buffer[1] - 1) + 1, features_buffer[0], features_buffer[2]),
-                         dtype=np.float32), device=device).contiguous().realize()
+  if features_buffer:
+    feat_q_len = frame_skip * features_buffer[1] if is_supercombo else frame_skip * (features_buffer[1] - 1) + 1
+    queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], features_buffer[2]),
+                       dtype=np.float32), device=device).contiguous().realize()
 
-    queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
-  else:
-    # TODO-SP: Remove legacy queuing fallback else block after all models are recompiled
-    npy_arrays = {
-      'desire': np.zeros(desire_shape[2], dtype=np.float32),
-      'tfm': np.zeros((3, 3), dtype=np.float32),
-      'big_tfm': np.zeros((3, 3), dtype=np.float32)
-    }
-
-    for key, shape in input_shapes.items():
-      if key not in npy_arrays and 'img' not in key and key not in ('features_buffer', desire_key):
-        npy_arrays[key] = np.zeros(shape, dtype=np.float32)
-
-    queues = {
-      'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
-      'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
-      'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
-                    dtype=np.float32), device=device).contiguous().realize()
-    }
-
-    if features_buffer:
-      queues['feat_q'] = Tensor(np.zeros((frame_skip * (features_buffer[1] - 1) + 1, features_buffer[0], features_buffer[2]),
-                         dtype=np.float32), device=device).contiguous().realize()
-
-    queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items()})
+  queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
 
   return queues, npy_arrays
 
 
 def make_split_input_queues(vision_input_shapes: dict, policy_input_shapes: dict,
-                            frame_skip: int, device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
-  return generate_queues_and_npy({**vision_input_shapes, **policy_input_shapes}, frame_skip, device, is_supercombo=False, use_packed=use_packed)
+                            frame_skip: int, device: str = Device.DEFAULT) -> tuple[dict, dict]:
+  return generate_queues_and_npy({**vision_input_shapes, **policy_input_shapes}, frame_skip, device, is_supercombo=False)
 
 
 def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
-                                 device: str = Device.DEFAULT, use_packed: bool = True) -> tuple[dict, dict]:
-  return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True, use_packed=use_packed)
+                                 device: str = Device.DEFAULT) -> tuple[dict, dict]:
+  return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True)
 
 
-def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, model_size: tuple[int, int],
-            features_slice: slice, frame_skip: int, input_shapes: dict, prepare_only: bool):
-  frame_prepare = make_frame_prepare(nv12, *model_size)
+def make_random_images(keys, shape, device):
+  return {k: Tensor.randint(shape, low=0, high=256, dtype=dtypes.uint8, device=device).realize() for k in keys}
+
+
+def make_warp_queues(device=Device.DEFAULT):
+  npy = {
+    'tfm': np.zeros((3, 3), dtype=np.float32),
+    'big_tfm': np.zeros((3, 3), dtype=np.float32),
+  }
+  queues = {k: Tensor(v, device='NPY').realize() for k, v in npy.items()}
+  return queues, npy
+
+
+def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
+  frame_prepare = make_frame_prepare(nv12, model_w, model_h)
+  WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
+
+  def warp(tfm, big_tfm, frame, big_frame):
+    tfm = tfm.to(WARP_DEV)
+    big_tfm = big_tfm.to(WARP_DEV)
+    Tensor.realize(tfm, big_tfm)
+
+    warped_frame = frame_prepare(frame, tfm).unsqueeze(0)
+    warped_big_frame = frame_prepare(big_frame, big_tfm).unsqueeze(0)
+    return Tensor.cat(warped_frame, warped_big_frame)
+  return warp
+
+
+def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, frame_skip: int, input_shapes: dict):
   sample_skip_fn = partial(sample_skip, frame_skip=frame_skip)
   sample_desire_fn = partial(sample_desire, frame_skip=frame_skip)
 
@@ -172,20 +177,14 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
   is_supercombo = vision_runner is None
   npy_shapes, npy_sizes = get_policy_npy_shapes(input_shapes, is_supercombo=is_supercombo)
 
-  def runner(img_q, big_img_q, feat_q, packed_npy_inputs, frame, big_frame, tfm, big_tfm, **kwargs):
+  def run_policy(warped, img_q, big_img_q, feat_q, packed_npy_inputs, **kwargs):
     desire_q = kwargs['desire_q']
-
     packed_npy_inputs_dev = packed_npy_inputs.to(Device.DEFAULT)
-    tfm_dev = tfm.to(Device.DEFAULT)
-    big_tfm_dev = big_tfm.to(Device.DEFAULT)
+    warped_dev = warped.to(Device.DEFAULT)
+    Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    Tensor.realize(packed_npy_inputs_dev, tfm_dev, big_tfm_dev)
-
-    img = shift_and_sample(img_q, frame_prepare(frame, tfm_dev).unsqueeze(0), sample_skip_fn).realize()
-    big_img = shift_and_sample(big_img_q, frame_prepare(big_frame, big_tfm_dev).unsqueeze(0), sample_skip_fn).realize()
-
-    if prepare_only:
-      return img, big_img
+    img = shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn).realize()
+    big_img = shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn).realize()
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
@@ -220,42 +219,52 @@ def create_jit_runner(vision_runner, policy_runners: list, nv12: NV12Frame, mode
       shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
 
-  return runner
+  return run_policy
 
 
-def compile_and_warmup(nv12: NV12Frame, model_size: tuple[int, int], prepare_only: bool, frame_skip: int, vision_runner, policy_runners: list, metadata: dict):
-  print(f"Compiling combined JIT for {nv12.width}x{nv12.height} (prepare_only={prepare_only})...")
+def compile_jit(jit, make_random_inputs, input_keys, make_queues):
+  SEED = 42
+  def random_inputs_run(fn, seed, test_val=None, test_buffers=None, expect_match=True):
+    input_queues, npy = make_queues(Device.DEFAULT)
+    rng = np.random.default_rng(seed)
+    Tensor.manual_seed(seed)
 
-  all_shapes = {key: value for meta in metadata.values() for key, value in meta['input_shapes'].items()}
+    testing = test_val is not None or test_buffers is not None
+    n_runs = 1 if testing else 3
 
-  feat_meta = metadata.get('vision') or metadata.get('model') or metadata.get('policy')
-  if not feat_meta:
-    raise ValueError("Could not find vision, model, or policy metadata.")
+    for i in range(n_runs):
+      for v in npy.values():
+        v[:] = rng.standard_normal(v.shape).astype(v.dtype)
+      Device.default.synchronize()
+      random_inputs = make_random_inputs()
+      st = time.perf_counter()
+      outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
+      mt = time.perf_counter()
+      Device.default.synchronize()
+      et = time.perf_counter()
+      print(f"  [{i+1}/{n_runs}] enqueue {(mt-st)*1e3:6.2f} ms -- total {(et-st)*1e3:6.2f} ms")
 
-  features_slice = feat_meta['output_slices']['hidden_state']
-  WARP_DEV = 'CPU' if "USBGPU" in os.environ else Device.DEFAULT
+      if i == 0:
+        val = [np.copy(v.numpy()) for v in (outs if isinstance(outs, tuple) else [outs])] if outs is not None else []
+        buffers = [np.copy(v.numpy().copy()) for v in input_queues.values()]
 
-  is_supercombo = vision_runner is None
-  run_func = create_jit_runner(vision_runner, policy_runners, nv12, model_size, features_slice, frame_skip, all_shapes, prepare_only)
-  run_jit = TinyJit(run_func, prune=True)
-  queues, npy_arrays = generate_queues_and_npy(all_shapes, frame_skip, Device.DEFAULT, is_supercombo=is_supercombo)
+    if test_val is not None:
+      match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
+      assert match == expect_match, f"outputs {'differ from' if expect_match else 'match'} baseline (seed={seed})"
+    if test_buffers is not None:
+      match = all(np.array_equal(a, b) for a, b in zip(buffers, test_buffers, strict=True))
+      assert match == expect_match, f"buffers {'differ from' if expect_match else 'match'} baseline (seed={seed})"
+    return val, buffers
 
-  for i in range(3):
-    rng = np.random.default_rng(42 + i)
-    frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
-    big_frame = Tensor.randint(nv12.size, low=0, high=256, dtype=dtypes.uint8, device=WARP_DEV).realize()
-    for arr in npy_arrays.values():
-      arr[:] = rng.standard_normal(arr.shape).astype(arr.dtype)
-
-    Device.default.synchronize()
-    start_time = time.perf_counter()
-    run_jit(**queues, frame=frame, big_frame=big_frame)
-    mid_time = time.perf_counter()
-    Device.default.synchronize()
-    print(f"  [{i + 1}/3] enqueue {(mid_time - start_time) * 1e3:6.2f} ms -- total {(time.perf_counter() - start_time) * 1e3:6.2f} ms")
-
-  # TODO-SP: switch to dump_oob/load_oob on next full recompile of all models
-  return pickle.loads(pickle.dumps(run_jit)) if not prepare_only else run_jit
+  print('capture + replay')
+  test_val, test_buffers = random_inputs_run(jit, SEED)
+  print('pickle round trip')
+  with tempfile.TemporaryFile(dir=".") as f:
+    dump_oob(jit, f)
+    f.seek(0)
+    deserialized_jit = load_oob(f)
+  random_inputs_run(deserialized_jit, SEED, test_val=test_val, test_buffers=test_buffers)
+  return deserialized_jit
 
 
 def _parse_size(size_str: str) -> tuple[int, int]:
@@ -277,19 +286,6 @@ def read_file_chunked_to_shm(path):
   return shm_path
 
 
-def _compile_for_resolutions(camera_resolutions: list, model_size: tuple[int, int], frame_skip: int,
-               vision_runner, policy_runners: list, metadata: dict) -> dict:
-  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-  return {
-    (cam_w, cam_h): {
-      name: compile_and_warmup(NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h)), model_size, prepare_only,
-                   frame_skip, vision_runner, policy_runners, metadata)
-      for name, prepare_only in [('warp_enqueue', True), ('run_policy', False)]
-    }
-    for cam_w, cam_h in camera_resolutions
-  }
-
-
 def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
   runners, keys = [], []
   for name, onnx_arg in [('policy', args.policy_onnx), ('off_policy', args.off_policy_onnx), ('on_policy', args.on_policy_onnx)]:
@@ -300,7 +296,18 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
 
 
 if __name__ == "__main__":
+  if 'USB' in os.getenv('DEV', '') or os.getenv('USBGPU'):
+    from openpilot.system.hardware.chestnut.flash import link_up
+    for _ in range(10):
+      if link_up():
+        break
+      time.sleep(1)
+    else:
+      raise RuntimeError("Chestnut not ready, skipping big model build")
+
+  from openpilot.common.file_chunker import chunk_file, get_chunk_targets
   from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
+  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
   from tinygrad.nn.onnx import OnnxRunner
 
   parser = argparse.ArgumentParser(description="Compile combined JIT pkl for sunnypilot modeld_v2")
@@ -317,7 +324,8 @@ if __name__ == "__main__":
   parser.add_argument('--supercombo-onnx', help='supercombo ONNX (for supercombo)')
 
   args = parser.parse_args()
-  output_data = defaultdict(dict)
+  model_w, model_h = args.model_size
+  output_data = {}
 
   args.vision_onnx = read_file_chunked_to_shm(args.vision_onnx)
   args.policy_onnx = read_file_chunked_to_shm(args.policy_onnx)
@@ -348,17 +356,31 @@ if __name__ == "__main__":
   vision_meta = output_data['metadata'].get('vision', {})
 
   derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
-  output_data.update(_compile_for_resolutions(args.camera_resolutions, args.model_size, derived_frame_skip,
-                        vision_runner, policy_runners, output_data['metadata']))
+  all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
+  feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('model') or output_data['metadata'].get('policy')
+  assert feat_meta is not None
+  features_slice = feat_meta['output_slices']['hidden_state']
+  is_supercombo = vision_runner is None
+
+  print(f"Compiling run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})...")
+  run_policy_func = make_run_policy(vision_runner, policy_runners, features_slice, derived_frame_skip, all_shapes)
+  run_policy_jit = TinyJit(run_policy_func, prune=True)
+  make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=is_supercombo)
+  make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
+  output_data['run_policy'] = compile_jit(run_policy_jit, make_random_model_inputs, POLICY_INPUTS, make_policy_queues)
+
+  for cam_w, cam_h in args.camera_resolutions:
+    print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
+    nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=WARP_DEV)
+    warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
+    output_data[(cam_w, cam_h)] = compile_jit(warp, make_random_warp_inputs, WARP_INPUTS, make_warp_queues)
 
   with open(args.output, "wb") as file:
-    # TODO-SP: switch to dump_oob from openpilot/selfdrive/helpers on next full recompile of all models
-    pickle.dump(output_data, file)
+    dump_oob(output_data, file)
 
   pkl_size = os.path.getsize(args.output)
   print(f"Saved combined JIT to {args.output} ({pkl_size / 1e6:.2f} MB)")
-
-  from openpilot.common.file_chunker import chunk_file, get_chunk_targets
   chunk_targets = get_chunk_targets(args.output, pkl_size)
   chunk_file(args.output, chunk_targets)
   print(f"Chunked into {len(chunk_targets) - 1} file(s)")
