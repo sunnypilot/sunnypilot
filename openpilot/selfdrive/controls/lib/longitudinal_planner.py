@@ -54,10 +54,17 @@ def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, 
       max_accel = min(max_accel, coast_limit)
 
   target_accel = np.clip(v_cruise - v_ego, min_accel, max_accel)
+
+  # An override only counts as "active" if it's the bound that actually determined target_accel here --
+  # turn/coast derating can shrink max_accel back below max_accel_override, and either bound can simply
+  # not be reached if v_cruise - v_ego already sits inside [min_accel, max_accel] on its own.
+  accel_controller_active = ((max_accel_override is not None and max_accel == max_accel_override and target_accel == max_accel) or
+                              (min_accel_override is not None and min_accel == min_accel_override and target_accel == min_accel))
+
   j_cruise = np.interp(v_ego, A_CRUISE_MAX_BP, J_CRUISE_VALS)
   target_accel = float(np.clip(target_accel, a_cruise_prev - j_cruise * dt, a_cruise_prev + j_cruise * dt))
 
-  return target_accel
+  return target_accel, accel_controller_active
 
 
 class LongitudinalPlanner(LongitudinalPlannerSP):
@@ -149,8 +156,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     max_accel_override = self.get_max_accel_override(v_ego)
     min_accel_override = self.get_min_accel_override(v_ego, is_e2e, force_decel)
-    self.accel_controller_active = max_accel_override is not None or min_accel_override is not None
-    self.a_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego,
+    self.a_cruise, self.accel_controller_active = get_cruise_accel(is_e2e, v_cruise, v_ego,
                                      self.a_cruise, steer_angle_without_offset, self.CP, self.dt,
                                      accel_coast, self.allow_throttle, max_accel_override, min_accel_override)
     cruise_should_stop = should_stop(v_ego, self.a_cruise)

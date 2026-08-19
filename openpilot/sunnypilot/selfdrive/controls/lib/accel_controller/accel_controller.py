@@ -38,6 +38,7 @@ class AccelController:
     self.last_max_accel = 2.0
     self.last_min_accel = -0.01
     self.first_run = True
+    self.min_accel_first_run = True
     self._profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
     self._enabled = self.params.get_bool("AccelPersonalityEnabled")
 
@@ -69,6 +70,12 @@ class AccelController:
   def get_min_accel(self, v_ego: float) -> float:
     v_ego = max(0.0, v_ego)
     target_min = np.interp(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self._profile])
-    self.last_min_accel = DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel
+
+    if self.min_accel_first_run:
+      self.last_min_accel = target_min
+      self.min_accel_first_run = False
+    else:
+      self.last_min_accel = DECEL_SMOOTH_ALPHA * target_min + (1 - DECEL_SMOOTH_ALPHA) * self.last_min_accel
+
     self.last_min_accel = min(self.last_min_accel, self.last_max_accel - 0.1)
     return float(self.last_min_accel)

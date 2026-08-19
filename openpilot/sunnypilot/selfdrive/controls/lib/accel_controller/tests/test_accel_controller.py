@@ -23,7 +23,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import (
-  AccelController, AccelProfile, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES, MIN_ACCEL_PROFILES,
+  AccelController, AccelProfile, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES,
 )
 
 
@@ -38,6 +38,14 @@ class TestAccelControllerCeiling(OpenpilotTestCase):
     max_a = self.controller.get_max_accel(20.0)
     expected_max = np.interp(20.0, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.normal])
     self.assertAlmostEqual(max_a, expected_max, places=6)
+
+  def test_min_accel_first_call_snaps_to_table_not_the_neg0p01_seed(self):
+    # Regression guard: get_min_accel used to have no first-run snap (unlike get_max_accel),
+    # so its very first call blended the table target against a hardcoded -0.01 seed and
+    # commanded a much-weaker-than-any-profile floor for the first ~10-15 frames of every drive.
+    min_a = self.controller.get_min_accel(20.0)
+    expected_min = np.interp(20.0, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[AccelProfile.normal])
+    self.assertAlmostEqual(min_a, expected_min, places=6)
 
   def test_table_lookup_matches_breakpoints_per_profile(self):
     for profile, table in MAX_ACCEL_PROFILES.items():
@@ -181,8 +189,9 @@ class TestOffEqualsStock(OpenpilotTestCase):
     from openpilot.selfdrive.controls.lib.longitudinal_planner import get_cruise_accel, A_CRUISE_MIN
     args = {"v_cruise": -100.0, "v_ego": 20.0, "a_cruise_prev": 0.0, "angle_steers": 0.0, "CP": _fake_cp(),
             "dt": 10.0, "accel_coast": 1.0, "allow_throttle": True}
-    target = get_cruise_accel(True, **args, min_accel_override=-0.3)
+    target, active = get_cruise_accel(True, **args, min_accel_override=-0.3)
     self.assertAlmostEqual(target, A_CRUISE_MIN, places=6)
+    self.assertFalse(active)  # controller's floor was ignored in favor of stock -- not "active"
 
   def test_blended_max_accel_uses_controller_override(self):
     # jerk-limiting now applies unconditionally (even in e2e) -- dt=10.0 opens the jerk-limit
@@ -190,8 +199,9 @@ class TestOffEqualsStock(OpenpilotTestCase):
     from openpilot.selfdrive.controls.lib.longitudinal_planner import get_cruise_accel
     args = {"v_cruise": 100.0, "v_ego": 20.0, "a_cruise_prev": 0.0, "angle_steers": 0.0, "CP": _fake_cp(),
             "dt": 10.0, "accel_coast": 1.0, "allow_throttle": True}
-    target = get_cruise_accel(True, **args, max_accel_override=0.4)
+    target, active = get_cruise_accel(True, **args, max_accel_override=0.4)
     self.assertAlmostEqual(target, 0.4, places=6)
+    self.assertTrue(active)
 
 
 
