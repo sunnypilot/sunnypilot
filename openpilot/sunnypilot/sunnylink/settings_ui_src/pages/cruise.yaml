@@ -46,8 +46,8 @@ sections:
   - key: AccelPersonalityEnabled
     widget: toggle
     title: Enable Accel Controller
-    description: Sets the acceleration limits and early lead-deceleration response for each profile. Following distance,
-      emergency braking, and final-stop state remain controlled by the longitudinal MPC.
+    description: Sets your preferred acceleration and cruise-deceleration limits by profile. Lead following, braking,
+      and stopping behavior remain independent of this setting.
     visibility:
     - $ref: '#/macros/longitudinal'
     enablement:
@@ -55,7 +55,8 @@ sections:
   - key: AccelPersonality
     widget: multiple_button
     title: Acceleration Profile
-    description: Select the vehicle acceleration and early lead-deceleration response.
+    description: Select the vehicle acceleration response. Chauffeur braking and stopping behavior remain the same across
+      profiles.
     options:
     - value: 0
       label: Eco

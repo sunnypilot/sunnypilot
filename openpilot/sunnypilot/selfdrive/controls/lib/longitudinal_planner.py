@@ -5,14 +5,14 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-from openpilot.cereal import messaging, custom, log
+from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController
-from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.mpc_comfort_controller import MpcComfortController
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
+from openpilot.sunnypilot.selfdrive.controls.lib.lead_departure_controller import LeadDepartureController
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -21,13 +21,12 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
-MpcPlanSource = log.LongitudinalPlan.LongitudinalPlanSource
 
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
     self.accel_controller = AccelController()
-    self.mpc_comfort_controller = MpcComfortController(mpc.dt)
+    self.lead_departure_controller = LeadDepartureController(CP.openpilotLongitudinalControl and CP.autoResumeSng and not CP.notCar)
     self.events_sp = EventsSP()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
@@ -57,16 +56,9 @@ class LongitudinalPlannerSP:
       return None
     return self.accel_controller.get_min_accel(v_ego)
 
-  def update_mpc_comfort(self, sm: messaging.SubMaster, a_target: float, a_trajectory, t_idxs,
-                         reset_state: bool, a_min: float | None) -> float:
-    if a_min is None:
-      self.mpc_comfort_controller.reset()
-      return a_target
-
-    lead_present = ((self.mpc.source == MpcPlanSource.lead0 and sm['radarState'].leadOne.present) or
-                    (self.mpc.source == MpcPlanSource.lead1 and sm['radarState'].leadTwo.present))
-    reset = reset_state or sm['carControl'].cruiseControl.override or sm['carState'].standstill or sm['carState'].vEgo < 0.3
-    return self.mpc_comfort_controller.update(a_target, a_trajectory, t_idxs, lead_present, a_min, reset)
+  def update_lead_departure(self, sm: messaging.SubMaster, a_target: float, should_stop: bool, reset: bool) -> bool:
+    radar_valid = sm.valid.get('radarState', False) and getattr(sm, 'alive', {}).get('radarState', False)
+    return self.lead_departure_controller.update(sm, self.mpc.source, a_target, should_stop, reset, radar_valid)
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
@@ -123,7 +115,7 @@ class LongitudinalPlannerSP:
 
     accel_controller = longitudinalPlanSP.accelController
     accel_controller.enabled = self.accel_controller.is_enabled()
-    accel_controller.active = self.accel_controller_active or self.mpc_comfort_controller.active
+    accel_controller.active = self.accel_controller_active
     accel_controller.profile = self.accel_controller.profile
 
     # Smart Cruise Control
