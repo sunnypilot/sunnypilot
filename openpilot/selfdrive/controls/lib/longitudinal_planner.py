@@ -156,6 +156,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     max_accel_override = self.get_max_accel_override(v_ego)
     min_accel_override = self.get_min_accel_override(v_ego, is_e2e, force_decel)
+    output_a_target_mpc = self.update_mpc_comfort(sm, output_a_target_mpc, self.a_desired_trajectory, CONTROL_N_T_IDX, reset_state, min_accel_override)
     self.a_cruise, self.accel_controller_active = get_cruise_accel(is_e2e, v_cruise, v_ego,
                                      self.a_cruise, steer_angle_without_offset, self.CP, self.dt,
                                      accel_coast, self.allow_throttle, max_accel_override, min_accel_override)

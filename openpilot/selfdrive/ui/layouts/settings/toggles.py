@@ -28,11 +28,11 @@ DESCRIPTIONS = {
     "your steering wheel distance button."
   ),
   "AccelPersonalityEnabled": tr_noop(
-    "Sets your preferred acceleration and cruise-deceleration limits by profile. Lead following, braking, and stopping behavior remain " +
-    "independent of this setting."
+    "Sets the acceleration limits and early lead-deceleration response for each profile. Following distance, emergency braking, and final-stop " +
+    "state remain controlled by the longitudinal MPC."
   ),
   "AccelPersonality": tr_noop(
-    "Select the vehicle acceleration response. Chauffeur braking and stopping behavior remain the same across profiles."
+    "Select the vehicle acceleration and early lead-deceleration response."
   ),
   "IsLdwEnabled": tr_noop(
     "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line " +
