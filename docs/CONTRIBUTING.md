@@ -1,3 +1,5 @@
+> sunnypilot follows [commaai/openpilot](https://github.com/commaai/openpilot)'s contributing guidelines. The following applies to all contributions here.
+
 # How to contribute
 
 Our software is open source so you can solve your own problems without needing help from others. And if you solve a problem and are so kind, you can upstream it for the rest of the world to use. Check out our [post about externalization](https://blog.comma.ai/a-2020-theme-externalization/).
@@ -35,6 +37,7 @@ All of these are examples of good PRs:
 * **UI design**: we do not have a good review process for this yet
 * **New features**: We believe openpilot is mostly feature-complete, and the rest is a matter of refinement and fixing bugs. As a result of this, most feature PRs will be immediately closed, however the beauty of open source is that forks can and do offer features that upstream openpilot doesn't.
 * **Negative expected value**: This is a class of PRs that makes an improvement, but the risk or validation costs more than the improvement. The risk can be mitigated by first getting a failing test merged.
+* **AI-generated contributions**: see our [AI policy](AI_POLICY.md)
 
 ### First contribution
 
@@ -58,7 +61,7 @@ A good pull request has all of the following:
 
 * Report bugs in GitHub issues.
 * Report driving issues in the `#driving-feedback` Discord channel.
-* Consider opting into driver camera uploads to improve the driver monitoring model.
+* Consider opting into cabin camera uploads to improve the driver monitoring model.
 * Connect your device to Wi-Fi regularly, so that we can pull data for training better driving models.
 * Run the `nightly` branch and report issues. This branch is like `master` but it's built just like a release.
 * Annotate images in the [comma10k dataset](https://github.com/commaai/comma10k).
@@ -68,6 +71,6 @@ A good pull request has all of the following:
 ### A guide for forks
 
 In order for your fork's data to be eligible for the training set:
-* **Your cereal messaging structs must be [compatible](../cereal#custom-forks)**
+* **Your cereal messaging structs must be [compatible](../openpilot/cereal#custom-forks)**
 * **The definitions of all the stock messaging structs must not change**: Do not change how any of the fields are set, including everything from `selfdriveState.enabled` to `carState.steeringAngleDeg`. Instead, create your own structs and set them however you'd like.
 * **Do not include cars that are not supported in upstream platforms**: Instead, create new opendbc platforms for cars that you'd like to support outside of upstream, even if it's just a trim-level difference.
