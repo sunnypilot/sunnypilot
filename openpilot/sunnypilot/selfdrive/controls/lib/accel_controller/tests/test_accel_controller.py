@@ -19,6 +19,7 @@ import unittest
 
 import numpy as np
 
+from openpilot.cereal import messaging
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
@@ -202,6 +203,9 @@ class TestOffEqualsStock(OpenpilotTestCase):
     target, active = get_cruise_accel(True, **args, max_accel_override=0.4)
     self.assertAlmostEqual(target, 0.4, places=6)
     self.assertTrue(active)
+    self.assertIsInstance(active, bool)
+    plan = messaging.new_message('longitudinalPlanSP')
+    plan.longitudinalPlanSP.accelController.active = active
 
 
 
