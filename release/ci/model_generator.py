@@ -66,11 +66,11 @@ def _read_pkl_bytes(pkl_path: Path) -> bytes:
 
 
 def _find_driving_pkl(output_path: Path) -> Path | None:
-  for pattern in ('driving_tinygrad.pkl', 'driving_*_tinygrad.pkl'):
+  for pattern in ('*driving_tinygrad.pkl', '*driving_*_tinygrad.pkl'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return matches[0]
-  for pattern in ('driving_tinygrad.pkl.chunkmanifest', 'driving_*_tinygrad.pkl.chunkmanifest'):
+  for pattern in ('*driving_tinygrad.pkl.chunkmanifest', '*driving_*_tinygrad.pkl.chunkmanifest'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return Path(str(matches[0]).removesuffix('.chunkmanifest'))

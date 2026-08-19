@@ -198,16 +198,29 @@ jobs:
           done
 
           # Detect model type and build compile args
-          VISION_ONNX="${{ env.MODELS_DIR }}/driving_vision.onnx"
-          POLICY_ONNX="${{ env.MODELS_DIR }}/driving_policy.onnx"
-          OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
-          ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
+          VISION_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_vision.onnx" "${{ env.MODELS_DIR }}/big_driving_vision.onnx"; do
+            [ -f "$f" ] && VISION_ONNX="$f" && break
+          done
+
+          POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_policy.onnx"; do
+            [ -f "$f" ] && POLICY_ONNX="$f" && break
+          done
+
+          OFF_POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_off_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_off_policy.onnx"; do
+            [ -f "$f" ] && OFF_POLICY_ONNX="$f" && break
+          done
+
+          ON_POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_on_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_on_policy.onnx"; do
+            [ -f "$f" ] && ON_POLICY_ONNX="$f" && break
+          done
+
           SUPERCOMBO_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx"; do
-            if [ -f "$f" ]; then
-              SUPERCOMBO_ONNX="$f"
-              break
-            fi
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx" "${{ env.MODELS_DIR }}/big_supercombo.onnx" "${{ env.MODELS_DIR }}/big_driving_supercombo.onnx"; do
+            [ -f "$f" ] && SUPERCOMBO_ONNX="$f" && break
           done
 
           MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
