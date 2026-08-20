@@ -6,12 +6,16 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from openpilot.sunnypilot import get_file_hash
-from openpilot.sunnypilot.models.default_model import MODEL_HASH_PATH, SUPERCOMBO_ONNX_PATH
+from openpilot.sunnypilot.models.default_model import MODEL_HASH_PATH, SUPERCOMBO_ONNX_PATH, get_default_model_label
 import hashlib
 from openpilot.common.test import OpenpilotTestCase
 
 
 class TestDefaultModel(OpenpilotTestCase):
+  def test_default_model_labels(self):
+    assert get_default_model_label() == "CD210 (Default)"
+    assert get_default_model_label(use_big_model=True) == "Lebowski (Default)"
+
   def test_compare_onnx_hashes(self):
     supercombo_hash = get_file_hash(SUPERCOMBO_ONNX_PATH)
 
