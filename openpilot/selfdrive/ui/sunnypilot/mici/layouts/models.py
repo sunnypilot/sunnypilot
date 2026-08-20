@@ -79,6 +79,7 @@ class FolderSelectionMici(NavScroller):
 
     btns = []
     if folder_name is None:
+      assert select_default_callback is not None and select_folder_callback is not None
       default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
       default_btn.set_click_callback(select_default_callback)
       btns.append(default_btn)
@@ -91,6 +92,7 @@ class FolderSelectionMici(NavScroller):
         else:
           btns.append(btn)
     else:
+      assert select_model_callback is not None
       for bundle in sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True):
         btn = BigButton(bundle.displayName.lower())
         btn.set_click_callback(lambda b=bundle: select_model_callback(b))
