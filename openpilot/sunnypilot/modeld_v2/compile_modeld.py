@@ -272,18 +272,17 @@ def _parse_size(size_str: str) -> tuple[int, int]:
   return int(width), int(height)
 
 
-def read_file_chunked_to_shm(path):
+def read_file_chunked_to_disk(path):
   if not path:
     return None
   import atexit
   import shutil
   from openpilot.common.file_chunker import open_file_chunked
-  from openpilot.common.hardware.hw import Paths
-  shm_path = os.path.join(Paths.shm_path(), os.path.basename(path))
-  atexit.register(lambda: os.path.exists(shm_path) and os.remove(shm_path))
-  with open(shm_path, 'wb') as dst, open_file_chunked(path) as src:
-    shutil.copyfileobj(src, dst)
-  return shm_path
+  tmp_path = f'{path}.unchunked'
+  with open(tmp_path, 'wb') as f, open_file_chunked(path) as src:
+    shutil.copyfileobj(src, f)
+  atexit.register(lambda: os.path.exists(tmp_path) and os.remove(tmp_path))
+  return tmp_path
 
 
 def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
@@ -327,11 +326,11 @@ if __name__ == "__main__":
   model_w, model_h = args.model_size
   output_data = {}
 
-  args.vision_onnx = read_file_chunked_to_shm(args.vision_onnx)
-  args.policy_onnx = read_file_chunked_to_shm(args.policy_onnx)
-  args.off_policy_onnx = read_file_chunked_to_shm(args.off_policy_onnx)
-  args.on_policy_onnx = read_file_chunked_to_shm(args.on_policy_onnx)
-  args.supercombo_onnx = read_file_chunked_to_shm(args.supercombo_onnx)
+  args.vision_onnx = read_file_chunked_to_disk(args.vision_onnx)
+  args.policy_onnx = read_file_chunked_to_disk(args.policy_onnx)
+  args.off_policy_onnx = read_file_chunked_to_disk(args.off_policy_onnx)
+  args.on_policy_onnx = read_file_chunked_to_disk(args.on_policy_onnx)
+  args.supercombo_onnx = read_file_chunked_to_disk(args.supercombo_onnx)
 
   vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
 
