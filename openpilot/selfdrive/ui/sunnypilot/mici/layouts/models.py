@@ -68,39 +68,33 @@ class CurrentModelInfo(Widget):
 
 
 class FolderSelectionMici(NavScroller):
-  def __init__(self, select_default_cb: Callable, select_folder_cb: Callable):
+
+  def __init__(self, folder_name: str | None = None,
+               select_default_callback: Callable | None = None,
+               select_folder_callback: Callable | None = None,
+               select_model_callback: Callable | None = None):
     super().__init__()
 
     folders = _build_folders()
-    folder_buttons = []
-    default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
-    default_btn.set_click_callback(select_default_cb)
-    folder_buttons.append(default_btn)
-
-    for folder in sorted(folders.keys(), key=lambda f: max((bundle.index for bundle in folders[f]), default=-1), reverse=True):
-      btn = BigButton(folder.lower())
-      btn.set_click_callback(lambda f=folder: select_folder_cb(f))
-      if folder.lower() == "favorites":
-        folder_buttons.insert(0, btn)
-      else:
-        folder_buttons.append(btn)
-
-    self._scroller.add_widgets(folder_buttons)
-
-
-class ModelSelectionMici(NavScroller):
-  def __init__(self, folder_name: str, select_model_cb: Callable):
-    super().__init__()
-
-    folders = _build_folders()
-    bundles_in_folder = sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True)
 
     btns = []
-    for bundle in bundles_in_folder:
-      txt = bundle.displayName.lower()
-      btn = BigButton(txt)
-      btn.set_click_callback(lambda b=bundle: select_model_cb(b))
-      btns.append(btn)
+    if folder_name is None:
+      default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
+      default_btn.set_click_callback(select_default_callback)
+      btns.append(default_btn)
+
+      for folder in sorted(folders.keys(), key=lambda f: max((bundle.index for bundle in folders[f]), default=-1), reverse=True):
+        btn = BigButton(folder.lower())
+        btn.set_click_callback(lambda f=folder: select_folder_callback(f))
+        if folder.lower() == "favorites":
+          btns.insert(0, btn)
+        else:
+          btns.append(btn)
+    else:
+      for bundle in sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True):
+        btn = BigButton(bundle.displayName.lower())
+        btn.set_click_callback(lambda b=bundle: select_model_callback(b))
+        btns.append(btn)
 
     self._scroller.add_widgets(btns)
 
@@ -140,18 +134,16 @@ class ModelsLayoutMici(NavScroller):
       self._scroller.scroll_panel.set_offset(0)
       self._scroller.scroll_to(0)
 
+    def select_model(bundle):
+      ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
+      gui_app.pop_widgets_to(self, instant=True)
+      self._scroller.scroll_panel.set_offset(0)
+      self._scroller.scroll_to(0)
+
     def select_folder(folder_name):
-      def select_model(bundle):
-        ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
-        gui_app.pop_widgets_to(self, instant=True)
-        self._scroller.scroll_panel.set_offset(0)
-        self._scroller.scroll_to(0)
+      gui_app.push_widget(FolderSelectionMici(folder_name, select_model_callback=select_model))
 
-      model_selection = ModelSelectionMici(folder_name, select_model)
-      gui_app.push_widget(model_selection)
-
-    folder_selection = FolderSelectionMici(select_default, select_folder)
-    gui_app.push_widget(folder_selection)
+    gui_app.push_widget(FolderSelectionMici(select_default_callback=select_default, select_folder_callback=select_folder))
 
   def _clear_cache(self):
     def confirm_callback():
