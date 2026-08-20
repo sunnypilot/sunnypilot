@@ -4,11 +4,7 @@ env:
   BUILD_DIR: "/data/openpilot"
   OUTPUT_DIR: ${{ github.workspace }}/output
   CI_DIR: ${{ github.workspace }}/release/ci
-  SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
-
-  # Branch configurations
-  STAGING_SOURCE_BRANCH: 'master'
 
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
@@ -109,11 +105,6 @@ jobs:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: [self-hosted, tici]
-    outputs:
-      new_branch: ${{ needs.prepare_strategy.outputs.new_branch }}
-      version: ${{ needs.prepare_strategy.outputs.version }}
-      extra_version_identifier: ${{ needs.prepare_strategy.outputs.extra_version_identifier }}
-      commit_sha: ${{ github.sha }}
     if: ${{
       (always() && !cancelled() && !failure()) &&
       needs.prepare_strategy.result == 'success' &&
@@ -129,26 +120,8 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
       - run: git lfs pull
 
-      - name: Cache SCons
-        uses: actions/cache@v4
-        with:
-          path: ${{env.SCONS_CACHE_DIR}}
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
-          #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
-          restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}
-
       - name: Set environment variables
-        id: set-env
         run: |
-          echo "new_branch=${{ needs.prepare_strategy.outputs.new_branch }}" >> $GITHUB_OUTPUT
-          echo "version=${{ needs.prepare_strategy.outputs.version }}" >> $GITHUB_OUTPUT
-          echo "extra_version_identifier=${{ needs.prepare_strategy.outputs.extra_version_identifier }}" >> $GITHUB_OUTPUT
-          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
@@ -157,9 +130,6 @@ jobs:
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           uv sync
           printenv >> $GITHUB_ENV
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            cat $GITHUB_OUTPUT
-          fi
 
       - name: Setup build environment
         run: |
@@ -168,7 +138,7 @@ jobs:
           echo "Starting build stage..."
           echo "BUILD_DIR: ${BUILD_DIR}"
           echo "CI_DIR: ${CI_DIR}"
-          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "VERSION: ${{ needs.prepare_strategy.outputs.version }}"
           echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
           echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
           echo "-------"
@@ -180,61 +150,44 @@ jobs:
 
       - name: Build Main Project
         run: |
-          export PYTHONPATH="$BUILD_DIR"
-          ./tools/release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+          export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
+          ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
+          # outside the checkout, which is wiped each run. /data/scons_cache is the device's, not ours.
+          SCONS_CACHE="$RUNNER_WORKSPACE/scons_cache"
+          mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
-          ln -sfn msgq_repo/msgq msgq
-          ln -sfn opendbc_repo/opendbc opendbc
-          ln -sfn rednose_repo/rednose rednose
-          ln -sfn teleoprtc_repo/teleoprtc teleoprtc
-          ln -sfn tinygrad_repo/tinygrad tinygrad
-          sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
-          echo "Building sunnypilot's modeld_v2..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/modeld_v2
-          echo "Building sunnypilot's locationd..."
-          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/selfdrive/locationd
-          echo "Building openpilot's locationd..."
-          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/selfdrive/locationd
+          echo "Building locationd..."
+          # -j1: parallel rednose generators OOM the device
+          scons -j1 cache_dir="$SCONS_CACHE" --minimal \
+            openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
+          /usr/bin/time -v scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
           fi
 
-      - name: Prepare Output
+      - name: Strip release tree
         run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
-          rsync -am${RUNNER_DEBUG:+v} \
-            --exclude='.sconsign.dblite' \
-            --exclude='*.a' \
-            --exclude='*.o' \
-            --exclude='*.os' \
-            --exclude='*.pyc' \
-            --exclude='moc_*' \
-            --exclude='__pycache__' \
-            --exclude='Jenkinsfile' \
-            --exclude='**/release/' \
-            --exclude='**/.github/' \
-            --exclude='**/openpilot/selfdrive/ui/replay/' \
-            --exclude='**/__pycache__/' \
-            --exclude='${{env.SCONS_CACHE_DIR}}' \
-            --exclude='**/.git/' \
-            --exclude='**/SConstruct' \
-            --exclude='**/SConscript' \
-            --exclude='**/.venv/' \
-            --exclude='openpilot/selfdrive/modeld/models/*.onnx*' \
-            --exclude='openpilot/sunnypilot/modeld*/models/*.onnx*' \
-            --exclude='openpilot/third_party/*x86*' \
-            --exclude='openpilot/third_party/*Darwin*' \
-            --delete-excluded \
-            --chown=comma:comma \
-            ${BUILD_DIR}/ ${OUTPUT_DIR}/
+          cd $BUILD_DIR
+          find . -name '*.a' -delete
+          find . -name '*.o' -delete
+          find . -name '*.os' -delete
+          find . -name '*.pyc' -delete
+          find . -name 'moc_*' -delete
+          find . -name '__pycache__' -type d -exec rm -rf {} +
+          find . -name 'SConstruct' -delete
+          find . -name 'SConscript' -delete
+          rm -rf .sconsign.dblite Jenkinsfile tools/release/ release/
+          rm -f openpilot/selfdrive/modeld/models/*.onnx*
+          rm -f openpilot/sunnypilot/modeld*/models/*.onnx*
+          find openpilot/third_party/ -name '*x86*' -exec rm -r {} +
+          find openpilot/third_party/ -name '*Darwin*' -exec rm -r {} +
+          cd -
 
       - name: 'Tar.gz files'
         run: |
-          tar czf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }} .
+          tar czf prebuilt.tar.gz -C ${{ env.BUILD_DIR }} .
           ls -la prebuilt.tar.gz
 
       - name: 'Upload Artifact'
@@ -242,6 +195,7 @@ jobs:
         with:
           name: prebuilt
           path: prebuilt.tar.gz
+          compression-level: 0
 
       - name: Re-enable powersave
         if: always()
@@ -283,29 +237,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo '${{ toJSON(needs.build.outputs) }}'
+          echo '${{ toJSON(needs.prepare_strategy.outputs) }}'
           ls -la ${{ env.OUTPUT_DIR }}
 
           ${{ env.CI_DIR }}/publish.sh \
             "${{ github.workspace }}" \
             "${{ env.OUTPUT_DIR }}" \
-            "${{ needs.build.outputs.new_branch }}" \
-            "${{ needs.build.outputs.version }}" \
+            "${{ needs.prepare_strategy.outputs.new_branch }}" \
+            "${{ needs.prepare_strategy.outputs.version }}" \
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "${{ needs.build.outputs.extra_version_identifier }}"
-
-          echo ""
-          echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
-          echo ""
-          echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
-          echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
-          echo "3. Update as needed (JSON array with no spaces)"
+            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
 
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
         run: |
             TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.prepare_strategy.outputs.build }}"
-            git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.build.outputs.build }}."
+            git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.prepare_strategy.outputs.build }}."
             git push -f origin ${TAG}
 
   notify:
@@ -324,7 +271,6 @@ jobs:
       - name: Prepare notification message
         id: message
         run: |
-          TEMPLATE='${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}'
           export VERSION="${{ needs.prepare_strategy.outputs.version }}"
           export branch_name="${{ env.SOURCE_BRANCH }}"
           export new_branch="${{ needs.prepare_strategy.outputs.new_branch }}"
@@ -373,7 +319,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              name: process.env.LABELf
+              name: process.env.LABEL
             });
 
             console.log(`Removed '${process.env.LABEL}' label from PR #${prNumber}`);
