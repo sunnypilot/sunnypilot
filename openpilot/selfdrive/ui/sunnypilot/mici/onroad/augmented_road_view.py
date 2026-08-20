@@ -1,0 +1,29 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+
+from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
+
+
+class _SuppressedConfidenceBall:
+  def render(self, *_):
+    pass
+
+
+class AugmentedRoadViewSP(AugmentedRoadView):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+    self._show_confidence_ball: bool = True
+    self._real_confidence_ball = self._confidence_ball
+    self._confidence_ball = _SuppressedConfidenceBall()
+
+  def set_show_confidence_ball(self, show: bool) -> None:
+    self._show_confidence_ball = show
+
+  def _render(self, _) -> None:
+    super()._render(_)
+    if self._show_confidence_ball:
+      self._real_confidence_ball.render(self.rect)
