@@ -17,3 +17,6 @@ CONFIRM_SPEED_THRESHOLD = {
   True: 80,   # km/h
   False: 50,  # mph
 }
+
+# Require confirmation for unusually large speed-limit drops, which are often bad map data.
+CONFIRM_SPEED_DROP_PERCENTAGE = 45

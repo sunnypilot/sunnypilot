@@ -33,6 +33,7 @@ ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
+EventNameSP = custom.OnroadEventSP.EventName
 
 ALL_STATES = tuple(SpeedLimitAssistState.schema.enumerants.values())
 
@@ -276,6 +277,32 @@ class TestSpeedLimitAssist(OpenpilotTestCase):
         assert self.sla.state in [SpeedLimitAssistState.preActive, SpeedLimitAssistState.active]
       elif initial_state in ACTIVE_STATES:
         assert self.sla.state in ACTIVE_STATES
+
+  @parameterized.expand([
+    (70, 55, False),
+    (45, 25, False),
+    (45, 15, True),
+    (30, 35, False),
+  ])
+  def test_confirmation_uses_speed_limit_drop_percentage(self, previous_limit, new_limit, requires_confirmation):
+    self.sla.prev_speed_limit_final_last_conv = previous_limit
+    self.sla.speed_limit_final_last_conv = new_limit
+
+    assert self.sla.requires_suspicious_drop_confirmation == requires_confirmation
+
+  def test_pre_active_event_only_fires_on_entry(self):
+    self.initialize_active_state(self.pcm_long_max_set_speed)
+    self.sla.prev_speed_limit_final_last_conv = 50
+    self.sla.speed_limit_prev = SPEED_LIMITS['city']
+
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['residential'],
+                    SPEED_LIMITS['residential'], True, 0, self.events_sp)
+    assert EventNameSP.speedLimitPreActive in self.events_sp.names
+
+    self.events_sp.clear()
+    self.sla.update(True, False, SPEED_LIMITS['city'], 0, self.pcm_long_max_set_speed, SPEED_LIMITS['residential'],
+                    SPEED_LIMITS['residential'], True, 0, self.events_sp)
+    assert EventNameSP.speedLimitPreActive not in self.events_sp.names
 
 
 class TestButtonStateTrackerSLAIntegration(OpenpilotTestCase):
