@@ -117,6 +117,12 @@ jobs:
       || fromJSON('["ubuntu-24.04"]') }}
     steps:
     - uses: actions/checkout@v7
+    - name: Getting LFS files
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60
+      with:
+        timeout_minutes: 2
+        max_attempts: 3
+        command: git lfs pull
     - run: ./tools/op.sh setup
     - name: Install raylib headless dependencies
       if: ${{ !contains(runner.name, 'nsc') }}
