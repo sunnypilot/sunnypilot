@@ -5,12 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import math
-
 import numpy as np
 
 from openpilot.cereal import custom
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import get_sanitize_int_param
@@ -33,11 +30,9 @@ MIN_ACCEL_BREAKPOINTS = [3., 4.5, 7., 9., 25.]
 
 ACCEL_SMOOTH_ALPHA = 0.90
 DECEL_SMOOTH_ALPHA = 0.40
-ALLOW_THROTTLE_FILTER_RC = 0.20
-ALLOW_THROTTLE_HYSTERESIS = 0.05
 
 class AccelController:
-  def __init__(self, dt: float = DT_MDL):
+  def __init__(self):
     self.params = Params()
     self.frame = 0
     self.last_max_accel = 2.0
@@ -46,8 +41,6 @@ class AccelController:
     self.min_accel_first_run = True
     self._profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
     self._enabled = self.params.get_bool("AccelPersonalityEnabled")
-    self._allow_throttle = True
-    self._throttle_prob_filter = FirstOrderFilter(0.0, ALLOW_THROTTLE_FILTER_RC, dt, initialized=False)
 
   def update(self, sm=None) -> None:
     self.frame += 1
@@ -61,14 +54,6 @@ class AccelController:
 
   def is_enabled(self) -> bool:
     return self._enabled
-
-  def update_allow_throttle(self, throttle_prob: float, low_speed_override: bool, threshold: float) -> bool:
-    if not math.isfinite(throttle_prob):
-      throttle_prob = 0.0
-    filtered_throttle_prob = self._throttle_prob_filter.update(throttle_prob)
-    allow_threshold = threshold if self._allow_throttle else threshold + ALLOW_THROTTLE_HYSTERESIS
-    self._allow_throttle = filtered_throttle_prob > allow_threshold or low_speed_override
-    return self._allow_throttle
 
   def get_max_accel(self, v_ego: float) -> float:
     v_ego = max(0.0, v_ego)

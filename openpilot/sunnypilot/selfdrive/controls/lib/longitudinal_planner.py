@@ -25,7 +25,7 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
-    self.accel_controller = AccelController(mpc.dt)
+    self.accel_controller = AccelController()
     self.lead_departure_controller = LeadDepartureController(CP.openpilotLongitudinalControl and CP.autoResumeSng and not CP.notCar)
     self.events_sp = EventsSP()
     self.dec = DynamicExperimentalController(CP, mpc)
@@ -55,9 +55,6 @@ class LongitudinalPlannerSP:
     if e2e or force_decel or not self.accel_controller.is_enabled():
       return None
     return self.accel_controller.get_min_accel(v_ego)
-
-  def update_allow_throttle(self, throttle_prob: float, low_speed_override: bool, threshold: float) -> bool:
-    return self.accel_controller.update_allow_throttle(throttle_prob, low_speed_override=low_speed_override, threshold=threshold)
 
   def update_lead_departure(self, sm: messaging.SubMaster, a_target: float, should_stop: bool, reset: bool) -> bool:
     radar_valid = sm.valid.get('radarState', False) and getattr(sm, 'alive', {}).get('radarState', False)
