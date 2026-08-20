@@ -111,7 +111,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     throttle_probs = sm['modelV2'].meta.disengagePredictions.gasPressProbs
     throttle_prob = throttle_probs[1] if len(throttle_probs) > 1 else 1.0
-    self.allow_throttle = throttle_prob > ALLOW_THROTTLE_THRESHOLD or v_ego <= MIN_ALLOW_THROTTLE_SPEED
+    self.allow_throttle = self.update_allow_throttle(throttle_prob, low_speed_override=v_ego <= MIN_ALLOW_THROTTLE_SPEED, threshold=ALLOW_THROTTLE_THRESHOLD)
 
     steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['vehicleParameters'].angleOffsetDeg
 
