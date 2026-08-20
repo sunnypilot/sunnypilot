@@ -21,7 +21,7 @@ class TestDefaultModel(OpenpilotTestCase):
     with open(MODEL_HASH_PATH) as f:
       current_hash = f.read().strip()
 
-    assert expected_hash == current_hash, "Run sunnypilot/models/default_model.py to update the default model name and hash"
+    assert expected_hash == current_hash, "Run openpilot/sunnypilot/models/default_model.py to update the default model name and hash"
 
   def test_compare_big_onnx_hash(self):
     big_supercombo_hash = get_file_hash(BIG_SUPERCOMBO_ONNX_PATH)
@@ -31,4 +31,4 @@ class TestDefaultModel(OpenpilotTestCase):
     with open(BIG_MODEL_HASH_PATH) as f:
       current_hash = f.read().strip()
 
-    assert expected_hash == current_hash, "Run sunnypilot/models/default_model.py to update the default big model name and hash"
+    assert expected_hash == current_hash, "Run openpilot/sunnypilot/models/default_model.py to update the default big model name and hash"
