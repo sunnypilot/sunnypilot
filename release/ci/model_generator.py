@@ -48,24 +48,33 @@ def create_short_name(full_name: str) -> str:
   return result[:8]
 
 
-def _read_pkl_bytes(pkl_path: Path) -> bytes:
+def create_pkl_name(full_name: str) -> str:
+  pkl = re.sub(r'[^a-zA-Z0-9]+', '_', full_name).strip('_').lower()
+  return pkl
+
+
+def _hash_pkl(pkl_path: Path) -> str:
   manifest = Path(f"{pkl_path}.chunkmanifest")
   if manifest.exists():
     num_chunks = int(manifest.read_text().strip())
-    parts = []
-    for i in range(num_chunks):
-      chunk = Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}")
-      parts.append(chunk.read_bytes())
-    return b''.join(parts)
-  return pkl_path.read_bytes()
+    paths = [Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}") for i in range(num_chunks)]
+  else:
+    paths = [pkl_path]
+
+  digest = hashlib.sha256()
+  for path in paths:
+    with path.open('rb') as f:
+      while block := f.read(1024 * 1024):
+        digest.update(block)
+  return digest.hexdigest()
 
 
 def _find_driving_pkl(output_path: Path) -> Path | None:
-  for pattern in ('driving_tinygrad.pkl', 'driving_*_tinygrad.pkl'):
+  for pattern in ('*driving_tinygrad.pkl', '*driving_*_tinygrad.pkl'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return matches[0]
-  for pattern in ('driving_tinygrad.pkl.chunkmanifest', 'driving_*_tinygrad.pkl.chunkmanifest'):
+  for pattern in ('*driving_tinygrad.pkl.chunkmanifest', '*driving_*_tinygrad.pkl.chunkmanifest'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return Path(str(matches[0]).removesuffix('.chunkmanifest'))
@@ -82,7 +91,7 @@ def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
 
 
 def generate_chunked_model(driving_pkl: Path) -> dict:
-  tinygrad_hash = hashlib.sha256(_read_pkl_bytes(driving_pkl)).hexdigest()
+  tinygrad_hash = _hash_pkl(driving_pkl)
 
   chunks_config = []
   manifest_file = Path(f"{driving_pkl}.chunkmanifest")
@@ -154,14 +163,15 @@ if __name__ == "__main__":
   _output_dir = Path(args.output_dir)
   _output_dir.mkdir(exist_ok=True, parents=True)
   _short_name = create_short_name(args.custom_name) if args.custom_name else None
+  _pkl = create_pkl_name(args.custom_name) if args.custom_name else None
 
   _driving_pkl = _find_driving_pkl(_output_dir)
   if not _driving_pkl:
     print(f"No driving_tinygrad.pkl found in {_output_dir}", file=sys.stderr)
     sys.exit(1)
 
-  if _short_name:
-    new_pkl = _output_dir / f"driving_{_short_name.lower()}_tinygrad.pkl"
+  if _pkl:
+    new_pkl = _output_dir / f"driving_{_pkl}_tinygrad.pkl"
     if not new_pkl.exists():
       _driving_pkl = _rename_pkl_with_chunks(_driving_pkl, new_pkl)
     else:

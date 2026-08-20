@@ -16,6 +16,7 @@ from openpilot.common.utils import strip_deprecated_keys
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_HW
+from openpilot.selfdrive.modeld.helpers import MODELS_DIR, usbgpu_compiled
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.common.hardware import HARDWARE, COMMA_HARDWARE
 from openpilot.common.basedir import BASEDIR
@@ -238,6 +239,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
   fan_controller = FanController(int(1./DT_HW))
   chestnut = Chestnut()
+  big_model_available = (MODELS_DIR / 'big_driving_supercombo.onnx').is_file() or usbgpu_compiled()
 
   while not end_event.is_set():
     sm.update(PANDA_STATES_TIMEOUT)
@@ -299,6 +301,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     set_usb_state(msg.deviceState, last_hw_state.usb_state)
     chestnut.update(started_ts is None, last_hw_state.usb_state)
+    set_offroad_alert_if_changed("Offroad_ChestnutBranch", msg.deviceState.chestnutPresent and not big_model_available)
 
     # this subset is only used for offroad
     temp_sources = [
