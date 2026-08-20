@@ -103,17 +103,22 @@ jobs:
       - run: |
           cd ${{ github.workspace }}/openpilot/openpilot
           if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
-            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx" -X "**/selfdrive/modeld/models/dmonitoring_*.onnx"
+            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx"
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
           else
-            git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx"
+            git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx" -X ""
             find selfdrive/modeld/models -name "*.onnx" ! -name "big_*.onnx" -delete
+          fi
+          if grep -lIF "version https://git-lfs.github.com/spec/v1" selfdrive/modeld/models/*.onnx; then
+            echo "::error::the ONNX files above are still LFS pointers, not real models"
+            exit 1
           fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
           path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
+          if-no-files-found: error
 
   build_model:
     runs-on: [self-hosted, usbgpu]
