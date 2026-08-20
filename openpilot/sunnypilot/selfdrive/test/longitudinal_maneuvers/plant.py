@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import math
 import time
 from typing import Any
@@ -28,6 +28,11 @@ LeadObservation = dict[str, Any]
 LeadObservationFn = Callable[[float, str, LeadObservation], LeadObservation | None]
 ModelActionFn = Callable[[float, float, float], tuple[float, bool]]
 EgoObservationFn = Callable[[float, float, float], tuple[float, float]]
+ModelPlanFn = Callable[[float, float, float], list[float]]
+ModelMetaFn = Callable[[float], tuple[list[float], bool, float]]
+LeadFutureProbsFn = Callable[[float], tuple[float, float, float]]
+PositionYFn = Callable[[float], list[float]]
+ExperimentalModeFn = Callable[[float], bool]
 
 
 @dataclass(frozen=True)
@@ -85,6 +90,11 @@ class PlantSP(Plant):
     lead_observation_fn: LeadObservationFn | None = None,
     model_action_fn: ModelActionFn | None = None,
     ego_observation_fn: EgoObservationFn | None = None,
+    model_plan_fn: ModelPlanFn | None = None,
+    model_meta_fn: ModelMetaFn | None = None,
+    lead_future_probs_fn: LeadFutureProbsFn | None = None,
+    position_y_fn: PositionYFn | None = None,
+    experimental_mode_fn: ExperimentalModeFn | None = None,
     actuator_delay: float | None = None,
     actuator_lag: float = 0.0,
     actuator_model: ActuatorModel | None = None,
@@ -129,6 +139,11 @@ class PlantSP(Plant):
     self.lead_observation_fn = lead_observation_fn
     self.model_action_fn = model_action_fn
     self.ego_observation_fn = ego_observation_fn
+    self.model_plan_fn = model_plan_fn
+    self.model_meta_fn = model_meta_fn
+    self.lead_future_probs_fn = lead_future_probs_fn
+    self.position_y_fn = position_y_fn
+    self.experimental_mode_fn = experimental_mode_fn
     self.actuator_model = actuator_model
     self.actuator_delay = actuator_model.planner_delay if actuator_model is not None else actuator_delay
     self.transport_delay = actuator_model.transport_delay if actuator_model is not None else actuator_delay
@@ -282,6 +297,10 @@ class PlantSP(Plant):
     # does not predict slowdown in e2e mode
     position = log.XYZTData.new_message()
     position.x = [float(x) for x in (self.speed + 0.5) * np.array(ModelConstants.T_IDXS)]
+    if self.position_y_fn is None:
+      position.y = [0.0] * len(ModelConstants.T_IDXS)
+    else:
+      position.y = [float(y) for y in self.position_y_fn(self.current_time)]
     model.modelV2.position = position
     if self.model_action_fn is None:
       model_acceleration, model_should_stop = self.acceleration + 0.5, False
@@ -290,17 +309,34 @@ class PlantSP(Plant):
     model.modelV2.action.desiredAcceleration = float(model_acceleration)
     model.modelV2.action.shouldStop = bool(model_should_stop)
     velocity = log.XYZTData.new_message()
-    velocity.x = [float(x) for x in (self.speed + 0.5) * np.ones_like(ModelConstants.T_IDXS)]
-    velocity.x[0] = float(self.speed)  # always start at current speed
+    if self.model_plan_fn is None:
+      velocity_plan = [float(x) for x in (self.speed + 0.5) * np.ones_like(ModelConstants.T_IDXS)]
+      velocity_plan[0] = float(self.speed)  # always start at current speed
+    else:
+      velocity_plan = [float(x) for x in self.model_plan_fn(self.current_time, self.speed, self.acceleration)]
+    velocity.x = velocity_plan
     model.modelV2.velocity = velocity
     acceleration = log.XYZTData.new_message()
     acceleration.x = [float(x) for x in np.zeros_like(ModelConstants.T_IDXS)]
     model.modelV2.acceleration = acceleration
     model.modelV2.meta.disengagePredictions.gasPressProbs = [float(prob_throttle) for _ in range(6)]
+    if self.model_meta_fn is None:
+      brake3_probs, hard_brake_predicted, frame_drop_perc = [0.0] * 5, False, 0.0
+    else:
+      brake3_probs, hard_brake_predicted, frame_drop_perc = self.model_meta_fn(self.current_time)
+    model.modelV2.meta.disengagePredictions.brake3MetersPerSecondSquaredProbs = [float(p) for p in brake3_probs]
+    model.modelV2.meta.hardBrakePredicted = bool(hard_brake_predicted)
+    model.modelV2.frameDropPerc = float(frame_drop_perc)
+    if self.lead_future_probs_fn is not None:
+      model.modelV2.init('leadsV3', 3)
+      lead_future_probs = self.lead_future_probs_fn(self.current_time)
+      for i, (prob, prob_time) in enumerate(zip(lead_future_probs, (0.0, 2.0, 4.0), strict=True)):
+        model.modelV2.leadsV3[i].prob = float(prob)
+        model.modelV2.leadsV3[i].probTime = prob_time
 
     control.controlsState.longControlState = self.long_control.long_control_state if self.long_control is not None else (
       LongCtrlState.pid if self.enabled else LongCtrlState.off)
-    ss.selfdriveState.experimentalMode = self.e2e
+    ss.selfdriveState.experimentalMode = self.e2e if self.experimental_mode_fn is None else bool(self.experimental_mode_fn(self.current_time))
     ss.selfdriveState.personality = self.personality
     control.controlsState.forceDecel = self.force_decel
     true_v_ego = self.speed
@@ -383,6 +419,9 @@ class PlantSP(Plant):
       "fcw": fcw,
       "mpc_source": self.planner.mpc.source,
       "dec_mode": self.planner.dec.mode(),
+      "dec_want_blended": self.planner.dec.want_blended,
+      "dec_signals": asdict(self.planner.dec.signals),
+      "dec_lead_veto": self.planner.dec.lead_veto,
       "controller_active": self.planner.accel_controller_active,
       "model_action": {
         "desiredAcceleration": float(model_acceleration),

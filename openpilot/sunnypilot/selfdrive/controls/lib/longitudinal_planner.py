@@ -93,8 +93,10 @@ class LongitudinalPlannerSP:
   def update(self, sm: messaging.SubMaster) -> None:
     self.accel_controller.update(sm)
     self.events_sp.clear()
-    self.dec.update(sm)
     self.e2e_alerts_helper.update(sm, self.events_sp)
+
+  def update_dec(self, sm: messaging.SubMaster) -> None:
+    self.dec.update(sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -112,6 +114,10 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+    dec.decelIntent = float(self.dec.signals.decel_intent)
+    dec.curveDetected = bool(self.dec.signals.curve_detected)
+    dec.wantBlended = bool(self.dec.want_blended)
+    dec.leadVeto = bool(self.dec.lead_veto)
 
     accel_controller = longitudinalPlanSP.accelController
     accel_controller.enabled = self.accel_controller.is_enabled()

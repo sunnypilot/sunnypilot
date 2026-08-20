@@ -209,6 +209,10 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
     active @2 :Bool;
+    decelIntent @3 :Float32;
+    curveDetected @4 :Bool;
+    wantBlended @5 :Bool;
+    leadVeto @6 :Bool;
 
     enum DynamicExperimentalControlState {
       acc @0;
