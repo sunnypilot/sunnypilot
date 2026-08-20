@@ -19,6 +19,24 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
 
+def _build_folders() -> dict[str, list]:
+  manager = ui_state.sm["modelManagerSP"]
+  bundles = manager.availableBundles
+  folders = {}
+  for bundle in bundles:
+    folder = next((override.value for override in bundle.overrides if override.key == "folder"), "")
+    folders.setdefault(folder, []).append(bundle)
+
+  favs = ui_state.params.get("ModelManager_Favs")
+  favorites = set(favs.split(';')) if favs else set()
+
+  if favorites:
+    for fav_bundle in [bundle for bundle in bundles if bundle.ref in favorites]:
+      folders.setdefault("favorites", []).append(fav_bundle)
+
+  return folders
+
+
 class CurrentModelInfo(Widget):
   def __init__(self):
     super().__init__()
@@ -53,20 +71,7 @@ class FolderSelectionMici(NavScroller):
   def __init__(self, select_default_cb: Callable, select_folder_cb: Callable):
     super().__init__()
 
-    favs = ui_state.params.get("ModelManager_Favs")
-    favorites = set(favs.split(';')) if favs else set()
-
-    manager = ui_state.sm["modelManagerSP"]
-    bundles = manager.availableBundles
-    folders = {}
-    for bundle in bundles:
-      folder = next((override.value for override in bundle.overrides if override.key == "folder"), "")
-      folders.setdefault(folder, []).append(bundle)
-
-    if favorites:
-      for fav_bundle in [bundle for bundle in bundles if bundle.ref in favorites]:
-        folders.setdefault("favorites", []).append(fav_bundle)
-
+    folders = _build_folders()
     folder_buttons = []
     default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
     default_btn.set_click_callback(select_default_cb)
@@ -87,20 +92,7 @@ class ModelSelectionMici(NavScroller):
   def __init__(self, folder_name: str, select_model_cb: Callable):
     super().__init__()
 
-    favs = ui_state.params.get("ModelManager_Favs")
-    favorites = set(favs.split(';')) if favs else set()
-
-    manager = ui_state.sm["modelManagerSP"]
-    bundles = manager.availableBundles
-    folders = {}
-    for bundle in bundles:
-      folder = next((override.value for override in bundle.overrides if override.key == "folder"), "")
-      folders.setdefault(folder, []).append(bundle)
-
-    if favorites:
-      for fav_bundle in [bundle for bundle in bundles if bundle.ref in favorites]:
-        folders.setdefault("favorites", []).append(fav_bundle)
-
+    folders = _build_folders()
     bundles_in_folder = sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True)
 
     btns = []
@@ -166,7 +158,7 @@ class ModelsLayoutMici(NavScroller):
       ui_state.params.put_bool("ModelManager_ClearCache", True)
 
     lbl = tr("slide to clear cache")
-    icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
+    icon = gui_app.texture("icons_mici/settings/device/uninstall.png", 64, 64)
     dlg = BigConfirmationDialog(lbl, icon, confirm_callback=confirm_callback, red=True)
     gui_app.push_widget(dlg)
 
