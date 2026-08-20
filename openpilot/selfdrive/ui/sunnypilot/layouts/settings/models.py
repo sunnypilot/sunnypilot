@@ -249,7 +249,8 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    active_name = self.model_manager.activeBundle.displayName if self.model_manager and self.model_manager.activeBundle.ref else f"{get_default_model()} (Default)"
+    active_name = self.model_manager.activeBundle.displayName if self.model_manager and self.model_manager.activeBundle.ref \
+      else f"{get_default_model()} (Default)"
     self.current_model_item.action_item.set_value(active_name)
 
     if not ui_state.is_offroad():
