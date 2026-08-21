@@ -45,8 +45,9 @@ class ScrollState(Enum):
 
 
 class GuiScrollPanel2:
-  def __init__(self, horizontal: bool = True) -> None:
+  def __init__(self, horizontal: bool = True, handle_out_of_bounds: bool = True) -> None:
     self._horizontal = horizontal
+    self._handle_out_of_bounds = handle_out_of_bounds
     self._state = ScrollState.STEADY
     self._offset: rl.Vector2 = rl.Vector2(0, 0)
     self._initial_click_event: MouseEvent | None = None
@@ -84,6 +85,20 @@ class GuiScrollPanel2:
   def _get_offset_bounds(self, bounds_size: float, content_size: float) -> tuple[float, float]:
     """Returns (max_offset, min_offset) for the given bounds and content size."""
     return 0.0, min(0.0, bounds_size - content_size)
+
+  def _clamp_offset(self, bounds_size: float, content_size: float) -> None:
+    if self._handle_out_of_bounds:
+      return
+
+    max_offset, min_offset = self._get_offset_bounds(bounds_size, content_size)
+    offset = self.get_offset()
+    clamped_offset = max(min_offset, min(max_offset, offset))
+    if clamped_offset == offset:
+      return
+
+    self.set_offset(clamped_offset)
+    if (clamped_offset == max_offset and self._velocity > 0) or (clamped_offset == min_offset and self._velocity < 0):
+      self._velocity = 0.0
 
   def _update_state(self, bounds_size: float, content_size: float, snap_target: float | None) -> None:
     """Runs per render frame, independent of mouse events. Updates auto-scrolling state and velocity."""
@@ -137,6 +152,8 @@ class GuiScrollPanel2:
         dt = rl.get_frame_time() or 1e-6
         factor = 1.0 - math.exp(-SNAP_RATE * dt)
         self.set_offset(self.get_offset() + dist * factor)
+
+    self._clamp_offset(bounds_size, content_size)
 
   def _handle_mouse_event(self, mouse_event: MouseEvent, bounds: rl.Rectangle, bounds_size: float,
                           content_size: float) -> None:
