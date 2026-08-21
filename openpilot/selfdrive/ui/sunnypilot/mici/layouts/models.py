@@ -4,11 +4,13 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from collections.abc import Callable
 import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.models.default_model import DEFAULT_MODEL
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.system.ui.lib.application import FontWeight, gui_app
@@ -16,6 +18,24 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
+
+def _build_folders() -> dict[str, list]:
+  manager = ui_state.sm["modelManagerSP"]
+  bundles = manager.availableBundles
+  folders = {}
+  for bundle in bundles:
+    folder = next((override.value for override in bundle.overrides if override.key == "folder"), "")
+    folders.setdefault(folder, []).append(bundle)
+
+  favs = ui_state.params.get("ModelManager_Favs")
+  favorites = set(favs.split(';')) if favs else set()
+
+  if favorites:
+    for fav_bundle in [bundle for bundle in bundles if bundle.ref in favorites]:
+      folders.setdefault("favorites", []).append(fav_bundle)
+
+  return folders
+
 
 class CurrentModelInfo(Widget):
   def __init__(self):
@@ -46,6 +66,41 @@ class CurrentModelInfo(Widget):
     self.info_text.set_position(self._rect.x + 20, self._rect.y + 161 - 25)
     self.info_text.render()
 
+
+class FolderSelectionMici(NavScroller):
+
+  def __init__(self, folder_name: str | None = None,
+               select_default_callback: Callable | None = None,
+               select_folder_callback: Callable | None = None,
+               select_model_callback: Callable | None = None):
+    super().__init__()
+
+    folders = _build_folders()
+
+    btns = []
+    if folder_name is None:
+      assert select_default_callback is not None and select_folder_callback is not None
+      default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
+      default_btn.set_click_callback(select_default_callback)
+      btns.append(default_btn)
+
+      for folder in sorted(folders.keys(), key=lambda f: max((bundle.index for bundle in folders[f]), default=-1), reverse=True):
+        btn = BigButton(folder.lower())
+        btn.set_click_callback(lambda f=folder: select_folder_callback(f))
+        if folder.lower() == "favorites":
+          btns.insert(0, btn)
+        else:
+          btns.append(btn)
+    else:
+      assert select_model_callback is not None
+      for bundle in sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True):
+        btn = BigButton(bundle.displayName.lower())
+        btn.set_click_callback(lambda b=bundle: select_model_callback(b))
+        btns.append(btn)
+
+    self._scroller.add_widgets(btns)
+
+
 class ModelsLayoutMici(NavScroller):
   def __init__(self):
     super().__init__()
@@ -59,81 +114,47 @@ class ModelsLayoutMici(NavScroller):
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
 
+    self.clear_cache_btn = BigButton(tr("clear cache"), "")
+    self.clear_cache_btn.set_click_callback(self._clear_cache)
+
     self.cancel_download_btn = BigButton(tr("cancel download"))
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
+    self.main_items = [self.current_model_info, self.select_model_btn, self.clear_cache_btn, self.cancel_download_btn]
     self._scroller.add_widgets(self.main_items)
 
   @property
   def model_manager(self):
     return ui_state.sm["modelManagerSP"]
 
-  def _get_grouped_bundles(self, favorites = None):
-    bundles = self.model_manager.availableBundles
-    folders = {}
-    for bundle in bundles:
-      folder = next((override.value for override in bundle.overrides if override.key == "folder"), "")
-      folders.setdefault(folder, []).append(bundle)
-
-    if favorites:
-      for fav_bundle in [bundle for bundle in bundles if bundle.ref in favorites]:
-        folders.setdefault("favorites", []).append(fav_bundle)
-
-    return folders
-
-  def _push_selection_view(self, items):
-    scroller = NavScroller()
-    scroller._scroller.add_widgets(items)
-    gui_app.push_widget(scroller)
-
   def _show_folders(self):
     self.focused_widget = self.select_model_btn
 
-    favs = ui_state.params.get("ModelManager_Favs")
-    favorites = set(favs.split(';')) if favs else set()
+    def select_default():
+      ui_state.params.remove("ModelManager_ActiveBundle")
+      gui_app.pop_widgets_to(self, instant=True)
+      self._scroller.scroll_panel.set_offset(0)
+      self._scroller.scroll_to(0)
 
-    folders = self._get_grouped_bundles(favorites)
-    folder_buttons = []
-    default_btn = BigButton(f"{DEFAULT_MODEL} (Default)".lower())
-    default_btn.set_click_callback(self._select_default)
-    folder_buttons.append(default_btn)
+    def select_model(bundle):
+      ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
+      gui_app.pop_widgets_to(self, instant=True)
+      self._scroller.scroll_panel.set_offset(0)
+      self._scroller.scroll_to(0)
 
-    for folder in sorted(folders.keys(), key=lambda f: max((bundle.index for bundle in folders[f]), default=-1), reverse=True):
-      if folder.lower() in ["release models", "master models", "favorites"]:
-        btn = BigButton(folder.lower())
-        btn.set_click_callback(lambda f=folder: self._select_folder(f))
-        if folder.lower() == "favorites":
-          folder_buttons.insert(0, btn)
-        else:
-          folder_buttons.append(btn)
-    self._push_selection_view(folder_buttons)
+    def select_folder(folder_name):
+      gui_app.push_widget(FolderSelectionMici(folder_name, select_model_callback=select_model))
 
-  def _pop_to_main(self):
-    gui_app.pop_widgets_to(self)
+    gui_app.push_widget(FolderSelectionMici(select_default_callback=select_default, select_folder_callback=select_folder))
 
-  def _select_model(self, bundle):
-    ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
-    self._pop_to_main()
+  def _clear_cache(self):
+    def confirm_callback():
+      ui_state.params.put_bool("ModelManager_ClearCache", True)
 
-  def _select_default(self):
-    ui_state.params.remove("ModelManager_ActiveBundle")
-    self._pop_to_main()
-
-  def _select_folder(self, folder_name):
-    favs = ui_state.params.get("ModelManager_Favs")
-    favorites = set(favs.split(';')) if favs else set()
-
-    folders = self._get_grouped_bundles(favorites)
-    bundles = sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True)
-
-    btns = []
-    for bundle in bundles:
-      txt = bundle.displayName.lower()
-      btn = BigButton(txt)
-      btn.set_click_callback(lambda b=bundle: self._select_model(b))
-      btns.append(btn)
-    self._push_selection_view(btns)
+    lbl = tr("slide to clear cache")
+    icon = gui_app.texture("icons_mici/settings/device/uninstall.png", 64, 64)
+    dlg = BigConfirmationDialog(lbl, icon, confirm_callback=confirm_callback, red=True)
+    gui_app.push_widget(dlg)
 
   def hide_event(self):
     super().hide_event()
@@ -145,6 +166,7 @@ class ModelsLayoutMici(NavScroller):
     super()._update_state()
 
     self.select_model_btn.set_enabled(ui_state.is_offroad())
+    self.clear_cache_btn.set_enabled(ui_state.is_offroad())
     self.cancel_download_btn.set_visible(False)
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
@@ -191,4 +213,3 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_header._shimmer = True
       self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")
-
