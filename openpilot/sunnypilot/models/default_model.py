@@ -11,6 +11,14 @@ MODEL_HASH_PATH = os.path.join(BASEDIR, "openpilot", "sunnypilot", "models", "te
 SUPERCOMBO_ONNX_PATH = os.path.join(BASEDIR, "openpilot", "selfdrive", "modeld", "models", "driving_supercombo.onnx")
 
 
+def get_default_model_name(use_big_model: bool) -> str:
+  return DEFAULT_BIG_MODEL if use_big_model else DEFAULT_MODEL
+
+
+def get_default_model_label(use_big_model: bool) -> str:
+  return f"{get_default_model_name(use_big_model)} (Default)"
+
+
 def update_model_hash():
   supercombo_hash = get_file_hash(SUPERCOMBO_ONNX_PATH)
   combined_hash = hashlib.sha256(supercombo_hash.encode()).hexdigest()

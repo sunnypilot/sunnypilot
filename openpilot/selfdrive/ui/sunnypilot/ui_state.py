@@ -43,6 +43,7 @@ class UIStateSP:
     self.screensaver_enabled: bool = False
 
     self.active_bundle = None
+    self.big_model_runnable: bool = False
     self.blindspot: bool = False
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
@@ -62,6 +63,12 @@ class UIStateSP:
     self.custom_torque_params: bool = False
     self.torque_override_enabled: bool = False
     self._sp_initialized: bool = False
+
+  @property
+  def default_model_is_big(self) -> bool:
+    if not self.started or self.usbgpu_loading or self.usbgpu_active is None:
+      return self.big_model_runnable
+    return self.usbgpu_active
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -151,6 +158,7 @@ class UIStateSP:
 
     self._enforce_constraints()
     self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    self.big_model_runnable = self.usbgpu and self.usbgpu_compiled
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
