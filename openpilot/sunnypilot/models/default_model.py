@@ -4,7 +4,13 @@ import hashlib
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot import get_file_hash
+from openpilot.selfdrive.modeld.helpers import usbgpu_present
 from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL, DEFAULT_BIG_MODEL
+
+
+def get_default_model() -> str:
+  return DEFAULT_BIG_MODEL if usbgpu_present() else DEFAULT_MODEL
+
 
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "openpilot", "sunnypilot", "models", "model_name.py")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "openpilot", "sunnypilot", "models", "tests", "model_hash")
