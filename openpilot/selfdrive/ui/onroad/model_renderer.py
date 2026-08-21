@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.selfdrive.locationd.calibrationd import HEIGHT_INIT
-from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
@@ -52,7 +52,6 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._longitudinal_control = False
     self._experimental_mode = False
     self._blend_filter = FirstOrderFilter(1.0, 0.25, 1 / gui_app.target_fps)
-    self._width_filter = FirstOrderFilter(0.9, 0.25, 1 / gui_app.target_fps)
     self._prev_allow_throttle = True
     self._lane_line_probs = np.zeros(4, dtype=np.float32)
     self._road_edge_stds = np.zeros(2, dtype=np.float32)
@@ -83,15 +82,6 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
       cp = messaging.log_from_bytes(car_params, car.CarParams)
       self._longitudinal_control = cp.openpilotLongitudinalControl
 
-  @property
-  def _lateral_active(self) -> bool:
-    sm = ui_state.sm
-    if sm.valid["selfdriveStateSP"]:
-      mads = sm["selfdriveStateSP"].mads
-      if mads.available:
-        from openpilot.selfdrive.ui.sunnypilot.ui_state import MADSState
-        return mads.enabled and mads.state not in (MADSState.paused, MADSState.overriding)
-    return ui_state.status in (UIStatus.ENGAGED, UIStatus.LAT_ONLY)
   def set_transform(self, transform: np.ndarray):
     self._car_space_transform = transform.astype(np.float32)
     self._transform_dirty = True
@@ -201,10 +191,8 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
       max_distance = np.clip(lead_d - min(lead_d * 0.35, 10.0), 0.0, max_distance)
 
     max_idx = self._get_path_length_idx(path_x_array, max_distance)
-    target_half_width = 0.9 if self._lateral_active else 0.40
-    current_half_width = self._width_filter.update(target_half_width)
     self._path.projected_points = self._map_line_to_polygon(
-      self._path.raw_points, current_half_width, self._path_offset_z, max_idx, max_distance, allow_invert=False
+      self._path.raw_points, self._get_path_half_width(), self._path_offset_z, max_idx, max_distance, allow_invert=False
     )
 
     self._update_experimental_gradient()
