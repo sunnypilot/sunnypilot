@@ -230,8 +230,7 @@ class TestPowerMonitoring(OpenpilotTestCase):
 
     assert result == expected_result
 
-  @pytest.mark.parametrize(
-    "custom_voltage, car_voltage, expected_result",
+  @parameterized.expand(
     [
       # Valid custom voltage > VBATT_PAUSE_CHARGING
       (12.0, 11.9, True),
