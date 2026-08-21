@@ -9,7 +9,7 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.cereal import log
+from openpilot.cereal import log, custom
 
 EventName = log.OnroadEvent.EventName
 
@@ -129,6 +129,8 @@ class HudRenderer(Widget):
     self._txt_egpu_orange: rl.Texture = gui_app.texture('icons_mici/egpu_orange.png', 60, 44)
     self._txt_egpu_crossed: rl.Texture = gui_app.texture('icons_mici/egpu_crossed.png', 60, 52)
     self._egpu_icon: rl.Texture | None = None
+    self._txt_experimental: rl.Texture = gui_app.texture('icons/experimental.png', 50, 50)
+    self._txt_experimental_white: rl.Texture = gui_app.texture('icons/experimental_white.png', 50, 50)
 
     self._wheel_alpha_filter = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
     self._wheel_y_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
@@ -274,6 +276,25 @@ class HudRenderer(Widget):
       exclamation_pos_x = pos_x - self._txt_exclamation_point.width / 2 + wheel_txt.width / 2 + EXCLAMATION_POINT_SPACING
       exclamation_pos_y = pos_y - self._txt_exclamation_point.height / 2
       rl.draw_texture_ex(self._txt_exclamation_point, rl.Vector2(exclamation_pos_x, exclamation_pos_y), 0.0, 1.0, rl.WHITE)
+
+    # Draw experimental icon on the other side of the torque bar
+    sm = ui_state.sm
+    experimental_mode = sm['selfdriveState'].experimentalMode
+    if gui_app.sunnypilot_ui() and sm.seen['longitudinalPlanSP'] and sm['longitudinalPlanSP'].dec.active:
+      experimental_mode = (
+          experimental_mode
+          and sm["longitudinalPlanSP"].dec.state
+          == custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState.blended
+      )
+
+    exp_txt = self._txt_experimental if experimental_mode else self._txt_experimental_white
+    exp_pos_x = int(rect.x + rect.width - 21 - exp_txt.width / 2)
+    exp_pos_y = int(rect.y + rect.height - 14 - exp_txt.height / 2 + self._wheel_y_filter.x)
+    exp_src_rect = rl.Rectangle(0, 0, exp_txt.width, exp_txt.height)
+    exp_dest_rect = rl.Rectangle(exp_pos_x, exp_pos_y, exp_txt.width, exp_txt.height)
+    exp_origin = (exp_txt.width / 2, exp_txt.height / 2)
+    rl.draw_texture_pro(exp_txt, exp_src_rect, exp_dest_rect, exp_origin, 0.0, color)
+
 
   def _draw_set_speed(self, rect: rl.Rectangle) -> None:
     """Draw the MAX speed indicator box."""
