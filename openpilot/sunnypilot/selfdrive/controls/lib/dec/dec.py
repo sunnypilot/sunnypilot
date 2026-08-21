@@ -25,6 +25,7 @@ _DECEL_INV_T = 1.0 / _T_IDXS[_DECEL_IDX]
 DECEL_INTENT_A_HINT = 0.35
 DECEL_INTENT_A_FULL = 1.30
 DECEL_INTENT_TRIGGER = 0.5
+DECEL_INTENT_CURVE_OVERRIDE = 0.9
 
 CURVE_Y_MAX = 5.0
 
@@ -54,7 +55,8 @@ class DecSignals:
 
 def should_blend(s: DecSignals) -> bool:
   degraded = s.model_trust < MODEL_TRUST_MIN
-  slowdown_detected = not degraded and s.decel_intent >= DECEL_INTENT_TRIGGER and not s.curve_detected
+  curve_gate = s.decel_intent >= DECEL_INTENT_CURVE_OVERRIDE or not s.curve_detected
+  slowdown_detected = not degraded and s.decel_intent >= DECEL_INTENT_TRIGGER and curve_gate
   return slowdown_detected or s.creeping
 
 

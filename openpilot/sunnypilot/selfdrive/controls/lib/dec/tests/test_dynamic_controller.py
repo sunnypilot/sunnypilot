@@ -111,10 +111,17 @@ class TestDynamicExperimentalController(OpenpilotTestCase):
 
   def test_curve_exclusion_prevents_false_blend(self):
     controller = make_controller()
-    sm = make_sm(v_ego=20.0, velocity=decel_velocity(20.0, -2.0), position_y=[6.0] * len(T_IDXS))
+    sm = make_sm(v_ego=20.0, velocity=decel_velocity(20.0, -1.0), position_y=[6.0] * len(T_IDXS))
     for _ in range(30):
       controller.update(sm)
     assert controller.mode() == "acc"
+
+  def test_curve_does_not_override_saturated_decel_intent(self):
+    controller = make_controller()
+    sm = make_sm(v_ego=20.0, velocity=decel_velocity(20.0, -2.0), position_y=[6.0] * len(T_IDXS))
+    for _ in range(10):
+      controller.update(sm)
+    assert controller.mode() == "blended"
 
   def test_any_lead_forces_acc_even_with_strong_model_signal(self):
     for lead_radar in (True, False):
@@ -275,7 +282,10 @@ class TestShouldBlend(OpenpilotTestCase):
     assert not should_blend(DecSignals(decel_intent=0.0))
 
   def test_curve_exclusion_suppresses_slowdown(self):
-    assert not should_blend(DecSignals(decel_intent=1.0, curve_detected=True))
+    assert not should_blend(DecSignals(decel_intent=0.7, curve_detected=True))
+
+  def test_curve_exclusion_does_not_override_saturated_decel_intent(self):
+    assert should_blend(DecSignals(decel_intent=1.0, curve_detected=True))
 
   def test_degraded_model_suppresses_model_based_reasons(self):
     s = DecSignals(decel_intent=1.0, model_trust=0.0)

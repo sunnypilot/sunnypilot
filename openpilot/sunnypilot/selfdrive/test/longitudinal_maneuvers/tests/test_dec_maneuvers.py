@@ -162,11 +162,18 @@ class TestDecManeuvers(OpenpilotTestCase):
     assert all(r["dec_mode"] == "acc" for r in results)
 
   def test_s9_curve_exclusion_prevents_false_blend_on_a_bend(self):
-    plant = PlantSP(lead_relevancy=False, speed=20.0, e2e=True, model_plan_fn=decel_plan(-2.5),
+    plant = PlantSP(lead_relevancy=False, speed=20.0, e2e=True, model_plan_fn=decel_plan(-1.0),
                      position_y_fn=lambda _t: [6.0] * len(T_IDXS))
     results, _ = _run(plant, steps=30, v_cruise=20.0)
 
     assert all(r["dec_mode"] == "acc" for r in results)
+
+  def test_s11_curve_does_not_interrupt_an_active_hard_stop(self):
+    plant = PlantSP(lead_relevancy=False, speed=20.0, e2e=True, model_plan_fn=decel_plan(-2.5),
+                     position_y_fn=lambda _t: [6.0] * len(T_IDXS))
+    results, _ = _run(plant, steps=10, v_cruise=20.0)
+
+    assert all(r["dec_mode"] == "blended" for r in results[ENTER_FRAMES - 1:])
 
   def test_s10_hard_brake_override_inert_while_lead_present(self):
     def hard_brake_meta(_current_time):
