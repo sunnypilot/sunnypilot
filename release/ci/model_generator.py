@@ -53,24 +53,28 @@ def create_pkl_name(full_name: str) -> str:
   return pkl
 
 
-def _read_pkl_bytes(pkl_path: Path) -> bytes:
+def _hash_pkl(pkl_path: Path) -> str:
   manifest = Path(f"{pkl_path}.chunkmanifest")
   if manifest.exists():
     num_chunks = int(manifest.read_text().strip())
-    parts = []
-    for i in range(num_chunks):
-      chunk = Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}")
-      parts.append(chunk.read_bytes())
-    return b''.join(parts)
-  return pkl_path.read_bytes()
+    paths = [Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}") for i in range(num_chunks)]
+  else:
+    paths = [pkl_path]
+
+  digest = hashlib.sha256()
+  for path in paths:
+    with path.open('rb') as f:
+      while block := f.read(1024 * 1024):
+        digest.update(block)
+  return digest.hexdigest()
 
 
 def _find_driving_pkl(output_path: Path) -> Path | None:
-  for pattern in ('driving_tinygrad.pkl', 'driving_*_tinygrad.pkl'):
+  for pattern in ('*driving_tinygrad.pkl', '*driving_*_tinygrad.pkl'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return matches[0]
-  for pattern in ('driving_tinygrad.pkl.chunkmanifest', 'driving_*_tinygrad.pkl.chunkmanifest'):
+  for pattern in ('*driving_tinygrad.pkl.chunkmanifest', '*driving_*_tinygrad.pkl.chunkmanifest'):
     matches = sorted(output_path.glob(pattern))
     if matches:
       return Path(str(matches[0]).removesuffix('.chunkmanifest'))
@@ -87,7 +91,7 @@ def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
 
 
 def generate_chunked_model(driving_pkl: Path) -> dict:
-  tinygrad_hash = hashlib.sha256(_read_pkl_bytes(driving_pkl)).hexdigest()
+  tinygrad_hash = _hash_pkl(driving_pkl)
 
   chunks_config = []
   manifest_file = Path(f"{driving_pkl}.chunkmanifest")
