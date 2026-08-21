@@ -394,21 +394,26 @@ class GreyBigButton(BigButton):
 
 class BigMultiParamToggle(BigMultiToggle):
   def __init__(self, text: str, param: str, options: list[str], toggle_callback: Callable | None = None,
-               select_callback: Callable | None = None, *, description: str = "", description_icon: Union[rl.Texture, None] = None):
+               select_callback: Callable | None = None, param_values: list[int] | None = None, *,
+               description: str = "", description_icon: Union[rl.Texture, None] = None):
     assert Params is not None
     super().__init__(text, options, toggle_callback, select_callback, description=description, description_icon=description_icon)
     self._param = param
+    self._param_values = param_values or list(range(len(options)))
+    assert len(self._param_values) == len(options)
 
     self._params = Params()
     self._load_value()
 
   def _load_value(self):
-    self.set_value(self._options[self._params.get(self._param) or 0])
+    param_value = self._params.get(self._param, return_default=True)
+    option_index = self._param_values.index(param_value) if param_value in self._param_values else 0
+    self.set_value(self._options[option_index])
 
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
     new_idx = self._options.index(self.value)
-    self._params.put(self._param, new_idx)
+    self._params.put(self._param, self._param_values[new_idx])
 
 
 class BigParamControl(BigToggle):

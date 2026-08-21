@@ -597,11 +597,15 @@
               "key": "LongitudinalPersonality",
               "widget": "multiple_button",
               "title": "Driving Personality",
-              "description": "Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.",
+              "description": "Standard is recommended. Aggressive and moderate modes follow lead cars closer and are more aggressive with the gas and brake. In relaxed mode, sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.",
               "options": [
                 {
                   "value": 0,
                   "label": "Aggressive"
+                },
+                {
+                  "value": 3,
+                  "label": "Moderate"
                 },
                 {
                   "value": 1,

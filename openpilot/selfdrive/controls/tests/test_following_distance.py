@@ -32,6 +32,7 @@ def run_following_distance_simulation(v_lead, t_end=100.0, personality=0):
 @parameterized_class(("personality", "speed"), itertools.product(
                       [log.LongitudinalPersonality.relaxed, # personality
                        log.LongitudinalPersonality.standard,
+                       log.LongitudinalPersonality.moderate,
                        log.LongitudinalPersonality.aggressive],
                       [0,10,35])) # speed
 class TestFollowingDistance(OpenpilotTestCase):

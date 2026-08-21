@@ -8,17 +8,26 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.mici.layouts.settings.initial_cruise_speed import InitialCruiseSpeedButton
 
 PERSONALITY_TO_INT = log.LongitudinalPersonality.schema.enumerants
+LONGITUDINAL_PERSONALITY_ORDER = (
+  int(log.LongitudinalPersonality.aggressive),
+  int(log.LongitudinalPersonality.moderate),
+  int(log.LongitudinalPersonality.standard),
+  int(log.LongitudinalPersonality.relaxed),
+)
+LONGITUDINAL_PERSONALITY_TO_BUTTON = {personality: index for index, personality in enumerate(LONGITUDINAL_PERSONALITY_ORDER)}
 
 
 class TogglesLayoutMici(NavScroller):
   def __init__(self):
     super().__init__()
 
-    self._personality_toggle = BigMultiParamToggle("following distance", "LongitudinalPersonality", ["aggressive", "standard", "relaxed"],
-                                                   description="Standard is recommended.\n" +
-                                                               "Aggressive follows closer, with firmer gas and braking.\n" +
-                                                               "Relaxed leaves more space.\n" +
-                                                               "Use the steering wheel distance button on supported cars.")
+    self._personality_toggle = BigMultiParamToggle(
+      "following distance", "LongitudinalPersonality", ["aggressive", "moderate", "standard", "relaxed"],
+      param_values=list(LONGITUDINAL_PERSONALITY_ORDER),
+      description="Standard is recommended.\n" +
+                  "Aggressive follows closer, with firmer gas and braking.\n" +
+                  "Relaxed leaves more space.\n" +
+                  "Use the steering wheel distance button on supported cars.")
     self._initial_cruise_speed = InitialCruiseSpeedButton()
     self._initial_cruise_speed.set_visible(lambda: ui_state.CP is not None and ui_state.has_longitudinal_control and not ui_state.CP.pcmCruise)
     is_metric_toggle = BigToggle("use metric units", initial_state=ui_state.params.get_bool("IsMetric"), toggle_callback=self._on_metric_toggle)
@@ -36,7 +45,6 @@ class TogglesLayoutMici(NavScroller):
     enable_openpilot = BigParamControl("enable sunnypilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback,
                                        description="Enable to use sunnypilot driver assistance.\n" +
                                                    "Disable to use your car's stock driver assistance.")
-
 
     self._scroller.add_widgets([
       self._personality_toggle,
@@ -75,7 +83,7 @@ class TogglesLayoutMici(NavScroller):
     if ui_state.sm.updated["selfdriveState"]:
       personality = PERSONALITY_TO_INT[ui_state.sm["selfdriveState"].personality]
       if personality != ui_state.personality and ui_state.started:
-        self._personality_toggle.set_value(self._personality_toggle._options[personality])
+        self._personality_toggle.set_value(self._personality_toggle._options[LONGITUDINAL_PERSONALITY_TO_BUTTON[personality]])
       ui_state.personality = personality
 
   def show_event(self):

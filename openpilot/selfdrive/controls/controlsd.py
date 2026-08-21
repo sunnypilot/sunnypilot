@@ -30,6 +30,18 @@ LaneChangeDirection = log.LaneChangeDirection
 
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
+LONGITUDINAL_PERSONALITY_TO_GAP_BARS = {
+  int(log.LongitudinalPersonality.aggressive): 1,
+  int(log.LongitudinalPersonality.moderate): 2,
+  int(log.LongitudinalPersonality.standard): 3,
+  int(log.LongitudinalPersonality.relaxed): 4,
+}
+
+
+def personality_to_gap_bars(personality):
+  personality_raw = personality.raw if hasattr(personality, "raw") else int(personality)
+  return LONGITUDINAL_PERSONALITY_TO_GAP_BARS[personality_raw]
+
 
 class Controls(ControlsExt):
   def __init__(self) -> None:
@@ -186,7 +198,7 @@ class Controls(ControlsExt):
     hudControl.speedVisible = CC.enabled
     hudControl.lanesVisible = CC.enabled
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
-    hudControl.leadDistanceBars = self.sm['selfdriveState'].personality.raw + 1
+    hudControl.leadDistanceBars = personality_to_gap_bars(self.sm['selfdriveState'].personality)
     hudControl.visualAlert = self.sm['selfdriveState'].alertHudVisual
 
     hudControl.rightLaneVisible = True

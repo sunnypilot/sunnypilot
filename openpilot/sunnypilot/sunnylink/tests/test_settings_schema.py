@@ -349,9 +349,9 @@ class TestItemCompleteness(OpenpilotTestCase):
           f"{item['key']}: min ({item['min']}) must be < max ({item['max']})"
 
   def test_known_param_has_options(self, schema):
-    """LongitudinalPersonality should have 3 options."""
+    """LongitudinalPersonality should have 4 options."""
     cruise = next(p for p in schema["panels"] if p["id"] == "cruise")
     lp = next((i for i in _iter_panel_items(cruise) if i["key"] == "LongitudinalPersonality"), None)
     assert lp is not None
     assert "options" in lp
-    assert len(lp["options"]) == 3
+    assert len(lp["options"]) == 4

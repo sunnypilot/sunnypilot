@@ -301,7 +301,7 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
     press(*CONFIRM)
 
   toggle_cases: Cases = [
-    lambda: click(times=3, wait_after=FAST_CLICK),  # first toggle is personality, which has 3 states
+    lambda: click(times=4, wait_after=FAST_CLICK),  # first toggle is personality, which has 4 states
     None, None, None, None, None, None,  # skip other toggles to save time
     lambda: click(times=2, wait_after=FAST_CLICK),  # test final toggle (enable openpilot)
   ]
