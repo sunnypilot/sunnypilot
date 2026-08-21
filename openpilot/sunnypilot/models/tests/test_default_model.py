@@ -20,4 +20,4 @@ class TestDefaultModel(OpenpilotTestCase):
     with open(MODEL_HASH_PATH) as f:
       current_hash = f.read().strip()
 
-    assert combined_hash == current_hash, "Run sunnypilot/models/default_model.py to update the default model name and hash"
+    assert combined_hash == current_hash, "Run openpilot/sunnypilot/models/default_model.py to update the default model name and hash"
