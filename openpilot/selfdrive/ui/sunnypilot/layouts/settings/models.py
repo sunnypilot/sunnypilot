@@ -10,7 +10,7 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.sunnypilot.models.default_model import get_default_model_name
+from openpilot.sunnypilot.models.default_model import get_default_model
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.lib.multilang import tr
@@ -211,7 +211,7 @@ class ModelsLayout(Widget):
     for bundle in bundles:
       folders.setdefault(next((ov_ride.value for ov_ride in bundle.overrides if ov_ride.key == "folder"), ""), []).append(bundle)
 
-    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': f"{get_default_model_name(ui_state.default_model_is_big)} (Default)",
+    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': f"{get_default_model()} (Default)",
                                                          'short_name': "Default"})])]
     for folder, folder_bundles in sorted(folders.items(), key=lambda x: max((bundle.index for bundle in x[1]), default=-1), reverse=True):
       folder_bundles.sort(key=lambda bundle: bundle.index, reverse=True)
@@ -250,7 +250,7 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    default_label = f"{get_default_model_name(ui_state.default_model_is_big)} (Default)"
+    default_label = f"{get_default_model()} (Default)"
     active_name = self.model_manager.activeBundle.displayName if self.model_manager and self.model_manager.activeBundle.ref else default_label
     self.current_model_item.action_item.set_value(active_name)
 
