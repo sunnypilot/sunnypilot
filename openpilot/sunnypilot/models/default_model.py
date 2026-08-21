@@ -5,7 +5,6 @@ import hashlib
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot import get_file_hash
 from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL, DEFAULT_BIG_MODEL
-from openpilot.selfdrive.modeld.helpers import usbgpu_present
 
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "openpilot", "sunnypilot", "models", "model_name.py")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "openpilot", "sunnypilot", "models", "tests", "model_hash")
@@ -20,10 +19,6 @@ def update_model_hash():
     f.write(combined_hash)
 
   print(f"Generated and updated new combined model hash to {MODEL_HASH_PATH}")
-
-
-def get_default_model() -> str:
-  return DEFAULT_BIG_MODEL if usbgpu_present() else DEFAULT_MODEL
 
 
 def update_default_model_names(default_model_name: str, default_big_model_name: str):
