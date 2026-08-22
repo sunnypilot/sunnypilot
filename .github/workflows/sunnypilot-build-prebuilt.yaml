@@ -208,13 +208,9 @@ jobs:
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   prepare_chestnut:
-    needs: [ build, prepare_strategy ]
+    needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
-    if: ${{
-      always() && !cancelled() &&
-      needs.build.result == 'success' &&
-      needs.prepare_strategy.outputs.include_big_model == 'true'
-      }}
+    if: ${{ needs.prepare_strategy.outputs.include_big_model == 'true' }}
     env:
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/big
@@ -233,12 +229,7 @@ jobs:
 
       - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
 
-      - name: Download prebuilt artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: prebuilt
-
-      - name: Verify ONNX and inject big model into prebuilt
+      - name: Verify ONNX and download big model chunks
         run: |
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
           DEFAULTS=$(curl -fsSL "$JSON_URL")
@@ -259,12 +250,8 @@ jobs:
             exit 1
           fi
 
-          mkdir -p chestnut_output
-          tar xzf prebuilt.tar.gz -C chestnut_output
-          MODELS_DEST="chestnut_output/openpilot/selfdrive/modeld/models"
-
+          mkdir -p big_model_chunks
           ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
-          SRC_PKL=$(echo "$ARTIFACT" | jq -r '.file_name')
           BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
           NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
 
@@ -273,17 +260,16 @@ jobs:
             CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
             CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
             echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-            curl -fsSL -o "${MODELS_DEST}/${CANONICAL_CHUNK}" "${BASE_URL}/${CHUNK_NAME}"
+            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "${BASE_URL}/${CHUNK_NAME}"
           done
 
-          echo "$NUM_CHUNKS" > "${MODELS_DEST}/${CANONICAL}.chunkmanifest"
-          tar czf prebuilt-chestnut.tar.gz -C chestnut_output .
+          echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
 
-      - name: Upload chestnut artifact
+      - name: Upload big model chunks
         uses: actions/upload-artifact@v4
         with:
-          name: prebuilt-chestnut
-          path: prebuilt-chestnut.tar.gz
+          name: big-model-chunks
+          path: big_model_chunks/
           compression-level: 0
 
   publish:
@@ -316,17 +302,23 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download chestnut artifact
-        if: ${{ needs.prepare_chestnut.result == 'success' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: prebuilt-chestnut
-
       - name: Prepare chestnut output
         if: ${{ needs.prepare_chestnut.result == 'success' }}
         run: |
           mkdir -p "${{ github.workspace }}/chestnut_output"
-          tar xzf prebuilt-chestnut.tar.gz -C "${{ github.workspace }}/chestnut_output"
+          tar xzf prebuilt.tar.gz -C "${{ github.workspace }}/chestnut_output"
+
+      - name: Download big model chunks
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: big-model-chunks
+          path: big_model_chunks
+
+      - name: Inject big model into chestnut
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        run: |
+          cp big_model_chunks/* "${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models/"
 
       - name: Configure Git
         run: |
