@@ -233,7 +233,12 @@ jobs:
 
       - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
 
-      - name: Verify and download big model from HF
+      - name: Download prebuilt artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt
+
+      - name: Verify ONNX and inject big model into prebuilt
         run: |
           MANIFEST_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/manifest.json"
           MANIFEST=$(curl -fsSL "$MANIFEST_URL")
@@ -248,22 +253,10 @@ jobs:
             exit 1
           fi
 
-          NUM_CHUNKS=$(echo "$MANIFEST" | jq -r '.big.artifact.num_chunks')
-          PKL_NAME=$(echo "$MANIFEST" | jq -r '.big.artifact.file_name')
-
-      - name: Download prebuilt artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: prebuilt
-
-      - name: Inject big model into prebuilt
-        run: |
           mkdir -p chestnut_output
           tar xzf prebuilt.tar.gz -C chestnut_output
 
           MODELS_DEST="chestnut_output/openpilot/selfdrive/modeld/models"
-          MANIFEST_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/manifest.json"
-          MANIFEST=$(curl -fsSL "$MANIFEST_URL")
           NUM_CHUNKS=$(echo "$MANIFEST" | jq -r '.big.artifact.num_chunks')
           PKL_NAME=$(echo "$MANIFEST" | jq -r '.big.artifact.file_name')
 
