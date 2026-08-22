@@ -1,10 +1,6 @@
 name: Build default big model
 
 on:
-  push:
-    branches: [ master, master-dev ]
-    paths:
-      - 'openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx'
   workflow_dispatch:
 
 env:
