@@ -9,6 +9,10 @@ TYPEC_CC_ORIENTATION_PATH = Path("/sys/class/power_supply/usb/typec_cc_orientati
 PRIMARY_USB_CONTROLLER = "a600000.ssusb"
 
 
+def is_chestnut_ready(vendor_id: int, product_id: int, product: str) -> bool:
+  return (vendor_id, product_id) in CHESTNUT_USB_IDS and product == f"custom {CHESTNUT_FW_VERSION}-CLEAN"
+
+
 def get_usb_topology() -> set[str]:
   try:
     return set(os.listdir(USB_DEVICES_PATH))

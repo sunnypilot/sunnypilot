@@ -3,14 +3,18 @@ import os
 import hashlib
 
 from openpilot.common.basedir import BASEDIR
+from openpilot.common.hardware.usb import is_chestnut_ready
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot import get_file_hash
 from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL, DEFAULT_BIG_MODEL
 
 
 def get_default_model() -> str:
-  show_big_model = (ui_state.usbgpu and ui_state.usbgpu_compiled
-                    and (ui_state.usbgpu_active or ui_state.usbgpu_loading or ui_state.is_offroad()))
+  is_offroad = ui_state.is_offroad()
+  usbgpu_ready = (any(is_chestnut_ready(d.vendorId, d.productId, d.product) for d in ui_state.sm["deviceState"].usbState.devices)
+                  if is_offroad else ui_state.usbgpu)
+  show_big_model = (usbgpu_ready and ui_state.usbgpu_compiled
+                    and (ui_state.usbgpu_active or ui_state.usbgpu_loading or is_offroad))
 
   return DEFAULT_BIG_MODEL if show_big_model else DEFAULT_MODEL
 
