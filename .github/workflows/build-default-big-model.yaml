@@ -1,0 +1,82 @@
+name: Build default big model
+
+on:
+  push:
+    branches: [ master, master-dev ]
+    paths:
+      - 'openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx'
+  workflow_dispatch:
+
+env:
+  HF_REPO: sunnypilot/sunnypilot_models_v1
+  HF_DEFAULTS_PATH: models/defaults/big
+
+jobs:
+  build_model:
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    with:
+      upstream_branch: ${{ github.sha }}
+      custom_name: default-big-model
+      target_hardware: usbgpu
+    secrets: inherit
+
+  upload_defaults:
+    needs: build_model
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+
+      - name: Install huggingface_hub
+        run: pip install --upgrade "huggingface_hub>=0.22.0"
+
+      - name: Download artifact name
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-default-big-model
+          path: artifact_name
+
+      - name: Read artifact name
+        id: artifact
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.artifact.outputs.artifact_name }}
+          path: output
+
+      - name: Upload model to HF defaults
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
+        run: |
+          rm -f output/artifact_name.txt
+          hf upload ${{ env.HF_REPO }} \
+            output/ \
+            "${HF_DEFAULTS_PATH}/${ARTIFACT_NAME}/" \
+            --repo-type=dataset
+
+      - name: Get tinygrad ref and ONNX hash
+        id: meta
+        run: |
+          export PYTHONPATH=$(pwd)
+          echo "tinygrad_ref=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)" >> $GITHUB_OUTPUT
+          echo "onnx_sha256=$(sha256sum openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Update default_models.json on HF
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
+        run: |
+          python3 release/ci/upload_default_model.py \
+            --hf-repo "${{ env.HF_REPO }}" \
+            --hf-defaults-path "${{ env.HF_DEFAULTS_PATH }}" \
+            --artifact-name "$ARTIFACT_NAME" \
+            --metadata-path "output/metadata.json" \
+            --onnx-sha256 "${{ steps.meta.outputs.onnx_sha256 }}" \
+            --tinygrad-ref "${{ steps.meta.outputs.tinygrad_ref }}"
