@@ -8,16 +8,31 @@ env:
   HF_DEFAULTS_PATH: models/defaults/big
 
 jobs:
+  resolve_name:
+    runs-on: ubuntu-24.04
+    outputs:
+      model_name: ${{ steps.name.outputs.model_name }}
+      onnx_ref: ${{ steps.name.outputs.onnx_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: name
+        run: |
+          NAME=$(PYTHONPATH=${{ github.workspace }} python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
+          ONNX_REF=$(git log -1 --format='%H' -- openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx)
+          echo "model_name=${NAME}" >> $GITHUB_OUTPUT
+          echo "onnx_ref=$ONNX_REF" >> $GITHUB_OUTPUT
+
   build_model:
+    needs: resolve_name
     uses: ./.github/workflows/sunnypilot-build-model.yaml
     with:
-      upstream_branch: ${{ github.sha }}
-      custom_name: default-big-model
+      upstream_branch: ${{ needs.resolve_name.outputs.onnx_ref }}
+      custom_name: ${{ needs.resolve_name.outputs.model_name }}
       target_hardware: usbgpu
     secrets: inherit
 
   upload_defaults:
-    needs: build_model
+    needs: [ resolve_name, build_model ]
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
@@ -34,7 +49,7 @@ jobs:
       - name: Download artifact name
         uses: actions/download-artifact@v4
         with:
-          name: artifact-name-default-big-model
+          name: artifact-name-${{ needs.resolve_name.outputs.model_name }}
           path: artifact_name
 
       - name: Read artifact name
@@ -62,4 +77,7 @@ jobs:
             --artifact-name "$ARTIFACT_NAME" \
             --model-dir output \
             --onnx-path "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" \
-            --tinygrad-ref "$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)"
+            --onnx-ref "${{ needs.resolve_name.outputs.onnx_ref }}" \
+            --model-name "${{ needs.resolve_name.outputs.model_name }}" \
+            --tinygrad-ref "$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)" \
+            --run-number "${{ github.run_number }}"

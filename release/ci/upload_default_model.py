@@ -29,30 +29,40 @@ def main():
   parser.add_argument("--artifact-name", required=True)
   parser.add_argument("--model-dir", required=True)
   parser.add_argument("--onnx-path", required=True)
+  parser.add_argument("--onnx-ref", required=True)
+  parser.add_argument("--model-name", required=True)
   parser.add_argument("--tinygrad-ref", required=True)
+  parser.add_argument("--run-number", required=True)
   args = parser.parse_args()
 
   api = HfApi()
   onnx_sha256 = hash_file(args.onnx_path)
+  short_ref = args.onnx_ref[:8]
+  folder_name = f"model-{args.model_name}-{short_ref}-{args.run_number}"
+
   print(f"ONNX hash: {onnx_sha256}")
+  print(f"ONNX ref: {args.onnx_ref} (short: {short_ref})")
+  print(f"Folder: {folder_name}")
 
   metadata_path = f"{args.model_dir}/metadata.json"
   with open(metadata_path) as f:
     metadata = json.load(f)
 
   bundle = metadata['bundles'][0]
+  bundle['display_name'] = args.model_name
   bundle['onnx_sha256'] = onnx_sha256
+  bundle['onnx_ref'] = args.onnx_ref
 
   artifact = bundle['models'][0]['artifact']
-  hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{args.artifact_name}"
+  hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{folder_name}"
   artifact['download_uri']['url'] = f"{hf_base}/{artifact['file_name']}"
   for chunk in artifact.get('chunks', []):
     chunk['url'] = f"{hf_base}/{chunk['file_name']}"
 
-  print(f"Uploading model to {args.hf_defaults_path}/{args.artifact_name}/")
+  print(f"Uploading model to {args.hf_defaults_path}/{folder_name}/")
   api.upload_folder(
     folder_path=args.model_dir,
-    path_in_repo=f"{args.hf_defaults_path}/{args.artifact_name}",
+    path_in_repo=f"{args.hf_defaults_path}/{folder_name}",
     repo_id=args.hf_repo,
     repo_type="dataset",
   )
