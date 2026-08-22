@@ -24,7 +24,8 @@ from opendbc.car.car_helpers import get_demo_car_params
 
 from tinygrad.tensor import Tensor
 
-from openpilot.common.file_chunker import open_file_chunked, get_existing_chunks
+from openpilot.common.file_chunker import open_file_chunked
+from openpilot.selfdrive.modeld.load_progress import open_with_progress
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -54,32 +55,6 @@ PROCESS_NAME = "openpilot.selfdrive.modeld.modeld_tinygrad"
 def _pkl_exists(path):
   from openpilot.common.file_chunker import get_manifest_path
   return os.path.exists(path) or os.path.exists(get_manifest_path(path))
-
-
-class _ProgressReader:
-  # wraps a chunked stream, reports byte-read % via cb (throttled to whole percent)
-  def __init__(self, inner, total, cb):
-    self._inner, self._total, self._cb = inner, total, cb
-    self._read = 0
-    self._pct = -1
-
-  def _bump(self, n):
-    self._read += n
-    if self._total:
-      pct = min(100, self._read * 100 // self._total)
-      if pct != self._pct:
-        self._pct = pct
-        self._cb(pct)
-
-  def read(self, size=-1):
-    data = self._inner.read(size)
-    self._bump(len(data))
-    return data
-
-  def readinto(self, b):
-    n = self._inner.readinto(b)
-    self._bump(n)
-    return n
 
 
 def _find_driving_pkl(bundle):
@@ -133,10 +108,7 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    stream = open_file_chunked(pkl_path)
-    if self.usbgpu:
-      total = sum(os.path.getsize(p) for p in get_existing_chunks(pkl_path))
-      stream = _ProgressReader(stream, total, lambda pct: Params().put("UsbGpuLoadProgress", pct))
+    stream = open_with_progress(pkl_path) if self.usbgpu else open_file_chunked(pkl_path)
     jits = load_oob(stream)
 
     self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
