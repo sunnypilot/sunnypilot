@@ -86,6 +86,7 @@ class UIState(UIStateSP):
     self.usbgpu_compiled: bool = usbgpu_compiled()
     self.usbgpu_active: bool | None = self.params.get("UsbGpuActive")
     self.usbgpu_loading: bool = self.params.get_bool("UsbGpuLoading")
+    self.usbgpu_load_progress: int = self.params.get("UsbGpuLoadProgress", return_default=True)
     self.started: bool = False
     self.ignition: bool = False
     self.recording_audio: bool = False
@@ -222,6 +223,7 @@ class UIState(UIStateSP):
       self.usbgpu_compiled = usbgpu_compiled()
     self.usbgpu_active = self.params.get("UsbGpuActive")
     self.usbgpu_loading = self.params.get_bool("UsbGpuLoading")
+    self.usbgpu_load_progress = self.params.get("UsbGpuLoadProgress", return_default=True)
 
     UIStateSP.update_params(self)
 

@@ -107,7 +107,8 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    jits = load_oob(open_file_chunked(pkl_path))
+    progress_cb = (lambda pct: Params().put("UsbGpuLoadProgress", pct)) if self.usbgpu else None
+    jits = load_oob(open_file_chunked(pkl_path, progress_cb))
 
     self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
     self.DEV = 'AMD' if self.usbgpu else self.WARP_DEV
@@ -333,6 +334,7 @@ def main(demo=False):
 
   params = Params()
   params.put_bool("UsbGpuLoading", USBGPU)
+  params.put("UsbGpuLoadProgress", 0)
   params.remove("UsbGpuActive")
 
   # visionipc clients
