@@ -10,6 +10,8 @@ class ProgressReader:
     self._params = Params()
     self._read = 0
     self._pct = -1
+    # sub-read size ~ 1% of total, so big weight buffers advance the % smoothly (not in jumps)
+    self._step = max(64 * 1024, total // 100)
 
   def _bump(self, n):
     self._read += n
@@ -25,9 +27,16 @@ class ProgressReader:
     return data
 
   def readinto(self, b):
-    n = self._inner.readinto(b)
-    self._bump(n)
-    return n
+    # sub-chunk big buffers so the % advances smoothly instead of jumping per weight
+    view = memoryview(b)
+    done = 0
+    while done < len(view):
+      n = self._inner.readinto(view[done:done + self._step])
+      if not n:
+        break
+      done += n
+      self._bump(n)
+    return done
 
 
 def open_with_progress(pkl_path, param="UsbGpuLoadProgress"):

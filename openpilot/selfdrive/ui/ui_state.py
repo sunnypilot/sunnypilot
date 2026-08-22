@@ -165,6 +165,10 @@ class UIState(UIStateSP):
     # Update started state
     self.started = self.sm["deviceState"].started and self.ignition
 
+    # Poll gpu load progress per-frame (not 5Hz) so the % counter updates smoothly
+    if self.usbgpu_loading:
+      self.usbgpu_load_progress = self.params.get("UsbGpuLoadProgress", return_default=True)
+
     # Update body state
     if self.CP is not None and self.is_body != self.CP.notCar:
       self.is_body = self.CP.notCar
