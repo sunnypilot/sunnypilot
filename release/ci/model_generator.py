@@ -90,6 +90,18 @@ def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
   return old_pkl.rename(new_pkl)
 
 
+def _hash_onnx_files(model_dir: Path) -> str | None:
+  onnx_files = sorted(model_dir.glob("*.onnx"))
+  if not onnx_files:
+    return None
+  digest = hashlib.sha256()
+  for f in onnx_files:
+    with f.open('rb') as fh:
+      while block := fh.read(1024 * 1024):
+        digest.update(block)
+  return digest.hexdigest()
+
+
 def generate_chunked_model(driving_pkl: Path) -> dict:
   tinygrad_hash = _hash_pkl(driving_pkl)
 
@@ -123,7 +135,8 @@ def generate_chunked_model(driving_pkl: Path) -> dict:
   }
 
 
-def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown") -> None:
+def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown",
+                         onnx_sha256=None) -> None:
   bundle_json = {
     "short_name": short_name,
     "display_name": custom_name or upstream_branch,
@@ -138,6 +151,9 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "overrides": {},
     "models": models,
   }
+
+  if onnx_sha256:
+    bundle_json["onnx_sha256"] = onnx_sha256
 
   # Write metadata to output_dir
   metadata_json = {
@@ -178,4 +194,6 @@ if __name__ == "__main__":
       _driving_pkl = new_pkl
 
   _model_metadata = generate_chunked_model(_driving_pkl)
-  create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch)
+  _onnx_sha256 = _hash_onnx_files(Path(args.model_dir))
+  create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch,
+                       onnx_sha256=_onnx_sha256)

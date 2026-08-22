@@ -1,0 +1,64 @@
+name: Build default big model
+
+on:
+  push:
+    branches: [ master, master-dev ]
+    paths:
+      - 'openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx'
+  workflow_dispatch:
+
+jobs:
+  build_model:
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    with:
+      upstream_branch: ${{ github.sha }}
+      custom_name: default-big-model
+      target_hardware: usbgpu
+    secrets: inherit
+
+  upload_defaults:
+    needs: build_model
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+
+      - name: Download artifact name
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-default-big-model
+          path: artifact_name
+
+      - name: Download model artifact
+        id: artifact
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.artifact.outputs.artifact_name }}
+          path: model_output
+
+      - name: Get tinygrad ref
+        id: tinygrad
+        run: |
+          source /etc/profile 2>/dev/null || true
+          export PYTHONPATH=$(pwd)
+          REF=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+
+      - name: Install huggingface_hub
+        run: pip install --upgrade "huggingface_hub>=0.22.0"
+
+      - name: Upload to HF defaults
+        env:
+          HF_OIDC_RESOURCE: datasets/sunnypilot/sunnypilot_models_v1
+        run: |
+          python3 release/ci/upload_default_model.py \
+            --onnx-path "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" \
+            --model-dir model_output \
+            --tinygrad-ref "${{ steps.tinygrad.outputs.ref }}" \
+            --hf-repo sunnypilot/sunnypilot_models_v1

@@ -36,6 +36,7 @@ jobs:
       publish_concurrency_group: ${{ steps.strategy.outputs.publish_concurrency_group }}
       is_stable_branch: ${{ steps.strategy.outputs.is_stable_branch }}
       build: ${{ steps.strategy.outputs.build }}
+      include_big_model: ${{ steps.strategy.outputs.include_big_model }}
     steps:
       - uses: actions/checkout@v4
       - name: Extract deploy strategy
@@ -78,6 +79,9 @@ jobs:
             stable_version=$(cat openpilot/sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g');
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=${environment}" >> $GITHUB_OUTPUT
+
+            include_big_model="$(echo "$CONFIG" | jq -r '.include_big_model // false')";
+            echo "include_big_model=$include_big_model" >> $GITHUB_OUTPUT
           fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
@@ -203,6 +207,84 @@ jobs:
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
+  prepare_chestnut:
+    needs: [ build, prepare_strategy ]
+    runs-on: ubuntu-24.04
+    if: ${{
+      always() && !cancelled() &&
+      needs.build.result == 'success' &&
+      needs.prepare_strategy.outputs.include_big_model == 'true'
+      }}
+    env:
+      HF_REPO: sunnypilot/sunnypilot_models_v1
+      HF_DEFAULTS_PATH: models/defaults
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Wait for default big model build
+        uses: ./.github/workflows/wait-for-action
+        with:
+          workflow: build-default-big-model.yaml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          should-wait-for-start: 'true'
+          wait-time: '45'
+
+      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+
+      - name: Verify and download big model from HF
+        run: |
+          MANIFEST_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/manifest.json"
+          MANIFEST=$(curl -fsSL "$MANIFEST_URL")
+
+          EXPECTED_ONNX_HASH=$(echo "$MANIFEST" | jq -r '.big.onnx_sha256')
+          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
+
+          echo "Repo ONNX hash:     $ACTUAL_ONNX_HASH"
+          echo "Manifest ONNX hash: $EXPECTED_ONNX_HASH"
+          if [ "$ACTUAL_ONNX_HASH" != "$EXPECTED_ONNX_HASH" ]; then
+            echo "::error::ONNX hash mismatch — run build-default-big-model workflow first"
+            exit 1
+          fi
+
+          NUM_CHUNKS=$(echo "$MANIFEST" | jq -r '.big.artifact.num_chunks')
+          PKL_NAME=$(echo "$MANIFEST" | jq -r '.big.artifact.file_name')
+
+      - name: Download prebuilt artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt
+
+      - name: Inject big model into prebuilt
+        run: |
+          mkdir -p chestnut_output
+          tar xzf prebuilt.tar.gz -C chestnut_output
+
+          MODELS_DEST="chestnut_output/openpilot/selfdrive/modeld/models"
+          MANIFEST_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/manifest.json"
+          MANIFEST=$(curl -fsSL "$MANIFEST_URL")
+          NUM_CHUNKS=$(echo "$MANIFEST" | jq -r '.big.artifact.num_chunks')
+          PKL_NAME=$(echo "$MANIFEST" | jq -r '.big.artifact.file_name')
+
+          CHUNK_BASE_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/big"
+          for i in $(seq 1 $NUM_CHUNKS); do
+            PADDED=$(printf "%02dof%02d" "$i" "$NUM_CHUNKS")
+            CHUNK_FILE="${PKL_NAME}.chunk${PADDED}"
+            echo "Downloading $CHUNK_FILE"
+            curl -fsSL -o "${MODELS_DEST}/${CHUNK_FILE}" "${CHUNK_BASE_URL}/${CHUNK_FILE}"
+          done
+
+          echo "$NUM_CHUNKS" > "${MODELS_DEST}/${PKL_NAME}.chunkmanifest"
+
+          tar czf prebuilt-chestnut.tar.gz -C chestnut_output .
+
+      - name: Upload chestnut artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-chestnut
+          path: prebuilt-chestnut.tar.gz
+          compression-level: 0
 
   publish:
     concurrency:
@@ -211,14 +293,20 @@ jobs:
       # Otherwise, if a job is waiting to be published due to environment wait time, it would be canceled by a new commit and restart the wait time.
       group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}
       cancel-in-progress: ${{ needs.prepare_strategy.outputs.cancel_publish_in_progress == 'true' }}
-    if: ${{ (always() && !cancelled() && !failure()) && needs.build.result == 'success' && needs.prepare_strategy.result == 'success' && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
-    needs: [ build, prepare_strategy ]
+    if: ${{
+      always() && !cancelled() &&
+      needs.build.result == 'success' &&
+      needs.prepare_strategy.result == 'success' &&
+      (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) &&
+      (needs.prepare_strategy.outputs.include_big_model != 'true' || needs.prepare_chestnut.result == 'success')
+      }}
+    needs: [ build, prepare_strategy, prepare_chestnut ]
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifacts
+      - name: Download prebuilt artifact
         uses: actions/download-artifact@v4
         with:
           name: prebuilt
@@ -227,6 +315,18 @@ jobs:
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
+
+      - name: Download chestnut artifact
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt-chestnut
+
+      - name: Prepare chestnut output
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        run: |
+          mkdir -p "${{ github.workspace }}/chestnut_output"
+          tar xzf prebuilt-chestnut.tar.gz -C "${{ github.workspace }}/chestnut_output"
 
       - name: Configure Git
         run: |
@@ -248,6 +348,22 @@ jobs:
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
             "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
 
+      - name: Publish chestnut branch
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
+          CHESTNUT_DIR="${{ github.workspace }}/chestnut_output"
+
+          ${{ env.CI_DIR }}/publish.sh \
+            "${{ github.workspace }}" \
+            "$CHESTNUT_DIR" \
+            "$CHESTNUT_BRANCH" \
+            "${{ needs.prepare_strategy.outputs.version }}" \
+            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
+            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
+
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
         run: |
@@ -260,6 +376,7 @@ jobs:
     - prepare_strategy
     - build
     - publish
+    - prepare_chestnut
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure())
       && needs.publish.result == 'success'
@@ -279,6 +396,7 @@ jobs:
           export commit_short_sha="${commit_short_sha:0:7}"
           export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
           export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
+          export chestnut_branch="${{ needs.prepare_chestnut.result == 'success' && format('{0}-chestnut', needs.prepare_strategy.outputs.new_branch) || '' }}"
 
           MESSAGE=$(cat << 'EOF' | envsubst
           ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
