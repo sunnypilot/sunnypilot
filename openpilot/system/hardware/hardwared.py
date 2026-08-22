@@ -301,7 +301,9 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     set_usb_state(msg.deviceState, last_hw_state.usb_state)
     chestnut.update(started_ts is None, last_hw_state.usb_state)
-    set_offroad_alert_if_changed("Offroad_ChestnutBranch", msg.deviceState.chestnutPresent and not big_model_available)
+    chestnut_needs_switch = msg.deviceState.chestnutPresent and not big_model_available
+    set_offroad_alert_if_changed("Offroad_ChestnutBranch", chestnut_needs_switch,
+                                 extra_text=f"{get_build_metadata().channel}-chestnut" if chestnut_needs_switch else None)
 
     # this subset is only used for offroad
     temp_sources = [
