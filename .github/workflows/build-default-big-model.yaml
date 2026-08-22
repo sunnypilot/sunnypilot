@@ -19,6 +19,9 @@ jobs:
   upload_defaults:
     needs: build_model
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,33 +49,17 @@ jobs:
           name: ${{ steps.artifact.outputs.artifact_name }}
           path: output
 
-      - name: Upload model to HF defaults
+      - name: Upload to HF and update default_models.json
         env:
           HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
           ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
         run: |
           rm -f output/artifact_name.txt
-          hf upload ${{ env.HF_REPO }} \
-            output/ \
-            "${HF_DEFAULTS_PATH}/${ARTIFACT_NAME}/" \
-            --repo-type=dataset
-
-      - name: Get tinygrad ref and ONNX hash
-        id: meta
-        run: |
           export PYTHONPATH=$(pwd)
-          echo "tinygrad_ref=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)" >> $GITHUB_OUTPUT
-          echo "onnx_sha256=$(sha256sum openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-      - name: Update default_models.json on HF
-        env:
-          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
-          ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
-        run: |
           python3 release/ci/upload_default_model.py \
             --hf-repo "${{ env.HF_REPO }}" \
             --hf-defaults-path "${{ env.HF_DEFAULTS_PATH }}" \
             --artifact-name "$ARTIFACT_NAME" \
-            --metadata-path "output/metadata.json" \
-            --onnx-sha256 "${{ steps.meta.outputs.onnx_sha256 }}" \
-            --tinygrad-ref "${{ steps.meta.outputs.tinygrad_ref }}"
+            --model-dir output \
+            --onnx-path "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" \
+            --tinygrad-ref "$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)"
