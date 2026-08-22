@@ -223,9 +223,10 @@ class HudRenderer(Widget):
     if icon is not self._egpu_icon:
       self._egpu_fade_time = rl.get_time()
       self._egpu_icon = icon
-    alpha = self._egpu_alpha_filter.update(loading or 0 < rl.get_time() - self._egpu_fade_time < SET_SPEED_PERSISTENCE)
-    if alpha < 1e-2:
-      return
+    # alpha = self._egpu_alpha_filter.update(loading or 0 < rl.get_time() - self._egpu_fade_time < SET_SPEED_PERSISTENCE)
+    # if alpha < 1e-2:
+    #   return
+    alpha = 1.0
 
     pos = rl.Vector2(rect.x + rect.width - 10 - icon.width,
                      rect.y + rect.height - 14 - (self._txt_wheel.height + icon.height) / 2)
