@@ -9,7 +9,7 @@ on:
 
 env:
   HF_REPO: sunnypilot/sunnypilot_models_v1
-  HF_DEFAULTS_PATH: models/defaults
+  HF_DEFAULTS_PATH: models/defaults/big
 
 jobs:
   build_model:
