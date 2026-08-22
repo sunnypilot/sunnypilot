@@ -108,8 +108,7 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    stream = open_with_progress(pkl_path) if self.usbgpu else open_file_chunked(pkl_path)
-    jits = load_oob(stream)
+    jits = load_oob(open_with_progress(pkl_path) if self.usbgpu else open_file_chunked(pkl_path))
 
     self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
     self.DEV = 'AMD' if self.usbgpu else self.WARP_DEV

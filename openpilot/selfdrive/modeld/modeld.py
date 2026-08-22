@@ -146,9 +146,7 @@ class ModelState(ModelStateBase):
     ModelStateBase.__init__(self)
     input_devices = get_tg_input_devices(PROCESS_NAME, usbgpu)
     self.WARP_DEV, self.QUEUE_DEV = input_devices['WARP_DEV'], input_devices['QUEUE_DEV']
-    pkl_path = modeld_pkl_path(usbgpu)
-    stream = open_with_progress(pkl_path) if usbgpu else open_file_chunked(pkl_path)
-    jits = load_oob(stream)
+    jits = load_oob(open_with_progress(modeld_pkl_path(usbgpu)) if usbgpu else open_file_chunked(modeld_pkl_path(usbgpu)))
     metadata = jits['metadata']
     self.input_shapes = metadata['input_shapes']
     self.vision_input_names = [k for k in self.input_shapes if 'img' in k]
