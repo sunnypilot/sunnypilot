@@ -236,8 +236,7 @@ class HudRenderer(Widget):
       pct_text = f"{ui_state.usbgpu_load_progress}%"
       pct_size = measure_text_cached(self._font_bold, pct_text, FONT_SIZES.max_speed)
       pct_pos = rl.Vector2(pos.x - 8 - pct_size.x, pos.y + (icon.height - pct_size.y) / 2)
-      rl.draw_text_ex(self._font_bold, pct_text, pct_pos, FONT_SIZES.max_speed, 0,
-                      rl.Color(255, 255, 255, int(255 * opacity * alpha)))
+      rl.draw_text_ex(self._font_bold, pct_text, pct_pos, FONT_SIZES.max_speed, 0, rl.WHITE)
 
   def _draw_steering_wheel(self, rect: rl.Rectangle) -> None:
     wheel_txt = self._txt_wheel_critical if self._show_wheel_critical else self._txt_wheel
