@@ -335,7 +335,6 @@ def main(demo=False):
 
   params = Params()
   params.put_bool("UsbGpuLoading", USBGPU)
-  params.put("UsbGpuLoadProgress", 0)
   params.remove("UsbGpuActive")
 
   # visionipc clients
