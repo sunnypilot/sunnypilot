@@ -16,7 +16,7 @@ class ModelRendererSP:
   def __init__(self):
     self.rainbow_path = RainbowPath()
     self.chevron_metrics = ChevronMetrics()
-    self._width_filter = FirstOrderFilter(0.9, 0.25, 1 / gui_app.target_fps)
+    self._width_filter = FirstOrderFilter(0.9, 0.1, 1 / gui_app.target_fps)
 
   @property
   def _lateral_active(self) -> bool:
