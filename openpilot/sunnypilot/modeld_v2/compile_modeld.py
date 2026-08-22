@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import argparse
+import math
 import os
 import tempfile
 import time
@@ -66,13 +67,14 @@ def get_policy_npy_shapes(input_shapes: dict, is_supercombo: bool = False) -> tu
   if desire_key:
     shapes['desire'] = (input_shapes[desire_key][2],)
 
-  if is_supercombo and 'features_buffer' in input_shapes:
-    fb = input_shapes['features_buffer']
-    shapes['prev_feat'] = (fb[0], fb[2])
-
   for key, shape in input_shapes.items():
     if key not in (desire_key, 'features_buffer') and 'img' not in key:
       shapes[key] = tuple(shape)
+
+  if is_supercombo and 'features_buffer' in input_shapes:
+    fb = input_shapes['features_buffer']
+    feat_dim = math.prod(fb[2:])
+    shapes['prev_feat'] = (fb[0], feat_dim)
 
   sizes = [int(np.prod(size)) for size in shapes.values()]
   return shapes, sizes
@@ -117,8 +119,9 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   }
 
   if features_buffer:
+    feat_dim = math.prod(features_buffer[2:])
     feat_q_len = frame_skip * features_buffer[1] if is_supercombo else frame_skip * (features_buffer[1] - 1) + 1
-    queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], features_buffer[2]),
+    queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], feat_dim),
                        dtype=np.float32), device=device).contiguous().realize()
 
   queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
@@ -183,14 +186,14 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    img = shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn).realize()
-    big_img = shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn).realize()
+    img = shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
+    big_img = shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
 
     desire_dev = unpacked_dict['desire']
-    desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn).realize()
+    desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
 
     inputs = {desire_key: desire_buf}
     for key, tensor_val in unpacked_dict.items():
@@ -199,19 +202,22 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize()
+      feat_buf = shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn)
+      inputs['features_buffer'] = feat_buf if len(fb := input_shapes['features_buffer']) <= 3 else feat_buf.reshape(fb)
 
     if vision_runner:
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
-        inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+        feat_buf = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+        inputs['features_buffer'] = feat_buf if len(fb := input_shapes['features_buffer']) <= 3 else feat_buf.reshape(fb)
       policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
     inputs.update({road_key: img, wide_key: big_img})
     if 'features_buffer' not in inputs:
-      inputs['features_buffer'] = sample_skip_fn(feat_q)
+      feat_buf = sample_skip_fn(feat_q)
+      inputs['features_buffer'] = feat_buf if len(fb := input_shapes['features_buffer']) <= 3 else feat_buf.reshape(fb)
 
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').realize()
     if 'features_buffer' not in inputs and features_slice is not None:
