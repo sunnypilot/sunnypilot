@@ -40,13 +40,9 @@ def get_existing_chunks(path):
   raise FileNotFoundError(path)
 
 class ChunkStream(io.RawIOBase):
-  def __init__(self, paths, total=0, progress_cb=None):
+  def __init__(self, paths):
     self._paths = iter(paths)
     self._f = None
-    self._total = total
-    self._progress_cb = progress_cb
-    self._read = 0
-    self._last_pct = -1
 
   def readable(self):
     return True
@@ -66,15 +62,9 @@ class ChunkStream(io.RawIOBase):
         self._f = None
         continue
       n += count
-    self._read += n
-    if self._progress_cb and self._total:
-      pct = min(100, self._read * 100 // self._total)
-      if pct != self._last_pct:
-        self._last_pct = pct
-        self._progress_cb(pct)
     return n
 
-def open_file_chunked(path, progress_cb=None):
+def open_file_chunked(path):
   manifest_path = get_manifest_path(path)
   if os.path.isfile(manifest_path):
     num_chunks = int(Path(manifest_path).read_text().strip())
@@ -83,8 +73,7 @@ def open_file_chunked(path, progress_cb=None):
     paths = [path]
   else:
     raise FileNotFoundError(path)
-  total = sum(os.path.getsize(p) for p in paths)
-  return io.BufferedReader(ChunkStream(paths, total, progress_cb))
+  return io.BufferedReader(ChunkStream(paths))
 
 
 if __name__ == "__main__":
