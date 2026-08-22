@@ -219,36 +219,60 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Wait for default big model build
-        uses: ./.github/workflows/wait-for-action
-        with:
-          workflow: build-default-big-model.yaml
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          should-wait-for-start: 'true'
-          wait-time: '45'
-
       - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
 
-      - name: Verify ONNX and download big model chunks
+      - name: Check HF defaults and build if needed
+        id: resolve
         run: |
+          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
+          echo "Repo ONNX hash: $ACTUAL_ONNX_HASH"
+
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+
+          check_hash() {
+            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ACTUAL_ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            [ -n "$BUNDLE" ] && [ "$BUNDLE" != "null" ]
+          }
+
+          if check_hash; then
+            echo "HF defaults match repo ONNX"
+          else
+            echo "No matching model on HF — triggering build"
+            gh workflow run build-default-big-model.yaml --ref "${{ github.head_ref || github.ref_name }}"
+
+            echo "Waiting for build to start..."
+            sleep 120
+
+            RUN_ID=$(gh run list --workflow=build-default-big-model.yaml --branch="${{ github.head_ref || github.ref_name }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+              echo "::error::Failed to find build-default-big-model run"
+              exit 1
+            fi
+
+            echo "Waiting for run $RUN_ID..."
+            gh run watch "$RUN_ID"
+
+            CONCLUSION=$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')
+            if [ "$CONCLUSION" != "success" ]; then
+              echo "::error::build-default-big-model failed: $CONCLUSION"
+              exit 1
+            fi
+
+            if ! check_hash; then
+              echo "::error::HF defaults still don't match after build"
+              exit 1
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download big model chunks
+        run: |
+          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
           DEFAULTS=$(curl -fsSL "$JSON_URL")
-
-          DEFAULT_NAME=$(PYTHONPATH=${{ github.workspace }} python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
-          BUNDLE=$(echo "$DEFAULTS" | jq --arg name "$DEFAULT_NAME" '.bundles[] | select(.display_name | startswith($name))')
-          if [ -z "$BUNDLE" ] || [ "$BUNDLE" = "null" ]; then
-            echo "::error::No bundle found for default big model '$DEFAULT_NAME' in default_models.json"
-            exit 1
-          fi
-
-          EXPECTED_ONNX_HASH=$(echo "$BUNDLE" | jq -r '.onnx_sha256')
-          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
-          echo "Repo ONNX hash:     $ACTUAL_ONNX_HASH"
-          echo "Manifest ONNX hash: $EXPECTED_ONNX_HASH"
-          if [ "$ACTUAL_ONNX_HASH" != "$EXPECTED_ONNX_HASH" ]; then
-            echo "::error::ONNX hash mismatch — run build-default-big-model workflow first"
-            exit 1
-          fi
+          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ACTUAL_ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
 
           mkdir -p big_model_chunks
           ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
@@ -271,6 +295,12 @@ jobs:
           name: big-model-chunks
           path: big_model_chunks/
           compression-level: 0
+
+      - name: Cancel run on failure
+        if: failure()
+        run: gh run cancel ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     concurrency:
