@@ -240,12 +240,18 @@ jobs:
 
       - name: Verify ONNX and inject big model into prebuilt
         run: |
-          MANIFEST_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/manifest.json"
-          MANIFEST=$(curl -fsSL "$MANIFEST_URL")
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+          DEFAULTS=$(curl -fsSL "$JSON_URL")
 
-          EXPECTED_ONNX_HASH=$(echo "$MANIFEST" | jq -r '.big.onnx_sha256')
+          DEFAULT_NAME=$(PYTHONPATH=${{ github.workspace }} python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
+          BUNDLE=$(echo "$DEFAULTS" | jq --arg name "$DEFAULT_NAME" '.bundles[] | select(.display_name | startswith($name))')
+          if [ -z "$BUNDLE" ] || [ "$BUNDLE" = "null" ]; then
+            echo "::error::No bundle found for default big model '$DEFAULT_NAME' in default_models.json"
+            exit 1
+          fi
+
+          EXPECTED_ONNX_HASH=$(echo "$BUNDLE" | jq -r '.onnx_sha256')
           ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
-
           echo "Repo ONNX hash:     $ACTUAL_ONNX_HASH"
           echo "Manifest ONNX hash: $EXPECTED_ONNX_HASH"
           if [ "$ACTUAL_ONNX_HASH" != "$EXPECTED_ONNX_HASH" ]; then
@@ -255,21 +261,22 @@ jobs:
 
           mkdir -p chestnut_output
           tar xzf prebuilt.tar.gz -C chestnut_output
-
           MODELS_DEST="chestnut_output/openpilot/selfdrive/modeld/models"
-          NUM_CHUNKS=$(echo "$MANIFEST" | jq -r '.big.artifact.num_chunks')
-          PKL_NAME=$(echo "$MANIFEST" | jq -r '.big.artifact.file_name')
 
-          CHUNK_BASE_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/big"
-          for i in $(seq 1 $NUM_CHUNKS); do
-            PADDED=$(printf "%02dof%02d" "$i" "$NUM_CHUNKS")
-            CHUNK_FILE="${PKL_NAME}.chunk${PADDED}"
-            echo "Downloading $CHUNK_FILE"
-            curl -fsSL -o "${MODELS_DEST}/${CHUNK_FILE}" "${CHUNK_BASE_URL}/${CHUNK_FILE}"
+          ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
+          SRC_PKL=$(echo "$ARTIFACT" | jq -r '.file_name')
+          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
+          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+
+          CANONICAL="big_driving_tinygrad.pkl"
+          echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
+            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
+            CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
+            echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
+            curl -fsSL -o "${MODELS_DEST}/${CANONICAL_CHUNK}" "${BASE_URL}/${CHUNK_NAME}"
           done
 
-          echo "$NUM_CHUNKS" > "${MODELS_DEST}/${PKL_NAME}.chunkmanifest"
-
+          echo "$NUM_CHUNKS" > "${MODELS_DEST}/${CANONICAL}.chunkmanifest"
           tar czf prebuilt-chestnut.tar.gz -C chestnut_output .
 
       - name: Upload chestnut artifact
