@@ -283,8 +283,9 @@ jobs:
           echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
             CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
             CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
+            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
             echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "${BASE_URL}/${CHUNK_NAME}"
+            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "$ENCODED_URL"
           done
 
           echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
