@@ -260,7 +260,9 @@ class ModelManagerSP:
         self.active_bundle = get_active_bundle(self.params)
 
         if (index_to_download := self.params.get("ModelManager_DownloadIndex")) is not None:
-          if model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
+          if self.active_bundle and self.active_bundle.index == index_to_download:
+            self.params.remove("ModelManager_DownloadIndex")
+          elif model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:
