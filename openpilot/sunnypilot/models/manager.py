@@ -220,6 +220,8 @@ class ModelManagerSP:
     """Downloads all models in a bundle"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
+    for model in self.selected_bundle.models:
+      model.artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
     self._report_status()
     os.makedirs(destination_path, exist_ok=True)
 
