@@ -172,7 +172,7 @@ if __name__ == "__main__":
     sys.exit(1)
 
   is_big = _driving_pkl.name.startswith('big_')
-  
+
   if _pkl:
     new_pkl = _output_dir / f"driving_{_pkl}_tinygrad.pkl"
     if not new_pkl.exists():
