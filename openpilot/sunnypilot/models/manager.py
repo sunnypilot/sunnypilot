@@ -143,13 +143,17 @@ class ModelManagerSP:
       is_cached = False
       if len(artifact.chunks) > 0:
         from openpilot.common.file_chunker import get_chunk_name
+        num_chunks = len(artifact.chunks)
         chunks_valid = True
         for i, chunk in enumerate(artifact.chunks):
-          chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
+          chunk_path = get_chunk_name(full_path, i, num_chunks)
           if not await verify_file(chunk_path, chunk.sha256):
             chunks_valid = False
             break
-        if chunks_valid and len(artifact.chunks) > 0:
+          artifact.downloadProgress.progress = ((i + 1) / num_chunks) * 100
+          self._sync_artifact_progress(artifact)
+          self._report_status()
+        if chunks_valid and num_chunks > 0:
           is_cached = True
       else:
         if await verify_file(full_path, expected_hash):
@@ -216,6 +220,7 @@ class ModelManagerSP:
     """Downloads all models in a bundle"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
+    self._report_status()
     os.makedirs(destination_path, exist_ok=True)
 
     try:
