@@ -1,12 +1,15 @@
+from openpilot.cereal import custom
 from opendbc.car.structs import car
 from openpilot.common.constants import CV
 from openpilot.common.parameterized import parameterized, parameterized_class
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.cruise import V_CRUISE_INITIAL
 from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode as SpeedLimitMode
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
+SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
 
 
 # TODO: test pcmCruise and pcmCruiseSpeed
@@ -110,6 +113,168 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
     expected_change = 3 if button_type == ButtonType.accelCruise else -3
     assert self.v_cruise_helper.v_cruise_kph == initial_speed + expected_change
+
+  def test_snap_to_slc_only_when_assist_enabled(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.warning), block=True)
+    self.enable(60 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 55
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.disabled
+    self.v_cruise_helper.prev_sla_state = SpeedLimitAssistState.disabled
+
+    self.press_button_short(ButtonType.decelCruise)
+
+    assert self.v_cruise_helper.v_cruise_kph == 50
+
+  def test_snap_to_slc_when_inactive_after_manual_adjustment(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(40 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 52
+    self.v_cruise_helper.prev_speed_limit_final_last_kph = 52
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.inactive
+    self.v_cruise_helper.prev_sla_state = SpeedLimitAssistState.inactive
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 52
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 60
+
+  def test_snap_to_slc_when_planner_state_disabled_but_assist_mode_enabled(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(40 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 30.9
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.disabled
+
+    self.press_button_short(ButtonType.decelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 30.9
+
+  def test_snap_to_slc_once_when_crossing_target(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(60 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 53
+    self.v_cruise_helper.prev_speed_limit_final_last_kph = 53
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+    self.v_cruise_helper.prev_sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.decelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 53
+
+    self.press_button_short(ButtonType.decelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 50
+
+    self.press_button_short(ButtonType.decelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 40
+
+  def test_snap_to_slc_once_when_crossing_target_from_below(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(40 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 53
+    self.v_cruise_helper.prev_speed_limit_final_last_kph = 53
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+    self.v_cruise_helper.prev_sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 53
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 60
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 70
+
+  def test_snap_to_slc_before_crossing_only_when_within_third_step(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(40 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 56
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 50
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 56
+
+  def test_snap_to_slc_before_crossing_when_close_to_next_step(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(40 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 52
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == 52
+
+  @parameterized.expand([
+    (56, 40, ButtonType.accelCruise, [40, 50, 56, 60, 70]),
+    (56, 70, ButtonType.decelCruise, [70, 60, 56, 50, 40]),
+    (58, 40, ButtonType.accelCruise, [40, 50, 58, 70]),
+    (58, 80, ButtonType.decelCruise, [80, 70, 58, 50]),
+    (62, 40, ButtonType.accelCruise, [40, 50, 62, 70]),
+    (62, 80, ButtonType.decelCruise, [80, 70, 62, 50]),
+  ])
+  def test_snap_to_slc_offset_sequences(self, slc_target, initial_speed, button_type, expected):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(initial_speed * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = slc_target
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+
+    actual = [self.v_cruise_helper.v_cruise_kph]
+    for _ in range(len(expected) - 1):
+      self.press_button_short(button_type)
+      actual.append(self.v_cruise_helper.v_cruise_kph)
+
+    assert actual == expected
+
+  def test_snap_to_slc_from_just_below_target(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.v_cruise_kph = 54.5
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 55
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.accelCruise)
+
+    assert self.v_cruise_helper.v_cruise_kph == 55
+
+  def test_snap_to_slc_from_just_above_target(self):
+    self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
+    self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
+    self.enable(60 * CV.KPH_TO_MS, False, False)
+
+    self.v_cruise_helper.v_cruise_kph = 53.5
+    self.v_cruise_helper.has_speed_limit = True
+    self.v_cruise_helper.speed_limit_final_last_kph = 53
+    self.v_cruise_helper.sla_state = SpeedLimitAssistState.active
+
+    self.press_button_short(ButtonType.decelCruise)
+
+    assert self.v_cruise_helper.v_cruise_kph == 53
 
   def test_rounding_behavior(self):
     """Test rounding behavior for 5 and 10 increments"""
