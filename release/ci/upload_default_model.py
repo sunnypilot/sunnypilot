@@ -7,11 +7,19 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import argparse
+import hashlib
 import json
-import sys
 import tempfile
 
 from huggingface_hub import HfApi, hf_hub_download
+
+
+def hash_file(path: str) -> str:
+  digest = hashlib.sha256()
+  with open(path, 'rb') as f:
+    while block := f.read(1024 * 1024):
+      digest.update(block)
+  return digest.hexdigest()
 
 
 def main():
@@ -19,22 +27,45 @@ def main():
   parser.add_argument("--hf-repo", required=True)
   parser.add_argument("--hf-defaults-path", required=True)
   parser.add_argument("--artifact-name", required=True)
-  parser.add_argument("--metadata-path", required=True)
-  parser.add_argument("--onnx-sha256", required=True)
+  parser.add_argument("--model-dir", required=True)
+  parser.add_argument("--onnx-path", required=True)
+  parser.add_argument("--onnx-ref", required=True)
+  parser.add_argument("--model-name", required=True)
   parser.add_argument("--tinygrad-ref", required=True)
+  parser.add_argument("--run-number", required=True)
   args = parser.parse_args()
 
-  with open(args.metadata_path) as f:
+  api = HfApi()
+  onnx_sha256 = hash_file(args.onnx_path)
+  short_ref = args.onnx_ref[:8]
+  folder_name = f"model-{args.model_name}-{short_ref}-{args.run_number}"
+
+  print(f"ONNX hash: {onnx_sha256}")
+  print(f"ONNX ref: {args.onnx_ref} (short: {short_ref})")
+  print(f"Folder: {folder_name}")
+
+  metadata_path = f"{args.model_dir}/metadata.json"
+  with open(metadata_path) as f:
     metadata = json.load(f)
 
   bundle = metadata['bundles'][0]
-  bundle['onnx_sha256'] = args.onnx_sha256
+  bundle['display_name'] = args.model_name
+  bundle['onnx_sha256'] = onnx_sha256
+  bundle['onnx_ref'] = args.onnx_ref
 
   artifact = bundle['models'][0]['artifact']
-  hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{args.artifact_name}"
+  hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{folder_name}"
   artifact['download_uri']['url'] = f"{hf_base}/{artifact['file_name']}"
   for chunk in artifact.get('chunks', []):
     chunk['url'] = f"{hf_base}/{chunk['file_name']}"
+
+  print(f"Uploading model to {args.hf_defaults_path}/{folder_name}/")
+  api.upload_folder(
+    folder_path=args.model_dir,
+    path_in_repo=f"{args.hf_defaults_path}/{folder_name}",
+    repo_id=args.hf_repo,
+    repo_type="dataset",
+  )
 
   json_filename = f"{args.hf_defaults_path}/default_models.json"
   try:
@@ -47,7 +78,7 @@ def main():
   defaults_json['tinygrad_ref'] = args.tinygrad_ref
 
   existing_idx = next((i for i, b in enumerate(defaults_json['bundles'])
-                       if b.get('display_name') == bundle.get('display_name')), None)
+                       if b.get('onnx_sha256') == onnx_sha256), None)
   if existing_idx is not None:
     defaults_json['bundles'][existing_idx] = bundle
   else:
@@ -55,7 +86,6 @@ def main():
 
   print(json.dumps(defaults_json, indent=2))
 
-  api = HfApi()
   with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
     json.dump(defaults_json, f, indent=2)
     tmp_path = f.name

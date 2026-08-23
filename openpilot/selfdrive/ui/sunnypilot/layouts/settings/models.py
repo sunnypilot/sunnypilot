@@ -178,27 +178,14 @@ class ModelsLayout(Widget):
     # circled_slash is authored grey; tinting it again only darkens it
     return {"name": name, "text_color": rl.GRAY, "icon": "icons/circled_slash.png", "icon_color": rl.WHITE}
 
-  @staticmethod
-  def _show_reset_params_dialog():
-    def _callback(response):
-      if response == DialogResult.CONFIRM:
-        ui_state.params.remove("CalibrationParams")
-        ui_state.params.remove("LiveTorqueParameters")
-    msg = tr("Model download has started in the background. We suggest resetting calibration. Would you like to do that now?")
-    dialog = ConfirmDialog(msg, tr("Reset Calibration"), callback=_callback)
-    gui_app.push_widget(dialog)
-
   def _on_model_selected(self, result):
     if result != DialogResult.CONFIRM:
       return
     selected_ref = self.model_dialog.selection_ref
     if selected_ref == "Default":
       ui_state.params.remove("ModelManager_ActiveBundle")
-      self._show_reset_params_dialog()
     elif selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None):
       ui_state.params.put("ModelManager_DownloadIndex", selected_bundle.index)
-      if self.model_manager.activeBundle and selected_bundle.generation != self.model_manager.activeBundle.generation:
-        self._show_reset_params_dialog()
     self.model_dialog = None
 
   @staticmethod

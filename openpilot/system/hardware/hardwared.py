@@ -27,7 +27,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.system.statsd import statlog
 from openpilot.system.hardware.power_monitoring import PowerMonitoring
 from openpilot.system.hardware.fan_controller import FanController
-from openpilot.common.version import terms_version, training_version, get_build_metadata, terms_version_sp
+from openpilot.common.version import terms_version, training_version, get_build_metadata, terms_version_sp, CHESTNUT_BRANCHES
 
 
 ThermalStatus = log.DeviceState.ThermalStatus
@@ -301,7 +301,11 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     set_usb_state(msg.deviceState, last_hw_state.usb_state)
     chestnut.update(started_ts is None, last_hw_state.usb_state)
-    set_offroad_alert_if_changed("Offroad_ChestnutBranch", msg.deviceState.chestnutPresent and not big_model_available)
+    current_channel = get_build_metadata().channel
+    chestnut_target = CHESTNUT_BRANCHES.get(current_channel)
+    chestnut_needs_switch = msg.deviceState.chestnutPresent and not big_model_available and chestnut_target is not None
+    set_offroad_alert_if_changed("Offroad_ChestnutBranch", chestnut_needs_switch,
+                                 extra_text=chestnut_target if chestnut_needs_switch else None)
 
     # this subset is only used for offroad
     temp_sources = [

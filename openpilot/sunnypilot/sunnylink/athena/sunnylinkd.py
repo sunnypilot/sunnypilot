@@ -28,7 +28,8 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
                        create_connection, WebSocketConnectionClosedException)
 
 import openpilot.cereal.messaging as messaging
-from openpilot.sunnypilot.models.default_model import get_default_model
+from openpilot.selfdrive.modeld.helpers import usbgpu_present, usbgpu_compiled
+from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL, DEFAULT_BIG_MODEL
 from openpilot.sunnypilot.selfdrive.car.sync_sunnylink_params import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
@@ -181,7 +182,10 @@ def getParamsMetadata() -> str:
     schema = generate_schema()
     schema["capabilities"] = generate_capabilities()
     schema["capability_labels"] = CAPABILITY_LABELS
-    schema["default_model"] = get_default_model()
+    # mirrors get_default_model() — ui_state unavailable in sunnylinkd process
+    show_big = (usbgpu_present() and usbgpu_compiled()
+                and (params.get_bool("UsbGpuActive") or params.get_bool("UsbGpuLoading") or params.get_bool("IsOffroad")))
+    schema["default_model"] = DEFAULT_BIG_MODEL if show_big else DEFAULT_MODEL
     raw = json.dumps(schema, separators=(",", ":")).encode("utf-8")
     return base64.b64encode(gzip.compress(raw)).decode("utf-8")
   except Exception:
