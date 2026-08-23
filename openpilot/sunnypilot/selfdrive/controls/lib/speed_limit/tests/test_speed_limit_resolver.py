@@ -55,6 +55,7 @@ def setup_sm_mock(mocker):
     'carStateSP': car_state_sp,
     'gpsLocation': gps_data,
   }[key]
+  sm_mock.logMonoTime = {'liveMapDataSP': time.monotonic_ns()}
   return sm_mock
 
 
@@ -110,6 +111,53 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     assert resolver.speed_limit == minimum_speed_limit
     assert resolver.source == socket_to_source[minimum_key]
 
+  def test_car_first_prefers_car_over_lower_current_map_limit(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.car_state_priority
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['carStateSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimit = 20.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.speed_limit == 30.
+    assert resolver.source == SpeedLimitSource.car
+
+  def test_car_first_uses_lower_upcoming_map_limit(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.car_state_priority
+    resolver.lookahead_lower_limits = True
+    resolver.lookahead_speed_factor_down = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['carStateSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 100.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.speed_limit == 20.
+    assert resolver.source == SpeedLimitSource.map
+    assert 99. < resolver.distance <= 100.
+
+  def test_car_first_uses_higher_upcoming_map_limit(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.car_state_priority
+    resolver.lookahead_speed_factor_up = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['carStateSP'].speedLimit = 20.
+    sm_mock['liveMapDataSP'].speedLimit = 20.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 30.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 100.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.speed_limit == 30.
+    assert resolver.source == SpeedLimitSource.map
+    assert 99. < resolver.distance <= 100.
+
   @parametrized_policies
   def test_parser(self, resolver_class, policy, sm_key, function_key, mocker):
     resolver = resolver_class()
@@ -140,8 +188,86 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
   def test_old_map_data_ignored(self, resolver_class, policy, mocker):
     resolver = resolver_class()
     resolver.policy = policy
-    sm_mock = mocker.MagicMock()
-    sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock.logMonoTime['liveMapDataSP'] = int((time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e9)
     resolver._get_from_map_data(sm_mock)
     assert resolver.limit_solutions[SpeedLimitSource.map] == 0.
     assert resolver.distance_solutions[SpeedLimitSource.map] == 0.
+
+  def test_map_speed_limit_ahead_distance_ages_from_log_mono_time(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    resolver.lookahead_speed_factor_up = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock.logMonoTime['liveMapDataSP'] = int((time.monotonic() - 2.) * 1e9)
+    sm_mock['liveMapDataSP'].speedLimit = 10.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 70.
+
+    resolver.update(10., sm_mock)
+
+    assert resolver.speed_limit == 20.
+    assert 49. < resolver.distance < 51.
+
+  def test_higher_map_speed_limit_ahead_applied_with_up_lookahead(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    resolver.lookahead_speed_factor_up = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['liveMapDataSP'].speedLimit = 10.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 70.
+
+    resolver.update(10., sm_mock)
+
+    assert resolver.speed_limit == 20.
+    assert 69. < resolver.distance <= 70.
+
+  def test_higher_map_speed_limit_ahead_ignored_outside_up_lookahead(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    resolver.lookahead_speed_factor_up = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['liveMapDataSP'].speedLimit = 10.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 80.
+
+    resolver.update(10., sm_mock)
+
+    assert resolver.speed_limit == 10.
+    assert resolver.distance == 0.
+
+  def test_lower_map_speed_limit_ahead_applied_with_down_lookahead(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    resolver.lookahead_lower_limits = True
+    resolver.lookahead_speed_factor_down = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['liveMapDataSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 100.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.speed_limit == 20.
+    assert 99. < resolver.distance <= 100.
+
+  def test_lower_map_speed_limit_ahead_ignored_outside_down_lookahead(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    resolver.lookahead_lower_limits = True
+    resolver.lookahead_speed_factor_down = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['liveMapDataSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 120.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.speed_limit == 30.
+    assert resolver.distance == 0.
