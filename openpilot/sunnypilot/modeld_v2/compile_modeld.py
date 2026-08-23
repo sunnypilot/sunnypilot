@@ -209,8 +209,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
-        feat_buf = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
-        inputs['features_buffer'] = feat_buf.reshape(input_shapes['features_buffer'])
+        inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
       policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
