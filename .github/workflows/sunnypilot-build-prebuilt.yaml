@@ -211,6 +211,8 @@ jobs:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
     if: ${{ needs.prepare_strategy.outputs.include_big_model == 'true' }}
+    outputs:
+      onnx_sha256: ${{ steps.resolve.outputs.onnx_sha256 }}
     env:
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/big
@@ -226,6 +228,7 @@ jobs:
         run: |
           ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
           echo "Repo ONNX hash: $ACTUAL_ONNX_HASH"
+          echo "onnx_sha256=$ACTUAL_ONNX_HASH" >> $GITHUB_OUTPUT
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
@@ -266,36 +269,6 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download big model chunks
-        run: |
-          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
-          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
-          DEFAULTS=$(curl -fsSL "$JSON_URL")
-          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ACTUAL_ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
-
-          mkdir -p big_model_chunks
-          ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
-          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
-          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
-
-          CANONICAL="big_driving_tinygrad.pkl"
-          echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
-            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
-            CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
-            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-            echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "$ENCODED_URL"
-          done
-
-          echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
-
-      - name: Upload big model chunks
-        uses: actions/upload-artifact@v4
-        with:
-          name: big-model-chunks
-          path: big_model_chunks/
-          compression-level: 0
 
       - name: Cancel run on failure
         if: failure()
@@ -339,12 +312,32 @@ jobs:
           mkdir -p "${{ github.workspace }}/chestnut_output"
           tar xzf prebuilt.tar.gz -C "${{ github.workspace }}/chestnut_output"
 
-      - name: Download big model chunks
+      - name: Download big model chunks from HF
         if: ${{ needs.prepare_chestnut.result == 'success' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: big-model-chunks
-          path: big_model_chunks
+        env:
+          HF_REPO: sunnypilot/sunnypilot_models_v1
+          HF_DEFAULTS_PATH: models/defaults/big
+        run: |
+          ONNX_HASH="${{ needs.prepare_chestnut.outputs.onnx_sha256 }}"
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+          DEFAULTS=$(curl -fsSL "$JSON_URL")
+          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
+
+          mkdir -p big_model_chunks
+          ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
+          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
+          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+
+          CANONICAL="big_driving_tinygrad.pkl"
+          echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
+            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
+            CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
+            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
+            echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
+            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "$ENCODED_URL"
+          done
+
+          echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
 
       - name: Inject big model into chestnut
         if: ${{ needs.prepare_chestnut.result == 'success' }}
