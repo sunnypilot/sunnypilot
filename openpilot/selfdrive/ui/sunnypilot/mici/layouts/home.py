@@ -24,21 +24,25 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     gray_idx = self._status_bar_layout.widgets.index(self._egpu_icon_gray)
     self._status_bar_layout.widgets.insert(gray_idx + 1, self._egpu_icon_orange)
 
-  def _render(self, _):
-    super()._render(_)
+  def _set_egpu_visibility(self):
     chestnut = ui_state.sm["deviceState"].chestnutPresent
-    if chestnut:
-      big_model_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
-      big_model_failed = ui_state.started and (ui_state.usbgpu_active is False)
-      loading = ui_state.usbgpu_loading or (big_model_selected and ui_state.started and ui_state.usbgpu_active is None)
+    if not chestnut:
+      self._egpu_icon.set_visible(False)
+      self._egpu_icon_orange.set_visible(False)
+      self._egpu_icon_gray.set_visible(False)
+      return
 
-      if loading:
-        self._egpu_icon._opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
-        self._egpu_icon.set_visible(True)
-        self._egpu_icon_orange.set_visible(False)
-        self._egpu_icon_gray.set_visible(False)
-      else:
-        self._egpu_icon._opacity = 1.0
-        self._egpu_icon.set_visible(big_model_selected and not big_model_failed)
-        self._egpu_icon_orange.set_visible(big_model_selected and big_model_failed)
-        self._egpu_icon_gray.set_visible(not big_model_selected)
+    big_model_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
+    big_model_failed = ui_state.started and (ui_state.usbgpu_active is False)
+    loading = ui_state.usbgpu_loading or (big_model_selected and ui_state.started and ui_state.usbgpu_active is None)
+
+    if loading:
+      self._egpu_icon._opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
+      self._egpu_icon.set_visible(True)
+      self._egpu_icon_orange.set_visible(False)
+      self._egpu_icon_gray.set_visible(False)
+    else:
+      self._egpu_icon._opacity = 1.0
+      self._egpu_icon.set_visible(big_model_selected and not big_model_failed)
+      self._egpu_icon_orange.set_visible(big_model_selected and big_model_failed)
+      self._egpu_icon_gray.set_visible(not big_model_selected)
