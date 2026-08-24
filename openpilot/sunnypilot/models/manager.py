@@ -30,6 +30,7 @@ class ModelManagerSP:
     self.params = Params()
     self.model_fetcher = ModelFetcher(self.params)
     self.pm = messaging.PubMaster(["modelManagerSP"])
+    self.sm = messaging.SubMaster(["deviceState"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
     self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
     self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params)
@@ -143,13 +144,17 @@ class ModelManagerSP:
       is_cached = False
       if len(artifact.chunks) > 0:
         from openpilot.common.file_chunker import get_chunk_name
+        num_chunks = len(artifact.chunks)
         chunks_valid = True
         for i, chunk in enumerate(artifact.chunks):
-          chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
+          chunk_path = get_chunk_name(full_path, i, num_chunks)
           if not await verify_file(chunk_path, chunk.sha256):
             chunks_valid = False
             break
-        if chunks_valid and len(artifact.chunks) > 0:
+          artifact.downloadProgress.progress = ((i + 1) / num_chunks) * 100
+          self._sync_artifact_progress(artifact)
+          self._report_status()
+        if chunks_valid and num_chunks > 0:
           is_cached = True
       else:
         if await verify_file(full_path, expected_hash):
@@ -216,6 +221,9 @@ class ModelManagerSP:
     """Downloads all models in a bundle"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
+    for model in self.selected_bundle.models:
+      model.artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
+    self._report_status()
     os.makedirs(destination_path, exist_ok=True)
 
     try:
@@ -255,12 +263,15 @@ class ModelManagerSP:
 
     while True:
       try:
-        self.available_models = self.model_fetcher.get_available_bundles()
+        self.sm.update(0)
+        self.available_models = self.model_fetcher.get_available_bundles(self.sm['deviceState'].chestnutPresent)
         validate_active_bundle(self.params, self.available_models)
         self.active_bundle = get_active_bundle(self.params)
 
         if (index_to_download := self.params.get("ModelManager_DownloadIndex")) is not None:
-          if model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
+          if self.active_bundle and self.active_bundle.index == index_to_download:
+            self.params.remove("ModelManager_DownloadIndex")
+          elif model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:

@@ -1,0 +1,279 @@
+name: Build default models
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Model target to build'
+        required: true
+        type: choice
+        options:
+          - small
+          - big
+  workflow_call:
+    inputs:
+      target:
+        description: 'Model target to build (small or big)'
+        required: true
+        type: string
+
+env:
+  HF_REPO: sunnypilot/sunnypilot_models_v1
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      model_name: ${{ steps.resolve.outputs.model_name }}
+      onnx_ref: ${{ steps.resolve.outputs.onnx_ref }}
+      onnx_path: ${{ steps.resolve.outputs.onnx_path }}
+      hf_defaults_path: ${{ steps.resolve.outputs.hf_defaults_path }}
+      target_hardware: ${{ steps.resolve.outputs.target_hardware }}
+      tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
+      dm_onnx_ref: ${{ steps.resolve.outputs.dm_onnx_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - id: resolve
+        run: |
+          export PYTHONPATH=${{ github.workspace }}
+
+          if [ "${{ inputs.target }}" = "big" ]; then
+            NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
+            ONNX_PATH="openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+            HF_DEFAULTS_PATH="models/defaults/big"
+            TARGET_HW="usbgpu"
+          else
+            NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL; print(DEFAULT_MODEL)")
+            ONNX_PATH="openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
+            HF_DEFAULTS_PATH="models/defaults/small"
+            TARGET_HW="qcom"
+          fi
+
+          ONNX_REF=$(git log -1 --format='%H' -- "$ONNX_PATH")
+          TINYGRAD_REF=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)
+          if [ -z "$TINYGRAD_REF" ]; then
+            echo "::error::Failed to resolve tinygrad ref"
+            exit 1
+          fi
+
+          DM_ONNX_REF=""
+          if [ "${{ inputs.target }}" = "small" ]; then
+            DM_ONNX_REF=$(git log -1 --format='%H' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
+          fi
+
+          echo "model_name=${NAME}" >> $GITHUB_OUTPUT
+          echo "onnx_ref=${ONNX_REF}" >> $GITHUB_OUTPUT
+          echo "onnx_path=${ONNX_PATH}" >> $GITHUB_OUTPUT
+          echo "hf_defaults_path=${HF_DEFAULTS_PATH}" >> $GITHUB_OUTPUT
+          echo "target_hardware=${TARGET_HW}" >> $GITHUB_OUTPUT
+          echo "tinygrad_ref=${TINYGRAD_REF}" >> $GITHUB_OUTPUT
+          echo "dm_onnx_ref=${DM_ONNX_REF}" >> $GITHUB_OUTPUT
+
+  build_driving_model:
+    needs: resolve
+    uses: ./.github/workflows/sunnypilot-build-model.yaml
+    with:
+      upstream_branch: ${{ needs.resolve.outputs.onnx_ref }}
+      custom_name: ${{ needs.resolve.outputs.model_name }}
+      target_hardware: ${{ needs.resolve.outputs.target_hardware }}
+    secrets: inherit
+
+  upload_defaults:
+    needs: [ resolve, build_driving_model, build_dm_model ]
+    if: ${{ !cancelled() && needs.build_driving_model.result == 'success' && (inputs.target != 'small' || needs.build_dm_model.result == 'success') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull ONNX via LFS
+        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}${{ inputs.target == 'small' && ',openpilot/selfdrive/modeld/models/dmonitoring_model.onnx' || '' }}"
+
+      - name: Install huggingface_hub
+        run: pip install --upgrade "huggingface_hub>=0.22.0"
+
+      - name: Download driving artifact name
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          path: artifact_name
+
+      - name: Read driving artifact name
+        id: artifact
+        run: |
+          ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download driving model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.artifact.outputs.artifact_name }}
+          path: output
+
+      - name: Upload driving model to HF
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
+        run: |
+          rm -f output/artifact_name.txt
+          export PYTHONPATH=$(pwd)
+          python3 release/ci/upload_default_model.py \
+            --hf-repo "${{ env.HF_REPO }}" \
+            --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
+            --artifact-name "$ARTIFACT_NAME" \
+            --model-dir output \
+            --onnx-path "${{ needs.resolve.outputs.onnx_path }}" \
+            --onnx-ref "${{ needs.resolve.outputs.onnx_ref }}" \
+            --model-name "${{ needs.resolve.outputs.model_name }}" \
+            --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
+            --run-number "${{ github.run_number }}"
+
+      - name: Download DM artifact
+        if: ${{ inputs.target == 'small' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: dm-model-${{ github.run_number }}
+          path: dm_output
+
+      - name: Generate DM metadata and upload to HF
+        if: ${{ inputs.target == 'small' }}
+        env:
+          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+        run: |
+          export PYTHONPATH=$(pwd)
+          python3 -c "
+          import json, hashlib
+          from pathlib import Path
+          from datetime import datetime, UTC
+
+          dm_dir = Path('dm_output')
+          manifest = list(dm_dir.glob('*.chunkmanifest'))
+          assert manifest, 'No chunkmanifest found'
+          pkl_name = manifest[0].name.removesuffix('.chunkmanifest')
+          num_chunks = int(manifest[0].read_text().strip())
+
+          chunks = []
+          for i in range(num_chunks):
+              chunk = dm_dir / f'{pkl_name}.chunk{i+1:02d}of{num_chunks:02d}'
+              chunks.append({
+                  'file_name': chunk.name,
+                  'sha256': hashlib.sha256(chunk.read_bytes()).hexdigest()
+              })
+
+          digest = hashlib.sha256()
+          for c in chunks:
+              with open(dm_dir / c['file_name'], 'rb') as f:
+                  while block := f.read(1024*1024):
+                      digest.update(block)
+
+          metadata = {
+              'bundles': [{
+                  'short_name': 'DMMODEL',
+                  'display_name': 'dmonitoring_model',
+                  'ref': '${{ needs.resolve.outputs.dm_onnx_ref }}',
+                  'runner': 'tinygrad',
+                  'build_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                  'models': [{
+                      'type': 'chunked',
+                      'artifact': {
+                          'file_name': pkl_name,
+                          'download_uri': {'url': '', 'sha256': digest.hexdigest()},
+                          'chunks': chunks
+                      }
+                  }]
+              }]
+          }
+          with open(dm_dir / 'metadata.json', 'w') as f:
+              json.dump(metadata, f, indent=2)
+          print('Generated DM metadata.json')
+          "
+
+          python3 release/ci/upload_default_model.py \
+            --hf-repo "${{ env.HF_REPO }}" \
+            --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
+            --artifact-name "dm-model-${{ github.run_number }}" \
+            --model-dir dm_output \
+            --onnx-path "${{ env.DM_ONNX }}" \
+            --onnx-ref "${{ needs.resolve.outputs.dm_onnx_ref }}" \
+            --model-name "dmonitoring_model" \
+            --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
+            --run-number "${{ github.run_number }}"
+
+  build_dm_model:
+    needs: resolve
+    if: ${{ inputs.target == 'small' }}
+    runs-on: [self-hosted, tici]
+    env:
+      DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
+      DM_PKL: openpilot/selfdrive/modeld/models/dmonitoring_model_tinygrad.pkl
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set environment variables
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync --frozen
+          printenv >> $GITHUB_ENV
+
+      - name: Disable powersave
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: Compile DM model
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+
+          taskset -c 7 env ${TG_FLAGS} python3 \
+            ${{ github.workspace }}/tinygrad_repo/examples/openpilot/compile3.py \
+            ${{ github.workspace }}/${{ env.DM_ONNX }} \
+            ${{ github.workspace }}/${{ env.DM_PKL }}
+
+      - name: Chunk DM pkl
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          python3 -c "
+          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
+          import os
+          pkl = '${{ github.workspace }}/${{ env.DM_PKL }}'
+          size = os.path.getsize(pkl)
+          targets = get_chunk_targets(pkl, size)
+          chunk_file(pkl, targets)
+          print(f'Chunked {pkl} into {len(targets)} chunks')
+          "
+
+      - name: Prepare DM output
+        run: |
+          mkdir -p dm_output
+          cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunk* dm_output/
+          cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunkmanifest dm_output/
+
+      - name: Upload DM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dm-model-${{ github.run_number }}
+          path: dm_output/
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+

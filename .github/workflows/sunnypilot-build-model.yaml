@@ -103,20 +103,25 @@ jobs:
       - run: |
           cd ${{ github.workspace }}/openpilot/openpilot
           if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
-            git lfs pull -X "selfdrive/modeld/models/big_*.onnx" -X "selfdrive/modeld/models/dmonitoring_*.onnx"
+            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx"
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
           else
-            git lfs pull -I "selfdrive/modeld/models/big_*.onnx"
+            git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx" -X ""
             find selfdrive/modeld/models -name "*.onnx" ! -name "big_*.onnx" -delete
+          fi
+          if grep -lIF "version https://git-lfs.github.com/spec/v1" selfdrive/modeld/models/*.onnx; then
+            echo "::error::the ONNX files above are still LFS pointers, not real models"
+            exit 1
           fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
           path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
+          if-no-files-found: error
 
   build_model:
-    runs-on: [self-hosted, tici]
+    runs-on: [self-hosted, usbgpu]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
@@ -127,7 +132,6 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - run: git lfs pull
 
       - name: Set environment variables
         id: set-env
@@ -160,7 +164,7 @@ jobs:
           fi
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
-          rm -rf ${{ env.MODELS_DIR }}/*.onnx
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx*
 
       - name: Download model artifacts
         uses: actions/download-artifact@v4
@@ -180,6 +184,7 @@ jobs:
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
+          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           if [ "${{ inputs.target_hardware }}" == "usbgpu" ]; then
             echo "USBGPU build"
             export USBGPU=1
@@ -187,27 +192,40 @@ jobs:
             OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
           else
             echo "QCOM build"
-            TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+            TG_FLAGS="$TG_FLAGS_QCOM"
             OUTPUT_PKL="${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
           fi
 
           # Generate metadata for all ONNX files
           find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
             echo "Generating metadata: $onnx_file"
-            env ${TG_FLAGS} python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+            env ${TG_FLAGS_QCOM} python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
           done
 
           # Detect model type and build compile args
-          VISION_ONNX="${{ env.MODELS_DIR }}/driving_vision.onnx"
-          POLICY_ONNX="${{ env.MODELS_DIR }}/driving_policy.onnx"
-          OFF_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_off_policy.onnx"
-          ON_POLICY_ONNX="${{ env.MODELS_DIR }}/driving_on_policy.onnx"
+          VISION_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_vision.onnx" "${{ env.MODELS_DIR }}/big_driving_vision.onnx"; do
+            [ -f "$f" ] && VISION_ONNX="$f" && break
+          done
+
+          POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_policy.onnx"; do
+            [ -f "$f" ] && POLICY_ONNX="$f" && break
+          done
+
+          OFF_POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_off_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_off_policy.onnx"; do
+            [ -f "$f" ] && OFF_POLICY_ONNX="$f" && break
+          done
+
+          ON_POLICY_ONNX=""
+          for f in "${{ env.MODELS_DIR }}/driving_on_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_on_policy.onnx"; do
+            [ -f "$f" ] && ON_POLICY_ONNX="$f" && break
+          done
+
           SUPERCOMBO_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx"; do
-            if [ -f "$f" ]; then
-              SUPERCOMBO_ONNX="$f"
-              break
-            fi
+          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx" "${{ env.MODELS_DIR }}/big_supercombo.onnx" "${{ env.MODELS_DIR }}/big_driving_supercombo.onnx"; do
+            [ -f "$f" ] && SUPERCOMBO_ONNX="$f" && break
           done
 
           MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
