@@ -139,6 +139,7 @@ class ModelsLayoutMici(NavScroller):
 
   def _pop_to_main(self):
     gui_app.pop_widgets_to(self)
+    self._scroller.scroll_panel.set_offset(0.0)
 
   def _select_model(self, bundle):
     ui_state.params.put("ModelManager_DownloadRef", bundle.ref)
