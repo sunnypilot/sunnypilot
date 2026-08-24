@@ -204,11 +204,16 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   aTarget @5 :Float32;
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
+  accelController @8 :AccelController;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
     active @2 :Bool;
+    decelIntent @3 :Float32;
+    curveDetected @4 :Bool;
+    wantBlended @5 :Bool;
+    leadVeto @6 :Bool;
 
     enum DynamicExperimentalControlState {
       acc @0;
@@ -305,6 +310,17 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   struct E2eAlerts {
     greenLightAlert @0 :Bool;
     leadDepartAlert @1 :Bool;
+  }
+
+  struct AccelController {
+    enabled @0 :Bool;
+    active @1 :Bool;
+    profile @2 :Profile;
+    enum Profile {
+      eco @0;
+      normal @1;
+      sport @2;
+    }
   }
 }
 
