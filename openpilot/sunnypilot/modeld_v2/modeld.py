@@ -25,6 +25,7 @@ from opendbc.car.car_helpers import get_demo_car_params
 from tinygrad.tensor import Tensor
 
 from openpilot.common.file_chunker import open_file_chunked
+from openpilot.selfdrive.modeld.load_progress import open_with_progress
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -107,7 +108,7 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    jits = load_oob(open_file_chunked(pkl_path))
+    jits = load_oob(open_with_progress(pkl_path) if self.usbgpu else open_file_chunked(pkl_path))
 
     self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
     self.DEV = 'AMD' if self.usbgpu else self.WARP_DEV
@@ -333,6 +334,7 @@ def main(demo=False):
 
   params = Params()
   params.put_bool("UsbGpuLoading", USBGPU)
+  params.put("UsbGpuLoadProgress", 0)
   params.remove("UsbGpuActive")
 
   # visionipc clients
