@@ -267,7 +267,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  prepare_small_models:
+  prepare_small_model:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
     outputs:
@@ -403,12 +403,12 @@ jobs:
       always() && !cancelled() &&
       needs.build.result == 'success' &&
       needs.prepare_strategy.result == 'success' &&
-      needs.prepare_small_models.result == 'success' &&
+      needs.prepare_small_model.result == 'success' &&
       needs.prepare_dm_model.result == 'success' &&
       (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) &&
       (needs.prepare_strategy.outputs.include_big_model != 'true' || needs.prepare_chestnut.result == 'success')
       }}
-    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_models, prepare_dm_model ]
+    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
@@ -456,7 +456,7 @@ jobs:
             echo "$NUM_CHUNKS" > "${MODELS_DIR}/${CANONICAL}.chunkmanifest"
           }
 
-          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_models.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
+          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
           download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
 
       - name: Prepare chestnut output
@@ -546,7 +546,7 @@ jobs:
     - build
     - publish
     - prepare_chestnut
-    - prepare_small_models
+    - prepare_small_model
     - prepare_dm_model
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure())
