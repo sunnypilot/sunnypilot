@@ -492,10 +492,41 @@ jobs:
 
           echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
 
-      - name: Inject big model into chestnut
+      - name: Inject models into chestnut
         if: ${{ needs.prepare_chestnut.result == 'success' }}
+        env:
+          HF_REPO: sunnypilot/sunnypilot_models_v1
         run: |
-          cp big_model_chunks/* "${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models/"
+          CHESTNUT_MODELS="${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models"
+          cp big_model_chunks/* "$CHESTNUT_MODELS/"
+
+          download_model_chunks() {
+            local DEFAULTS_PATH="$1"
+            local ONNX_HASH="$2"
+            local CANONICAL="$3"
+            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
+            local DEFAULTS=$(curl -fsSL "$JSON_URL")
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
+            ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
+            BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
+            NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+
+            echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
+              CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
+              if [ -z "$CHUNK_IDX" ]; then
+                echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
+                exit 1
+              fi
+              CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
+              echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
+              curl -fsSL -o "${CHESTNUT_MODELS}/${CANONICAL_CHUNK}" "$ENCODED_URL"
+            done
+            echo "$NUM_CHUNKS" > "${CHESTNUT_MODELS}/${CANONICAL}.chunkmanifest"
+          }
+
+          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
+          download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
 
       - name: Configure Git
         run: |
