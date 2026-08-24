@@ -276,6 +276,29 @@ class TestKnownPanels(OpenpilotTestCase):
     enhanced_enable_keys = {r.get("key") for r in enhanced.get("enablement", []) if r.get("type") == "param"}
     assert "NeuralNetworkLateralControl" in enhanced_enable_keys
 
+  def test_accel_controller_profile_mapping_and_enablement(self, schema):
+    cruise = next(p for p in schema["panels"] if p["id"] == "cruise")
+    items = {item["key"]: item for item in _iter_panel_items(cruise)}
+
+    assert items["AccelPersonalityEnabled"]["widget"] == "toggle"
+    assert items["AccelPersonality"]["options"] == [
+      {"value": 0, "label": "Eco"},
+      {"value": 1, "label": "Normal"},
+      {"value": 2, "label": "Sport"},
+    ]
+    assert {
+      "type": "capability",
+      "field": "has_longitudinal_control",
+      "equals": True,
+    } in items["AccelPersonalityEnabled"]["enablement"]
+    assert {
+      "type": "capability",
+      "field": "has_longitudinal_control",
+      "equals": True,
+    } in items["AccelPersonality"]["enablement"]
+    profile_enable_keys = {rule.get("key") for rule in items["AccelPersonality"]["enablement"] if rule.get("type") == "param"}
+    assert "AccelPersonalityEnabled" not in profile_enable_keys
+
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
   def test_hyundai_has_longitudinal_tuning(self, schema):
