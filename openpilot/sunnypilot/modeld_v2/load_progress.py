@@ -1,5 +1,5 @@
 import os
-from openpilot.common.file_chunker import open_file_chunked, get_existing_chunks
+from openpilot.common.file_chunker import open_file_chunked, get_existing_chunks, get_manifest_path
 from openpilot.common.params import Params
 
 PARAM = "UsbGpuLoadProgress"
@@ -40,5 +40,6 @@ class ProgressReader:
 
 
 def open_with_progress(pkl_path):
-  total = sum(os.path.getsize(p) for p in get_existing_chunks(pkl_path))
+  manifest = get_manifest_path(pkl_path)
+  total = sum(os.path.getsize(p) for p in get_existing_chunks(pkl_path) if p != manifest)
   return ProgressReader(open_file_chunked(pkl_path), total)

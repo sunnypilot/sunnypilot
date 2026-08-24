@@ -42,6 +42,8 @@ class UIStateSP:
     self.screensaver = ScreenSaverSP(params=self.params)
     self.screensaver_enabled: bool = False
 
+    self.usbgpu_load_progress: int = self.params.get("UsbGpuLoadProgress", return_default=True)
+
     self.active_bundle = None
     self.blindspot: bool = False
     self.chevron_metrics = None
@@ -175,6 +177,8 @@ class UIStateSP:
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
     self.always_offroad = self.params.get_bool("OffroadMode")
     self.screensaver_enabled = self.params.get_bool("ScreenSaverEnabled")
+    if self.usbgpu_loading:
+      self.usbgpu_load_progress = self.params.get("UsbGpuLoadProgress", return_default=True)
 
     if not self._sp_initialized:
       self._sp_initialized = True

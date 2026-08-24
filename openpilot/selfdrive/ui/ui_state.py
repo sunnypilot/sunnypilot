@@ -86,7 +86,6 @@ class UIState(UIStateSP):
     self.usbgpu_compiled: bool = usbgpu_compiled()
     self.usbgpu_active: bool | None = self.params.get("UsbGpuActive")
     self.usbgpu_loading: bool = self.params.get_bool("UsbGpuLoading")
-    self.usbgpu_load_progress: int = self.params.get("UsbGpuLoadProgress", return_default=True)
     self.started: bool = False
     self.ignition: bool = False
     self.recording_audio: bool = False
@@ -164,9 +163,6 @@ class UIState(UIStateSP):
 
     # Update started state
     self.started = self.sm["deviceState"].started and self.ignition
-
-    if self.usbgpu_loading:
-      self.usbgpu_load_progress = self.params.get("UsbGpuLoadProgress", return_default=True)
 
     # Update body state
     if self.CP is not None and self.is_body != self.CP.notCar:

@@ -223,25 +223,13 @@ class HudRenderer(Widget):
     if icon is not self._egpu_icon:
       self._egpu_fade_time = rl.get_time()
       self._egpu_icon = icon
-    alpha = self._egpu_alpha_filter.update(True)
+    alpha = self._egpu_alpha_filter.update(loading or 0 < rl.get_time() - self._egpu_fade_time < SET_SPEED_PERSISTENCE)
     if alpha < 1e-2:
       return
 
     pos = rl.Vector2(rect.x + rect.width - 10 - icon.width,
                      rect.y + rect.height - 14 - (self._txt_wheel.height + icon.height) / 2)
     rl.draw_texture_ex(icon, pos, 0.0, 1.0, rl.Color(255, 255, 255, int(255 * opacity * alpha)))
-
-    if loading:
-      pct_text = f"{ui_state.usbgpu_load_progress}%"
-      size = FONT_SIZES.max_speed
-      cell = measure_text_cached(self._font_bold, "0", size)
-      widths = [cell.x if c.isdigit() else measure_text_cached(self._font_bold, c, size).x for c in pct_text]
-      x = pos.x - 8 - sum(widths)
-      y = pos.y + (icon.height - cell.y) / 2
-      for c, w in zip(pct_text, widths, strict=True):
-        glyph = measure_text_cached(self._font_bold, c, size).x
-        rl.draw_text_ex(self._font_bold, c, rl.Vector2(x + (w - glyph) / 2, y), size, 0, rl.WHITE)
-        x += w
 
   def _draw_steering_wheel(self, rect: rl.Rectangle) -> None:
     wheel_txt = self._txt_wheel_critical if self._show_wheel_critical else self._txt_wheel

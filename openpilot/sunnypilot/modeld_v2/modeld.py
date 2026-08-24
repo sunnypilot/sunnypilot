@@ -25,7 +25,7 @@ from opendbc.car.car_helpers import get_demo_car_params
 from tinygrad.tensor import Tensor
 
 from openpilot.common.file_chunker import open_file_chunked
-from openpilot.selfdrive.modeld.load_progress import open_with_progress
+from openpilot.sunnypilot.modeld_v2.load_progress import open_with_progress
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
