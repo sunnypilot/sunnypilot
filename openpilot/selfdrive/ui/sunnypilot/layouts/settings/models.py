@@ -10,9 +10,11 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.sunnypilot.models.default_model import get_default_model
+from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
+from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
+from openpilot.selfdrive.ui.sunnypilot.model_info import model_info
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -36,6 +38,7 @@ class ModelsLayout(Widget):
     super().__init__()
     self.model_manager = None
     self.model_dialog = None
+    self._selection_source = None
     self._downloading = False
     self.last_cache_calc_time = 0
 
@@ -49,16 +52,23 @@ class ModelsLayout(Widget):
 
   def _initialize_items(self):
     self.current_model_item = ListItemSP(
-      title=tr("Current Model"),
+      title=tr("Active Model"),
       description="",
       action_item=ScrollingButtonAction(tr("SELECT")),
       callback=self._handle_current_model_clicked
+    )
+
+    self.other_model_item = ListItemSP(
+      title=tr("Big Model"),
+      action_item=ScrollingButtonAction(tr("SELECT")),
+      callback=self._handle_other_model_clicked
     )
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
+                                             ui_state.params.put("ModelManager_LastSyncTime_USBGPU", 0),
                                              gui_app.push_widget(alert_dialog(tr("Fetching Latest Models")))))
 
     self.clear_cache_item = ListItemSP(
@@ -68,7 +78,8 @@ class ModelsLayout(Widget):
       callback=self._clear_cache
     )
 
-    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "", lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
+    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "",
+                                            lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
                                                   tr("Set the maximum speed for lane turn desires. Default is 19 mph."),
@@ -93,7 +104,7 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.current_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.current_model_item, self.other_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
                   self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
@@ -142,7 +153,7 @@ class ModelsLayout(Widget):
     if not bundle:
       return
 
-    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadIndex") is not None)
+    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadRef") is not None)
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
@@ -180,26 +191,37 @@ class ModelsLayout(Widget):
 
   def _on_model_selected(self, result):
     if result != DialogResult.CONFIRM:
+      self.model_dialog = None
       return
     selected_ref = self.model_dialog.selection_ref
-    if selected_ref == "Default":
-      ui_state.params.remove("ModelManager_ActiveBundle")
-    elif selected_bundle := next((bundle for bundle in self.model_manager.availableBundles if bundle.ref == selected_ref), None):
-      ui_state.params.put("ModelManager_DownloadIndex", selected_bundle.index)
     self.model_dialog = None
+    if selected_ref == "Default":
+      if self._selection_source in ACTIVE_BUNDLE_KEYS:
+        ui_state.params.remove(ACTIVE_BUNDLE_KEYS[self._selection_source])
+      return
+    if selected_bundle := self._resolve_selected_bundle(selected_ref):
+      ui_state.params.put("ModelManager_DownloadRef", selected_bundle.ref)
+
+  def _resolve_selected_bundle(self, ref):
+    """Finds the bundle for a ref across both hardware manifests."""
+    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
+    source_bundles = {
+      source: self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
+      for source in ("qcom", "usbgpu")
+    }
+    resolved = resolve_bundle_by_ref(ref, source_bundles)
+    return resolved[0] if resolved else None
 
   @staticmethod
   def _bundle_to_node(bundle):
     return TreeNode(bundle.ref, {'display_name': bundle.displayName, 'short_name': bundle.internalName})
 
-  def _get_folders(self, favorites):
-    bundles = self.model_manager.availableBundles
+  def _get_folders(self, favorites, bundles):
     folders = {}
     for bundle in bundles:
       folders.setdefault(next((ov_ride.value for ov_ride in bundle.overrides if ov_ride.key == "folder"), ""), []).append(bundle)
 
-    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': f"{get_default_model()} (Default)",
-                                                         'short_name': "Default"})])]
+    folders_list = []
     for folder, folder_bundles in sorted(folders.items(), key=lambda x: max((bundle.index for bundle in x[1]), default=-1), reverse=True):
       folder_bundles.sort(key=lambda bundle: bundle.index, reverse=True)
       name = folder + (f" - (Updated: {m.group(1)})" if folder_bundles and (m := re.search(r'\(([^)]*)\)[^(]*$', folder_bundles[0].displayName)) else "")
@@ -210,20 +232,45 @@ class ModelsLayout(Widget):
     return folders_list
 
   def _handle_current_model_clicked(self):
+    self._open_source_dialog(ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent))
+
+  def _handle_other_model_clicked(self):
+    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
+    self._open_source_dialog("qcom" if active == "usbgpu" else "usbgpu")
+
+  def _open_source_dialog(self, source):
+    """Opens the picker for one hardware: its model folders plus the Default reset entry."""
+    self._selection_source = source
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
-    folders_list = self._get_folders(favorites)
-
-    active_ref = self.model_manager.activeBundle.ref if self.model_manager.activeBundle else "Default"
-    self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, active_ref, "ModelManager_Favs",
-                                         get_folders_fn=self._get_folders, on_exit=self._on_model_selected)
+    folders_list = self._source_folders(favorites, source)
+    if not folders_list:
+      gui_app.push_widget(alert_dialog(tr("No models are available for this hardware yet. Connect to the internet and refresh the model list.")))
+      return
+    self.model_dialog = TreeOptionDialog(tr("Select a Model"), folders_list, self._slot_active_ref(source), "ModelManager_Favs",
+                                         get_folders_fn=lambda favs: self._source_folders(favs, source), on_exit=self._on_model_selected)
     gui_app.push_widget(self.model_dialog)
+
+  def _source_folders(self, favorites, source):
+    """Default reset entry on top, then the hardware's model folders."""
+    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
+    bundles = self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
+    if not bundles:
+      return []
+    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': "Default"})])]
+    folders_list.extend(self._get_folders(favorites, bundles))
+    return folders_list
+
+  @staticmethod
+  def _slot_active_ref(source: str) -> str:
+    bundle = get_selected_bundle(ui_state.params, source)
+    return bundle.ref if bundle else "Default"
 
   def _update_state(self):
     advanced_controls: bool = ui_state.params.get_bool("ShowAdvancedControls")
     turn_desire: bool = ui_state.params.get_bool("LaneTurnDesire")
     live_delay: bool = ui_state.params.get_bool("LagdToggle")
-    camera_offset: bool = ui_state.params.get("ModelManager_ActiveBundle") is not None
+    camera_offset: bool = ui_state.active_bundle is not None
 
     self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
@@ -237,9 +284,10 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    default_label = f"{get_default_model()} (Default)"
-    active_name = self.model_manager.activeBundle.displayName if self.model_manager and self.model_manager.activeBundle.ref else default_label
+    source, active_name, other_name = model_info()
     self.current_model_item.action_item.set_value(active_name)
+    self.other_model_item.set_title(tr("Big Model") if source == "qcom" else tr("Small Model"))
+    self.other_model_item.action_item.set_value(other_name)
 
     if not ui_state.is_offroad():
       self.current_model_item.action_item.set_enabled(False)
