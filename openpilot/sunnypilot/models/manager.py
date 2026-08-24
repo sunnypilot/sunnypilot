@@ -30,6 +30,7 @@ class ModelManagerSP:
     self.params = Params()
     self.model_fetcher = ModelFetcher(self.params)
     self.pm = messaging.PubMaster(["modelManagerSP"])
+    self.sm = messaging.SubMaster(["deviceState"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
     self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
     self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params)
@@ -262,7 +263,8 @@ class ModelManagerSP:
 
     while True:
       try:
-        self.available_models = self.model_fetcher.get_available_bundles()
+        self.sm.update(0)
+        self.available_models = self.model_fetcher.get_available_bundles(self.sm['deviceState'].chestnutPresent)
         validate_active_bundle(self.params, self.available_models)
         self.active_bundle = get_active_bundle(self.params)
 
