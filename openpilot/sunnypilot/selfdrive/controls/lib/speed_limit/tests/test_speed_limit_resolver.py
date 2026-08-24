@@ -140,6 +140,7 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     assert resolver.speed_limit == 20.
     assert resolver.source == SpeedLimitSource.map
     assert 99. < resolver.distance <= 100.
+    assert resolver.lower_lookahead_active
 
   def test_car_first_uses_higher_upcoming_map_limit(self, resolver_class, mocker):
     resolver = resolver_class()
@@ -157,6 +158,7 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     assert resolver.speed_limit == 30.
     assert resolver.source == SpeedLimitSource.map
     assert 99. < resolver.distance <= 100.
+    assert not resolver.lower_lookahead_active
 
   @parametrized_policies
   def test_parser(self, resolver_class, policy, sm_key, function_key, mocker):
@@ -255,6 +257,7 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
 
     assert resolver.speed_limit == 20.
     assert 99. < resolver.distance <= 100.
+    assert resolver.lower_lookahead_active
 
   def test_lower_map_speed_limit_ahead_ignored_outside_down_lookahead(self, resolver_class, mocker):
     resolver = resolver_class()
@@ -271,3 +274,22 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
 
     assert resolver.speed_limit == 30.
     assert resolver.distance == 0.
+    assert not resolver.lower_lookahead_active
+
+  def test_lower_lookahead_active_requires_map_source_selection(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.combined
+    resolver.lookahead_lower_limits = True
+    resolver.lookahead_speed_factor_down = 1.0
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock['carStateSP'].speedLimit = 10.
+    sm_mock['liveMapDataSP'].speedLimit = 30.
+    sm_mock['liveMapDataSP'].speedLimitAhead = 20.
+    sm_mock['liveMapDataSP'].speedLimitAheadValid = True
+    sm_mock['liveMapDataSP'].speedLimitAheadDistance = 100.
+
+    resolver.update(15., sm_mock)
+
+    assert resolver.source == SpeedLimitSource.car
+    assert resolver.speed_limit == 10.
+    assert not resolver.lower_lookahead_active

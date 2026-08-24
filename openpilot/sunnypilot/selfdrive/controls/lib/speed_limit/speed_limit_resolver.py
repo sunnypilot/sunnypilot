@@ -36,6 +36,7 @@ class SpeedLimitResolver:
   distance: float
   source: custom.LongitudinalPlanSP.SpeedLimit.Source
   speed_limit_offset: float
+  lower_lookahead_active: bool
 
   def __init__(self):
     self.params = Params()
@@ -79,6 +80,8 @@ class SpeedLimitResolver:
     self.speed_limit_final = 0.
     self.speed_limit_final_last = 0.
     self.speed_limit_offset = 0.
+    self.lower_lookahead_active = False
+    self._map_lower_lookahead_active = False
 
   def _get_lookahead_speed_factor_up(self) -> float:
     return get_slc_lookahead_speed_factor_up()
@@ -135,6 +138,7 @@ class SpeedLimitResolver:
 
   def _get_from_map_data(self, sm: messaging.SubMaster) -> None:
     self._reset_limit_sources(SpeedLimitSource.map)
+    self._map_lower_lookahead_active = False
     self._process_map_data(sm)
 
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
@@ -170,9 +174,11 @@ class SpeedLimitResolver:
       if lower_lookahead_reached or distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
+        self._map_lower_lookahead_active = lower_lookahead_reached and distance_to_speed_limit_ahead > 0.
     elif lower_lookahead_reached:
       self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
       self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
+      self._map_lower_lookahead_active = distance_to_speed_limit_ahead > 0.
     elif speed_limit > 0. and next_speed_limit > speed_limit:
       lookahead_distance = next_speed_limit * CV.MS_TO_KPH * self.lookahead_speed_factor_up
       if lookahead_distance > 0. and distance_to_speed_limit_ahead <= lookahead_distance:
@@ -223,6 +229,7 @@ class SpeedLimitResolver:
     self.update_params()
 
     self.speed_limit, self.distance, self.source = self._resolve_limit_sources(sm)
+    self.lower_lookahead_active = self.source == SpeedLimitSource.map and self._map_lower_lookahead_active
     self.speed_limit_offset = self._get_speed_limit_offset()
 
     self.update_speed_limit_states()

@@ -18,6 +18,66 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
+SPEED_LIMIT_APPROACH_SHAPE = 1.5
+
+
+def speed_limit_no_brake_active(enabled: bool, lower_lookahead_active: bool, has_lead: bool) -> bool:
+  return enabled and lower_lookahead_active and not has_lead
+
+
+def limit_speed_limit_decel_target(a_target: float, speed_limit_source_active: bool, has_lead: bool, max_decel: float) -> float:
+  if speed_limit_source_active and not has_lead:
+    return max(a_target, max_decel)
+  return a_target
+
+
+def speed_limit_idle_active(v_ego: float, speed_limit_target: float, release_gap: float, mode: str) -> bool:
+  return mode == "idle" and speed_limit_target > 0. and v_ego > speed_limit_target + release_gap
+
+
+def no_lead_normal_decel_idle_active(mode: str, intentional_decel: bool, cruise_source_active: bool,
+                                     a_target: float, min_idle_decel: float, has_lead: bool, should_stop: bool) -> bool:
+  return mode == "idle" and intentional_decel and cruise_source_active and a_target <= min_idle_decel and not has_lead and not should_stop
+
+
+def speed_limit_current_limit_decel_needed(speed_limit_source_active: bool, lower_lookahead_active: bool,
+                                           v_ego: float, speed_limit_target: float, overspeed_margin: float = 0.) -> bool:
+  return speed_limit_source_active and not lower_lookahead_active and speed_limit_target > 0. and \
+    v_ego > speed_limit_target + overspeed_margin
+
+
+def speed_limit_approach_accel(v_ego: float, v_target: float, distance: float, lookahead_speed_factor: float,
+                               accel_coast: float, min_accel: float, max_accel: float = 0.0) -> float:
+  coast_accel = max(min(accel_coast, max_accel), min_accel)
+  if v_target <= 0. or distance <= 0. or v_ego <= v_target:
+    return coast_accel
+
+  required_accel = (v_target ** 2 - v_ego ** 2) / max(2.0 * distance, 1.0)
+  if required_accel >= coast_accel:
+    return coast_accel
+  if required_accel <= min_accel:
+    return min_accel
+
+  lookahead_distance = max(v_ego, v_target) * CV.MS_TO_KPH * lookahead_speed_factor
+  progress = 1.0 - distance / max(lookahead_distance, distance, 1.0)
+  urgency = max(min(progress, 1.0), 0.0) ** SPEED_LIMIT_APPROACH_SHAPE
+  target_accel = min(required_accel, coast_accel + urgency * (min_accel - coast_accel))
+  return max(min(target_accel, coast_accel), min_accel)
+
+
+def speed_limit_no_brake_accel_target(v_ego: float, speed_limit_target: float, release_gap: float, no_brake_accel: float,
+                                      mode: str = "fixed", distance: float = 0., lookahead_speed_factor: float = 0.,
+                                      accel_coast: float | None = None, min_accel: float = -1.2) -> float:
+  if speed_limit_target > 0. and v_ego <= speed_limit_target + release_gap:
+    return 0.
+  if mode == "idle":
+    return 0.
+  if mode == "dynamic":
+    approach_accel = speed_limit_approach_accel(v_ego, speed_limit_target, distance, lookahead_speed_factor,
+                                                accel_coast if accel_coast is not None else no_brake_accel, min_accel)
+    return approach_accel
+  return no_brake_accel
+
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
@@ -115,6 +175,7 @@ class LongitudinalPlannerSP:
     assist.active = self.sla.is_active
     assist.vTarget = float(self.sla.output_v_target)
     assist.aTarget = float(self.sla.output_a_target)
+    assist.longitudinalIdle = bool(getattr(self, "longitudinal_idle", False))
 
     # E2E Alerts
     e2eAlerts = longitudinalPlanSP.e2eAlerts
