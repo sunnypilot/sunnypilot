@@ -58,6 +58,30 @@ MonitoringPolicy = log.DriverMonitoringState.MonitoringPolicy
 TurnDirection = custom.ModelDataV2SP.TurnDirection
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
+LANE_CHANGE_FCW_SUPPRESS_MIN_DREL = 10.0
+LANE_CHANGE_FCW_SUPPRESS_PULLING_AWAY_VREL = 0.5
+LANE_CHANGE_FCW_SUPPRESS_MIN_AEGO = -1.0
+LANE_CHANGE_FCW_SUPPRESS_MIN_TARGET_YREL = 0.5
+LANE_CHANGE_FCW_SUPPRESS_GRACE_PERIOD = 10.0
+
+
+def should_suppress_lane_change_fcw(sm: messaging.SubMaster, CS: car.CarState, recent_lane_change: bool) -> bool:
+  lane_change_state = sm['modelV2'].meta.laneChangeState
+  lane_change_starting = lane_change_state == LaneChangeState.laneChangeStarting
+  if not (lane_change_starting or recent_lane_change) or not sm.valid['radarState']:
+    return False
+
+  lane_change_direction = sm['modelV2'].meta.laneChangeDirection
+  lead = sm['radarState'].leadOne
+  # yRel is left-positive; during the crossover, require the lead to be clearly on the target side.
+  lead_on_target_side = ((lane_change_direction == LaneChangeDirection.left and lead.yRel > LANE_CHANGE_FCW_SUPPRESS_MIN_TARGET_YREL) or
+                         (lane_change_direction == LaneChangeDirection.right and lead.yRel < -LANE_CHANGE_FCW_SUPPRESS_MIN_TARGET_YREL))
+  return (lead.present and
+          (lead_on_target_side if lane_change_starting else True) and
+          lead.dRel > LANE_CHANGE_FCW_SUPPRESS_MIN_DREL and
+          lead.vRel > LANE_CHANGE_FCW_SUPPRESS_PULLING_AWAY_VREL and
+          CS.aEgo > LANE_CHANGE_FCW_SUPPRESS_MIN_AEGO and
+          not CS.brakePressed)
 
 
 class SelfdriveD:
@@ -139,6 +163,9 @@ class SelfdriveD:
     self.mismatch_counter = 0
     self.cruise_mismatch_counter = 0
     self.last_steering_pressed_frame = 0
+    self.last_lane_change_end_frame = -1
+    self.lane_change_maneuver_active = False
+    self.lane_change_state_prev = LaneChangeState.off
     self.distance_traveled = 0
     self.last_functional_fan_frame = 0
     self.events_prev = []
@@ -494,10 +521,22 @@ class SelfdriveD:
         self.events.add(EventName.steerSaturated)
 
     # Check for FCW
+    lane_change_state = self.sm['modelV2'].meta.laneChangeState
+    if lane_change_state in (LaneChangeState.laneChangeStarting, LaneChangeState.laneChangeFinishing):
+      self.lane_change_maneuver_active = True
+    if self.lane_change_maneuver_active and self.lane_change_state_prev != LaneChangeState.off and lane_change_state == LaneChangeState.off:
+      self.last_lane_change_end_frame = self.sm.frame
+      self.lane_change_maneuver_active = False
+    elif lane_change_state == LaneChangeState.off:
+      self.lane_change_maneuver_active = False
+    self.lane_change_state_prev = lane_change_state
+    recent_lane_change = self.last_lane_change_end_frame >= 0 and \
+      (self.sm.frame - self.last_lane_change_end_frame) * DT_CTRL < LANE_CHANGE_FCW_SUPPRESS_GRACE_PERIOD
     stock_long_is_braking = self.enabled and not self.CP.openpilotLongitudinalControl and CS.aEgo < -1.25
     model_fcw = self.sm['modelV2'].meta.hardBrakePredicted and not CS.brakePressed and not stock_long_is_braking
     planner_fcw = self.sm['longitudinalPlan'].fcw and self.enabled
-    if (planner_fcw or model_fcw) and not self.CP.notCar:
+    suppress_lane_change_fcw = should_suppress_lane_change_fcw(self.sm, CS, recent_lane_change)
+    if (planner_fcw or model_fcw) and not suppress_lane_change_fcw and not self.CP.notCar:
       self.events.add(EventName.fcw)
 
     # GPS checks
