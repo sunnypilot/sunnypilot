@@ -11,13 +11,13 @@ from opendbc.car.structs import car
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog, ForwardingHandler
-
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
 from opendbc.car.carlog import carlog
 from opendbc.car.fw_versions import ObdCallback
 from opendbc.car.car_helpers import get_car, interfaces
 from opendbc.car.interfaces import CarInterfaceBase, RadarInterfaceBase
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.helpers import convert_carControlSP, convert_to_capnp
@@ -123,6 +123,9 @@ class Car:
       self.RI = RI
 
     self.CP.alternativeExperience = 0
+    if self.params.get_bool("ToyotaAutoHold"):
+      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALLOW_AEB
+
     # mads
     set_alternative_experience(self.CP, self.CP_SP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
