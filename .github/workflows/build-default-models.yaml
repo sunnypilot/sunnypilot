@@ -31,6 +31,7 @@ jobs:
       target_hardware: ${{ steps.resolve.outputs.target_hardware }}
       tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
       dm_onnx_ref: ${{ steps.resolve.outputs.dm_onnx_ref }}
+      dm_onnx_date: ${{ steps.resolve.outputs.dm_onnx_date }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,8 +61,10 @@ jobs:
           fi
 
           DM_ONNX_REF=""
+          DM_ONNX_DATE=""
           if [ "${{ inputs.target }}" = "small" ]; then
             DM_ONNX_REF=$(git log -1 --format='%H' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
+            DM_ONNX_DATE=$(git log -1 --format=%cd --date=format:'%B %d, %Y' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
           fi
 
           echo "model_name=${NAME}" >> $GITHUB_OUTPUT
@@ -71,6 +74,7 @@ jobs:
           echo "target_hardware=${TARGET_HW}" >> $GITHUB_OUTPUT
           echo "tinygrad_ref=${TINYGRAD_REF}" >> $GITHUB_OUTPUT
           echo "dm_onnx_ref=${DM_ONNX_REF}" >> $GITHUB_OUTPUT
+          echo "dm_onnx_date=${DM_ONNX_DATE}" >> $GITHUB_OUTPUT
 
   build_small_model:
     needs: resolve
@@ -395,7 +399,7 @@ jobs:
           metadata = {
               'bundles': [{
                   'short_name': 'DMMODEL',
-                  'display_name': 'dmonitoring_model',
+                  'display_name': 'dmonitoring_model (${{ needs.resolve.outputs.dm_onnx_date }})',
                   'ref': '${{ needs.resolve.outputs.dm_onnx_ref }}',
                   'runner': 'tinygrad',
                   'build_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -421,7 +425,7 @@ jobs:
             --model-dir dm_output \
             --onnx-path "${{ env.DM_ONNX }}" \
             --onnx-ref "${{ needs.resolve.outputs.dm_onnx_ref }}" \
-            --model-name "dmonitoring_model" \
+            --model-name "dmonitoring_model (${{ needs.resolve.outputs.dm_onnx_date }})" \
             --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
             --run-number "${{ github.run_number }}"
 
