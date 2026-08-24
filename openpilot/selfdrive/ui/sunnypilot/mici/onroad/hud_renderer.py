@@ -42,7 +42,7 @@ class HudRendererSP(HudRenderer):
     widths = [cell.x if c.isdigit() else measure_text_cached(self._font_bold, c, size).x for c in pct_text]
     x = pos.x - 8 - sum(widths)
     y = pos.y + (icon.height - cell.y) / 2
-    for c, w in zip(pct_text, widths):
+    for c, w in zip(pct_text, widths, strict=True):
       glyph = measure_text_cached(self._font_bold, c, size).x
       rl.draw_text_ex(self._font_bold, c, rl.Vector2(x + (w - glyph) / 2, y), size, 0, rl.WHITE)
       x += w
