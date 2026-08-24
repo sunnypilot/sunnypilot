@@ -40,6 +40,5 @@ class ProgressReader:
 
 
 def open_with_progress(pkl_path):
-  manifest = get_manifest_path(pkl_path)
-  total = sum(os.path.getsize(p) for p in get_existing_chunks(pkl_path) if p != manifest)
+  total = sum(os.path.getsize(p) for p in get_existing_chunks(pkl_path))
   return ProgressReader(open_file_chunked(pkl_path), total)
