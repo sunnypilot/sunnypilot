@@ -10,9 +10,10 @@ change and must be intentional. KNOWN_PROTOCOL_VERSIONS pins the set we
 explicitly support — when the constant is bumped, this list must be edited in
 the same commit so the bump shows up in code review.
 """
+
 from __future__ import annotations
 
-
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.sunnylink.capabilities import (
   CAPABILITY_DEFAULTS,
   CAPABILITY_FIELDS,
@@ -20,11 +21,21 @@ from openpilot.sunnypilot.sunnylink.capabilities import (
   PROTOCOL_VERSION,
   generate_capabilities,
 )
-from openpilot.common.test import OpenpilotTestCase
 
 
 KNOWN_PROTOCOL_VERSIONS = (1,)
 LATEST_KNOWN = max(KNOWN_PROTOCOL_VERSIONS)
+
+
+class FakeParams:
+  def __init__(self, values=None):
+    self.values = values or {}
+
+  def get(self, key, *args, **kwargs):
+    return self.values.get(key)
+
+  def get_bool(self, key):
+    return bool(self.values.get(key, False))
 
 
 def caps():
@@ -52,14 +63,12 @@ class TestProtocolVersion(OpenpilotTestCase):
   def test_protocol_version_is_known(self):
     """Sentinel against accidental bumps. Edit KNOWN_PROTOCOL_VERSIONS if intentional."""
     assert PROTOCOL_VERSION in KNOWN_PROTOCOL_VERSIONS, (
-      f"PROTOCOL_VERSION={PROTOCOL_VERSION} is not in KNOWN_PROTOCOL_VERSIONS={KNOWN_PROTOCOL_VERSIONS}. " +
-      "If this bump is intentional, add it to KNOWN_PROTOCOL_VERSIONS."
+      f"PROTOCOL_VERSION={PROTOCOL_VERSION} is not in KNOWN_PROTOCOL_VERSIONS={KNOWN_PROTOCOL_VERSIONS}. "
+      + "If this bump is intentional, add it to KNOWN_PROTOCOL_VERSIONS."
     )
 
   def test_protocol_version_matches_latest_known(self):
-    assert PROTOCOL_VERSION == LATEST_KNOWN, (
-      "Test invariant: PROTOCOL_VERSION must equal max(KNOWN_PROTOCOL_VERSIONS)."
-    )
+    assert PROTOCOL_VERSION == LATEST_KNOWN, "Test invariant: PROTOCOL_VERSION must equal max(KNOWN_PROTOCOL_VERSIONS)."
 
 
 class TestOpaquePerBrandFlags(OpenpilotTestCase):

@@ -2303,6 +2303,50 @@
       "description": "",
       "items": [
         {
+          "key": "ToyotaAutoHold",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaEnhancedBsm",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: Prius TSS2 BSM and some tssp",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaTSS2Long",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Toyota: custom longitudinal for TSS2",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
+          "key": "ToyotaDriveMode",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Enable drive mode btn link",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            }
+          ]
+        },
+        {
           "key": "ToyotaEnforceStockLongitudinal",
           "widget": "toggle",
           "needs_onroad_cycle": true,
