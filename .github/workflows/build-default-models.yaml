@@ -17,6 +17,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: build-default-models-${{ inputs.target }}
+  cancel-in-progress: false
+
 env:
   HF_REPO: sunnypilot/sunnypilot_models_v1
 
@@ -420,7 +424,7 @@ jobs:
 
           python3 release/ci/upload_default_model.py \
             --hf-repo "${{ env.HF_REPO }}" \
-            --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
+            --hf-defaults-path "models/defaults/dm" \
             --artifact-name "dm-model-${{ github.run_number }}" \
             --model-dir dm_output \
             --onnx-path "${{ env.DM_ONNX }}" \
@@ -440,6 +444,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Pull DM ONNX via LFS
+        run: git lfs pull -I "${{ env.DM_ONNX }}"
 
       - name: Set environment variables
         run: |
