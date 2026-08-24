@@ -242,14 +242,14 @@ jobs:
             echo "HF defaults match repo ONNX"
           else
             echo "No matching model on HF — triggering build"
-            gh workflow run build-default-big-model.yaml --ref "${{ github.head_ref || github.ref_name }}"
+            gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=big
 
             echo "Waiting for build to start..."
             sleep 120
 
-            RUN_ID=$(gh run list --workflow=build-default-big-model.yaml --branch="${{ github.head_ref || github.ref_name }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+            RUN_ID=$(gh run list --workflow=build-default-models.yaml --branch="${{ github.head_ref || github.ref_name }}" --limit=1 --json databaseId --jq '.[0].databaseId')
             if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              echo "::error::Failed to find build-default-big-model run"
+              echo "::error::Failed to find build-default-models run"
               exit 1
             fi
 
@@ -258,7 +258,7 @@ jobs:
 
             CONCLUSION=$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')
             if [ "$CONCLUSION" != "success" ]; then
-              echo "::error::build-default-big-model failed: $CONCLUSION"
+              echo "::error::build-default-models failed: $CONCLUSION"
               exit 1
             fi
 
