@@ -11,6 +11,15 @@ from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPl
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
 
 
+class PlannerSM(dict):
+  def __init__(self, radar_frame: int, services: dict):
+    super().__init__(services)
+    self.frame = radar_frame
+    self.logMonoTime = {"radarState": radar_frame}
+    self.valid = {"radarState": True}
+    self.alive = {"radarState": True}
+
+
 class Plant:
   messaging_initialized = False
 
@@ -132,7 +141,7 @@ class Plant:
     car_control.carControl.orientationNED = [0., float(pitch), 0.]
 
     # ******** get controlsState messages for plotting ***
-    sm = {'radarState': radar.radarState,
+    sm = PlannerSM(self.rk.frame, {'radarState': radar.radarState,
           'carState': car_state.carState,
           'carControl': car_control.carControl,
           'controlsState': control.controlsState,
@@ -141,7 +150,7 @@ class Plant:
           'modelV2': model.modelV2,
           'carStateSP': car_state_sp.carStateSP,
           'liveMapDataSP': live_map_data_sp.liveMapDataSP,
-          'gpsLocation': gps_data.gpsLocation}
+          'gpsLocation': gps_data.gpsLocation})
     self.planner.update(sm)
     self.acceleration = self.planner.output_a_target
     if self.planner.output_should_stop:

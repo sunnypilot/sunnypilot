@@ -43,6 +43,28 @@ sections:
       label: Relaxed
     enablement:
     - $ref: '#/macros/longitudinal'
+  - key: AccelPersonalityEnabled
+    widget: toggle
+    title: Enable Accel Controller
+    description: Lets you choose how sunnypilot starts, catches up, and settles at the cruise speed. Emergency braking and stopping are
+      unchanged.
+    visibility:
+    - $ref: '#/macros/longitudinal'
+    enablement:
+    - $ref: '#/macros/longitudinal'
+  - key: AccelPersonality
+    widget: multiple_button
+    title: Acceleration Profile
+    description: Eco is gentlest, Normal balances a prompt start with smooth catch-up, and Sport is more responsive.
+    options:
+    - value: 0
+      label: Eco
+    - value: 1
+      label: Normal
+    - value: 2
+      label: Sport
+    enablement:
+    - $ref: '#/macros/longitudinal'
   - key: IntelligentCruiseButtonManagement
     widget: toggle
     title: Intelligent Cruise Button Management (ICBM) (Alpha)
