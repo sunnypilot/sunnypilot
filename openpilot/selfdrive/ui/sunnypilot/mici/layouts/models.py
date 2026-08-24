@@ -64,7 +64,7 @@ class ModelsLayoutMici(NavScroller):
     self._download_progress = "."
     self._download_frame = 0
     self._was_downloading = False
-    self._selection_source = None
+    self._selection_source: str | None = None
 
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
@@ -150,12 +150,15 @@ class ModelsLayoutMici(NavScroller):
     self._pop_to_main()
 
   def _select_folder(self, folder_name):
+    source = self._selection_source
+    if source is None:  # folders are only reachable after picking a hardware
+      return
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
     active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
 
-    if self._selection_source != active:
-      bundles = get_cached_bundles(ui_state.params, self._selection_source)
+    if source != active:
+      bundles = get_cached_bundles(ui_state.params, source)
     else:
       bundles = self.model_manager.availableBundles
     folders = self._get_grouped_bundles(bundles, favorites)
