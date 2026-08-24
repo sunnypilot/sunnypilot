@@ -72,15 +72,108 @@ jobs:
           echo "tinygrad_ref=${TINYGRAD_REF}" >> $GITHUB_OUTPUT
           echo "dm_onnx_ref=${DM_ONNX_REF}" >> $GITHUB_OUTPUT
 
-  build_driving_model:
+  build_small_model:
     needs: resolve
-    if: ${{ inputs.target != 'big' }}
-    uses: ./.github/workflows/sunnypilot-build-model.yaml
-    with:
-      upstream_branch: ${{ needs.resolve.outputs.onnx_ref }}
-      custom_name: ${{ needs.resolve.outputs.model_name }}
-      target_hardware: ${{ needs.resolve.outputs.target_hardware }}
-    secrets: inherit
+    if: ${{ inputs.target == 'small' }}
+    runs-on: [self-hosted, tici]
+    env:
+      SMALL_ONNX: openpilot/selfdrive/modeld/models/driving_supercombo.onnx
+      SMALL_PKL: openpilot/selfdrive/modeld/models/driving_tinygrad.pkl
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Pull ONNX via LFS
+        run: git lfs pull -I "${{ env.SMALL_ONNX }}"
+
+      - name: Set environment variables
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync --frozen
+          printenv >> $GITHUB_ENV
+
+      - name: Disable powersave
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: Compile small model with stock compiler
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+          FRAME_SKIP=$(python3 -c "from openpilot.selfdrive.modeld.constants import ModelConstants as MC; print(MC.MODEL_RUN_FREQ // MC.MODEL_CONTEXT_FREQ)")
+
+          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+
+          env ${TG_FLAGS} python3 \
+            ${{ github.workspace }}/openpilot/selfdrive/modeld/compile_modeld.py \
+            --onnx ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
+            --model-size $MODEL_SIZE \
+            --camera-resolutions $CAMERA_RES \
+            --frame-skip $FRAME_SKIP \
+            --output ${{ github.workspace }}/${{ env.SMALL_PKL }}
+
+      - name: Chunk small pkl
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          python3 -c "
+          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
+          import os
+          pkl = '${{ github.workspace }}/${{ env.SMALL_PKL }}'
+          size = os.path.getsize(pkl)
+          targets = get_chunk_targets(pkl, size)
+          chunk_file(pkl, targets)
+          print(f'Chunked into {len(targets)} files')
+          "
+
+      - name: Prepare output
+        env:
+          MODEL_NAME: ${{ needs.resolve.outputs.model_name }}
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
+          OUTPUT_DIR="${{ github.workspace }}/small_output"
+          PKL_BASE="driving_tinygrad.pkl"
+          mkdir -p "$OUTPUT_DIR"
+
+          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "$MODELS_DIR" \
+            --output-dir "$OUTPUT_DIR" \
+            --custom-name "$MODEL_NAME" \
+            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}"
+
+          echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
+
+      - name: Upload small model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ needs.resolve.outputs.model_name }}-${{ github.run_number }}
+          path: ${{ github.workspace }}/small_output/
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          path: ${{ github.workspace }}/small_output/artifact_name.txt
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   build_big_model:
     needs: resolve
@@ -169,13 +262,11 @@ jobs:
           export PYTHONPATH=${{ github.workspace }}
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           OUTPUT_DIR="${{ github.workspace }}/big_output"
+          PKL_BASE="big_driving_tinygrad.pkl"
           mkdir -p "$OUTPUT_DIR"
 
-          rsync -avm \
-            --include='*.chunk*' \
-            --include='*.chunkmanifest' \
-            --exclude='*' \
-            "$MODELS_DIR/" "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
 
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "$MODELS_DIR" \
@@ -204,12 +295,12 @@ jobs:
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   upload_defaults:
-    needs: [ resolve, build_driving_model, build_big_model, build_dm_model ]
+    needs: [ resolve, build_small_model, build_big_model, build_dm_model ]
     if: |
       ${{
         !cancelled() &&
         (inputs.target == 'big' && needs.build_big_model.result == 'success' ||
-         inputs.target != 'big' && needs.build_driving_model.result == 'success') &&
+         inputs.target == 'small' && needs.build_small_model.result == 'success') &&
         (inputs.target != 'small' || needs.build_dm_model.result == 'success')
       }}
     runs-on: ubuntu-24.04
