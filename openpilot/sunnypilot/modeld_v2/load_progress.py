@@ -1,5 +1,5 @@
 import os
-from openpilot.common.file_chunker import open_file_chunked, get_existing_chunks, get_manifest_path
+from openpilot.common.file_chunker import open_file_chunked, get_existing_chunks
 from openpilot.common.params import Params
 
 PARAM = "UsbGpuLoadProgress"
