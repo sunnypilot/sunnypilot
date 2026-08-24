@@ -575,8 +575,7 @@ class SelfdriveD(CruiseHelper):
     clear_event_types = set()
     if ET.WARNING not in self.state_machine.current_alert_types:
       clear_event_types.add(ET.WARNING)
-    cat = self.state_machine.current_alert_types
-    if self.enabled or ((ET.ENABLE in cat or ET.USER_DISABLE in cat) and ET.NO_ENTRY not in cat):
+    if self.enabled or (ET.NO_ENTRY not in (c := self.state_machine.current_alert_types) and (ET.ENABLE in c or ET.USER_DISABLE in c)):
       clear_event_types.add(ET.NO_ENTRY)
 
     pers = LONGITUDINAL_PERSONALITY_MAP[self.personality]
