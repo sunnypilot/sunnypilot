@@ -14,11 +14,16 @@ from openpilot.sunnypilot import get_sanitize_int_param
 
 AccelProfile = custom.LongitudinalPlanSP.AccelController.Profile
 
-MAX_ACCEL_BREAKPOINTS = [0., 3., 12,  24., 36.]  # m/s
+MAX_ACCEL_BREAKPOINTS = [0., 3., 5., 10., 20., 25., 40.]  # m/s
 MAX_ACCEL_PROFILES = {
-  AccelProfile.eco:    [1.60, 1.48, 0.50, 0.30, 0.10],
-  AccelProfile.normal: [1.90, 1.70, 0.80, 0.42, 0.30],
-  AccelProfile.sport:  [2.00, 2.00, 1.86, 1.30, 0.60],
+  AccelProfile.eco:    [1.60, 1.48, 1.22, 0.86, 0.66, 0.52, 0.40],
+  AccelProfile.normal: [1.90, 1.70, 1.42, 0.99, 0.80, 0.66, 0.52],
+  AccelProfile.sport:  [2.00, 2.00, 1.86, 1.30, 1.02, 0.86, 0.72],
+}
+CRUISE_DECEL_RESPONSE_TIME = {  # seconds
+  AccelProfile.eco: 3.0,
+  AccelProfile.normal: 2.5,
+  AccelProfile.sport: 2.0,
 }
 
 
@@ -44,3 +49,9 @@ class AccelController:
 
   def get_max_accel(self, v_ego: float) -> float:
     return float(np.interp(max(0.0, v_ego), MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self._profile]))
+
+  def get_cruise_target(self, v_ego: float, v_target: float) -> float:
+    if not np.isfinite(v_target) or v_target <= 0.0 or v_target >= v_ego:
+      return v_target
+
+    return float(v_ego + (v_target - v_ego) / CRUISE_DECEL_RESPONSE_TIME[self._profile])

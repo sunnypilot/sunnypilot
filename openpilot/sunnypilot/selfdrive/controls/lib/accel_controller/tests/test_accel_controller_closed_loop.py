@@ -14,7 +14,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.controls.lib.drive_helpers import should_stop
-from openpilot.selfdrive.controls.lib.longitudinal_planner import A_CRUISE_MAX_BP, J_CRUISE_VALS, get_cruise_accel
+from openpilot.selfdrive.controls.lib.longitudinal_planner import A_CRUISE_MAX_BP, A_CRUISE_MIN, J_CRUISE_VALS, get_cruise_accel
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalPlanSource, T_IDXS as T_IDXS_MPC
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import (
   AccelController, AccelProfile, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
@@ -53,22 +53,26 @@ def run_profile(profile: int, *, enabled: bool = True, speed: float = 0.0, v_cru
     target_speed = v_cruise if v_cruise_fn is None else v_cruise_fn(frame)
     measured = speed + (float(rng.normal(0.0, speed_noise)) if speed_noise else 0.0)
     max_accel_override = controller.get_max_accel(measured) if controller.is_enabled() else None
+    if controller.is_enabled():
+      target_speed = controller.get_cruise_target(measured, target_speed)
     accel = get_cruise_accel(e2e, target_speed, measured, accel, 0.0, CarParams(), DT_MDL, 2.0, True, max_accel_override)
     speed = max(0.0, speed + accel * DT_MDL)
     rows.append((speed, accel, should_stop(speed, accel)))
   return rows
 
 
-def run_vehicle_profile(profile: int, duration: float = 80.0, enabled: bool = True):
+def run_vehicle_profile(profile: int, duration: float = 80.0, enabled: bool = True, speed: float = 0.0,
+                        v_cruise_fn: Callable[[float], float] | None = None):
   params = Params()
   params.put_bool("AccelPersonalityEnabled", enabled, block=True)
   params.put("AccelPersonality", profile, block=True)
 
-  plant = PlantSP(speed=0.0, actuator_model=PRIUS_TSS2_ROUTE_MODEL, run_long_control=True)
+  plant = PlantSP(speed=speed, actuator_model=PRIUS_TSS2_ROUTE_MODEL, run_long_control=True)
   _set_mpc_acceleration(plant)
   rows = []
   while plant.current_time < duration:
-    result = plant.step(v_cruise=25.0)
+    v_cruise = 25.0 if v_cruise_fn is None else v_cruise_fn(plant.current_time)
+    result = plant.step(v_cruise=v_cruise)
     rows.append((plant.current_time, result["speed"], result["a_target"], result["actuator_command"], result["acceleration"]))
   return np.asarray(rows)
 
@@ -131,7 +135,7 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
     self.assertAlmostEqual(settled["a_target"], eco_limit, delta=0.01)
     self.assertLess(settled["a_target"], settled["model_action"]["desiredAcceleration"])
 
-  def test_blended_profile_does_not_change_model_braking(self):
+  def test_lower_cruise_target_does_not_soften_model_braking(self):
     params = Params()
     params.put_bool("DynamicExperimentalControl", False, block=True)
     params.put("AccelPersonality", AccelProfile.eco, block=True)
@@ -144,11 +148,10 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
       params.put_bool("AccelPersonalityEnabled", enabled, block=True)
       plant = PlantSP(speed=20.0, e2e=True, model_action_fn=request_braking)
       _set_mpc_acceleration(plant)
-      traces[enabled] = [plant.step(v_cruise=30.0) for _ in range(10)]
+      traces[enabled] = [plant.step(v_cruise=19.5) for _ in range(10)]
 
     self.assertTrue(all(row["mpc_source"] == LongitudinalPlanSource.e2e for row in traces[True]))
-    self.assertTrue(all(row["controller_active"] for row in traces[True]))
-    self.assertTrue(all(not row["controller_active"] for row in traces[False]))
+    self.assertTrue(all(not row["controller_active"] for trace in traces.values() for row in trace))
     for key in ("a_target", "should_stop", "mpc_source"):
       self.assertEqual([row[key] for row in traces[True]], [row[key] for row in traces[False]])
 
@@ -170,7 +173,7 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
     for key in ("a_target", "should_stop", "mpc_source"):
       self.assertEqual([row[key] for row in traces[True]], [row[key] for row in traces[False]])
 
-  def test_profile_does_not_change_lead_braking(self):
+  def test_lower_cruise_target_does_not_soften_lead_braking(self):
     params = Params()
     params.put_bool("DynamicExperimentalControl", False, block=True)
     params.put("AccelPersonality", AccelProfile.eco, block=True)
@@ -180,7 +183,7 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
       params.put_bool("AccelPersonalityEnabled", enabled, block=True)
       plant = PlantSP(speed=20.0)
       _set_mpc_acceleration(plant, -0.8)
-      traces[enabled] = [plant.step(v_cruise=30.0) for _ in range(10)]
+      traces[enabled] = [plant.step(v_cruise=19.5) for _ in range(10)]
 
     self.assertTrue(all(row["mpc_source"] == LongitudinalPlanSource.lead0 for row in traces[True]))
     for key in ("a_target", "should_stop", "mpc_source"):
@@ -191,19 +194,66 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
     normal = run_profile(AccelProfile.normal, speed=4.0, steps=120)
     self.assertGreater(normal[-1][0], eco[-1][0])
 
-  def test_profiles_do_not_change_far_braking(self):
-    # The ceiling is an upper bound only, so a deceleration is bit-identical to stock for every profile.
+  def test_zero_speed_stop_request_is_unchanged(self):
+    # Zero-speed stop requests bypass the small cruise-setpoint pre-shape.
     for e2e in (False, True):
       stock = run_profile(AccelProfile.normal, enabled=False, speed=20.0, v_cruise=0.0, e2e=e2e, steps=100)
       for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
         self.assertEqual(run_profile(profile, speed=20.0, v_cruise=0.0, e2e=e2e, steps=100), stock)
 
-  def test_cruise_decel_is_identical_to_stock_for_every_profile(self):
-    # Deceleration is deliberately NOT profile-dependent: the controller sets an acceleration ceiling and
-    # nothing else, and an upper bound cannot participate in a brake. Stock's clip to A_CRUISE_MIN owns it.
-    stock = run_profile(AccelProfile.normal, enabled=False, speed=25.0, v_cruise=20.0, steps=220)
+  def test_large_cruise_decel_retains_stock_authority(self):
     for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
-      self.assertEqual(run_profile(profile, speed=25.0, v_cruise=20.0, steps=220), stock, profile)
+      trace = np.asarray(run_profile(profile, speed=25.0, v_cruise=20.0, steps=220))
+      self.assertAlmostEqual(float(np.min(trace[:, 1])), A_CRUISE_MIN, places=12)
+      self.assertGreaterEqual(float(np.min(trace[:, 0])), 20.0 - 1e-9)
+
+  def test_small_cruise_decel_is_profiled_and_smooth(self):
+    target = 25.0 - 5.0 * CV.MPH_TO_MS
+    stock = np.asarray(run_profile(AccelProfile.normal, enabled=False, speed=25.0, v_cruise=target, steps=300))
+    traces = {
+      profile: np.asarray(run_profile(profile, speed=25.0, v_cruise=target, steps=300))
+      for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport)
+    }
+    peak_decel = {profile: float(np.min(trace[:, 1])) for profile, trace in traces.items()}
+
+    self.assertGreater(peak_decel[AccelProfile.eco], peak_decel[AccelProfile.normal])
+    self.assertGreater(peak_decel[AccelProfile.normal], peak_decel[AccelProfile.sport])
+    self.assertGreater(peak_decel[AccelProfile.sport], float(np.min(stock[:, 1])))
+
+    for trace in traces.values():
+      peak_frame = int(np.argmin(trace[:, 1]))
+      self.assertTrue(np.all(np.diff(trace[peak_frame:, 1]) >= -1e-12))
+      self.assertGreaterEqual(float(np.min(trace[:, 0])), target - 1e-9)
+
+      speeds = np.concatenate(([25.0], trace[:-1, 0]))
+      jerk_limit = np.interp(speeds, A_CRUISE_MAX_BP, J_CRUISE_VALS)
+      jerk = np.abs(np.diff(np.concatenate(([0.0], trace[:, 1])))) / DT_MDL
+      self.assertTrue(np.all(jerk <= jerk_limit + 1e-9))
+
+  def test_small_cruise_decel_stays_smooth_through_actuator(self):
+    target = 25.0 - 5.0 * CV.MPH_TO_MS
+
+    def cruise_target(current_time: float) -> float:
+      return 25.0 if current_time < 2.0 else target
+
+    stock = run_vehicle_profile(AccelProfile.normal, duration=12.0, enabled=False, speed=25.0, v_cruise_fn=cruise_target)
+    traces = [
+      run_vehicle_profile(profile, duration=12.0, speed=25.0, v_cruise_fn=cruise_target)
+      for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport)
+    ]
+    step_frame = int(np.flatnonzero(stock[:, 0] >= 2.0)[0])
+    stock_decel = stock[step_frame:]
+
+    for trace in traces:
+      decel = trace[step_frame:]
+      self.assertGreater(float(np.min(decel[:, 2])), float(np.min(stock_decel[:, 2])))
+      self.assertGreater(float(np.min(decel[:, 4])), float(np.min(stock_decel[:, 4])))
+      self.assertGreaterEqual(float(np.min(decel[:, 1])), target - 1e-9)
+
+      for column in (2, 3, 4):
+        jerk = np.max(np.abs(np.diff(trace[step_frame - 1:, column]))) / DT_MDL
+        stock_jerk = np.max(np.abs(np.diff(stock[step_frame - 1:, column]))) / DT_MDL
+        self.assertLessEqual(float(jerk), float(stock_jerk) + 1e-9)
 
   def test_blended_launch_respects_profiles(self):
     traces = {

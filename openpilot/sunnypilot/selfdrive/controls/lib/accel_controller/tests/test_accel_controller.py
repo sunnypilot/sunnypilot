@@ -15,7 +15,7 @@ from openpilot.selfdrive.controls.lib.longitudinal_planner import (
   A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS, A_CRUISE_MIN, J_CRUISE_VALS, get_cruise_accel,
 )
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import (
-  AccelController, AccelProfile, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
+  AccelController, AccelProfile, CRUISE_DECEL_RESPONSE_TIME, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
 )
 
 
@@ -111,7 +111,25 @@ class TestAccelController(OpenpilotTestCase):
     controller = self.set_profile(AccelProfile.sport)
     assert controller.get_max_accel(-1.0) == MAX_ACCEL_PROFILES[AccelProfile.sport][0]
 
-  def test_profile_change_has_no_controller_filter(self):
+  def test_cruise_decel_response(self):
+    v_ego = 25.0
+    v_target = 22.5
+    targets = {}
+    for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
+      controller = self.set_profile(profile)
+      targets[profile] = controller.get_cruise_target(v_ego, v_target)
+      assert np.isclose(targets[profile] - v_ego, (v_target - v_ego) / CRUISE_DECEL_RESPONSE_TIME[profile])
+
+    assert v_ego > targets[AccelProfile.eco] > targets[AccelProfile.normal] > targets[AccelProfile.sport] > v_target
+
+  def test_cruise_target_bypasses_non_decel_requests(self):
+    controller = self.set_profile(AccelProfile.eco)
+    assert controller.get_cruise_target(20.0, 25.0) == 25.0
+    assert controller.get_cruise_target(20.0, 20.0) == 20.0
+    assert controller.get_cruise_target(20.0, 0.0) == 0.0
+    assert np.isnan(controller.get_cruise_target(20.0, float("nan")))
+
+  def test_profile_change_refreshes_ceiling(self):
     controller = self.set_profile(AccelProfile.normal)
     self.params.put("AccelPersonality", AccelProfile.sport, block=True)
     controller.frame = int(1.0 / DT_MDL) - 1
@@ -165,23 +183,21 @@ class TestPlannerIntegration(OpenpilotTestCase):
 
   def test_disabled_leaves_stock_limit_active(self):
     planner = _bare_planner()
-    for e2e in (False, True):
-      assert planner.get_max_accel_override(5.0, 30.0, e2e=e2e) is None
-      assert planner.accel_controller_active is False
+    assert planner.get_max_accel_override(5.0) is None
+    assert planner.accel_controller_active is False
 
-  def test_e2e_uses_enabled_profile(self):
+  def test_enabled_profile_applies_to_cruise_candidate(self):
     self.params.put_bool("AccelPersonalityEnabled", True, block=True)
     planner = _bare_planner()
     expected = np.interp(5.0, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.normal])
-    assert planner.get_max_accel_override(5.0, 30.0, e2e=True) == expected
-    assert planner.accel_controller_active is True
+    assert planner.get_max_accel_override(5.0) == expected
 
   def test_enabled_acc_uses_python_native_telemetry_types(self):
     self.params.put_bool("AccelPersonalityEnabled", True, block=True)
     self.params.put("AccelPersonality", AccelProfile.sport, block=True)
     planner = _bare_planner()
     expected = np.interp(5.0, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.sport])
-    assert planner.get_max_accel_override(5.0, 30.0, e2e=False) == expected
+    assert planner.get_max_accel_override(5.0) == expected
     assert type(planner.accel_controller_active) is bool
     assert type(planner.accel_controller.is_enabled()) is bool
     assert type(planner.accel_controller.profile) is int
@@ -191,13 +207,9 @@ class TestPlannerIntegration(OpenpilotTestCase):
     self.params.put("AccelPersonality", AccelProfile.normal, block=True)
     planner = _bare_planner()
     expected = np.interp(5.0, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.normal])
-    assert planner.get_max_accel_override(5.0, 30.0, e2e=False) == expected
-    assert planner.accel_controller_active is True
+    assert planner.get_max_accel_override(5.0) == expected
 
   def test_ceiling_applies_to_every_target_source(self):
-    # The ceiling is speed-scheduled only, so it is deliberately source-independent. This is what the old
-    # COMFORT_SOURCES allow-list existed to qualify; with target shaping gone there is nothing to gate,
-    # because an upper bound on acceleration cannot soften an SCC or speed-limit deceleration.
     from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanSource
 
     self.params.put_bool("AccelPersonalityEnabled", True, block=True)
@@ -208,40 +220,48 @@ class TestPlannerIntegration(OpenpilotTestCase):
     for source in (LongitudinalPlanSource.cruise, LongitudinalPlanSource.sccVision,
                    LongitudinalPlanSource.sccMap, LongitudinalPlanSource.speedLimitAssist):
       planner.source = source
-      assert np.isclose(planner.get_max_accel_override(speed, 33.0, e2e=False), expected), source
+      assert np.isclose(planner.get_max_accel_override(speed), expected), source
 
-  def test_carried_accel_state_cannot_ratchet_above_the_ceiling(self):
-    # get_cruise_accel clips to max_accel FIRST and applies its jerk limit SECOND, so when
-    # a_cruise_prev - j*dt is above the ceiling, that second clip's lower bound pulls the command back over
-    # it and can only walk down at j_cruise. a_cruise is force-set to the measured aEgo on reset_state, so
-    # after the driver accelerates hard and lifts off, openpilot re-engages pinned above the profile.
-    # Measured on route 000005dd: 87 frames commanding up to 1.70 m/s^2 where eco allows 0.87.
+  def test_ceiling_remains_active_without_throttle_intent(self):
     self.params.put_bool("AccelPersonalityEnabled", True, block=True)
     self.params.put("AccelPersonality", AccelProfile.eco, block=True)
     planner = _bare_planner()
-    v_ego = 9.84
-    ceiling = planner.accel_controller.get_max_accel(v_ego)
+    planner.allow_throttle = False
+    assert planner.get_max_accel_override(12.0) == planner.accel_controller.get_max_accel(12.0)
 
-    planner.a_cruise = 1.90  # what a hard driver launch leaves behind
-    override = planner.get_max_accel_override(v_ego, 30.0, e2e=False)
+  def test_profile_switch_uses_stock_jerk_limit(self):
+    self.params.put_bool("AccelPersonalityEnabled", True, block=True)
+    self.params.put("AccelPersonality", AccelProfile.sport, block=True)
+    planner = _bare_planner()
+    v_ego = 12.0
+    planner.a_cruise = planner.accel_controller.get_max_accel(v_ego)
 
-    assert np.isclose(override, ceiling)
-    assert planner.a_cruise <= ceiling + 1e-12
-    accel = get_cruise_accel(False, 30.0, v_ego, planner.a_cruise, 0.0, _fake_cp(), DT_MDL, 0.0, True, override)
-    assert accel <= ceiling + 1e-12
+    self.params.put("AccelPersonality", AccelProfile.eco, block=True)
+    planner.accel_controller.frame = int(1.0 / DT_MDL) - 1
+    planner.accel_controller.update()
+    ceiling = planner.get_max_accel_override(v_ego)
+    previous = planner.a_cruise
+    accel = get_cruise_accel(False, 30.0, v_ego, previous, 0.0, _fake_cp(), DT_MDL, 0.0, True, ceiling)
+    jerk_step = float(np.interp(v_ego, A_CRUISE_MAX_BP, J_CRUISE_VALS)) * DT_MDL
 
-    # Braking must be untouched: the clamp is upper-side only.
-    for carried in (-3.5, -1.2, -0.4, 0.0):
-      planner.a_cruise = carried
-      planner.get_max_accel_override(v_ego, 30.0, e2e=False)
-      assert planner.a_cruise == carried, carried
+    assert previous > ceiling
+    assert np.isclose(previous - accel, jerk_step)
+    assert planner.a_cruise == previous
 
-    # Disabled must not touch the carried state at all.
-    self.params.put_bool("AccelPersonalityEnabled", False, block=True)
-    off = _bare_planner()
-    off.a_cruise = 1.90
-    assert off.get_max_accel_override(v_ego, 30.0, e2e=False) is None
-    assert off.a_cruise == 1.90
+  def test_cruise_target_shaping_is_source_and_force_decel_gated(self):
+    from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanSource
+
+    self.params.put_bool("AccelPersonalityEnabled", True, block=True)
+    planner = _bare_planner()
+    shaped = planner.get_cruise_target_override(25.0, 22.5, force_decel=False)
+    assert 22.5 < shaped < 25.0
+
+    for source in (LongitudinalPlanSource.sccVision, LongitudinalPlanSource.sccMap, LongitudinalPlanSource.speedLimitAssist):
+      planner.source = source
+      assert planner.get_cruise_target_override(25.0, 22.5, force_decel=False) == 22.5
+
+    planner.source = LongitudinalPlanSource.cruise
+    assert planner.get_cruise_target_override(25.0, 0.0, force_decel=True) == 0.0
 
   def test_e2e_candidate_is_held_through_a_brake_but_not_otherwise(self):
     # Route 000005dd: e2e -> lead1 stepped +2.25 m/s^2 in one frame (45 m/s^3) and back the next, while the

@@ -39,7 +39,6 @@ class LongitudinalPlannerSP:
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
-    self.a_cruise = 0.  # re-assigned by the subclass; declared here because get_max_accel_override clamps it
 
     self.output_v_target = 0.
     self.output_a_target = 0.
@@ -59,20 +58,17 @@ class LongitudinalPlannerSP:
 
     return False
 
-  def get_max_accel_override(self, v_ego: float, _v_target: float, e2e: bool) -> float | None:
-    """Pure speed-scheduled authority. The arrival taper is the comfort law's job, not the ceiling's."""
-    self.accel_controller_active = bool(self.accel_controller.is_enabled() and (e2e or self.allow_throttle))
-    if not self.accel_controller_active:
+  def get_max_accel_override(self, v_ego: float) -> float | None:
+    if not self.accel_controller.is_enabled():
       return None
 
-    ceiling = self.accel_controller.get_max_accel(v_ego)
+    return self.accel_controller.get_max_accel(v_ego)
 
-    # get_cruise_accel jerk-limits AFTER clipping to max_accel, so a carried value above the ceiling ratchets
-    # the command back over it. upper side only: never make braking less negative
-    if math.isfinite(self.a_cruise):
-      self.a_cruise = min(self.a_cruise, ceiling)
+  def get_cruise_target_override(self, v_ego: float, v_target: float, force_decel: bool) -> float:
+    if not self.accel_controller.is_enabled() or force_decel or self.source != LongitudinalPlanSource.cruise:
+      return v_target
 
-    return ceiling
+    return self.accel_controller.get_cruise_target(v_ego, v_target)
 
   def _has_valid_selected_lead(self, sm: messaging.SubMaster, source: MpcPlanSource) -> bool:
     radar_valid = sm.valid.get('radarState', False) and getattr(sm, 'alive', {}).get('radarState', False)

@@ -145,7 +145,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     is_e2e = self.is_e2e(sm)
 
-    max_accel_override = self.get_max_accel_override(v_ego, v_cruise, is_e2e)
+    max_accel_override = self.get_max_accel_override(v_ego)
+    v_cruise = self.get_cruise_target_override(v_ego, v_cruise, force_decel)
     a_cruise_prev = self.a_cruise
     gated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
                                     self.CP, self.dt, accel_coast, self.allow_throttle, max_accel_override)
@@ -165,6 +166,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target, self.mpc.source, _ = min(candidates, key=lambda c: c[0])
     self.output_should_stop = any(should_stop for _, _, should_stop in candidates)
     self.output_a_target = np.clip(output_a_target, ACCEL_MIN, ACCEL_MAX)
+    self.accel_controller_active = bool(self.accel_controller.is_enabled() and not force_decel and
+                                        self.mpc.source == LongitudinalPlanSource.cruise)
 
     self.v_desired_filter.x = self.v_desired_filter.x + self.dt * (self.output_a_target + a_prev) / 2.0
 
