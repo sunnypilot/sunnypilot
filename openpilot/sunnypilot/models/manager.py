@@ -265,7 +265,7 @@ class ModelManagerSP:
       try:
         self.sm.update(0)
         self.available_models = self.model_fetcher.get_available_bundles(self.sm['deviceState'].chestnutPresent)
-        validate_active_bundle(self.params, self.available_models)
+        validate_active_bundle(self.params, self.available_models, self.model_fetcher.catalog_stable)
         self.active_bundle = get_active_bundle(self.params)
 
         if (index_to_download := self.params.get("ModelManager_DownloadIndex")) is not None:

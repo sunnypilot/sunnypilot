@@ -79,38 +79,37 @@ def _bundle_is_valid_locally(bundle: custom.ModelManagerSP.ModelBundle) -> bool:
              for file_name, expected_hash in _bundle_artifacts(bundle))
 
 
-def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None) -> bool:
+def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None,
+                        catalog_stable: bool = True) -> bool:
   if active_bundle is None:
     return False
 
   if available_bundles is not None:
     matching_bundle = None
     for bundle in available_bundles:
-      if getattr(active_bundle, 'ref', None) and getattr(bundle, 'ref', None):
+      if active_bundle.ref and bundle.ref:
         if active_bundle.ref == bundle.ref:
           matching_bundle = bundle
           break
-      elif getattr(active_bundle, 'internalName', None) == getattr(bundle, 'internalName', None):
+      elif active_bundle.internalName == bundle.internalName:
         matching_bundle = bundle
         break
 
     if matching_bundle is None:
-      return True
+      return catalog_stable
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
-
-    active_runner = getattr(active_bundle, 'runner', None)
-    matching_runner = getattr(matching_bundle, 'runner', None)
-    if active_runner is not None and matching_runner is not None:
-      if getattr(active_runner, 'raw', active_runner) != getattr(matching_runner, 'raw', matching_runner):
-        return True
+    if active_bundle.runner.raw != matching_bundle.runner.raw:
+      return True
     if set(_bundle_artifacts(active_bundle)) != set(_bundle_artifacts(matching_bundle)):
       return True
 
-  return not _bundle_is_valid_locally(active_bundle)
+  # missing files get re-downloaded, not treated as a reason to reset selection
+  return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
+                           catalog_stable: bool = True) -> None:
   global _LAST_VALIDATED_RAW
 
   raw_bundle = params.get("ModelManager_ActiveBundle")
@@ -121,7 +120,7 @@ def validate_active_bundle(params: Params, available_bundles: list[custom.ModelM
     return
 
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
-  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
+  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles, catalog_stable):
     cloudlog.warning("Active model bundle invalid; resetting to default")
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
