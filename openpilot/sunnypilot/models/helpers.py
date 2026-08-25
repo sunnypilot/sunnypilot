@@ -23,7 +23,6 @@ REQUIRED_JSON_VERSION = 18
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 ModelManager = custom.ModelManagerSP
-_LAST_VALIDATED_RAW = None
 
 
 def _compute_hash(file_path: str) -> str | None:
@@ -79,8 +78,7 @@ def _bundle_is_valid_locally(bundle: custom.ModelManagerSP.ModelBundle) -> bool:
              for file_name, expected_hash in _bundle_artifacts(bundle))
 
 
-def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None,
-                        catalog_stable: bool = True) -> bool:
+def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None) -> bool:
   if active_bundle is None:
     return False
 
@@ -96,7 +94,7 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
         break
 
     if matching_bundle is None:
-      return catalog_stable
+      return True
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
     if active_bundle.runner.raw != matching_bundle.runner.raw:
@@ -108,29 +106,16 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
-                           catalog_stable: bool = True) -> None:
-  global _LAST_VALIDATED_RAW
-
-  if not catalog_stable:
-    _LAST_VALIDATED_RAW = None
-    return
-
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
   raw_bundle = params.get("ModelManager_ActiveBundle")
   if not raw_bundle:
     return
 
-  if raw_bundle == _LAST_VALIDATED_RAW:
-    return
-
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
-  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles, catalog_stable):
+  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning("Active model bundle invalid; resetting to default")
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
-    _LAST_VALIDATED_RAW = None
-  else:
-    _LAST_VALIDATED_RAW = raw_bundle
 
 
 def get_active_bundle(params: Params | None = None, raw_bundle_dict: dict | bytes | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
