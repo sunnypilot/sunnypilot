@@ -14,7 +14,7 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import ButtonActionSP
 from openpilot.system.ui.widgets.label import ScrollState, UnifiedLabel
 from openpilot.system.ui.widgets.list_view import BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, _resolve_value
 
-SCROLL_SPEED = 1.0  # stock is 0.8, boosted ~20% to compensate for larger font (50 vs 32)
+SCROLL_SPEED = 1.2  # stock is 0.8, boosted 50% to compensate for larger font (50 vs 32)
 SCROLL_REFERENCE_FPS = 60.
 
 
