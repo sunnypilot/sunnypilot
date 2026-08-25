@@ -115,8 +115,12 @@ class ModelsLayout(Widget):
   def calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
-      cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
-    return cache_size
+      for file in os.listdir(CUSTOM_MODEL_PATH):
+        try:
+          cache_size += os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file))
+        except OSError:
+          continue
+    return cache_size / (1024**2)
 
   def _clear_cache(self):
     def _callback(response):
