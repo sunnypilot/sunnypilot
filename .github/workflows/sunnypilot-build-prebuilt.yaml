@@ -523,15 +523,12 @@ jobs:
   notify:
     needs:
     - prepare_strategy
-    - build
     - publish
     - publish_chestnut
-    - prepare_chestnut
-    - prepare_small_model
-    - prepare_dm_model
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure())
       && needs.publish.result == 'success'
+      && (needs.publish_chestnut.result == 'success' || needs.publish_chestnut.result == 'skipped')
       && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
       && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name] != null) }}
     steps:
