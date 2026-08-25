@@ -267,9 +267,10 @@ class ModelManagerSP:
     while True:
       try:
         self.sm.update(0)
-        self.available_models = self.model_fetcher.get_available_bundles(self.sm['deviceState'].chestnutPresent)
+        chestnut_present = self.sm['deviceState'].chestnutPresent
+        self.available_models = self.model_fetcher.get_available_bundles(chestnut_present)
         if boot_ticks >= self.BOOT_SETTLE_TICKS:
-          validate_active_bundle(self.params, self.available_models)
+          validate_active_bundle(self.params, self.available_models, is_usbgpu=chestnut_present)
         boot_ticks = min(boot_ticks + 1, self.BOOT_SETTLE_TICKS)
         self.active_bundle = get_active_bundle(self.params)
 
