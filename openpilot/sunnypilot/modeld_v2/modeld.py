@@ -62,20 +62,6 @@ def _is_lock_contention(e: BaseException) -> bool:
   return "Failed to acquire lock file" in repr(e)
 
 
-def _egpu_lock_holder() -> str:
-  """Who is holding the am_usb lock. Diagnosis only - never raises."""
-  import glob
-  import subprocess
-  try:
-    locks = glob.glob("/tmp/am_usb:*.lock")
-    if not locks:
-      return "no lock file"
-    out = subprocess.run(["fuser", "-v"] + locks, capture_output=True, text=True, timeout=5)
-    return " ".join((out.stdout + out.stderr).split())[:300] or "nobody"
-  except Exception:
-    return "unknown"
-
-
 def _load_with_retry(make_model, attempts: int = EGPU_LOAD_ATTEMPTS, wait: float = EGPU_LOCK_RETRY_WAIT):
   """Call make_model, retrying only on am_usb lock contention. Returns (model, error)."""
   last: Exception | None = None
@@ -86,9 +72,8 @@ def _load_with_retry(make_model, attempts: int = EGPU_LOAD_ATTEMPTS, wait: float
       last = e
       if not _is_lock_contention(e) or attempt == attempts:
         break
-      cloudlog.warning(f"eGPU lock held (attempt {attempt}/{attempts}), retry in {wait}s (holder: {_egpu_lock_holder()})")
+      cloudlog.warning(f"eGPU lock held (attempt {attempt}/{attempts}), retrying in {wait}s")
       time.sleep(wait)
-  cloudlog.error(f"eGPU model load failed (lock holder: {_egpu_lock_holder()})")
   return None, last
 
 
@@ -412,11 +397,12 @@ def main(demo=False):
 
     t = threading.Thread(target=load, daemon=True)
     t.start()
-    t.join(EGPU_LOAD_TIMEOUT + (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT)
+    load_timeout = EGPU_LOAD_TIMEOUT + (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT
+    t.join(load_timeout)
     model, load_err = result[0] if result else (None, None)
     params.put_bool("UsbGpuActive", model is not None)
     if model is None:
-      why = repr(load_err) if load_err else f"no result after {EGPU_LOAD_TIMEOUT}s"
+      why = repr(load_err) if load_err else f"no result after {load_timeout:.0f}s"
       raise RuntimeError(f"eGPU model load failed or timed out ({why})")
   else:
     model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, usbgpu=False)
