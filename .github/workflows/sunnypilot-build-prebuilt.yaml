@@ -424,116 +424,100 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download default model chunks from HF
-        env:
-          HF_REPO: sunnypilot/sunnypilot_models_v1
-        run: |
-          set -o pipefail
-          MODELS_DIR="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
-
-          download_model_chunks() {
-            local DEFAULTS_PATH="$1"
-            local ONNX_HASH="$2"
-            local CANONICAL="$3"
-            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
-            local DEFAULTS=$(curl -fsSL "$JSON_URL")
-            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
-            ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
-            BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
-            NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
-
-            echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
-              CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
-              if [ -z "$CHUNK_IDX" ]; then
-                echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
-                exit 1
-              fi
-              CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
-              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-              echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-              curl -fsSL -o "${MODELS_DIR}/${CANONICAL_CHUNK}" "$ENCODED_URL"
-            done
-            echo "$NUM_CHUNKS" > "${MODELS_DIR}/${CANONICAL}.chunkmanifest"
-          }
-
-          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
-          download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
-
       - name: Prepare chestnut output
         if: ${{ needs.prepare_chestnut.result == 'success' }}
         run: |
           mkdir -p "${{ github.workspace }}/chestnut_output"
           tar xzf prebuilt.tar.gz -C "${{ github.workspace }}/chestnut_output"
 
-      - name: Download big model chunks from HF
-        if: ${{ needs.prepare_chestnut.result == 'success' }}
+      - name: Download all model chunks from HF
         env:
           HF_REPO: sunnypilot/sunnypilot_models_v1
-          HF_DEFAULTS_PATH: models/defaults/big
+          INCLUDE_BIG: ${{ needs.prepare_chestnut.result == 'success' && 'true' || 'false' }}
         run: |
-          ONNX_HASH="${{ needs.prepare_chestnut.outputs.onnx_sha256 }}"
-          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
-          DEFAULTS=$(curl -fsSL "$JSON_URL")
-          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
-
-          mkdir -p big_model_chunks
-          ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
-          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
-          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
-
-          CANONICAL="big_driving_tinygrad.pkl"
-          echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
-            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+')
-            CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
-            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-            echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-            curl -fsSL -o "big_model_chunks/${CANONICAL_CHUNK}" "$ENCODED_URL"
-          done
-
-          echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
-
-      - name: Inject models into chestnut
-        if: ${{ needs.prepare_chestnut.result == 'success' }}
-        env:
-          HF_REPO: sunnypilot/sunnypilot_models_v1
-        run: |
-          CHESTNUT_MODELS="${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models"
-          cp big_model_chunks/* "$CHESTNUT_MODELS/"
+          set -eo pipefail
 
           download_model_chunks() {
-            local DEFAULTS_PATH="$1"
-            local ONNX_HASH="$2"
-            local CANONICAL="$3"
+            local DEFAULTS_PATH="$1" ONNX_HASH="$2" CANONICAL="$3" DEST_DIR="$4"
             local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
-            local DEFAULTS=$(curl -fsSL "$JSON_URL")
+            local DEFAULTS BUNDLE ARTIFACT BASE_URL NUM_CHUNKS
+            DEFAULTS=$(curl -fsSL "$JSON_URL")
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
             ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
             BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
             NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
 
-            echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
+            mkdir -p "$DEST_DIR"
+            while IFS= read -r CHUNK_NAME; do
               CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
               if [ -z "$CHUNK_IDX" ]; then
                 echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
-                exit 1
+                return 1
               fi
-              CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-              echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
-              curl -fsSL -o "${CHESTNUT_MODELS}/${CANONICAL_CHUNK}" "$ENCODED_URL"
-            done
-            echo "$NUM_CHUNKS" > "${CHESTNUT_MODELS}/${CANONICAL}.chunkmanifest"
+              echo "Downloading $CHUNK_NAME -> ${CANONICAL}.chunk${CHUNK_IDX}"
+              curl -fsSL --retry 3 --retry-delay 5 -o "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" "$ENCODED_URL"
+            done < <(echo "$ARTIFACT" | jq -r '.chunks[].file_name')
+            echo "$NUM_CHUNKS" > "${DEST_DIR}/${CANONICAL}.chunkmanifest"
           }
 
-          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
-          download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
+          SMALL_DIR=$(mktemp -d)
+          DM_DIR=$(mktemp -d)
+
+          echo "Downloading small, DM$( [ "$INCLUDE_BIG" = "true" ] && echo ", big" ) model chunks in parallel..."
+
+          download_model_chunks "models/defaults/small" \
+            "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" \
+            "driving_tinygrad.pkl" "$SMALL_DIR" &
+          SMALL_PID=$!
+
+          download_model_chunks "models/defaults/dm" \
+            "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" \
+            "dmonitoring_model_tinygrad.pkl" "$DM_DIR" &
+          DM_PID=$!
+
+          BIG_PID=""
+          if [ "$INCLUDE_BIG" = "true" ]; then
+            mkdir -p big_model_chunks
+            download_model_chunks "models/defaults/big" \
+              "${{ needs.prepare_chestnut.outputs.onnx_sha256 }}" \
+              "big_driving_tinygrad.pkl" "big_model_chunks" &
+            BIG_PID=$!
+          fi
+
+          FAIL=0
+          wait $SMALL_PID || FAIL=1
+          wait $DM_PID || FAIL=1
+          if [ -n "$BIG_PID" ]; then
+            wait $BIG_PID || FAIL=1
+          fi
+          if [ $FAIL -ne 0 ]; then
+            echo "::error::One or more model downloads failed"
+            exit 1
+          fi
+
+          MODELS_DIR="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
+          cp "$SMALL_DIR"/* "$MODELS_DIR/"
+          cp "$DM_DIR"/* "$MODELS_DIR/"
+          rm -rf "$SMALL_DIR" "$DM_DIR"
+
+      - name: Inject models into chestnut
+        if: ${{ needs.prepare_chestnut.result == 'success' }}
+        run: |
+          CHESTNUT_MODELS="${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models"
+          MAIN_MODELS="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
+          cp big_model_chunks/* "$CHESTNUT_MODELS/"
+          cp "$MAIN_MODELS"/driving_tinygrad.pkl.chunk* "$CHESTNUT_MODELS/"
+          cp "$MAIN_MODELS"/driving_tinygrad.pkl.chunkmanifest "$CHESTNUT_MODELS/"
+          cp "$MAIN_MODELS"/dmonitoring_model_tinygrad.pkl.chunk* "$CHESTNUT_MODELS/"
+          cp "$MAIN_MODELS"/dmonitoring_model_tinygrad.pkl.chunkmanifest "$CHESTNUT_MODELS/"
 
       - name: Configure Git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Publish to Public Repository
+      - name: Publish branches
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -546,23 +530,36 @@ jobs:
             "${{ needs.prepare_strategy.outputs.new_branch }}" \
             "${{ needs.prepare_strategy.outputs.version }}" \
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
+            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}" &
+          MAIN_PID=$!
 
-      - name: Publish chestnut branch
-        if: ${{ needs.prepare_chestnut.result == 'success' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
-          CHESTNUT_DIR="${{ github.workspace }}/chestnut_output"
+          CHESTNUT_PID=""
+          if [ "${{ needs.prepare_chestnut.result }}" = "success" ]; then
+            CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
+            CHESTNUT_DIR="${{ github.workspace }}/chestnut_output"
 
-          ${{ env.CI_DIR }}/publish.sh \
-            "${{ github.workspace }}" \
-            "$CHESTNUT_DIR" \
-            "$CHESTNUT_BRANCH" \
-            "${{ needs.prepare_strategy.outputs.version }}" \
-            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
+            ${{ env.CI_DIR }}/publish.sh \
+              "${{ github.workspace }}" \
+              "$CHESTNUT_DIR" \
+              "$CHESTNUT_BRANCH" \
+              "${{ needs.prepare_strategy.outputs.version }}" \
+              "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
+              "${{ needs.prepare_strategy.outputs.extra_version_identifier }}" &
+            CHESTNUT_PID=$!
+          fi
+
+          wait $MAIN_PID
+          MAIN_RC=$?
+          CHESTNUT_RC=0
+          if [ -n "$CHESTNUT_PID" ]; then
+            wait $CHESTNUT_PID
+            CHESTNUT_RC=$?
+          fi
+
+          if [ $MAIN_RC -ne 0 ] || [ $CHESTNUT_RC -ne 0 ]; then
+            echo "::error::Publish failed (main=$MAIN_RC, chestnut=$CHESTNUT_RC)"
+            exit 1
+          fi
 
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
