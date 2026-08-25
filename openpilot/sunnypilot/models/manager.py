@@ -257,15 +257,21 @@ class ModelManagerSP:
     """Main entry point for downloading a model bundle"""
     asyncio.run(self._download_bundle(model_bundle, destination_path))
 
+  BOOT_SETTLE_TICKS = 10  # seconds at 1 Hz before validating active bundle
+
   def main_thread(self) -> None:
     """Main thread for model management"""
     rk = Ratekeeper(1, print_delay_threshold=None)
+    boot_ticks = 0
 
     while True:
       try:
         self.sm.update(0)
-        self.available_models = self.model_fetcher.get_available_bundles(self.sm['deviceState'].chestnutPresent)
-        validate_active_bundle(self.params, self.available_models)
+        chestnut_present = self.sm['deviceState'].chestnutPresent
+        self.available_models = self.model_fetcher.get_available_bundles(chestnut_present)
+        if boot_ticks >= self.BOOT_SETTLE_TICKS:
+          validate_active_bundle(self.params, self.available_models, is_usbgpu=chestnut_present)
+        boot_ticks = min(boot_ticks + 1, self.BOOT_SETTLE_TICKS)
         self.active_bundle = get_active_bundle(self.params)
 
         if (index_to_download := self.params.get("ModelManager_DownloadIndex")) is not None:
