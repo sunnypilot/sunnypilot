@@ -9,7 +9,7 @@ See the LICENSE.md file in the root directory for more details.
 import os
 os.environ['GMMU'] = '0'
 from openpilot.common.hardware import COMMA_HARDWARE
-from openpilot.selfdrive.modeld.helpers import usbgpu_present, load_oob, modeld_pkl_path
+from openpilot.selfdrive.modeld.helpers import usbgpu_present, load_oob
 import time
 import numpy as np
 import openpilot.cereal.messaging as messaging
@@ -50,12 +50,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeC
 
 PROCESS_NAME = "openpilot.selfdrive.modeld.modeld_tinygrad"
 
-# tinygrad's AMD-over-USB backend guards the device with a flock on /tmp/am_usb:<bus>-<port>.lock,
-# taken with LOCK_EX | LOCK_NB (a second process attempting to acquire it fails immediately with
-# "Failed to acquire lock file", surfacing as ExceptionGroup("No interface for AMD:0 is
-# available")). No other openpilot code acquires this lock, so one possible contender is a
-# previous modeld instance that has not exited yet; retrying covers that case, and the fuser
-# output logged on failure identifies the holder if it recurs.
+# tinygrad guards the AMD-over-USB device with a non-blocking flock on /tmp/am_usb:<bus>-<port>.lock;
+# a holder that has not exited yet (e.g. a previous modeld) fails the load instantly, so retry.
 EGPU_LOAD_ATTEMPTS = 5
 EGPU_LOCK_RETRY_WAIT = 3.0  # [s] between attempts
 EGPU_LOAD_TIMEOUT = 60  # [s] on top of the worst-case retry wait
@@ -81,9 +77,7 @@ def _egpu_lock_holder() -> str:
 
 
 def _load_with_retry(make_model, attempts: int = EGPU_LOAD_ATTEMPTS, wait: float = EGPU_LOCK_RETRY_WAIT):
-  """Call make_model up to `attempts` times, retrying only on am_usb lock contention.
-
-  Returns (model, error); model is None when every attempt failed."""
+  """Call make_model, retrying only on am_usb lock contention. Returns (model, error)."""
   last: Exception | None = None
   for attempt in range(1, attempts + 1):
     try:
@@ -131,7 +125,7 @@ class ModelState(ModelStateBase):
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray
 
-  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool = False, force_builtin_pkl: bool = False):
+  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool = False):
     ModelStateBase.__init__(self)
 
     env_pkl = os.environ.get('COMBINED_MODEL_PKL')
@@ -148,19 +142,7 @@ class ModelState(ModelStateBase):
     self.PLANPLUS_CONTROL: float = 1.0
     self.usbgpu = usbgpu
 
-    # force_builtin_pkl: the caller already knows the active bundle's pkl cannot be opened on
-    # the built-in GPU (an eGPU bundle's pkl is an AMD build and load_oob raises inside tinygrad,
-    # taking modeld with it). Use the pkl compiled into this build instead.
-    pkl_path = None if force_builtin_pkl else _find_driving_pkl(model_bundle)
-    if pkl_path is None and force_builtin_pkl:
-      fallback = str(modeld_pkl_path(usbgpu=False))
-      if _pkl_exists(fallback):
-        cloudlog.warning(f"loading the built-in pkl {fallback} instead of the active bundle")
-        pkl_path, model_bundle = fallback, None
-        # the built-in pkl is not the active bundle, so the bundle's generation and smoothing
-        # overrides do not describe it - keep them consistent with model_bundle=None
-        self.generation = None
-        self.LAT_SMOOTH_SECONDS = self.LONG_SMOOTH_SECONDS = 0.0
+    pkl_path = _find_driving_pkl(model_bundle)
     assert pkl_path is not None, "No driving pkl found — all models must be compiled with compile_modeld.py"
     self._init_combined(pkl_path, cam_w, cam_h, model_bundle)
 
@@ -431,31 +413,24 @@ def main(demo=False):
     t = threading.Thread(target=load, daemon=True)
     t.start()
     t.join(EGPU_LOAD_TIMEOUT + (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT)
-    # read the result exactly once: the thread may still be running after a timeout, and a model
-    # that finishes loading after we have fallen back must not swap in mid-drive
     model, load_err = result[0] if result else (None, None)
     params.put_bool("UsbGpuActive", model is not None)
     if model is None:
       why = repr(load_err) if load_err else f"no result after {EGPU_LOAD_TIMEOUT}s"
-      cloudlog.error(f"eGPU model unavailable ({why}), falling back to the built-in model")
-
-  if model is None:
-    # fall back to the model compiled into this build. force_builtin_pkl because an eGPU
-    # bundle's pkl cannot be opened on the built-in GPU - without it the fallback itself
-    # raises and modeld exits, and manager does not restart modeld
-    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, usbgpu=False, force_builtin_pkl=USBGPU)
+      raise RuntimeError(f"eGPU model load failed or timed out ({why})")
+  else:
+    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, usbgpu=False)
 
   params.put_bool("UsbGpuLoading", False)
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  # keyed off the model that actually loaded, not the intent: a fallback run has no eGPU state
-  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if model.usbgpu else [])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if USBGPU else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
   publish_state = PublishState()
-  chestnut_state = ChestnutState(pm, model.usbgpu) if model.usbgpu else None
+  chestnut_state = ChestnutState(pm, USBGPU) if USBGPU else None
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
