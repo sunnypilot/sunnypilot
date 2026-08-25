@@ -195,3 +195,85 @@ class TestReadFileChunkedToDisk(OpenpilotTestCase):
 
       assert out.parent == Path(d)
       assert out.read_bytes() == payload
+
+
+class Test4DFeaturesBuffer(OpenpilotTestCase):
+  def test_get_policy_npy_shapes_4d(self):
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes
+    input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 32, 512),  # compare 4d to 3d for regression
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2)
+    }
+    shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=True)
+    assert shapes['prev_feat'] == (1, 16384)
+    assert sizes == [8, 2, 2, 16384]
+
+  def test_get_policy_npy_shapes_3d(self):
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes
+    input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 512),
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2)
+    }
+    shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=True)
+    assert shapes['prev_feat'] == (1, 512)
+    assert sizes == [8, 2, 2, 512]
+
+
+class TestStockCompileModeldEquivalence(OpenpilotTestCase):
+  def test_get_policy_npy_shapes_matches_stock(self):
+    from openpilot.selfdrive.modeld.compile_modeld import get_policy_npy_shapes as stock_get_policy_npy_shapes
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes as sunny_get_policy_npy_shapes
+
+    stock_input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 512), # see below comment
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2),
+    }
+
+    stock_shapes, stock_sizes = stock_get_policy_npy_shapes(stock_input_shapes)
+    sunny_shapes, sunny_sizes = sunny_get_policy_npy_shapes(stock_input_shapes, is_supercombo=True)
+
+    assert sunny_shapes == stock_shapes
+    assert sunny_sizes == stock_sizes
+    assert sunny_shapes['prev_feat'] == (1, 512)
+
+  def test_make_input_queues_full_stock_equivalence(self):
+    from openpilot.selfdrive.modeld.compile_modeld import make_input_queues as stock_make_input_queues
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues as sunny_make_supercombo_input_queues
+    input_shapes = {
+      'img': (1, 12, 128, 256),
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 512),  # when https://github.com/commaai/openpilot/pull/38681 merges, update to 1,24,32,512
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2),
+    }
+    frame_skip = 4
+
+    stock_queues, stock_npy = stock_make_input_queues(input_shapes, frame_skip, device='NPY')
+    sunny_queues, sunny_npy = sunny_make_supercombo_input_queues(input_shapes, frame_skip, device='NPY')
+    assert set(sunny_queues.keys()) == set(stock_queues.keys())
+    for key in stock_queues:
+      assert sunny_queues[key].shape == stock_queues[key].shape, \
+        f"Queue shape mismatch for {key}: sunny {sunny_queues[key].shape} != stock {stock_queues[key].shape}"
+    assert set(sunny_npy.keys()) == set(stock_npy.keys())
+    for key in stock_npy:
+      assert sunny_npy[key].shape == stock_npy[key].shape, \
+        f"Numpy array shape mismatch for {key}: sunny {sunny_npy[key].shape} != stock {stock_npy[key].shape}"
+
+  def test_make_warp_queues_stock_equivalence(self):
+    from openpilot.selfdrive.modeld.compile_modeld import make_warp_input_queues as stock_make_warp_queues
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import make_warp_queues as sunny_make_warp_queues
+    stock_vision_shapes = {'img': (1, 12, 128, 256)}  # for now?
+    stock_queues, stock_npy = stock_make_warp_queues(stock_vision_shapes, frame_skip=4, device='NPY')
+    sunny_queues, sunny_npy = sunny_make_warp_queues(device='NPY')
+
+    assert set(sunny_npy.keys()) == set(stock_npy.keys()) == {'tfm', 'big_tfm'}
+    for key in sunny_npy:
+      assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)
+
+

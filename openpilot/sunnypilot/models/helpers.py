@@ -18,12 +18,11 @@ from openpilot.sunnypilot.models.constants import Meta, MetaSimPose, MetaTombRai
 from openpilot.common.hardware.hw import Paths
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 17
+REQUIRED_JSON_VERSION = 18
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 ModelManager = custom.ModelManagerSP
-_LAST_VALIDATED_RAW = None
 
 
 def _compute_hash(file_path: str) -> str | None:
@@ -86,11 +85,11 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   if available_bundles is not None:
     matching_bundle = None
     for bundle in available_bundles:
-      if getattr(active_bundle, 'ref', None) and getattr(bundle, 'ref', None):
+      if active_bundle.ref and bundle.ref:
         if active_bundle.ref == bundle.ref:
           matching_bundle = bundle
           break
-      elif getattr(active_bundle, 'internalName', None) == getattr(bundle, 'internalName', None):
+      elif active_bundle.internalName == bundle.internalName:
         matching_bundle = bundle
         break
 
@@ -98,36 +97,42 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
       return True
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
-
-    active_runner = getattr(active_bundle, 'runner', None)
-    matching_runner = getattr(matching_bundle, 'runner', None)
-    if active_runner is not None and matching_runner is not None:
-      if getattr(active_runner, 'raw', active_runner) != getattr(matching_runner, 'raw', matching_runner):
-        return True
+    if active_bundle.runner.raw != matching_bundle.runner.raw:
+      return True
     if set(_bundle_artifacts(active_bundle)) != set(_bundle_artifacts(matching_bundle)):
       return True
 
-  return not _bundle_is_valid_locally(active_bundle)
+  # missing files trigger re-download, not selection reset
+  return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
-  global _LAST_VALIDATED_RAW
+def _prev_bundle_key(is_usbgpu: bool) -> str:
+  return "ModelManager_PrevBundle_USBGPU" if is_usbgpu else "ModelManager_PrevBundle"
 
+
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
+                           is_usbgpu: bool = False) -> None:
   raw_bundle = params.get("ModelManager_ActiveBundle")
   if not raw_bundle:
-    return
-
-  if raw_bundle == _LAST_VALIDATED_RAW:
+    prev = params.get(_prev_bundle_key(is_usbgpu))
+    if prev and (prev_bundle := get_active_bundle(params, raw_bundle_dict=prev)) is not None:
+      if not _bundle_needs_reset(prev_bundle, available_bundles):
+        params.put("ModelManager_ActiveBundle", prev, block=True)
     return
 
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
   if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning("Active model bundle invalid; resetting to default")
+    params.put(_prev_bundle_key(not is_usbgpu), raw_bundle, block=True)
+
+    prev = params.get(_prev_bundle_key(is_usbgpu))
+    if prev and (prev_bundle := get_active_bundle(params, raw_bundle_dict=prev)) is not None:
+      if not _bundle_needs_reset(prev_bundle, available_bundles):
+        params.put("ModelManager_ActiveBundle", prev, block=True)
+        return
+
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
-    _LAST_VALIDATED_RAW = None
-  else:
-    _LAST_VALIDATED_RAW = raw_bundle
 
 
 def get_active_bundle(params: Params | None = None, raw_bundle_dict: dict | bytes | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
