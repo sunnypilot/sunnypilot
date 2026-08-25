@@ -79,7 +79,8 @@ def _bundle_is_valid_locally(bundle: custom.ModelManagerSP.ModelBundle) -> bool:
              for file_name, expected_hash in _bundle_artifacts(bundle))
 
 
-def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None) -> bool:
+def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None,
+                        catalog_stable: bool = True) -> bool:
   if active_bundle is None:
     return False
 
@@ -95,7 +96,7 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
         break
 
     if matching_bundle is None:
-      return False
+      return catalog_stable
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
     if active_bundle.runner.raw != matching_bundle.runner.raw:
@@ -103,12 +104,17 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
     if set(_bundle_artifacts(active_bundle)) != set(_bundle_artifacts(matching_bundle)):
       return True
 
-  # missing files get re-downloaded, not treated as a reason to reset selection
+  # missing files trigger re-download, not selection reset
   return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
+                           catalog_stable: bool = True) -> None:
   global _LAST_VALIDATED_RAW
+
+  if not catalog_stable:
+    _LAST_VALIDATED_RAW = None
+    return
 
   raw_bundle = params.get("ModelManager_ActiveBundle")
   if not raw_bundle:
@@ -118,7 +124,7 @@ def validate_active_bundle(params: Params, available_bundles: list[custom.ModelM
     return
 
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
-  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
+  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles, catalog_stable):
     cloudlog.warning("Active model bundle invalid; resetting to default")
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
