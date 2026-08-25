@@ -10,12 +10,17 @@ on:
         options:
           - small
           - big
+          - dm
   workflow_call:
     inputs:
       target:
-        description: 'Model target to build (small or big)'
+        description: 'Model target to build (small, big, or dm)'
         required: true
         type: string
+
+concurrency:
+  group: build-default-models-${{ inputs.target }}
+  cancel-in-progress: false
 
 env:
   HF_REPO: sunnypilot/sunnypilot_models_v1
@@ -28,10 +33,7 @@ jobs:
       onnx_ref: ${{ steps.resolve.outputs.onnx_ref }}
       onnx_path: ${{ steps.resolve.outputs.onnx_path }}
       hf_defaults_path: ${{ steps.resolve.outputs.hf_defaults_path }}
-      target_hardware: ${{ steps.resolve.outputs.target_hardware }}
       tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
-      dm_onnx_ref: ${{ steps.resolve.outputs.dm_onnx_ref }}
-      dm_onnx_date: ${{ steps.resolve.outputs.dm_onnx_date }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,12 +47,14 @@ jobs:
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
             ONNX_PATH="openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/big"
-            TARGET_HW="usbgpu"
+          elif [ "${{ inputs.target }}" = "dm" ]; then
+            ONNX_PATH="openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+            HF_DEFAULTS_PATH="models/defaults/dm"
+            NAME="dmonitoring_model ($(git log -1 --format=%cd --date=format:'%B %d, %Y' -- "$ONNX_PATH"))"
           else
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL; print(DEFAULT_MODEL)")
             ONNX_PATH="openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/small"
-            TARGET_HW="qcom"
           fi
 
           ONNX_REF=$(git log -1 --format='%H' -- "$ONNX_PATH")
@@ -60,21 +64,11 @@ jobs:
             exit 1
           fi
 
-          DM_ONNX_REF=""
-          DM_ONNX_DATE=""
-          if [ "${{ inputs.target }}" = "small" ]; then
-            DM_ONNX_REF=$(git log -1 --format='%H' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
-            DM_ONNX_DATE=$(git log -1 --format=%cd --date=format:'%B %d, %Y' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
-          fi
-
           echo "model_name=${NAME}" >> $GITHUB_OUTPUT
           echo "onnx_ref=${ONNX_REF}" >> $GITHUB_OUTPUT
           echo "onnx_path=${ONNX_PATH}" >> $GITHUB_OUTPUT
           echo "hf_defaults_path=${HF_DEFAULTS_PATH}" >> $GITHUB_OUTPUT
-          echo "target_hardware=${TARGET_HW}" >> $GITHUB_OUTPUT
           echo "tinygrad_ref=${TINYGRAD_REF}" >> $GITHUB_OUTPUT
-          echo "dm_onnx_ref=${DM_ONNX_REF}" >> $GITHUB_OUTPUT
-          echo "dm_onnx_date=${DM_ONNX_DATE}" >> $GITHUB_OUTPUT
 
   build_small_model:
     needs: resolve
@@ -304,43 +298,45 @@ jobs:
       ${{
         !cancelled() &&
         (inputs.target == 'big' && needs.build_big_model.result == 'success' ||
-         inputs.target == 'small' && needs.build_small_model.result == 'success') &&
-        (inputs.target != 'small' || needs.build_dm_model.result == 'success')
+         inputs.target == 'small' && needs.build_small_model.result == 'success' ||
+         inputs.target == 'dm' && needs.build_dm_model.result == 'success')
       }}
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: write
-    env:
-      DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
     steps:
       - uses: actions/checkout@v4
 
       - name: Pull ONNX via LFS
-        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}${{ inputs.target == 'small' && ',openpilot/selfdrive/modeld/models/dmonitoring_model.onnx' || '' }}"
+        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}"
 
       - name: Install huggingface_hub
         run: pip install --upgrade "huggingface_hub>=0.22.0"
 
-      - name: Download driving artifact name
+      - name: Download artifact name
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         uses: actions/download-artifact@v4
         with:
           name: artifact-name-${{ needs.resolve.outputs.model_name }}
           path: artifact_name
 
-      - name: Read driving artifact name
+      - name: Read artifact name
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         id: artifact
         run: |
           ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
-      - name: Download driving model artifact
+      - name: Download model artifact
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.artifact_name }}
           path: output
 
-      - name: Upload driving model to HF
+      - name: Upload model to HF
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         env:
           HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
           ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
@@ -359,14 +355,14 @@ jobs:
             --run-number "${{ github.run_number }}"
 
       - name: Download DM artifact
-        if: ${{ inputs.target == 'small' }}
+        if: ${{ inputs.target == 'dm' }}
         uses: actions/download-artifact@v4
         with:
           name: dm-model-${{ github.run_number }}
           path: dm_output
 
       - name: Generate DM metadata and upload to HF
-        if: ${{ inputs.target == 'small' }}
+        if: ${{ inputs.target == 'dm' }}
         env:
           HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
         run: |
@@ -399,8 +395,8 @@ jobs:
           metadata = {
               'bundles': [{
                   'short_name': 'DMMODEL',
-                  'display_name': 'dmonitoring_model (${{ needs.resolve.outputs.dm_onnx_date }})',
-                  'ref': '${{ needs.resolve.outputs.dm_onnx_ref }}',
+                  'display_name': '${{ needs.resolve.outputs.model_name }}',
+                  'ref': '${{ needs.resolve.outputs.onnx_ref }}',
                   'runner': 'tinygrad',
                   'build_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
                   'models': [{
@@ -423,15 +419,15 @@ jobs:
             --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
             --artifact-name "dm-model-${{ github.run_number }}" \
             --model-dir dm_output \
-            --onnx-path "${{ env.DM_ONNX }}" \
-            --onnx-ref "${{ needs.resolve.outputs.dm_onnx_ref }}" \
-            --model-name "dmonitoring_model (${{ needs.resolve.outputs.dm_onnx_date }})" \
+            --onnx-path "${{ needs.resolve.outputs.onnx_path }}" \
+            --onnx-ref "${{ needs.resolve.outputs.onnx_ref }}" \
+            --model-name "${{ needs.resolve.outputs.model_name }}" \
             --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
             --run-number "${{ github.run_number }}"
 
   build_dm_model:
     needs: resolve
-    if: ${{ inputs.target == 'small' }}
+    if: ${{ inputs.target == 'dm' }}
     runs-on: [self-hosted, tici]
     env:
       DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
@@ -440,6 +436,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Pull DM ONNX via LFS
+        run: git lfs pull -I "${{ env.DM_ONNX }}"
 
       - name: Set environment variables
         run: |

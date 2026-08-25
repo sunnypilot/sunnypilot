@@ -240,34 +240,24 @@ jobs:
 
           if check_hash; then
             echo "HF defaults match repo ONNX"
-          else
-            echo "No matching model on HF — triggering build"
-            TRIGGER_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=big
-
-            echo "Waiting for build to start..."
-            sleep 120
-
-            RUN_ID=$(gh run list --workflow=build-default-models.yaml --branch="${{ github.head_ref || github.ref_name }}" --created=">$TRIGGER_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
-            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              echo "::error::Failed to find build-default-models run"
-              exit 1
-            fi
-
-            echo "Waiting for run $RUN_ID..."
-            gh run watch "$RUN_ID"
-
-            CONCLUSION=$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')
-            if [ "$CONCLUSION" != "success" ]; then
-              echo "::error::build-default-models failed: $CONCLUSION"
-              exit 1
-            fi
-
-            if ! check_hash; then
-              echo "::error::HF defaults still don't match after build"
-              exit 1
-            fi
+            exit 0
           fi
+
+          echo "No matching model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=big
+
+          echo "Polling HF for big model availability..."
+          for i in $(seq 1 90); do
+            sleep 30
+            if check_hash; then
+              echo "Big model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/90: not yet available"
+          done
+
+          echo "::error::Big model not available on HF after 45 minutes"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -277,12 +267,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  prepare_small_models:
+  prepare_small_model:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
     outputs:
       driving_onnx_sha256: ${{ steps.resolve.outputs.driving_onnx_sha256 }}
-      dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
     env:
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/small
@@ -292,18 +281,15 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           submodules: recursive
 
-      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/driving_supercombo.onnx,openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
 
       - name: Check HF defaults and build if needed
         id: resolve
         run: |
           DRIVING_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/driving_supercombo.onnx" | cut -d' ' -f1)
-          DM_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx" | cut -d' ' -f1)
           TINYGRAD_REF=$(PYTHONPATH=${{ github.workspace }} python3 openpilot/sunnypilot/models/tinygrad_ref.py)
           echo "driving_onnx_sha256=$DRIVING_HASH" >> $GITHUB_OUTPUT
-          echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
           echo "Driving ONNX hash: $DRIVING_HASH"
-          echo "DM ONNX hash: $DM_HASH"
           echo "tinygrad ref: $TINYGRAD_REF"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
@@ -314,40 +300,92 @@ jobs:
             [ "$TINYGRAD_MATCH" = "true" ] || return 1
             DRIVING=$(echo "$DEFAULTS" | jq --arg hash "$DRIVING_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
             [ -n "$DRIVING" ] && [ "$DRIVING" != "null" ] || return 1
+          }
+
+          if check_defaults; then
+            echo "HF defaults match repo ONNX hash and tinygrad ref"
+            exit 0
+          fi
+
+          echo "No matching model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=small
+
+          echo "Polling HF for model availability..."
+          for i in $(seq 1 60); do
+            sleep 30
+            if check_defaults; then
+              echo "Model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/60: not yet available"
+          done
+
+          echo "::error::Small driving model not available on HF after 30 minutes"
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cancel run on failure
+        if: failure()
+        run: gh run cancel ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prepare_dm_model:
+    needs: [ prepare_strategy ]
+    runs-on: ubuntu-24.04
+    outputs:
+      dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
+    env:
+      HF_REPO: sunnypilot/sunnypilot_models_v1
+      HF_DEFAULTS_PATH: models/defaults/dm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          submodules: recursive
+
+      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+
+      - name: Check HF defaults and build if needed
+        id: resolve
+        run: |
+          DM_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx" | cut -d' ' -f1)
+          TINYGRAD_REF=$(PYTHONPATH=${{ github.workspace }} python3 openpilot/sunnypilot/models/tinygrad_ref.py)
+          echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
+          echo "DM ONNX hash: $DM_HASH"
+          echo "tinygrad ref: $TINYGRAD_REF"
+
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+
+          check_defaults() {
+            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
+            [ "$TINYGRAD_MATCH" = "true" ] || return 1
             DM=$(echo "$DEFAULTS" | jq --arg hash "$DM_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
             [ -n "$DM" ] && [ "$DM" != "null" ] || return 1
           }
 
           if check_defaults; then
-            echo "HF defaults match repo ONNX hashes and tinygrad ref"
-          else
-            echo "No matching models on HF — triggering build"
-            TRIGGER_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=small
-
-            echo "Waiting for build to start..."
-            sleep 120
-
-            RUN_ID=$(gh run list --workflow=build-default-models.yaml --branch="${{ github.head_ref || github.ref_name }}" --created=">$TRIGGER_TIME" --limit=1 --json databaseId --jq '.[0].databaseId')
-            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              echo "::error::Failed to find build-default-models run"
-              exit 1
-            fi
-
-            echo "Waiting for run $RUN_ID..."
-            gh run watch "$RUN_ID"
-
-            CONCLUSION=$(gh run view "$RUN_ID" --json conclusion --jq '.conclusion')
-            if [ "$CONCLUSION" != "success" ]; then
-              echo "::error::build-default-models failed: $CONCLUSION"
-              exit 1
-            fi
-
-            if ! check_defaults; then
-              echo "::error::HF defaults still don't match after build"
-              exit 1
-            fi
+            echo "HF defaults match DM ONNX hash and tinygrad ref"
+            exit 0
           fi
+
+          echo "No matching DM model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=dm
+
+          echo "Polling HF for DM model availability..."
+          for i in $(seq 1 60); do
+            sleep 30
+            if check_defaults; then
+              echo "DM model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/60: not yet available"
+          done
+
+          echo "::error::DM model not available on HF after 30 minutes"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -365,11 +403,12 @@ jobs:
       always() && !cancelled() &&
       needs.build.result == 'success' &&
       needs.prepare_strategy.result == 'success' &&
-      needs.prepare_small_models.result == 'success' &&
+      needs.prepare_small_model.result == 'success' &&
+      needs.prepare_dm_model.result == 'success' &&
       (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) &&
       (needs.prepare_strategy.outputs.include_big_model != 'true' || needs.prepare_chestnut.result == 'success')
       }}
-    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_models ]
+    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
@@ -385,19 +424,19 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download small model chunks from HF
+      - name: Download default model chunks from HF
         env:
           HF_REPO: sunnypilot/sunnypilot_models_v1
-          HF_DEFAULTS_PATH: models/defaults/small
         run: |
           set -o pipefail
-          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
-          DEFAULTS=$(curl -fsSL "$JSON_URL")
           MODELS_DIR="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
 
           download_model_chunks() {
-            local ONNX_HASH="$1"
-            local CANONICAL="$2"
+            local DEFAULTS_PATH="$1"
+            local ONNX_HASH="$2"
+            local CANONICAL="$3"
+            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
+            local DEFAULTS=$(curl -fsSL "$JSON_URL")
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
             ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
             BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
@@ -417,8 +456,8 @@ jobs:
             echo "$NUM_CHUNKS" > "${MODELS_DIR}/${CANONICAL}.chunkmanifest"
           }
 
-          download_model_chunks "${{ needs.prepare_small_models.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
-          download_model_chunks "${{ needs.prepare_small_models.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
+          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
+          download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
 
       - name: Prepare chestnut output
         if: ${{ needs.prepare_chestnut.result == 'success' }}
@@ -453,10 +492,41 @@ jobs:
 
           echo "$NUM_CHUNKS" > "big_model_chunks/${CANONICAL}.chunkmanifest"
 
-      - name: Inject big model into chestnut
+      - name: Inject models into chestnut
         if: ${{ needs.prepare_chestnut.result == 'success' }}
+        env:
+          HF_REPO: sunnypilot/sunnypilot_models_v1
         run: |
-          cp big_model_chunks/* "${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models/"
+          CHESTNUT_MODELS="${{ github.workspace }}/chestnut_output/openpilot/selfdrive/modeld/models"
+          cp big_model_chunks/* "$CHESTNUT_MODELS/"
+
+          download_model_chunks() {
+            local DEFAULTS_PATH="$1"
+            local ONNX_HASH="$2"
+            local CANONICAL="$3"
+            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
+            local DEFAULTS=$(curl -fsSL "$JSON_URL")
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
+            ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
+            BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
+            NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+
+            echo "$ARTIFACT" | jq -r '.chunks[].file_name' | while read CHUNK_NAME; do
+              CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
+              if [ -z "$CHUNK_IDX" ]; then
+                echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
+                exit 1
+              fi
+              CANONICAL_CHUNK="${CANONICAL}.chunk${CHUNK_IDX}"
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
+              echo "Downloading $CHUNK_NAME -> $CANONICAL_CHUNK"
+              curl -fsSL -o "${CHESTNUT_MODELS}/${CANONICAL_CHUNK}" "$ENCODED_URL"
+            done
+            echo "$NUM_CHUNKS" > "${CHESTNUT_MODELS}/${CANONICAL}.chunkmanifest"
+          }
+
+          download_model_chunks "models/defaults/small" "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" "driving_tinygrad.pkl"
+          download_model_chunks "models/defaults/dm" "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" "dmonitoring_model_tinygrad.pkl"
 
       - name: Configure Git
         run: |
@@ -507,7 +577,8 @@ jobs:
     - build
     - publish
     - prepare_chestnut
-    - prepare_small_models
+    - prepare_small_model
+    - prepare_dm_model
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure())
       && needs.publish.result == 'success'
