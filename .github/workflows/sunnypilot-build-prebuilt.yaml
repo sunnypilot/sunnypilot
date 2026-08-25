@@ -39,6 +39,8 @@ jobs:
       include_big_model: ${{ steps.strategy.outputs.include_big_model }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Extract deploy strategy
         id: strategy
         run: |
@@ -96,6 +98,8 @@ jobs:
       }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         with:
@@ -119,6 +123,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 1
           submodules: recursive
           ref: ${{ env.SOURCE_BRANCH }}
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
@@ -214,27 +219,24 @@ jobs:
     outputs:
       onnx_sha256: ${{ steps.resolve.outputs.onnx_sha256 }}
     env:
+      GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/big
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-
-      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
-
-      - name: Check HF defaults and build if needed
+      - name: Resolve ONNX hash via API
         id: resolve
         run: |
-          ACTUAL_ONNX_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx" | cut -d' ' -f1)
-          echo "Repo ONNX hash: $ACTUAL_ONNX_HASH"
-          echo "onnx_sha256=$ACTUAL_ONNX_HASH" >> $GITHUB_OUTPUT
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          ONNX_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          echo "ONNX hash: $ONNX_HASH"
+          echo "onnx_sha256=$ONNX_HASH" >> $GITHUB_OUTPUT
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_hash() {
             DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
-            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ACTUAL_ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
             [ -n "$BUNDLE" ] && [ "$BUNDLE" != "null" ]
           }
 
@@ -244,7 +246,7 @@ jobs:
           fi
 
           echo "No matching model on HF — dispatching build"
-          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=big
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=big
 
           echo "Polling HF for big model availability..."
           for i in $(seq 1 90); do
@@ -273,23 +275,20 @@ jobs:
     outputs:
       driving_onnx_sha256: ${{ steps.resolve.outputs.driving_onnx_sha256 }}
     env:
+      GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/small
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          submodules: recursive
-
-      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
-
-      - name: Check HF defaults and build if needed
+      - name: Resolve ONNX hash and tinygrad ref via API
         id: resolve
         run: |
-          DRIVING_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/driving_supercombo.onnx" | cut -d' ' -f1)
-          TINYGRAD_REF=$(PYTHONPATH=${{ github.workspace }} python3 openpilot/sunnypilot/models/tinygrad_ref.py)
-          echo "driving_onnx_sha256=$DRIVING_HASH" >> $GITHUB_OUTPUT
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          DRIVING_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "Driving ONNX hash: $DRIVING_HASH"
+          echo "driving_onnx_sha256=$DRIVING_HASH" >> $GITHUB_OUTPUT
+
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
           echo "tinygrad ref: $TINYGRAD_REF"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
@@ -308,7 +307,7 @@ jobs:
           fi
 
           echo "No matching model on HF — dispatching build"
-          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=small
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=small
 
           echo "Polling HF for model availability..."
           for i in $(seq 1 60); do
@@ -337,23 +336,20 @@ jobs:
     outputs:
       dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
     env:
+      GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/dm
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          submodules: recursive
-
-      - run: git lfs pull -I "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
-
-      - name: Check HF defaults and build if needed
+      - name: Resolve ONNX hash and tinygrad ref via API
         id: resolve
         run: |
-          DM_HASH=$(sha256sum "openpilot/selfdrive/modeld/models/dmonitoring_model.onnx" | cut -d' ' -f1)
-          TINYGRAD_REF=$(PYTHONPATH=${{ github.workspace }} python3 openpilot/sunnypilot/models/tinygrad_ref.py)
-          echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          DM_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "DM ONNX hash: $DM_HASH"
+          echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
+
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
           echo "tinygrad ref: $TINYGRAD_REF"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
@@ -372,7 +368,7 @@ jobs:
           fi
 
           echo "No matching DM model on HF — dispatching build"
-          gh workflow run build-default-models.yaml --ref "${{ github.head_ref || github.ref_name }}" -f target=dm
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=dm
 
           echo "Polling HF for DM model availability..."
           for i in $(seq 1 60); do
@@ -413,6 +409,8 @@ jobs:
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Download prebuilt artifact
         uses: actions/download-artifact@v4
@@ -477,8 +475,11 @@ jobs:
       }}
     needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
     runs-on: ubuntu-24.04
+    environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Download prebuilt artifact
         uses: actions/download-artifact@v4
@@ -537,6 +538,8 @@ jobs:
       && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name] != null) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Prepare notification message
         id: message
