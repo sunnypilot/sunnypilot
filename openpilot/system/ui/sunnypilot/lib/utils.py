@@ -14,9 +14,8 @@ from openpilot.system.ui.sunnypilot.widgets.list_view import ButtonActionSP
 from openpilot.system.ui.widgets.label import ScrollState, UnifiedLabel
 from openpilot.system.ui.widgets.list_view import BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, _resolve_value
 
-SCROLL_SPEED = 0.8
+SCROLL_SPEED = 1.0  # stock is 0.8, boosted ~20% to compensate for larger font (50 vs 32)
 SCROLL_REFERENCE_FPS = 60.
-SCROLL_BOOST = 1.2  # TIZI text is larger (50 vs 32), needs faster scroll to feel equivalent
 
 
 class UnifiedLabelSP(UnifiedLabel):
@@ -24,8 +23,8 @@ class UnifiedLabelSP(UnifiedLabel):
   def _render(self, _):
     if self._needs_scroll and self._scroll_state == ScrollState.SCROLLING:
       fps = gui_app.target_fps
-      wrong_step = SCROLL_SPEED / SCROLL_REFERENCE_FPS * fps
-      correct_step = SCROLL_SPEED * SCROLL_REFERENCE_FPS / fps * SCROLL_BOOST
+      wrong_step = 0.8 / SCROLL_REFERENCE_FPS * fps
+      correct_step = SCROLL_SPEED * SCROLL_REFERENCE_FPS / fps
       self._scroll_offset -= (correct_step - wrong_step)
     super()._render(_)
 
