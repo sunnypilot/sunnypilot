@@ -141,31 +141,34 @@ class ModelFetcher:
   MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v21.json"
   MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v22.json"
 
-  CATALOG_SETTLE_TICKS = 10  # seconds at 1 Hz before trusting chestnut state
+  CATALOG_SETTLE_TICKS = 10  # seconds at 1 Hz before trusting initial chestnut state
 
   def __init__(self, params: Params):
     self.params = params
     self.model_parser = ModelParser()
     self._is_usbgpu: bool | None = None
-    self._ticks_since_switch: int = 0
+    self._booted: bool = False
+    self._ticks_since_boot: int = 0
     self.model_cache = ModelCache(params)
     self.model_url = self.MODEL_URL
 
   @property
   def catalog_stable(self) -> bool:
-    return self._is_usbgpu is not None and self._ticks_since_switch >= self.CATALOG_SETTLE_TICKS
+    return self._booted and self._ticks_since_boot >= self.CATALOG_SETTLE_TICKS
 
   def _update_model_source(self, chestnut_present: bool) -> None:
     """Updates what json to use based on chestnut hardware presence via deviceState"""
     is_usbgpu = chestnut_present
     if is_usbgpu != self._is_usbgpu:
+      if not self._booted:
+        self._booted = True
+        self._ticks_since_boot = 0
       self._is_usbgpu = is_usbgpu
-      self._ticks_since_switch = 0
       self.model_cache = ModelCache(self.params, suffix="_USBGPU" if is_usbgpu else "")
       self.model_url = self.MODEL_URL_USBGPU if is_usbgpu else self.MODEL_URL
       self.params.put("ModelManager_ActiveJson", self.model_url, block=True)
     else:
-      self._ticks_since_switch = min(self._ticks_since_switch + 1, self.CATALOG_SETTLE_TICKS)
+      self._ticks_since_boot = min(self._ticks_since_boot + 1, self.CATALOG_SETTLE_TICKS)
 
   def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
