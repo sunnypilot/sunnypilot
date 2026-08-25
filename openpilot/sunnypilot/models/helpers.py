@@ -79,8 +79,7 @@ def _bundle_is_valid_locally(bundle: custom.ModelManagerSP.ModelBundle) -> bool:
              for file_name, expected_hash in _bundle_artifacts(bundle))
 
 
-def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None,
-                        catalog_stable: bool = True) -> bool:
+def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None) -> bool:
   if active_bundle is None:
     return False
 
@@ -96,7 +95,7 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
         break
 
     if matching_bundle is None:
-      return catalog_stable
+      return False
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
     if active_bundle.runner.raw != matching_bundle.runner.raw:
@@ -108,8 +107,7 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
-                           catalog_stable: bool = True) -> None:
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
   global _LAST_VALIDATED_RAW
 
   raw_bundle = params.get("ModelManager_ActiveBundle")
@@ -120,7 +118,7 @@ def validate_active_bundle(params: Params, available_bundles: list[custom.ModelM
     return
 
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
-  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles, catalog_stable):
+  if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning("Active model bundle invalid; resetting to default")
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
