@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr_noop
 
 
@@ -17,6 +18,9 @@ METRIC_HEIGHT = 126
 METRIC_MARGIN = 30
 METRIC_START_Y = 300
 HOME_BTN = rl.Rectangle(60, 860, 180, 180)
+
+EGPU_ICON_WIDTH = 180
+EGPU_ICON_HEIGHT = 133
 
 
 # Color scheme
@@ -53,6 +57,8 @@ class MetricData:
 class SidebarSP:
   def __init__(self):
     self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
+    self._egpu_green_img = gui_app.texture("icons_mici/egpu_green.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
+    self._egpu_gray_img = gui_app.texture("icons_mici/egpu_gray.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
 
   def _update_sunnylink_status(self):
     if not ui_state.params.get_bool("SunnylinkEnabled"):
@@ -77,6 +83,14 @@ class SidebarSP:
       status, color = (tr_noop("OFFLINE"), Colors.DANGER)
 
     self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
+
+  def _get_home_icon(self, default_img: rl.Texture) -> tuple[rl.Texture, rl.Vector2]:
+    if not ui_state.started and ui_state.sm["deviceState"].chestnutPresent:
+      icon = self._egpu_green_img if ui_state.usbgpu_compiled else self._egpu_gray_img
+      x = HOME_BTN.x + (HOME_BTN.width - icon.width) / 2
+      y = HOME_BTN.y + (HOME_BTN.height - icon.height) / 2
+      return icon, rl.Vector2(x, y)
+    return default_img, rl.Vector2(HOME_BTN.x, HOME_BTN.y)
 
   def _draw_metrics_w_sunnylink(self, rect: rl.Rectangle, _temp, _panda, _connect):
     metrics = [_temp, _panda, _connect, self._sunnylink_status]
