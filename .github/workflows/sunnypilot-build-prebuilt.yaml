@@ -436,10 +436,12 @@ jobs:
           INCLUDE_BIG: ${{ needs.prepare_chestnut.result == 'success' && 'true' || 'false' }}
         run: |
           set -eo pipefail
+          MODELS_DIR="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
+          DOWNLOAD_LIST=$(mktemp)
 
-          download_model_chunks() {
-            local DEFAULTS_PATH="$1" ONNX_HASH="$2" CANONICAL="$3" DEST_DIR="$4"
-            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${DEFAULTS_PATH}/default_models.json"
+          resolve_chunks() {
+            local HF_PATH="$1" ONNX_HASH="$2" CANONICAL="$3" DEST_DIR="$4"
+            local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_PATH}/default_models.json"
             local DEFAULTS BUNDLE ARTIFACT BASE_URL NUM_CHUNKS
             DEFAULTS=$(curl -fsSL "$JSON_URL")
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
@@ -455,51 +457,34 @@ jobs:
                 return 1
               fi
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-              echo "Downloading $CHUNK_NAME -> ${CANONICAL}.chunk${CHUNK_IDX}"
-              curl -fsSL --retry 3 --retry-delay 5 -o "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" "$ENCODED_URL"
+              printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" >> "$DOWNLOAD_LIST"
             done < <(echo "$ARTIFACT" | jq -r '.chunks[].file_name')
             echo "$NUM_CHUNKS" > "${DEST_DIR}/${CANONICAL}.chunkmanifest"
           }
 
-          SMALL_DIR=$(mktemp -d)
-          DM_DIR=$(mktemp -d)
-
-          echo "Downloading small, DM$( [ "$INCLUDE_BIG" = "true" ] && echo ", big" ) model chunks in parallel..."
-
-          download_model_chunks "models/defaults/small" \
+          resolve_chunks "models/defaults/small" \
             "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}" \
-            "driving_tinygrad.pkl" "$SMALL_DIR" &
-          SMALL_PID=$!
-
-          download_model_chunks "models/defaults/dm" \
+            "driving_tinygrad.pkl" "$MODELS_DIR"
+          resolve_chunks "models/defaults/dm" \
             "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}" \
-            "dmonitoring_model_tinygrad.pkl" "$DM_DIR" &
-          DM_PID=$!
+            "dmonitoring_model_tinygrad.pkl" "$MODELS_DIR"
 
-          BIG_PID=""
           if [ "$INCLUDE_BIG" = "true" ]; then
             mkdir -p big_model_chunks
-            download_model_chunks "models/defaults/big" \
+            resolve_chunks "models/defaults/big" \
               "${{ needs.prepare_chestnut.outputs.onnx_sha256 }}" \
-              "big_driving_tinygrad.pkl" "big_model_chunks" &
-            BIG_PID=$!
+              "big_driving_tinygrad.pkl" "big_model_chunks"
           fi
 
-          FAIL=0
-          wait $SMALL_PID || FAIL=1
-          wait $DM_PID || FAIL=1
-          if [ -n "$BIG_PID" ]; then
-            wait $BIG_PID || FAIL=1
-          fi
-          if [ $FAIL -ne 0 ]; then
-            echo "::error::One or more model downloads failed"
-            exit 1
-          fi
-
-          MODELS_DIR="${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models"
-          cp "$SMALL_DIR"/* "$MODELS_DIR/"
-          cp "$DM_DIR"/* "$MODELS_DIR/"
-          rm -rf "$SMALL_DIR" "$DM_DIR"
+          TOTAL=$(wc -l < "$DOWNLOAD_LIST")
+          echo "Downloading $TOTAL chunks with 8 parallel connections..."
+          xargs -P8 -d'\n' -I{} bash -c '
+            URL="${1%%	*}"
+            DEST="${1#*	}"
+            echo "Downloading $(basename "$DEST")"
+            curl -fsSL --retry 3 --retry-delay 5 -o "$DEST" "$URL"
+          ' _ {} < "$DOWNLOAD_LIST"
+          rm -f "$DOWNLOAD_LIST"
 
       - name: Inject models into chestnut
         if: ${{ needs.prepare_chestnut.result == 'success' }}
