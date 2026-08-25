@@ -477,6 +477,7 @@ jobs:
       }}
     needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
     runs-on: ubuntu-24.04
+    environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
