@@ -4,11 +4,7 @@ env:
   BUILD_DIR: "/data/openpilot"
   OUTPUT_DIR: ${{ github.workspace }}/output
   CI_DIR: ${{ github.workspace }}/release/ci
-  SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
-
-  # Branch configurations
-  STAGING_SOURCE_BRANCH: 'master'
 
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
@@ -40,8 +36,11 @@ jobs:
       publish_concurrency_group: ${{ steps.strategy.outputs.publish_concurrency_group }}
       is_stable_branch: ${{ steps.strategy.outputs.is_stable_branch }}
       build: ${{ steps.strategy.outputs.build }}
+      include_big_model: ${{ steps.strategy.outputs.include_big_model }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Extract deploy strategy
         id: strategy
         run: |
@@ -82,6 +81,9 @@ jobs:
             stable_version=$(cat openpilot/sunnypilot/common/version.h | grep SUNNYPILOT_VERSION | sed -e 's/[^0-9|.]//g');
             echo "version=$([ "$is_stable_branch" = "true" ] && echo "$stable_version" || echo "$BUILD")" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=${environment}" >> $GITHUB_OUTPUT
+
+            include_big_model="$(echo "$CONFIG" | jq -r '.include_big_model // false')";
+            echo "include_big_model=$include_big_model" >> $GITHUB_OUTPUT
           fi
           echo "build=$BUILD" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
@@ -96,6 +98,8 @@ jobs:
       }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         with:
@@ -109,11 +113,6 @@ jobs:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: [self-hosted, tici]
-    outputs:
-      new_branch: ${{ needs.prepare_strategy.outputs.new_branch }}
-      version: ${{ needs.prepare_strategy.outputs.version }}
-      extra_version_identifier: ${{ needs.prepare_strategy.outputs.extra_version_identifier }}
-      commit_sha: ${{ github.sha }}
     if: ${{
       (always() && !cancelled() && !failure()) &&
       needs.prepare_strategy.result == 'success' &&
@@ -124,31 +123,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 1
           submodules: recursive
           ref: ${{ env.SOURCE_BRANCH }}
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
       - run: git lfs pull
 
-      - name: Cache SCons
-        uses: actions/cache@v4
-        with:
-          path: ${{env.SCONS_CACHE_DIR}}
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}-${{ github.sha }}
-          # Note: GitHub Actions enforces cache isolation between different build sources (PR builds, workflow dispatches, etc.)
-          #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
-          restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}
-
       - name: Set environment variables
-        id: set-env
         run: |
-          echo "new_branch=${{ needs.prepare_strategy.outputs.new_branch }}" >> $GITHUB_OUTPUT
-          echo "version=${{ needs.prepare_strategy.outputs.version }}" >> $GITHUB_OUTPUT
-          echo "extra_version_identifier=${{ needs.prepare_strategy.outputs.extra_version_identifier }}" >> $GITHUB_OUTPUT
-          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-
           # Set up common environment
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
@@ -157,9 +139,6 @@ jobs:
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           uv sync
           printenv >> $GITHUB_ENV
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            cat $GITHUB_OUTPUT
-          fi
 
       - name: Setup build environment
         run: |
@@ -168,7 +147,7 @@ jobs:
           echo "Starting build stage..."
           echo "BUILD_DIR: ${BUILD_DIR}"
           echo "CI_DIR: ${CI_DIR}"
-          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "VERSION: ${{ needs.prepare_strategy.outputs.version }}"
           echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
           echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
           echo "-------"
@@ -180,61 +159,44 @@ jobs:
 
       - name: Build Main Project
         run: |
-          export PYTHONPATH="$BUILD_DIR"
-          ./tools/release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+          export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
+          ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
+          # outside the checkout, which is wiped each run. /data/scons_cache is the device's, not ours.
+          SCONS_CACHE="$RUNNER_WORKSPACE/scons_cache"
+          mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
-          ln -sfn msgq_repo/msgq msgq
-          ln -sfn opendbc_repo/opendbc opendbc
-          ln -sfn rednose_repo/rednose rednose
-          ln -sfn teleoprtc_repo/teleoprtc teleoprtc
-          ln -sfn tinygrad_repo/tinygrad tinygrad
-          sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
-          echo "Building sunnypilot's modeld_v2..."
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/modeld_v2
-          echo "Building sunnypilot's locationd..."
-          scons -j2 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/sunnypilot/selfdrive/locationd
-          echo "Building openpilot's locationd..."
-          scons -j1 cache_dir=${{env.SCONS_CACHE_DIR}} --minimal openpilot/selfdrive/locationd
+          echo "Building locationd..."
+          # -j1: parallel rednose generators OOM the device
+          scons -j1 cache_dir="$SCONS_CACHE" --minimal \
+            openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
+          SKIP_TINYGRAD_COMPILE=1 /usr/bin/time -v scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
           fi
 
-      - name: Prepare Output
+      - name: Strip release tree
         run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
-          rsync -am${RUNNER_DEBUG:+v} \
-            --exclude='.sconsign.dblite' \
-            --exclude='*.a' \
-            --exclude='*.o' \
-            --exclude='*.os' \
-            --exclude='*.pyc' \
-            --exclude='moc_*' \
-            --exclude='__pycache__' \
-            --exclude='Jenkinsfile' \
-            --exclude='**/release/' \
-            --exclude='**/.github/' \
-            --exclude='**/openpilot/selfdrive/ui/replay/' \
-            --exclude='**/__pycache__/' \
-            --exclude='${{env.SCONS_CACHE_DIR}}' \
-            --exclude='**/.git/' \
-            --exclude='**/SConstruct' \
-            --exclude='**/SConscript' \
-            --exclude='**/.venv/' \
-            --exclude='openpilot/selfdrive/modeld/models/*.onnx*' \
-            --exclude='openpilot/sunnypilot/modeld*/models/*.onnx*' \
-            --exclude='openpilot/third_party/*x86*' \
-            --exclude='openpilot/third_party/*Darwin*' \
-            --delete-excluded \
-            --chown=comma:comma \
-            ${BUILD_DIR}/ ${OUTPUT_DIR}/
+          cd $BUILD_DIR
+          find . -name '*.a' -delete
+          find . -name '*.o' -delete
+          find . -name '*.os' -delete
+          find . -name '*.pyc' -delete
+          find . -name 'moc_*' -delete
+          find . -name '__pycache__' -type d -exec rm -rf {} +
+          find . -name 'SConstruct' -delete
+          find . -name 'SConscript' -delete
+          rm -rf .sconsign.dblite Jenkinsfile tools/release/ release/
+          rm -f openpilot/selfdrive/modeld/models/*.onnx*
+          rm -f openpilot/sunnypilot/modeld*/models/*.onnx*
+          find openpilot/third_party/ -name '*x86*' -exec rm -r {} +
+          find openpilot/third_party/ -name '*Darwin*' -exec rm -r {} +
+          cd -
 
       - name: 'Tar.gz files'
         run: |
-          tar czf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }} .
+          tar czf prebuilt.tar.gz -C ${{ env.BUILD_DIR }} .
           ls -la prebuilt.tar.gz
 
       - name: 'Upload Artifact'
@@ -242,6 +204,7 @@ jobs:
         with:
           name: prebuilt
           path: prebuilt.tar.gz
+          compression-level: 0
 
       - name: Re-enable powersave
         if: always()
@@ -249,22 +212,212 @@ jobs:
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
+  prepare_chestnut:
+    needs: [ prepare_strategy ]
+    runs-on: ubuntu-24.04
+    if: ${{ needs.prepare_strategy.outputs.include_big_model == 'true' }}
+    outputs:
+      onnx_sha256: ${{ steps.resolve.outputs.onnx_sha256 }}
+    env:
+      GH_REPO: ${{ github.repository }}
+      HF_REPO: sunnypilot/sunnypilot_models_v1
+      HF_DEFAULTS_PATH: models/defaults/big
+    steps:
+      - name: Resolve ONNX hash and tinygrad ref via API
+        id: resolve
+        run: |
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          ONNX_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          echo "ONNX hash: $ONNX_HASH"
+          echo "onnx_sha256=$ONNX_HASH" >> $GITHUB_OUTPUT
+
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
+          echo "tinygrad ref: $TINYGRAD_REF"
+
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+
+          check_defaults() {
+            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
+            [ "$TINYGRAD_MATCH" = "true" ] || return 1
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            [ -n "$BUNDLE" ] && [ "$BUNDLE" != "null" ]
+          }
+
+          if check_defaults; then
+            echo "HF defaults match repo ONNX hash and tinygrad ref"
+            exit 0
+          fi
+
+          echo "No matching model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=big
+
+          echo "Polling HF for big model availability..."
+          for i in $(seq 1 90); do
+            sleep 30
+            if check_defaults; then
+              echo "Big model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/90: not yet available"
+          done
+
+          echo "::error::Big model not available on HF after 45 minutes"
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cancel run on failure
+        if: failure()
+        run: gh run cancel ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prepare_small_model:
+    needs: [ prepare_strategy ]
+    runs-on: ubuntu-24.04
+    outputs:
+      driving_onnx_sha256: ${{ steps.resolve.outputs.driving_onnx_sha256 }}
+    env:
+      GH_REPO: ${{ github.repository }}
+      HF_REPO: sunnypilot/sunnypilot_models_v1
+      HF_DEFAULTS_PATH: models/defaults/small
+    steps:
+      - name: Resolve ONNX hash and tinygrad ref via API
+        id: resolve
+        run: |
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          DRIVING_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          echo "Driving ONNX hash: $DRIVING_HASH"
+          echo "driving_onnx_sha256=$DRIVING_HASH" >> $GITHUB_OUTPUT
+
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
+          echo "tinygrad ref: $TINYGRAD_REF"
+
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+
+          check_defaults() {
+            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
+            [ "$TINYGRAD_MATCH" = "true" ] || return 1
+            DRIVING=$(echo "$DEFAULTS" | jq --arg hash "$DRIVING_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            [ -n "$DRIVING" ] && [ "$DRIVING" != "null" ] || return 1
+          }
+
+          if check_defaults; then
+            echo "HF defaults match repo ONNX hash and tinygrad ref"
+            exit 0
+          fi
+
+          echo "No matching model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=small
+
+          echo "Polling HF for model availability..."
+          for i in $(seq 1 60); do
+            sleep 30
+            if check_defaults; then
+              echo "Model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/60: not yet available"
+          done
+
+          echo "::error::Small driving model not available on HF after 30 minutes"
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cancel run on failure
+        if: failure()
+        run: gh run cancel ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prepare_dm_model:
+    needs: [ prepare_strategy ]
+    runs-on: ubuntu-24.04
+    outputs:
+      dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
+    env:
+      GH_REPO: ${{ github.repository }}
+      HF_REPO: sunnypilot/sunnypilot_models_v1
+      HF_DEFAULTS_PATH: models/defaults/dm
+    steps:
+      - name: Resolve ONNX hash and tinygrad ref via API
+        id: resolve
+        run: |
+          REF="${{ github.head_ref || github.ref_name }}"
+
+          DM_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          echo "DM ONNX hash: $DM_HASH"
+          echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
+
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
+          echo "tinygrad ref: $TINYGRAD_REF"
+
+          JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
+
+          check_defaults() {
+            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
+            [ "$TINYGRAD_MATCH" = "true" ] || return 1
+            DM=$(echo "$DEFAULTS" | jq --arg hash "$DM_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            [ -n "$DM" ] && [ "$DM" != "null" ] || return 1
+          }
+
+          if check_defaults; then
+            echo "HF defaults match DM ONNX hash and tinygrad ref"
+            exit 0
+          fi
+
+          echo "No matching DM model on HF — dispatching build"
+          gh workflow run build-default-models.yaml --ref "$REF" -f target=dm
+
+          echo "Polling HF for DM model availability..."
+          for i in $(seq 1 60); do
+            sleep 30
+            if check_defaults; then
+              echo "DM model available on HF after $((i * 30))s"
+              exit 0
+            fi
+            echo "Poll $i/60: not yet available"
+          done
+
+          echo "::error::DM model not available on HF after 30 minutes"
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cancel run on failure
+        if: failure()
+        run: gh run cancel ${{ github.run_id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     concurrency:
-      # We do a bit of a hack here to avoid canceling the publishing job if a new commit comes in while we're publishing by adding the sha to the group name.
-      # This means that if multiple commits come in while we're publishing, they will be queued up and publish one after the other.
-      # Otherwise, if a job is waiting to be published due to environment wait time, it would be canceled by a new commit and restart the wait time.
       group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}
       cancel-in-progress: ${{ needs.prepare_strategy.outputs.cancel_publish_in_progress == 'true' }}
-    if: ${{ (always() && !cancelled() && !failure()) && needs.build.result == 'success' && needs.prepare_strategy.result == 'success' && (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) }}
-    needs: [ build, prepare_strategy ]
+    if: ${{
+      always() && !cancelled() &&
+      needs.build.result == 'success' &&
+      needs.prepare_strategy.result == 'success' &&
+      needs.prepare_small_model.result == 'success' &&
+      needs.prepare_dm_model.result == 'success' &&
+      (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')) &&
+      (needs.prepare_strategy.outputs.include_big_model != 'true' || needs.prepare_chestnut.result == 'success')
+      }}
+    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
     runs-on: ubuntu-24.04
     environment: ${{ needs.prepare_strategy.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Download build artifacts
+      - name: Download prebuilt artifact
         uses: actions/download-artifact@v4
         with:
           name: prebuilt
@@ -273,6 +426,17 @@ jobs:
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
+
+      - name: Download model chunks from HF
+        uses: ./.github/workflows/download-hf-model-chunks
+        with:
+          hf_repo: sunnypilot/sunnypilot_models_v1
+          dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
+          models: |
+            [
+              {"hf_path": "models/defaults/small", "onnx_hash": "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}", "canonical": "driving_tinygrad.pkl"},
+              {"hf_path": "models/defaults/dm", "onnx_hash": "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}", "canonical": "dmonitoring_model_tinygrad.pkl"}
+            ]
 
       - name: Configure Git
         run: |
@@ -283,36 +447,95 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo '${{ toJSON(needs.build.outputs) }}'
+          echo '${{ toJSON(needs.prepare_strategy.outputs) }}'
           ls -la ${{ env.OUTPUT_DIR }}
 
           ${{ env.CI_DIR }}/publish.sh \
             "${{ github.workspace }}" \
             "${{ env.OUTPUT_DIR }}" \
-            "${{ needs.build.outputs.new_branch }}" \
-            "${{ needs.build.outputs.version }}" \
+            "${{ needs.prepare_strategy.outputs.new_branch }}" \
+            "${{ needs.prepare_strategy.outputs.version }}" \
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "${{ needs.build.outputs.extra_version_identifier }}"
-
-          echo ""
-          echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
-          echo ""
-          echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
-          echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
-          echo "3. Update as needed (JSON array with no spaces)"
+            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
 
       - name: Tag ${{ needs.prepare_strategy.outputs.environment }}
         if: ${{ needs.prepare_strategy.outputs.is_stable_branch == 'true' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')) }}
         run: |
             TAG="${{ needs.prepare_strategy.outputs.environment }}/${{ needs.prepare_strategy.outputs.version }}/${{ needs.prepare_strategy.outputs.build }}"
-            git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.build.outputs.build }}."
+            git tag -f -a ${TAG} -m "${{ needs.prepare_strategy.outputs.environment }} @ ${{ needs.prepare_strategy.outputs.version }} of build ${{ needs.prepare_strategy.outputs.build }}."
             git push -f origin ${TAG}
+
+  publish_chestnut:
+    concurrency:
+      group: ${{ needs.prepare_strategy.outputs.publish_concurrency_group }}-chestnut
+      cancel-in-progress: ${{ needs.prepare_strategy.outputs.cancel_publish_in_progress == 'true' }}
+    if: ${{
+      always() && !cancelled() &&
+      needs.build.result == 'success' &&
+      needs.prepare_strategy.result == 'success' &&
+      needs.prepare_small_model.result == 'success' &&
+      needs.prepare_dm_model.result == 'success' &&
+      needs.prepare_chestnut.result == 'success' &&
+      (!contains(github.event_name, 'pull_request') || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+      }}
+    needs: [ build, prepare_strategy, prepare_chestnut, prepare_small_model, prepare_dm_model ]
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.prepare_strategy.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download prebuilt artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prebuilt
+
+      - name: Untar prebuilt
+        run: |
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
+
+      - name: Download model chunks from HF
+        uses: ./.github/workflows/download-hf-model-chunks
+        with:
+          hf_repo: sunnypilot/sunnypilot_models_v1
+          dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
+          models: |
+            [
+              {"hf_path": "models/defaults/small", "onnx_hash": "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}", "canonical": "driving_tinygrad.pkl"},
+              {"hf_path": "models/defaults/dm", "onnx_hash": "${{ needs.prepare_dm_model.outputs.dm_onnx_sha256 }}", "canonical": "dmonitoring_model_tinygrad.pkl"},
+              {"hf_path": "models/defaults/big", "onnx_hash": "${{ needs.prepare_chestnut.outputs.onnx_sha256 }}", "canonical": "big_driving_tinygrad.pkl"}
+            ]
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Publish chestnut branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
+
+          ${{ env.CI_DIR }}/publish.sh \
+            "${{ github.workspace }}" \
+            "${{ env.OUTPUT_DIR }}" \
+            "$CHESTNUT_BRANCH" \
+            "${{ needs.prepare_strategy.outputs.version }}" \
+            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
+            "${{ needs.prepare_strategy.outputs.extra_version_identifier }}"
 
   notify:
     needs:
     - prepare_strategy
     - build
     - publish
+    - publish_chestnut
+    - prepare_chestnut
+    - prepare_small_model
+    - prepare_dm_model
     runs-on: ubuntu-24.04
     if: ${{ (always() && !cancelled() && !failure())
       && needs.publish.result == 'success'
@@ -320,11 +543,12 @@ jobs:
       && (fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_V2)[github.head_ref || github.ref_name] != null) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Prepare notification message
         id: message
         run: |
-          TEMPLATE='${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}'
           export VERSION="${{ needs.prepare_strategy.outputs.version }}"
           export branch_name="${{ env.SOURCE_BRANCH }}"
           export new_branch="${{ needs.prepare_strategy.outputs.new_branch }}"
@@ -333,6 +557,7 @@ jobs:
           export commit_short_sha="${commit_short_sha:0:7}"
           export extra_version_identifier="${{ needs.prepare_strategy.outputs.extra_version_identifier || github.run_number }}"
           export PUBLIC_REPO_URL="${{ env.PUBLIC_REPO_URL }}"
+          export chestnut_branch="${{ needs.prepare_chestnut.result == 'success' && format('{0}-chestnut', needs.prepare_strategy.outputs.new_branch) || '' }}"
 
           MESSAGE=$(cat << 'EOF' | envsubst
           ${{ vars.DISCOURSE_GENERAL_UPDATE_NOTICE }}
@@ -373,7 +598,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              name: process.env.LABELf
+              name: process.env.LABEL
             });
 
             console.log(`Removed '${process.env.LABEL}' label from PR #${prNumber}`);
