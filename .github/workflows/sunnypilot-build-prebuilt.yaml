@@ -223,7 +223,7 @@ jobs:
       HF_REPO: sunnypilot/sunnypilot_models_v1
       HF_DEFAULTS_PATH: models/defaults/big
     steps:
-      - name: Resolve ONNX hash via API
+      - name: Resolve ONNX hash and tinygrad ref via API
         id: resolve
         run: |
           REF="${{ github.head_ref || github.ref_name }}"
@@ -232,16 +232,21 @@ jobs:
           echo "ONNX hash: $ONNX_HASH"
           echo "onnx_sha256=$ONNX_HASH" >> $GITHUB_OUTPUT
 
+          TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
+          echo "tinygrad ref: $TINYGRAD_REF"
+
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
-          check_hash() {
+          check_defaults() {
             DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
+            [ "$TINYGRAD_MATCH" = "true" ] || return 1
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
             [ -n "$BUNDLE" ] && [ "$BUNDLE" != "null" ]
           }
 
-          if check_hash; then
-            echo "HF defaults match repo ONNX"
+          if check_defaults; then
+            echo "HF defaults match repo ONNX hash and tinygrad ref"
             exit 0
           fi
 
@@ -251,7 +256,7 @@ jobs:
           echo "Polling HF for big model availability..."
           for i in $(seq 1 90); do
             sleep 30
-            if check_hash; then
+            if check_defaults; then
               echo "Big model available on HF after $((i * 30))s"
               exit 0
             fi
