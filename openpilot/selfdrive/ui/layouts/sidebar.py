@@ -175,7 +175,8 @@ class Sidebar(Widget, SidebarSP):
       button_img, button_pos, icon_opacity = SidebarSP._get_home_icon(self, button_img)
 
     tint = Colors.BUTTON_PRESSED if (ui_state.started and flag_pressed) else Colors.BUTTON_NORMAL
-    tint = rl.Color(tint.r, tint.g, tint.b, int(255 * icon_opacity))
+    if icon_opacity < 1.0:
+      tint = rl.Color(tint[0], tint[1], tint[2], int(255 * icon_opacity))
     rl.draw_texture_ex(button_img, button_pos, 0.0, 1.0, tint)
 
     # Microphone button
