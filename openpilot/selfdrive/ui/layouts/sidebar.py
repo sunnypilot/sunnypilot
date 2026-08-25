@@ -169,11 +169,13 @@ class Sidebar(Widget, SidebarSP):
     flag_pressed = mouse_down and rl.check_collision_point_rec(mouse_pos, HOME_BTN)
     button_img = self._flag_img if ui_state.started else self._home_img
     button_pos = rl.Vector2(HOME_BTN.x, HOME_BTN.y)
+    icon_opacity = 1.0
 
     if gui_app.sunnypilot_ui():
-      button_img, button_pos = SidebarSP._get_home_icon(self, button_img)
+      button_img, button_pos, icon_opacity = SidebarSP._get_home_icon(self, button_img)
 
     tint = Colors.BUTTON_PRESSED if (ui_state.started and flag_pressed) else Colors.BUTTON_NORMAL
+    tint = rl.Color(tint.r, tint.g, tint.b, int(255 * icon_opacity))
     rl.draw_texture_ex(button_img, button_pos, 0.0, 1.0, tint)
 
     # Microphone button

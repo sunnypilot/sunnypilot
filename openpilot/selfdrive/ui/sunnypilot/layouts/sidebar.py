@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
+
 import pyray as rl
 import time
 from dataclasses import dataclass
@@ -58,6 +60,8 @@ class SidebarSP:
   def __init__(self):
     self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
     self._egpu_green_img = gui_app.texture("icons_mici/egpu_green.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
+    self._egpu_default_img = gui_app.texture("icons_mici/egpu.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
+    self._egpu_orange_img = gui_app.texture("icons_mici/egpu_orange.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
     self._egpu_gray_img = gui_app.texture("icons_mici/egpu_gray.png", EGPU_ICON_WIDTH, EGPU_ICON_HEIGHT)
 
   def _update_sunnylink_status(self):
@@ -84,13 +88,28 @@ class SidebarSP:
 
     self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
 
-  def _get_home_icon(self, default_img: rl.Texture) -> tuple[rl.Texture, rl.Vector2]:
-    if not ui_state.started and ui_state.sm["deviceState"].chestnutPresent:
-      icon = self._egpu_green_img if ui_state.usbgpu_compiled else self._egpu_gray_img
-      x = HOME_BTN.x + (HOME_BTN.width - icon.width) / 2
-      y = HOME_BTN.y + (HOME_BTN.height - icon.height) / 2
-      return icon, rl.Vector2(x, y)
-    return default_img, rl.Vector2(HOME_BTN.x, HOME_BTN.y)
+  def _get_home_icon(self, default_img: rl.Texture) -> tuple[rl.Texture, rl.Vector2, float]:
+    default_pos = rl.Vector2(HOME_BTN.x, HOME_BTN.y)
+    if not ui_state.sm["deviceState"].chestnutPresent:
+      return default_img, default_pos, 1.0
+
+    big_model_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
+    big_model_failed = ui_state.started and (ui_state.usbgpu_active is False)
+    loading = ui_state.usbgpu_loading or (big_model_selected and ui_state.started and ui_state.usbgpu_active is None)
+
+    if loading:
+      icon = self._egpu_default_img
+      opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
+    elif big_model_selected and big_model_failed:
+      icon, opacity = self._egpu_orange_img, 1.0
+    elif big_model_selected:
+      icon, opacity = self._egpu_green_img, 1.0
+    else:
+      icon, opacity = self._egpu_gray_img, 1.0
+
+    x = HOME_BTN.x + (HOME_BTN.width - icon.width) / 2
+    y = HOME_BTN.y + (HOME_BTN.height - icon.height) / 2
+    return icon, rl.Vector2(x, y), opacity
 
   def _draw_metrics_w_sunnylink(self, rect: rl.Rectangle, _temp, _panda, _connect):
     metrics = [_temp, _panda, _connect, self._sunnylink_status]
