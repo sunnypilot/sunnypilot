@@ -106,14 +106,31 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   return False
 
 
-def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None) -> None:
+def _prev_bundle_key(is_usbgpu: bool) -> str:
+  return "ModelManager_PrevBundle_USBGPU" if is_usbgpu else "ModelManager_PrevBundle"
+
+
+def validate_active_bundle(params: Params, available_bundles: list[custom.ModelManagerSP.ModelBundle] | None = None,
+                           is_usbgpu: bool = False) -> None:
   raw_bundle = params.get("ModelManager_ActiveBundle")
   if not raw_bundle:
+    prev = params.get(_prev_bundle_key(is_usbgpu))
+    if prev and (prev_bundle := get_active_bundle(params, raw_bundle_dict=prev)) is not None:
+      if not _bundle_needs_reset(prev_bundle, available_bundles):
+        params.put("ModelManager_ActiveBundle", prev, block=True)
     return
 
   active_bundle = get_active_bundle(params, raw_bundle_dict=raw_bundle)
   if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning("Active model bundle invalid; resetting to default")
+    params.put(_prev_bundle_key(not is_usbgpu), raw_bundle, block=True)
+
+    prev = params.get(_prev_bundle_key(is_usbgpu))
+    if prev and (prev_bundle := get_active_bundle(params, raw_bundle_dict=prev)) is not None:
+      if not _bundle_needs_reset(prev_bundle, available_bundles):
+        params.put("ModelManager_ActiveBundle", prev, block=True)
+        return
+
     params.remove("ModelManager_ActiveBundle")
     params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
 
