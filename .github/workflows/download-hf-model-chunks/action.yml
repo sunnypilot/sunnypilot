@@ -1,0 +1,66 @@
+name: Download HF model chunks
+description: Resolve and download model chunks from HuggingFace in parallel
+
+inputs:
+  hf_repo:
+    description: HuggingFace dataset repo
+    required: true
+  models:
+    description: 'JSON array of {hf_path, onnx_hash, canonical} objects'
+    required: true
+  dest_dir:
+    description: Destination directory for downloaded chunks
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download model chunks
+      shell: bash
+      env:
+        HF_REPO: ${{ inputs.hf_repo }}
+        MODELS_JSON: ${{ inputs.models }}
+        DEST_DIR: ${{ inputs.dest_dir }}
+      run: |
+        set -eo pipefail
+        DOWNLOAD_LIST=$(mktemp)
+
+        resolve_chunks() {
+          local HF_PATH="$1" ONNX_HASH="$2" CANONICAL="$3" DEST_DIR="$4"
+          local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_PATH}/default_models.json"
+          local DEFAULTS BUNDLE ARTIFACT BASE_URL NUM_CHUNKS
+          DEFAULTS=$(curl -fsSL "$JSON_URL")
+          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
+          ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
+          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
+          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+
+          mkdir -p "$DEST_DIR"
+          while IFS= read -r CHUNK_NAME; do
+            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
+            if [ -z "$CHUNK_IDX" ]; then
+              echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
+              return 1
+            fi
+            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
+            printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" >> "$DOWNLOAD_LIST"
+          done < <(echo "$ARTIFACT" | jq -r '.chunks[].file_name')
+          echo "$NUM_CHUNKS" > "${DEST_DIR}/${CANONICAL}.chunkmanifest"
+        }
+
+        echo "$MODELS_JSON" | jq -c '.[]' | while IFS= read -r model; do
+          HF_PATH=$(echo "$model" | jq -r '.hf_path')
+          ONNX_HASH=$(echo "$model" | jq -r '.onnx_hash')
+          CANONICAL=$(echo "$model" | jq -r '.canonical')
+          resolve_chunks "$HF_PATH" "$ONNX_HASH" "$CANONICAL" "$DEST_DIR"
+        done
+
+        TOTAL=$(wc -l < "$DOWNLOAD_LIST")
+        echo "Downloading $TOTAL chunks with 8 parallel connections..."
+        xargs -P8 -d'\n' -I{} bash -c '
+          URL="${1%%	*}"
+          DEST="${1#*	}"
+          echo "Downloading $(basename "$DEST")"
+          curl -fsSL --retry 3 --retry-delay 5 -o "$DEST" "$URL"
+        ' _ {} < "$DOWNLOAD_LIST"
+        rm -f "$DOWNLOAD_LIST"
