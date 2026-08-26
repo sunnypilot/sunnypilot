@@ -16,6 +16,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP
 from openpilot.system.ui.widgets.label import UnifiedLabel
+from openpilot.system.ui.sunnypilot.lib.utils import UnifiedLabelSP
 from openpilot.system.ui.widgets.list_view import ItemAction
 
 FONT_SIZE = style.ITEM_TEXT_FONT_SIZE
@@ -48,7 +49,7 @@ class DownloadStatusAction(ItemAction):
     self.name = ""
     self.status_text = ""
     self.segments: list[tuple[str, rl.Color, str | None, rl.Color | None]] | None = None
-    self._segment_labels: list[UnifiedLabel] = []
+    self._segment_labels: list[UnifiedLabelSP] = []
     self.downloading = False
     self.text_color = rl.GRAY
     self.icon: str | None = None
@@ -185,8 +186,8 @@ class DownloadStatusAction(ItemAction):
   def _render_segments(self, rect: rl.Rectangle):
     measured = self._measured_segments()
     while len(self._segment_labels) < len(measured):
-      self._segment_labels.append(UnifiedLabel("", font_size=FONT_SIZE, max_width=SEGMENT_NAME_MAX_WIDTH,
-                                               scroll=True, wrap_text=False))
+      self._segment_labels.append(UnifiedLabelSP("", font_size=FONT_SIZE, max_width=SEGMENT_NAME_MAX_WIDTH,
+                                                 scroll=True, wrap_text=False))
     x = rect.x + rect.width - sum(total for _, _, total in measured)
     for i, ((text, color, icon, icon_color), text_width, _) in enumerate(measured):
       if i:
