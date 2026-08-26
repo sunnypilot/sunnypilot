@@ -39,6 +39,17 @@ class ModelManagerSP:
     self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
     self._chunk_size = 128 * 1000  # 128 KB chunks
     self._download_start_times: dict[str, float] = {}  # Track start time per model
+    self._download_ref: bytes | str | None = None
+
+  def _download_interrupted(self) -> bool:
+    # DownloadRef removed means cancel; a different ref means the user picked
+    # another model mid-download. Either way this download must stop.
+    return self.params.get("ModelManager_DownloadRef") != self._download_ref
+
+  def _release_download_ref(self) -> None:
+    if not self._download_interrupted():
+      self.params.remove("ModelManager_DownloadRef")
+    self._download_ref = None
 
   def _sync_artifact_progress(self, source_artifact) -> None:
     """Mirror download progress to all artifacts sharing the same filename in the selected bundle."""
@@ -80,7 +91,7 @@ class ModelManagerSP:
           f.write(chunk)
           bytes_downloaded += len(chunk)
 
-          if self.params.get("ModelManager_DownloadRef") is None:
+          if self._download_interrupted():
             raise Exception("Download cancelled")
 
           if total_size > 0:
@@ -118,7 +129,7 @@ class ModelManagerSP:
             for data in response.iter_content(chunk_size=self._chunk_size):
               f.write(data)
               chunk_downloaded += len(data)
-              if self.params.get("ModelManager_DownloadRef") is None:
+              if self._download_interrupted():
                 raise Exception("Download cancelled")
               intra = chunk_downloaded / max(chunk_size, 1)
               progress = min(99.0, ((i + intra) / num_chunks) * 100)
@@ -137,6 +148,9 @@ class ModelManagerSP:
   async def _process_artifact(self, artifact, destination_path: str) -> None:
     if not artifact.downloadUri.uri:
       return None
+    if self._download_interrupted():
+      # raised before the try so a cancel never deletes files already on disk
+      raise Exception("Download cancelled")
 
     url = artifact.downloadUri.uri
     expected_hash = artifact.downloadUri.sha256
@@ -242,6 +256,8 @@ class ModelManagerSP:
           seen_artifacts.add(artifact.fileName)
           await self._process_artifact(artifact, destination_path)
 
+      if self._download_interrupted():
+        raise Exception("Download cancelled")
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
       self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict(), block=True)
       self.active_bundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
@@ -274,12 +290,13 @@ class ModelManagerSP:
         if (ref_to_download := self.params.get("ModelManager_DownloadRef")) is not None:
           if resolved := resolve_bundle_by_ref(ref_to_download, self.source_models):
             model_to_download, source = resolved
+            self._download_ref = ref_to_download
             try:
               self.download(model_to_download, Paths.model_root(), source)
             except Exception as e:
               cloudlog.exception(e)
             finally:
-              self.params.remove("ModelManager_DownloadRef")
+              self._release_download_ref()
               self.selected_bundle = None
 
         if self.params.get("ModelManager_ClearCache"):

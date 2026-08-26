@@ -103,6 +103,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.manager = ModelManagerSP.__new__(ModelManagerSP)
     self.manager.params = mock.MagicMock()
     self.manager.params.get.return_value = b'0'  # not cancelled
+    self.manager._download_ref = b'0'
     self.manager.pm = mock.MagicMock()
     self.manager.pm.send.side_effect = self._record_progress
     self.manager.selected_bundle = None
@@ -261,6 +262,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
       artifact = self.make_artifact(chunked=True)
       base_path = os.path.join(self.dest, artifact.fileName)
       self.manager.params.get.side_effect = lambda key: b"ref" if key == "ModelManager_DownloadRef" else None
+      self.manager._download_ref = b"ref"
       asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
       assert os.path.isfile(get_manifest_path(base_path))
     self.run_with_server(body)
@@ -279,10 +281,64 @@ class TestManagerDownload(ManagerDownloadTestBase):
         return b"0"
 
       self.manager.params.get.side_effect = get
+      self.manager._download_ref = b"ref"
       with self.assertRaises(Exception) as ctx:
         asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
       assert 'cancelled' in str(ctx.exception).lower()
       assert not os.path.isfile(get_manifest_path(base_path))
+    self.run_with_server(body)
+
+  def test_replaced_download_ref_cancels_transfer(self):
+    """Selecting another model mid-transfer cancels the running download."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      checks = {"n": 0}
+
+      def get(key):
+        if key == "ModelManager_DownloadRef":
+          checks["n"] += 1
+          return b"ref" if checks["n"] <= 2 else b"other-ref"
+        return b"0"
+
+      self.manager.params.get.side_effect = get
+      self.manager._download_ref = b"ref"
+      with self.assertRaises(Exception) as ctx:
+        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
+      assert 'cancelled' in str(ctx.exception).lower()
+      assert not os.path.isfile(get_manifest_path(base_path))
+    self.run_with_server(body)
+
+  def test_replaced_download_ref_is_kept(self):
+    """A selection made during a download must survive that download's cleanup."""
+    self.manager.params.get.return_value = b"new-ref"
+    self.manager._download_ref = b"old-ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_not_called()
+
+  def test_own_download_ref_is_released(self):
+    self.manager.params.get.return_value = b"ref"
+    self.manager._download_ref = b"ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
+
+  def test_cached_bundle_cancel_skips_slot_write(self):
+    """Cancelling must stop an already-on-disk bundle before it is applied to the slot."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      for i, data in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
+          f.write(data)
+      self._bundle.ref = "test-ref"
+      params, store = self._make_params_with_store()
+      self.manager.params = params
+      self.manager._download_ref = b"ref"  # store has no DownloadRef -> cancelled
+      with self.assertRaises(Exception) as ctx:
+        asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
+      assert 'cancelled' in str(ctx.exception).lower()
+      assert "ModelManager_ActiveBundle" not in store
+      assert all(os.path.isfile(p) for p in self.chunk_paths(base_path)), "cancel must not delete cached chunks"
     self.run_with_server(body)
 
   def _make_params_with_store(self):
