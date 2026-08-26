@@ -46,12 +46,12 @@ class ModelManagerSP:
     self._download_ref: bytes | str | None = None
 
   def _download_interrupted(self) -> bool:
-    # DownloadRef removed means cancel; a different ref means the user picked
-    # another model mid-download. Either way this download must stop.
-    return self.params.get("ModelManager_DownloadRef") != self._download_ref
+    # only removal cancels: a different ref is a queued selection that
+    # _release_download_ref leaves in place for the next tick
+    return self.params.get("ModelManager_DownloadRef") is None
 
   def _release_download_ref(self) -> None:
-    if not self._download_interrupted():
+    if self.params.get("ModelManager_DownloadRef") == self._download_ref:
       self.params.remove("ModelManager_DownloadRef")
     self._download_ref = None
 

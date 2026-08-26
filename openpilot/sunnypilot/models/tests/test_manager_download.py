@@ -288,25 +288,15 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert not os.path.isfile(get_manifest_path(base_path))
     self.run_with_server(body)
 
-  def test_replaced_download_ref_cancels_transfer(self):
-    """Selecting another model mid-transfer cancels the running download."""
+  def test_replaced_download_ref_queues_instead_of_cancelling(self):
+    """Selecting another model mid-transfer lets the running download finish."""
     def body():
       artifact = self.make_artifact(chunked=True)
       base_path = os.path.join(self.dest, artifact.fileName)
-      checks = {"n": 0}
-
-      def get(key):
-        if key == "ModelManager_DownloadRef":
-          checks["n"] += 1
-          return b"ref" if checks["n"] <= 2 else b"other-ref"
-        return b"0"
-
-      self.manager.params.get.side_effect = get
+      self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
       self.manager._download_ref = b"ref"
-      with self.assertRaises(Exception) as ctx:
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-      assert 'cancelled' in str(ctx.exception).lower()
-      assert not os.path.isfile(get_manifest_path(base_path))
+      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
+      assert os.path.isfile(get_manifest_path(base_path))
     self.run_with_server(body)
 
   def test_replaced_download_ref_is_kept(self):
@@ -332,8 +322,9 @@ class TestManagerDownload(ManagerDownloadTestBase):
           f.write(data)
       self._bundle.ref = "test-ref"
       params, store = self._make_params_with_store()
+      store["ModelManager_DownloadRef"] = None  # removed -> cancelled
       self.manager.params = params
-      self.manager._download_ref = b"ref"  # store has no DownloadRef -> cancelled
+      self.manager._download_ref = b"ref"
       with self.assertRaises(Exception) as ctx:
         asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
       assert 'cancelled' in str(ctx.exception).lower()
