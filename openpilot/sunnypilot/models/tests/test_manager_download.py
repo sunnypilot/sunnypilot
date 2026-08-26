@@ -25,7 +25,9 @@ from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.selfdrive.test.helpers import http_server_context
 from openpilot.sunnypilot.models import manager as manager_module
 from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
-from openpilot.sunnypilot.models.helpers import get_active_bundle, get_active_source, get_selected_bundle, resolve_bundle_by_ref
+from openpilot.sunnypilot.models import helpers
+from openpilot.sunnypilot.models.helpers import (get_active_bundle, get_active_source, get_selected_bundle,
+                                                  resolve_bundle_by_ref, validate_active_bundles)
 from openpilot.sunnypilot.models.manager import ModelManagerSP
 
 CHUNK_BODIES = [b'A' * 5000, b'B' * 5000, b'C' * 3000]
@@ -532,6 +534,20 @@ class TestSourceCacheIntegrity(OpenpilotTestCase):
     fetch.assert_called_once_with("qcom")
     assert [bundle.ref for bundle in bundles] == ["ddd"]
 
+  def test_mismatched_refetch_happens_once(self):
+    """If the fresh manifest still fails the source check, the URL is authoritative:
+    trust it instead of refetching at 1 Hz forever."""
+    params = self._make_params({"bundles": [manifest_bundle("big", "bbb", is_big=True)]},
+                               {"bundles": [manifest_bundle("big2", "ccc", is_big=True)]})
+    fetcher = ModelFetcher(params)
+    fetched = self._fetched(manifest_bundle("big", "bbb", is_big=True))
+    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched) as fetch:
+      first = fetcher.get_bundles_for_source("qcom")
+      second = fetcher.get_bundles_for_source("qcom")
+    fetch.assert_called_once_with("qcom")
+    assert [bundle.ref for bundle in first] == ["bbb"]
+    assert [bundle.ref for bundle in second] == ["bbb"]
+
   def test_corrupt_cache_is_refetched(self):
     """A cache that fails to parse (e.g. truncated/foreign JSON) must trigger a
     refetch instead of raising every loop and never recovering."""
@@ -543,6 +559,51 @@ class TestSourceCacheIntegrity(OpenpilotTestCase):
       bundles = fetcher.get_bundles_for_source("qcom")
     fetch.assert_called_once_with("qcom")
     assert [bundle.ref for bundle in bundles] == ["aaa"]
+
+
+class TestActiveBundleValidation(OpenpilotTestCase):
+  """Validation is per-slot: a failed fetch (empty bundle list) must not reset a slot,
+  and resetting one slot must not stomp the runner cache derived from the other."""
+
+  def setUp(self):
+    super().setUp()
+    helpers._LAST_VALIDATED_RAW.clear()
+
+  @staticmethod
+  def _raw_bundle(ref: str, runner: int | None = None) -> dict:
+    bundle = custom.ModelManagerSP.ModelBundle.new_message()
+    bundle.ref = ref
+    bundle.minimumSelectorVersion = 18
+    if runner is not None:
+      bundle.runner = runner
+    return bundle.to_dict()
+
+  def _params(self, qcom=None, usbgpu=None):
+    params = mock.MagicMock()
+
+    def get(key, *args, **kwargs):
+      return {"ModelManager_ActiveBundle": qcom, "ModelManager_ActiveBundleUSBGPU": usbgpu}.get(key)
+
+    params.get.side_effect = get
+    return params
+
+  def test_empty_catalog_does_not_reset_slot(self):
+    params = self._params(qcom=self._raw_bundle("small"))
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+      validate_active_bundles(params, {"qcom": [], "usbgpu": []})
+    params.remove.assert_not_called()
+
+  def test_reset_recomputes_runner_from_surviving_slot(self):
+    tinygrad = int(custom.ModelManagerSP.Runner.tinygrad)
+    big_raw = self._raw_bundle("big", runner=tinygrad)
+    params = self._params(qcom=self._raw_bundle("gone"), usbgpu=big_raw)
+    catalog = {"qcom": [custom.ModelManagerSP.ModelBundle(**self._raw_bundle("other"))],
+               "usbgpu": [custom.ModelManagerSP.ModelBundle(**big_raw)]}
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+      validate_active_bundles(params, catalog)
+    params.remove.assert_called_once_with("ModelManager_ActiveBundle")
+    runner_puts = [call for call in params.put.call_args_list if call.args[0] == "ModelRunnerTypeCache"]
+    assert [call.args[1] for call in runner_puts] == [tinygrad]
 
 
 class TestActiveBundleSelection(OpenpilotTestCase):

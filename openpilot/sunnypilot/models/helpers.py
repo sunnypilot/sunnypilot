@@ -173,15 +173,16 @@ def _validate_active_bundle(params: Params, source: str, available_bundles: list
   if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning(f"Active model bundle invalid for {source}; resetting to default")
     params.remove(key)
-    params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
     _LAST_VALIDATED_RAW[key] = None
   else:
     _LAST_VALIDATED_RAW[key] = raw_bundle
 
 
 def validate_active_bundles(params: Params, source_bundles: dict[str, list[custom.ModelManagerSP.ModelBundle]]) -> None:
+  # an empty list means the fetch failed, not that the catalog dropped the bundle
   for source, bundles in source_bundles.items():
-    _validate_active_bundle(params, source, bundles)
+    _validate_active_bundle(params, source, bundles or None)
+  get_active_model_runner(params, force_check=True)
 
 
 def get_active_model_runner(params: Params | None = None, force_check: bool = False) -> int:

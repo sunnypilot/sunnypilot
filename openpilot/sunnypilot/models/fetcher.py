@@ -155,6 +155,7 @@ class ModelFetcher:
       for source, (_, suffix) in self.MODEL_SOURCES.items()
     }
     self.model_url = self.MODEL_URL
+    self._refetched: set[str] = set()
     self._update_model_source()
 
   @staticmethod
@@ -216,7 +217,9 @@ class ModelFetcher:
     cached_data, is_expired = self.model_caches[source].get()
 
     if cached_data and not is_expired:
-      if self._cache_matches_source(source, cached_data):
+      # a source is refetched over a mismatch at most once per process: if the fresh
+      # manifest still mismatches, the URL is authoritative and the cache is trusted
+      if self._cache_matches_source(source, cached_data) or source in self._refetched:
         try:
           parsed = self.model_parser.parse_models(cached_data)
         except Exception:
@@ -229,7 +232,8 @@ class ModelFetcher:
           # manifest version) - do not trust it, refetch so the source is repopulated
           cloudlog.warning(f"Cached models for {source} have no valid bundles; refetching")
       else:
-        cloudlog.warning(f"Cached models for {source} not valid; refetching")
+        self._refetched.add(source)
+        cloudlog.warning(f"Cached models for {source} not valid; refetching once")
 
     fetched_bundles = self._fetch_and_cache_models(source)
     if fetched_bundles is not None:
