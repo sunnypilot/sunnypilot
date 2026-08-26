@@ -165,8 +165,9 @@ class ModelsLayoutMici(NavScroller):
     self._was_downloading = is_downloading
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
-    default_model_text = f"{get_default_model()} (Default)".lower()
-    model_text = manager.activeBundle.displayName.lower() if manager.activeBundle.ref else default_model_text
+    # read the slot through ui_state, not modelManagerSP: the manager republishes a
+    # tick after a chestnut change, and the stale bundle flashes the wrong model
+    model_text = ((ui_state.active_bundle or {}).get("displayName") or f"{get_default_model()} (Default)").lower()
     self.current_model_info.current_model_text.set_text(model_text)
     self.current_model_info.info_header.set_text(tr("cache size"))
     self.current_model_info.info_text.set_text(f"{ModelsLayout.calculate_cache_size():.2f} MB")

@@ -230,7 +230,7 @@ class ModelsLayout(Widget):
     advanced_controls: bool = ui_state.params.get_bool("ShowAdvancedControls")
     turn_desire: bool = ui_state.params.get_bool("LaneTurnDesire")
     live_delay: bool = ui_state.params.get_bool("LagdToggle")
-    camera_offset: bool = ui_state.params.get("ModelManager_ActiveBundle") is not None
+    camera_offset: bool = ui_state.active_bundle is not None
 
     self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
@@ -244,8 +244,9 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    default_label = f"{get_default_model()} (Default)"
-    active_name = self.model_manager.activeBundle.displayName if self.model_manager and self.model_manager.activeBundle.ref else default_label
+    # read the slot through ui_state, not modelManagerSP: the manager republishes a
+    # tick after a chestnut change, and the stale bundle flashes the wrong model
+    active_name = (ui_state.active_bundle or {}).get("displayName") or f"{get_default_model()} (Default)"
     self.current_model_item.action_item.set_value(active_name)
 
     if not ui_state.is_offroad():
