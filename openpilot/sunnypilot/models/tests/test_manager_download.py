@@ -323,7 +323,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
     self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
 
   def test_cached_bundle_cancel_skips_slot_write(self):
-    """Cancelling must stop an already-on-disk bundle before it is applied to the slot."""
+    """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
     def body():
       artifact = self.make_artifact(chunked=True)
       base_path = os.path.join(self.dest, artifact.fileName)
@@ -339,6 +339,25 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert 'cancelled' in str(ctx.exception).lower()
       assert "ModelManager_ActiveBundle" not in store
       assert all(os.path.isfile(p) for p in self.chunk_paths(base_path)), "cancel must not delete cached chunks"
+    self.run_with_server(body)
+
+  def test_resume_skips_valid_chunks(self):
+    """A chunk already on disk is kept and not re-downloaded; progress starts above its share."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      with open(get_chunk_name(base_path, 0, len(CHUNK_BODIES)), 'wb') as f:
+        f.write(CHUNK_BODIES[0])
+
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+
+      chunk0_suffix = get_chunk_name('', 0, len(CHUNK_BODIES))
+      assert not any(p.endswith(chunk0_suffix) for p in DownloadHandler.request_paths), "valid chunk was re-downloaded"
+      for i, expected in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'rb') as f:
+          assert f.read() == expected
+      assert os.path.isfile(get_manifest_path(base_path))
+      assert min(self.reported) >= (1 / len(CHUNK_BODIES)) * 100 - 1, "progress must not restart below the resumed share"
     self.run_with_server(body)
 
   def _make_params_with_store(self):
