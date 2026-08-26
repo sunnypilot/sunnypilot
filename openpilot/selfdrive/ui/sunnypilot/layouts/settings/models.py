@@ -268,15 +268,26 @@ class ModelsLayout(Widget):
     self.other_model_item.action_item.set_value(other_name)
 
     dl_source, dl_text = self._download_status or (None, "")
-    self.other_model_item.set_description(dl_text if dl_source is not None and dl_source != source else "")
+    self._set_row_status(self.other_model_item, dl_text if dl_source is not None and dl_source != source else "")
     if not ui_state.is_offroad():
       self.current_model_item.action_item.set_enabled(False)
       self.other_model_item.action_item.set_enabled(False)
-      self.current_model_item.set_description(tr("Only available when vehicle is off, or always offroad mode is on"))
+      self._set_row_status(self.current_model_item, tr("Only available when vehicle is off, or always offroad mode is on"))
     else:
       self.current_model_item.action_item.set_enabled(True)
       self.other_model_item.action_item.set_enabled(True)
-      self.current_model_item.set_description(dl_text if dl_source == source else "")
+      self._set_row_status(self.current_model_item, dl_text if dl_source == source else "")
+
+  @staticmethod
+  def _set_row_status(item, text):
+    # a description renders only while shown; hide before clearing or the
+    # empty description keeps its visible state
+    if text:
+      item.set_description(text)
+      item.show_description(True)
+    else:
+      item.show_description(False)
+      item.set_description("")
 
   def _render(self, rect):
     self._scroller.render(rect)
