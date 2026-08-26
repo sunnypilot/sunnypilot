@@ -221,7 +221,6 @@ class ModelManagerSP:
     self.pm.send('modelManagerSP', msg)
 
   async def _download_bundle(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str, source: str) -> None:
-    """Downloads a bundle and sets it as the active bundle for its source"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
     for model in self.selected_bundle.models:

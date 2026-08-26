@@ -199,14 +199,12 @@ class ModelFetcher:
 
   @staticmethod
   def _cache_matches_source(source: str, cached_data: dict) -> bool:
-    """Confirms a cached manifest contains requested source's models."""
     bundles = cached_data.get("bundles", [])
     if source == "usbgpu":
       return any(bundle.get("is_big") is True for bundle in bundles)
     return not any(bundle.get("is_big") is True for bundle in bundles)
 
   def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
-    """Gets the list of available models for a specific source, with smart cache handling."""
     if source not in self.MODEL_SOURCES:
       cloudlog.warning(f"Unknown model source: {source}")
       return []
@@ -247,7 +245,6 @@ class ModelFetcher:
 
 
 def get_cached_bundles(params: Params, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
-  """Reads a source's cached manifest from params and parses it into bundles."""
 
   if source not in ModelFetcher.MODEL_SOURCES:
     cloudlog.warning(f"Unknown model source: {source}")

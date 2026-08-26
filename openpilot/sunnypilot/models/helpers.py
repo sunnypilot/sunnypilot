@@ -145,7 +145,6 @@ def get_active_bundle(params: Params | None = None, *, usbgpu: bool | None = Non
 def resolve_bundle_by_ref(
   ref: str, source_bundles: dict[str, list[custom.ModelManagerSP.ModelBundle]],
 ) -> "tuple[custom.ModelManagerSP.ModelBundle, str] | None":
-  """Finds the bundle matching a ref across all sources."""
   for source, bundles in source_bundles.items():
     for bundle in bundles:
       if bundle.ref == ref:
