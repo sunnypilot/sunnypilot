@@ -13,7 +13,7 @@ from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model_name, model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model_name
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -40,6 +40,7 @@ class ModelsLayout(Widget):
     self._selection_source = None
     self._downloading = False
     self._verifying = False
+    self._last_note = None
     self.last_cache_calc_time = 0
 
     self._initialize_items()
@@ -51,17 +52,17 @@ class ModelsLayout(Widget):
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self.current_model_item = ListItemSP(
-      title=tr("Active Model"),
+    self.small_model_item = ListItemSP(
+      title=tr("Small Model"),
       description="",
       action_item=ScrollingButtonAction(tr("SELECT")),
-      callback=self._handle_current_model_clicked
+      callback=lambda: self._open_source_dialog("qcom")
     )
 
-    self.other_model_item = ListItemSP(
+    self.big_model_item = ListItemSP(
       title=tr("Big Model"),
       action_item=ScrollingButtonAction(tr("SELECT")),
-      callback=self._handle_other_model_clicked
+      callback=lambda: self._open_source_dialog("usbgpu")
     )
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
@@ -105,7 +106,7 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.current_model_item, self.other_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
                   self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
@@ -155,13 +156,7 @@ class ModelsLayout(Widget):
     if not progresses or bundle.status not in (custom.ModelManagerSP.DownloadStatus.downloading,
                                                custom.ModelManagerSP.DownloadStatus.failed):
       self.download_item.action_item.update(name="", segments=self._slot_segments())
-      note = ""
-      if self._big_model_state() == 'failed':
-        note = tr("Big model unavailable, the small model is driving")
-      self._set_item_note(self.download_item, note)
       return
-
-    self._set_item_note(self.download_item, "")
 
     self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
     if bundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
@@ -216,6 +211,29 @@ class ModelsLayout(Widget):
     else:
       item.show_description(False)
       item.set_description("")
+
+  def _status_note(self) -> str:
+    """The failover story for the Model Status row. One-way big -> small, and the
+    fallback is runner-matched: a Default big can only fall back to the Default
+    small (stock modeld), a custom big has no automatic fallback yet."""
+    if not ui_state.usbgpu:
+      return ""
+    big_bundle = get_selected_bundle(ui_state.params, "usbgpu")
+    big_name = big_bundle.internalName if big_bundle else default_model_name("usbgpu")
+    big_is_default = big_bundle is None
+    fallback_name = default_model_name("qcom")
+    state = self._big_model_state()
+    if state == 'failed':
+      if big_is_default:
+        return tr("Big model unavailable, {} is driving until the next drive.").format(fallback_name)
+      return tr("Big model unavailable until the next drive.")
+    if state == 'loading':
+      if big_is_default:
+        return tr("{} drives until the big model is ready.").format(fallback_name)
+      return tr("Getting the big model ready.")
+    if big_is_default:
+      return tr("{} will drive. If it fails during a drive, {} takes over until the next drive.").format(big_name, fallback_name)
+    return tr("{} will drive when the eGPU is ready.").format(big_name)
 
   def _queued_name(self, current_ref):
     ref = ui_state.params.get("ModelManager_DownloadRef")
@@ -281,12 +299,6 @@ class ModelsLayout(Widget):
       folders_list.insert(0, TreeFolder("Favorites", [self._bundle_to_node(bundle) for bundle in fav_bundles]))
     return folders_list
 
-  def _handle_current_model_clicked(self):
-    self._open_source_dialog(active_source())
-
-  def _handle_other_model_clicked(self):
-    self._open_source_dialog("qcom" if active_source() == "usbgpu" else "usbgpu")
-
   def _open_source_dialog(self, source):
     self._selection_source = source
     favs = ui_state.params.get("ModelManager_Favs")
@@ -330,19 +342,23 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    source, active_name, other_name = model_info()
-    self.current_model_item.action_item.set_value(active_name)
-    self.other_model_item.set_title(tr("Big Model") if source == "qcom" else tr("Small Model"))
-    self.other_model_item.action_item.set_value(other_name)
 
-    if not ui_state.is_offroad():
-      self.current_model_item.action_item.set_enabled(False)
-      self.other_model_item.action_item.set_enabled(False)
-      self.current_model_item.set_description(tr("Only available when vehicle is off, or always offroad mode is on"))
-    else:
-      self.current_model_item.action_item.set_enabled(True)
-      self.other_model_item.action_item.set_enabled(True)
-      self.current_model_item.set_description("")
+    source = active_source()
+    for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "usbgpu")):
+      bundle = get_selected_bundle(ui_state.params, item_source)
+      name = bundle.internalName if bundle else default_model_name(item_source)
+      color = ON_COLOR if item_source == source else style.ITEM_TEXT_VALUE_COLOR
+      item.action_item.set_value(name, color)
+
+    note = self._status_note()
+    if note != self._last_note:
+      self._last_note = note
+      self._set_item_note(self.download_item, note)
+
+    offroad = ui_state.is_offroad()
+    self.small_model_item.action_item.set_enabled(offroad)
+    self.big_model_item.action_item.set_enabled(offroad)
+    self.small_model_item.set_description("" if offroad else tr("Only available when vehicle is off, or always offroad mode is on"))
 
   def _render(self, rect):
     self._scroller.render(rect)
