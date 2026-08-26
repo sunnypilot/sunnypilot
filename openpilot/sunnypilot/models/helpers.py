@@ -136,11 +136,10 @@ def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = N
 
 
 def get_active_bundle(params: Params | None = None, *, usbgpu: bool | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
+  # no cross-slot fallback: an empty active slot means the hardware default, which
+  # only stock modeld can run - modeld_v2 requires a real bundle
   params = params or Params()
-  if get_active_source(usbgpu=usbgpu) == "usbgpu":
-    if bundle := get_selected_bundle(params, "usbgpu"):
-      return bundle
-  return get_selected_bundle(params, "qcom")
+  return get_selected_bundle(params, get_active_source(usbgpu=usbgpu))
 
 
 def resolve_bundle_by_ref(

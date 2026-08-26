@@ -607,8 +607,9 @@ class TestActiveBundleValidation(OpenpilotTestCase):
 
 
 class TestActiveBundleSelection(OpenpilotTestCase):
-  """The effective active bundle follows the hardware: the usbgpu slot wins when a GPU
-  is present, otherwise the qcom slot. Each slot keeps its own selection."""
+  """The effective active bundle is the active source's slot: usbgpu when a GPU is
+  present, qcom otherwise. An empty active slot means the hardware default (stock
+  runner), never the other slot's pick - modeld_v2 requires a real bundle."""
 
   @staticmethod
   def _raw_bundle(ref: str) -> dict:
@@ -645,10 +646,10 @@ class TestActiveBundleSelection(OpenpilotTestCase):
     with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
       assert get_active_bundle(params).ref == "big"
 
-  def test_gpu_without_big_selection_falls_back_to_small(self):
+  def test_gpu_without_big_selection_is_hardware_default(self):
     params = self._params(qcom=self._raw_bundle("small"), usbgpu=None)
     with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
-      assert get_active_bundle(params).ref == "small"
+      assert get_active_bundle(params) is None
 
 
 class TestEffectiveSource(OpenpilotTestCase):
