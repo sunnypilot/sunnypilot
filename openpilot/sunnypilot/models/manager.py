@@ -24,6 +24,10 @@ from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_
 DOWNLOAD_TIMEOUT = (30, 30)
 
 
+class DownloadCancelled(Exception):
+  pass
+
+
 class ModelManagerSP:
   """Manages model downloads and status reporting"""
 
@@ -92,7 +96,7 @@ class ModelManagerSP:
           bytes_downloaded += len(chunk)
 
           if self._download_interrupted():
-            raise Exception("Download cancelled")
+            raise DownloadCancelled("Download cancelled")
 
           if total_size > 0:
             progress = (bytes_downloaded / total_size) * 100
@@ -133,7 +137,7 @@ class ModelManagerSP:
               f.write(data)
               chunk_downloaded += len(data)
               if self._download_interrupted():
-                raise Exception("Download cancelled")
+                raise DownloadCancelled("Download cancelled")
               intra = chunk_downloaded / max(chunk_size, 1)
               progress = min(99.0, ((completed + intra) / num_chunks) * 100)
               artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
@@ -153,8 +157,7 @@ class ModelManagerSP:
     if not artifact.downloadUri.uri:
       return None
     if self._download_interrupted():
-      # raised before the try so a cancel never deletes files already on disk
-      raise Exception("Download cancelled")
+      raise DownloadCancelled("Download cancelled")
 
     url = artifact.downloadUri.uri
     expected_hash = artifact.downloadUri.sha256
@@ -170,6 +173,8 @@ class ModelManagerSP:
         from openpilot.common.file_chunker import get_chunk_name
         num_chunks = len(artifact.chunks)
         for i, chunk in enumerate(artifact.chunks):
+          if self._download_interrupted():
+            raise DownloadCancelled("Download cancelled")
           if await verify_file(get_chunk_name(full_path, i, num_chunks), chunk.sha256):
             valid_chunks.add(i)
           artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.verifying
@@ -206,6 +211,17 @@ class ModelManagerSP:
       artifact.downloadProgress.eta = 0
       self._sync_artifact_progress(artifact)
       self._report_status()
+
+    except DownloadCancelled:
+      # a cancel keeps whatever is on disk: complete chunks resume the next attempt
+      self._download_start_times.pop(artifact.fileName, None)
+      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
+      artifact.downloadProgress.eta = 0
+      self._sync_artifact_progress(artifact)
+      if self.selected_bundle:
+        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+      self._report_status()
+      raise
 
     except Exception as e:
       cloudlog.error(f"Error downloading {filename}: {str(e)}")
@@ -261,7 +277,7 @@ class ModelManagerSP:
           await self._process_artifact(artifact, destination_path)
 
       if self._download_interrupted():
-        raise Exception("Download cancelled")
+        raise DownloadCancelled("Download cancelled")
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
       self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict(), block=True)
       self.active_bundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
