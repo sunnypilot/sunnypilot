@@ -8,10 +8,11 @@ import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
-from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS
+from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
-from openpilot.selfdrive.ui.sunnypilot.model_info import bundles_for_source, default_model_name, model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
+                                                           default_model_name, model_info, queued_name)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -19,10 +20,22 @@ from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
 
 def _model_info() -> tuple[str, str, str]:
-  """(active model, other-model header, other-model text) for the panel."""
+  """(active model, info header, info text) for the panel. Runner-matched: the
+  active line names what actually drives, and a notable big-model state takes
+  the info pair."""
   source, active_name, other_name = model_info()
+  state = big_model_state()
+  _, _, carry_display = carrying_model()
+  if carry_display is None:
+    big = get_selected_bundle(ui_state.params, "usbgpu")
+    carry_display = big.displayName if big else default_model_name("usbgpu")
+  active_text = (carry_display or active_name).lower()
+  if state == 'failed':
+    return active_text, tr("big model"), tr("unavailable")
+  if state == 'loading':
+    return active_text, tr("big model"), tr("getting ready")
   header = tr("small model") if source == "usbgpu" else tr("big model")
-  return active_name.lower(), header, other_name.lower()
+  return active_text, header, other_name.lower()
 
 
 class CurrentModelInfo(Widget):
@@ -99,8 +112,13 @@ class ModelsLayoutMici(NavScroller):
     self.focused_widget = self.select_model_btn
 
     hardware_btns = []
+    active = active_source()
     for source, label in (("qcom", tr("small models")), ("usbgpu", tr("big models"))):
-      btn = BigButton(label.lower())
+      bundle = get_selected_bundle(ui_state.params, source)
+      value = (bundle.internalName if bundle else default_model_name(source)).lower()
+      if source == active:
+        value += f" ({tr('active')})"
+      btn = BigButton(label.lower(), value=value)
       btn.set_click_callback(lambda s=source: self._select_hardware(s))
       hardware_btns.append(btn)
     self._push_selection_view(hardware_btns)
@@ -215,8 +233,12 @@ class ModelsLayoutMici(NavScroller):
           progress += 100.0
 
       self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
+      self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
-      self.current_model_info.current_model_text.set_text(f"{manager.selectedBundle.internalName.lower()}")
+      name_text = manager.selectedBundle.internalName.lower()
+      if queued := queued_name(manager.selectedBundle.ref):
+        name_text += f"  |  {queued.lower()} {tr('queued')}"
+      self.current_model_info.current_model_text.set_text(name_text)
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_header._shimmer = True
       self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")

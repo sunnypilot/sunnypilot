@@ -13,7 +13,7 @@ from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model_name
+from openpilot.selfdrive.ui.sunnypilot.model_info import big_model_state, bundles_for_source, carrying_model, default_model_name, queued_name
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -163,34 +163,26 @@ class ModelsLayout(Widget):
       device._reset_interactive_timeout()
 
     state = self._download_row_state(progresses, bundle.internalName)
-    if queued := self._queued_name(bundle.ref):
+    if queued := queued_name(bundle.ref):
       state["name"] += f"  |  {queued} {tr('queued')}"
     self.download_item.action_item.update(**state)
     self._downloading = self.download_item.action_item.downloading
     ds = custom.ModelManagerSP.DownloadStatus
     self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
 
-  @staticmethod
-  def _big_model_state():
-    """'failed' | 'loading' | None, mirroring the sidebar's detection (#1969)."""
-    if ui_state.started and ui_state.usbgpu and ui_state.big_model_failed:
-      return 'failed'
-    big_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
-    if ui_state.usbgpu_loading or (big_selected and ui_state.started and ui_state.usbgpu_active is None):
-      return 'loading'
-    return None
-
   def _slot_segments(self):
-    """small and big slots side by side; green marks the side actually driving, an empty slot shows its default."""
-    active = active_source()
-    big_state = self._big_model_state()
+    """small and big slots side by side; green marks the slot whose pick is actually
+    driving (runner-matched, so a failed Default big greens neither slot), an empty
+    slot shows its default."""
+    big_state = big_model_state()
+    carry_source, carry_internal, _ = carrying_model()
     segments = []
     for source, label in (("qcom", tr("small")), ("usbgpu", tr("big"))):
       if segments:
         segments.append(("|", rl.GRAY, None, None))
       bundle = get_selected_bundle(ui_state.params, source)
       name = bundle.internalName if bundle else default_model_name(source)
-      color = ON_COLOR if source == active else rl.LIGHTGRAY
+      color = ON_COLOR if (source == carry_source and name == carry_internal) else rl.LIGHTGRAY
       icon, icon_color = "icons/checkmark.png", None
       if source == "usbgpu":
         if big_state == 'failed':
@@ -222,7 +214,7 @@ class ModelsLayout(Widget):
     big_name = big_bundle.internalName if big_bundle else default_model_name("usbgpu")
     big_is_default = big_bundle is None
     fallback_name = default_model_name("qcom")
-    state = self._big_model_state()
+    state = big_model_state()
     if state == 'failed':
       if big_is_default:
         return tr("Big model unavailable, {} is driving until the next drive.").format(fallback_name)
@@ -234,13 +226,6 @@ class ModelsLayout(Widget):
     if big_is_default:
       return tr("{} will drive. If it fails during a drive, {} takes over until the next drive.").format(big_name, fallback_name)
     return tr("{} will drive when the eGPU is ready.").format(big_name)
-
-  def _queued_name(self, current_ref):
-    ref = ui_state.params.get("ModelManager_DownloadRef")
-    if ref and ref != current_ref:
-      if bundle := self._resolve_selected_bundle(ref):
-        return bundle.internalName
-    return None
 
   @staticmethod
   def _download_row_state(progresses, name: str) -> dict:
@@ -343,11 +328,11 @@ class ModelsLayout(Widget):
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
 
-    source = active_source()
+    carry_source, _, carry_display = carrying_model()
     for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "usbgpu")):
       bundle = get_selected_bundle(ui_state.params, item_source)
       name = bundle.displayName if bundle else default_model_name(item_source)
-      color = ON_COLOR if item_source == source else style.ITEM_TEXT_VALUE_COLOR
+      color = ON_COLOR if (item_source == carry_source and name == carry_display) else style.ITEM_TEXT_VALUE_COLOR
       item.action_item.set_value(name, color)
 
     note = self._status_note()
