@@ -92,11 +92,11 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   if available_bundles is not None:
     matching_bundle = None
     for bundle in available_bundles:
-      if getattr(active_bundle, 'ref', None) and getattr(bundle, 'ref', None):
+      if active_bundle.ref and bundle.ref:
         if active_bundle.ref == bundle.ref:
           matching_bundle = bundle
           break
-      elif getattr(active_bundle, 'internalName', None) == getattr(bundle, 'internalName', None):
+      elif active_bundle.internalName == bundle.internalName:
         matching_bundle = bundle
         break
 
@@ -104,12 +104,8 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
       return True
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
-
-    active_runner = getattr(active_bundle, 'runner', None)
-    matching_runner = getattr(matching_bundle, 'runner', None)
-    if active_runner is not None and matching_runner is not None:
-      if getattr(active_runner, 'raw', active_runner) != getattr(matching_runner, 'raw', matching_runner):
-        return True
+    if active_bundle.runner != matching_bundle.runner:
+      return True
     if set(_bundle_artifacts(active_bundle)) != set(_bundle_artifacts(matching_bundle)):
       return True
 

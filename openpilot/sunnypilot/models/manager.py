@@ -305,7 +305,7 @@ class ModelManagerSP:
     for source in ACTIVE_BUNDLE_KEYS:
       if selected_bundle := get_selected_bundle(self.params, source):
         for model in selected_bundle.models:
-          if hasattr(model, 'artifact') and model.artifact.fileName:
+          if model.artifact.fileName:
             active_files.append(model.artifact.fileName)
 
     # Remove all files except active ones (including their chunk files)
