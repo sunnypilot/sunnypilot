@@ -25,7 +25,7 @@ from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.selfdrive.test.helpers import http_server_context
 from openpilot.sunnypilot.models import manager as manager_module
 from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
-from openpilot.sunnypilot.models.helpers import get_active_bundle, get_selected_bundle, resolve_bundle_by_ref
+from openpilot.sunnypilot.models.helpers import get_active_bundle, get_active_source, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.sunnypilot.models.manager import ModelManagerSP
 
 CHUNK_BODIES = [b'A' * 5000, b'B' * 5000, b'C' * 3000]
@@ -547,7 +547,7 @@ class TestSourceCacheIntegrity(OpenpilotTestCase):
 
 class TestActiveBundleSelection(OpenpilotTestCase):
   """The effective active bundle follows the hardware: the usbgpu slot wins when a GPU
-  is present and compiled, otherwise the qcom slot. Each slot keeps its own selection."""
+  is present, otherwise the qcom slot. Each slot keeps its own selection."""
 
   @staticmethod
   def _raw_bundle(ref: str) -> dict:
@@ -574,6 +574,21 @@ class TestActiveBundleSelection(OpenpilotTestCase):
     assert get_selected_bundle(params, "qcom").ref == "small"
     assert get_selected_bundle(params, "usbgpu").ref == "big"
 
+  def test_no_gpu_uses_qcom_slot(self):
+    params = self._params(qcom=self._raw_bundle("small"), usbgpu=self._raw_bundle("big"))
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+      assert get_active_bundle(params).ref == "small"
+
+  def test_gpu_uses_usbgpu_slot(self):
+    params = self._params(qcom=self._raw_bundle("small"), usbgpu=self._raw_bundle("big"))
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+      assert get_active_bundle(params).ref == "big"
+
+  def test_gpu_without_big_selection_falls_back_to_small(self):
+    params = self._params(qcom=self._raw_bundle("small"), usbgpu=None)
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+      assert get_active_bundle(params).ref == "small"
+
 
 class TestEffectiveSource(OpenpilotTestCase):
   """One gate decides the active source. With no flags it is runtime truth (GPU
@@ -588,6 +603,28 @@ class TestEffectiveSource(OpenpilotTestCase):
     bundle.minimumSelectorVersion = 18
     return bundle.to_dict()
 
+  def test_runtime_no_gpu(self):
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+      assert get_active_source() == "qcom"
+
+  def test_runtime_gpu_present(self):
+    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+      assert get_active_source() == "usbgpu"
+
+  def test_display_offroad_gpu_present_shows_big(self):
+    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=False, offroad=True) == "usbgpu"
+
+  def test_display_onroad_gpu_loading_shows_big(self):
+    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=True, offroad=False) == "usbgpu"
+
+  def test_display_onroad_gpu_active_shows_big(self):
+    assert get_active_source(usbgpu=True, usbgpu_active=True, usbgpu_loading=False, offroad=False) == "usbgpu"
+
+  def test_display_onroad_gpu_idle_shows_small(self):
+    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=False, offroad=False) == "qcom"
+
+  def test_display_active_none_is_idle(self):
+    assert get_active_source(usbgpu=True, usbgpu_active=None, usbgpu_loading=False, offroad=False) == "qcom"
 
   def test_active_bundle_follows_source(self):
     params = mock.MagicMock()
@@ -595,6 +632,8 @@ class TestEffectiveSource(OpenpilotTestCase):
                                           "ModelManager_ActiveBundleUSBGPU": self._raw_bundle("big")}.get(key)
     with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
       assert get_active_bundle(params).ref == "small"
+    assert get_selected_bundle(params, get_active_source(usbgpu=True, usbgpu_active=False,
+                                                         usbgpu_loading=False, offroad=True)).ref == "big"
 
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')

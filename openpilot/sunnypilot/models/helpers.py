@@ -130,12 +130,21 @@ def get_selected_bundle(params: Params | None = None, source: str = "qcom") -> "
   return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS.get(source, "ModelManager_ActiveBundle")))
 
 
+def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = None,
+                      usbgpu_loading: bool | None = None, offroad: bool | None = None) -> str:
+  if usbgpu is None:
+    usbgpu = usbgpu_present()
+  state_valid = usbgpu_active is not None or usbgpu_loading is not None or offroad is not None
+  big_active = usbgpu and (not state_valid or usbgpu_active or usbgpu_loading or offroad)
+  return "usbgpu" if big_active else "qcom"
+
+
 def get_active_bundle(params: Params | None = None, *, usbgpu: bool | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
   params = params or Params()
-  if usbgpu:
-    return get_selected_bundle(params, "usbgpu")
-  else:
-    return get_selected_bundle(params, "qcom")
+  if get_active_source(usbgpu=usbgpu) == "usbgpu":
+    if bundle := get_selected_bundle(params, "usbgpu"):
+      return bundle
+  return get_selected_bundle(params, "qcom")
 
 
 def resolve_bundle_by_ref(
