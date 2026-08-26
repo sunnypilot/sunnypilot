@@ -149,27 +149,19 @@ class ModelFetcher:
   def __init__(self, params: Params):
     self.params = params
     self.model_parser = ModelParser()
-    self._active_json_published = False
     self.model_caches = {
       source: ModelCache(params, suffix=suffix)
       for source, (_, suffix) in self.MODEL_SOURCES.items()
     }
-    self.model_url = self.MODEL_URL
     self._refetched: set[str] = set()
-    self._update_model_source()
+    self.params.put("ModelManager_ActiveJson", {
+      "qcom": self.MODEL_URL,
+      "usbgpu": self.MODEL_URL_USBGPU,
+    }, block=True)
 
   @staticmethod
   def active_source(chestnut_present: bool) -> str:
     return "usbgpu" if chestnut_present else "qcom"
-
-  def _update_model_source(self) -> None:
-    """Publishes the manifest URLs for both sources"""
-    if not self._active_json_published:
-      self._active_json_published = True
-      self.params.put("ModelManager_ActiveJson", {
-        "qcom": self.MODEL_URL,
-        "usbgpu": self.MODEL_URL_USBGPU,
-      }, block=True)
 
   def _fetch_and_cache_models(self, source: str) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
@@ -213,7 +205,12 @@ class ModelFetcher:
       return any(bundle.get("is_big") is True for bundle in bundles)
     return not any(bundle.get("is_big") is True for bundle in bundles)
 
-  def _get_source_bundles(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+  def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+    """Gets the list of available models for a specific source, with smart cache handling."""
+    if source not in self.MODEL_SOURCES:
+      cloudlog.warning(f"Unknown model source: {source}")
+      return []
+
     cached_data, is_expired = self.model_caches[source].get()
 
     if cached_data and not is_expired:
@@ -247,13 +244,6 @@ class ModelFetcher:
       return self.model_parser.parse_models(cached_data)
     except Exception:
       return []
-
-  def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
-    """Gets the list of available models for a specific source, with smart cache handling."""
-    if source not in self.MODEL_SOURCES:
-      cloudlog.warning(f"Unknown model source: {source}")
-      return []
-    return self._get_source_bundles(source)
 
 
 def get_cached_bundles(params: Params, source: str) -> list[custom.ModelManagerSP.ModelBundle]:

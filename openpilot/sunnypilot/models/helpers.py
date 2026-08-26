@@ -123,7 +123,7 @@ def _parse_active_bundle(raw_bundle) -> "custom.ModelManagerSP.ModelBundle | Non
 
 def get_selected_bundle(params: Params | None = None, source: str = "qcom") -> "custom.ModelManagerSP.ModelBundle | None":
   params = params or Params()
-  return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS.get(source, "ModelManager_ActiveBundle")))
+  return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS[source]))
 
 
 def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = None,
