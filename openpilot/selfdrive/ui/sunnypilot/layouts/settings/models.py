@@ -13,7 +13,7 @@ from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model_name, model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model, default_model_name, model_info
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -163,26 +163,23 @@ class ModelsLayout(Widget):
 
     state = self._download_row_state(progresses, bundle.internalName)
     if queued := self._queued_name(bundle.ref):
-      state["name"] += f"  ·  {queued} {tr('queued')}"
+      state["name"] += f"  |  {queued} {tr('queued')}"
     self.download_item.action_item.update(**state)
     self._downloading = self.download_item.action_item.downloading
     ds = custom.ModelManagerSP.DownloadStatus
     self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
 
   def _slot_segments(self):
-    """One segment per slot: name, downloaded check or empty-slot mark, active in green."""
+    """small and big slots side by side; the active side is green, an empty slot shows its default."""
     active = active_source()
     segments = []
-    for source in ("qcom", "usbgpu"):
+    for source, label in (("qcom", tr("small")), ("usbgpu", tr("big"))):
+      if segments:
+        segments.append(("|", rl.GRAY, None, None))
       bundle = get_selected_bundle(ui_state.params, source)
-      name = bundle.internalName if bundle else tr("Default")
-      if source == active:
-        name += f" ({tr('active')})"
-      color = ON_COLOR if source == active else rl.GRAY
-      if bundle:
-        segments.append((name, color, "icons/checkmark.png", None))
-      else:
-        segments.append((name, color, "icons/circled_slash.png", rl.WHITE))
+      name = bundle.internalName if bundle else default_model(source)
+      segments.append((label, rl.GRAY, None, None))
+      segments.append((name, ON_COLOR if source == active else rl.LIGHTGRAY, "icons/checkmark.png", None))
     return segments
 
   def _queued_name(self, current_ref):

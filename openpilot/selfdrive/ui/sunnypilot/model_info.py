@@ -22,8 +22,12 @@ def bundles_for_source(source: str):
   return get_cached_bundles(ui_state.params, source)
 
 
+def default_model(source: str) -> str:
+  return DEFAULT_BIG_MODEL if source == 'usbgpu' else DEFAULT_MODEL
+
+
 def default_model_name(source: str) -> str:
-  return f"{DEFAULT_BIG_MODEL if source == 'usbgpu' else DEFAULT_MODEL} (Default)"
+  return f"{default_model(source)} (Default)"
 
 
 def model_info() -> tuple[str, str, str]:

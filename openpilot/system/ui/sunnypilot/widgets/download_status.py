@@ -25,6 +25,7 @@ ICON_PADDING = 12
 BAR_WIDTH = 1100
 BAR_HEIGHT = 20
 SEGMENT_GAP = 24
+SEGMENT_NAME_MAX_WIDTH = 380
 BAR_GAP = 16
 BAR_RADIUS = BAR_HEIGHT / 2
 CAPSULE_POINTS = 24
@@ -47,6 +48,7 @@ class DownloadStatusAction(ItemAction):
     self.name = ""
     self.status_text = ""
     self.segments: list[tuple[str, rl.Color, str | None, rl.Color | None]] | None = None
+    self._segment_labels: list[UnifiedLabel] = []
     self.downloading = False
     self.text_color = rl.GRAY
     self.icon: str | None = None
@@ -99,7 +101,7 @@ class DownloadStatusAction(ItemAction):
     """[(segment, text width, total width incl. icon and gap)]"""
     out = []
     for i, seg in enumerate(self.segments or []):
-      text_width = measure_text_cached(self._font, seg[0], FONT_SIZE).x
+      text_width = min(measure_text_cached(self._font, seg[0], FONT_SIZE).x, SEGMENT_NAME_MAX_WIDTH)
       total = text_width + (ICON_PADDING + ICON_SIZE if seg[2] else 0) + (SEGMENT_GAP if i else 0)
       out.append((seg, text_width, total))
     return out
@@ -182,12 +184,20 @@ class DownloadStatusAction(ItemAction):
 
   def _render_segments(self, rect: rl.Rectangle):
     measured = self._measured_segments()
+    while len(self._segment_labels) < len(measured):
+      self._segment_labels.append(UnifiedLabel("", font_size=FONT_SIZE, max_width=SEGMENT_NAME_MAX_WIDTH,
+                                               scroll=True, wrap_text=False))
     x = rect.x + rect.width - sum(total for _, _, total in measured)
     for i, ((text, color, icon, icon_color), text_width, _) in enumerate(measured):
       if i:
         x += SEGMENT_GAP
+      label = self._segment_labels[i]
+      if label.text != text:
+        label.set_text(text)
+      label.set_text_color(color)
       text_height = measure_text_cached(self._font, text, FONT_SIZE).y
-      rl.draw_text_ex(self._font, text, rl.Vector2(x, rect.y + (rect.height - text_height) / 2), FONT_SIZE, 0, color)
+      label.set_position(x, rect.y + (rect.height - text_height) / 2)
+      label.render()
       x += text_width
       if icon:
         texture = gui_app.texture(icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
