@@ -346,7 +346,7 @@ class ModelsLayout(Widget):
     source = active_source()
     for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "usbgpu")):
       bundle = get_selected_bundle(ui_state.params, item_source)
-      name = bundle.internalName if bundle else default_model_name(item_source)
+      name = bundle.displayName if bundle else default_model_name(item_source)
       color = ON_COLOR if item_source == source else style.ITEM_TEXT_VALUE_COLOR
       item.action_item.set_value(name, color)
 
@@ -365,3 +365,4 @@ class ModelsLayout(Widget):
 
   def show_event(self):
     self._scroller.show_event()
+    self._last_note = None  # re-expand the failover note every time the page opens
