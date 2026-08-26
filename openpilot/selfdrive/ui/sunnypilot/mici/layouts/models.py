@@ -8,11 +8,10 @@ import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
-from openpilot.selfdrive.ui.sunnypilot.model_info import model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import bundles_for_source, model_info
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -111,16 +110,12 @@ class ModelsLayoutMici(NavScroller):
 
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
 
-    if source != active:
-      bundles = get_cached_bundles(ui_state.params, source)
-      if not bundles:
-        gui_app.push_widget(BigDialog(title=tr("No models available"),
-                                      description=tr("No models are available for this hardware yet. Connect to the internet and refresh the model list.")))
-        return
-    else:
-      bundles = self.model_manager.availableBundles
+    bundles = bundles_for_source(source)
+    if not bundles:
+      gui_app.push_widget(BigDialog(title=tr("No models available"),
+                                    description=tr("No models are available for this hardware yet. Connect to the internet and refresh the model list.")))
+      return
     folders = self._get_grouped_bundles(bundles, favorites)
 
     folder_buttons = []
@@ -155,13 +150,8 @@ class ModelsLayoutMici(NavScroller):
       return
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
 
-    if source != active:
-      bundles = get_cached_bundles(ui_state.params, source)
-    else:
-      bundles = self.model_manager.availableBundles
-    folders = self._get_grouped_bundles(bundles, favorites)
+    folders = self._get_grouped_bundles(bundles_for_source(source), favorites)
     bundles = sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True)
 
     btns = []

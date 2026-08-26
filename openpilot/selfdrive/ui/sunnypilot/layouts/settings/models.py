@@ -10,11 +10,10 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, model_info
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -207,12 +206,7 @@ class ModelsLayout(Widget):
       ui_state.params.put("ModelManager_DownloadRef", selected_bundle.ref)
 
   def _resolve_selected_bundle(self, ref):
-    """Finds the bundle for a ref across both hardware manifests."""
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    source_bundles = {
-      source: self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
-      for source in ("qcom", "usbgpu")
-    }
+    source_bundles = {source: bundles_for_source(source) for source in ("qcom", "usbgpu")}
     resolved = resolve_bundle_by_ref(ref, source_bundles)
     return resolved[0] if resolved else None
 
@@ -236,11 +230,10 @@ class ModelsLayout(Widget):
     return folders_list
 
   def _handle_current_model_clicked(self):
-    self._open_source_dialog(ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent))
+    self._open_source_dialog(active_source())
 
   def _handle_other_model_clicked(self):
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    self._open_source_dialog("qcom" if active == "usbgpu" else "usbgpu")
+    self._open_source_dialog("qcom" if active_source() == "usbgpu" else "usbgpu")
 
   def _open_source_dialog(self, source):
     """Opens the picker for one hardware: its model folders plus the Default reset entry."""
@@ -256,9 +249,7 @@ class ModelsLayout(Widget):
     gui_app.push_widget(self.model_dialog)
 
   def _source_folders(self, favorites, source):
-    """Default reset entry on top, then the hardware's model folders."""
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    bundles = self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
+    bundles = bundles_for_source(source)
     if not bundles:
       return []
     folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': "Default"})])]
