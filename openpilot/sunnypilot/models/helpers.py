@@ -29,7 +29,7 @@ ACTIVE_BUNDLE_KEYS = {
   "qcom": "ModelManager_ActiveBundle",
   "usbgpu": "ModelManager_ActiveBundleUSBGPU",
 }
-_LAST_VALIDATED_RAW: dict[str, bytes | None] = {}
+_LAST_VALIDATED_RAW: dict[str, dict | None] = {}
 
 
 def _compute_hash(file_path: str) -> str | None:
