@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 import os
 import re
 import time
-import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
@@ -19,13 +18,11 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.scroller_tici import Scroller
-from openpilot.system.ui.widgets.toggle import ON_COLOR
 
 from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.lib.utils import NoElideButtonAction, ScrollingButtonAction
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, toggle_item_sp, option_item_sp
-from openpilot.system.ui.sunnypilot.widgets.download_status import download_status_item
 from openpilot.system.ui.sunnypilot.widgets.tree_dialog import TreeOptionDialog, TreeNode, TreeFolder
 
 if gui_app.sunnypilot_ui():
@@ -38,7 +35,7 @@ class ModelsLayout(Widget):
     self.model_manager = None
     self.model_dialog = None
     self._selection_source = None
-    self._downloading = False
+    self._download_status = None  # (source, text) while a download or verify is in flight
     self.last_cache_calc_time = 0
 
     self._initialize_items()
@@ -62,8 +59,6 @@ class ModelsLayout(Widget):
       action_item=ScrollingButtonAction(tr("SELECT")),
       callback=self._handle_other_model_clicked
     )
-
-    self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
@@ -103,7 +98,7 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.current_model_item, self.other_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.current_model_item, self.other_model_item, self.cancel_download_item, self.refresh_item, self.clear_cache_item,
                   self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
@@ -116,10 +111,6 @@ class ModelsLayout(Widget):
       cp = ui_state.CP.steerActuatorDelay
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"
     self.lagd_toggle.set_description(desc)
-
-  def _is_downloading(self):
-    return (self.model_manager and self.model_manager.selectedBundle and
-            self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
 
   @staticmethod
   def calculate_cache_size():
@@ -143,20 +134,14 @@ class ModelsLayout(Widget):
     gui_app.push_widget(dialog)
 
   def _handle_bundle_download_progress(self):
-    self.download_item.set_visible(False)
     self.cancel_download_item.set_visible(False)
-    self._downloading = False
+    self._download_status = None
 
-    if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
-      return
-
-    bundle = self.model_manager.selectedBundle if self._is_downloading() or (
-      self.model_manager.selectedBundle and self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed
-    ) else self.model_manager.activeBundle
+    bundle = self.model_manager.selectedBundle if self.model_manager else None
     if not bundle:
       return
 
-    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadRef") is not None)
+    self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
@@ -165,34 +150,31 @@ class ModelsLayout(Widget):
     if bundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()
 
-    # every bundle is a single chunked artifact now
     progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName]
     if not progresses:
       return
 
-    self.download_item.set_visible(True)
-    self.download_item.action_item.update(**self._download_row_state(progresses, bundle.internalName))
-    self._downloading = self.download_item.action_item.downloading
+    resolved = resolve_bundle_by_ref(bundle.ref, {source: bundles_for_source(source) for source in ("qcom", "usbgpu")})
+    if not resolved:
+      return
+    self._download_status = (resolved[1], self._download_status_text(progresses))
 
   @staticmethod
-  def _download_row_state(progresses, name: str) -> dict:
-    """Maps a bundle's artifact progress to DownloadStatusAction.update kwargs."""
+  def _download_status_text(progresses) -> str:
     # .raw: _DynamicEnum equals its int but does not hash like it
     statuses = {getattr(p.status, 'raw', p.status) for p in progresses}
     progress = sum(p.progress for p in progresses) / len(progresses)
     ds = custom.ModelManagerSP.DownloadStatus
 
     if ds.failed in statuses:
-      # close.png is authored black and a tint cannot lift it, hence close2
-      return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
+      return tr("download failed")
     if ds.verifying in statuses:
-      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
+      return f"{tr('verifying')} {int(progress)}%"
     if ds.downloading in statuses:
-      return {"name": name, "downloading": True, "progress": progress}
+      return f"{tr('downloading')} {int(progress)}%"
     if statuses <= {ds.downloaded, ds.cached}:
-      return {"name": name, "text_color": ON_COLOR, "icon": "icons/checkmark.png"}
-    # circled_slash is authored grey; tinting it again only darkens it
-    return {"name": name, "text_color": rl.GRAY, "icon": "icons/circled_slash.png", "icon_color": rl.WHITE}
+      return tr("downloaded")
+    return ""
 
   def _on_model_selected(self, result):
     if result != DialogResult.CONFIRM:
@@ -285,6 +267,8 @@ class ModelsLayout(Widget):
     self.other_model_item.set_title(tr("Big Model") if source == "qcom" else tr("Small Model"))
     self.other_model_item.action_item.set_value(other_name)
 
+    dl_source, dl_text = self._download_status or (None, "")
+    self.other_model_item.set_description(dl_text if dl_source is not None and dl_source != source else "")
     if not ui_state.is_offroad():
       self.current_model_item.action_item.set_enabled(False)
       self.other_model_item.action_item.set_enabled(False)
@@ -292,7 +276,7 @@ class ModelsLayout(Widget):
     else:
       self.current_model_item.action_item.set_enabled(True)
       self.other_model_item.action_item.set_enabled(True)
-      self.current_model_item.set_description("")
+      self.current_model_item.set_description(dl_text if dl_source == source else "")
 
   def _render(self, rect):
     self._scroller.render(rect)
