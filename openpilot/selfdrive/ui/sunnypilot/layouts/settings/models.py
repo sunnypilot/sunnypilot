@@ -155,7 +155,13 @@ class ModelsLayout(Widget):
     if not progresses or bundle.status not in (custom.ModelManagerSP.DownloadStatus.downloading,
                                                custom.ModelManagerSP.DownloadStatus.failed):
       self.download_item.action_item.update(name="", segments=self._slot_segments())
+      note = ""
+      if self._big_model_state() == 'failed':
+        note = tr("Big model unavailable, the small model is driving")
+      self._set_item_note(self.download_item, note)
       return
+
+    self._set_item_note(self.download_item, "")
 
     self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
     if bundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
@@ -169,18 +175,47 @@ class ModelsLayout(Widget):
     ds = custom.ModelManagerSP.DownloadStatus
     self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
 
+  @staticmethod
+  def _big_model_state():
+    """'failed' | 'loading' | None, mirroring the sidebar's detection (#1969)."""
+    if ui_state.started and ui_state.usbgpu and ui_state.big_model_failed:
+      return 'failed'
+    big_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
+    if ui_state.usbgpu_loading or (big_selected and ui_state.started and ui_state.usbgpu_active is None):
+      return 'loading'
+    return None
+
   def _slot_segments(self):
-    """small and big slots side by side; the active side is green, an empty slot shows its default."""
+    """small and big slots side by side; green marks the side actually driving, an empty slot shows its default."""
     active = active_source()
+    big_state = self._big_model_state()
     segments = []
     for source, label in (("qcom", tr("small")), ("usbgpu", tr("big"))):
       if segments:
         segments.append(("|", rl.GRAY, None, None))
       bundle = get_selected_bundle(ui_state.params, source)
       name = bundle.internalName if bundle else default_model_name(source)
+      color = ON_COLOR if source == active else rl.LIGHTGRAY
+      icon, icon_color = "icons/checkmark.png", None
+      if source == "usbgpu":
+        if big_state == 'failed':
+          color, icon, icon_color = rl.RED, "icons/close2.png", rl.RED
+        elif big_state == 'loading':
+          color = rl.GOLD
       segments.append((label, rl.GRAY, None, None))
-      segments.append((name, ON_COLOR if source == active else rl.LIGHTGRAY, "icons/checkmark.png", None))
+      segments.append((name, color, icon, icon_color))
     return segments
+
+  @staticmethod
+  def _set_item_note(item, text):
+    # a description renders only while shown; hide before clearing or the
+    # empty description keeps its visible state
+    if text:
+      item.set_description(text)
+      item.show_description(True)
+    else:
+      item.show_description(False)
+      item.set_description("")
 
   def _queued_name(self, current_ref):
     ref = ui_state.params.get("ModelManager_DownloadRef")
