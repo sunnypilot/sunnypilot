@@ -10,12 +10,17 @@ on:
         options:
           - small
           - big
+          - dm
   workflow_call:
     inputs:
       target:
-        description: 'Model target to build (small or big)'
+        description: 'Model target to build (small, big, or dm)'
         required: true
         type: string
+
+concurrency:
+  group: build-default-models-${{ inputs.target }}
+  cancel-in-progress: false
 
 env:
   HF_REPO: sunnypilot/sunnypilot_models_v1
@@ -28,9 +33,7 @@ jobs:
       onnx_ref: ${{ steps.resolve.outputs.onnx_ref }}
       onnx_path: ${{ steps.resolve.outputs.onnx_path }}
       hf_defaults_path: ${{ steps.resolve.outputs.hf_defaults_path }}
-      target_hardware: ${{ steps.resolve.outputs.target_hardware }}
       tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
-      dm_onnx_ref: ${{ steps.resolve.outputs.dm_onnx_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,12 +47,14 @@ jobs:
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
             ONNX_PATH="openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/big"
-            TARGET_HW="usbgpu"
+          elif [ "${{ inputs.target }}" = "dm" ]; then
+            ONNX_PATH="openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
+            HF_DEFAULTS_PATH="models/defaults/dm"
+            NAME="dmonitoring_model ($(git log -1 --format=%cd --date=format:'%B %d, %Y' -- "$ONNX_PATH"))"
           else
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL; print(DEFAULT_MODEL)")
             ONNX_PATH="openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/small"
-            TARGET_HW="qcom"
           fi
 
           ONNX_REF=$(git log -1 --format='%H' -- "$ONNX_PATH")
@@ -59,65 +64,279 @@ jobs:
             exit 1
           fi
 
-          DM_ONNX_REF=""
-          if [ "${{ inputs.target }}" = "small" ]; then
-            DM_ONNX_REF=$(git log -1 --format='%H' -- openpilot/selfdrive/modeld/models/dmonitoring_model.onnx)
-          fi
-
           echo "model_name=${NAME}" >> $GITHUB_OUTPUT
           echo "onnx_ref=${ONNX_REF}" >> $GITHUB_OUTPUT
           echo "onnx_path=${ONNX_PATH}" >> $GITHUB_OUTPUT
           echo "hf_defaults_path=${HF_DEFAULTS_PATH}" >> $GITHUB_OUTPUT
-          echo "target_hardware=${TARGET_HW}" >> $GITHUB_OUTPUT
           echo "tinygrad_ref=${TINYGRAD_REF}" >> $GITHUB_OUTPUT
-          echo "dm_onnx_ref=${DM_ONNX_REF}" >> $GITHUB_OUTPUT
 
-  build_driving_model:
+  build_small_model:
     needs: resolve
-    uses: ./.github/workflows/sunnypilot-build-model.yaml
-    with:
-      upstream_branch: ${{ needs.resolve.outputs.onnx_ref }}
-      custom_name: ${{ needs.resolve.outputs.model_name }}
-      target_hardware: ${{ needs.resolve.outputs.target_hardware }}
-    secrets: inherit
+    if: ${{ inputs.target == 'small' }}
+    runs-on: [self-hosted, tici]
+    env:
+      SMALL_ONNX: openpilot/selfdrive/modeld/models/driving_supercombo.onnx
+      SMALL_PKL: openpilot/selfdrive/modeld/models/driving_tinygrad.pkl
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Pull ONNX via LFS
+        run: git lfs pull -I "${{ env.SMALL_ONNX }}"
+
+      - name: Set environment variables
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync --frozen
+          printenv >> $GITHUB_ENV
+
+      - name: Disable powersave
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: Compile small model with stock compiler
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+          FRAME_SKIP=$(python3 -c "from openpilot.selfdrive.modeld.constants import ModelConstants as MC; print(MC.MODEL_RUN_FREQ // MC.MODEL_CONTEXT_FREQ)")
+
+          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+
+          env ${TG_FLAGS} python3 \
+            ${{ github.workspace }}/openpilot/selfdrive/modeld/compile_modeld.py \
+            --onnx ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
+            --model-size $MODEL_SIZE \
+            --camera-resolutions $CAMERA_RES \
+            --frame-skip $FRAME_SKIP \
+            --output ${{ github.workspace }}/${{ env.SMALL_PKL }}
+
+      - name: Chunk small pkl
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          python3 -c "
+          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
+          import os
+          pkl = '${{ github.workspace }}/${{ env.SMALL_PKL }}'
+          size = os.path.getsize(pkl)
+          targets = get_chunk_targets(pkl, size)
+          chunk_file(pkl, targets)
+          print(f'Chunked into {len(targets)} files')
+          "
+
+      - name: Prepare output
+        env:
+          MODEL_NAME: ${{ needs.resolve.outputs.model_name }}
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
+          OUTPUT_DIR="${{ github.workspace }}/small_output"
+          PKL_BASE="driving_tinygrad.pkl"
+          mkdir -p "$OUTPUT_DIR"
+
+          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "$MODELS_DIR" \
+            --output-dir "$OUTPUT_DIR" \
+            --custom-name "$MODEL_NAME" \
+            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}"
+
+          echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
+
+      - name: Upload small model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ needs.resolve.outputs.model_name }}-${{ github.run_number }}
+          path: ${{ github.workspace }}/small_output/
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          path: ${{ github.workspace }}/small_output/artifact_name.txt
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+
+  build_big_model:
+    needs: resolve
+    if: ${{ inputs.target == 'big' }}
+    runs-on: [self-hosted, usbgpu]
+    env:
+      BIG_ONNX: openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx
+      BIG_PKL: openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Pull big ONNX via LFS
+        run: git lfs pull -I "${{ env.BIG_ONNX }}"
+
+      - name: Set environment variables
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync --frozen
+          printenv >> $GITHUB_ENV
+
+      - name: Disable powersave
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: Wait for chestnut PCIe link
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          python3 -c "
+          import time
+          from openpilot.system.hardware.chestnut.flash import link_up
+          for i in range(10):
+              if link_up():
+                  print(f'PCIe link up after {i+1} attempt(s)')
+                  break
+              time.sleep(1)
+          else:
+              raise RuntimeError('Chestnut PCIe link not ready after 10 attempts')
+          "
+
+      - name: Compile big model with stock compiler
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+          FRAME_SKIP=$(python3 -c "from openpilot.selfdrive.modeld.constants import ModelConstants as MC; print(MC.MODEL_RUN_FREQ // MC.MODEL_CONTEXT_FREQ)")
+
+          TG_FLAGS="DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2"
+
+          env ${TG_FLAGS} python3 \
+            ${{ github.workspace }}/openpilot/selfdrive/modeld/compile_modeld.py \
+            --onnx ${{ github.workspace }}/${{ env.BIG_ONNX }} \
+            --model-size $MODEL_SIZE \
+            --camera-resolutions $CAMERA_RES \
+            --frame-skip $FRAME_SKIP \
+            --output ${{ github.workspace }}/${{ env.BIG_PKL }}
+
+      - name: Chunk big pkl
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          python3 -c "
+          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
+          import os
+          pkl = '${{ github.workspace }}/${{ env.BIG_PKL }}'
+          size = os.path.getsize(pkl)
+          targets = get_chunk_targets(pkl, size)
+          chunk_file(pkl, targets)
+          print(f'Chunked into {len(targets)} files')
+          "
+
+      - name: Prepare output
+        env:
+          MODEL_NAME: ${{ needs.resolve.outputs.model_name }}
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH=${{ github.workspace }}
+          MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
+          OUTPUT_DIR="${{ github.workspace }}/big_output"
+          PKL_BASE="big_driving_tinygrad.pkl"
+          mkdir -p "$OUTPUT_DIR"
+
+          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "$MODELS_DIR" \
+            --output-dir "$OUTPUT_DIR" \
+            --custom-name "$MODEL_NAME" \
+            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}"
+
+          echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
+
+      - name: Upload big model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ needs.resolve.outputs.model_name }}-${{ github.run_number }}
+          path: ${{ github.workspace }}/big_output/
+
+      - name: Upload artifact name file
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          path: ${{ github.workspace }}/big_output/artifact_name.txt
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   upload_defaults:
-    needs: [ resolve, build_driving_model, build_dm_model ]
-    if: ${{ !cancelled() && needs.build_driving_model.result == 'success' && (inputs.target != 'small' || needs.build_dm_model.result == 'success') }}
+    needs: [ resolve, build_small_model, build_big_model, build_dm_model ]
+    if: |
+      ${{
+        !cancelled() &&
+        (inputs.target == 'big' && needs.build_big_model.result == 'success' ||
+         inputs.target == 'small' && needs.build_small_model.result == 'success' ||
+         inputs.target == 'dm' && needs.build_dm_model.result == 'success')
+      }}
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: write
-    env:
-      DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
     steps:
       - uses: actions/checkout@v4
 
       - name: Pull ONNX via LFS
-        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}${{ inputs.target == 'small' && ',openpilot/selfdrive/modeld/models/dmonitoring_model.onnx' || '' }}"
+        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}"
 
       - name: Install huggingface_hub
         run: pip install --upgrade "huggingface_hub>=0.22.0"
 
-      - name: Download driving artifact name
+      - name: Download artifact name
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         uses: actions/download-artifact@v4
         with:
           name: artifact-name-${{ needs.resolve.outputs.model_name }}
           path: artifact_name
 
-      - name: Read driving artifact name
+      - name: Read artifact name
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         id: artifact
         run: |
           ARTIFACT_NAME=$(cat artifact_name/artifact_name.txt)
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
-      - name: Download driving model artifact
+      - name: Download model artifact
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.artifact_name }}
           path: output
 
-      - name: Upload driving model to HF
+      - name: Upload model to HF
+        if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         env:
           HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
           ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
@@ -136,14 +355,14 @@ jobs:
             --run-number "${{ github.run_number }}"
 
       - name: Download DM artifact
-        if: ${{ inputs.target == 'small' }}
+        if: ${{ inputs.target == 'dm' }}
         uses: actions/download-artifact@v4
         with:
           name: dm-model-${{ github.run_number }}
           path: dm_output
 
       - name: Generate DM metadata and upload to HF
-        if: ${{ inputs.target == 'small' }}
+        if: ${{ inputs.target == 'dm' }}
         env:
           HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
         run: |
@@ -176,8 +395,8 @@ jobs:
           metadata = {
               'bundles': [{
                   'short_name': 'DMMODEL',
-                  'display_name': 'dmonitoring_model',
-                  'ref': '${{ needs.resolve.outputs.dm_onnx_ref }}',
+                  'display_name': '${{ needs.resolve.outputs.model_name }}',
+                  'ref': '${{ needs.resolve.outputs.onnx_ref }}',
                   'runner': 'tinygrad',
                   'build_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
                   'models': [{
@@ -200,15 +419,15 @@ jobs:
             --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
             --artifact-name "dm-model-${{ github.run_number }}" \
             --model-dir dm_output \
-            --onnx-path "${{ env.DM_ONNX }}" \
-            --onnx-ref "${{ needs.resolve.outputs.dm_onnx_ref }}" \
-            --model-name "dmonitoring_model" \
+            --onnx-path "${{ needs.resolve.outputs.onnx_path }}" \
+            --onnx-ref "${{ needs.resolve.outputs.onnx_ref }}" \
+            --model-name "${{ needs.resolve.outputs.model_name }}" \
             --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
             --run-number "${{ github.run_number }}"
 
   build_dm_model:
     needs: resolve
-    if: ${{ inputs.target == 'small' }}
+    if: ${{ inputs.target == 'dm' }}
     runs-on: [self-hosted, tici]
     env:
       DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
@@ -217,6 +436,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Pull DM ONNX via LFS
+        run: git lfs pull -I "${{ env.DM_ONNX }}"
 
       - name: Set environment variables
         run: |

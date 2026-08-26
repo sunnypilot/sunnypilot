@@ -221,7 +221,6 @@ class ModelManagerSP:
     self.pm.send('modelManagerSP', msg)
 
   async def _download_bundle(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str, source: str) -> None:
-    """Downloads a bundle and sets it as the active bundle for its source"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
     for model in self.selected_bundle.models:
@@ -305,7 +304,7 @@ class ModelManagerSP:
     for source in ACTIVE_BUNDLE_KEYS:
       if selected_bundle := get_selected_bundle(self.params, source):
         for model in selected_bundle.models:
-          if hasattr(model, 'artifact') and model.artifact.fileName:
+          if model.artifact.fileName:
             active_files.append(model.artifact.fileName)
 
     # Remove all files except active ones (including their chunk files)

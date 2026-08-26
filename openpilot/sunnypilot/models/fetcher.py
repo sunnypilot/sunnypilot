@@ -138,8 +138,8 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v20.json"
-  MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v21.json"
+  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v21.json"
+  MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v22.json"
 
   MODEL_SOURCES = {
     "qcom": (MODEL_URL, ""),
@@ -149,26 +149,19 @@ class ModelFetcher:
   def __init__(self, params: Params):
     self.params = params
     self.model_parser = ModelParser()
-    self._active_json_published = False
     self.model_caches = {
       source: ModelCache(params, suffix=suffix)
       for source, (_, suffix) in self.MODEL_SOURCES.items()
     }
-    self.model_url = self.MODEL_URL
-    self._update_model_source()
+    self._refetched: set[str] = set()
+    self.params.put("ModelManager_ActiveJson", {
+      "qcom": self.MODEL_URL,
+      "usbgpu": self.MODEL_URL_USBGPU,
+    }, block=True)
 
   @staticmethod
   def active_source(chestnut_present: bool) -> str:
     return "usbgpu" if chestnut_present else "qcom"
-
-  def _update_model_source(self) -> None:
-    """Publishes the manifest URLs for both sources"""
-    if not self._active_json_published:
-      self._active_json_published = True
-      self.params.put("ModelManager_ActiveJson", {
-        "qcom": self.MODEL_URL,
-        "usbgpu": self.MODEL_URL_USBGPU,
-      }, block=True)
 
   def _fetch_and_cache_models(self, source: str) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
@@ -206,17 +199,22 @@ class ModelFetcher:
 
   @staticmethod
   def _cache_matches_source(source: str, cached_data: dict) -> bool:
-    """Confirms a cached manifest contains requested source's models."""
     bundles = cached_data.get("bundles", [])
     if source == "usbgpu":
       return any(bundle.get("is_big") is True for bundle in bundles)
     return not any(bundle.get("is_big") is True for bundle in bundles)
 
-  def _get_source_bundles(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+  def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+    if source not in self.MODEL_SOURCES:
+      cloudlog.warning(f"Unknown model source: {source}")
+      return []
+
     cached_data, is_expired = self.model_caches[source].get()
 
     if cached_data and not is_expired:
-      if self._cache_matches_source(source, cached_data):
+      # a source is refetched over a mismatch at most once per process: if the fresh
+      # manifest still mismatches, the URL is authoritative and the cache is trusted
+      if self._cache_matches_source(source, cached_data) or source in self._refetched:
         try:
           parsed = self.model_parser.parse_models(cached_data)
         except Exception:
@@ -229,7 +227,8 @@ class ModelFetcher:
           # manifest version) - do not trust it, refetch so the source is repopulated
           cloudlog.warning(f"Cached models for {source} have no valid bundles; refetching")
       else:
-        cloudlog.warning(f"Cached models for {source} not valid; refetching")
+        self._refetched.add(source)
+        cloudlog.warning(f"Cached models for {source} not valid; refetching once")
 
     fetched_bundles = self._fetch_and_cache_models(source)
     if fetched_bundles is not None:
@@ -244,16 +243,8 @@ class ModelFetcher:
     except Exception:
       return []
 
-  def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
-    """Gets the list of available models for a specific source, with smart cache handling."""
-    if source not in self.MODEL_SOURCES:
-      cloudlog.warning(f"Unknown model source: {source}")
-      return []
-    return self._get_source_bundles(source)
-
 
 def get_cached_bundles(params: Params, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
-  """Reads a source's cached manifest from params and parses it into bundles."""
 
   if source not in ModelFetcher.MODEL_SOURCES:
     cloudlog.warning(f"Unknown model source: {source}")

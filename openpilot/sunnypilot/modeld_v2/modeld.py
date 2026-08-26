@@ -91,7 +91,7 @@ class ModelState(ModelStateBase):
     if env_pkl and os.path.exists(env_pkl):
       model_bundle = None
     else:
-      model_bundle = get_active_bundle()
+      model_bundle = get_active_bundle(usbgpu=usbgpu)
     self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides} if model_bundle else {}
 
