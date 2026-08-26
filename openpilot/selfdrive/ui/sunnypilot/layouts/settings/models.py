@@ -286,9 +286,11 @@ class ModelsLayout(Widget):
 
     if not ui_state.is_offroad():
       self.current_model_item.action_item.set_enabled(False)
+      self.other_model_item.action_item.set_enabled(False)
       self.current_model_item.set_description(tr("Only available when vehicle is off, or always offroad mode is on"))
     else:
       self.current_model_item.action_item.set_enabled(True)
+      self.other_model_item.action_item.set_enabled(True)
       self.current_model_item.set_description("")
 
   def _render(self, rect):
