@@ -113,6 +113,15 @@ class UIState(UIStateSP):
     self._on_body_changed_callbacks.append(callback)
 
   @property
+  def big_model_failed(self) -> bool:
+    # Mirrors the onroad HUD's four-condition check so sidebar and home icons reflect the same failure states
+    return (self.usbgpu_active is False or
+            not self.sm['deviceState'].chestnutPresent or
+            (self.usbgpu_active is True and self.sm.recv_frame['modelV2'] > self.started_frame and
+             not self.sm.alive['modelV2']) or
+            (self.usbgpu_active is None and self.sm.recv_frame['modelV2'] > self.started_frame))
+
+  @property
   def engaged(self) -> bool:
     return self.started and (self.sm["selfdriveState"].enabled or self.sm["selfdriveStateSP"].mads.enabled)
 
