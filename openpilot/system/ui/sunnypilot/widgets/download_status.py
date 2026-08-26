@@ -134,6 +134,8 @@ class DownloadStatusAction(ItemAction):
 
   def _render_downloading(self, rect: rl.Rectangle):
     percent = f"{int(self._progress.x)}%"
+    if self.status_text:
+      percent = f"{self.status_text} {percent}"
     text_height = measure_text_cached(self._font, percent, FONT_SIZE).y
     top = rect.y + (rect.height - (text_height + BAR_GAP + BAR_HEIGHT)) / 2
 

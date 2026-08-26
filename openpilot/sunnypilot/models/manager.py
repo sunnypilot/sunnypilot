@@ -162,8 +162,8 @@ class ModelManagerSP:
     full_path = os.path.join(destination_path, filename)
 
     try:
-      # verification is silent: publishing it as progress made the bar climb and
-      # then fall back to zero when the real download started
+      # progress counts only valid chunks so a resumed download continues the
+      # bar from where verification left it, instead of falling back to zero
       is_cached = False
       valid_chunks: set[int] = set()
       if len(artifact.chunks) > 0:
@@ -172,6 +172,10 @@ class ModelManagerSP:
         for i, chunk in enumerate(artifact.chunks):
           if await verify_file(get_chunk_name(full_path, i, num_chunks), chunk.sha256):
             valid_chunks.add(i)
+          artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.verifying
+          artifact.downloadProgress.progress = (len(valid_chunks) / num_chunks) * 100
+          self._sync_artifact_progress(artifact)
+          self._report_status()
         is_cached = len(valid_chunks) == num_chunks
       else:
         if await verify_file(full_path, expected_hash):

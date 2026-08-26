@@ -202,16 +202,19 @@ class ModelsLayoutMici(NavScroller):
       device.set_override_interactive_timeout(5)
       progress = 0.0
       count = 0
+      verifying = False
       for model in manager.selectedBundle.models:
         count += 1
         p = model.artifact.downloadProgress
-        if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
+        if p.status in (custom.ModelManagerSP.DownloadStatus.downloading,
+                        custom.ModelManagerSP.DownloadStatus.verifying):
           progress += p.progress
+          verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      self.current_model_info.current_model_header.set_text(tr("downloading"))
+      self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
       self.current_model_info.current_model_header._shimmer = True
       self.current_model_info.current_model_text.set_text(f"{manager.selectedBundle.internalName.lower()}")
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)

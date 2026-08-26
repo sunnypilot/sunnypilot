@@ -360,6 +360,22 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert min(self.reported) >= (1 / len(CHUNK_BODIES)) * 100 - 1, "progress must not restart below the resumed share"
     self.run_with_server(body)
 
+  def test_verify_reports_valid_fraction_then_cached(self):
+    """A fully cached bundle publishes climbing verify progress and ends cached."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      for i, data in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
+          f.write(data)
+
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+
+      assert DownloadHandler.request_paths == [], "cached bundle must not hit the network"
+      assert [round(p) for p in self.reported[:3]] == [33, 67, 100]
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.cached
+    self.run_with_server(body)
+
   def _make_params_with_store(self):
     params = mock.MagicMock()
     store = {}

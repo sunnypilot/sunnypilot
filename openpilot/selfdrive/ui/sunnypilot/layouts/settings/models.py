@@ -185,6 +185,8 @@ class ModelsLayout(Widget):
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
       return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
+    if ds.verifying in statuses:
+      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
     if ds.downloading in statuses:
       return {"name": name, "downloading": True, "progress": progress}
     if statuses <= {ds.downloaded, ds.cached}:
