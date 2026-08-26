@@ -8,6 +8,8 @@ import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.models.default_model import get_default_model
+from openpilot.sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayout
 from openpilot.selfdrive.ui.ui_state import ui_state, device
@@ -60,7 +62,7 @@ class ModelsLayoutMici(NavScroller):
     self.select_model_btn.set_click_callback(self._show_folders)
 
     self.cancel_download_btn = BigButton(tr("cancel download"))
-    self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
+    self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
     self._scroller.add_widgets(self.main_items)
@@ -113,11 +115,12 @@ class ModelsLayoutMici(NavScroller):
     gui_app.pop_widgets_to(self)
 
   def _select_model(self, bundle):
-    ui_state.params.put("ModelManager_DownloadIndex", bundle.index)
+    ui_state.params.put("ModelManager_DownloadRef", bundle.ref)
     self._pop_to_main()
 
   def _select_default(self):
-    ui_state.params.remove("ModelManager_ActiveBundle")
+    source = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
+    ui_state.params.remove(ACTIVE_BUNDLE_KEYS[source])
     self._pop_to_main()
 
   def _select_folder(self, folder_name):
@@ -162,8 +165,9 @@ class ModelsLayoutMici(NavScroller):
     self._was_downloading = is_downloading
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
-    default_model_text = f"{get_default_model()} (Default)".lower()
-    model_text = manager.activeBundle.displayName.lower() if manager.activeBundle.ref else default_model_text
+    # read the slot through ui_state, not modelManagerSP: the manager republishes a
+    # tick after a chestnut change, and the stale bundle flashes the wrong model
+    model_text = ((ui_state.active_bundle or {}).get("displayName") or f"{get_default_model()} (Default)").lower()
     self.current_model_info.current_model_text.set_text(model_text)
     self.current_model_info.info_header.set_text(tr("cache size"))
     self.current_model_info.info_text.set_text(f"{ModelsLayout.calculate_cache_size():.2f} MB")
