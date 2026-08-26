@@ -183,14 +183,14 @@ class ModelsLayout(Widget):
       bundle = get_selected_bundle(ui_state.params, source)
       name = bundle.internalName if bundle else default_model_name(source)
       color = ON_COLOR if (source == carry_source and name == carry_internal) else rl.LIGHTGRAY
-      icon, icon_color = "icons/checkmark.png", None
+      name = "● " + name
       if source == "usbgpu":
         if big_state == 'failed':
-          color, icon, icon_color = rl.RED, "icons/close2.png", rl.RED
+          color = rl.RED
         elif big_state == 'loading':
           color = rl.GOLD
       segments.append((label, rl.GRAY, None, None))
-      segments.append((name, color, icon, icon_color))
+      segments.append((name, color, None, None))
     return segments
 
   @staticmethod
