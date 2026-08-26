@@ -294,6 +294,27 @@ class ModelManagerSP:
     """Main entry point for downloading a model bundle"""
     asyncio.run(self._download_bundle(model_bundle, destination_path, source))
 
+  def _process_download_requests(self) -> None:
+    # loops so a ref queued during a download starts in the same tick, without
+    # the bar dropping to idle for a tick between the two transfers
+    last_ref = None
+    while (ref_to_download := self.params.get("ModelManager_DownloadRef")) is not None:
+      if ref_to_download == last_ref:  # a repeating ref falls back to the next tick instead of spinning
+        return
+      last_ref = ref_to_download
+      resolved = resolve_bundle_by_ref(ref_to_download, self.source_models)
+      if not resolved:
+        return
+      model_to_download, source = resolved
+      self._download_ref = ref_to_download
+      try:
+        self.download(model_to_download, Paths.model_root(), source)
+      except Exception as e:
+        cloudlog.exception(e)
+      finally:
+        self._release_download_ref()
+        self.selected_bundle = None
+
   def main_thread(self) -> None:
     """Main thread for model management"""
     rk = Ratekeeper(1, print_delay_threshold=None)
@@ -307,17 +328,7 @@ class ModelManagerSP:
         validate_active_bundles(self.params, self.source_models)
         self.active_bundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
 
-        if (ref_to_download := self.params.get("ModelManager_DownloadRef")) is not None:
-          if resolved := resolve_bundle_by_ref(ref_to_download, self.source_models):
-            model_to_download, source = resolved
-            self._download_ref = ref_to_download
-            try:
-              self.download(model_to_download, Paths.model_root(), source)
-            except Exception as e:
-              cloudlog.exception(e)
-            finally:
-              self._release_download_ref()
-              self.selected_bundle = None
+        self._process_download_requests()
 
         if self.params.get("ModelManager_ClearCache"):
           self.clear_model_cache()
