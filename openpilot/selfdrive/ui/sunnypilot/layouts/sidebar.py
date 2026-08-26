@@ -94,7 +94,7 @@ class SidebarSP:
       return default_img, default_pos, 1.0
 
     big_model_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
-    big_model_failed = ui_state.started and (ui_state.usbgpu_active is False)
+    big_model_failed = ui_state.started and ui_state.big_model_failed
     loading = ui_state.usbgpu_loading or (big_model_selected and ui_state.started and ui_state.usbgpu_active is None)
 
     if loading:
