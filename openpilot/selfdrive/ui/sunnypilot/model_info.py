@@ -23,7 +23,11 @@ def bundles_for_source(source: str):
 
 
 def model_info() -> tuple[str, str, str]:
-  """returns (active source, active model name, other model name)"""
+  """returns (active source, active model name, other model name)
+
+  Names come from the params slots, never modelManagerSP.activeBundle — the
+  manager republishes a tick after a chestnut change, so the stale bundle
+  would flash the wrong model."""
   source = active_source()
   other = "qcom" if source == "usbgpu" else "usbgpu"
   active_bundle = get_selected_bundle(ui_state.params, source)
