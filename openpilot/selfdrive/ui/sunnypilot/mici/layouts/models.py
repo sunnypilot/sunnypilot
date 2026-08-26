@@ -11,7 +11,7 @@ from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
-from openpilot.selfdrive.ui.sunnypilot.model_info import bundles_for_source, model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import bundles_for_source, default_model_name, model_info
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -119,7 +119,7 @@ class ModelsLayoutMici(NavScroller):
     folders = self._get_grouped_bundles(bundles, favorites)
 
     folder_buttons = []
-    default_btn = BigButton(tr("default"))
+    default_btn = BigButton(default_model_name(source).lower())
     default_btn.set_click_callback(lambda s=source: self._select_default(s))
     folder_buttons.append(default_btn)
 

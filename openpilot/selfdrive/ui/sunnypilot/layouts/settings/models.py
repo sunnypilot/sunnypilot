@@ -13,7 +13,7 @@ from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import active_source, bundles_for_source, default_model_name, model_info
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -251,7 +251,7 @@ class ModelsLayout(Widget):
     bundles = bundles_for_source(source)
     if not bundles:
       return []
-    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': "Default"})])]
+    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': default_model_name(source)})])]
     folders_list.extend(self._get_folders(favorites, bundles))
     return folders_list
 
