@@ -236,7 +236,6 @@ class ModelsLayout(Widget):
     self._open_source_dialog("qcom" if active_source() == "usbgpu" else "usbgpu")
 
   def _open_source_dialog(self, source):
-    """Opens the picker for one hardware: its model folders plus the Default reset entry."""
     self._selection_source = source
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
