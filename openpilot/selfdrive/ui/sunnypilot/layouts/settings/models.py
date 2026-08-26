@@ -39,6 +39,7 @@ class ModelsLayout(Widget):
     self.model_dialog = None
     self._selection_source = None
     self._downloading = False
+    self._verifying = False
     self.last_cache_calc_time = 0
 
     self._initialize_items()
@@ -77,7 +78,8 @@ class ModelsLayout(Widget):
       callback=self._clear_cache
     )
 
-    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "",
+    self.cancel_download_item = button_item(lambda: tr("Cancel Verification") if self._verifying else tr("Cancel Download"),
+                                            tr("Cancel"), "",
                                             lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
@@ -117,10 +119,6 @@ class ModelsLayout(Widget):
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"
     self.lagd_toggle.set_description(desc)
 
-  def _is_downloading(self):
-    return (self.model_manager and self.model_manager.selectedBundle and
-            self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
-
   @staticmethod
   def calculate_cache_size():
     cache_size = 0.0
@@ -143,36 +141,56 @@ class ModelsLayout(Widget):
     gui_app.push_widget(dialog)
 
   def _handle_bundle_download_progress(self):
-    self.download_item.set_visible(False)
     self.cancel_download_item.set_visible(False)
     self._downloading = False
-
-    if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
-      return
-
-    bundle = self.model_manager.selectedBundle if self._is_downloading() or (
-      self.model_manager.selectedBundle and self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed
-    ) else self.model_manager.activeBundle
-    if not bundle:
-      return
-
-    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadRef") is not None)
+    self._verifying = False
+    self.download_item.set_visible(True)
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
       self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
+    bundle = self.model_manager.selectedBundle if self.model_manager else None
+    progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName] if bundle else []
+    if not progresses or bundle.status not in (custom.ModelManagerSP.DownloadStatus.downloading,
+                                               custom.ModelManagerSP.DownloadStatus.failed):
+      self.download_item.action_item.update(name="", segments=self._slot_segments())
+      return
+
+    self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
     if bundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()
 
-    # every bundle is a single chunked artifact now
-    progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName]
-    if not progresses:
-      return
-
-    self.download_item.set_visible(True)
-    self.download_item.action_item.update(**self._download_row_state(progresses, bundle.internalName))
+    state = self._download_row_state(progresses, bundle.internalName)
+    if queued := self._queued_name(bundle.ref):
+      state["name"] += f"  ·  {queued} {tr('queued')}"
+    self.download_item.action_item.update(**state)
     self._downloading = self.download_item.action_item.downloading
+    ds = custom.ModelManagerSP.DownloadStatus
+    self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
+
+  def _slot_segments(self):
+    """One segment per slot: name, downloaded check or empty-slot mark, active in green."""
+    active = active_source()
+    segments = []
+    for source in ("qcom", "usbgpu"):
+      bundle = get_selected_bundle(ui_state.params, source)
+      name = bundle.internalName if bundle else tr("Default")
+      if source == active:
+        name += f" ({tr('active')})"
+      color = ON_COLOR if source == active else rl.GRAY
+      if bundle:
+        segments.append((name, color, "icons/checkmark.png", None))
+      else:
+        segments.append((name, color, "icons/circled_slash.png", rl.WHITE))
+    return segments
+
+  def _queued_name(self, current_ref):
+    ref = ui_state.params.get("ModelManager_DownloadRef")
+    if ref and ref != current_ref:
+      if bundle := self._resolve_selected_bundle(ref):
+        return bundle.internalName
+    return None
 
   @staticmethod
   def _download_row_state(progresses, name: str) -> dict:

@@ -24,6 +24,7 @@ ICON_PADDING = 12
 
 BAR_WIDTH = 1100
 BAR_HEIGHT = 20
+SEGMENT_GAP = 24
 BAR_GAP = 16
 BAR_RADIUS = BAR_HEIGHT / 2
 CAPSULE_POINTS = 24
@@ -45,6 +46,7 @@ class DownloadStatusAction(ItemAction):
     super().__init__(width=BAR_WIDTH)
     self.name = ""
     self.status_text = ""
+    self.segments: list[tuple[str, rl.Color, str | None, rl.Color | None]] | None = None
     self.downloading = False
     self.text_color = rl.GRAY
     self.icon: str | None = None
@@ -62,7 +64,8 @@ class DownloadStatusAction(ItemAction):
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
                                        alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
-  def update(self, name, downloading=False, progress=0.0, status_text="", text_color=rl.GRAY, icon=None, icon_color=None):
+  def update(self, name, downloading=False, progress=0.0, status_text="", text_color=rl.GRAY, icon=None, icon_color=None, segments=None):
+    self.segments = segments
     if downloading and not self.downloading:
       self._name_label.reset_shimmer()
       self._progress.x = progress
@@ -85,10 +88,21 @@ class DownloadStatusAction(ItemAction):
   def get_width_hint(self) -> float:
     if self.downloading:
       return BAR_WIDTH
+    if self.segments:
+      return sum(total for _, _, total in self._measured_segments())
     width = measure_text_cached(self._font, self._idle_text, FONT_SIZE).x
     if self.icon:
       width += ICON_SIZE + ICON_PADDING
     return width
+
+  def _measured_segments(self):
+    """[(segment, text width, total width incl. icon and gap)]"""
+    out = []
+    for i, seg in enumerate(self.segments or []):
+      text_width = measure_text_cached(self._font, seg[0], FONT_SIZE).x
+      total = text_width + (ICON_PADDING + ICON_SIZE if seg[2] else 0) + (SEGMENT_GAP if i else 0)
+      out.append((seg, text_width, total))
+    return out
 
   def _render(self, rect: rl.Rectangle):
     if self.downloading:
@@ -150,6 +164,9 @@ class DownloadStatusAction(ItemAction):
     self._draw_fill(rail, max(0.0, min(rect.width, rect.width * (self._progress.x / 100.0))))
 
   def _render_idle(self, rect: rl.Rectangle):
+    if self.segments:
+      self._render_segments(rect)
+      return
     text = self._idle_text
     text_size = measure_text_cached(self._font, text, FONT_SIZE)
     right = rect.x + rect.width
@@ -162,6 +179,21 @@ class DownloadStatusAction(ItemAction):
 
     rl.draw_text_ex(self._font, text, rl.Vector2(right - text_size.x, rect.y + (rect.height - text_size.y) / 2),
                     FONT_SIZE, 0, self.text_color)
+
+  def _render_segments(self, rect: rl.Rectangle):
+    measured = self._measured_segments()
+    x = rect.x + rect.width - sum(total for _, _, total in measured)
+    for i, ((text, color, icon, icon_color), text_width, _) in enumerate(measured):
+      if i:
+        x += SEGMENT_GAP
+      text_height = measure_text_cached(self._font, text, FONT_SIZE).y
+      rl.draw_text_ex(self._font, text, rl.Vector2(x, rect.y + (rect.height - text_height) / 2), FONT_SIZE, 0, color)
+      x += text_width
+      if icon:
+        texture = gui_app.texture(icon, ICON_SIZE, ICON_SIZE, keep_aspect_ratio=True)
+        rl.draw_texture_v(texture, rl.Vector2(x + ICON_PADDING, rect.y + (rect.height - texture.height) / 2),
+                          icon_color or color)
+        x += ICON_PADDING + ICON_SIZE
 
 
 def download_status_item(title):
