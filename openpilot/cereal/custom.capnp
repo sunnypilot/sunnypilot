@@ -382,6 +382,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
+  fordLateralPath @5 :FordLateralPath;
 
   struct Param {
     key @0 :Text;
@@ -400,6 +401,14 @@ struct CarControlSP @0xa5cd762cd951a455 {
     json @5;
     bytes @6;
   }
+}
+
+struct FordLateralPath {
+  pathOffset @0 :Float32;     # c0 [m]
+  pathAngle @1 :Float32;      # c1 [rad]
+  curvature @2 :Float32;      # c2 [1/m]
+  curvatureRate @3 :Float32;  # c3 [1/m^2]
+  valid @4 :Bool;
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {

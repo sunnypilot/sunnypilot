@@ -104,6 +104,14 @@ class ControlsExt(ModelStateBase):
     CC_SP.intelligentCruiseButtonManagement.sendButton = icbm_src.sendButton
     CC_SP.intelligentCruiseButtonManagement.vTarget = icbm_src.vTarget
 
+    ford_path = getattr(self, 'ford_path', None)
+    if ford_path is not None:
+      CC_SP.fordLateralPath.valid = ford_path.valid
+      CC_SP.fordLateralPath.pathOffset = ford_path.path_offset
+      CC_SP.fordLateralPath.pathAngle = ford_path.path_angle
+      CC_SP.fordLateralPath.curvature = ford_path.curvature
+      CC_SP.fordLateralPath.curvatureRate = ford_path.curvature_rate
+
     return CC_SP
 
   @staticmethod

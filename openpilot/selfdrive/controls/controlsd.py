@@ -13,6 +13,7 @@ from openpilot.common.swaglog import cloudlog
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
+from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -52,6 +53,8 @@ class Controls(ControlsExt):
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
+    self.ford_path_controller = FordPathController()
+    self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -155,6 +158,12 @@ class Controls(ControlsExt):
       actuators.curvature = float(lateral_output)
     else:
       actuators.steeringAngleDeg = float(lateral_output)
+    if self.CP.brand == "ford":
+      self.ford_path = self.ford_path_controller.update(model_v2 if self.sm.valid['modelV2'] else None,
+                                                        self.desired_curvature, v_ego=CS.vEgo, active=CC.latActive,
+                                                        current_curvature=self.curvature, yaw_rate=CS.yawRate,
+                                                        actuator_delay=lat_delay)
+      actuators.curvature = float(self.ford_path.curvature)
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:
       attr = getattr(actuators, p)
