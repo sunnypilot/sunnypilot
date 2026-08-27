@@ -21,9 +21,14 @@ MAX_ACCEL_PROFILES = {
   AccelProfile.sport:  [2.00, 2.00, 1.86, 1.30, 1.02, 0.86, 0.72],
 }
 CRUISE_DECEL_RESPONSE_TIME = {  # seconds
-  AccelProfile.eco: 3.0,
-  AccelProfile.normal: 2.5,
-  AccelProfile.sport: 2.0,
+  AccelProfile.eco: 4.0,
+  AccelProfile.normal: 3.5,
+  AccelProfile.sport: 3.0,
+}
+CRUISE_DECEL_ACCEL = {  # m/s^2; comfort-first cruise deceleration target
+  AccelProfile.eco: -0.35,
+  AccelProfile.normal: -0.50,
+  AccelProfile.sport: -0.65,
 }
 
 
@@ -54,4 +59,7 @@ class AccelController:
     if not np.isfinite(v_target) or v_target <= 0.0 or v_target >= v_ego:
       return v_target
 
-    return float(v_ego + (v_target - v_ego) / CRUISE_DECEL_RESPONSE_TIME[self._profile])
+    response_time = CRUISE_DECEL_RESPONSE_TIME[self._profile]
+    target_delta = v_target - v_ego
+    target_delta = max(target_delta / response_time, CRUISE_DECEL_ACCEL[self._profile] * response_time)
+    return float(v_ego + target_delta)

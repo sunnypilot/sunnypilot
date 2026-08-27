@@ -15,7 +15,7 @@ from openpilot.selfdrive.controls.lib.longitudinal_planner import (
   A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS, A_CRUISE_MIN, J_CRUISE_VALS, get_cruise_accel,
 )
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import (
-  AccelController, AccelProfile, CRUISE_DECEL_RESPONSE_TIME, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
+  AccelController, AccelProfile, CRUISE_DECEL_ACCEL, CRUISE_DECEL_RESPONSE_TIME, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
 )
 
 
@@ -121,6 +121,8 @@ class TestAccelController(OpenpilotTestCase):
       assert np.isclose(targets[profile] - v_ego, (v_target - v_ego) / CRUISE_DECEL_RESPONSE_TIME[profile])
 
     assert v_ego > targets[AccelProfile.eco] > targets[AccelProfile.normal] > targets[AccelProfile.sport] > v_target
+    assert all(CRUISE_DECEL_RESPONSE_TIME[profile] >= 3.0 for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport))
+    assert all(CRUISE_DECEL_ACCEL[profile] < 0.0 for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport))
 
   def test_cruise_target_bypasses_non_decel_requests(self):
     controller = self.set_profile(AccelProfile.eco)
@@ -145,6 +147,7 @@ class TestAccelController(OpenpilotTestCase):
     controller.frame = int(1.0 / DT_MDL) - 1
     controller.update()
     assert controller.profile == AccelProfile.sport
+    assert controller.frame == 0
 
   def test_enabled_param_refresh(self):
     controller = self.set_profile(AccelProfile.normal)
@@ -152,6 +155,7 @@ class TestAccelController(OpenpilotTestCase):
     controller.frame = int(1.0 / DT_MDL) - 1
     controller.update()
     assert not controller.is_enabled()
+    assert controller.frame == 0
 
 
 class TestPlannerIntegration(OpenpilotTestCase):
