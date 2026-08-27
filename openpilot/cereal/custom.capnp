@@ -131,6 +131,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     downloaded @2;
     cached @3;
     failed @4;
+    verifying @5;
   }
 
   struct DownloadProgress {

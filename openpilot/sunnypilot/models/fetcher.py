@@ -13,8 +13,6 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware.hw import Paths
 from openpilot.sunnypilot.models.helpers import is_bundle_version_compatible
-from openpilot.selfdrive.modeld.helpers import usbgpu_present
-
 from openpilot.cereal import custom
 
 
@@ -140,45 +138,53 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v20.json"
-  MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v21.json"
+  MODEL_URL = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_v21.json"
+  MODEL_URL_USBGPU = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/driving_models_usbgpu_v22.json"
+
+  MODEL_SOURCES = {
+    "qcom": (MODEL_URL, ""),
+    "usbgpu": (MODEL_URL_USBGPU, "_USBGPU"),
+  }
 
   def __init__(self, params: Params):
     self.params = params
     self.model_parser = ModelParser()
-    self._is_usbgpu: bool | None = None
-    self.model_cache = ModelCache(params)
-    self.model_url = self.MODEL_URL
-    self._update_model_source()
+    self.model_caches = {
+      source: ModelCache(params, suffix=suffix)
+      for source, (_, suffix) in self.MODEL_SOURCES.items()
+    }
+    self._refetched: set[str] = set()
+    self.params.put("ModelManager_ActiveJson", {
+      "qcom": self.MODEL_URL,
+      "usbgpu": self.MODEL_URL_USBGPU,
+    }, block=True)
 
-  def _update_model_source(self) -> None:
-    """Updates what json to use based on usbgpu availability"""
-    is_usbgpu = usbgpu_present()
-    if is_usbgpu != self._is_usbgpu:
-      self._is_usbgpu = is_usbgpu
-      self.model_cache = ModelCache(self.params, suffix="_USBGPU" if is_usbgpu else "")
-      self.model_url = self.MODEL_URL_USBGPU if is_usbgpu else self.MODEL_URL
-      self.params.put("ModelManager_ActiveJson", self.model_url, block=True)
+  @staticmethod
+  def active_source(chestnut_present: bool) -> str:
+    return "usbgpu" if chestnut_present else "qcom"
 
-  def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle] | None:
+  def _fetch_and_cache_models(self, source: str) -> list[custom.ModelManagerSP.ModelBundle] | None:
     """Fetches fresh model data from remote and updates cache.
     Returns None on transport errors. Raises on 404 and other fatal HTTP errors.
     """
+    model_url, _ = self.MODEL_SOURCES[source]
     try:
-      response = requests.get(self.model_url, timeout=10)
+      response = requests.get(model_url, timeout=10)
 
       # Explicitly handle 404 differently
       if response.status_code == 404:
-        cloudlog.error(f"Models URL returned 404 Not Found: {self.model_url}")
-        raise HTTPError(f"404 Not Found: {self.model_url}", response=response)
+        cloudlog.error(f"Models URL returned 404 Not Found: {model_url}")
+        raise HTTPError(f"404 Not Found: {model_url}", response=response)
 
       # Raise for any other 4xx/5xx
       response.raise_for_status()
 
       json_data = response.json()
-      self.model_cache.set(json_data)
-      cloudlog.debug("Successfully updated models cache")
-      return self.model_parser.parse_models(json_data)
+      parsed = self.model_parser.parse_models(json_data)
+      if parsed:
+        self.model_caches[source].set(json_data)
+        cloudlog.debug(f"Successfully updated models cache for {source}")
+      return parsed
 
     except ConnectionError as e:
       cloudlog.warning(f"DNS/connection error while fetching models: {e}")
@@ -191,16 +197,40 @@ class ModelFetcher:
 
     return None
 
-  def get_available_bundles(self) -> list[custom.ModelManagerSP.ModelBundle]:
-    """Gets the list of available models, with smart cache handling"""
-    self._update_model_source()
-    cached_data, is_expired = self.model_cache.get()
+  @staticmethod
+  def _cache_matches_source(source: str, cached_data: dict) -> bool:
+    bundles = cached_data.get("bundles", [])
+    if source == "usbgpu":
+      return any(bundle.get("is_big") is True for bundle in bundles)
+    return not any(bundle.get("is_big") is True for bundle in bundles)
+
+  def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+    if source not in self.MODEL_SOURCES:
+      cloudlog.warning(f"Unknown model source: {source}")
+      return []
+
+    cached_data, is_expired = self.model_caches[source].get()
 
     if cached_data and not is_expired:
-      cloudlog.debug("Using valid cached models data")
-      return self.model_parser.parse_models(cached_data)
+      # a source is refetched over a mismatch at most once per process: if the fresh
+      # manifest still mismatches, the URL is authoritative and the cache is trusted
+      if self._cache_matches_source(source, cached_data) or source in self._refetched:
+        try:
+          parsed = self.model_parser.parse_models(cached_data)
+        except Exception:
+          cloudlog.warning(f"Failed to parse cached models for {source}; refetching", exc_info=True)
+        else:
+          if parsed:
+            cloudlog.debug(f"Using valid cached models data for source {source}")
+            return parsed
+          # a source-matching cache that yields no valid bundles is stale (e.g. an old
+          # manifest version) - do not trust it, refetch so the source is repopulated
+          cloudlog.warning(f"Cached models for {source} have no valid bundles; refetching")
+      else:
+        self._refetched.add(source)
+        cloudlog.warning(f"Cached models for {source} not valid; refetching once")
 
-    fetched_bundles = self._fetch_and_cache_models()
+    fetched_bundles = self._fetch_and_cache_models(source)
     if fetched_bundles is not None:
       return fetched_bundles
 
@@ -208,12 +238,33 @@ class ModelFetcher:
       cloudlog.warning("Failed to fetch fresh data and no cache available")
 
     cloudlog.warning("Failed to fetch fresh data. Using expired cache as fallback")
-    return self.model_parser.parse_models(cached_data)
+    try:
+      return self.model_parser.parse_models(cached_data)
+    except Exception:
+      return []
+
+
+def get_cached_bundles(params: Params, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+
+  if source not in ModelFetcher.MODEL_SOURCES:
+    cloudlog.warning(f"Unknown model source: {source}")
+    return []
+  _, suffix = ModelFetcher.MODEL_SOURCES[source]
+  cached_data = params.get(f"ModelManager_ModelsCache{suffix}")
+  if not cached_data:
+    return []
+  try:
+    return ModelParser.parse_models(cached_data)
+  except Exception as e:
+    cloudlog.warning(f"Failed to parse cached models for source {source}: {e}")
+    return []
+
 
 if __name__ == "__main__":
+  from openpilot.selfdrive.modeld.helpers import usbgpu_present
   params = Params()
   model_fetcher = ModelFetcher(params)
-  bundles = model_fetcher.get_available_bundles()
+  bundles = model_fetcher.get_bundles_for_source(ModelFetcher.active_source(usbgpu_present()))
   for bundle in bundles:
     for model in bundle.models:
       model_overrides = {override.key: override.value for override in bundle.overrides}

@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import pyray as rl
 
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import HudRenderer
+from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.blind_spot_indicators import BlindSpotIndicators
 
 
@@ -21,6 +22,8 @@ class HudRendererSP(HudRenderer):
 
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
+    if ui_state.usbgpu and not ui_state.usbgpu_compiled and ui_state.model_runner_tinygrad:
+      self._draw_model_source(rect)
     self.blind_spot_indicators.render(rect)
 
   def _has_blind_spot_detected(self) -> bool:
