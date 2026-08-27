@@ -298,7 +298,7 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
 
 
 if __name__ == "__main__":
-  if 'USB' in os.getenv('DEV', '') or os.getenv('USBGPU'):
+  if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
     from openpilot.system.hardware.chestnut.flash import link_up
     for _ in range(10):
       if link_up():

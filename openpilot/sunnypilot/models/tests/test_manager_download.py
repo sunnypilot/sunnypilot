@@ -392,7 +392,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
       asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
 
       assert "ModelManager_ActiveBundle" in store, "qcom download must write the qcom slot"
-      assert "ModelManager_ActiveBundleUSBGPU" not in store, "qcom download must not touch the usbgpu slot"
+      assert "ModelManager_ActiveBundleChestnut" not in store, "qcom download must not touch the chestnut slot"
       assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
       assert self.manager.active_bundle is not None and self.manager.active_bundle.ref == "test-ref"
       assert self.manager.active_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
@@ -401,18 +401,18 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert missing == [], f"chunks missing from the cache: {missing}"
     self.run_with_server(body)
 
-  def test_download_writes_usbgpu_slot(self):
-    """A download resolved to the usbgpu source writes the usbgpu active bundle slot only."""
+  def test_download_writes_chestnut_slot(self):
+    """A download resolved to the chestnut source writes the chestnut active bundle slot only."""
     def body():
       self.make_artifact(chunked=True)
       self._bundle.ref = "big-ref"
       self._bundle.minimumSelectorVersion = 18
       params, store = self._make_params_with_store()
       self.manager.params = params
-      asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "usbgpu"))
+      asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "chestnut"))
 
-      assert "ModelManager_ActiveBundleUSBGPU" in store, "usbgpu download must write the usbgpu slot"
-      assert "ModelManager_ActiveBundle" not in store, "usbgpu download must not touch the qcom slot"
+      assert "ModelManager_ActiveBundleChestnut" in store, "chestnut download must write the chestnut slot"
+      assert "ModelManager_ActiveBundle" not in store, "chestnut download must not touch the qcom slot"
       assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
     self.run_with_server(body)
 
@@ -447,20 +447,20 @@ class TestResolveBundleByRef(OpenpilotTestCase):
 
   def test_qcom_ref_resolves_to_qcom_slot(self):
     small = self._bundle("small")
-    assert resolve_bundle_by_ref("small", {"qcom": [small], "usbgpu": []}) == (small, "qcom")
+    assert resolve_bundle_by_ref("small", {"qcom": [small], "chestnut": []}) == (small, "qcom")
 
-  def test_usbgpu_ref_resolves_to_usbgpu_slot(self):
+  def test_chestnut_ref_resolves_to_chestnut_slot(self):
     big = self._bundle("big")
-    assert resolve_bundle_by_ref("big", {"qcom": [], "usbgpu": [big]}) == (big, "usbgpu")
+    assert resolve_bundle_by_ref("big", {"qcom": [], "chestnut": [big]}) == (big, "chestnut")
 
   def test_unknown_ref_returns_none(self):
-    source_bundles = {"qcom": [self._bundle("small")], "usbgpu": []}
+    source_bundles = {"qcom": [self._bundle("small")], "chestnut": []}
     assert resolve_bundle_by_ref("nope", source_bundles) is None
 
 
 def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = False) -> dict:
   """Minimal manifest bundle dict, version-compatible (no chunks to avoid disk side effects).
-  Big (usbgpu) bundles carry `is_big: true` in the manifest JSON."""
+  Big (chestnut) bundles carry `is_big: true` in the manifest JSON."""
   return {
     "index": index,
     "short_name": short_name,
@@ -489,15 +489,15 @@ class TestModelFetcherSources(OpenpilotTestCase):
   """Both manifests are always maintained: get_bundles_for_source exposes either
   source by name, and active_source picks which one matches the attached hardware."""
 
-  def _make_params(self, qcom_manifest, usbgpu_manifest):
+  def _make_params(self, qcom_manifest, chestnut_manifest):
     params = mock.MagicMock()
 
     def get(key):
       if key == "ModelManager_ModelsCache":
         return qcom_manifest
-      if key == "ModelManager_ModelsCache_USBGPU":
-        return usbgpu_manifest
-      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_USBGPU"):
+      if key == "ModelManager_ModelsCache_Chestnut":
+        return chestnut_manifest
+      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_Chestnut"):
         return fresh_sync_time()
       return None
 
@@ -506,14 +506,14 @@ class TestModelFetcherSources(OpenpilotTestCase):
 
   def test_active_source_follows_chestnut_presence(self):
     assert ModelFetcher.active_source(False) == "qcom"
-    assert ModelFetcher.active_source(True) == "usbgpu"
+    assert ModelFetcher.active_source(True) == "chestnut"
 
   def test_get_bundles_for_source_returns_each_source(self):
     params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
                                {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
     fetcher = ModelFetcher(params)
     assert [bundle.ref for bundle in fetcher.get_bundles_for_source("qcom")] == ["aaa"]
-    assert [bundle.ref for bundle in fetcher.get_bundles_for_source("usbgpu")] == ["bbb"]
+    assert [bundle.ref for bundle in fetcher.get_bundles_for_source("chestnut")] == ["bbb"]
 
   def test_get_bundles_for_source_unknown(self):
     assert ModelFetcher(mock.MagicMock()).get_bundles_for_source("bogus") == []
@@ -522,16 +522,16 @@ class TestModelFetcherSources(OpenpilotTestCase):
     params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
                                {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
     qcom_bundles = get_cached_bundles(params, "qcom")
-    usbgpu_bundles = get_cached_bundles(params, "usbgpu")
+    chestnut_bundles = get_cached_bundles(params, "chestnut")
     assert [b.ref for b in qcom_bundles] == ["aaa"]
-    assert [b.ref for b in usbgpu_bundles] == ["bbb"]
+    assert [b.ref for b in chestnut_bundles] == ["bbb"]
     assert qcom_bundles[0].displayName == "SMALL"
 
   def test_get_cached_bundles_empty_when_missing(self):
     params = mock.MagicMock()
     params.get.return_value = None
     assert get_cached_bundles(params, "qcom") == []
-    assert get_cached_bundles(params, "usbgpu") == []
+    assert get_cached_bundles(params, "chestnut") == []
 
   def test_get_cached_bundles_unknown_source(self):
     assert get_cached_bundles(mock.MagicMock(), "bogus") == []
@@ -543,27 +543,27 @@ class TestModelFetcherSources(OpenpilotTestCase):
     assert active_json_calls, "expected ModelManager_ActiveJson to be written"
     assert active_json_calls[-1].args[1] == {
       "qcom": ModelFetcher.MODEL_URL,
-      "usbgpu": ModelFetcher.MODEL_URL_USBGPU,
+      "chestnut": ModelFetcher.MODEL_URL_CHESTNUT,
     }
 
 
 
 class TestSourceCacheIntegrity(OpenpilotTestCase):
   """Each source's cached manifest must contain only that source's models; the
-  `is_big` flag in the JSON marks the big (usbgpu) models. A mismatched cache is
+  `is_big` flag in the JSON marks the big (chestnut) models. A mismatched cache is
   legacy data from before the per-source split (the active manifest was cached
   under the unsuffixed key regardless of hardware) and is refetched. This
   replaces the old one-time bundle migration."""
 
-  def _make_params(self, qcom_manifest, usbgpu_manifest):
+  def _make_params(self, qcom_manifest, chestnut_manifest):
     params = mock.MagicMock()
 
     def get(key):
       if key == "ModelManager_ModelsCache":
         return qcom_manifest
-      if key == "ModelManager_ModelsCache_USBGPU":
-        return usbgpu_manifest
-      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_USBGPU"):
+      if key == "ModelManager_ModelsCache_Chestnut":
+        return chestnut_manifest
+      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_Chestnut"):
         return fresh_sync_time()
       return None
 
@@ -584,13 +584,13 @@ class TestSourceCacheIntegrity(OpenpilotTestCase):
       bundles = fetcher.get_bundles_for_source("qcom")
     assert [bundle.ref for bundle in bundles] == ["aaa"]
 
-  def test_usbgpu_cache_without_big_models_is_refetched(self):
+  def test_chestnut_cache_without_big_models_is_refetched(self):
     params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
                                {"bundles": [manifest_bundle("big2", "ccc")]})
     fetcher = ModelFetcher(params)
     fetched = self._fetched(manifest_bundle("big", "bbb", is_big=True))
     with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched):
-      bundles = fetcher.get_bundles_for_source("usbgpu")
+      bundles = fetcher.get_bundles_for_source("chestnut")
     assert [bundle.ref for bundle in bundles] == ["bbb"]
 
   def test_matching_caches_are_used_without_fetch(self):
@@ -599,7 +599,7 @@ class TestSourceCacheIntegrity(OpenpilotTestCase):
     fetcher = ModelFetcher(params)
     with mock.patch.object(fetcher, "_fetch_and_cache_models", side_effect=AssertionError("cache should be used")):
       assert [bundle.ref for bundle in fetcher.get_bundles_for_source("qcom")] == ["aaa"]
-      assert [bundle.ref for bundle in fetcher.get_bundles_for_source("usbgpu")] == ["bbb"]
+      assert [bundle.ref for bundle in fetcher.get_bundles_for_source("chestnut")] == ["bbb"]
 
   def test_stale_version_cache_is_refetched(self):
     """A source-matching cache whose bundles are all filtered by the selector version
@@ -660,28 +660,28 @@ class TestActiveBundleValidation(OpenpilotTestCase):
       bundle.runner = runner
     return bundle.to_dict()
 
-  def _params(self, qcom=None, usbgpu=None):
+  def _params(self, qcom=None, chestnut=None):
     params = mock.MagicMock()
 
     def get(key, *args, **kwargs):
-      return {"ModelManager_ActiveBundle": qcom, "ModelManager_ActiveBundleUSBGPU": usbgpu}.get(key)
+      return {"ModelManager_ActiveBundle": qcom, "ModelManager_ActiveBundleChestnut": chestnut}.get(key)
 
     params.get.side_effect = get
     return params
 
   def test_empty_catalog_does_not_reset_slot(self):
     params = self._params(qcom=self._raw_bundle("small"))
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
-      validate_active_bundles(params, {"qcom": [], "usbgpu": []})
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
+      validate_active_bundles(params, {"qcom": [], "chestnut": []})
     params.remove.assert_not_called()
 
   def test_reset_recomputes_runner_from_surviving_slot(self):
     tinygrad = int(custom.ModelManagerSP.Runner.tinygrad)
     big_raw = self._raw_bundle("big", runner=tinygrad)
-    params = self._params(qcom=self._raw_bundle("gone"), usbgpu=big_raw)
+    params = self._params(qcom=self._raw_bundle("gone"), chestnut=big_raw)
     catalog = {"qcom": [custom.ModelManagerSP.ModelBundle(**self._raw_bundle("other"))],
-               "usbgpu": [custom.ModelManagerSP.ModelBundle(**big_raw)]}
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+               "chestnut": [custom.ModelManagerSP.ModelBundle(**big_raw)]}
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
       validate_active_bundles(params, catalog)
     params.remove.assert_called_once_with("ModelManager_ActiveBundle")
     runner_puts = [call for call in params.put.call_args_list if call.args[0] == "ModelRunnerTypeCache"]
@@ -689,7 +689,7 @@ class TestActiveBundleValidation(OpenpilotTestCase):
 
 
 class TestActiveBundleSelection(OpenpilotTestCase):
-  """The effective active bundle is the active source's slot: usbgpu when a GPU is
+  """The effective active bundle is the active source's slot: chestnut when a GPU is
   present, qcom otherwise. An empty active slot means the hardware default (stock
   runner), never the other slot's pick - modeld_v2 requires a real bundle."""
 
@@ -700,37 +700,37 @@ class TestActiveBundleSelection(OpenpilotTestCase):
     bundle.minimumSelectorVersion = 18
     return bundle.to_dict()
 
-  def _params(self, qcom=None, usbgpu=None):
+  def _params(self, qcom=None, chestnut=None):
     params = mock.MagicMock()
 
     def get(key, *args, **kwargs):
       if key == "ModelManager_ActiveBundle":
         return qcom
-      if key == "ModelManager_ActiveBundleUSBGPU":
-        return usbgpu
+      if key == "ModelManager_ActiveBundleChestnut":
+        return chestnut
       return None
 
     params.get.side_effect = get
     return params
 
   def test_selected_bundle_is_per_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), usbgpu=self._raw_bundle("big"))
+    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
     assert get_selected_bundle(params, "qcom").ref == "small"
-    assert get_selected_bundle(params, "usbgpu").ref == "big"
+    assert get_selected_bundle(params, "chestnut").ref == "big"
 
   def test_no_gpu_uses_qcom_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), usbgpu=self._raw_bundle("big"))
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
       assert get_active_bundle(params).ref == "small"
 
-  def test_gpu_uses_usbgpu_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), usbgpu=self._raw_bundle("big"))
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+  def test_gpu_uses_chestnut_slot(self):
+    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
       assert get_active_bundle(params).ref == "big"
 
   def test_gpu_without_big_selection_is_hardware_default(self):
-    params = self._params(qcom=self._raw_bundle("small"), usbgpu=None)
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
+    params = self._params(qcom=self._raw_bundle("small"), chestnut=None)
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
       assert get_active_bundle(params) is None
 
 
@@ -748,36 +748,36 @@ class TestEffectiveSource(OpenpilotTestCase):
     return bundle.to_dict()
 
   def test_runtime_no_gpu(self):
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
       assert get_active_source() == "qcom"
 
   def test_runtime_gpu_present(self):
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=True):
-      assert get_active_source() == "usbgpu"
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
+      assert get_active_source() == "chestnut"
 
   def test_display_offroad_gpu_present_shows_big(self):
-    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=False, offroad=True) == "usbgpu"
+    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=False, offroad=True) == "chestnut"
 
   def test_display_onroad_gpu_loading_shows_big(self):
-    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=True, offroad=False) == "usbgpu"
+    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=True, offroad=False) == "chestnut"
 
   def test_display_onroad_gpu_active_shows_big(self):
-    assert get_active_source(usbgpu=True, usbgpu_active=True, usbgpu_loading=False, offroad=False) == "usbgpu"
+    assert get_active_source(chestnut=True, chestnut_active=True, chestnut_loading=False, offroad=False) == "chestnut"
 
   def test_display_onroad_gpu_idle_shows_small(self):
-    assert get_active_source(usbgpu=True, usbgpu_active=False, usbgpu_loading=False, offroad=False) == "qcom"
+    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=False, offroad=False) == "qcom"
 
   def test_display_active_none_is_idle(self):
-    assert get_active_source(usbgpu=True, usbgpu_active=None, usbgpu_loading=False, offroad=False) == "qcom"
+    assert get_active_source(chestnut=True, chestnut_active=None, chestnut_loading=False, offroad=False) == "qcom"
 
   def test_active_bundle_follows_source(self):
     params = mock.MagicMock()
     params.get.side_effect = lambda key: {"ModelManager_ActiveBundle": self._raw_bundle("small"),
-                                          "ModelManager_ActiveBundleUSBGPU": self._raw_bundle("big")}.get(key)
-    with mock.patch("openpilot.sunnypilot.models.helpers.usbgpu_present", return_value=False):
+                                          "ModelManager_ActiveBundleChestnut": self._raw_bundle("big")}.get(key)
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
       assert get_active_bundle(params).ref == "small"
-    assert get_selected_bundle(params, get_active_source(usbgpu=True, usbgpu_active=False,
-                                                         usbgpu_loading=False, offroad=True)).ref == "big"
+    assert get_selected_bundle(params, get_active_source(chestnut=True, chestnut_active=False,
+                                                         chestnut_loading=False, offroad=True)).ref == "big"
 
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')

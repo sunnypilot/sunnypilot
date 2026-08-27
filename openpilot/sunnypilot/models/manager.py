@@ -40,7 +40,7 @@ class ModelManagerSP:
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
     self.source_models: dict[str, list[custom.ModelManagerSP.ModelBundle]] = {}
     self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
-    self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
+    self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
     self._chunk_size = 128 * 1000  # 128 KB chunks
     self._download_start_times: dict[str, float] = {}  # Track start time per model
     self._download_ref: bytes | str | None = None
@@ -280,7 +280,7 @@ class ModelManagerSP:
         raise DownloadCancelled("Download cancelled")
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
       self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict(), block=True)
-      self.active_bundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
+      self.active_bundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
 
     except Exception:
       if self.selected_bundle is not None:
@@ -326,7 +326,7 @@ class ModelManagerSP:
         self.source_models = {source: self.model_fetcher.get_bundles_for_source(source) for source in ModelFetcher.MODEL_SOURCES}
         self.available_models = self.source_models[ModelFetcher.active_source(self.chestnut_present)]
         validate_active_bundles(self.params, self.source_models)
-        self.active_bundle = get_active_bundle(self.params, usbgpu=self.chestnut_present)
+        self.active_bundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
 
         self._process_download_requests()
 

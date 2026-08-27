@@ -176,7 +176,7 @@ jobs:
   build_big_model:
     needs: resolve
     if: ${{ inputs.target == 'big' }}
-    runs-on: [self-hosted, usbgpu]
+    runs-on: [self-hosted, chestnut]
     env:
       BIG_ONNX: openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx
       BIG_PKL: openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl

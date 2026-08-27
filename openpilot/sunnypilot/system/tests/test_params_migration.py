@@ -15,22 +15,22 @@ class TestModelBundleSlotMigration(OpenpilotTestCase):
   The migration seeds both slots; per-source validation later drops whichever does not
   match its own manifest."""
 
-  def test_seeds_usbgpu_slot_from_active_bundle(self):
+  def test_seeds_chestnut_slot_from_active_bundle(self):
     params = Params()
     bundle = {"ref": "big", "minimumSelectorVersion": 18}
     params.put("ModelManager_ActiveBundle", bundle, block=True)
     _migrate_model_bundle_slots(params)
-    assert params.get("ModelManager_ActiveBundleUSBGPU") == bundle
+    assert params.get("ModelManager_ActiveBundleChestnut") == bundle
     assert params.get("ModelManager_ActiveBundle") == bundle
 
-  def test_noop_when_usbgpu_slot_already_set(self):
+  def test_noop_when_chestnut_slot_already_set(self):
     params = Params()
     params.put("ModelManager_ActiveBundle", {"ref": "small"}, block=True)
-    params.put("ModelManager_ActiveBundleUSBGPU", {"ref": "big"}, block=True)
+    params.put("ModelManager_ActiveBundleChestnut", {"ref": "big"}, block=True)
     _migrate_model_bundle_slots(params)
-    assert params.get("ModelManager_ActiveBundleUSBGPU") == {"ref": "big"}
+    assert params.get("ModelManager_ActiveBundleChestnut") == {"ref": "big"}
 
   def test_noop_when_no_selection(self):
     params = Params()
     _migrate_model_bundle_slots(params)
-    assert params.get("ModelManager_ActiveBundleUSBGPU") is None
+    assert params.get("ModelManager_ActiveBundleChestnut") is None
