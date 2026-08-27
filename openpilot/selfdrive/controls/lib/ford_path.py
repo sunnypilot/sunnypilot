@@ -92,38 +92,51 @@ def _encode_path(model, desired_curvature: float | None, v_ego: float, current_c
   path_offset = _sample(_PATH_OFFSET_DISTANCE, distance, offset)
   path_angle = _sample(lookahead, distance, heading)
   model_curvature = _curvature(path)
+  model_curvature_rate = _curvature_rate(path)
   action_curvature = model_curvature if desired_curvature is None else _finite(desired_curvature)
   requested_curvature = max((model_curvature, action_curvature), key=abs)
   maneuver_residual = requested_curvature - model_curvature
   path_offset += 0.5 * maneuver_residual * _PATH_OFFSET_DISTANCE ** 2
   path_angle += maneuver_residual * lookahead
-  offset_curvature = 2.0 * path_offset / _PATH_OFFSET_DISTANCE ** 2
-  angle_curvature = path_angle / lookahead
-  geometry_demand = max(abs(offset_curvature), abs(angle_curvature))
   correction = 0.0
+  tracking_demand = 0.0
+  wheel_beyond_target = False
   if current_curvature is not None:
     target_curvature = requested_curvature
-    tracking_error = target_curvature - _finite(current_curvature)
+    measured_curvature = _finite(current_curvature)
+    tracking_error = target_curvature - measured_curvature
     correction = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
+    tracking_demand = abs(correction)
+    wheel_beyond_target = target_curvature * measured_curvature > 0.0 and \
+      abs(target_curvature) + _TRACKING_ERROR_DEADZONE < abs(measured_curvature)
     correction_limit = _TRACKING_ERROR_LIMIT
     if correction * target_curvature < 0.0:
       correction_limit = 0.5 * abs(target_curvature)
     correction = float(np.clip(correction, -correction_limit, correction_limit))
-    path_offset += 0.5 * correction * _PATH_OFFSET_DISTANCE ** 2
-    path_angle += correction * lookahead
+    correction_offset = 0.5 * correction * _PATH_OFFSET_DISTANCE ** 2
+    correction_angle = correction * lookahead
+    if wheel_beyond_target:
+      path_offset = correction_offset
+      path_angle = correction_angle
+    else:
+      path_offset += correction_offset
+      path_angle += correction_angle
 
-  control_demand = max(geometry_demand, abs(requested_curvature), abs(correction))
-  maneuver_share = float(np.interp(control_demand, _CENTERING_CURVATURE_BASEBAND, (0.0, 1.0)))
+  spatial_demand = abs(model_curvature_rate) * lookahead / 3.0
+  overflow_demand = max(abs(requested_curvature) - DBC_CURVATURE[1], 0.0)
+  maneuver_demand = max(spatial_demand, overflow_demand, tracking_demand)
+  maneuver_share = 1.0 if wheel_beyond_target else \
+    float(np.interp(maneuver_demand, _CENTERING_CURVATURE_BASEBAND, (0.0, 1.0)))
   path_offset *= maneuver_share
   path_angle *= maneuver_share
-  centering_curvature = model_curvature if model_curvature * requested_curvature >= 0.0 else 0.0
+  centering_curvature = requested_curvature
 
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
     path_angle=float(np.clip(path_angle, *DBC_ANGLE)),
     curvature=float(np.clip(centering_curvature * (1.0 - maneuver_share), *DBC_CURVATURE)),
-    curvature_rate=float(np.clip(_curvature_rate(path), *DBC_CURVATURE_RATE)),
+    curvature_rate=float(np.clip(model_curvature_rate, *DBC_CURVATURE_RATE)),
   )
 
 
