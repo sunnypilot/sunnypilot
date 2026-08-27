@@ -103,6 +103,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.manager = ModelManagerSP.__new__(ModelManagerSP)
     self.manager.params = mock.MagicMock()
     self.manager.params.get.return_value = b'0'  # not cancelled
+    self.manager._download_ref = b'0'
     self.manager.pm = mock.MagicMock()
     self.manager.pm.send.side_effect = self._record_progress
     self.manager.selected_bundle = None
@@ -261,6 +262,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
       artifact = self.make_artifact(chunked=True)
       base_path = os.path.join(self.dest, artifact.fileName)
       self.manager.params.get.side_effect = lambda key: b"ref" if key == "ModelManager_DownloadRef" else None
+      self.manager._download_ref = b"ref"
       asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
       assert os.path.isfile(get_manifest_path(base_path))
     self.run_with_server(body)
@@ -279,10 +281,90 @@ class TestManagerDownload(ManagerDownloadTestBase):
         return b"0"
 
       self.manager.params.get.side_effect = get
+      self.manager._download_ref = b"ref"
       with self.assertRaises(Exception) as ctx:
         asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
       assert 'cancelled' in str(ctx.exception).lower()
       assert not os.path.isfile(get_manifest_path(base_path))
+    self.run_with_server(body)
+
+  def test_replaced_download_ref_queues_instead_of_cancelling(self):
+    """Selecting another model mid-transfer lets the running download finish."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
+      self.manager._download_ref = b"ref"
+      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
+      assert os.path.isfile(get_manifest_path(base_path))
+    self.run_with_server(body)
+
+  def test_replaced_download_ref_is_kept(self):
+    """A selection made during a download must survive that download's cleanup."""
+    self.manager.params.get.return_value = b"new-ref"
+    self.manager._download_ref = b"old-ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_not_called()
+
+  def test_own_download_ref_is_released(self):
+    self.manager.params.get.return_value = b"ref"
+    self.manager._download_ref = b"ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
+
+  def test_cached_bundle_cancel_skips_slot_write(self):
+    """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      for i, data in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
+          f.write(data)
+      self._bundle.ref = "test-ref"
+      params, store = self._make_params_with_store()
+      store["ModelManager_DownloadRef"] = None  # removed -> cancelled
+      self.manager.params = params
+      self.manager._download_ref = b"ref"
+      with self.assertRaises(Exception) as ctx:
+        asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
+      assert 'cancelled' in str(ctx.exception).lower()
+      assert "ModelManager_ActiveBundle" not in store
+      assert all(os.path.isfile(p) for p in self.chunk_paths(base_path)), "cancel must not delete cached chunks"
+    self.run_with_server(body)
+
+  def test_resume_skips_valid_chunks(self):
+    """A chunk already on disk is kept and not re-downloaded; progress starts above its share."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      with open(get_chunk_name(base_path, 0, len(CHUNK_BODIES)), 'wb') as f:
+        f.write(CHUNK_BODIES[0])
+
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+
+      chunk0_suffix = get_chunk_name('', 0, len(CHUNK_BODIES))
+      assert not any(p.endswith(chunk0_suffix) for p in DownloadHandler.request_paths), "valid chunk was re-downloaded"
+      for i, expected in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'rb') as f:
+          assert f.read() == expected
+      assert os.path.isfile(get_manifest_path(base_path))
+      assert min(self.reported) >= (1 / len(CHUNK_BODIES)) * 100 - 1, "progress must not restart below the resumed share"
+    self.run_with_server(body)
+
+  def test_verify_reports_valid_fraction_then_cached(self):
+    """A fully cached bundle publishes climbing verify progress and ends cached."""
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      base_path = os.path.join(self.dest, artifact.fileName)
+      for i, data in enumerate(CHUNK_BODIES):
+        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
+          f.write(data)
+
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+
+      assert DownloadHandler.request_paths == [], "cached bundle must not hit the network"
+      assert [round(p) for p in self.reported[:3]] == [33, 67, 100]
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.cached
     self.run_with_server(body)
 
   def _make_params_with_store(self):
