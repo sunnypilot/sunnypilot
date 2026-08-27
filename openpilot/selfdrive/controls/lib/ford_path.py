@@ -102,7 +102,7 @@ def _encode_path(model, desired_curvature: float | None, v_ego: float, current_c
   tracking_demand = 0.0
   wheel_beyond_target = False
   if current_curvature is not None:
-    target_curvature = requested_curvature
+    target_curvature = action_curvature
     measured_curvature = _finite(current_curvature)
     tracking_error = target_curvature - measured_curvature
     correction = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
@@ -129,7 +129,7 @@ def _encode_path(model, desired_curvature: float | None, v_ego: float, current_c
     float(np.interp(maneuver_demand, _CENTERING_CURVATURE_BASEBAND, (0.0, 1.0)))
   path_offset *= maneuver_share
   path_angle *= maneuver_share
-  centering_curvature = requested_curvature
+  centering_curvature = action_curvature
 
   return FordPath(
     valid=True,

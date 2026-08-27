@@ -126,7 +126,7 @@ def test_s_turn_reverses_fast_fields_while_c2_is_bounded():
 
 def test_reversal_does_not_add_software_persistence_to_centering_c2():
   controller = FordPathController()
-  assert controller.update(_path(0.002), 0.0, v_ego=8.0).curvature > 0.0
+  assert controller.update(_path(0.002), 0.002, v_ego=8.0).curvature > 0.0
 
   reversing = controller.update(_path(-0.02), -0.02, v_ego=8.0)
 
@@ -180,6 +180,15 @@ def test_minor_changing_curve_does_not_emit_ungated_c3():
   assert abs(command.path_angle) < 1e-9
   assert command.curvature > 0.0049
   assert command.curvature_rate == 0.0
+
+
+def test_c2_uses_stable_action_curvature_not_independent_model_fit():
+  controller = FordPathController(dt=1.0)
+  first = controller.update(_path(0.004), 0.002, v_ego=8.0, current_curvature=0.002)
+  second = controller.update(_path(0.006), 0.002, v_ego=8.0, current_curvature=0.002)
+
+  assert np.isclose(first.curvature, 0.002)
+  assert np.isclose(second.curvature, 0.002)
 
 
 def test_action_curvature_corrects_stale_opposing_model_at_low_speed():
@@ -266,18 +275,18 @@ def test_curvature_error_increases_forward_pose_command_while_behind():
   assert np.isclose(behind.curvature_rate, tracking.curvature_rate)
 
 
-def test_rolling_arc_stays_active_while_vehicle_unwinds():
+def test_measured_wheel_beyond_action_countersteers_model_arc():
   controller = FordPathController()
   controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02, yaw_rate=0.3)
   outputs = [controller.update(_path(0.02), 0.003, v_ego=15.0, current_curvature=0.01, yaw_rate=0.15) for _ in range(4)]
   unwinding = outputs[-1]
 
-  assert 0.0 <= unwinding.curvature <= 0.003
-  assert unwinding.path_angle > 0.03
+  assert unwinding.curvature == 0.0
+  assert unwinding.path_angle < 0.0
 
 
-def test_geometric_c2_remains_active_for_centering():
-  centering = FordPathController(dt=1.0).update(_path(0.002), 0.0, v_ego=15.0, current_curvature=0.0)
+def test_action_c2_remains_active_for_centering():
+  centering = FordPathController(dt=1.0).update(_path(0.002), 0.002, v_ego=15.0, current_curvature=0.002)
 
   assert centering.curvature > 0.001
   assert abs(centering.path_offset) < 1e-9
