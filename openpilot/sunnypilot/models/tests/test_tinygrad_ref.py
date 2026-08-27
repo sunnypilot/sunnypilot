@@ -1,13 +1,11 @@
 import requests
 
-from openpilot.common.params import Params
 from openpilot.sunnypilot.models.tinygrad_ref import get_tinygrad_ref
 from openpilot.sunnypilot.models.fetcher import ModelFetcher
 from openpilot.common.test import OpenpilotTestCase
 
 def fetch_tinygrad_ref():
-  fetcher = ModelFetcher(Params())
-  response = requests.get(fetcher.model_url, timeout=10)
+  response = requests.get(ModelFetcher.MODEL_URL, timeout=10)
   response.raise_for_status()
   json_data = response.json()
   return json_data.get("tinygrad_ref")
