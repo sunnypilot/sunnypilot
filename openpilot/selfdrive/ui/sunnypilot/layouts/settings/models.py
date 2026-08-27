@@ -10,11 +10,10 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import big_model_state, bundles_for_source, carrying_model, default_model_name, queued_name
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -40,6 +39,8 @@ class ModelsLayout(Widget):
     self.model_dialog = None
     self._selection_source = None
     self._downloading = False
+    self._verifying = False
+    self._last_note = None
     self.last_cache_calc_time = 0
 
     self._initialize_items()
@@ -51,17 +52,17 @@ class ModelsLayout(Widget):
     self._scroller = Scroller(self.items, line_separator=True, spacing=0)
 
   def _initialize_items(self):
-    self.current_model_item = ListItemSP(
-      title=tr("Active Model"),
+    self.small_model_item = ListItemSP(
+      title=tr("Small Model"),
       description="",
       action_item=ScrollingButtonAction(tr("SELECT")),
-      callback=self._handle_current_model_clicked
+      callback=lambda: self._open_source_dialog("qcom")
     )
 
-    self.other_model_item = ListItemSP(
+    self.big_model_item = ListItemSP(
       title=tr("Big Model"),
       action_item=ScrollingButtonAction(tr("SELECT")),
-      callback=self._handle_other_model_clicked
+      callback=lambda: self._open_source_dialog("usbgpu")
     )
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
@@ -78,7 +79,8 @@ class ModelsLayout(Widget):
       callback=self._clear_cache
     )
 
-    self.cancel_download_item = button_item(tr("Cancel Download"), tr("Cancel"), "",
+    self.cancel_download_item = button_item(lambda: tr("Cancel Verification") if self._verifying else tr("Cancel Download"),
+                                            tr("Cancel"), "",
                                             lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
     self.lane_turn_value_control = option_item_sp(tr("Adjust Lane Turn Speed"), "LaneTurnValue", 500, 2000,
@@ -104,7 +106,7 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.current_model_item, self.other_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
                   self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
@@ -118,16 +120,16 @@ class ModelsLayout(Widget):
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"
     self.lagd_toggle.set_description(desc)
 
-  def _is_downloading(self):
-    return (self.model_manager and self.model_manager.selectedBundle and
-            self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
-
   @staticmethod
   def calculate_cache_size():
     cache_size = 0.0
     if os.path.exists(CUSTOM_MODEL_PATH):
-      cache_size = sum(os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file)) for file in os.listdir(CUSTOM_MODEL_PATH)) / (1024**2)
-    return cache_size
+      for file in os.listdir(CUSTOM_MODEL_PATH):
+        try:
+          cache_size += os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file))
+        except OSError:
+          continue
+    return cache_size / (1024**2)
 
   def _clear_cache(self):
     def _callback(response):
@@ -140,36 +142,90 @@ class ModelsLayout(Widget):
     gui_app.push_widget(dialog)
 
   def _handle_bundle_download_progress(self):
-    self.download_item.set_visible(False)
     self.cancel_download_item.set_visible(False)
     self._downloading = False
-
-    if not self.model_manager or (not self.model_manager.selectedBundle and not self.model_manager.activeBundle):
-      return
-
-    bundle = self.model_manager.selectedBundle if self._is_downloading() or (
-      self.model_manager.selectedBundle and self.model_manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed
-    ) else self.model_manager.activeBundle
-    if not bundle:
-      return
-
-    self.cancel_download_item.set_visible(bool(self.model_manager.selectedBundle) and ui_state.params.get("ModelManager_DownloadRef") is not None)
+    self._verifying = False
+    self.download_item.set_visible(True)
 
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
       self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
+    bundle = self.model_manager.selectedBundle if self.model_manager else None
+    progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName] if bundle else []
+    if not progresses or bundle.status not in (custom.ModelManagerSP.DownloadStatus.downloading,
+                                               custom.ModelManagerSP.DownloadStatus.failed):
+      self.download_item.action_item.update(name="", segments=self._slot_segments())
+      return
+
+    self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
     if bundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
       device._reset_interactive_timeout()
 
-    # every bundle is a single chunked artifact now
-    progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName]
-    if not progresses:
-      return
-
-    self.download_item.set_visible(True)
-    self.download_item.action_item.update(**self._download_row_state(progresses, bundle.internalName))
+    state = self._download_row_state(progresses, bundle.internalName)
+    if queued := queued_name(bundle.ref):
+      state["name"] += f"  |  {queued} {tr('queued')}"
+    self.download_item.action_item.update(**state)
     self._downloading = self.download_item.action_item.downloading
+    ds = custom.ModelManagerSP.DownloadStatus
+    self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
+
+  def _slot_segments(self):
+    """small and big slots side by side; green marks the slot whose pick is actually
+    driving (runner-matched, so a failed Default big greens neither slot), an empty
+    slot shows its default."""
+    big_state = big_model_state()
+    carry_source, carry_internal, _ = carrying_model()
+    segments = []
+    for source, label in (("qcom", tr("small")), ("usbgpu", tr("big"))):
+      if segments:
+        segments.append(("|", rl.GRAY, None, None))
+      bundle = get_selected_bundle(ui_state.params, source)
+      name = bundle.internalName if bundle else default_model_name(source)
+      color = ON_COLOR if (source == carry_source and name == carry_internal) else rl.LIGHTGRAY
+      name = "● " + name
+      if source == "usbgpu":
+        if big_state == 'failed':
+          color = rl.RED
+        elif big_state == 'loading':
+          color = rl.GOLD
+      segments.append((label, rl.GRAY, None, None))
+      segments.append((name, color, None, None))
+    return segments
+
+  @staticmethod
+  def _set_item_note(item, text):
+    # a description renders only while shown; hide before clearing or the
+    # empty description keeps its visible state
+    if text:
+      item.set_description(text)
+      item.show_description(True)
+    else:
+      item.show_description(False)
+      item.set_description("")
+
+  def _status_note(self) -> str:
+    """The failover story for the Model Status row. One-way big -> small, and the
+    fallback is runner-matched: a Default big can only fall back to the Default
+    small (stock modeld), a custom big has no automatic fallback yet."""
+    if not ui_state.usbgpu:
+      return ""
+    big_bundle = get_selected_bundle(ui_state.params, "usbgpu")
+    big_name = big_bundle.internalName if big_bundle else default_model_name("usbgpu")
+    big_is_default = big_bundle is None
+    fallback_name = default_model_name("qcom")
+    state = big_model_state()
+    if state == 'failed':
+      if big_is_default:
+        return tr("Big model unavailable, {} is driving until the next drive.").format(fallback_name)
+      return tr("Big model unavailable until the next drive.")
+    if state == 'loading':
+      if big_is_default:
+        return tr("{} drives until the big model is ready.").format(fallback_name)
+      return tr("Getting the big model ready.")
+    if big_is_default:
+      return tr("{} will drive. If it fails during a drive, {} takes over until the next drive.").format(big_name, fallback_name)
+    return tr("{} will drive when the eGPU is ready.").format(big_name)
 
   @staticmethod
   def _download_row_state(progresses, name: str) -> dict:
@@ -182,6 +238,8 @@ class ModelsLayout(Widget):
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
       return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
+    if ds.verifying in statuses:
+      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
     if ds.downloading in statuses:
       return {"name": name, "downloading": True, "progress": progress}
     if statuses <= {ds.downloaded, ds.cached}:
@@ -203,12 +261,7 @@ class ModelsLayout(Widget):
       ui_state.params.put("ModelManager_DownloadRef", selected_bundle.ref)
 
   def _resolve_selected_bundle(self, ref):
-    """Finds the bundle for a ref across both hardware manifests."""
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    source_bundles = {
-      source: self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
-      for source in ("qcom", "usbgpu")
-    }
+    source_bundles = {source: bundles_for_source(source) for source in ("qcom", "usbgpu")}
     resolved = resolve_bundle_by_ref(ref, source_bundles)
     return resolved[0] if resolved else None
 
@@ -228,18 +281,10 @@ class ModelsLayout(Widget):
       folders_list.append(TreeFolder(name, [self._bundle_to_node(bundle) for bundle in folder_bundles]))
 
     if favorites and (fav_bundles := [bundle for bundle in bundles if bundle.ref in favorites]):
-      folders_list.insert(1, TreeFolder("Favorites", [self._bundle_to_node(bundle) for bundle in fav_bundles]))
+      folders_list.insert(0, TreeFolder("Favorites", [self._bundle_to_node(bundle) for bundle in fav_bundles]))
     return folders_list
 
-  def _handle_current_model_clicked(self):
-    self._open_source_dialog(ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent))
-
-  def _handle_other_model_clicked(self):
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    self._open_source_dialog("qcom" if active == "usbgpu" else "usbgpu")
-
   def _open_source_dialog(self, source):
-    """Opens the picker for one hardware: its model folders plus the Default reset entry."""
     self._selection_source = source
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
@@ -252,12 +297,10 @@ class ModelsLayout(Widget):
     gui_app.push_widget(self.model_dialog)
 
   def _source_folders(self, favorites, source):
-    """Default reset entry on top, then the hardware's model folders."""
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
-    bundles = self.model_manager.availableBundles if source == active else get_cached_bundles(ui_state.params, source)
+    bundles = bundles_for_source(source)
     if not bundles:
       return []
-    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': "Default"})])]
+    folders_list = [TreeFolder("", [TreeNode("Default", {'display_name': default_model_name(source)})])]
     folders_list.extend(self._get_folders(favorites, bundles))
     return folders_list
 
@@ -284,20 +327,27 @@ class ModelsLayout(Widget):
     self._update_lagd_description(live_delay)
     self.model_manager = ui_state.sm["modelManagerSP"]
     self._handle_bundle_download_progress()
-    source, active_name, other_name = model_info()
-    self.current_model_item.action_item.set_value(active_name)
-    self.other_model_item.set_title(tr("Big Model") if source == "qcom" else tr("Small Model"))
-    self.other_model_item.action_item.set_value(other_name)
 
-    if not ui_state.is_offroad():
-      self.current_model_item.action_item.set_enabled(False)
-      self.current_model_item.set_description(tr("Only available when vehicle is off, or always offroad mode is on"))
-    else:
-      self.current_model_item.action_item.set_enabled(True)
-      self.current_model_item.set_description("")
+    carry_source, _, carry_display = carrying_model()
+    for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "usbgpu")):
+      bundle = get_selected_bundle(ui_state.params, item_source)
+      name = bundle.displayName if bundle else default_model_name(item_source)
+      color = ON_COLOR if (item_source == carry_source and name == carry_display) else style.ITEM_TEXT_VALUE_COLOR
+      item.action_item.set_value(name, color)
+
+    note = self._status_note()
+    if note != self._last_note:
+      self._last_note = note
+      self._set_item_note(self.download_item, note)
+
+    offroad = ui_state.is_offroad()
+    self.small_model_item.action_item.set_enabled(offroad)
+    self.big_model_item.action_item.set_enabled(offroad)
+    self.small_model_item.set_description("" if offroad else tr("Only available when vehicle is off, or always offroad mode is on"))
 
   def _render(self, rect):
     self._scroller.render(rect)
 
   def show_event(self):
     self._scroller.show_event()
+    self._last_note = None  # re-expand the failover note every time the page opens

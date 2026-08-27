@@ -8,11 +8,11 @@ import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
-from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS
+from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
-from openpilot.selfdrive.ui.sunnypilot.model_info import model_info
+from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
+                                                           default_model_name, model_info, queued_name)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -20,10 +20,22 @@ from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
 
 def _model_info() -> tuple[str, str, str]:
-  """(active model, other-model header, other-model text) for the panel."""
+  """(active model, info header, info text) for the panel. Runner-matched: the
+  active line names what actually drives, and a notable big-model state takes
+  the info pair."""
   source, active_name, other_name = model_info()
+  state = big_model_state()
+  _, _, carry_display = carrying_model()
+  if carry_display is None:
+    big = get_selected_bundle(ui_state.params, "usbgpu")
+    carry_display = big.displayName if big else default_model_name("usbgpu")
+  active_text = (carry_display or active_name).lower()
+  if state == 'failed':
+    return active_text, tr("big model"), tr("unavailable")
+  if state == 'loading':
+    return active_text, tr("big model"), tr("getting ready")
   header = tr("small model") if source == "usbgpu" else tr("big model")
-  return active_name.lower(), header, other_name.lower()
+  return active_text, header, other_name.lower()
 
 
 class CurrentModelInfo(Widget):
@@ -100,8 +112,13 @@ class ModelsLayoutMici(NavScroller):
     self.focused_widget = self.select_model_btn
 
     hardware_btns = []
+    active = active_source()
     for source, label in (("qcom", tr("small models")), ("usbgpu", tr("big models"))):
-      btn = BigButton(label.lower())
+      bundle = get_selected_bundle(ui_state.params, source)
+      value = (bundle.internalName if bundle else default_model_name(source)).lower()
+      if source == active:
+        value += f" ({tr('active')})"
+      btn = BigButton(label.lower(), value=value)
       btn.set_click_callback(lambda s=source: self._select_hardware(s))
       hardware_btns.append(btn)
     self._push_selection_view(hardware_btns)
@@ -111,20 +128,16 @@ class ModelsLayoutMici(NavScroller):
 
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
 
-    if source != active:
-      bundles = get_cached_bundles(ui_state.params, source)
-      if not bundles:
-        gui_app.push_widget(BigDialog(title=tr("No models available"),
-                                      description=tr("No models are available for this hardware yet. Connect to the internet and refresh the model list.")))
-        return
-    else:
-      bundles = self.model_manager.availableBundles
+    bundles = bundles_for_source(source)
+    if not bundles:
+      gui_app.push_widget(BigDialog(title=tr("No models available"),
+                                    description=tr("No models are available for this hardware yet. Connect to the internet and refresh the model list.")))
+      return
     folders = self._get_grouped_bundles(bundles, favorites)
 
     folder_buttons = []
-    default_btn = BigButton(tr("default"))
+    default_btn = BigButton(default_model_name(source).lower())
     default_btn.set_click_callback(lambda s=source: self._select_default(s))
     folder_buttons.append(default_btn)
 
@@ -155,13 +168,8 @@ class ModelsLayoutMici(NavScroller):
       return
     favs = ui_state.params.get("ModelManager_Favs")
     favorites = set(favs.split(';')) if favs else set()
-    active = ModelFetcher.active_source(ui_state.sm["deviceState"].chestnutPresent)
 
-    if source != active:
-      bundles = get_cached_bundles(ui_state.params, source)
-    else:
-      bundles = self.model_manager.availableBundles
-    folders = self._get_grouped_bundles(bundles, favorites)
+    folders = self._get_grouped_bundles(bundles_for_source(source), favorites)
     bundles = sorted(folders.get(folder_name, []), key=lambda b: b.index, reverse=True)
 
     btns = []
@@ -212,18 +220,25 @@ class ModelsLayoutMici(NavScroller):
       device.set_override_interactive_timeout(5)
       progress = 0.0
       count = 0
+      verifying = False
       for model in manager.selectedBundle.models:
         count += 1
         p = model.artifact.downloadProgress
-        if p.status == custom.ModelManagerSP.DownloadStatus.downloading:
+        if p.status in (custom.ModelManagerSP.DownloadStatus.downloading,
+                        custom.ModelManagerSP.DownloadStatus.verifying):
           progress += p.progress
+          verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      self.current_model_info.current_model_header.set_text(tr("downloading"))
+      self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
+      self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
-      self.current_model_info.current_model_text.set_text(f"{manager.selectedBundle.internalName.lower()}")
+      name_text = manager.selectedBundle.internalName.lower()
+      if queued := queued_name(manager.selectedBundle.ref):
+        name_text += f"  |  {queued.lower()} {tr('queued')}"
+      self.current_model_info.current_model_text.set_text(name_text)
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_header._shimmer = True
       self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")

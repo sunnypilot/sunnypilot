@@ -47,7 +47,7 @@ git rm -rf $OUTPUT_DIR/.git || true # Doing cleanup, but it might fail if the .g
 git remote remove origin || true # ensure cleanup
 git remote add origin $GIT_ORIGIN
 #git push origin -d $DEV_BRANCH || true # Ensuring we delete the remote branch if it exists as we are wiping it out
-git fetch origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --allow-empty -m "sunnypilot v$VERSION release" && git push -u origin $DEV_BRANCH)
+git fetch --depth 1 origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --allow-empty -m "sunnypilot v$VERSION release" && git push -u origin $DEV_BRANCH)
 
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .

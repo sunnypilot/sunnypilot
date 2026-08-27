@@ -19,7 +19,7 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import usbgpu_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 17
+REQUIRED_JSON_VERSION = 18
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
@@ -29,7 +29,7 @@ ACTIVE_BUNDLE_KEYS = {
   "qcom": "ModelManager_ActiveBundle",
   "usbgpu": "ModelManager_ActiveBundleUSBGPU",
 }
-_LAST_VALIDATED_RAW: dict[str, bytes | None] = {}
+_LAST_VALIDATED_RAW: dict[str, dict | None] = {}
 
 
 def _compute_hash(file_path: str) -> str | None:
@@ -92,11 +92,11 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
   if available_bundles is not None:
     matching_bundle = None
     for bundle in available_bundles:
-      if getattr(active_bundle, 'ref', None) and getattr(bundle, 'ref', None):
+      if active_bundle.ref and bundle.ref:
         if active_bundle.ref == bundle.ref:
           matching_bundle = bundle
           break
-      elif getattr(active_bundle, 'internalName', None) == getattr(bundle, 'internalName', None):
+      elif active_bundle.internalName == bundle.internalName:
         matching_bundle = bundle
         break
 
@@ -104,12 +104,8 @@ def _bundle_needs_reset(active_bundle: custom.ModelManagerSP.ModelBundle, availa
       return True
     if active_bundle.minimumSelectorVersion != matching_bundle.minimumSelectorVersion:
       return True
-
-    active_runner = getattr(active_bundle, 'runner', None)
-    matching_runner = getattr(matching_bundle, 'runner', None)
-    if active_runner is not None and matching_runner is not None:
-      if getattr(active_runner, 'raw', active_runner) != getattr(matching_runner, 'raw', matching_runner):
-        return True
+    if active_bundle.runner != matching_bundle.runner:
+      return True
     if set(_bundle_artifacts(active_bundle)) != set(_bundle_artifacts(matching_bundle)):
       return True
 
@@ -127,7 +123,7 @@ def _parse_active_bundle(raw_bundle) -> "custom.ModelManagerSP.ModelBundle | Non
 
 def get_selected_bundle(params: Params | None = None, source: str = "qcom") -> "custom.ModelManagerSP.ModelBundle | None":
   params = params or Params()
-  return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS.get(source, "ModelManager_ActiveBundle")))
+  return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS[source]))
 
 
 def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = None,
@@ -140,17 +136,15 @@ def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = N
 
 
 def get_active_bundle(params: Params | None = None, *, usbgpu: bool | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
+  # no cross-slot fallback: an empty active slot means the hardware default, which
+  # only stock modeld can run - modeld_v2 requires a real bundle
   params = params or Params()
-  if get_active_source(usbgpu=usbgpu) == "usbgpu":
-    if bundle := get_selected_bundle(params, "usbgpu"):
-      return bundle
-  return get_selected_bundle(params, "qcom")
+  return get_selected_bundle(params, get_active_source(usbgpu=usbgpu))
 
 
 def resolve_bundle_by_ref(
   ref: str, source_bundles: dict[str, list[custom.ModelManagerSP.ModelBundle]],
 ) -> "tuple[custom.ModelManagerSP.ModelBundle, str] | None":
-  """Finds the bundle matching a ref across all sources."""
   for source, bundles in source_bundles.items():
     for bundle in bundles:
       if bundle.ref == ref:
@@ -173,15 +167,16 @@ def _validate_active_bundle(params: Params, source: str, available_bundles: list
   if active_bundle is None or _bundle_needs_reset(active_bundle, available_bundles):
     cloudlog.warning(f"Active model bundle invalid for {source}; resetting to default")
     params.remove(key)
-    params.put("ModelRunnerTypeCache", int(custom.ModelManagerSP.Runner.stock), block=True)
     _LAST_VALIDATED_RAW[key] = None
   else:
     _LAST_VALIDATED_RAW[key] = raw_bundle
 
 
 def validate_active_bundles(params: Params, source_bundles: dict[str, list[custom.ModelManagerSP.ModelBundle]]) -> None:
+  # an empty list means the fetch failed, not that the catalog dropped the bundle
   for source, bundles in source_bundles.items():
-    _validate_active_bundle(params, source, bundles)
+    _validate_active_bundle(params, source, bundles or None)
+  get_active_model_runner(params, force_check=True)
 
 
 def get_active_model_runner(params: Params | None = None, force_check: bool = False) -> int:
