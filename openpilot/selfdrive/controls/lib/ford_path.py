@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 
 import numpy as np
@@ -13,9 +13,13 @@ _FIT_DISTANCE_M = 7.0
 _COMMITTED_DISTANCE_M = 0.0
 _REFERENCE_SAMPLES = 17
 _C2_CURVATURE_LIMIT = 0.008
+_C2_CENTERING_LIMIT = 0.003
+_CURVATURE_REVERSAL_START = 0.0001
+_CURVATURE_REVERSAL_FULL = 0.0003
 _CURVATURE_RESIDUAL_DISTANCE_M = 4.0
 _CURVATURE_ERROR_DISTANCE_M = 2.0
 _CURVATURE_ERROR_LIMIT = 0.02
+_PATH_ANGLE_RATE_LIMIT = 1.0
 _MAX_MEASURED_YAW_RATE = 1.0
 
 
@@ -30,6 +34,13 @@ class FordPath:
 
 def _finite(value: float) -> float:
   return float(value) if math.isfinite(value) else 0.0
+
+
+def _opposition_weight(requested_curvature: float, other_curvature: float) -> float:
+  if requested_curvature * other_curvature >= 0.0:
+    return 0.0
+  return float(np.clip((abs(requested_curvature) - _CURVATURE_REVERSAL_START) /
+                       (_CURVATURE_REVERSAL_FULL - _CURVATURE_REVERSAL_START), 0.0, 1.0))
 
 
 def _model_path(model) -> tuple[np.ndarray, np.ndarray] | None:
@@ -148,18 +159,33 @@ def _fit_path(reference: tuple[np.ndarray, np.ndarray], desired_curvature: float
   geometric_curvature, geometric_curvature_rate = local_geometry
   curvature = float(np.clip(geometric_curvature, -_C2_CURVATURE_LIMIT, _C2_CURVATURE_LIMIT))
   curvature_rate = geometric_curvature_rate if abs(geometric_curvature) < _C2_CURVATURE_LIMIT else 0.0
-  requested_curvature = geometric_curvature
+  tracking_curvature = geometric_curvature
   curvature_error = 0.0
   if desired_curvature is not None:
     requested_curvature = _finite(desired_curvature)
-    bounded_curvature = curvature
-    # C2 is filtered inside the PSCM. Never fill that slow channel beyond the
-    # curvature currently requested, or in the opposite direction during an unwind.
-    curvature = float(np.clip(curvature, min(0.0, requested_curvature), max(0.0, requested_curvature)))
-    if curvature != bounded_curvature:
+    measured_curvature = _finite(current_curvature) if current_curvature is not None else 0.0
+    scale_squared = _C2_CENTERING_LIMIT ** 2
+
+    # Preserve an established rolling arc while the action begins to unwind,
+    # but release it progressively as an opposing request clears the curvature noise band.
+    arc_agreement = float(np.clip(geometric_curvature * measured_curvature / scale_squared, 0.0, 1.0))
+    reversal = _opposition_weight(requested_curvature, measured_curvature)
+    rolling_weight = arc_agreement * (1.0 - reversal)
+    maneuver_curvature = requested_curvature + rolling_weight * (geometric_curvature - requested_curvature)
+
+    # Retain a small geometric C2 band for centering. Larger maneuver curvature
+    # uses C1, and geometry opposing a requested reversal is removed from C2.
+    c2_limit = min(_C2_CURVATURE_LIMIT, max(abs(requested_curvature), _C2_CENTERING_LIMIT))
+    bounded_curvature = float(np.clip(geometric_curvature, -c2_limit, c2_limit))
+    opposition = _opposition_weight(requested_curvature, geometric_curvature)
+    curvature = bounded_curvature * (1.0 - opposition)
+    if curvature != float(np.clip(geometric_curvature, -_C2_CURVATURE_LIMIT, _C2_CURVATURE_LIMIT)):
       curvature_rate = 0.0
+
+    allocated_curvature = float(np.clip(curvature, min(0.0, maneuver_curvature), max(0.0, maneuver_curvature)))
+    tracking_curvature = maneuver_curvature + curvature - allocated_curvature
     if current_curvature is not None:
-      curvature_error = float(np.clip(requested_curvature - _finite(current_curvature),
+      curvature_error = float(np.clip(tracking_curvature - measured_curvature,
                                       -_CURVATURE_ERROR_LIMIT, _CURVATURE_ERROR_LIMIT))
   curvature_rate = float(np.clip(curvature_rate, DBC_CURVATURE_RATE[0], DBC_CURVATURE_RATE[1]))
 
@@ -168,7 +194,7 @@ def _fit_path(reference: tuple[np.ndarray, np.ndarray], desired_curvature: float
   # C0/C1 carry the rolling pose error and the fast part of the turn. The
   # curvature error term continuously adds command while the vehicle is behind
   # and countersteers while the PSCM's filtered C2 is draining.
-  path_angle = (local_heading + _CURVATURE_RESIDUAL_DISTANCE_M * (requested_curvature - curvature) +
+  path_angle = (local_heading + _CURVATURE_RESIDUAL_DISTANCE_M * (tracking_curvature - curvature) +
                 _CURVATURE_ERROR_DISTANCE_M * curvature_error)
   return FordPath(
     valid=True,
@@ -204,6 +230,14 @@ class FordPathController:
     self._last_model_key = None
     self._last_path = None
 
+  def _finish(self, path: FordPath, rate_limit: bool) -> FordPath:
+    if rate_limit:
+      previous_angle = self._last_path.path_angle if self._last_path is not None else 0.0
+      max_delta = _PATH_ANGLE_RATE_LIMIT * self.dt
+      path = replace(path, path_angle=float(np.clip(path.path_angle, previous_angle - max_delta, previous_angle + max_delta)))
+    self._last_path = path
+    return path
+
   def update(self, model, desired_curvature: float | None = None, *, v_ego: float = 0.0, active: bool = True,
              current_curvature: float | None = None, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
     del actuator_delay
@@ -221,8 +255,7 @@ class FordPathController:
     if fresh is None:
       path = _fit_path(self._reference, desired_curvature, current_curvature) if self._reference is not None else None
       if path is not None:
-        self._last_path = path
-        return path
+        return self._finish(path, desired_curvature is not None)
       self.reset()
       return FordPath()
 
@@ -241,8 +274,7 @@ class FordPathController:
     if path is None:
       self.reset()
       return FordPath()
-    self._last_path = path
-    return path
+    return self._finish(path, desired_curvature is not None)
 
 
 def encode_ford_path(model, t_prev: float, desired_curvature: float | None = None, *, v_ego: float = 0.0,
