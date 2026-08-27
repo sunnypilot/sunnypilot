@@ -173,6 +173,15 @@ def test_minor_curve_uses_c2_when_tracking_is_close():
   assert command.curvature > 0.0049
 
 
+def test_minor_changing_curve_does_not_emit_ungated_c3():
+  command = FordPathController(dt=1.0).update(_path(0.005, 0.0003), 0.005, v_ego=8.0, current_curvature=0.0048)
+
+  assert abs(command.path_offset) < 1e-9
+  assert abs(command.path_angle) < 1e-9
+  assert command.curvature > 0.0049
+  assert command.curvature_rate == 0.0
+
+
 def test_action_curvature_corrects_stale_opposing_model_at_low_speed():
   command = FordPathController().update(_path(-0.001, speed=1.0), 0.005, v_ego=1.0, current_curvature=0.001)
 

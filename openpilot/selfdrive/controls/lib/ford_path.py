@@ -136,7 +136,7 @@ def _encode_path(model, desired_curvature: float | None, v_ego: float, current_c
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
     path_angle=float(np.clip(path_angle, *DBC_ANGLE)),
     curvature=float(np.clip(centering_curvature * (1.0 - maneuver_share), *DBC_CURVATURE)),
-    curvature_rate=float(np.clip(model_curvature_rate, *DBC_CURVATURE_RATE)),
+    curvature_rate=float(np.clip(model_curvature_rate * maneuver_share, *DBC_CURVATURE_RATE)),
   )
 
 
