@@ -13,6 +13,9 @@ _FIT_DISTANCE_M = 7.0
 _COMMITTED_DISTANCE_M = 0.0
 _REFERENCE_SAMPLES = 17
 _C2_CURVATURE_LIMIT = 0.008
+_CURVATURE_RESIDUAL_DISTANCE_M = 4.0
+_CURVATURE_ERROR_DISTANCE_M = 2.0
+_CURVATURE_ERROR_LIMIT = 0.02
 _MAX_MEASURED_YAW_RATE = 1.0
 
 
@@ -124,16 +127,11 @@ def _local_geometry(path: tuple[np.ndarray, np.ndarray]) -> tuple[float, float] 
   heading_fit = np.polynomial.polynomial.polyfit(station[:geometry_samples], heading[:geometry_samples], 2)
   geometric_curvature = float(heading_fit[1])
   geometric_curvature_rate = float(2.0 * heading_fit[2])
-  curvature = float(np.clip(geometric_curvature, -_C2_CURVATURE_LIMIT, _C2_CURVATURE_LIMIT))
-  # C3 is the spatial derivative of C2. Once C2 is capped, keep the slow
-  # channel flat and leave the remaining geometry to the fast C1 residual.
-  curvature_rate = geometric_curvature_rate if abs(geometric_curvature) < _C2_CURVATURE_LIMIT else 0.0
-  curvature_rate = float(np.clip(curvature_rate, DBC_CURVATURE_RATE[0], DBC_CURVATURE_RATE[1]))
-  return curvature, curvature_rate
+  return geometric_curvature, geometric_curvature_rate
 
 
-def _fit_path(reference: tuple[np.ndarray, np.ndarray],
-              geometry: tuple[np.ndarray, np.ndarray] | None = None) -> FordPath | None:
+def _fit_path(reference: tuple[np.ndarray, np.ndarray], desired_curvature: float | None = None,
+              current_curvature: float | None = None) -> FordPath | None:
   x, y = _forward_prefix(reference)
   forward = (x >= -0.25) & (x <= _FIT_DISTANCE_M)
   x = x[forward]
@@ -144,29 +142,38 @@ def _fit_path(reference: tuple[np.ndarray, np.ndarray],
   sample_x = np.linspace(0.0, length, _REFERENCE_SAMPLES)
   sample_y = np.interp(sample_x, x, y)
   slopes = np.gradient(sample_y, sample_x, edge_order=2)
-  local_geometry = _local_geometry(reference if geometry is None else geometry)
+  local_geometry = _local_geometry(reference)
   if local_geometry is None:
     return None
-  curvature, curvature_rate = local_geometry
+  geometric_curvature, geometric_curvature_rate = local_geometry
+  curvature = float(np.clip(geometric_curvature, -_C2_CURVATURE_LIMIT, _C2_CURVATURE_LIMIT))
+  curvature_rate = geometric_curvature_rate if abs(geometric_curvature) < _C2_CURVATURE_LIMIT else 0.0
+  requested_curvature = geometric_curvature
+  curvature_error = 0.0
+  if desired_curvature is not None:
+    requested_curvature = _finite(desired_curvature)
+    bounded_curvature = curvature
+    # C2 is filtered inside the PSCM. Never fill that slow channel beyond the
+    # curvature currently requested, or in the opposite direction during an unwind.
+    curvature = float(np.clip(curvature, min(0.0, requested_curvature), max(0.0, requested_curvature)))
+    if curvature != bounded_curvature:
+      curvature_rate = 0.0
+    if current_curvature is not None:
+      curvature_error = float(np.clip(requested_curvature - _finite(current_curvature),
+                                      -_CURVATURE_ERROR_LIMIT, _CURVATURE_ERROR_LIMIT))
+  curvature_rate = float(np.clip(curvature_rate, DBC_CURVATURE_RATE[0], DBC_CURVATURE_RATE[1]))
 
-  # C2/C3 are only the reference's local geometric jet. Fit the curvature
-  # residual into C1 so an unrepresentable turn uses Ford's fast feedback path
-  # without inflating either slow feedforward field.
-  progress = sample_x / length
   path_offset = float(np.clip(sample_y[0], DBC_OFFSET[0], DBC_OFFSET[1]))
-  scaled_curvature = 0.5 * curvature * length ** 2
-  scaled_curvature_rate = curvature_rate * length ** 3 / 6.0
-  position_target = sample_y - path_offset - scaled_curvature * progress ** 2 - scaled_curvature_rate * progress ** 3
-  tangent_target = (slopes * length - 2.0 * scaled_curvature * progress -
-                    3.0 * scaled_curvature_rate * progress ** 2)
-  denominator = float(progress @ progress + len(progress))
-  scaled_angle = float((progress @ position_target + tangent_target.sum()) / denominator)
-  scaled_angle = float(np.clip(scaled_angle, math.tan(DBC_ANGLE[0]) * length,
-                               math.tan(DBC_ANGLE[1]) * length))
+  local_heading = math.atan(float(slopes[0]))
+  # C0/C1 carry the rolling pose error and the fast part of the turn. The
+  # curvature error term continuously adds command while the vehicle is behind
+  # and countersteers while the PSCM's filtered C2 is draining.
+  path_angle = (local_heading + _CURVATURE_RESIDUAL_DISTANCE_M * (requested_curvature - curvature) +
+                _CURVATURE_ERROR_DISTANCE_M * curvature_error)
   return FordPath(
     valid=True,
     path_offset=path_offset,
-    path_angle=math.atan(scaled_angle / length),
+    path_angle=float(np.clip(path_angle, DBC_ANGLE[0], DBC_ANGLE[1])),
     curvature=curvature,
     curvature_rate=curvature_rate,
   )
@@ -189,19 +196,17 @@ class FordPathController:
   def __init__(self, dt: float = 0.01):
     self.dt = dt
     self._reference: tuple[np.ndarray, np.ndarray] | None = None
-    self._geometry: tuple[np.ndarray, np.ndarray] | None = None
     self._last_model_key: tuple[int, int] | int | None = None
     self._last_path: FordPath | None = None
 
   def reset(self) -> None:
     self._reference = None
-    self._geometry = None
     self._last_model_key = None
     self._last_path = None
 
-  def update(self, model, desired_curvature: float = 0.0, *, v_ego: float = 0.0, active: bool = True,
-             current_curvature: float = 0.0, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
-    del desired_curvature, current_curvature, actuator_delay
+  def update(self, model, desired_curvature: float | None = None, *, v_ego: float = 0.0, active: bool = True,
+             current_curvature: float | None = None, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
+    del actuator_delay
     if not active or model is None:
       self.reset()
       return FordPath()
@@ -212,13 +217,9 @@ class FordPathController:
     if self._reference is not None:
       self._reference = _advance_path(self._reference[0], self._reference[1], max(_finite(v_ego), 0.0),
                                       measured_yaw_rate, self.dt)
-    if self._geometry is not None:
-      self._geometry = _advance_path(self._geometry[0], self._geometry[1], max(_finite(v_ego), 0.0),
-                                     measured_yaw_rate, self.dt)
-
     fresh = _model_path(model)
     if fresh is None:
-      path = _fit_path(self._reference, self._geometry) if self._reference is not None else None
+      path = _fit_path(self._reference, desired_curvature, current_curvature) if self._reference is not None else None
       if path is not None:
         self._last_path = path
         return path
@@ -230,15 +231,13 @@ class FordPathController:
       self._reference = fresh
     elif model_key != self._last_model_key:
       self._reference = _merge_reference(self._reference, fresh, self._last_path)
-    if self._geometry is None or model_key != self._last_model_key:
-      self._geometry = fresh
     self._last_model_key = model_key
 
-    path = _fit_path(self._reference, self._geometry)
+    path = _fit_path(self._reference, desired_curvature, current_curvature)
     if path is None:
       seed = _polynomial_reference(self._last_path) if self._last_path is not None else fresh
       self._reference = _merge_reference(seed, fresh, self._last_path)
-      path = _fit_path(self._reference, self._geometry)
+      path = _fit_path(self._reference, desired_curvature, current_curvature)
     if path is None:
       self.reset()
       return FordPath()
@@ -246,8 +245,8 @@ class FordPathController:
     return path
 
 
-def encode_ford_path(model, t_prev: float, desired_curvature: float = 0.0, *, v_ego: float = 0.0,
-                     current_curvature: float = 0.0, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
+def encode_ford_path(model, t_prev: float, desired_curvature: float | None = None, *, v_ego: float = 0.0,
+                     current_curvature: float | None = None, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
   """Stateless compatibility helper; live control uses FordPathController."""
   del t_prev
   return FordPathController().update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature,

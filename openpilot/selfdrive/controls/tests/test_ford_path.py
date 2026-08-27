@@ -102,10 +102,11 @@ def test_s_turn_reverses_fast_fields_while_c2_is_bounded():
   controller.update(_path(0.04), v_ego=8.0, yaw_rate=0.0)
   controller.update(_path(0.04), v_ego=8.0, yaw_rate=0.16)
 
-  outputs = [controller.update(_path(-0.02), v_ego=8.0, yaw_rate=0.32) for _ in range(5)]
+  outputs = [controller.update(_path(-0.02), -0.02, v_ego=8.0, current_curvature=0.02, yaw_rate=0.32) for _ in range(5)]
 
   assert all(path.valid for path in outputs)
   assert all(DBC_CURVATURE[0] <= path.curvature <= DBC_CURVATURE[1] for path in outputs)
+  assert all(path.curvature <= 0.0 for path in outputs)
   assert outputs[0].path_angle < -0.03
   assert outputs[-1].path_offset < 0.0
 
@@ -149,11 +150,37 @@ def test_invalid_ford_yaw_rate_does_not_rotate_the_reference():
   assert sentinel == expected
 
 
-def test_desired_curvature_does_not_alter_the_model_reference():
-  quiet = FordPathController().update(_path(0.0), -0.01, v_ego=15.0)
-  noisy = FordPathController().update(_path(0.0), 0.01, v_ego=15.0)
+def test_curvature_error_increases_only_the_fast_heading_command():
+  behind = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=0.0)
+  tracking = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=0.008)
 
-  assert quiet == noisy
+  assert behind.path_angle > tracking.path_angle + 0.015
+  assert np.isclose(behind.path_offset, tracking.path_offset)
+  assert np.isclose(behind.curvature, tracking.curvature)
+  assert np.isclose(behind.curvature_rate, tracking.curvature_rate)
+
+
+def test_c2_drains_with_requested_curvature_while_vehicle_unwinds():
+  controller = FordPathController()
+  controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02)
+  unwinding = controller.update(_path(0.02), 0.003, v_ego=15.0, current_curvature=0.01)
+
+  assert 0.0 <= unwinding.curvature <= 0.003
+  assert unwinding.path_angle < 0.0
+
+
+def test_tight_turn_from_stop_uses_fast_heading_command():
+  path = FordPathController().update(_path(0.04), 0.04, v_ego=0.0, current_curvature=0.0)
+
+  assert np.isclose(path.curvature, 0.008, atol=5e-5)
+  assert path.path_angle > 0.15
+
+
+def test_curvature_feedback_is_bounded_for_bad_measurement():
+  nominal = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=0.008)
+  corrupted = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=-1.0)
+
+  assert corrupted.path_angle <= nominal.path_angle + 0.04 + 1e-9
 
 
 def test_invalid_or_inactive_resets_reference():
