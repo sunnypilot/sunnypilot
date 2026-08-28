@@ -89,12 +89,16 @@ def _migrate_model_bundle_slots(_params):
   # ActiveBundle. Seed both slots; validation drops whichever does not match
   # its own manifest.
   try:
-    if _params.get("ModelManager_ActiveBundleUSBGPU") is not None:
+    if _params.get("ModelManager_ActiveBundleChestnut") is not None:
+      return
+    if (chestnut_bundle := _params.get("ModelManager_ActiveBundleUSBGPU")) is not None:
+      _params.put("ModelManager_ActiveBundleChestnut", chestnut_bundle, block=True)
+      cloudlog.info("params_migration: seeded ModelManager_ActiveBundleChestnut from ModelManager_ActiveBundleUSBGPU")
       return
     if (bundle := _params.get("ModelManager_ActiveBundle")) is None:
       return
-    _params.put("ModelManager_ActiveBundleUSBGPU", bundle, block=True)
-    cloudlog.info("params_migration: seeded ModelManager_ActiveBundleUSBGPU from ModelManager_ActiveBundle")
+    _params.put("ModelManager_ActiveBundleChestnut", bundle, block=True)
+    cloudlog.info("params_migration: seeded ModelManager_ActiveBundleChestnut from ModelManager_ActiveBundle")
   except Exception as e:
     cloudlog.exception(f"Error migrating model bundle slots: {e}")
 
@@ -136,5 +140,5 @@ def run_migration(_params):
   # seed TeslaMadsScreenButton for existing Tesla installs
   _migrate_tesla_mads_screen_button(_params)
 
-  # seed the usbgpu model slot from the pre-split single slot
+  # seed the chestnut model slot from the pre-split single slot
   _migrate_model_bundle_slots(_params)

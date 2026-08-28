@@ -30,7 +30,7 @@ on:
         type: boolean
         default: true
       target_hardware:
-        description: 'Hardware target to compile for (qcom or usbgpu)'
+        description: 'Hardware target to compile for (qcom or chestnut)'
         required: false
         type: string
         default: 'qcom'
@@ -101,7 +101,7 @@ on:
         default: 'qcom'
         options:
           - qcom
-          - usbgpu
+          - chestnut
       hf_repo:
         description: 'Hugging Face dataset repository'
         required: false
@@ -109,7 +109,7 @@ on:
         default: 'sunnypilot/sunnypilot_models_v1'
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
-  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_v' || 'v' }}${{ inputs.json_version }}.json
+  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'chestnut' && 'chestnut_v' || 'v' }}${{ inputs.json_version }}.json
 
 jobs:
   build_model:
