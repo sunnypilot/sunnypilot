@@ -62,8 +62,8 @@ def _find_driving_pkl(bundle):
   if bundle and bundle.models:
     from openpilot.common.hardware.hw import Paths
     for model in bundle.models:
-      if (file_name := getattr(model.artifact, 'fileName', None)):
-        if _pkl_exists(path := os.path.join(Paths.model_root(), file_name)):
+      if pkl_name := bundle.models[0].artifact.fileName:
+        if _pkl_exists(path := os.path.join(Paths.model_root(), pkl_name)):
           return path
   return None
 
