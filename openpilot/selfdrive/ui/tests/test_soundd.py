@@ -11,12 +11,12 @@ AudibleAlert = log.SelfdriveState.AudibleAlert
 
 
 class TestSoundd(OpenpilotTestCase):
-  def test_comma_four_volume_is_20_percent_louder_than_comma_three_x(self):
+  def test_comma_four_volume_is_50_percent_louder_than_comma_three_x(self):
     for weighted_db in (20.0, 30.0, 40.0, 50.0):
       with self.subTest(weighted_db=weighted_db):
         comma_three_x_volume = calculate_volume_for_device(weighted_db, "tizi")
         comma_four_volume = calculate_volume_for_device(weighted_db, "mici")
-        assert comma_four_volume == min(1.0, comma_three_x_volume * 1.2)
+        assert comma_four_volume == min(1.0, comma_three_x_volume * 1.5)
 
   def test_milestone_chime_uses_ui_milestone_event(self):
     soundd = Soundd()

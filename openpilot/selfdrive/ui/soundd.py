@@ -60,7 +60,7 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
 def calculate_volume_for_device(weighted_db: float, device_type: str) -> float:
   ambient_db = 30 if device_type in ("mici", "tizi") else 26
   volume_base = 10 if device_type in ("mici", "tizi") else 20
-  volume_boost = 1.2 if device_type == "mici" else 1.0
+  volume_boost = 1.5 if device_type == "mici" else 1.0
   volume = ((weighted_db - ambient_db) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
   return min(MAX_VOLUME, volume_boost * math.pow(volume_base, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1)))
 
