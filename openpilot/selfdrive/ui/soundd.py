@@ -25,13 +25,7 @@ ALERT_RAMP_TIME = 4 # seconds to ramp to max volume for warningImmediate
 SELFDRIVE_STATE_TIMEOUT = 5 # 5 seconds
 FILTER_DT = 1. / (micd.SAMPLE_RATE / micd.FFT_SAMPLES)
 
-AMBIENT_DB = 26 # DB where MIN_VOLUME is applied
 DB_SCALE = 30 # AMBIENT_DB + DB_SCALE is where MAX_VOLUME is applied
-
-VOLUME_BASE = 20
-if HARDWARE.get_device_type() == "tizi":
-  AMBIENT_DB = 30
-  VOLUME_BASE = 10
 
 AudibleAlert = log.SelfdriveState.AudibleAlert
 AudibleAlertSP = custom.SelfdriveStateSP.AudibleAlert
@@ -62,6 +56,14 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   **sound_list_sp,
 }
 
+
+def calculate_volume_for_device(weighted_db: float, device_type: str) -> float:
+  ambient_db = 30 if device_type in ("mici", "tizi") else 26
+  volume_base = 10 if device_type in ("mici", "tizi") else 20
+  volume_boost = 1.2 if device_type == "mici" else 1.0
+  volume = ((weighted_db - ambient_db) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
+  return min(MAX_VOLUME, volume_boost * math.pow(volume_base, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1)))
+
 def check_selfdrive_timeout_alert(sm):
   ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
 
@@ -76,6 +78,7 @@ class Soundd(QuietMode):
   def __init__(self):
     super().__init__()
 
+    self.device_type = HARDWARE.get_device_type()
     self.load_sounds()
 
     self.current_alert = AudibleAlert.none
@@ -172,8 +175,7 @@ class Soundd(QuietMode):
       self.update_alert(AudibleAlert.complete)
 
   def calculate_volume(self, weighted_db):
-    volume = ((weighted_db - AMBIENT_DB) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
-    return math.pow(VOLUME_BASE, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1))
+    return calculate_volume_for_device(weighted_db, self.device_type)
 
   @retry(attempts=10, delay=3)
   def get_stream(self, sd):
