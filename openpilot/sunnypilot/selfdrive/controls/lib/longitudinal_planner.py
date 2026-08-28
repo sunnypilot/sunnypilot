@@ -70,6 +70,10 @@ class LongitudinalPlannerSP:
 
     return self.accel_controller.get_cruise_target(v_ego, v_target)
 
+  def is_accel_controller_active(self, force_decel: bool) -> bool:
+    return bool(self.accel_controller.is_enabled() and not force_decel and
+                self.mpc.source == MpcPlanSource.cruise)
+
   def _has_valid_selected_lead(self, sm: messaging.SubMaster, source: MpcPlanSource) -> bool:
     radar_valid = sm.valid.get('radarState', False) and getattr(sm, 'alive', {}).get('radarState', False)
     return radar_valid and ((source == MpcPlanSource.lead0 and sm['radarState'].leadOne.present) or

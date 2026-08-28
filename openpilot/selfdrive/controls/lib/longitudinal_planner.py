@@ -166,8 +166,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target, self.mpc.source, _ = min(candidates, key=lambda c: c[0])
     self.output_should_stop = any(should_stop for _, _, should_stop in candidates)
     self.output_a_target = np.clip(output_a_target, ACCEL_MIN, ACCEL_MAX)
-    self.accel_controller_active = bool(self.accel_controller.is_enabled() and not force_decel and
-                                        self.mpc.source == LongitudinalPlanSource.cruise)
+    self.accel_controller_active = self.is_accel_controller_active(force_decel)
 
     self.v_desired_filter.x = self.v_desired_filter.x + self.dt * (self.output_a_target + a_prev) / 2.0
 

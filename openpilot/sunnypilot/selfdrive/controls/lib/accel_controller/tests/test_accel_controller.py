@@ -134,28 +134,21 @@ class TestAccelController(OpenpilotTestCase):
   def test_profile_change_refreshes_ceiling(self):
     controller = self.set_profile(AccelProfile.normal)
     self.params.put("AccelPersonality", AccelProfile.sport, block=True)
-    controller.frame = int(1.0 / DT_MDL) - 1
     controller.update()
     index = MAX_ACCEL_BREAKPOINTS.index(10.0)
     assert controller.get_max_accel(10.0) == MAX_ACCEL_PROFILES[AccelProfile.sport][index]
 
-  def test_params_refresh_once_per_second(self):
+  def test_params_refresh_every_update(self):
     controller = self.set_profile(AccelProfile.normal)
     self.params.put("AccelPersonality", AccelProfile.sport, block=True)
     controller.update()
-    assert controller.profile == AccelProfile.normal
-    controller.frame = int(1.0 / DT_MDL) - 1
-    controller.update()
     assert controller.profile == AccelProfile.sport
-    assert controller.frame == 0
 
   def test_enabled_param_refresh(self):
     controller = self.set_profile(AccelProfile.normal)
     self.params.put_bool("AccelPersonalityEnabled", False, block=True)
-    controller.frame = int(1.0 / DT_MDL) - 1
     controller.update()
     assert not controller.is_enabled()
-    assert controller.frame == 0
 
 
 class TestPlannerIntegration(OpenpilotTestCase):
@@ -241,7 +234,6 @@ class TestPlannerIntegration(OpenpilotTestCase):
     planner.a_cruise = planner.accel_controller.get_max_accel(v_ego)
 
     self.params.put("AccelPersonality", AccelProfile.eco, block=True)
-    planner.accel_controller.frame = int(1.0 / DT_MDL) - 1
     planner.accel_controller.update()
     ceiling = planner.get_max_accel_override(v_ego)
     previous = planner.a_cruise

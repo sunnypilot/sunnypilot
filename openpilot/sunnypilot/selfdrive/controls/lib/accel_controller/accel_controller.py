@@ -9,7 +9,6 @@ import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import get_sanitize_int_param
 
 AccelProfile = custom.LongitudinalPlanSP.AccelController.Profile
@@ -35,15 +34,11 @@ CRUISE_DECEL_ACCEL = {  # m/s^2; comfort-first cruise deceleration target
 class AccelController:
   def __init__(self):
     self.params = Params()
-    self.frame = 0
-    self._profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
-    self._enabled = self.params.get_bool("AccelPersonalityEnabled")
+    self.update()
 
   def update(self) -> None:
-    self.frame += 1
-    if self.frame % int(1.0 / DT_MDL) == 0:
-      self._profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
-      self._enabled = self.params.get_bool("AccelPersonalityEnabled")
+    self._profile = get_sanitize_int_param("AccelPersonality", AccelProfile.eco, AccelProfile.sport, self.params)
+    self._enabled = self.params.get_bool("AccelPersonalityEnabled")
 
   @property
   def profile(self) -> int:
@@ -61,5 +56,6 @@ class AccelController:
 
     response_time = CRUISE_DECEL_RESPONSE_TIME[self._profile]
     target_delta = v_target - v_ego
-    target_delta = max(target_delta / response_time, CRUISE_DECEL_ACCEL[self._profile] * response_time)
-    return float(v_ego + target_delta)
+    if target_delta < CRUISE_DECEL_ACCEL[self._profile] * response_time * 2.0:
+      return v_target
+    return float(v_ego + target_delta / response_time)
