@@ -5,7 +5,7 @@ import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
-from openpilot.selfdrive.controls.lib.ford_path import DBC_CURVATURE, FordPathController, encode_ford_path
+from openpilot.selfdrive.controls.lib.ford_path import DBC_CURVATURE, FordPathController
 
 
 def _path(curvature: float, curvature_rate: float = 0.0, speed: float = 8.0):
@@ -25,23 +25,18 @@ def _path(curvature: float, curvature_rate: float = 0.0, speed: float = 8.0):
   )
 
 
-def _offset_path(offset: float, speed: float = 8.0):
-  t = np.linspace(0.0, 3.0, 61)
-  distance = speed * t
-  return SimpleNamespace(
-    position=SimpleNamespace(t=t.tolist(), x=distance.tolist(), y=np.full_like(distance, offset).tolist()),
-    orientation=SimpleNamespace(z=np.zeros_like(distance).tolist()),
-  )
-
-
 def _equivalent_curvature(path, distance: float = 7.0) -> float:
   offset = path.path_offset + path.path_angle * distance + 0.5 * path.curvature * distance ** 2 + \
     path.curvature_rate * distance ** 3 / 6.0
   return 2.0 * offset / distance ** 2
 
 
+def _command(model, desired_curvature: float, *, v_ego: float = 0.0, current_curvature: float | None = None):
+  return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature)
+
+
 def test_steady_arc_uses_c2_without_fast_pose_fields():
-  path = encode_ford_path(_path(0.008), 0.0, v_ego=8.0)
+  path = _command(_path(0.008), 0.008, v_ego=8.0)
 
   assert path.valid
   assert abs(path.path_offset) < 1e-9
@@ -67,8 +62,8 @@ def test_sunnypilot_path_message_round_trip():
 
 
 def test_tight_arc_uses_signed_forward_pose_without_slow_c2():
-  left = encode_ford_path(_path(0.04), 0.0, v_ego=8.0)
-  right = encode_ford_path(_path(-0.04), 0.0, v_ego=8.0)
+  left = _command(_path(0.04), 0.04, v_ego=8.0)
+  right = _command(_path(-0.04), -0.04, v_ego=8.0)
 
   assert left.curvature == 0.0
   assert right.curvature == 0.0
@@ -83,39 +78,32 @@ def test_tight_arc_uses_signed_forward_pose_without_slow_c2():
 def test_c2_does_not_increase_while_tight_curve_unwinds():
   curvatures = (0.04, 0.018, 0.016, 0.014, 0.012, 0.010, 0.008, 0.006, 0.0)
   measured = (0.04,) + curvatures[:-1]
-  commands = [encode_ford_path(_path(curvature), 0.0, curvature, v_ego=8.0, current_curvature=actual).curvature
+  commands = [_command(_path(curvature), curvature, v_ego=8.0, current_curvature=actual).curvature
               for curvature, actual in zip(curvatures, measured, strict=True)]
 
   assert np.all(np.diff(commands) <= 1e-9)
 
 
-def test_lateral_delay_does_not_change_the_reference_polynomial():
-  early = FordPathController().update(_path(0.012, 0.0003), v_ego=10.0, current_curvature=-0.01, actuator_delay=0.1)
-  late = FordPathController().update(_path(0.012, 0.0003), v_ego=10.0, current_curvature=-0.01, actuator_delay=0.9)
-
-  assert early == late
-
-
 def test_fresh_model_replaces_previous_path_without_hidden_state():
   controller = FordPathController(dt=1.0)
   initial = controller.update(_path(0.04), 0.04, v_ego=8.0)
-  replanned = controller.update(_path(0.0), v_ego=8.0)
+  replanned = controller.update(_path(0.0), 0.0, v_ego=8.0)
 
   assert initial.path_offset > 0.5
-  assert replanned == FordPathController().update(_path(0.0), v_ego=8.0)
+  assert replanned == FordPathController().update(_path(0.0), 0.0, v_ego=8.0)
 
 
 def test_s_turn_reverses_fast_fields_while_c2_is_bounded():
   controller = FordPathController(dt=0.05)
-  controller.update(_path(0.04), v_ego=8.0, yaw_rate=0.0)
-  controller.update(_path(0.04), v_ego=8.0, yaw_rate=0.16)
+  controller.update(_path(0.04), 0.04, v_ego=8.0)
+  controller.update(_path(0.04), 0.04, v_ego=8.0)
 
   outputs = []
   for frame_id in range(5):
     model = _path(-0.02)
     model.frameId = frame_id + 1
     model.timestampEof = frame_id + 1
-    outputs.append(controller.update(model, -0.02, v_ego=8.0, current_curvature=0.02, yaw_rate=0.32))
+    outputs.append(controller.update(model, -0.02, v_ego=8.0, current_curvature=0.02))
 
   assert all(path.valid for path in outputs)
   assert all(DBC_CURVATURE[0] <= path.curvature <= DBC_CURVATURE[1] for path in outputs)
@@ -241,29 +229,6 @@ def test_reversal_noise_band_is_continuous():
   assert abs(outside.path_angle - inside.path_angle) < 0.005
 
 
-def test_yaw_rate_does_not_create_a_second_path_source():
-  model = _offset_path(0.25)
-  controller = FordPathController(dt=1.0)
-  before = controller.update(model, v_ego=8.0, current_curvature=0.0)
-  after = controller.update(model, v_ego=8.0, yaw_rate=0.16)
-
-  assert before.valid and after.valid
-  assert after == before
-
-
-def test_invalid_ford_yaw_rate_does_not_rotate_the_reference():
-  model = _offset_path(0.25)
-  valid = FordPathController(dt=0.01)
-  invalid = FordPathController(dt=0.01)
-  valid.update(model, v_ego=8.0)
-  invalid.update(model, v_ego=8.0)
-
-  expected = valid.update(model, v_ego=8.0, yaw_rate=0.0)
-  sentinel = invalid.update(model, v_ego=8.0, yaw_rate=6.6066)
-
-  assert sentinel == expected
-
-
 def test_curvature_error_increases_forward_pose_command_while_behind():
   behind = FordPathController(dt=1.0).update(_path(0.008), 0.008, v_ego=15.0, current_curvature=0.0)
   tracking = FordPathController(dt=1.0).update(_path(0.008), 0.008, v_ego=15.0, current_curvature=0.008)
@@ -277,8 +242,8 @@ def test_curvature_error_increases_forward_pose_command_while_behind():
 
 def test_measured_wheel_beyond_action_countersteers_model_arc():
   controller = FordPathController()
-  controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02, yaw_rate=0.3)
-  outputs = [controller.update(_path(0.02), 0.003, v_ego=15.0, current_curvature=0.01, yaw_rate=0.15) for _ in range(4)]
+  controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02)
+  outputs = [controller.update(_path(0.02), 0.003, v_ego=15.0, current_curvature=0.01) for _ in range(4)]
   unwinding = outputs[-1]
 
   assert unwinding.curvature == 0.0
@@ -316,10 +281,10 @@ def test_invalid_model_ramps_pose_to_zero_while_remaining_in_extended_mode():
   controller = FordPathController()
   for _ in range(10):
     active = controller.update(_path(0.04), 0.04, v_ego=12.0)
-  missing = controller.update(None, v_ego=12.0)
+  missing = controller.update(None, 0.0, v_ego=12.0)
 
   assert active.path_offset > 0.0
   assert missing.valid
   assert np.isclose(active.path_offset - missing.path_offset, 0.04)
   assert missing.curvature == 0.0
-  assert not controller.update(_path(0.0), v_ego=12.0, active=False).valid
+  assert not controller.update(_path(0.0), 0.0, v_ego=12.0, active=False).valid

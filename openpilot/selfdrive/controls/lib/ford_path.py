@@ -82,7 +82,7 @@ def _curvature(path: tuple[list[float], list[float], list[float]]) -> float:
   return (_sample(horizon, distance, heading) - _sample(0.0, distance, heading)) / horizon
 
 
-def _encode_path(model, desired_curvature: float | None, v_ego: float, current_curvature: float | None) -> FordPath:
+def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None) -> FordPath:
   path = _model_path(model)
   if path is None:
     return FordPath()
@@ -93,7 +93,7 @@ def _encode_path(model, desired_curvature: float | None, v_ego: float, current_c
   path_angle = _sample(lookahead, distance, heading)
   model_curvature = _curvature(path)
   model_curvature_rate = _curvature_rate(path)
-  action_curvature = model_curvature if desired_curvature is None else _finite(desired_curvature)
+  action_curvature = _finite(desired_curvature)
   requested_curvature = max((model_curvature, action_curvature), key=abs)
   maneuver_residual = requested_curvature - model_curvature
   path_offset += 0.5 * maneuver_residual * _PATH_OFFSET_DISTANCE ** 2
@@ -147,9 +147,6 @@ class FordPathController:
     self.dt = dt
     self._last_path = FordPath(valid=True)
 
-  def reset(self) -> None:
-    self._last_path = FordPath(valid=True)
-
   def _limit(self, target: FordPath) -> FordPath:
     values = []
     for field, rate in zip(fields(FordPath)[1:], _PATH_RATES, strict=True):
@@ -159,18 +156,11 @@ class FordPathController:
     self._last_path = FordPath(True, *values)
     return self._last_path
 
-  def update(self, model, desired_curvature: float | None = None, *, v_ego: float = 0.0, active: bool = True,
-             current_curvature: float | None = None, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
-    del yaw_rate, actuator_delay
+  def update(self, model, desired_curvature: float, *, v_ego: float = 0.0, active: bool = True,
+             current_curvature: float | None = None) -> FordPath:
     if not active:
-      self.reset()
+      self._last_path = FordPath(valid=True)
       return FordPath()
     if model is None:
       return self._limit(FordPath(valid=True))
     return self._limit(_encode_path(model, desired_curvature, v_ego, current_curvature))
-
-
-def encode_ford_path(model, t_prev: float, desired_curvature: float | None = None, *, v_ego: float = 0.0,
-                     current_curvature: float | None = None, yaw_rate: float = 0.0, actuator_delay: float = 0.0) -> FordPath:
-  del t_prev, yaw_rate, actuator_delay
-  return _encode_path(model, desired_curvature, v_ego, current_curvature)

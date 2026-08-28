@@ -161,8 +161,7 @@ class Controls(ControlsExt):
     if self.CP.brand == "ford":
       self.ford_path = self.ford_path_controller.update(model_v2 if self.sm.valid['modelV2'] else None,
                                                         self.desired_curvature, v_ego=CS.vEgo, active=CC.latActive,
-                                                        current_curvature=self.curvature, yaw_rate=CS.yawRate,
-                                                        actuator_delay=lat_delay)
+                                                        current_curvature=self.curvature)
       actuators.curvature = float(self.ford_path.curvature)
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:
