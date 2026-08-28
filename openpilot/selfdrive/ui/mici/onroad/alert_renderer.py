@@ -20,6 +20,7 @@ AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 
 ALERT_MARGIN = 18
+ALERT_BACKGROUND_OPACITY = 0.90
 
 ALERT_FONT_SMALL = 66 - 50
 ALERT_FONT_BIG = 88 - 40
@@ -279,7 +280,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
   def _draw_background(self, alert: Alert) -> None:
     # draw top gradient for alert text at top
     color = ALERT_COLORS.get(alert.status, ALERT_COLORS[AlertStatus.normal])
-    color = rl.Color(color.r, color.g, color.b, int(255 * 0.90 * self._alpha_filter.x))
+    color = rl.Color(color.r, color.g, color.b, int(255 * ALERT_BACKGROUND_OPACITY * self._alpha_filter.x))
     translucent_color = rl.Color(color.r, color.g, color.b, int(0 * self._alpha_filter.x))
 
     small_alert_height = round(self._rect.height * 0.583) # 140px at mici height

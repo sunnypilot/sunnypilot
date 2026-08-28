@@ -11,6 +11,7 @@ import pyray as rl
 
 from openpilot.cereal import messaging
 from openpilot.common.hardware import PC
+from openpilot.selfdrive.ui.mici.onroad.alert_renderer import ALERT_BACKGROUND_OPACITY
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import FONT_SIZES
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import (
@@ -132,6 +133,7 @@ class MilestoneCelebrationPrototype(Widget):
       return
 
     alpha = min(1.0, elapsed / 0.2, (CELEBRATION_DURATION - elapsed) / 0.8)
+    self._draw_background_scrim(rect, alpha)
     self._draw_confetti(rect, elapsed, alpha)
     self._draw_milestone(rect, elapsed, alpha, self._current_milestone)
     self._screenshot_ready = elapsed >= 1.0
@@ -168,7 +170,7 @@ class MilestoneCelebrationPrototype(Widget):
       flip = 0.2 + 0.8 * abs(math.sin(elapsed * 5 + particle.phase))
       particle_rect = rl.Rectangle(x, y, particle.width * particle_scale * flip, particle.height * particle_scale)
       origin = rl.Vector2(particle_rect.width / 2, particle_rect.height / 2)
-      color = rl.Color(particle.color.r, particle.color.g, particle.color.b, int(245 * alpha))
+      color = rl.Color(particle.color.r, particle.color.g, particle.color.b, int(255 * alpha))
       rl.draw_rectangle_pro(particle_rect, origin, particle.angle + particle.spin * elapsed, color)
 
   @staticmethod
@@ -206,14 +208,6 @@ class MilestoneCelebrationPrototype(Widget):
 
     center_x = rect.x + rect.width / 2
     center_y = rect.y + rect.height / 2
-    glow_radius = int(112 * scale * pulse)
-    rl.draw_circle_gradient(
-      rl.Vector2(center_x, center_y),
-      glow_radius,
-      rl.Color(0, 0, 0, int(110 * alpha)),
-      rl.BLANK,
-    )
-
     text_color = rl.Color(255, 255, 255, int(255 * 0.9 * alpha))
     secondary_color = rl.Color(255, 255, 255, int(255 * 0.72 * alpha))
     number_line_width = number_bounds.x + 8 * scale + unit_bounds.x
@@ -230,3 +224,18 @@ class MilestoneCelebrationPrototype(Widget):
                     unit_size, 0, secondary_color)
     rl.draw_text_ex(semibold_font, milestone_label, rl.Vector2(center_x - milestone_bounds.x / 2, milestone_y),
                     milestone_size, 0, text_color)
+
+  @staticmethod
+  def _draw_background_scrim(rect: rl.Rectangle, alpha: float) -> None:
+    # Match the alert background: a mostly opaque black core fading to transparent.
+    fade_height = round(rect.height * 0.25)
+    solid_height = round(rect.height * 0.50)
+    solid_color = rl.Color(0, 0, 0, int(255 * ALERT_BACKGROUND_OPACITY * alpha))
+    transparent = rl.Color(0, 0, 0, 0)
+    x = int(rect.x)
+    y = int(rect.y)
+    width = int(rect.width)
+
+    rl.draw_rectangle_gradient_v(x, y, width, fade_height, transparent, solid_color)
+    rl.draw_rectangle(x, y + fade_height, width, solid_height, solid_color)
+    rl.draw_rectangle_gradient_v(x, y + fade_height + solid_height, width, fade_height, solid_color, transparent)
