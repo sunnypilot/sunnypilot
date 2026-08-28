@@ -15,6 +15,7 @@ trap cleanup_prototype EXIT INT TERM
 
 export PATH="$prototype_root/.venv/bin:$PATH"
 export SP_MILESTONE_PROTOTYPE=1
+export SP_MILESTONE_RESET=1
 prototype_playback="${SP_MILESTONE_PLAYBACK:-1}"
 
 "$prototype_root/openpilot/tools/replay/replay" --demo --playback "$prototype_playback" &

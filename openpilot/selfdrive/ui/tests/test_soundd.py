@@ -1,38 +1,28 @@
 import threading
 import time
-from types import SimpleNamespace
 
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log, messaging
 from openpilot.cereal.messaging import SubMaster, PubMaster
 from openpilot.selfdrive.ui.soundd import SELFDRIVE_STATE_TIMEOUT, Soundd, check_selfdrive_timeout_alert
-from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import PerDriveMilestoneTracker
+from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import MILESTONE_EVENT_PAYLOAD
 
 AudibleAlert = log.SelfdriveState.AudibleAlert
 
 
 class TestSoundd(OpenpilotTestCase):
-  def test_milestone_chime_uses_real_assisted_distance(self):
+  def test_milestone_chime_uses_ui_milestone_event(self):
     soundd = Soundd()
-    soundd.milestone_tracker = PerDriveMilestoneTracker(milestone_meters=10.0)
 
     class SubMasterStub:
       def __init__(self):
-        self.logMonoTime = {'carState': 0}
-        self.data = {
-          'deviceState': SimpleNamespace(started=True),
-          'carState': SimpleNamespace(vEgo=10.0),
-          'carControl': SimpleNamespace(latActive=True, longActive=True),
-        }
+        self.updated = {'customReservedRawData0': True}
+        self.data = {'customReservedRawData0': MILESTONE_EVENT_PAYLOAD}
 
       def __getitem__(self, service):
         return self.data[service]
 
     sm = SubMasterStub()
-    soundd.update_milestone_alert(sm)
-    sm.logMonoTime['carState'] = 500_000_000
-    soundd.update_milestone_alert(sm)
-    sm.logMonoTime['carState'] = 1_000_000_000
     soundd.update_milestone_alert(sm)
 
     assert soundd.current_alert == AudibleAlert.complete

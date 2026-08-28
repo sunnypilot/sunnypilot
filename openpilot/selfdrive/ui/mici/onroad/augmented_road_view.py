@@ -161,7 +161,7 @@ class AugmentedRoadView(CameraView):
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverStateRenderer()
     self._confidence_ball = ConfidenceBall()
-    self._milestone_celebration = MilestoneCelebrationPrototype() if MILESTONE_PROTOTYPE_ENABLED else None
+    self._milestone_celebration = self._child(MilestoneCelebrationPrototype()) if MILESTONE_PROTOTYPE_ENABLED else None
     self._offroad_label = UnifiedLabel("start the car to\nuse sunnypilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
@@ -366,10 +366,12 @@ class AugmentedRoadView(CameraView):
     return self._cached_matrix
 
   def show_event(self):
+    super().show_event()
     if gui_app.sunnypilot_ui():
       ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.RESUME)
 
   def hide_event(self):
+    super().hide_event()
     if gui_app.sunnypilot_ui():
       ui_state.reset_onroad_sleep_timer(OnroadTimerStatus.PAUSE)
 

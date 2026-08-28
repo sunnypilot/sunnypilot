@@ -15,7 +15,7 @@ from openpilot.system import micd
 from openpilot.common.hardware import HARDWARE
 
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
-from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import PerDriveMilestoneTracker, assist_category
+from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import MILESTONE_EVENT_PAYLOAD
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -87,8 +87,6 @@ class Soundd(QuietMode):
 
     self.selfdrive_timeout_alert = False
     self.pending_stop = False
-    self.milestone_tracker = PerDriveMilestoneTracker()
-    self._started_prev = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
 
@@ -169,21 +167,8 @@ class Soundd(QuietMode):
       self.selfdrive_timeout_alert = False
 
   def update_milestone_alert(self, sm):
-    started = sm['deviceState'].started
-    if started != self._started_prev:
-      self.milestone_tracker.reset()
-      self._started_prev = started
-
-    if not started:
-      return
-
-    car_control = sm['carControl']
-    milestones = self.milestone_tracker.update(
-      sm.logMonoTime['carState'],
-      sm['carState'].vEgo,
-      assist_category(car_control.latActive, car_control.longActive),
-    )
-    if milestones and self.current_alert == AudibleAlert.none and not self.enabled:
+    milestone_event = sm.updated['customReservedRawData0'] and bytes(sm['customReservedRawData0']) == MILESTONE_EVENT_PAYLOAD
+    if milestone_event and self.current_alert == AudibleAlert.none and not self.enabled:
       self.update_alert(AudibleAlert.complete)
 
   def calculate_volume(self, weighted_db):
@@ -202,7 +187,7 @@ class Soundd(QuietMode):
     import sounddevice as sd
     micd.patch_sounddevice(sd)
 
-    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'deviceState', 'carState', 'carControl'])
+    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'customReservedRawData0'])
 
     with self.get_stream(sd) as stream:
       rk = Ratekeeper(20)

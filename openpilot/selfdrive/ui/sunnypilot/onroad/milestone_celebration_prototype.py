@@ -1,8 +1,4 @@
-"""PROTOTYPE: Tesla-style milestone celebration over the on-road view.
-
-Question: does a brief, full-screen confetti overlay feel at home on comma four?
-This deliberately keeps all state in memory and retriggers once on every drive.
-"""
+"""Tesla-style persistent assisted-distance milestones over the on-road view."""
 
 import math
 import os
@@ -13,13 +9,16 @@ from dataclasses import dataclass
 
 import pyray as rl
 
+from openpilot.cereal import messaging
+from openpilot.common.hardware import PC
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import FONT_SIZES
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import (
   AssistCategory,
+  AssistedDistanceMilestoneTracker,
   DistanceMilestone,
-  PerDriveMilestoneTracker,
-  TEST_MILESTONE_MILES,
+  MILESTONE_EVENT_PAYLOAD,
+  MilestoneStore,
   assist_category,
 )
 from openpilot.system.ui.lib.application import FontWeight, gui_app
@@ -29,6 +28,7 @@ from openpilot.system.ui.widgets import Widget
 
 CELEBRATION_DURATION = 4.5
 PARTICLE_COUNT = 150
+PERSIST_INTERVAL_SECONDS = 60.0
 
 CONFETTI_COLORS = (
   rl.Color(255, 55, 95, 255),
@@ -63,7 +63,12 @@ class MilestoneCelebrationPrototype(Widget):
     self._celebration_started_time: float | None = None
     self._current_milestone: DistanceMilestone | None = None
     self._pending_milestones: deque[DistanceMilestone] = deque()
-    self._tracker = PerDriveMilestoneTracker()
+    self._store = MilestoneStore()
+    stored_distances = self._store.reset() if PC and os.getenv("SP_MILESTONE_RESET") == "1" else self._store.load()
+    self._tracker = AssistedDistanceMilestoneTracker(stored_distances)
+    self._pm = messaging.PubMaster(["customReservedRawData0"])
+    self._last_persisted_distances = stored_distances
+    self._last_persist_time = time.monotonic()
     self._screenshot_taken = False
     self._screenshot_ready = False
     self._particles = self._make_particles()
@@ -90,27 +95,32 @@ class MilestoneCelebrationPrototype(Widget):
   def _render(self, rect: rl.Rectangle, /) -> None:
     now = time.monotonic()
     if ui_state.started_time != self._drive_started_time:
-      # Reset on every off-road -> on-road transition so the spike can be tested on every drive.
+      self._persist_distances(force=True)
       self._drive_started_time = ui_state.started_time
       self._celebration_started_time = None
       self._current_milestone = None
       self._pending_milestones.clear()
-      self._tracker.reset()
+      self._tracker.reset_sampling()
       self._screenshot_taken = False
       self._screenshot_ready = False
 
     car_control = ui_state.sm["carControl"]
     category = assist_category(car_control.latActive, car_control.longActive)
 
-    self._pending_milestones.extend(self._tracker.update(
+    milestones = self._tracker.update(
       ui_state.sm.logMonoTime["carState"],
       ui_state.sm["carState"].vEgo,
       category,
-    ))
+    )
+    self._pending_milestones.extend(milestones)
+    self._persist_distances(force=bool(milestones))
 
     if self._current_milestone is None and self._pending_milestones:
       self._current_milestone = self._pending_milestones.popleft()
       self._celebration_started_time = now
+      milestone_event = messaging.new_message("customReservedRawData0", size=len(MILESTONE_EVENT_PAYLOAD), valid=True)
+      milestone_event.customReservedRawData0 = MILESTONE_EVENT_PAYLOAD
+      self._pm.send("customReservedRawData0", milestone_event)
 
     if self._celebration_started_time is None or self._current_milestone is None:
       return
@@ -125,6 +135,20 @@ class MilestoneCelebrationPrototype(Widget):
     self._draw_confetti(rect, elapsed, alpha)
     self._draw_milestone(rect, elapsed, alpha, self._current_milestone)
     self._screenshot_ready = elapsed >= 1.0
+
+  def hide_event(self) -> None:
+    self._persist_distances(force=True)
+    super().hide_event()
+
+  def _persist_distances(self, force: bool = False) -> None:
+    distances = self._tracker.distances_meters()
+    if distances == self._last_persisted_distances:
+      return
+    now = time.monotonic()
+    if force or now - self._last_persist_time >= PERSIST_INTERVAL_SECONDS:
+      self._store.save(distances)
+      self._last_persisted_distances = distances
+      self._last_persist_time = now
 
   def capture_screenshot(self) -> None:
     screenshot_path = os.getenv("SP_MILESTONE_SCREENSHOT")
@@ -161,15 +185,22 @@ class MilestoneCelebrationPrototype(Widget):
     semibold_font = gui_app.font(FontWeight.SEMI_BOLD)
     tween_progress = min(elapsed / 0.85, 1.0)
     tween_progress = 1.0 - (1.0 - tween_progress) ** 3
-    previous_distance = max(0.0, milestone.distance_miles - TEST_MILESTONE_MILES)
+    previous_distance = milestone.previous_distance_miles
     displayed_distance = previous_distance + (milestone.distance_miles - previous_distance) * tween_progress
-    number = f"{displayed_distance:.1f}"
+    if tween_progress >= 1.0:
+      number = f"{round(milestone.distance_miles):,}"
+    else:
+      number = f"{displayed_distance:,.1f}"
     unit = "MI"
     category = "FULL ASSIST" if milestone.category == AssistCategory.FULL_ASSIST else "MADS"
     milestone_label = "MILESTONE"
 
-    number_bounds = measure_text_cached(display_font, number, number_size)
     unit_bounds = measure_text_cached(semibold_font, unit, unit_size)
+    number_bounds = measure_text_cached(display_font, number, number_size)
+    max_number_width = rect.width * 0.72 - unit_bounds.x - 8 * scale
+    if number_bounds.x > max_number_width:
+      number_size = max(1, int(number_size * max_number_width / number_bounds.x))
+      number_bounds = measure_text_cached(display_font, number, number_size)
     category_bounds = measure_text_cached(semibold_font, category, category_size)
     milestone_bounds = measure_text_cached(semibold_font, milestone_label, milestone_size)
 
@@ -185,16 +216,17 @@ class MilestoneCelebrationPrototype(Widget):
 
     text_color = rl.Color(255, 255, 255, int(255 * 0.9 * alpha))
     secondary_color = rl.Color(255, 255, 255, int(255 * 0.72 * alpha))
-    number_x = center_x - number_bounds.x / 2
+    number_line_width = number_bounds.x + 8 * scale + unit_bounds.x
+    number_x = center_x - number_line_width / 2
     number_y = center_y - 76 * scale
-    unit_y = center_y + 22 * scale
+    unit_y = center_y + 14 * scale
     category_y = center_y - 91 * scale
     milestone_y = center_y + 50 * scale
 
     rl.draw_text_ex(semibold_font, category, rl.Vector2(center_x - category_bounds.x / 2, category_y),
                     category_size, 0, secondary_color)
     rl.draw_text_ex(display_font, number, rl.Vector2(number_x, number_y), number_size, 0, text_color)
-    rl.draw_text_ex(semibold_font, unit, rl.Vector2(center_x - unit_bounds.x / 2, unit_y),
+    rl.draw_text_ex(semibold_font, unit, rl.Vector2(number_x + number_bounds.x + 8 * scale, unit_y),
                     unit_size, 0, secondary_color)
     rl.draw_text_ex(semibold_font, milestone_label, rl.Vector2(center_x - milestone_bounds.x / 2, milestone_y),
                     milestone_size, 0, text_color)
