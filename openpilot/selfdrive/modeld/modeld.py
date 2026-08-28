@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+from collections.abc import Callable
+import ctypes
 from functools import cached_property
 import os
-os.environ['GMMU'] = '0' # for usbgpu fast loading, noop for qcom
+os.environ['GMMU'] = '0' # for chestnut fast loading, noop for qcom
 from tinygrad.tensor import Tensor
 from tinygrad.device import Device
 import struct
@@ -30,7 +32,7 @@ from openpilot.selfdrive.modeld.compile_modeld import make_input_queues, WARP_IN
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_driving_model_data, fill_pose_msg, PublishState
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
-from openpilot.selfdrive.modeld.helpers import usbgpu_present, usbgpu_compiled, modeld_pkl_path, get_tg_input_devices, load_oob
+from openpilot.selfdrive.modeld.helpers import chestnut_present, chestnut_compiled, modeld_pkl_path, get_tg_input_devices, load_oob
 
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
@@ -94,8 +96,10 @@ class ChestnutState:
     if self.big and "AMD" in Device._opened_devices and self.sends % 100 == 1:
       try:
         smu = Device["AMD"].iface.dev_impl.smu
+        metrics_t = smu.smu_mod.SmuMetricsExternal_t
         smu._send_msg(smu.smu_mod.PPSMC_MSG_TransferTableSmu2Dram, smu.smu_mod.TABLE_SMU_METRICS, timeout=100)
-        metrics = smu.read_table(smu.smu_mod.SmuMetricsExternal_t, smu.smu_mod.TABLE_SMU_METRICS).SmuMetrics
+        metrics_buf = bytearray(smu.adev.vram.view(smu.driver_table_paddr, ctypes.sizeof(metrics_t))[:])
+        metrics = metrics_t.from_buffer(metrics_buf).SmuMetrics
         self.metrics = {'tempC': metrics.AvgTemperature[smu.smu_mod.TEMP_HOTSPOT],
                         'memoryTempC': metrics.AvgTemperature[smu.smu_mod.TEMP_MEM],
                         'powerDrawW': metrics.AverageSocketPower,
@@ -141,18 +145,18 @@ class FrameMeta:
 class ModelState(ModelStateBase):
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
-  def __init__(self, cam_w: int, cam_h: int, usbgpu: bool):
+  def __init__(self, cam_w: int, cam_h: int, chestnut: bool):
     ModelStateBase.__init__(self)
-    input_devices = get_tg_input_devices(PROCESS_NAME, usbgpu)
+    input_devices = get_tg_input_devices(PROCESS_NAME, chestnut)
     self.WARP_DEV, self.QUEUE_DEV = input_devices['WARP_DEV'], input_devices['QUEUE_DEV']
-    jits = load_oob(open_file_chunked(modeld_pkl_path(usbgpu)))
+    jits = load_oob(open_file_chunked(modeld_pkl_path(chestnut)))
     metadata = jits['metadata']
     self.input_shapes = metadata['input_shapes']
     self.vision_input_names = [k for k in self.input_shapes if 'img' in k]
     self.output_slices = metadata['output_slices']
 
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.usbgpu = usbgpu
+    self.chestnut = chestnut
 
     self.frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
     self.input_queues, self.npy = make_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
@@ -168,7 +172,7 @@ class ModelState(ModelStateBase):
     return parsed_model_outputs
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
-          inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray]:
     for key in bufs.keys():
       ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data
       yuv_size = self.frame_buf_params[key][3]
@@ -192,11 +196,11 @@ class ModelState(ModelStateBase):
     outs, = self.run_policy(
       **{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped
     )
+    if after_enqueue is not None:
+      after_enqueue()
     model_output = outs.numpy()[0]
-    if self.usbgpu and not np.all(np.isfinite(model_output)):
-      # TODO remove with prev_feat
-      cloudlog.error("model output not finite, dropping frame")
-      return None
+    if self.chestnut and not np.all(np.isfinite(model_output)):
+      raise RuntimeError("model output not finite")
     outputs_dict = self.parser.parse_outputs(self.slice_outputs(model_output, self.output_slices))
     self.npy['prev_feat'][:] = model_output[self.output_slices['hidden_state']]
 
@@ -218,12 +222,12 @@ class ModelState(ModelStateBase):
 def main(demo=False):
   cloudlog.warning("modeld init")
 
-  USBGPU = usbgpu_present() and usbgpu_compiled()
-  if USBGPU:
+  CHESTNUT = chestnut_present() and chestnut_compiled()
+  if CHESTNUT:
     os.environ['HCQDEV_WAIT_TIMEOUT_MS'] = '3000'
   params = Params()
-  params.put_bool("UsbGpuLoading", USBGPU)
-  params.remove("UsbGpuActive")
+  params.put_bool("ChestnutLoading", CHESTNUT)
+  params.remove("ChestnutActive")
 
   config_realtime_process(7, 54)
 
@@ -253,7 +257,7 @@ def main(demo=False):
   st = time.monotonic()
   cloudlog.warning("loading model")
   model = None
-  if USBGPU:
+  if CHESTNUT:
     big_model = None
     def load_big():
       nonlocal big_model
@@ -267,23 +271,23 @@ def main(demo=False):
     loader.start()
     loader.join(BIG_MODEL_TIMEOUT)
     model = big_model
-    params.put_bool("UsbGpuActive", model is not None)
+    params.put_bool("ChestnutActive", model is not None)
 
-  small_model = ModelState(vipc_client_main.width, vipc_client_main.height, False) if model is None or USBGPU else None
+  small_model = ModelState(vipc_client_main.width, vipc_client_main.height, False) if model is None or CHESTNUT else None
   if model is None:
     model = small_model
-  params.put_bool("UsbGpuLoading", False)
+  params.put_bool("ChestnutLoading", False)
   assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if USBGPU else [])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if CHESTNUT else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
   publish_state = PublishState()
   params = Params()
-  chestnut_state = ChestnutState(pm, model.usbgpu) if USBGPU else None
+  chestnut_state = ChestnutState(pm, model.chestnut) if CHESTNUT else None
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / ModelConstants.MODEL_RUN_FREQ)
@@ -393,13 +397,15 @@ def main(demo=False):
 
     mt1 = time.perf_counter()
     try:
-      model_output = model.run(bufs, transforms, inputs)
+      send_chestnut = (chestnut_state is not None and
+                       run_count % round(ModelConstants.MODEL_RUN_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0)
+      model_output = model.run(bufs, transforms, inputs, chestnut_state.send if send_chestnut else None)
     except Exception:
-      if not params.get_bool("UsbGpuActive"):
+      if not params.get_bool("ChestnutActive"):
         raise
       # fallback to small model
       cloudlog.exception("big model failed, fall back to small")
-      params.put_bool("UsbGpuActive", False)
+      params.put_bool("ChestnutActive", False)
       assert small_model is not None
       model = small_model
       if chestnut_state is not None:
@@ -419,7 +425,7 @@ def main(demo=False):
       fill_model_msg(modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, extrinsics_calibration_seen)
-      modelv2_send.modelV2.big = model.usbgpu
+      modelv2_send.modelV2.big = model.chestnut
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
@@ -440,10 +446,6 @@ def main(demo=False):
       pm.send('cameraOdometry', posenet_send)
       pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
-
-    if chestnut_state is not None and run_count % round(ModelConstants.MODEL_RUN_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0:
-      chestnut_state.send()
-
 
 if __name__ == "__main__":
   try:

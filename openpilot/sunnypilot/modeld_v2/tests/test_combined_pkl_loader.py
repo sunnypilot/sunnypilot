@@ -59,8 +59,8 @@ class TestFindDrivingPkl(OpenpilotTestCase):
 class TestModelStateCombinedInit(OpenpilotTestCase):
   def test_asserts_when_no_pkl(self, monkeypatch):
     bundle = DummyBundle(models=[], is_20hz=True)
-    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle)
-    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle)
+    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
+    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
     with self.assertRaisesRegex(AssertionError, "No driving pkl found"):
       ModelState(cam_w=CAM_W, cam_h=CAM_H)
 
