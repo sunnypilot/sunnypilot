@@ -1,15 +1,42 @@
 import threading
 import time
+from types import SimpleNamespace
 
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log, messaging
 from openpilot.cereal.messaging import SubMaster, PubMaster
-from openpilot.selfdrive.ui.soundd import SELFDRIVE_STATE_TIMEOUT, check_selfdrive_timeout_alert
+from openpilot.selfdrive.ui.soundd import SELFDRIVE_STATE_TIMEOUT, Soundd, check_selfdrive_timeout_alert
+from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import PerDriveMilestoneTracker
 
 AudibleAlert = log.SelfdriveState.AudibleAlert
 
 
 class TestSoundd(OpenpilotTestCase):
+  def test_milestone_chime_uses_real_assisted_distance(self):
+    soundd = Soundd()
+    soundd.milestone_tracker = PerDriveMilestoneTracker(milestone_meters=10.0)
+
+    class SubMasterStub:
+      def __init__(self):
+        self.logMonoTime = {'carState': 0}
+        self.data = {
+          'deviceState': SimpleNamespace(started=True),
+          'carState': SimpleNamespace(vEgo=10.0),
+          'carControl': SimpleNamespace(latActive=True, longActive=True),
+        }
+
+      def __getitem__(self, service):
+        return self.data[service]
+
+    sm = SubMasterStub()
+    soundd.update_milestone_alert(sm)
+    sm.logMonoTime['carState'] = 500_000_000
+    soundd.update_milestone_alert(sm)
+    sm.logMonoTime['carState'] = 1_000_000_000
+    soundd.update_milestone_alert(sm)
+
+    assert soundd.current_alert == AudibleAlert.complete
+
   def test_check_selfdrive_timeout_alert(self, mocker):
     sm = SubMaster(['selfdriveState', 'selfdriveStateSP'])
     pm = PubMaster(['selfdriveState', 'selfdriveStateSP'])

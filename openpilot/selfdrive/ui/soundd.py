@@ -15,6 +15,7 @@ from openpilot.system import micd
 from openpilot.common.hardware import HARDWARE
 
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
+from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import PerDriveMilestoneTracker, assist_category
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -53,6 +54,7 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.promptDistracted: ("dm_warning.wav", None, MAX_VOLUME),
 
   AudibleAlert.preAlert: ("pre_alert.wav", 1, MAX_VOLUME),
+  AudibleAlert.complete: ("milestone.wav", 1, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("critical.wav", None, MAX_VOLUME),
   AudibleAlert.warningImmediate: ("dm_critical.wav", None, MAX_VOLUME),
@@ -85,6 +87,8 @@ class Soundd(QuietMode):
 
     self.selfdrive_timeout_alert = False
     self.pending_stop = False
+    self.milestone_tracker = PerDriveMilestoneTracker()
+    self._started_prev = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
 
@@ -164,6 +168,24 @@ class Soundd(QuietMode):
       self.update_alert(AudibleAlert.none)
       self.selfdrive_timeout_alert = False
 
+  def update_milestone_alert(self, sm):
+    started = sm['deviceState'].started
+    if started != self._started_prev:
+      self.milestone_tracker.reset()
+      self._started_prev = started
+
+    if not started:
+      return
+
+    car_control = sm['carControl']
+    milestones = self.milestone_tracker.update(
+      sm.logMonoTime['carState'],
+      sm['carState'].vEgo,
+      assist_category(car_control.latActive, car_control.longActive),
+    )
+    if milestones and self.current_alert == AudibleAlert.none and not self.enabled:
+      self.update_alert(AudibleAlert.complete)
+
   def calculate_volume(self, weighted_db):
     volume = ((weighted_db - AMBIENT_DB) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
     return math.pow(VOLUME_BASE, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1))
@@ -180,7 +202,7 @@ class Soundd(QuietMode):
     import sounddevice as sd
     micd.patch_sounddevice(sd)
 
-    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure'])
+    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'deviceState', 'carState', 'carControl'])
 
     with self.get_stream(sd) as stream:
       rk = Ratekeeper(20)
@@ -198,6 +220,7 @@ class Soundd(QuietMode):
             self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
 
         self.get_audible_alert(sm)
+        self.update_milestone_alert(sm)
 
         # Ramp up immediate warning sound over 4s
         if self.current_alert == AudibleAlert.warningImmediate:

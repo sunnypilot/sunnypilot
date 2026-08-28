@@ -1,5 +1,8 @@
+import os
+
 import pyray as rl
 import openpilot.cereal.messaging as messaging
+from openpilot.common.hardware import PC
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsLayout
 from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
@@ -61,7 +64,8 @@ class MiciMainLayout(Scroller):
 
     # Start onboarding if terms or training not completed, make sure to push after self
     self._onboarding_window = OnboardingWindow(lambda: gui_app.pop_widgets_to(self))
-    if not self._onboarding_window.completed:
+    skip_onboarding_for_local_prototype = PC and os.getenv("SP_MILESTONE_PROTOTYPE") == "1"
+    if not self._onboarding_window.completed and not skip_onboarding_for_local_prototype:
       gui_app.push_widget(self._onboarding_window)
 
     # initialize correct onroad layout
