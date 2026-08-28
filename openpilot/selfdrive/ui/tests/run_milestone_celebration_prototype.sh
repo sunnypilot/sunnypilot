@@ -15,8 +15,9 @@ trap cleanup_prototype EXIT INT TERM
 
 export PATH="$prototype_root/.venv/bin:$PATH"
 export SP_MILESTONE_PROTOTYPE=1
+prototype_playback="${SP_MILESTONE_PLAYBACK:-1}"
 
-"$prototype_root/openpilot/tools/replay/replay" --demo &
+"$prototype_root/openpilot/tools/replay/replay" --demo --playback "$prototype_playback" &
 prototype_replay_pid=$!
 
 "$prototype_root/.venv/bin/python" "$prototype_root/openpilot/selfdrive/ui/mici/onroad/augmented_road_view.py"

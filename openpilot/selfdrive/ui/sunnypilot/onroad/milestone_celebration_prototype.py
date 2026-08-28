@@ -13,11 +13,13 @@ from dataclasses import dataclass
 
 import pyray as rl
 
+from openpilot.selfdrive.ui.mici.onroad.hud_renderer import FONT_SIZES
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import (
   AssistCategory,
   DistanceMilestone,
   PerDriveMilestoneTracker,
+  TEST_MILESTONE_MILES,
   assist_category,
 )
 from openpilot.system.ui.lib.application import FontWeight, gui_app
@@ -121,7 +123,7 @@ class MilestoneCelebrationPrototype(Widget):
 
     alpha = min(1.0, elapsed / 0.2, (CELEBRATION_DURATION - elapsed) / 0.8)
     self._draw_confetti(rect, elapsed, alpha)
-    self._draw_milestone_card(rect, elapsed, alpha, self._current_milestone)
+    self._draw_milestone(rect, elapsed, alpha, self._current_milestone)
     self._screenshot_ready = elapsed >= 1.0
 
   def capture_screenshot(self) -> None:
@@ -146,36 +148,53 @@ class MilestoneCelebrationPrototype(Widget):
       rl.draw_rectangle_pro(particle_rect, origin, particle.angle + particle.spin * elapsed, color)
 
   @staticmethod
-  def _draw_milestone_card(rect: rl.Rectangle, elapsed: float, alpha: float, milestone: DistanceMilestone) -> None:
-    compact = rect.height <= 300
-    scale = rect.height / (240.0 if compact else 1080.0)
-    card_width = (210 if compact else 590) * scale
-    card_height = (82 if compact else 230) * scale
+  def _draw_milestone(rect: rl.Rectangle, elapsed: float, alpha: float, milestone: DistanceMilestone) -> None:
+    # Match the comma four set-speed hierarchy: DISPLAY number with a MAX-sized label.
+    scale = rect.height / 240.0
     pulse = 1.0 + 0.025 * math.sin(min(elapsed, 0.6) / 0.6 * math.pi)
-    card_width *= pulse
-    card_height *= pulse
-    card = rl.Rectangle(
-      rect.x + (rect.width - card_width) / 2,
-      rect.y + (rect.height - card_height) / 2,
-      card_width,
-      card_height,
+    number_size = int(FONT_SIZES.set_speed * scale * pulse)
+    milestone_size = int(FONT_SIZES.max_speed * scale * pulse)
+    category_size = int(22 * scale * pulse)
+    unit_size = category_size
+
+    display_font = gui_app.font(FontWeight.DISPLAY)
+    semibold_font = gui_app.font(FontWeight.SEMI_BOLD)
+    tween_progress = min(elapsed / 0.85, 1.0)
+    tween_progress = 1.0 - (1.0 - tween_progress) ** 3
+    previous_distance = max(0.0, milestone.distance_miles - TEST_MILESTONE_MILES)
+    displayed_distance = previous_distance + (milestone.distance_miles - previous_distance) * tween_progress
+    number = f"{displayed_distance:.1f}"
+    unit = "MI"
+    category = "FULL ASSIST" if milestone.category == AssistCategory.FULL_ASSIST else "MADS"
+    milestone_label = "MILESTONE"
+
+    number_bounds = measure_text_cached(display_font, number, number_size)
+    unit_bounds = measure_text_cached(semibold_font, unit, unit_size)
+    category_bounds = measure_text_cached(semibold_font, category, category_size)
+    milestone_bounds = measure_text_cached(semibold_font, milestone_label, milestone_size)
+
+    center_x = rect.x + rect.width / 2
+    center_y = rect.y + rect.height / 2
+    glow_radius = int(112 * scale * pulse)
+    rl.draw_circle_gradient(
+      rl.Vector2(center_x, center_y),
+      glow_radius,
+      rl.Color(0, 0, 0, int(110 * alpha)),
+      rl.BLANK,
     )
 
-    rl.draw_rectangle_rounded(card, 0.20, 16, rl.Color(25, 31, 42, int(225 * alpha)))
-    rl.draw_rectangle_rounded_lines_ex(card, 0.20, 16, max(1, int(2 * scale)), rl.Color(255, 255, 255, int(90 * alpha)))
+    text_color = rl.Color(255, 255, 255, int(255 * 0.9 * alpha))
+    secondary_color = rl.Color(255, 255, 255, int(255 * 0.72 * alpha))
+    number_x = center_x - number_bounds.x / 2
+    number_y = center_y - 76 * scale
+    unit_y = center_y + 22 * scale
+    category_y = center_y - 91 * scale
+    milestone_y = center_y + 50 * scale
 
-    number_font = gui_app.font(FontWeight.BOLD)
-    label_font = gui_app.font(FontWeight.MEDIUM)
-    number_size = int((35 if compact else 98) * scale)
-    label_size = int((14 if compact else 42) * scale)
-    number = f"{milestone.distance_miles:.1f} mi"
-    label = "FULL ASSIST MILESTONE" if milestone.category == AssistCategory.FULL_ASSIST else "MADS MILESTONE"
-
-    number_bounds = measure_text_cached(number_font, number, number_size)
-    label_bounds = measure_text_cached(label_font, label, label_size)
-    number_y = 9 if compact else 35
-    label_y = 55 if compact else 145
-    number_pos = rl.Vector2(card.x + (card.width - number_bounds.x) / 2, card.y + number_y * scale)
-    label_pos = rl.Vector2(card.x + (card.width - label_bounds.x) / 2, card.y + label_y * scale)
-    rl.draw_text_ex(number_font, number, number_pos, number_size, 0, rl.Color(255, 255, 255, int(255 * alpha)))
-    rl.draw_text_ex(label_font, label, label_pos, label_size, 2 * scale, rl.Color(220, 226, 235, int(230 * alpha)))
+    rl.draw_text_ex(semibold_font, category, rl.Vector2(center_x - category_bounds.x / 2, category_y),
+                    category_size, 0, secondary_color)
+    rl.draw_text_ex(display_font, number, rl.Vector2(number_x, number_y), number_size, 0, text_color)
+    rl.draw_text_ex(semibold_font, unit, rl.Vector2(center_x - unit_bounds.x / 2, unit_y),
+                    unit_size, 0, secondary_color)
+    rl.draw_text_ex(semibold_font, milestone_label, rl.Vector2(center_x - milestone_bounds.x / 2, milestone_y),
+                    milestone_size, 0, text_color)
