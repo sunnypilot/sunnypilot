@@ -35,14 +35,56 @@ def _command(model, desired_curvature: float, *, v_ego: float = 0.0, current_cur
   return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature)
 
 
-def test_steady_arc_uses_c2_without_fast_pose_fields():
+def test_steady_arc_keeps_c2_with_small_continuous_pose_authority():
   path = _command(_path(0.008), 0.008, v_ego=8.0)
 
   assert path.valid
-  assert abs(path.path_offset) < 1e-9
-  assert abs(path.path_angle) < 1e-9
-  assert np.isclose(path.curvature, 0.008, atol=5e-5)
+  assert 0.0 < path.path_offset < 0.02
+  assert 0.0 < path.path_angle < 0.01
+  assert np.isclose(path.curvature, 0.0052, atol=5e-5)
   assert abs(path.curvature_rate) < 1e-5
+
+
+def test_gentle_changing_curve_keeps_continuous_pose_authority():
+  path = _command(_path(0.004, 0.00015), 0.004, v_ego=8.0, current_curvature=0.004)
+
+  assert abs(path.path_offset) > 0.0001
+  assert abs(path.path_angle) > 0.0001
+  assert 0.0 < path.curvature < 0.004
+
+
+def test_c2_unloads_before_near_horizon_curve_exit():
+  path = _command(_path(0.004, -0.0005), 0.004, v_ego=8.0, current_curvature=0.004)
+
+  assert path.curvature == 0.0
+  assert path.curvature_rate == 0.0
+  assert path.path_angle < 0.02
+
+
+def test_tight_curve_unwind_keeps_fast_pose_without_loading_c2():
+  steady = _command(_path(0.015), 0.015, v_ego=10.0, current_curvature=0.012)
+  unwinding = _command(_path(0.015, -0.0005), 0.015, v_ego=10.0, current_curvature=0.012)
+
+  assert steady.curvature == 0.0
+  assert unwinding.curvature == 0.0
+  assert abs(_equivalent_curvature(unwinding)) > 0.9 * abs(_equivalent_curvature(steady))
+
+
+def test_action_curvature_wins_over_opposing_model_geometry():
+  path = _command(_path(0.008), -0.004, v_ego=7.0, current_curvature=0.0)
+
+  assert path.path_angle < 0.0
+  assert _equivalent_curvature(path) < -0.003
+
+
+def test_changing_path_keeps_c3_zero_without_software_drain():
+  controller = FordPathController()
+  for _ in range(100):
+    changing = controller.update(_path(0.004, 0.001), 0.004, v_ego=15.0, current_curvature=0.004)
+  flat = controller.update(_path(0.004), 0.004, v_ego=15.0, current_curvature=0.004)
+
+  assert changing.curvature_rate == 0.0
+  assert flat.curvature_rate == 0.0
 
 
 def test_sunnypilot_path_message_round_trip():
@@ -153,20 +195,28 @@ def test_action_demand_exposes_forward_path_authority():
   assert _equivalent_curvature(command) >= 0.004
 
 
-def test_minor_curve_uses_c2_when_tracking_is_close():
+def test_model_turn_exposes_fast_authority_before_action_catches_up():
+  command = FordPathController(dt=1.0).update(_path(0.04), 0.002, v_ego=8.0, current_curvature=0.002)
+
+  assert command.curvature == 0.0
+  assert command.path_offset > 0.5
+  assert command.path_angle > 0.2
+
+
+def test_minor_curve_blends_c2_with_small_pose_authority_when_tracking_is_close():
   command = FordPathController(dt=1.0).update(_path(0.005), 0.005, v_ego=8.0, current_curvature=0.0048)
 
-  assert abs(command.path_offset) < 1e-9
-  assert abs(command.path_angle) < 1e-9
-  assert command.curvature > 0.0049
+  assert 0.0 < command.path_offset < 0.01
+  assert 0.0 < command.path_angle < 0.01
+  assert command.curvature > 0.003
 
 
-def test_minor_changing_curve_does_not_emit_ungated_c3():
+def test_minor_changing_curve_keeps_future_geometry_in_pose_not_c3():
   command = FordPathController(dt=1.0).update(_path(0.005, 0.0003), 0.005, v_ego=8.0, current_curvature=0.0048)
 
-  assert abs(command.path_offset) < 1e-9
-  assert abs(command.path_angle) < 1e-9
-  assert command.curvature > 0.0049
+  assert abs(command.path_offset) < 0.02
+  assert abs(command.path_angle) < 0.01
+  assert command.curvature > 0.003
   assert command.curvature_rate == 0.0
 
 
@@ -175,8 +225,8 @@ def test_c2_uses_stable_action_curvature_not_independent_model_fit():
   first = controller.update(_path(0.004), 0.002, v_ego=8.0, current_curvature=0.002)
   second = controller.update(_path(0.006), 0.002, v_ego=8.0, current_curvature=0.002)
 
-  assert np.isclose(first.curvature, 0.002)
-  assert np.isclose(second.curvature, 0.002)
+  assert np.isclose(first.curvature, 0.0013)
+  assert np.isclose(second.curvature, 0.0013)
 
 
 def test_action_curvature_corrects_stale_opposing_model_at_low_speed():
@@ -188,12 +238,12 @@ def test_action_curvature_corrects_stale_opposing_model_at_low_speed():
   assert _equivalent_curvature(command) >= 0.004
 
 
-def test_small_action_sign_noise_does_not_reverse_a_strong_model_path():
+def test_action_sign_wins_over_opposing_model_path():
   command = FordPathController(dt=1.0).update(_path(0.04), -0.0005, v_ego=6.0, current_curvature=0.02)
 
-  assert command.path_offset > 0.0
-  assert command.path_angle > 0.0
-  assert _equivalent_curvature(command) > 0.02
+  assert command.path_offset < 0.0
+  assert command.path_angle < 0.0
+  assert _equivalent_curvature(command) < 0.0
 
 
 def test_measured_curvature_after_path_exit_commands_countersteer():
@@ -235,8 +285,8 @@ def test_curvature_error_increases_forward_pose_command_while_behind():
 
   assert behind.path_offset > tracking.path_offset + 0.01
   assert behind.path_angle > tracking.path_angle + 0.015
-  assert behind.curvature == 0.0
-  assert tracking.curvature > 0.007
+  assert np.isclose(behind.curvature, tracking.curvature)
+  assert tracking.curvature > 0.005
   assert np.isclose(behind.curvature_rate, tracking.curvature_rate)
 
 
@@ -254,8 +304,8 @@ def test_action_c2_remains_active_for_centering():
   centering = FordPathController(dt=1.0).update(_path(0.002), 0.002, v_ego=15.0, current_curvature=0.002)
 
   assert centering.curvature > 0.001
-  assert abs(centering.path_offset) < 1e-9
-  assert abs(centering.path_angle) < 1e-9
+  assert centering.path_offset > 0.0
+  assert centering.path_angle > 0.0
 
 
 def test_tight_turn_from_stop_builds_bounded_forward_pose_authority():

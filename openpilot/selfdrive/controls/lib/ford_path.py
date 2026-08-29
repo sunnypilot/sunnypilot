@@ -12,10 +12,11 @@ DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 _PATH_OFFSET_DISTANCE = 7.0
 _PATH_MIN_LOOKAHEAD = 7.0
 _CURVATURE_RATE_HORIZONS = (3.5, 5.0, 7.0)
-_CENTERING_CURVATURE_BASEBAND = (0.003, 0.006)
+_FAST_POSE_CURVATURE_BAND = (0.009, 0.012)
+_CENTERING_CURVATURE_SHARE = 0.65
 _TRACKING_ERROR_DEADZONE = 0.0005
 _TRACKING_ERROR_LIMIT = 0.012
-_PATH_RATES = (4.0, 1.0, math.inf, 0.002)
+_PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
 
 @dataclass(frozen=True)
@@ -94,19 +95,18 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
   model_curvature = _curvature(path)
   model_curvature_rate = _curvature_rate(path)
   action_curvature = _finite(desired_curvature)
-  requested_curvature = max((model_curvature, action_curvature), key=abs)
+  requested_curvature = action_curvature if action_curvature * model_curvature < 0.0 else \
+    max((model_curvature, action_curvature), key=abs)
   maneuver_residual = requested_curvature - model_curvature
   path_offset += 0.5 * maneuver_residual * _PATH_OFFSET_DISTANCE ** 2
   path_angle += maneuver_residual * lookahead
   correction = 0.0
-  tracking_demand = 0.0
   wheel_beyond_target = False
   if current_curvature is not None:
     target_curvature = action_curvature
     measured_curvature = _finite(current_curvature)
     tracking_error = target_curvature - measured_curvature
     correction = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
-    tracking_demand = abs(correction)
     wheel_beyond_target = target_curvature * measured_curvature > 0.0 and \
       abs(target_curvature) + _TRACKING_ERROR_DEADZONE < abs(measured_curvature)
     correction_limit = _TRACKING_ERROR_LIMIT
@@ -122,21 +122,27 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
       path_offset += correction_offset
       path_angle += correction_angle
 
-  spatial_demand = abs(model_curvature_rate) * lookahead / 3.0
-  overflow_demand = max(abs(requested_curvature) - DBC_CURVATURE[1], 0.0)
-  maneuver_demand = max(spatial_demand, overflow_demand, tracking_demand)
-  maneuver_share = 1.0 if wheel_beyond_target else \
-    float(np.interp(maneuver_demand, _CENTERING_CURVATURE_BASEBAND, (0.0, 1.0)))
-  path_offset *= maneuver_share
-  path_angle *= maneuver_share
-  centering_curvature = action_curvature
+  future_curvature = action_curvature + model_curvature_rate * lookahead
+  sustained_curvature = 0.0
+  if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _TRACKING_ERROR_DEADZONE:
+    sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
+  maneuver_demand = max(abs(requested_curvature), abs(correction))
+  maneuver_share = float(np.interp(maneuver_demand, _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
+  centering_curvature = 0.0 if wheel_beyond_target else \
+    sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)
+  path_offset -= 0.5 * centering_curvature * _PATH_OFFSET_DISTANCE ** 2
+  path_angle -= centering_curvature * lookahead
+
+  pose_gain = 0.20 + 0.80 * maneuver_share
+  path_offset *= pose_gain
+  path_angle *= pose_gain
 
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
     path_angle=float(np.clip(path_angle, *DBC_ANGLE)),
-    curvature=float(np.clip(centering_curvature * (1.0 - maneuver_share), *DBC_CURVATURE)),
-    curvature_rate=float(np.clip(model_curvature_rate * maneuver_share, *DBC_CURVATURE_RATE)),
+    curvature=float(np.clip(centering_curvature, *DBC_CURVATURE)),
+    curvature_rate=0.0,
   )
 
 
