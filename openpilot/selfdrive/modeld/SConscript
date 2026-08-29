@@ -7,7 +7,7 @@ from openpilot.common.file_chunker import chunk_file, get_chunk_targets, get_exi
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
 from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE, DM_INPUT_SIZE
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.helpers import TG_INPUT_DEVICES_PATH, usbgpu_present, modeld_pkl_path
+from openpilot.selfdrive.modeld.helpers import TG_INPUT_DEVICES_PATH, chestnut_present, modeld_pkl_path
 
 
 CAMERA_CONFIGS = [
@@ -36,18 +36,18 @@ else:
 tg_devices = { # which device to put jit inputs to at runtime
   'openpilot.selfdrive.modeld.modeld': {
     'default': {'WARP_DEV': tg_backend, 'QUEUE_DEV': tg_backend},
-    'usbgpu': {'WARP_DEV': tg_backend, 'QUEUE_DEV': 'AMD'}
+    'chestnut': {'WARP_DEV': tg_backend, 'QUEUE_DEV': 'AMD'}
   },
   'openpilot.selfdrive.modeld.dmonitoringmodeld': {
     'default': {'DEV': tg_backend}
   },
 }
 
-USBGPU = usbgpu_present()
-if USBGPU:
-  usbgpu_tg_flags = f'DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV={tg_backend} FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2'
+CHESTNUT = chestnut_present()
+if CHESTNUT:
+  chestnut_tg_flags = f'DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV={tg_backend} FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2'
   # the USB+AMD GPU takes an exclusive flock; serialize all targets that touch it
-  usbgpu_lock = File("models/.usb_gpu.lock").abspath
+  chestnut_lock = File("models/.chestnut.lock").abspath
 
 def write_tg_devices(target, source, env):
   with open(str(target[0]), "w") as f:
@@ -73,44 +73,45 @@ compile_modeld_script = [
 model_w, model_h = MEDMODEL_INPUT_SIZE
 frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
 
-for usbgpu in [False, True] if USBGPU else [False]:
-  target_pkl_path = File(modeld_pkl_path(usbgpu)).abspath
-  # BIG_INTO_SMALL=1 builds the default target from the big model, e.g. to test it without a USB GPU
-  file_prefix, cmd_flags = ('big_', usbgpu_tg_flags) if usbgpu else ('big_' if os.getenv('BIG_INTO_SMALL') else '', tg_flags)
-  driving_onnx_deps = get_existing_chunks(File(f"models/{file_prefix}driving_supercombo.onnx").abspath)
-  camera_res_args = ' '.join(f'{cw}x{ch}' for cw, ch in CAMERA_CONFIGS)
-  # CPU 7 is isolated with isolcpus on AGNOS, so explicitly pin the compiler to it.
-  taskset = 'taskset -c 7 ' if arch == 'comma_arm64' else ''
-  cmd = (f'{cmd_flags} {mac_brew_string} {taskset}python3 {modeld_dir}/compile_modeld.py '
-        f'--model-size {model_w}x{model_h} '
-        f'--camera-resolutions {camera_res_args} '
-        f'--onnx {File(f"models/{file_prefix}driving_supercombo.onnx").abspath} '
-        f'--output {target_pkl_path} --frame-skip {frame_skip}')
-  onnx_sizes_sum = sum(os.path.getsize(f) for f in driving_onnx_deps)
-  chunk_targets = get_chunk_targets(target_pkl_path, estimate_pickle_max_size(onnx_sizes_sum))
-  def do_compile(target, source, env, command=cmd, pkl=target_pkl_path, chunks=chunk_targets):
-    from openpilot.system.hardware.chestnut.flash import link_up
-    # chestnut can enumerate before its PCIe link is up due to varying 12V power behavior across cars
-    for _ in range(10):
-      if link_up():
-        break
-      time.sleep(1)
-    else:
-      print("Chestnut not ready, skipping big model build")
-      return
-    if ret := env.Execute(command):
-      return ret
-    chunk_file(pkl, chunks)
-  def do_chunk(target, source, env, pkl=target_pkl_path, chunks=chunk_targets):
-    chunk_file(pkl, chunks)
-  actions = Action(do_compile, "  [USBGPU] $TARGET") if usbgpu else [cmd, Action(do_chunk, "  [CHUNK] $TARGET")]
-  node = lenv.Command(
-    chunk_targets,
-    tinygrad_files + compile_modeld_script + driving_onnx_deps + [Value(chunk_targets), chunker_file],
-    actions,
-  )
-  if usbgpu:
-    lenv.SideEffect(usbgpu_lock, node)
+if not os.getenv('SKIP_TINYGRAD_COMPILE'):
+  for chestnut in [False, True] if CHESTNUT else [False]:
+    target_pkl_path = File(modeld_pkl_path(chestnut)).abspath
+    # BIG_INTO_SMALL=1 builds the default target from the big model, e.g. to test it without a chestnut
+    file_prefix, cmd_flags = ('big_', chestnut_tg_flags) if chestnut else ('big_' if os.getenv('BIG_INTO_SMALL') else '', tg_flags)
+    driving_onnx_deps = get_existing_chunks(File(f"models/{file_prefix}driving_supercombo.onnx").abspath)
+    camera_res_args = ' '.join(f'{cw}x{ch}' for cw, ch in CAMERA_CONFIGS)
+    # CPU 7 is isolated with isolcpus on AGNOS, so explicitly pin the compiler to it.
+    taskset = 'taskset -c 7 ' if arch == 'comma_arm64' else ''
+    cmd = (f'{cmd_flags} {mac_brew_string} {taskset}python3 {modeld_dir}/compile_modeld.py '
+          f'--model-size {model_w}x{model_h} '
+          f'--camera-resolutions {camera_res_args} '
+          f'--onnx {File(f"models/{file_prefix}driving_supercombo.onnx").abspath} '
+          f'--output {target_pkl_path} --frame-skip {frame_skip}')
+    onnx_sizes_sum = sum(os.path.getsize(f) for f in driving_onnx_deps)
+    chunk_targets = get_chunk_targets(target_pkl_path, estimate_pickle_max_size(onnx_sizes_sum))
+    def do_compile(target, source, env, command=cmd, pkl=target_pkl_path, chunks=chunk_targets):
+      from openpilot.system.hardware.chestnut.flash import link_up
+      # chestnut can enumerate before its PCIe link is up due to varying 12V power behavior across cars
+      for _ in range(10):
+        if link_up():
+          break
+        time.sleep(1)
+      else:
+        print("Chestnut not ready, skipping big model build")
+        return
+      if ret := env.Execute(command):
+        return ret
+      chunk_file(pkl, chunks)
+    def do_chunk(target, source, env, pkl=target_pkl_path, chunks=chunk_targets):
+      chunk_file(pkl, chunks)
+    actions = Action(do_compile, "  [CHESTNUT] $TARGET") if chestnut else [cmd, Action(do_chunk, "  [CHUNK] $TARGET")]
+    node = lenv.Command(
+      chunk_targets,
+      tinygrad_files + compile_modeld_script + driving_onnx_deps + [Value(chunk_targets), chunker_file],
+      actions,
+    )
+    if chestnut:
+      lenv.SideEffect(chestnut_lock, node)
 
 # get model metadata
 fn = File(f"models/dmonitoring_model").abspath
@@ -142,4 +143,5 @@ def tg_compile(flags, model_name):
      Action(do_chunk, "  [CHUNK] $TARGET")],
   )
 
-tg_compile(tg_flags, 'dmonitoring_model')
+if not os.getenv('SKIP_TINYGRAD_COMPILE'):
+  tg_compile(tg_flags, 'dmonitoring_model')

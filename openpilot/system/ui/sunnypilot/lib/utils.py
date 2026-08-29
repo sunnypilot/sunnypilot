@@ -8,11 +8,25 @@ from collections.abc import Callable
 
 import pyray as rl
 
-from openpilot.system.ui.lib.application import FontWeight
+from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import ButtonActionSP
-from openpilot.system.ui.widgets.label import UnifiedLabel
+from openpilot.system.ui.widgets.label import ScrollState, UnifiedLabel
 from openpilot.system.ui.widgets.list_view import BUTTON_WIDTH, BUTTON_HEIGHT, TEXT_PADDING, _resolve_value
+
+SCROLL_SPEED = 1.2  # stock is 0.8, boosted 50% to compensate for larger font (50 vs 32)
+SCROLL_REFERENCE_FPS = 60.
+
+
+class UnifiedLabelSP(UnifiedLabel):
+  # stock scroll formula (0.8 / 60 * fps) is inverted — pre-correct so speed is constant px/sec
+  def _render(self, _):
+    if self._needs_scroll and self._scroll_state == ScrollState.SCROLLING:
+      fps = gui_app.target_fps
+      wrong_step = 0.8 / SCROLL_REFERENCE_FPS * fps
+      correct_step = SCROLL_SPEED * SCROLL_REFERENCE_FPS / fps
+      self._scroll_offset -= (correct_step - wrong_step)
+    super()._render(_)
 
 
 class NoElideButtonAction(ButtonActionSP):
@@ -21,14 +35,12 @@ class NoElideButtonAction(ButtonActionSP):
 
 
 class ScrollingButtonAction(ButtonActionSP):
-  """ButtonActionSP whose value scrolls instead of eliding when it doesn't fit."""
-
   def __init__(self, text: str | Callable[[], str], width: int = style.BUTTON_ACTION_WIDTH,
                enabled: bool | Callable[[], bool] = True):
     super().__init__(text=text, width=width, enabled=enabled)
-    self._value_label = UnifiedLabel("", font_size=style.ITEM_TEXT_FONT_SIZE, font_weight=FontWeight.NORMAL,
-                                     text_color=self._value_color, scroll=True,
-                                     alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+    self._value_label = UnifiedLabelSP("", font_size=style.ITEM_TEXT_FONT_SIZE, font_weight=FontWeight.NORMAL,
+                                       text_color=self._value_color, scroll=True,
+                                       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
 
   def set_value(self, value: str | Callable[[], str], color: rl.Color = style.ITEM_TEXT_VALUE_COLOR):
     if self.value != _resolve_value(value, ""):

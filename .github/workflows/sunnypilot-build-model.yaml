@@ -31,7 +31,7 @@ on:
         type: string
         default: ''
       target_hardware:
-        description: 'Hardware target to compile for (qcom or usbgpu)'
+        description: 'Hardware target to compile for (qcom or chestnut)'
         required: false
         type: string
         default: 'qcom'
@@ -57,7 +57,7 @@ on:
         type: choice
         options:
           - qcom
-          - usbgpu
+          - chestnut
         default: 'qcom'
 
 
@@ -102,7 +102,7 @@ jobs:
           cat $GITHUB_OUTPUT
       - run: |
           cd ${{ github.workspace }}/openpilot/openpilot
-          if [ "${{ inputs.target_hardware }}" != "usbgpu" ]; then
+          if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
             git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx"
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
           else
@@ -121,7 +121,7 @@ jobs:
           if-no-files-found: error
 
   build_model:
-    runs-on: [self-hosted, usbgpu]
+    runs-on: [self-hosted, chestnut]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
@@ -185,10 +185,10 @@ jobs:
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
           TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
-          if [ "${{ inputs.target_hardware }}" == "usbgpu" ]; then
-            echo "USBGPU build"
-            export USBGPU=1
-            TG_FLAGS="DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2"
+          if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
+            echo "CHESTNUT build"
+            export CHESTNUT=1
+            TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2"
             OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
           else
             echo "QCOM build"
