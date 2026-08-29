@@ -41,12 +41,7 @@ def _compute_hash(file_path: str) -> str | None:
     return None
 
 
-async def verify_file(file_path: str, expected_hash: str) -> bool:
-  file_hash = _compute_hash(file_path)
-  return file_hash == expected_hash.lower() if file_hash else False
-
-
-def _verify_file(file_path: str, expected_hash: str) -> bool:
+def verify_file(file_path: str, expected_hash: str) -> bool:
   file_hash = _compute_hash(file_path)
   return file_hash == expected_hash.lower() if file_hash else False
 
@@ -81,7 +76,7 @@ def _bundle_artifacts(bundle: custom.ModelManagerSP.ModelBundle) -> list[tuple[s
 
 def _bundle_is_valid_locally(bundle: custom.ModelManagerSP.ModelBundle) -> bool:
   model_root = Paths.model_root()
-  return all(_verify_file(os.path.join(model_root, file_name), expected_hash)
+  return all(verify_file(os.path.join(model_root, file_name), expected_hash)
              for file_name, expected_hash in _bundle_artifacts(bundle))
 
 
