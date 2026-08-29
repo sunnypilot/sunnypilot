@@ -12,6 +12,7 @@ from requests.exceptions import (SSLError, RequestException, HTTPError)
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware.hw import Paths
+from openpilot.common.file_chunker import get_chunk_name
 from openpilot.sunnypilot.models.helpers import is_bundle_version_compatible
 from openpilot.cereal import custom
 
@@ -48,7 +49,13 @@ class ModelParser:
         manifest_path = os.path.join(model_dir, f"{artifact.fileName}.chunkmanifest")
         num_chunks = str(len(artifact.chunks))
 
-        if not os.path.exists(manifest_path) or open(manifest_path).read().strip() != num_chunks:
+        # a manifest describes chunk files on disk (file_chunker writes one only after
+        # writing the chunks): writing it for artifacts that were never downloaded lets
+        # it shadow a whole-file model in open_file_chunked(), and lets two catalog
+        # entries that share a file_name with different chunk counts rewrite it on
+        # every parse
+        first_chunk = os.path.join(model_dir, get_chunk_name(artifact.fileName, 0, len(artifact.chunks)))
+        if os.path.exists(first_chunk) and (not os.path.exists(manifest_path) or open(manifest_path).read().strip() != num_chunks):
           with open(manifest_path, "w") as f:
             f.write(num_chunks)
           cloudlog.info(f"Wrote chunk manifest for {artifact.fileName}: {num_chunks} chunks")
