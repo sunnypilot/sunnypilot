@@ -192,7 +192,6 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     ref @9 :Text;
     minimumSelectorVersion @10 :UInt32;
     overrides @11 :List(Override);
-    isBig @12 :Bool;
   }
 }
 

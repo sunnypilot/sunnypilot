@@ -93,8 +93,6 @@ class ModelState(ModelStateBase):
       model_bundle = None
     else:
       model_bundle = get_active_bundle(chestnut=chestnut)
-    if model_bundle and chestnut != model_bundle.isBig:
-      model_bundle = None
     self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides} if model_bundle else {}
 

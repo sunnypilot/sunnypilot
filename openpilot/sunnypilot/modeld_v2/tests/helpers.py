@@ -41,7 +41,6 @@ class DummyBundle:
     self.overrides = [DummyOverride('lat', '.1'), DummyOverride('long', '.3')]
     self.generation = generation
     self.is20hz = is_20hz
-    self.isBig = is_big
     self.models = models or []
 
 
