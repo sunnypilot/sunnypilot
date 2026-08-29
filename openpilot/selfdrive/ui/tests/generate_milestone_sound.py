@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the temporary milestone celebration chime."""
+"""Generate the assisted-driving milestone celebration chime."""
 
 import math
 import wave

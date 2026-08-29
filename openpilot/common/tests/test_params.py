@@ -106,6 +106,13 @@ class TestParams(OpenpilotTestCase):
     assert q.get("CarParams") is None
     assert q.get("CarParams", True) == b"1"
 
+  def test_flush_non_blocking_writes(self):
+    self.params.put("DongleId", "first")
+    self.params.put("DongleId", "last")
+    self.params.flush()
+
+    assert self.params.get("DongleId") == "last"
+
   def test_params_all_keys(self):
     keys = Params().all_keys()
 

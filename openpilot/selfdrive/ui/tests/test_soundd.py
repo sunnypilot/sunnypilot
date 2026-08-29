@@ -5,12 +5,26 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log, messaging
 from openpilot.cereal.messaging import SubMaster, PubMaster
 from openpilot.selfdrive.ui.soundd import SELFDRIVE_STATE_TIMEOUT, Soundd, calculate_volume_for_device, check_selfdrive_timeout_alert
-from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import MILESTONE_EVENT_PAYLOAD
 
 AudibleAlert = log.SelfdriveState.AudibleAlert
 
 
 class TestSoundd(OpenpilotTestCase):
+  @staticmethod
+  def milestone_submaster(event_id=42):
+    class SubMasterStub:
+      def __init__(self):
+        self.updated = {'assistedDrivingMilestoneState': True}
+        msg = messaging.new_message('assistedDrivingMilestoneState')
+        msg.assistedDrivingMilestoneState.enabled = True
+        msg.assistedDrivingMilestoneState.event.id = event_id
+        self.data = {'assistedDrivingMilestoneState': msg.assistedDrivingMilestoneState}
+
+      def __getitem__(self, service):
+        return self.data[service]
+
+    return SubMasterStub()
+
   def test_comma_four_volume_is_50_percent_louder_than_comma_three_x(self):
     for weighted_db in (20.0, 30.0, 40.0, 50.0):
       with self.subTest(weighted_db=weighted_db):
@@ -18,21 +32,34 @@ class TestSoundd(OpenpilotTestCase):
         comma_four_volume = calculate_volume_for_device(weighted_db, "mici")
         assert comma_four_volume == min(1.0, comma_three_x_volume * 1.5)
 
-  def test_milestone_chime_uses_ui_milestone_event(self):
+  def test_milestone_chime_uses_typed_milestone_event_once(self):
     soundd = Soundd()
-
-    class SubMasterStub:
-      def __init__(self):
-        self.updated = {'customReservedRawData0': True}
-        self.data = {'customReservedRawData0': MILESTONE_EVENT_PAYLOAD}
-
-      def __getitem__(self, service):
-        return self.data[service]
-
-    sm = SubMasterStub()
+    sm = self.milestone_submaster()
     soundd.update_milestone_alert(sm)
 
     assert soundd.current_alert == AudibleAlert.complete
+    soundd.current_alert = AudibleAlert.none
+    soundd.update_milestone_alert(sm)
+    assert soundd.current_alert == AudibleAlert.none
+
+  def test_safety_alert_consumes_milestone_without_replaying_it(self):
+    soundd = Soundd()
+    sm = self.milestone_submaster()
+    soundd.current_alert = AudibleAlert.warningImmediate
+
+    soundd.update_milestone_alert(sm)
+    soundd.current_alert = AudibleAlert.none
+    soundd.update_milestone_alert(sm)
+
+    assert soundd.current_alert == AudibleAlert.none
+
+  def test_quiet_mode_consumes_milestone_without_playing_it(self):
+    soundd = Soundd()
+    soundd.enabled = True
+
+    soundd.update_milestone_alert(self.milestone_submaster())
+
+    assert soundd.current_alert == AudibleAlert.none
 
   def test_check_selfdrive_timeout_alert(self, mocker):
     sm = SubMaster(['selfdriveState', 'selfdriveStateSP'])

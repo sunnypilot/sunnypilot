@@ -64,8 +64,8 @@ class MiciMainLayout(Scroller):
 
     # Start onboarding if terms or training not completed, make sure to push after self
     self._onboarding_window = OnboardingWindow(lambda: gui_app.pop_widgets_to(self))
-    skip_onboarding_for_local_prototype = PC and os.getenv("SP_MILESTONE_PROTOTYPE") == "1"
-    if not self._onboarding_window.completed and not skip_onboarding_for_local_prototype:
+    skip_onboarding_for_milestone_preview = PC and os.getenv("SP_MILESTONE_PREVIEW") == "1"
+    if not self._onboarding_window.completed and not skip_onboarding_for_milestone_preview:
       gui_app.push_widget(self._onboarding_window)
 
     # initialize correct onroad layout
@@ -123,6 +123,8 @@ class MiciMainLayout(Scroller):
         self._onroad_time_delay = rl.get_time()
       else:
         self._scroll_to(self._home_layout)
+        if hasattr(self._home_layout, "request_drive_summary"):
+          self._home_layout.request_drive_summary()
 
     # FIXME: these two pops can interrupt user interacting in the settings
     if self._onroad_time_delay is not None and rl.get_time() - self._onroad_time_delay >= ONROAD_DELAY:

@@ -75,6 +75,7 @@ public:
     return put(key.c_str(), val ? "1" : "0", 1);
   }
   void putNonBlocking(const std::string &key, const std::string &val);
+  void flushNonBlockingWrites();
   inline void putBoolNonBlocking(const std::string &key, bool val) {
     putNonBlocking(key, val ? "1" : "0");
   }

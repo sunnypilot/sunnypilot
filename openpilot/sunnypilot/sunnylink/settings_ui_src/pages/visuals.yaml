@@ -20,6 +20,10 @@ sections:
     widget: toggle
     title: Steering Arc
     description: Display steering arc on the driving screen when lateral control is enabled.
+  - key: AssistedDrivingMilestonesEnabled
+    widget: toggle
+    title: Assisted Driving Milestones
+    description: Celebrate cumulative MADS and full-assist distance milestones while driving.
   - key: ShowTurnSignals
     widget: toggle
     title: Display Turn Signals

@@ -32,7 +32,14 @@ from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
 from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
 from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
+from openpilot.sunnypilot.selfdrive.selfdrived.assisted_driving_milestones import (
+  AssistCategory,
+  AssistedDrivingMilestones,
+  MilestoneEvent,
+  MilestoneStore,
+)
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.system.statsd import statlog
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -88,7 +95,8 @@ class SelfdriveD(CruiseHelper):
     self.big_model_ready_t = 0.
 
     # Setup sockets
-    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
+    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] +
+                                  ['selfdriveStateSP', 'onroadEventsSP', 'assistedDrivingMilestoneState'])
 
     self.gps_location_service = get_gps_location_service(self.params)
     self.gps_packets = [self.gps_location_service]
@@ -127,6 +135,7 @@ class SelfdriveD(CruiseHelper):
       self.params.remove("ExperimentalMode")
 
     self.CS_prev = car.CarState.new_message()
+    self.car_state_log_mono_time = 0
     self.AM = AlertManager()
     self.events = Events()
 
@@ -137,6 +146,11 @@ class SelfdriveD(CruiseHelper):
     self.cruise_mismatch_counter = 0
     self.last_steering_pressed_frame = 0
     self.distance_traveled = 0
+    self.assisted_driving_milestones = AssistedDrivingMilestones(MilestoneStore(self.params))
+    self.assisted_driving_milestones_enabled = bool(self.params.get("AssistedDrivingMilestonesEnabled", return_default=True))
+    self.assisted_driving_milestone_drive_id = ""
+    self._milestone_event: MilestoneEvent | None = None
+    self._milestone_event_expires_ns = 0
     self.last_functional_fan_frame = 0
     self.events_prev = []
     self.logged_comm_issue = None
@@ -527,6 +541,8 @@ class SelfdriveD(CruiseHelper):
   def data_sample(self):
     _car_state = messaging.recv_one(self.car_state_sock)
     CS = _car_state.carState if _car_state else self.CS_prev
+    if _car_state is not None:
+      self.car_state_log_mono_time = _car_state.logMonoTime
 
     self.sm.update(0)
 
@@ -645,6 +661,31 @@ class SelfdriveD(CruiseHelper):
       self.pm.send('onroadEventsSP', ce_send_sp)
     self.events_sp_prev = self.events_sp.names.copy()
 
+  def publish_assisted_driving_milestones(self, now_ns: int, event: MilestoneEvent | None) -> None:
+    if event is not None:
+      self._milestone_event = event
+      self._milestone_event_expires_ns = now_ns + 1_000_000_000
+    elif now_ns >= self._milestone_event_expires_ns:
+      self._milestone_event = None
+
+    if event is None and self.sm.frame % 10 != 0:
+      return
+
+    snapshot = self.assisted_driving_milestones.snapshot()
+    msg = messaging.new_message("assistedDrivingMilestoneState")
+    msg.valid = True
+    state = msg.assistedDrivingMilestoneState
+    state.enabled = self.assisted_driving_milestones_enabled
+    state.madsDistanceMeters = snapshot.distances_meters[AssistCategory.MADS]
+    state.fullAssistDistanceMeters = snapshot.distances_meters[AssistCategory.FULL_ASSIST]
+    if self._milestone_event is not None:
+      state.event.id = self._milestone_event.event_id
+      state.event.category = self._milestone_event.category.value
+      state.event.distanceMeters = self._milestone_event.distance_meters
+      state.event.previousDistanceMeters = self._milestone_event.previous_distance_meters
+      state.event.unit = self._milestone_event.unit.value
+    self.pm.send("assistedDrivingMilestoneState", msg)
+
   def step(self):
     CS = self.data_sample()
     self.update_events(CS)
@@ -653,6 +694,28 @@ class SelfdriveD(CruiseHelper):
     if not self.CP.notCar:
       self.mads.update(CS)
     self.update_alerts(CS)
+
+    now_ns = time.monotonic_ns()
+    if not self.assisted_driving_milestone_drive_id:
+      self.assisted_driving_milestone_drive_id = self.params.get("CurrentRoute") or ""
+      self.assisted_driving_milestones.set_drive_id(self.assisted_driving_milestone_drive_id)
+    car_control = self.sm['carControl']
+    milestone_event = self.assisted_driving_milestones.update(
+      self.car_state_log_mono_time,
+      CS.vEgo,
+      lat_active=car_control.latActive,
+      long_active=car_control.longActive,
+      is_metric=self.is_metric,
+      enabled=self.assisted_driving_milestones_enabled,
+    )
+    if milestone_event is not None:
+      cloudlog.event("assisted_driving_milestone_reached",
+                     event_id=milestone_event.event_id,
+                     category=milestone_event.category.value,
+                     distance_meters=milestone_event.distance_meters)
+      statlog.gauge(f"assisted_driving_milestone.{milestone_event.category.value}.meters",
+                    milestone_event.distance_meters)
+    self.publish_assisted_driving_milestones(now_ns, milestone_event)
 
     self.button_state_tracker.update(CS)
     self.publish_selfdriveState(CS)
@@ -666,6 +729,7 @@ class SelfdriveD(CruiseHelper):
       self.disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.params.get("LongitudinalPersonality", return_default=True)
+      self.assisted_driving_milestones_enabled = bool(self.params.get("AssistedDrivingMilestonesEnabled", return_default=True))
 
       self.mads.read_params()
       time.sleep(0.1)
@@ -679,6 +743,7 @@ class SelfdriveD(CruiseHelper):
         self.step()
         self.rk.monitor_time()
     finally:
+      self.assisted_driving_milestones.close()
       e.set()
       t.join()
 

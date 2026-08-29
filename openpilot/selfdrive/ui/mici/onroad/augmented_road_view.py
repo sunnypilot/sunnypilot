@@ -19,14 +19,14 @@ from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCamera
 from openpilot.common.transformations.orientation import rot_from_euler
 from enum import IntEnum
 
-MILESTONE_PROTOTYPE_ENABLED = gui_app.sunnypilot_ui()
+MILESTONE_CELEBRATION_ENABLED = gui_app.sunnypilot_ui()
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.onroad.hud_renderer import HudRendererSP as HudRenderer
   from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
 
-  if MILESTONE_PROTOTYPE_ENABLED:
-    from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_celebration_prototype import MilestoneCelebrationPrototype
+  if MILESTONE_CELEBRATION_ENABLED:
+    from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_celebration import MilestoneCelebration
 
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.ExtrinsicsCalibration.Status.calibrated
@@ -161,7 +161,7 @@ class AugmentedRoadView(CameraView):
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverStateRenderer()
     self._confidence_ball = ConfidenceBall()
-    self._milestone_celebration = self._child(MilestoneCelebrationPrototype()) if MILESTONE_PROTOTYPE_ENABLED else None
+    self._milestone_celebration = self._child(MilestoneCelebration()) if MILESTONE_CELEBRATION_ENABLED else None
     self._offroad_label = UnifiedLabel("start the car to\nuse sunnypilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
@@ -227,10 +227,13 @@ class AugmentedRoadView(CameraView):
     # Fade out bottom of overlays for looks
     rl.draw_texture_ex(self._fade_texture, rl.Vector2(self._content_rect.x, self._content_rect.y), 0.0, 1.0, rl.WHITE)
 
-    if self._milestone_celebration is not None:
-      self._milestone_celebration.render(self._content_rect)
-
     alert_to_render, not_animating_out = self._alert_renderer.will_render()
+
+    if self._milestone_celebration is not None:
+      if alert_to_render is not None:
+        self._milestone_celebration.cancel_for_alert()
+      else:
+        self._milestone_celebration.render(self._content_rect)
 
     # Hide DMoji when disengaged unless AlwaysOnDM is enabled
     should_draw_dmoji = (not self._hud_renderer.drawing_top_icons() and
@@ -256,9 +259,6 @@ class AugmentedRoadView(CameraView):
     self._confidence_ball.render(self.rect)
 
     self._bookmark_icon.render(self.rect)
-    if self._milestone_celebration is not None:
-      self._milestone_celebration.capture_screenshot()
-
   def _switch_stream_if_needed(self, sm):
     if sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:
       v_ego = sm['carState'].vEgo

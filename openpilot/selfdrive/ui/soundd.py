@@ -15,7 +15,6 @@ from openpilot.system import micd
 from openpilot.common.hardware import HARDWARE
 
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
-from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import MILESTONE_EVENT_PAYLOAD
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -90,6 +89,7 @@ class Soundd(QuietMode):
 
     self.selfdrive_timeout_alert = False
     self.pending_stop = False
+    self.last_milestone_event_id = 0
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
 
@@ -170,8 +170,14 @@ class Soundd(QuietMode):
       self.selfdrive_timeout_alert = False
 
   def update_milestone_alert(self, sm):
-    milestone_event = sm.updated['customReservedRawData0'] and bytes(sm['customReservedRawData0']) == MILESTONE_EVENT_PAYLOAD
-    if milestone_event and self.current_alert == AudibleAlert.none and not self.enabled:
+    if not sm.updated['assistedDrivingMilestoneState']:
+      return
+    milestone_state = sm['assistedDrivingMilestoneState']
+    event_id = milestone_state.event.id
+    if not milestone_state.enabled or event_id == 0 or event_id == self.last_milestone_event_id:
+      return
+    self.last_milestone_event_id = event_id
+    if self.current_alert == AudibleAlert.none and not self.enabled:
       self.update_alert(AudibleAlert.complete)
 
   def calculate_volume(self, weighted_db):
@@ -189,7 +195,7 @@ class Soundd(QuietMode):
     import sounddevice as sd
     micd.patch_sounddevice(sd)
 
-    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'customReservedRawData0'])
+    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'assistedDrivingMilestoneState'])
 
     with self.get_stream(sd) as stream:
       rk = Ratekeeper(20)

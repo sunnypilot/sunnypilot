@@ -97,6 +97,10 @@ Params::Params(const std::string &path) {
 }
 
 Params::~Params() {
+  flushNonBlockingWrites();
+}
+
+void Params::flushNonBlockingWrites() {
   if (future.valid()) {
     future.wait();
   }

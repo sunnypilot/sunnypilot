@@ -1,7 +1,6 @@
-"""Tesla-style persistent assisted-distance milestones over the on-road view."""
+"""Render assisted-driving milestone celebrations over the on-road view."""
 
 import math
-import os
 import random
 import time
 from collections import deque
@@ -9,27 +8,20 @@ from dataclasses import dataclass
 
 import pyray as rl
 
-from openpilot.cereal import messaging
-from openpilot.common.hardware import PC
+from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.onroad.alert_renderer import ALERT_BACKGROUND_OPACITY
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import FONT_SIZES
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.selfdrive.ui.sunnypilot.onroad.milestone_tracker_prototype import (
-  AssistCategory,
-  AssistedDistanceMilestoneTracker,
-  DistanceMilestone,
-  MILESTONE_EVENT_PAYLOAD,
-  MilestoneStore,
-  assist_category,
-)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
 
 CELEBRATION_DURATION = 4.5
 PARTICLE_COUNT = 150
-PERSIST_INTERVAL_SECONDS = 60.0
+METERS_PER_MILE = 1609.344
+METERS_PER_KILOMETER = 1000.0
 
 CONFETTI_COLORS = (
   rl.Color(255, 55, 95, 255),
@@ -55,23 +47,25 @@ class ConfettiParticle:
   color: rl.Color
 
 
-class MilestoneCelebrationPrototype(Widget):
-  """Throwaway visual spike enabled on the sunnypilot comma four UI."""
+@dataclass(frozen=True)
+class CelebrationMilestone:
+  event_id: int
+  full_assist: bool
+  distance_meters: float
+  previous_distance_meters: float
+  metric: bool
+
+
+class MilestoneCelebration(Widget):
+  """Pure renderer for typed assisted-driving milestone events."""
 
   def __init__(self):
     super().__init__()
     self._drive_started_time = -1.0
     self._celebration_started_time: float | None = None
-    self._current_milestone: DistanceMilestone | None = None
-    self._pending_milestones: deque[DistanceMilestone] = deque()
-    self._store = MilestoneStore()
-    stored_distances = self._store.reset() if PC and os.getenv("SP_MILESTONE_RESET") == "1" else self._store.load()
-    self._tracker = AssistedDistanceMilestoneTracker(stored_distances)
-    self._pm = messaging.PubMaster(["customReservedRawData0"])
-    self._last_persisted_distances = stored_distances
-    self._last_persist_time = time.monotonic()
-    self._screenshot_taken = False
-    self._screenshot_ready = False
+    self._current_milestone: CelebrationMilestone | None = None
+    self._pending_milestones: deque[CelebrationMilestone] = deque()
+    self._last_event_id = 0
     self._particles = self._make_particles()
 
   @staticmethod
@@ -96,32 +90,16 @@ class MilestoneCelebrationPrototype(Widget):
   def _render(self, rect: rl.Rectangle, /) -> None:
     now = time.monotonic()
     if ui_state.started_time != self._drive_started_time:
-      self._persist_distances(force=True)
       self._drive_started_time = ui_state.started_time
       self._celebration_started_time = None
       self._current_milestone = None
       self._pending_milestones.clear()
-      self._tracker.reset_sampling()
-      self._screenshot_taken = False
-      self._screenshot_ready = False
 
-    car_control = ui_state.sm["carControl"]
-    category = assist_category(car_control.latActive, car_control.longActive)
-
-    milestones = self._tracker.update(
-      ui_state.sm.logMonoTime["carState"],
-      ui_state.sm["carState"].vEgo,
-      category,
-    )
-    self._pending_milestones.extend(milestones)
-    self._persist_distances(force=bool(milestones))
+    self._consume_event(suppress=False)
 
     if self._current_milestone is None and self._pending_milestones:
       self._current_milestone = self._pending_milestones.popleft()
       self._celebration_started_time = now
-      milestone_event = messaging.new_message("customReservedRawData0", size=len(MILESTONE_EVENT_PAYLOAD), valid=True)
-      milestone_event.customReservedRawData0 = MILESTONE_EVENT_PAYLOAD
-      self._pm.send("customReservedRawData0", milestone_event)
 
     if self._celebration_started_time is None or self._current_milestone is None:
       return
@@ -136,28 +114,35 @@ class MilestoneCelebrationPrototype(Widget):
     self._draw_background_scrim(rect, alpha)
     self._draw_confetti(rect, elapsed, alpha)
     self._draw_milestone(rect, elapsed, alpha, self._current_milestone)
-    self._screenshot_ready = elapsed >= 1.0
 
-  def hide_event(self) -> None:
-    self._persist_distances(force=True)
-    super().hide_event()
+  def cancel_for_alert(self) -> None:
+    self._consume_event(suppress=True)
+    self._celebration_started_time = None
+    self._current_milestone = None
+    self._pending_milestones.clear()
 
-  def _persist_distances(self, force: bool = False) -> None:
-    distances = self._tracker.distances_meters()
-    if distances == self._last_persisted_distances:
+  def _consume_event(self, suppress: bool) -> None:
+    if not ui_state.sm.updated["assistedDrivingMilestoneState"]:
       return
-    now = time.monotonic()
-    if force or now - self._last_persist_time >= PERSIST_INTERVAL_SECONDS:
-      self._store.save(distances)
-      self._last_persisted_distances = distances
-      self._last_persist_time = now
-
-  def capture_screenshot(self) -> None:
-    screenshot_path = os.getenv("SP_MILESTONE_SCREENSHOT")
-    if screenshot_path and self._screenshot_ready and not self._screenshot_taken:
-      rl.rl_draw_render_batch_active()
-      rl.take_screenshot(screenshot_path)
-      self._screenshot_taken = True
+    state = ui_state.sm["assistedDrivingMilestoneState"]
+    event = state.event
+    if not state.enabled:
+      self._celebration_started_time = None
+      self._current_milestone = None
+      self._pending_milestones.clear()
+      return
+    if event.id == 0 or event.id == self._last_event_id:
+      return
+    self._last_event_id = event.id
+    if suppress:
+      return
+    self._pending_milestones.append(CelebrationMilestone(
+      event_id=event.id,
+      full_assist=event.category == custom.AssistedDrivingMilestoneState.Category.fullAssist,
+      distance_meters=event.distanceMeters,
+      previous_distance_meters=event.previousDistanceMeters,
+      metric=event.unit == custom.AssistedDrivingMilestoneState.Unit.metric,
+    ))
 
   def _draw_confetti(self, rect: rl.Rectangle, elapsed: float, alpha: float) -> None:
     travel_height = rect.height * 1.45
@@ -174,7 +159,7 @@ class MilestoneCelebrationPrototype(Widget):
       rl.draw_rectangle_pro(particle_rect, origin, particle.angle + particle.spin * elapsed, color)
 
   @staticmethod
-  def _draw_milestone(rect: rl.Rectangle, elapsed: float, alpha: float, milestone: DistanceMilestone) -> None:
+  def _draw_milestone(rect: rl.Rectangle, elapsed: float, alpha: float, milestone: CelebrationMilestone) -> None:
     # Match the comma four set-speed hierarchy: DISPLAY number with a MAX-sized label.
     scale = rect.height / 240.0
     pulse = 1.0 + 0.025 * math.sin(min(elapsed, 0.6) / 0.6 * math.pi)
@@ -187,15 +172,17 @@ class MilestoneCelebrationPrototype(Widget):
     semibold_font = gui_app.font(FontWeight.SEMI_BOLD)
     tween_progress = min(elapsed / 0.85, 1.0)
     tween_progress = 1.0 - (1.0 - tween_progress) ** 3
-    previous_distance = milestone.previous_distance_miles
-    displayed_distance = previous_distance + (milestone.distance_miles - previous_distance) * tween_progress
+    meters_per_unit = METERS_PER_KILOMETER if milestone.metric else METERS_PER_MILE
+    previous_distance = milestone.previous_distance_meters / meters_per_unit
+    milestone_distance = milestone.distance_meters / meters_per_unit
+    displayed_distance = previous_distance + (milestone_distance - previous_distance) * tween_progress
     if tween_progress >= 1.0:
-      number = f"{round(milestone.distance_miles):,}"
+      number = f"{round(milestone_distance):,}"
     else:
       number = f"{displayed_distance:,.1f}"
-    unit = "MI"
-    category = "FULL ASSIST" if milestone.category == AssistCategory.FULL_ASSIST else "MADS"
-    milestone_label = "MILESTONE"
+    unit = tr("KM") if milestone.metric else tr("MI")
+    category = tr("FULL ASSIST") if milestone.full_assist else tr("MADS")
+    milestone_label = tr("MILESTONE")
 
     unit_bounds = measure_text_cached(semibold_font, unit, unit_size)
     number_bounds = measure_text_cached(display_font, number, number_size)

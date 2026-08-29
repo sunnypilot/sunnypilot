@@ -133,6 +133,12 @@ int params_put_bool(ParamsHandle *handle, const char *key, bool value, bool bloc
   });
 }
 
+void params_flush(ParamsHandle *handle) noexcept {
+  translate_exceptions([&]() {
+    handle->params.flushNonBlockingWrites();
+  });
+}
+
 int params_remove(ParamsHandle *handle, const char *key) noexcept {
   return translate_exceptions(-1, [&]() {
     return handle->params.remove(key);

@@ -478,7 +478,30 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   }
 }
 
-struct CustomReserved10 @0xcb9fd56c7057593a {
+struct AssistedDrivingMilestoneState @0xcb9fd56c7057593a {
+  enabled @0 :Bool;
+  madsDistanceMeters @1 :Float64;
+  fullAssistDistanceMeters @2 :Float64;
+  event @3 :Event;
+
+  struct Event {
+    id @0 :UInt64;
+    category @1 :Category;
+    distanceMeters @2 :Float64;
+    previousDistanceMeters @3 :Float64;
+    unit @4 :Unit;
+  }
+
+  enum Category {
+    none @0;
+    mads @1;
+    fullAssist @2;
+  }
+
+  enum Unit {
+    imperial @0;
+    metric @1;
+  }
 }
 
 struct CustomReserved11 @0xc2243c65e0340384 {

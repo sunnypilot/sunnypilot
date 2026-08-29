@@ -11,7 +11,6 @@ from openpilot.sunnypilot.selfdrive.car.sync_sunnylink_params import CAR_LIST_JS
 
 ONROAD_BRIGHTNESS_MIGRATION_VERSION: str = "1.0"
 ONROAD_BRIGHTNESS_TIMER_MIGRATION_VERSION: str = "1.0"
-ASSISTED_DISTANCE_MILESTONE_RESET_VERSION: str = "1"
 
 # index → seconds mapping for OnroadScreenOffTimer (SSoT)
 ONROAD_BRIGHTNESS_TIMER_VALUES = {0: 3, 1: 5, 2: 7, 3: 10, 4: 15, 5: 30, **{i: (i - 5) * 60 for i in range(6, 16)}}
@@ -100,17 +99,30 @@ def _migrate_model_bundle_slots(_params):
     cloudlog.exception(f"Error migrating model bundle slots: {e}")
 
 
-def _reset_assisted_distance_milestones(_params):
+def _migrate_assisted_driving_milestones(_params):
   try:
-    if _params.get("AssistedDistanceMilestoneResetVersion", return_default=True) == ASSISTED_DISTANCE_MILESTONE_RESET_VERSION:
+    state = _params.get("AssistedDrivingMilestoneState", return_default=True)
+    if isinstance(state, dict) and state.get("version") == 1:
       return
 
-    _params.put("MadsDrivenDistanceMeters", 0.0, block=True)
-    _params.put("FullAssistDrivenDistanceMeters", 0.0, block=True)
-    _params.put("AssistedDistanceMilestoneResetVersion", ASSISTED_DISTANCE_MILESTONE_RESET_VERSION, block=True)
-    cloudlog.info("params_migration: reset assisted-distance milestone counters")
+    _params.put("AssistedDrivingMilestoneState", {
+      "version": 1,
+      "distancesMeters": {
+        "mads": max(0.0, _params.get("MadsDrivenDistanceMeters", return_default=True) or 0.0),
+        "fullAssist": max(0.0, _params.get("FullAssistDrivenDistanceMeters", return_default=True) or 0.0),
+      },
+      "driveStartDistancesMeters": {
+        "mads": max(0.0, _params.get("MadsDrivenDistanceMeters", return_default=True) or 0.0),
+        "fullAssist": max(0.0, _params.get("FullAssistDrivenDistanceMeters", return_default=True) or 0.0),
+      },
+      "nextEventId": 1,
+      "nextSummaryId": 1,
+      "unit": "metric" if _params.get_bool("IsMetric") else "imperial",
+      "activeDriveId": "",
+    }, block=True)
+    cloudlog.info("params_migration: migrated assisted-driving milestone state")
   except Exception as e:
-    cloudlog.exception(f"Error resetting assisted-distance milestone counters: {e}")
+    cloudlog.exception(f"Error migrating assisted-driving milestone state: {e}")
 
 
 def run_migration(_params):
@@ -153,5 +165,4 @@ def run_migration(_params):
   # seed the usbgpu model slot from the pre-split single slot
   _migrate_model_bundle_slots(_params)
 
-  # reset prototype milestone counters once for the next test cycle
-  _reset_assisted_distance_milestones(_params)
+  _migrate_assisted_driving_milestones(_params)

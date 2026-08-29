@@ -136,7 +136,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", {PERSISTENT, JSON}},
-    {"AssistedDistanceMilestoneResetVersion", {PERSISTENT, STRING, "0"}},
+    {"AssistedDrivingMilestonesEnabled", {PERSISTENT | BACKUP, BOOL, "1"}},
+    {"AssistedDrivingMilestoneState", {PERSISTENT, JSON, "{}"}},
     {"AutoLaneChangeBsmDelay", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"AutoLaneChangeTimer", {PERSISTENT | BACKUP, INT, "0"}},
     {"BlinkerLateralReengageDelay", {PERSISTENT | BACKUP, INT, "0"}},  // seconds
@@ -167,6 +168,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
     {"IsReleaseSpBranch", {CLEAR_ON_MANAGER_START, BOOL}},
     {"LastGPSPositionLLK", {PERSISTENT, STRING}},
+    {"LastDriveAssistedDrivingSummary", {PERSISTENT, JSON, "{}"}},
     {"LeadDepartAlert", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"MadsDrivenDistanceMeters", {PERSISTENT, FLOAT, "0.0"}},
     {"MaxTimeOffroad", {PERSISTENT | BACKUP, INT, "1800"}},

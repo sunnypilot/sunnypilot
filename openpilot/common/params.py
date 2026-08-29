@@ -73,6 +73,7 @@ params_get = _bind("params_get", [ParamsHandle, ctypes.c_char_p, ctypes.c_bool],
 params_get_bool = _bind("params_get_bool", [ParamsHandle, ctypes.c_char_p, ctypes.c_bool], ctypes.c_bool)
 params_put = _bind("params_put", [ParamsHandle, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t, ctypes.c_bool], ctypes.c_int)
 params_put_bool = _bind("params_put_bool", [ParamsHandle, ctypes.c_char_p, ctypes.c_bool, ctypes.c_bool], ctypes.c_int)
+params_flush = _bind("params_flush", [ParamsHandle])
 params_remove = _bind("params_remove", [ParamsHandle, ctypes.c_char_p], ctypes.c_int)
 params_get_path = _bind("params_get_path", [ParamsHandle, ctypes.c_char_p, ctypes.c_size_t], ParamsBuffer)
 params_keys_size = _bind("params_keys_size", [ParamsHandle], ctypes.c_size_t)
@@ -177,6 +178,10 @@ class Params:
 
   def put_bool(self, key, val, block=False):
     params_put_bool(self.p, self.check_key(key), val, block)
+
+  def flush(self):
+    """Wait for all prior nonblocking writes from this Params instance."""
+    params_flush(self.p)
 
   def remove(self, key):
     params_remove(self.p, self.check_key(key))
