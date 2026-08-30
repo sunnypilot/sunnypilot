@@ -21,6 +21,7 @@ from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.common.hardware import HARDWARE, COMMA_HARDWARE
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.hardware.usb import CHESTNUT_FW_VERSION, CHESTNUT_ROM_USB_IDS, CHESTNUT_USB_IDS, get_usb_state, get_usb_topology, set_usb_state
+from openpilot.system.hardware.chestnut.flash import vbus_write
 from openpilot.common.linux import LinuxSystemStats
 from openpilot.system.loggerd.config import get_available_percent
 from openpilot.common.swaglog import cloudlog
@@ -49,6 +50,7 @@ class Chestnut:
     self.attempts = 0
     self.last_attempt = 0.
     self.flashed = False
+    self.vbus_on = None
 
   def flash(self) -> None:
     ret = subprocess.run(["sudo", sys.executable, os.path.join(BASEDIR, "openpilot/system/hardware/chestnut/flash.py"), CHESTNUT_FW_VERSION],
@@ -56,9 +58,16 @@ class Chestnut:
     cloudlog.event("chestnut flash done", returncode=ret.returncode, output=ret.stdout[-1000:], error=ret.returncode != 0)
     self.flashed = ret.returncode == 0
 
+  def set_vbus(self, on: bool) -> None:
+    if on == self.vbus_on:
+      return
+    vbus_write("1" if on else "0")
+    self.vbus_on = on
+
   def update(self, offroad: bool, usb_state: list[dict]) -> None:
     mismatch = any((d["vendorId"], d["productId"]) in CHESTNUT_USB_IDS + CHESTNUT_ROM_USB_IDS and
                    d["product"] != f"custom {CHESTNUT_FW_VERSION}-CLEAN" for d in usb_state)
+    self.set_vbus(not offroad or mismatch)
     if not mismatch:
       self.flashed = False
       return
