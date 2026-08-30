@@ -195,8 +195,24 @@ def test_action_demand_exposes_forward_path_authority():
   assert _equivalent_curvature(command) >= 0.004
 
 
-def test_model_turn_exposes_fast_authority_before_action_catches_up():
-  command = FordPathController(dt=1.0).update(_path(0.04), 0.002, v_ego=8.0, current_curvature=0.002)
+def test_model_curvature_does_not_change_fast_command_for_same_action():
+  gentle_model = _command(_path(0.004), 0.004, v_ego=8.0, current_curvature=0.002)
+  aggressive_model = _command(_path(0.04), 0.004, v_ego=8.0, current_curvature=0.002)
+
+  assert np.isclose(aggressive_model.path_offset, gentle_model.path_offset)
+  assert np.isclose(aggressive_model.path_angle, gentle_model.path_angle)
+
+
+def test_fast_fields_encode_one_virtual_curvature():
+  command = _command(_path(0.004), 0.008, v_ego=8.0, current_curvature=0.0)
+
+  offset_curvature = 2.0 * command.path_offset / 7.0 ** 2
+  angle_curvature = command.path_angle / 8.0
+  assert np.isclose(offset_curvature, angle_curvature)
+
+
+def test_action_turn_exposes_fast_authority_without_large_model_arc():
+  command = FordPathController(dt=1.0).update(_path(0.002), 0.04, v_ego=8.0, current_curvature=0.002)
 
   assert command.curvature == 0.0
   assert command.path_offset > 0.5
