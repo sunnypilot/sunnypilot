@@ -15,6 +15,7 @@ _CURVATURE_RATE_HORIZONS = (3.5, 5.0, 7.0)
 _FAST_POSE_CURVATURE_BAND = (0.009, 0.012)
 _CENTERING_CURVATURE_SHARE = 0.65
 _TRACKING_ERROR_DEADZONE = 0.0005
+_TRACKING_ERROR_GAIN = 1.5
 _TRACKING_ERROR_LIMIT = 0.012
 _PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
@@ -91,7 +92,7 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
     target_curvature = action_curvature
     measured_curvature = _finite(current_curvature)
     tracking_error = target_curvature - measured_curvature
-    correction = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
+    correction = _TRACKING_ERROR_GAIN * math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
     wheel_beyond_target = target_curvature * measured_curvature > 0.0 and \
       abs(target_curvature) + _TRACKING_ERROR_DEADZONE < abs(measured_curvature)
     correction_limit = _TRACKING_ERROR_LIMIT
@@ -103,7 +104,7 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
   sustained_curvature = 0.0
   if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _TRACKING_ERROR_DEADZONE:
     sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
-  maneuver_demand = max(abs(action_curvature), abs(correction))
+  maneuver_demand = abs(action_curvature)
   maneuver_share = float(np.interp(maneuver_demand, _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
   centering_curvature = 0.0 if wheel_beyond_target else \
     sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)

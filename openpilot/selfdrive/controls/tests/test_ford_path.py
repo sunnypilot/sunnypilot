@@ -306,6 +306,13 @@ def test_curvature_error_increases_forward_pose_command_while_behind():
   assert np.isclose(behind.curvature_rate, tracking.curvature_rate)
 
 
+def test_major_turn_undertracking_uses_bounded_fast_feedback_authority():
+  command = FordPathController(dt=1.0).update(_path(0.02), 0.02, v_ego=8.0, current_curvature=0.01)
+
+  assert command.curvature == 0.0
+  assert command.path_angle >= 0.25
+
+
 def test_measured_wheel_beyond_action_countersteers_model_arc():
   controller = FordPathController()
   controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02)
