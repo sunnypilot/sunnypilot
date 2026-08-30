@@ -152,9 +152,9 @@ class SpeedLimitResolver:
         self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
   def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimit.Source:
-    sources_for_policy = self._policy_to_sources_map[self.policy]
+    sources_for_policy = self._policy_to_sources_map[Policy(self.policy)]
 
-    if self.policy != Policy.combined:
+    if Policy(self.policy) != Policy.combined:
       # They are ordered in the order of preference, so we pick the first that's non-zero
       for source in sources_for_policy:
         if self.limit_solutions[source] > 0.:

@@ -23,13 +23,14 @@ struct SpecialItemSpec {
 
 inline constexpr std::array<CameraViewSpec, 4> kCameraViewSpecs = {{
   {CameraViewKind::Road,     "Road Camera",      "road",   "road",      "camera_road",      &RouteData::road_camera},
-  {CameraViewKind::Driver,   "Driver Camera",    "driver", "driver",    "camera_driver",    &RouteData::driver_camera},
+  {CameraViewKind::Cabin,    "Cabin Camera",     "driver", "driver",    "camera_driver",    &RouteData::cabin_camera},
   {CameraViewKind::WideRoad, "Wide Road Camera", "wide",   "wide_road", "camera_wide_road", &RouteData::wide_road_camera},
   {CameraViewKind::QRoad,    "qRoad Camera",     "qroad",  "qroad",     "camera_qroad",     &RouteData::qroad_camera},
 }};
 
-inline constexpr std::array<SpecialItemSpec, 5> kSpecialItemSpecs = {{
+inline constexpr std::array<SpecialItemSpec, 6> kSpecialItemSpecs = {{
   {"map", "Map", PaneKind::Map, CameraViewKind::Road},
+  {"thumbnail", "Thumbnail", PaneKind::Thumbnail, CameraViewKind::Road},
   {kCameraViewSpecs[0].special_item_id, kCameraViewSpecs[0].label, PaneKind::Camera, kCameraViewSpecs[0].view},
   {kCameraViewSpecs[1].special_item_id, kCameraViewSpecs[1].label, PaneKind::Camera, kCameraViewSpecs[1].view},
   {kCameraViewSpecs[2].special_item_id, kCameraViewSpecs[2].label, PaneKind::Camera, kCameraViewSpecs[2].view},

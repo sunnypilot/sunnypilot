@@ -9,14 +9,14 @@ from openpilot.system.ui.widgets.scroller import NavRawScrollPanel, NavScroller
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigCircleButton
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog
 from openpilot.selfdrive.ui.mici.widgets.pairing_dialog import PairingDialog
-from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import DriverCameraDialog
+from openpilot.selfdrive.ui.mici.onroad.cabin_camera_dialog import CabinCameraDialog
 from openpilot.selfdrive.ui.mici.layouts.onboarding import TrainingGuide, TermsPage
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.widgets.label import UnifiedLabel
-from openpilot.system.ui.widgets.html_render import HtmlModal, HtmlRenderer
+from openpilot.system.ui.widgets.html_render import HtmlRenderer
 from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
 
 
@@ -160,7 +160,7 @@ class DeviceLayoutMici(NavScroller):
   def __init__(self):
     super().__init__()
 
-    self._fcc_dialog: HtmlModal | None = None
+    self._fcc_dialog: MiciFccModal | None = None
 
     def power_off_callback():
       ui_state.params.put_bool("DoShutdown", True, block=True)
@@ -172,7 +172,6 @@ class DeviceLayoutMici(NavScroller):
       params = ui_state.params
       params.remove("CalibrationParams")
       params.remove("LiveTorqueParameters")
-      params.remove("LiveParameters")
       params.remove("LiveParametersV2")
       params.remove("LiveDelay")
       params.put_bool("OnroadCycleRequested", True, block=True)
@@ -190,9 +189,9 @@ class DeviceLayoutMici(NavScroller):
     regulatory_btn = BigButton("regulatory info", "", gui_app.texture("icons_mici/settings/device/info.png", 64, 64))
     regulatory_btn.set_click_callback(self._on_regulatory)
 
-    driver_cam_btn = BigButton("driver\ncamera preview", "", gui_app.texture("icons_mici/settings/device/cameras.png", 64, 64))
-    driver_cam_btn.set_click_callback(lambda: gui_app.push_widget(DriverCameraDialog()))
-    driver_cam_btn.set_enabled(lambda: ui_state.is_offroad())
+    cabin_cam_btn = BigButton("driver\ncamera preview", "", gui_app.texture("icons_mici/settings/device/cameras.png", 64, 64))
+    cabin_cam_btn.set_click_callback(lambda: gui_app.push_widget(CabinCameraDialog()))
+    cabin_cam_btn.set_enabled(lambda: ui_state.is_offroad())
 
     review_training_guide_btn = BigButton("review\ntraining guide", "", gui_app.texture("icons_mici/settings/device/info.png", 64, 64))
     review_training_guide_btn.set_click_callback(lambda: gui_app.push_widget(ReviewTrainingGuide(completed_callback=lambda: gui_app.pop_widgets_to(self))))
@@ -205,7 +204,7 @@ class DeviceLayoutMici(NavScroller):
       DeviceInfoLayoutMici(),
       PairBigButton(),
       review_training_guide_btn,
-      driver_cam_btn,
+      cabin_cam_btn,
       terms_btn,
       regulatory_btn,
       reset_calibration_btn,

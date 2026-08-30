@@ -39,8 +39,8 @@ class ModelPoints:
 
 @dataclass
 class LeadVehicle:
-  glow: list[float] = field(default_factory=list)
-  chevron: list[float] = field(default_factory=list)
+  glow: list[tuple[float, float]] = field(default_factory=list)
+  chevron: list[tuple[float, float]] = field(default_factory=list)
   fill_alpha: int = 0
 
 
@@ -90,7 +90,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     sm = ui_state.sm
 
     # Check if data is up-to-date
-    if (sm.recv_frame["liveCalibration"] < ui_state.started_frame or
+    if (sm.recv_frame["extrinsicsCalibration"] < ui_state.started_frame or
         sm.recv_frame["modelV2"] < ui_state.started_frame):
       return
 
@@ -102,8 +102,8 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     # Update state
     self._experimental_mode = sm['selfdriveState'].experimentalMode
 
-    live_calib = sm['liveCalibration']
-    self._path_offset_z = live_calib.height[0] if live_calib.height else HEIGHT_INIT[0]
+    extrinsics_calibration = sm['extrinsicsCalibration']
+    self._path_offset_z = extrinsics_calibration.height[0] if extrinsics_calibration.height else HEIGHT_INIT[0]
 
     if self._counter % 60 == 0:
       self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
@@ -192,7 +192,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
 
     max_idx = self._get_path_length_idx(path_x_array, max_distance)
     self._path.projected_points = self._map_line_to_polygon(
-      self._path.raw_points, 0.9, self._path_offset_z, max_idx, max_distance, allow_invert=False
+      self._path.raw_points, self._get_path_half_width(), self._path_offset_z, max_idx, max_distance, allow_invert=False
     )
 
     self._update_experimental_gradient()
@@ -292,7 +292,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     allow_throttle = sm['longitudinalPlan'].allowThrottle or not self._longitudinal_control
     self._blend_filter.update(int(allow_throttle))
 
-    if ui_state.rainbow_path:
+    if ui_state.rainbow_path and self._lateral_active:
       self.rainbow_path.draw_rainbow_path(self._rect, self._path)
       return
 

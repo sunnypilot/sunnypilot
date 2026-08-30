@@ -5,9 +5,10 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.sunnypilot.sunnylink.athena import sunnylinkd
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestSunnylinkdMethods:
+class TestSunnylinkdMethods(OpenpilotTestCase):
   def setup_method(self):
     self.saved_params = []
 
@@ -16,10 +17,10 @@ class TestSunnylinkdMethods:
     def mock_save_param(key, value, compression=False):
       self.saved_params.append((key, value, compression))
 
-    sunnylinkd.save_param_from_base64_encoded_string = mock_save_param
+    sunnylinkd.save_param_from_base64_encoded_string = mock_save_param  # ty: ignore[invalid-assignment]
 
   def teardown_method(self):
-    sunnylinkd.save_param_from_base64_encoded_string = self.original_save
+    sunnylinkd.save_param_from_base64_encoded_string = self.original_save  # ty: ignore[invalid-assignment]
 
   def test_saveParams_blocked(self):
     blocked_params = {

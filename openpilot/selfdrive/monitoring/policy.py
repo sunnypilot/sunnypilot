@@ -41,7 +41,7 @@ class DRIVER_MONITOR_SETTINGS:
     # lockout specs
     self._MAX_ALERT_3 = 2
     self._MAX_NO_RESPONSE = 1
-    self._LOCKOUT_TIME = int(1800 / DT_DMON)
+    self._LOCKOUT_TIMES = [int(60 * n_min / DT_DMON) for n_min in [1, 5, 15, 30]]
 
     self._TIMEOUT_RECOVERY_FACTOR_MAX = 5.
     self._TIMEOUT_RECOVERY_FACTOR_MIN = 1.25
@@ -107,17 +107,17 @@ class DriverBlink:
     self.right = 0.
 
 # model output refers to center of undistorted+leveled image
-ref_undistorted_cam = DEVICE_CAMERAS[("tici", "ar0231")].dcam
-dcam_undistorted_FL = 598.0
-dcam_undistorted_W, dcam_undistorted_H = (ref_undistorted_cam.width, ref_undistorted_cam.height)
+ref_undistorted_cam = DEVICE_CAMERAS[("tici", "ar0231")].cabin
+cabin_undistorted_FL = 598.0
+cabin_undistorted_W, cabin_undistorted_H = (ref_undistorted_cam.width, ref_undistorted_cam.height)
 
 def face_orientation_from_model(orient_model, pos_model, rpy_calib):
   pitch_model = orient_model[0]
   yaw_model = orient_model[1]
 
-  face_pixel_position = ((pos_model[0]+0.5)*dcam_undistorted_W, (pos_model[1]+0.5)*dcam_undistorted_H)
-  yaw_focal_angle = atan2(face_pixel_position[0] - dcam_undistorted_W//2, dcam_undistorted_FL)
-  pitch_focal_angle = atan2(face_pixel_position[1] - dcam_undistorted_H//2, dcam_undistorted_FL)
+  face_pixel_position = ((pos_model[0]+0.5)*cabin_undistorted_W, (pos_model[1]+0.5)*cabin_undistorted_H)
+  yaw_focal_angle = atan2(face_pixel_position[0] - cabin_undistorted_W//2, cabin_undistorted_FL)
+  pitch_focal_angle = atan2(face_pixel_position[1] - cabin_undistorted_H//2, cabin_undistorted_FL)
 
   pitch = pitch_model + pitch_focal_angle
   yaw = -yaw_model + yaw_focal_angle
@@ -152,7 +152,10 @@ class DriverMonitoring:
     self.cnt_since_alert_3 = 0
     self.no_response_timeout = int(self.settings._NO_RESPONSE_TIMEOUT / DT_DMON)
     self.no_response_cnt = 0
-    self.lockout_time = 0
+    self.lockout_active = Params().get_bool("DriverTooDistracted")
+    self.lockout_count = Params().get("DriverLockoutCount") or 0
+    self.lockout_duration = self.settings._LOCKOUT_TIMES[min(max(self.lockout_count - 1, 0), len(self.settings._LOCKOUT_TIMES) - 1)]
+    self.lockout_time_elapsed = 0
     self.step_change = 0.
     self.active_policy = MonitoringPolicy.vision
     self.driver_interacting = False
@@ -163,7 +166,6 @@ class DriverMonitoring:
     self.threshold_alert_2 = 0.
     self.dcam_uncertain_cnt = 0
     self.dcam_reset_cnt = 0
-    self.too_distracted = Params().get_bool("DriverTooDistracted")
 
     self._reset_awareness()
     self._set_policy(MonitoringPolicy.vision)
@@ -310,16 +312,20 @@ class DriverMonitoring:
     self.driver_interacting = driver_engaged
 
     if self.alert_3_cnt >= self.settings._MAX_ALERT_3 or self.no_response_cnt >= self.settings._MAX_NO_RESPONSE:
-      self.too_distracted = True
+      if not self.lockout_active:
+        self.lockout_count += 1
+        self.lockout_duration = self.settings._LOCKOUT_TIMES[min(self.lockout_count - 1, len(self.settings._LOCKOUT_TIMES) - 1)]
+        Params().put("DriverLockoutCount", self.lockout_count)
+      self.lockout_active = True
 
-    if self.too_distracted:
-      self.lockout_time += 1
-      if self.lockout_time > self.settings._LOCKOUT_TIME:
-        self.too_distracted = False
+    if self.lockout_active:
+      self.lockout_time_elapsed += 1
+      if self.lockout_time_elapsed > self.lockout_duration:
+        self.lockout_active = False
         self.alert_3_cnt = 0
         self.cnt_since_alert_3 = 0
         self.no_response_cnt = 0
-        self.lockout_time = 0
+        self.lockout_time_elapsed = 0
 
     always_on_valid = self.always_on and not wrong_gear
     if (self.driver_interacting and self.awareness > 0 and self.active_policy == MonitoringPolicy.wheeltouch) or \
@@ -379,8 +385,10 @@ class DriverMonitoring:
     dat = messaging.new_message('driverMonitoringState', valid=valid)
     dm = dat.driverMonitoringState
 
-    dm.lockout = self.too_distracted
-    dm.lockoutRecoveryPercent = to_percent(self.lockout_time / self.settings._LOCKOUT_TIME)
+    dm.lockout = self.lockout_active
+    dm.lockoutCount = self.lockout_count
+    if self.lockout_active:
+      dm.lockoutMinutesRemaining = max(1, round((self.lockout_duration - self.lockout_time_elapsed) * DT_DMON / 60.))
     dm.alert3Count = self.alert_3_cnt
     dm.noResponseCount = self.no_response_cnt
     dm.noResponseForceDecel = self.alert_level == AlertLevel.three and self.cnt_since_alert_3 >= self.no_response_timeout
@@ -433,7 +441,7 @@ class DriverMonitoring:
       driver_engaged = sm['carState'].steeringPressed or (sm['selfdriveState'].enabled and sm['carState'].gasPressed)
       brake_disengage_prob = sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs[0] # brake disengage prob in next 2s
       steering_angle_deg = sm['carState'].steeringAngleDeg
-      rpyCalib = sm['liveCalibration'].rpyCalib
+      rpyCalib = sm['extrinsicsCalibration'].rpyCalib
 
     self._set_pose_strictness(
       brake_disengage_prob=brake_disengage_prob,

@@ -11,6 +11,7 @@ import itertools
 import numpy as np
 import tqdm
 from argparse import ArgumentParser
+from collections.abc import Callable
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -21,7 +22,8 @@ from openpilot.tools.lib.framereader import FrameReader, ffprobe
 from openpilot.selfdrive.test.process_replay.migration import migrate_all
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.common.utils import Timer
-from msgq.visionipc import VisionIpcServer, VisionStreamType
+from openpilot.cereal.visionipc import VisionStreamType
+from msgq.visionipc import VisionIpcServer
 
 FRAMERATE = 20
 DEMO_ROUTE, DEMO_START, DEMO_END = '5beb9b58bd12b691/0000010a--a51155e496', 90, 105
@@ -138,7 +140,7 @@ def iter_segment_frames(camera_paths, start_time, end_time, fps=20, use_qcam=Fal
   frames_per_seg = fps * 60
   start_frame, end_frame = int(start_time * fps), int(end_time * fps)
   current_seg: int = -1
-  seg_frames: FrameReader | np.ndarray | None = None
+  get_frame: Callable[[int], np.ndarray] | None = None
 
   for global_idx in range(start_frame, end_frame):
     seg_idx, local_idx = global_idx // frames_per_seg, global_idx % frames_per_seg
@@ -157,12 +159,12 @@ def iter_segment_frames(camera_paths, start_time, end_time, fps=20, use_qcam=Fal
         if result.returncode != 0:
           raise RuntimeError(f"ffmpeg failed: {result.stderr.decode()}")
         seg_frames = np.frombuffer(result.stdout, dtype=np.uint8).reshape(-1, w * h * 3 // 2)
+        get_frame = seg_frames.__getitem__
       else:
-        seg_frames = FrameReader(path, pix_fmt="nv12")
+        get_frame = FrameReader(path, pix_fmt="nv12").get
 
-    assert seg_frames is not None
-    frame = seg_frames[local_idx] if use_qcam else seg_frames.get(local_idx)
-    yield global_idx, frame
+    assert get_frame is not None
+    yield global_idx, get_frame(local_idx)
 
 
 class FrameQueue:
@@ -318,7 +320,7 @@ def clip(route: Route, output: str, start: int, end: int, headless: bool = True,
       wide_frame_queue = FrameQueue(ecamera_paths, start, end, fps=FRAMERATE)
 
     vipc = VisionIpcServer("camerad")
-    vipc.create_buffers(VisionStreamType.VISION_STREAM_ROAD, 4, frame_queue.frame_w, frame_queue.frame_h)
+    vipc.create_buffers(VisionStreamType.VISION_STREAM_NARROW_ROAD, 4, frame_queue.frame_w, frame_queue.frame_h)
     if wide_frame_queue:
       vipc.create_buffers(VisionStreamType.VISION_STREAM_WIDE_ROAD, 4, wide_frame_queue.frame_w, wide_frame_queue.frame_h)
     vipc.start_listener()
@@ -337,7 +339,7 @@ def clip(route: Route, output: str, start: int, end: int, headless: bool = True,
         if frame_idx >= len(message_chunks):
           break
         _, frame_bytes = frame_queue.get()
-        vipc.send(VisionStreamType.VISION_STREAM_ROAD, frame_bytes, frame_idx, int(frame_idx * 5e7), int(frame_idx * 5e7))
+        vipc.send(VisionStreamType.VISION_STREAM_NARROW_ROAD, frame_bytes, frame_idx, int(frame_idx * 5e7), int(frame_idx * 5e7))
         if wide_frame_queue:
           _, wide_bytes = wide_frame_queue.get()
           vipc.send(VisionStreamType.VISION_STREAM_WIDE_ROAD, wide_bytes, frame_idx, int(frame_idx * 5e7), int(frame_idx * 5e7))

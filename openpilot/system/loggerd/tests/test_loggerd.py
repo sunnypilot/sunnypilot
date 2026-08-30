@@ -5,10 +5,12 @@ import random
 import string
 import subprocess
 import time
+from collections.abc import Collection
 from collections import defaultdict
 from pathlib import Path
-import pytest
 
+from openpilot.common.parameterized import parameterized
+from openpilot.common.test import OpenpilotTestCase
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log
 from openpilot.cereal.services import SERVICE_LIST
@@ -16,14 +18,15 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.timeout import Timeout
 from openpilot.common.hardware.hw import Paths
-from openpilot.common.hardware import TICI
+from openpilot.common.hardware import COMMA_HARDWARE
 from openpilot.system.loggerd.xattr_cache import getxattr
 from openpilot.system.loggerd.deleter import PRESERVE_ATTR_NAME, PRESERVE_ATTR_VALUE
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.common.version import get_version
 from openpilot.tools.lib.helpers import RE
 from openpilot.tools.lib.logreader import LogReader
-from msgq.visionipc import VisionIpcServer, VisionStreamType
+from openpilot.cereal.visionipc import VisionStreamType
+from msgq.visionipc import VisionIpcServer
 
 SentinelType = log.Sentinel.SentinelType
 
@@ -31,7 +34,7 @@ CEREAL_SERVICES = [f for f in log.Event.schema.union_fields if f in SERVICE_LIST
                    and SERVICE_LIST[f].should_log and "encode" not in f.lower()]
 
 
-class TestLoggerd:
+class TestLoggerd(OpenpilotTestCase):
   def _get_latest_log_dir(self):
     log_dirs = sorted(Path(Paths.log_root()).iterdir(), key=lambda f: f.stat().st_mtime)
     return log_dirs[-1]
@@ -74,8 +77,8 @@ class TestLoggerd:
     end_type = SentinelType.endOfRoute if route else SentinelType.endOfSegment
     assert msgs[-1].sentinel.type == end_type
 
-  def _publish_random_messages(self, services: list[str]) -> dict[str, list]:
-    pm = messaging.PubMaster(services)
+  def _publish_random_messages(self, services: Collection[str]) -> dict[str, list]:
+    pm = messaging.PubMaster(list(services))
 
     managed_processes["loggerd"].start()
     for s in services:
@@ -109,12 +112,12 @@ class TestLoggerd:
     w, h = 320, 240
     frame_spec = (w, h, w * h * 3 // 2, w, w * h)
     streams = [
-      (VisionStreamType.VISION_STREAM_ROAD, frame_spec, "roadCameraState"),
-      (VisionStreamType.VISION_STREAM_DRIVER, frame_spec, "driverCameraState"),
+      (VisionStreamType.VISION_STREAM_NARROW_ROAD, frame_spec, "narrowRoadCameraState"),
+      (VisionStreamType.VISION_STREAM_CABIN, frame_spec, "cabinCameraState"),
       (VisionStreamType.VISION_STREAM_WIDE_ROAD, frame_spec, "wideRoadCameraState"),
     ]
 
-    sm = messaging.SubMaster(["roadEncodeData"])
+    sm = messaging.SubMaster(["narrowRoadEncodeData"])
     pm = messaging.PubMaster([s for _, _, s in streams] + ["rawAudioData"])
     vipc_server = VisionIpcServer("camerad")
     for stream_type, frame_spec, _ in streams:
@@ -125,7 +128,7 @@ class TestLoggerd:
     os.environ["LOGGERD_SEGMENT_LENGTH"] = str(segment_length)
     managed_processes["loggerd"].start()
     managed_processes["encoderd"].start()
-    assert pm.wait_for_readers_to_update("roadCameraState", timeout=5)
+    assert pm.wait_for_readers_to_update("narrowRoadCameraState", timeout=5)
 
     fps = 20
     for n in range(1, int(num_segs * segment_length * fps) + 1):
@@ -192,7 +195,6 @@ class TestLoggerd:
       assert getattr(initData, initData_key) == v
       assert logged_params[param_key].decode() == v
 
-  @pytest.mark.xdist_group("camera_encoder_tests")  # setting xdist group ensures tests are run in same worker, prevents encoderd from crashing
   def test_rotation(self):
     Params().put("RecordFront", True, block=True)
 
@@ -233,7 +235,7 @@ class TestLoggerd:
     assert abs(boot.wallTimeNanos - time.time_ns()) < 5*1e9 # within 5s
     assert boot.launchLog == launch_log
 
-    if TICI:
+    if COMMA_HARDWARE:
       for fn in ["console-ramoops", "pmsg-ramoops-0"]:
         path = Path(os.path.join("/sys/fs/pstore/", fn))
         if path.is_file():
@@ -277,7 +279,9 @@ class TestLoggerd:
         assert recv_cnt == 0, f"got {recv_cnt} {s} msgs in qlog"
       else:
         # check logged message count matches decimation
-        expected_cnt = (len(msgs) - 1) // SERVICE_LIST[s].decimation + 1
+        decimation = SERVICE_LIST[s].decimation
+        assert decimation is not None
+        expected_cnt = (len(msgs) - 1) // decimation + 1
         assert recv_cnt == expected_cnt, f"expected {expected_cnt} msgs for {s}, got {recv_cnt}"
 
   def test_rlog(self):
@@ -305,25 +309,23 @@ class TestLoggerd:
     assert getxattr(segment_dir, PRESERVE_ATTR_NAME) == PRESERVE_ATTR_VALUE
 
   def test_not_preserving_nonbookmarked_segments(self):
-    services = set(random.sample(CEREAL_SERVICES, random.randint(5, 10))) - {"userBookmark", "audioFeedback"}
+    services = set(random.sample(CEREAL_SERVICES, random.randint(5, 10))) - {"userBookmark"}
     self._publish_random_messages(services)
 
     segment_dir = self._get_latest_log_dir()
     assert getxattr(segment_dir, PRESERVE_ATTR_NAME) is None
 
-  @pytest.mark.xdist_group("camera_encoder_tests")  # setting xdist group ensures tests are run in same worker, prevents encoderd from crashing
-  @pytest.mark.parametrize("record_front", [True, False])
+  @parameterized.expand([True, False])
   def test_record_front(self, record_front):
     params = Params()
     params.put_bool("RecordFront", record_front, block=True)
 
     self._publish_camera_and_audio_messages()
 
-    dcamera_hevc_exists = os.path.exists(os.path.join(self._get_latest_log_dir(), 'dcamera.hevc'))
-    assert dcamera_hevc_exists == record_front
+    cabin_hevc_exists = os.path.exists(os.path.join(self._get_latest_log_dir(), 'dcamera.hevc'))
+    assert cabin_hevc_exists == record_front
 
-  @pytest.mark.xdist_group("camera_encoder_tests")  # setting xdist group ensures tests are run in same worker, prevents encoderd from crashing
-  @pytest.mark.parametrize("record_audio", [True, False])
+  @parameterized.expand([True, False])
   def test_record_audio(self, record_audio):
     params = Params()
     params.put_bool("RecordAudio", record_audio, block=True)

@@ -193,7 +193,7 @@ def finalize_update() -> None:
 
 
 def handle_agnos_update() -> None:
-  from openpilot.common.hardware.tici.agnos import flash_agnos_update, get_target_slot_number
+  from openpilot.common.hardware.comma.agnos import flash_agnos_update, get_target_slot_number
 
   cur_version = HARDWARE.get_os_version()
   updated_version = run(["bash", "-c", r"unset AGNOS_VERSION && source launch_env.sh && \
@@ -207,13 +207,10 @@ def handle_agnos_update() -> None:
   set_consistent_flag(False)
 
   cloudlog.info(f"Beginning background installation for AGNOS {updated_version}")
-  set_offroad_alert("Offroad_NeosUpdate", True)
 
-  manifest_path = os.path.join(OVERLAY_MERGED, "openpilot/system/hardware/tici/agnos.json")
+  manifest_path = os.path.join(OVERLAY_MERGED, "openpilot/system/hardware/comma/agnos.json")
   target_slot_number = get_target_slot_number()
   flash_agnos_update(manifest_path, target_slot_number, cloudlog)
-  set_offroad_alert("Offroad_NeosUpdate", False)
-
 
 
 class Updater:
@@ -342,7 +339,7 @@ class Updater:
     setup_git_options(OVERLAY_MERGED)
     output = run(["git", "ls-remote", "--heads"], OVERLAY_MERGED)
 
-    self.branches = defaultdict(lambda: None)
+    self.branches.clear()
     for line in output.split('\n'):
       ls_remotes_re = r'(?P<commit_sha>\b[0-9a-f]{5,40}\b)(\s+)(refs\/heads\/)(?P<branch_name>.*$)'
       x = re.fullmatch(ls_remotes_re, line.strip())

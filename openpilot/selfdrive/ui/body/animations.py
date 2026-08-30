@@ -87,21 +87,12 @@ BROW_LOWERED = [
 (2, 0)
 ]
 BROW_STRAIGHT = [(1, 0), (1, 1), (1, 2)]
-BROW_DOWN = [
-(0, 1), (0, 2),
-                (1, 3)
-]
-
 # Mouths (centered, not mirrored)
 MOUTH_SMILE = [
 (6, 6),                 (6, 9),
         (7, 7), (7, 8),
 ]
 MOUTH_NORMAL = [(7, 7), (7, 8)]
-MOUTH_SAD = [
-        (6, 7), (6, 8),
-(7, 6),                 (7, 9)
-]
 
 # --- Animations ---
 
@@ -168,16 +159,6 @@ INQUISITIVE = Animation(
   repeat_interval=10
 )
 
-WINK = Animation(
-  frames=[
-    _make_frame(EYE_OPEN, _mirror(EYE_OPEN), BROW_HIGH, _mirror(BROW_HIGH), MOUTH_SMILE),
-    _make_frame(EYE_OPEN, _mirror(EYE_CLOSED), BROW_HIGH, _mirror(_shift(BROW_DOWN, (0, 2))), MOUTH_SMILE),
-  ],
-  mode=AnimationMode.ONCE_FORWARD_BACKWARD,
-  frame_duration=0.75,
-)
-
-
 # --- Face Animator Class ---
 
 class FaceAnimator:
@@ -204,7 +185,10 @@ class FaceAnimator:
       frames_back = round(rewind_elapsed / self._animation.frame_duration)
       frame_index = self._rewind_from - frames_back
       if frame_index <= 0:
-        return self._switch_to_next(now)
+        if self._next is None:
+          self._rewinding = False
+          return self._animation.frames[0]
+        return self._switch_to_next(now, self._next)
       return self._animation.frames[frame_index]
 
     # Play starting frames first (once)
@@ -223,7 +207,7 @@ class FaceAnimator:
 
     if self._next is not None:
       if frame_index == 0 and (len(self._animation.frames) == 1 or self._seen_nonzero):
-        return self._switch_to_next(now)
+        return self._switch_to_next(now, self._next)
       # No natural return to frame 0 — start rewinding
       if self._animation.mode in (AnimationMode.ONCE_FORWARD, AnimationMode.REPEAT_FORWARD):
         self._rewinding = True
@@ -232,8 +216,8 @@ class FaceAnimator:
 
     return self._animation.frames[frame_index]
 
-  def _switch_to_next(self, now: float) -> list[tuple[int, int]]:
-    self._animation = self._next
+  def _switch_to_next(self, now: float, animation: Animation) -> list[tuple[int, int]]:
+    self._animation = animation
     self._next = None
     self._rewinding = False
     self._seen_nonzero = False

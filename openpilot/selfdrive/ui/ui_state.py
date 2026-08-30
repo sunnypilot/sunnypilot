@@ -12,6 +12,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.hardware import HARDWARE, PC
+from openpilot.selfdrive.modeld.helpers import chestnut_compiled
 
 from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP, DeviceSP
 
@@ -25,6 +26,15 @@ class UIStatus(Enum):
   OVERRIDE = "override"
   LAT_ONLY = "lat_only"
   LONG_ONLY = "long_only"
+
+
+class ChestnutState(Enum):
+  DISCONNECTED = "disconnected"
+  UNCOMPILED = "uncompiled"
+  READY = "ready"
+  LOADING = "loading"
+  ACTIVE = "active"
+  FAILED = "failed"
 
 
 class UIState(UIStateSP):
@@ -44,7 +54,7 @@ class UIState(UIStateSP):
         "modelV2",
         "controlsState",
         "onroadEvents",
-        "liveCalibration",
+        "extrinsicsCalibration",
         "radarState",
         "deviceState",
         "pandaStates",
@@ -52,7 +62,7 @@ class UIState(UIStateSP):
         "driverMonitoringState",
         "carState",
         "driverStateV2",
-        "roadCameraState",
+        "narrowRoadCameraState",
         "wideRoadCameraState",
         "managerState",
         "selfdriveState",
@@ -60,7 +70,7 @@ class UIState(UIStateSP):
         "gpsLocationExternal",
         "carOutput",
         "carControl",
-        "liveParameters",
+        "vehicleParameters",
         "testJoystick",
         "rawAudioData",
       ] + self.sm_services_ext
@@ -80,15 +90,19 @@ class UIState(UIStateSP):
     self.is_release = False  # self.params.get_bool("IsReleaseBranch")
     self.always_on_dm: bool = self.params.get_bool("AlwaysOnDM")
     self.experimental_mode: bool = self.params.get_bool("ExperimentalMode")
-    self.usbgpu: bool = self.params.get_bool("UsbGpuPresent")
-    self.usbgpu_compiled: bool = self.params.get_bool("UsbGpuCompiled")
+    self.experimental_mode_confirmed: bool = self.params.get_bool("ExperimentalModeConfirmed")
+    self.chestnut_present: bool = False
+    self.chestnut_compiled: bool = chestnut_compiled()
+    self.chestnut_active: bool | None = None
+    self.chestnut_loading: bool = False
+    self.chestnut_state = ChestnutState.DISCONNECTED
     self.started: bool = False
     self.ignition: bool = False
     self.recording_audio: bool = False
     self.panda_type: log.PandaState.PandaType = log.PandaState.PandaType.unknown
     self.personality: log.LongitudinalPersonality = log.LongitudinalPersonality.standard
     self.has_longitudinal_control: bool = False
-    self.is_body: bool | None = None
+    self.is_body: bool | None = False
     self.CP: car.CarParams | None = None
     self.light_sensor: float = -1.0
 
@@ -127,6 +141,7 @@ class UIState(UIStateSP):
     self.sm.update(0)
     self._update_state()
     self._update_status()
+    self._update_chestnut_state()
     device.update()
     UIStateSP.update(self)
 
@@ -190,11 +205,34 @@ class UIState(UIStateSP):
         self.status = UIStatus.DISENGAGED
         self.started_frame = self.sm.frame
         self.started_time = time.monotonic()
+        self.chestnut_present = self.sm["deviceState"].chestnutPresent
 
       for callback in self._offroad_transition_callbacks:
         callback()
 
       self._started_prev = self.started
+
+  def _update_chestnut_state(self) -> None:
+    detected = self.sm["deviceState"].chestnutPresent
+    if not self.started:
+      self.chestnut_present = detected
+      self.chestnut_state = (ChestnutState.READY if detected and self.chestnut_compiled else
+                             ChestnutState.UNCOMPILED if detected else ChestnutState.DISCONNECTED)
+      return
+
+    model_seen = self.sm.recv_frame["modelV2"] > self.started_frame
+    if not self.chestnut_present:
+      self.chestnut_state = ChestnutState.DISCONNECTED
+    elif not self.chestnut_compiled:
+      self.chestnut_state = ChestnutState.UNCOMPILED
+    elif self.chestnut_state == ChestnutState.FAILED or not detected or (model_seen and (not self.sm.alive["modelV2"] or not self.sm["modelV2"].big)):
+      self.chestnut_state = ChestnutState.FAILED
+    elif self.chestnut_loading or not model_seen:
+      self.chestnut_state = ChestnutState.LOADING
+    elif self.chestnut_active is False:
+      self.chestnut_state = ChestnutState.FAILED
+    else:
+      self.chestnut_state = ChestnutState.ACTIVE
 
   def update_params(self) -> None:
     # For slower operations
@@ -211,8 +249,11 @@ class UIState(UIStateSP):
     self.is_metric = self.params.get_bool("IsMetric")
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
-    self.usbgpu = self.params.get_bool("UsbGpuPresent")
-    self.usbgpu_compiled = self.params.get_bool("UsbGpuCompiled")
+    self.experimental_mode_confirmed = self.params.get_bool("ExperimentalModeConfirmed")
+    if not self.chestnut_compiled:
+      self.chestnut_compiled = chestnut_compiled()
+    self.chestnut_active = self.params.get("ChestnutActive")
+    self.chestnut_loading = self.params.get_bool("ChestnutLoading")
 
     UIStateSP.update_params(self)
 
@@ -314,9 +355,9 @@ class Device(DeviceSP):
       brightness = 0
 
     if brightness != self._last_brightness:
-      self._brightness_target = brightness
+      self._brightness_target = int(brightness)
       self._brightness_event.set()
-      self._last_brightness = brightness
+      self._last_brightness = int(brightness)
 
   def _update_wakefulness(self):
     # Handle interactive timeout
@@ -337,9 +378,15 @@ class Device(DeviceSP):
 
     self._set_awake(ui_state.ignition or not interaction_timeout or PC)
 
-  def _set_awake(self, on: bool):
+  def _set_awake(self, on: bool, _ui_state=None):
+    # screensaver holds _awake True, so waking is not a state change
+    if on and self._blocked_by_screensaver:
+      self.dismiss_screensaver(_ui_state or ui_state)
+
     if on != self._awake:
-      DeviceSP._set_awake(on, ui_state)
+      super()._set_awake(on, _ui_state or ui_state)
+      if self._blocked_by_screensaver:
+        return
       self._awake = on
       cloudlog.debug(f"setting display power {int(on)}")
       HARDWARE.set_display_power(on)

@@ -127,6 +127,21 @@ sections:
       key: EnforceTorqueControl
       equals: true
     items:
+    - key: LateralJerkTorqueController
+      widget: toggle
+      title: Lateral Jerk Torque Controller
+      description: Looks ahead at planned steering to reduce sudden corrections, so the wheel moves more smoothly through turns. Works with Self-Tune and custom tuning. Thanks to @twilsonco for the implementation.
+      visibility:
+      - type: not
+        condition:
+          type: capability
+          field: steer_control_type
+          equals: angle
+      enablement:
+      - $ref: '#/macros/offroad'
+      - type: param
+        key: NeuralNetworkLateralControl
+        equals: false
     - key: LiveTorqueParamsToggle
       widget: toggle
       title: Self-Tune
@@ -242,6 +257,10 @@ sections:
       label: 2 seconds
     - value: 5
       label: 3 seconds
+  - key: RoadEdgeLaneChangeEnabled
+    widget: toggle
+    title: 'Block Lane Change: Road Edge Detection'
+    description: Blocks lane change when the model sees a road edge on the side you signal.
   - key: AutoLaneChangeBsmDelay
     widget: toggle
     title: 'Auto Lane Change: Delay with Blind Spot'

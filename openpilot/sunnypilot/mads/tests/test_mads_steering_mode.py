@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import pytest
+from openpilot.common.parameterized import parameterized
 
 from openpilot.cereal import log, custom
 from opendbc.car import structs
@@ -13,7 +13,8 @@ from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
-from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
+from opendbc.sunnypilot.car.tesla.values import MadsScreenButtonType, TeslaFlagsSP
+from openpilot.common.test import OpenpilotTestCase
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
@@ -36,6 +37,12 @@ def make_panda_state(mocker, controls_allowed_lateral=True):
   ps.controlsAllowedLateral = controls_allowed_lateral
   ps.safetyModel = SafetyModel.hyundai
   return ps
+
+
+def make_params_mock(mocker, values):
+  params = mocker.MagicMock()
+  params.get = mocker.MagicMock(side_effect=lambda k, **kwargs: values[k])
+  return params
 
 
 def make_mads(mocker, steering_mode):
@@ -74,8 +81,8 @@ def run_frames(mads, sd, cs, n=1):
 
 # should_silent_lkas_enable across all modes
 
-class TestShouldSilentLkasEnable:
-  @pytest.mark.parametrize("brake,regen", [(True, False), (False, True)])
+class TestShouldSilentLkasEnable(OpenpilotTestCase):
+  @parameterized.expand([(True, False), (False, True)], names=["brake", "regen"])
   def test_pause_blocks_reenable_on_braking_at_standstill(self, mocker, brake, regen):
     mads, _ = make_mads(mocker, MadsSteeringModeOnBrake.PAUSE)
     cs = make_car_state(brake_pressed=brake, regen_braking=regen, standstill=True)
@@ -99,7 +106,7 @@ class TestShouldSilentLkasEnable:
 
 # pause
 
-class TestPauseMode:
+class TestPauseMode(OpenpilotTestCase):
   def test_stays_paused_at_standstill_brake_held(self, mocker):
     mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.PAUSE)
     mads.state_machine.state = State.enabled
@@ -144,7 +151,7 @@ class TestPauseMode:
 
 # disengage
 
-class TestDisengageMode:
+class TestDisengageMode(OpenpilotTestCase):
   def test_brake_while_enabled_disables(self, mocker):
     mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.DISENGAGE)
     mads.state_machine.state = State.enabled
@@ -168,7 +175,7 @@ class TestDisengageMode:
 
 # remain active
 
-class TestRemainActiveMode:
+class TestRemainActiveMode(OpenpilotTestCase):
   def test_brake_does_not_pause_or_disable(self, mocker):
     mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.REMAIN_ACTIVE)
     mads.state_machine.state = State.enabled
@@ -182,7 +189,7 @@ class TestRemainActiveMode:
 
 # lateral mismatch counter
 
-class TestLateralMismatchCounter:
+class TestLateralMismatchCounter(OpenpilotTestCase):
   def test_no_accumulation_while_paused(self, mocker):
     mads, sd = make_mads(mocker, MadsSteeringModeOnBrake.PAUSE)
     mads.state_machine.state = State.paused
@@ -206,7 +213,7 @@ class TestLateralMismatchCounter:
 
 # brand restrictions
 
-class TestBrandSteeringModeRestrictions:
+class TestBrandSteeringModeRestrictions(OpenpilotTestCase):
   def test_rivian_forced_to_disengage(self, mocker):
     CP = structs.CarParams()
     CP.brand = "rivian"
@@ -223,16 +230,28 @@ class TestBrandSteeringModeRestrictions:
     params = mocker.MagicMock()
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
 
-  def test_tesla_with_vehicle_bus_uses_param(self, mocker):
+  @parameterized.expand([MadsScreenButtonType.THREE_FINGER,
+                                             MadsScreenButtonType.FOUR_FINGER,
+                                             MadsScreenButtonType.FIVE_FINGER], names=["screen_button"])
+  def test_tesla_with_vehicle_bus_uses_param(self, mocker, screen_button):
     CP = structs.CarParams()
     CP.brand = "tesla"
     CP_SP = structs.CarParamsSP()
     CP_SP.flags = TeslaFlagsSP.HAS_VEHICLE_BUS
-    params = mocker.MagicMock()
-    params.get = mocker.MagicMock(return_value=MadsSteeringModeOnBrake.REMAIN_ACTIVE)
+    params = make_params_mock(mocker, {"TeslaMadsScreenButton": screen_button,
+                                       "MadsSteeringMode": MadsSteeringModeOnBrake.REMAIN_ACTIVE})
     assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.REMAIN_ACTIVE
 
-  @pytest.mark.parametrize("brand", ["hyundai", "toyota", "honda", "gm"])
+  def test_tesla_with_vehicle_bus_screen_button_off_forced_to_disengage(self, mocker):
+    CP = structs.CarParams()
+    CP.brand = "tesla"
+    CP_SP = structs.CarParamsSP()
+    CP_SP.flags = TeslaFlagsSP.HAS_VEHICLE_BUS
+    params = make_params_mock(mocker, {"TeslaMadsScreenButton": MadsScreenButtonType.OFF,
+                                       "MadsSteeringMode": MadsSteeringModeOnBrake.REMAIN_ACTIVE})
+    assert read_steering_mode_param(CP, CP_SP, params) == MadsSteeringModeOnBrake.DISENGAGE
+
+  @parameterized.expand(["hyundai", "toyota", "honda", "gm"], names=["brand"])
   def test_other_brands_use_param(self, mocker, brand):
     CP = structs.CarParams()
     CP.brand = brand

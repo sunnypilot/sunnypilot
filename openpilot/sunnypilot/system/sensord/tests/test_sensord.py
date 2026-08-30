@@ -1,6 +1,5 @@
 import os
 import subprocess
-import pytest
 import time
 import numpy as np
 from collections import namedtuple, defaultdict
@@ -12,6 +11,7 @@ from openpilot.common.gpio import get_irqs_for_action
 from openpilot.common.timeout import Timeout
 from openpilot.common.hardware import HARDWARE
 from openpilot.system.manager.process_config import managed_processes
+from openpilot.common.test import OpenpilotTestCase
 
 BMX = {
   ('bmx055', 'acceleration'),
@@ -71,7 +71,7 @@ ALL_SENSORS = {
 }
 
 
-def get_irq_count(irq: int):
+def get_irq_count(irq: str):
   with open(f"/sys/kernel/irq/{irq}/per_cpu_count") as f:
     per_cpu = map(int, f.read().split(","))
     return sum(per_cpu)
@@ -103,8 +103,9 @@ def read_sensor_events(duration_sec):
 
   return {k: v for k, v in events.items() if len(v) > 0}
 
-@pytest.mark.tici
-class TestSensord:
+class TestSensord(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
+
   @classmethod
   def setup_class(cls):
     # enable LSM self test
@@ -181,7 +182,7 @@ class TestSensord:
   def test_logmonottime_timestamp_diff(self):
     # ensure diff between the message logMonotime and sample timestamp is small
 
-    tdiffs = list()
+    tdiffs = []
     for etype in self.events:
       for measurement in self.events[etype]:
         m = getattr(measurement, measurement.which())
@@ -203,7 +204,7 @@ class TestSensord:
     assert avg_diff < 4, f"Avg packet diff: {avg_diff:.1f}ms"
 
   def test_sensor_values(self):
-    sensor_values = dict()
+    sensor_values = {}
     for etype in self.events:
       for measurement in self.events[etype]:
         m = getattr(measurement, measurement.which())

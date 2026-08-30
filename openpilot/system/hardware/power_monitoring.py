@@ -35,7 +35,7 @@ class PowerMonitoring:
     self.car_battery_capacity_uWh = max((CAR_BATTERY_CAPACITY_uWh / 10), car_battery_capacity_uWh)
 
   # Calculation tick
-  def calculate(self, voltage: int | None, ignition: bool):
+  def calculate(self, voltage: float | None, ignition: bool):
     try:
       now = time.monotonic()
 
@@ -106,18 +106,10 @@ class PowerMonitoring:
 
   # Max Time Offroad
   def max_time_offroad_exceeded(self, offroad_time):
-    """
-    Check if the max time offroad has been exceeded. If the value is 0, it means no limit.
-    :param offroad_time: Time spent offroad in seconds
-    :return: True if the max time offroad has been exceeded, False otherwise
-    """
-    try:
-      param = self.params.get("MaxTimeOffroad")
-      sp_max_time_val_s = param * 60 if param is not None and param >= 0 else MAX_TIME_OFFROAD_S
-    except Exception:
-      sp_max_time_val_s = MAX_TIME_OFFROAD_S
-
-    return 0 < sp_max_time_val_s <= offroad_time
+    param = self.params.get("MaxTimeOffroad")  # minutes, 0 = no limit
+    if param is not None and param >= 0:
+      return 0 < param * 60 <= offroad_time
+    return offroad_time > MAX_TIME_OFFROAD_S
 
   # See if we need to shutdown
   def should_shutdown(self, ignition: bool, in_car: bool, offroad_timestamp: float | None, started_seen: bool):

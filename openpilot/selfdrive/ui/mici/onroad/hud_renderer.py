@@ -1,8 +1,9 @@
+import math
 import pyray as rl
 from dataclasses import dataclass
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
-from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
+from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus, ChestnutState
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -106,6 +107,7 @@ class HudRenderer(Widget):
     self.speed: float = 0.0
     self.v_ego_cluster_seen: bool = False
     self._engaged: bool = False
+    self._chestnut_fade_time: float = 0
 
     self._can_draw_top_icons = True
     self._show_wheel_critical = False
@@ -121,11 +123,15 @@ class HudRenderer(Widget):
     self._txt_wheel: rl.Texture = gui_app.texture('icons_mici/wheel.png', 50, 50)
     self._txt_wheel_critical: rl.Texture = gui_app.texture('icons_mici/wheel_critical.png', 50, 50)
     self._txt_exclamation_point: rl.Texture = gui_app.texture('icons_mici/exclamation_point.png', 9, 44)
-
+    self._txt_chestnut: rl.Texture = gui_app.texture('icons_mici/chestnut.png', 60, 44)
+    self._txt_chestnut_green: rl.Texture = gui_app.texture('icons_mici/chestnut_green.png', 60, 44)
+    self._txt_chestnut_orange: rl.Texture = gui_app.texture('icons_mici/chestnut_orange.png', 75, 44)
+    self._chestnut_icon: rl.Texture | None = None
     self._wheel_alpha_filter = FirstOrderFilter(0, 0.05, 1 / gui_app.target_fps)
     self._wheel_y_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
 
     self._set_speed_alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+    self._chestnut_alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
   def set_wheel_critical_icon(self, critical: bool):
     """Set the wheel icon to critical or normal state."""
@@ -158,6 +164,8 @@ class HudRenderer(Widget):
     engaged = sm['selfdriveState'].enabled
     if (set_speed != self.set_speed and engaged) or (engaged and not self._engaged):
       self._set_speed_changed_time = rl.get_time()
+    if engaged != self._engaged:
+      self._chestnut_fade_time = rl.get_time() if engaged else 0
     self._engaged = engaged
     self.set_speed = set_speed
     self.is_cruise_set = 0 < self.set_speed < SET_SPEED_NA
@@ -177,7 +185,38 @@ class HudRenderer(Widget):
     if self.is_cruise_set:
       self._draw_set_speed(rect)
 
+    self._draw_model_source(rect)
+
     self._draw_steering_wheel(rect)
+
+  def _draw_model_source(self, rect: rl.Rectangle) -> None:
+    if ui_state.sm.recv_frame['selfdriveState'] < ui_state.started_frame:
+      return
+
+    loading = ui_state.chestnut_state == ChestnutState.LOADING
+    if loading:
+      icon = self._txt_chestnut
+      opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
+    elif ui_state.chestnut_state in (ChestnutState.UNCOMPILED, ChestnutState.FAILED):
+      icon = self._txt_chestnut_orange
+      opacity = 1.0
+    elif ui_state.chestnut_state == ChestnutState.ACTIVE:
+      icon = self._txt_chestnut_green
+      opacity = 1.0
+    else:
+      return
+
+    if icon is not self._chestnut_icon:
+      self._chestnut_fade_time = rl.get_time()
+      self._chestnut_icon = icon
+    visible = loading or rl.get_time() - self._chestnut_fade_time < SET_SPEED_PERSISTENCE
+    alpha = self._chestnut_alpha_filter.update(visible)
+    if alpha < 1e-2:
+      return
+
+    pos = rl.Vector2(rect.x + rect.width - 10 - icon.width,
+                     rect.y + rect.height - 14 - (self._txt_wheel.height + icon.height) / 2)
+    rl.draw_texture_ex(icon, pos, 0.0, 1.0, rl.Color(255, 255, 255, int(255 * opacity * alpha)))
 
   def _draw_steering_wheel(self, rect: rl.Rectangle) -> None:
     wheel_txt = self._txt_wheel_critical if self._show_wheel_critical else self._txt_wheel

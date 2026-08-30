@@ -10,8 +10,10 @@ from openpilot.cereal import messaging, log, custom
 from opendbc.car.structs import car
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
+from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_active_source
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.sunnypilot.widgets.screen_saver import ScreenSaverSP
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -33,12 +35,16 @@ class UIStateSP:
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-      "gpsLocation", "liveTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "liveDelay"
+      "gpsLocation", "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay"
     ]
 
     self.sunnylink_state = SunnylinkState()
 
+    self.screensaver = ScreenSaverSP(params=self.params)
+    self.screensaver_enabled: bool = False
+
     self.active_bundle = None
+    self.model_runner_tinygrad: bool = False
     self.blindspot: bool = False
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
@@ -146,7 +152,13 @@ class UIStateSP:
       self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
 
     self._enforce_constraints()
-    self.active_bundle = self.params.get("ModelManager_ActiveBundle")
+    source = get_active_source(chestnut=self.chestnut_present, chestnut_active=self.chestnut_active,
+                               chestnut_loading=self.chestnut_loading, offroad=self.is_offroad())
+    self.active_bundle = self.params.get(ACTIVE_BUNDLE_KEYS[source])
+    self.model_runner_tinygrad = self.active_bundle is not None and self.active_bundle.get("runner") == "tinygrad"
+    # stock only counts the default big model's compiled pkl. a downloaded big bundle runs on the
+    # chestnut just the same, so ChestnutState has to see it as available too.
+    self.chestnut_compiled = self.chestnut_compiled or self.model_runner_tinygrad
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
@@ -170,6 +182,7 @@ class UIStateSP:
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
     self.always_offroad = self.params.get_bool("OffroadMode")
+    self.screensaver_enabled = self.params.get_bool("ScreenSaverEnabled")
 
     if not self._sp_initialized:
       self._sp_initialized = True
@@ -184,10 +197,15 @@ class UIStateSP:
         self.params.put_bool("EnforceTorqueControl", False, block=True)
         self.params.put_bool("NeuralNetworkLateralControl", False, block=True)
 
+      if self.params.get_bool("LateralJerkTorqueController") and self.params.get_bool("NeuralNetworkLateralControl"):
+        self.params.put_bool("LateralJerkTorqueController", False, block=True)
+        self.params.put_bool("NeuralNetworkLateralControl", False, block=True)
+
       # Angle steering: no torque-based lateral controls
       if CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.params.remove("EnforceTorqueControl")
         self.params.remove("NeuralNetworkLateralControl")
+        self.params.remove("LateralJerkTorqueController")
 
       # Alpha longitudinal: clear if not available
       if not CP.alphaLongitudinalAvailable:
@@ -200,6 +218,7 @@ class UIStateSP:
       # No CarParams: clear all car-dependent params as safety default
       self.params.remove("EnforceTorqueControl")
       self.params.remove("NeuralNetworkLateralControl")
+      self.params.remove("LateralJerkTorqueController")
       self.params.remove("AlphaLongitudinalEnabled")
 
     # No longitudinal control: no experimental mode or DEC
@@ -224,10 +243,32 @@ class UIStateSP:
 
 
 class DeviceSP:
-  @staticmethod
-  def _set_awake(on: bool, _ui_state):
-    if _ui_state.boot_offroad_mode == 1 and not on:
+  def __init__(self):
+    self._blocked_by_screensaver: bool = False
+
+  def _set_awake(self, on: bool, _ui_state=None):
+    self._blocked_by_screensaver = False
+
+    if not on and _ui_state.screensaver_enabled:
+      if _ui_state.screensaver.was_dismissed:
+        self.dismiss_screensaver(_ui_state)
+      elif _ui_state.screensaver.is_active:
+        self._blocked_by_screensaver = True
+      else:
+        _ui_state.screensaver.initialize()
+        gui_app.push_widget(_ui_state.screensaver)
+        self._blocked_by_screensaver = True
+    else:
+      self.dismiss_screensaver(_ui_state)
+
+    # blocked runs every frame, so write only when actually sleeping
+    if _ui_state.boot_offroad_mode == 1 and not on and not self._blocked_by_screensaver:
       _ui_state.params.put_bool("OffroadMode", True)
+
+  def dismiss_screensaver(self, _ui_state) -> None:
+    if gui_app.get_active_widget() == _ui_state.screensaver:
+      gui_app.pop_widget()
+    self._blocked_by_screensaver = False
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:

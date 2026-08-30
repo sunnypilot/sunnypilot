@@ -1,6 +1,7 @@
+import math
 import os
 import pyray as rl
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from abc import ABC
 from openpilot.system.ui.lib.application import gui_app, FontWeight, MousePos
 from openpilot.system.ui.lib.multilang import tr
@@ -104,7 +105,9 @@ class ButtonAction(ItemAction):
     value_text = self.value
     if value_text:
       text_width = measure_text_cached(self._font, value_text, ITEM_TEXT_FONT_SIZE).x
-      return text_width + BUTTON_WIDTH + TEXT_PADDING
+      # round up so the width survives float32 storage in rl.Rectangle, otherwise the
+      # value label can come out a fraction of a pixel too narrow and get elided
+      return math.ceil(text_width) + BUTTON_WIDTH + TEXT_PADDING
     else:
       return BUTTON_WIDTH
 
@@ -207,7 +210,7 @@ class DualButtonAction(ItemAction):
 
 
 class MultipleButtonAction(ItemAction):
-  def __init__(self, buttons: list[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None):
+  def __init__(self, buttons: Sequence[str | Callable[[], str]], button_width: int, selected_index: int = 0, callback: Callable | None = None):
     super().__init__(width=len(buttons) * button_width + (len(buttons) - 1) * RIGHT_ITEM_PADDING, enabled=True)
     self.buttons = buttons
     self.button_width = button_width

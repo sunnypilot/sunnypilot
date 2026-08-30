@@ -8,9 +8,10 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.sunnypilot import get_file_hash
 from openpilot.sunnypilot.models.default_model import MODEL_HASH_PATH, SUPERCOMBO_ONNX_PATH
 import hashlib
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestDefaultModel:
+class TestDefaultModel(OpenpilotTestCase):
   def test_compare_onnx_hashes(self):
     supercombo_hash = get_file_hash(SUPERCOMBO_ONNX_PATH)
 
@@ -19,4 +20,4 @@ class TestDefaultModel:
     with open(MODEL_HASH_PATH) as f:
       current_hash = f.read().strip()
 
-    assert combined_hash == current_hash, "Run sunnypilot/models/default_model.py to update the default model name and hash"
+    assert combined_hash == current_hash, "Run openpilot/sunnypilot/models/default_model.py to update the default model name and hash"

@@ -12,11 +12,21 @@ from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, Bi
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.models import ModelsLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 
 ICON_SIZE = 70
 BIG_ICON_SIZE = 110
+
+
+class SunnylinkBigButton(SettingsBigButton):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._label.set_font_weight(FontWeight.AUDIOWIDE)
+
+  def _get_label_font_size(self):
+    # Audiowide runs wider than Inter: "sunnylink" wraps to two lines at 64
+    return 56
 
 
 class SettingsLayoutSP(OP.SettingsLayout):
@@ -32,11 +42,11 @@ class SettingsLayoutSP(OP.SettingsLayout):
                                                 BIG_ICON_SIZE)
     self.icon_offroad_slider = gui_app.texture("icons_mici/settings/device/lkas.png", BIG_ICON_SIZE, BIG_ICON_SIZE)
 
-    sunnylink_panel = SunnylinkLayoutMici(back_callback=gui_app.pop_widget)
-    sunnylink_btn = SettingsBigButton(tr("sunnylink"), "", gui_app.texture("icons_mici/settings/developer/ssh.png", 55, 55))
+    sunnylink_panel = SunnylinkLayoutMici()
+    sunnylink_btn = SunnylinkBigButton(tr("sunnylink"), "", gui_app.texture("../../sunnypilot/selfdrive/assets/icons_mici/sunnylink.png", 76, 44))
     sunnylink_btn.set_click_callback(lambda: gui_app.push_widget(sunnylink_panel))
 
-    models_panel = ModelsLayoutMici(back_callback=gui_app.pop_widget)
+    models_panel = ModelsLayoutMici()
     models_btn = SettingsBigButton(tr("models"), "", gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_models.png", ICON_SIZE, ICON_SIZE))
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
@@ -56,8 +66,8 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
     items = self._scroller._items.copy()
 
-    items.insert(1, sunnylink_btn)
-    items.insert(2, models_btn)
+    items.insert(1, models_btn)
+    items.insert(5, sunnylink_btn)
 
     # front slots (only one ever visible at a time): exit-always-offroad, then enable-onroad
     items.insert(0, self._enable_offroad_btn_onroad)
