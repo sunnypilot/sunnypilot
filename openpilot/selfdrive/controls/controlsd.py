@@ -53,7 +53,7 @@ class Controls(ControlsExt):
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
-    self.ford_path_controller = FordPathController(coherent_pose=self.params.get_bool("FordCoherentPath"))
+    self.ford_path_controller = FordPathController()
     self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()

@@ -278,14 +278,6 @@ class TestKnownPanels(OpenpilotTestCase):
 
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
-  def test_ford_has_coherent_path_toggle(self, schema):
-    items = _brand_items(schema["vehicle_settings"].get("ford"))
-    coherent_path = next((item for item in items if item["key"] == "FordCoherentPath"), None)
-
-    assert coherent_path is not None
-    assert {rule["type"] for rule in coherent_path.get("enablement", [])} == {"offroad_only"}
-    assert coherent_path.get("needs_onroad_cycle") is True
-
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys

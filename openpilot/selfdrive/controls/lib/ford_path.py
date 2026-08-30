@@ -83,26 +83,23 @@ def _curvature(path: tuple[list[float], list[float], list[float]]) -> float:
   return (_sample(horizon, distance, heading) - _sample(0.0, distance, heading)) / horizon
 
 
-def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None,
-                 coherent_pose: bool = False) -> FordPath:
+def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None) -> FordPath:
   path = _model_path(model)
   if path is None:
     return FordPath()
 
   distance, offset, heading = path
   lookahead = max(_finite(v_ego), _PATH_MIN_LOOKAHEAD)
-  pose_horizon = min(lookahead, distance[-1]) if coherent_pose else lookahead
-  offset_horizon = pose_horizon if coherent_pose else _PATH_OFFSET_DISTANCE
-  path_offset = _sample(offset_horizon, distance, offset)
-  path_angle = _sample(pose_horizon, distance, heading)
+  path_offset = _sample(_PATH_OFFSET_DISTANCE, distance, offset)
+  path_angle = _sample(lookahead, distance, heading)
   model_curvature = _curvature(path)
   model_curvature_rate = _curvature_rate(path)
   action_curvature = _finite(desired_curvature)
   requested_curvature = action_curvature if action_curvature * model_curvature < 0.0 else \
     max((model_curvature, action_curvature), key=abs)
   maneuver_residual = requested_curvature - model_curvature
-  path_offset += 0.5 * maneuver_residual * offset_horizon ** 2
-  path_angle += maneuver_residual * pose_horizon
+  path_offset += 0.5 * maneuver_residual * _PATH_OFFSET_DISTANCE ** 2
+  path_angle += maneuver_residual * lookahead
   correction = 0.0
   wheel_beyond_target = False
   if current_curvature is not None:
@@ -116,8 +113,8 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
     if correction * target_curvature < 0.0:
       correction_limit = 0.5 * abs(target_curvature)
     correction = float(np.clip(correction, -correction_limit, correction_limit))
-    correction_offset = 0.5 * correction * offset_horizon ** 2
-    correction_angle = correction * pose_horizon
+    correction_offset = 0.5 * correction * _PATH_OFFSET_DISTANCE ** 2
+    correction_angle = correction * lookahead
     if wheel_beyond_target:
       path_offset = correction_offset
       path_angle = correction_angle
@@ -125,7 +122,7 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
       path_offset += correction_offset
       path_angle += correction_angle
 
-  future_curvature = action_curvature + model_curvature_rate * pose_horizon
+  future_curvature = action_curvature + model_curvature_rate * lookahead
   sustained_curvature = 0.0
   if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _TRACKING_ERROR_DEADZONE:
     sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
@@ -133,16 +130,12 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
   maneuver_share = float(np.interp(maneuver_demand, _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
   centering_curvature = 0.0 if wheel_beyond_target else \
     sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)
-  path_offset -= 0.5 * centering_curvature * offset_horizon ** 2
-  path_angle -= centering_curvature * pose_horizon
+  path_offset -= 0.5 * centering_curvature * _PATH_OFFSET_DISTANCE ** 2
+  path_angle -= centering_curvature * lookahead
 
   pose_gain = 0.20 + 0.80 * maneuver_share
   path_offset *= pose_gain
   path_angle *= pose_gain
-  if coherent_pose:
-    # C0/C1 describe one line which, together with C2, reaches the same
-    # forward position and heading at a shared horizon.
-    path_offset -= path_angle * pose_horizon
 
   return FordPath(
     valid=True,
@@ -156,21 +149,11 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
 class FordPathController:
   """Convert the model path directly into one vehicle-independent Ford path command."""
 
-  def __init__(self, dt: float = 0.01, coherent_pose: bool = False):
+  def __init__(self, dt: float = 0.01):
     self.dt = dt
-    self.coherent_pose = coherent_pose
     self._last_path = FordPath(valid=True)
 
   def _limit(self, target: FordPath) -> FordPath:
-    if self.coherent_pose:
-      deltas = (target.path_offset - self._last_path.path_offset,
-                target.path_angle - self._last_path.path_angle)
-      scale = min((1.0, *(rate * self.dt / abs(delta) for delta, rate in zip(deltas, _PATH_RATES[:2], strict=True) if delta != 0.0)))
-      path_offset = self._last_path.path_offset + scale * deltas[0]
-      path_angle = self._last_path.path_angle + scale * deltas[1]
-      self._last_path = FordPath(True, path_offset, path_angle, target.curvature, target.curvature_rate)
-      return self._last_path
-
     values = []
     for field, rate in zip(fields(FordPath)[1:], _PATH_RATES, strict=True):
       previous = getattr(self._last_path, field.name)
@@ -186,4 +169,4 @@ class FordPathController:
       return FordPath()
     if model is None:
       return self._limit(FordPath(valid=True))
-    return self._limit(_encode_path(model, desired_curvature, v_ego, current_curvature, self.coherent_pose))
+    return self._limit(_encode_path(model, desired_curvature, v_ego, current_curvature))

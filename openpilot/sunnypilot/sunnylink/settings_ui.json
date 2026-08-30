@@ -2174,24 +2174,6 @@
     }
   ],
   "vehicle_settings": {
-    "ford": {
-      "title": "Ford Settings",
-      "description": "",
-      "items": [
-        {
-          "key": "FordCoherentPath",
-          "widget": "toggle",
-          "needs_onroad_cycle": true,
-          "title": "Coherent Ford Path (Experimental)",
-          "description": "Solve the fast path offset and angle at one shared lookahead. Disable to use the previous Ford path controller.",
-          "enablement": [
-            {
-              "type": "offroad_only"
-            }
-          ]
-        }
-      ]
-    },
     "hyundai": {
       "title": "Hyundai / Kia / Genesis Settings",
       "description": "",
