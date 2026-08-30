@@ -3,20 +3,19 @@ import math
 
 import numpy as np
 
+from openpilot.selfdrive.controls.lib.drive_helpers import MAX_CURVATURE
+
 
 DBC_OFFSET = (-5.12, 5.11)
 DBC_ANGLE = (-0.5, 0.5235)
 DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
-_PATH_OFFSET_DISTANCE = 7.0
-_PATH_MIN_LOOKAHEAD = 7.0
+_PATH_HORIZON = 7.0
 _CURVATURE_RATE_HORIZONS = (3.5, 5.0, 7.0)
 _FAST_POSE_CURVATURE_BAND = (0.009, 0.012)
 _CENTERING_CURVATURE_SHARE = 0.65
-_TRACKING_ERROR_DEADZONE = 0.0005
-_TRACKING_ERROR_GAIN = 1.5
-_TRACKING_ERROR_LIMIT = 0.012
+_CURVATURE_NOISE_FLOOR = 0.0005
 _PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
 
@@ -83,37 +82,22 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
   if path is None:
     return FordPath()
 
-  lookahead = max(_finite(v_ego), _PATH_MIN_LOOKAHEAD)
   model_curvature_rate = _curvature_rate(path)
   action_curvature = _finite(desired_curvature)
-  correction = 0.0
-  wheel_beyond_target = False
-  if current_curvature is not None:
-    target_curvature = action_curvature
-    measured_curvature = _finite(current_curvature)
-    tracking_error = target_curvature - measured_curvature
-    correction = _TRACKING_ERROR_GAIN * math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
-    wheel_beyond_target = target_curvature * measured_curvature > 0.0 and \
-      abs(target_curvature) + _TRACKING_ERROR_DEADZONE < abs(measured_curvature)
-    correction_limit = _TRACKING_ERROR_LIMIT
-    if correction * target_curvature < 0.0:
-      correction_limit = 0.5 * abs(target_curvature)
-    correction = float(np.clip(correction, -correction_limit, correction_limit))
+  measured_curvature = float(np.clip(_finite(current_curvature), -MAX_CURVATURE, MAX_CURVATURE)) \
+    if current_curvature is not None else 0.0
 
-  future_curvature = action_curvature + model_curvature_rate * lookahead
+  future_curvature = action_curvature + model_curvature_rate * max(_finite(v_ego), _PATH_HORIZON)
   sustained_curvature = 0.0
-  if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _TRACKING_ERROR_DEADZONE:
+  if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _CURVATURE_NOISE_FLOOR:
     sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
   maneuver_demand = abs(action_curvature)
   maneuver_share = float(np.interp(maneuver_demand, _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
-  centering_curvature = 0.0 if wheel_beyond_target else \
-    sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)
+  centering_curvature = sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)
 
-  pose_gain = 0.20 + 0.80 * maneuver_share
-  fast_curvature = correction if wheel_beyond_target else \
-    (action_curvature - centering_curvature) * pose_gain + correction
-  path_offset = 0.5 * fast_curvature * _PATH_OFFSET_DISTANCE ** 2
-  path_angle = fast_curvature * lookahead
+  fast_curvature = (action_curvature - centering_curvature) + (action_curvature - measured_curvature)
+  path_offset = 0.5 * fast_curvature * _PATH_HORIZON ** 2
+  path_angle = fast_curvature * _PATH_HORIZON
 
   return FordPath(
     valid=True,

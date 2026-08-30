@@ -31,16 +31,20 @@ def _equivalent_curvature(path, distance: float = 7.0) -> float:
   return 2.0 * offset / distance ** 2
 
 
+def _fast_curvatures(path, distance: float = 7.0) -> tuple[float, float]:
+  return 2.0 * path.path_offset / distance ** 2, path.path_angle / distance
+
+
 def _command(model, desired_curvature: float, *, v_ego: float = 0.0, current_curvature: float | None = None):
   return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature)
 
 
-def test_steady_arc_keeps_c2_with_small_continuous_pose_authority():
-  path = _command(_path(0.008), 0.008, v_ego=8.0)
+def test_steady_arc_splits_hold_between_c2_and_fast_pose():
+  path = _command(_path(0.008), 0.008, v_ego=8.0, current_curvature=0.008)
 
   assert path.valid
-  assert 0.0 < path.path_offset < 0.02
-  assert 0.0 < path.path_angle < 0.01
+  assert np.isclose(_fast_curvatures(path)[0], 0.0028)
+  assert np.isclose(_fast_curvatures(path)[1], 0.0028)
   assert np.isclose(path.curvature, 0.0052, atol=5e-5)
   assert abs(path.curvature_rate) < 1e-5
 
@@ -58,7 +62,7 @@ def test_c2_unloads_before_near_horizon_curve_exit():
 
   assert path.curvature == 0.0
   assert path.curvature_rate == 0.0
-  assert path.path_angle < 0.02
+  assert path.path_angle < 0.03
 
 
 def test_tight_curve_unwind_keeps_fast_pose_without_loading_c2():
@@ -117,10 +121,10 @@ def test_tight_arc_uses_signed_forward_pose_without_slow_c2():
   assert right.path_offset < -0.5
 
 
-def test_c2_does_not_increase_while_tight_curve_unwinds():
+def test_c2_does_not_increase_when_model_shows_tight_curve_unwind():
   curvatures = (0.04, 0.018, 0.016, 0.014, 0.012, 0.010, 0.008, 0.006, 0.0)
   measured = (0.04,) + curvatures[:-1]
-  commands = [_command(_path(curvature), curvature, v_ego=8.0, current_curvature=actual).curvature
+  commands = [_command(_path(curvature, -curvature / 8.0), curvature, v_ego=8.0, current_curvature=actual).curvature
               for curvature, actual in zip(curvatures, measured, strict=True)]
 
   assert np.all(np.diff(commands) <= 1e-9)
@@ -207,7 +211,7 @@ def test_fast_fields_encode_one_virtual_curvature():
   command = _command(_path(0.004), 0.008, v_ego=8.0, current_curvature=0.0)
 
   offset_curvature = 2.0 * command.path_offset / 7.0 ** 2
-  angle_curvature = command.path_angle / 8.0
+  angle_curvature = command.path_angle / 7.0
   assert np.isclose(offset_curvature, angle_curvature)
 
 
@@ -222,16 +226,16 @@ def test_action_turn_exposes_fast_authority_without_large_model_arc():
 def test_minor_curve_blends_c2_with_small_pose_authority_when_tracking_is_close():
   command = FordPathController(dt=1.0).update(_path(0.005), 0.005, v_ego=8.0, current_curvature=0.0048)
 
-  assert 0.0 < command.path_offset < 0.01
-  assert 0.0 < command.path_angle < 0.01
+  assert 0.0 < command.path_offset < 0.05
+  assert 0.0 < command.path_angle < 0.02
   assert command.curvature > 0.003
 
 
 def test_minor_changing_curve_keeps_future_geometry_in_pose_not_c3():
   command = FordPathController(dt=1.0).update(_path(0.005, 0.0003), 0.005, v_ego=8.0, current_curvature=0.0048)
 
-  assert abs(command.path_offset) < 0.02
-  assert abs(command.path_angle) < 0.01
+  assert abs(command.path_offset) < 0.05
+  assert abs(command.path_angle) < 0.02
   assert command.curvature > 0.003
   assert command.curvature_rate == 0.0
 
@@ -270,15 +274,15 @@ def test_measured_curvature_after_path_exit_commands_countersteer():
   assert command.path_angle < 0.0
 
 
-def test_measured_curvature_countersteers_when_beyond_modeled_arc():
+def test_large_measured_curvature_overshoot_countersteers_without_dropping_c2():
   controller = FordPathController(dt=1.0)
   command = controller.update(_path(0.004), 0.003, v_ego=8.0, current_curvature=0.012)
-  tracking = FordPathController(dt=1.0).update(_path(0.004), 0.003, v_ego=8.0, current_curvature=0.004)
+  tracking = FordPathController(dt=1.0).update(_path(0.004), 0.003, v_ego=8.0, current_curvature=0.003)
 
   assert command.path_offset < 0.0
   assert command.path_angle < 0.0
   assert command.path_angle < tracking.path_angle
-  assert command.curvature == 0.0
+  assert np.isclose(command.curvature, tracking.curvature)
 
 
 def test_model_reversal_suppresses_old_c2_and_countersteers():
@@ -310,17 +314,18 @@ def test_major_turn_undertracking_uses_bounded_fast_feedback_authority():
   command = FordPathController(dt=1.0).update(_path(0.02), 0.02, v_ego=8.0, current_curvature=0.01)
 
   assert command.curvature == 0.0
-  assert command.path_angle >= 0.25
+  assert command.path_angle >= 0.2
 
 
-def test_measured_wheel_beyond_action_countersteers_model_arc():
+def test_driver_well_beyond_requested_curvature_gets_countersteer():
   controller = FordPathController()
   controller.update(_path(0.02), 0.02, v_ego=15.0, current_curvature=0.02)
   outputs = [controller.update(_path(0.02), 0.003, v_ego=15.0, current_curvature=0.01) for _ in range(4)]
-  unwinding = outputs[-1]
+  resumed = outputs[-1]
 
-  assert unwinding.curvature == 0.0
-  assert unwinding.path_angle < 0.0
+  assert resumed.curvature > 0.0
+  assert resumed.path_offset < 0.0
+  assert resumed.path_angle < 0.0
 
 
 def test_action_c2_remains_active_for_centering():
@@ -344,9 +349,10 @@ def test_tight_turn_from_stop_builds_bounded_forward_pose_authority():
 
 
 def test_curvature_feedback_is_bounded_for_bad_measurement():
-  bounded = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=-0.02)
-  corrupted = FordPathController().update(_path(0.008), 0.008, v_ego=15.0, current_curvature=-1.0)
+  bounded = FordPathController(dt=1.0).update(_path(0.008), 0.008, v_ego=15.0, current_curvature=-0.2)
+  corrupted = FordPathController(dt=1.0).update(_path(0.008), 0.008, v_ego=15.0, current_curvature=-1.0)
 
+  assert np.isclose(corrupted.path_offset, bounded.path_offset)
   assert np.isclose(corrupted.path_angle, bounded.path_angle)
 
 
@@ -361,3 +367,45 @@ def test_invalid_model_ramps_pose_to_zero_while_remaining_in_extended_mode():
   assert np.isclose(active.path_offset - missing.path_offset, 0.04)
   assert missing.curvature == 0.0
   assert not controller.update(_path(0.0), 0.0, v_ego=12.0, active=False).valid
+
+
+def test_fast_pose_holds_requested_arc_at_measured_target():
+  command = _command(_path(0.03), 0.03, v_ego=20.0, current_curvature=0.03)
+  offset_curvature, angle_curvature = _fast_curvatures(command)
+
+  assert np.isclose(offset_curvature, 0.03)
+  assert np.isclose(angle_curvature, 0.03)
+
+
+def test_fast_pose_adds_remaining_error_to_arc_feedforward():
+  entering = _command(_path(0.03), 0.03, current_curvature=0.0)
+  halfway = _command(_path(0.03), 0.03, current_curvature=0.015)
+  tracking = _command(_path(0.03), 0.03, current_curvature=0.03)
+
+  assert np.allclose(_fast_curvatures(entering), (0.06, 0.06))
+  assert np.allclose(_fast_curvatures(halfway), (0.045, 0.045))
+  assert np.allclose(_fast_curvatures(tracking), (0.03, 0.03))
+
+
+def test_small_overshoot_reduces_hold_without_reversing_active_arc():
+  tracking = _command(_path(0.03), 0.03, current_curvature=0.03)
+  overshoot = _command(_path(0.03), 0.03, current_curvature=0.031)
+
+  assert 0.0 < overshoot.path_offset < tracking.path_offset
+  assert 0.0 < overshoot.path_angle < tracking.path_angle
+  assert np.allclose(_fast_curvatures(overshoot), (0.029, 0.029))
+
+
+def test_path_exit_uses_measured_curvature_to_unwind():
+  command = _command(_path(0.0), 0.0, current_curvature=0.03)
+
+  assert np.allclose(_fast_curvatures(command), (-0.03, -0.03))
+
+
+def test_gentle_c2_share_is_subtracted_once_from_fast_feedforward():
+  command = _command(_path(0.004), 0.004, current_curvature=0.004)
+  offset_curvature, angle_curvature = _fast_curvatures(command)
+
+  assert np.isclose(command.curvature, 0.0026)
+  assert np.isclose(offset_curvature, 0.0014)
+  assert np.isclose(angle_curvature, 0.0014)
