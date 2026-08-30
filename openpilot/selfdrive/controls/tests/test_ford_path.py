@@ -35,6 +35,44 @@ def _command(model, desired_curvature: float, *, v_ego: float = 0.0, current_cur
   return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature)
 
 
+def _coherent_command(model, desired_curvature: float, *, v_ego: float = 0.0, current_curvature: float | None = None):
+  return FordPathController(dt=1.0, coherent_pose=True).update(
+    model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature,
+  )
+
+
+def test_coherent_pose_matches_one_forward_position_and_heading():
+  horizon = 8.0
+  model = _path(0.04)
+  command = _coherent_command(model, 0.04, v_ego=horizon, current_curvature=0.04)
+  expected_heading = 0.04 * horizon
+  expected_offset = (1.0 - math.cos(expected_heading)) / 0.04
+
+  commanded_heading = command.path_angle + command.curvature * horizon
+  commanded_offset = command.path_offset + command.path_angle * horizon + 0.5 * command.curvature * horizon ** 2
+
+  assert np.isclose(commanded_heading, expected_heading, atol=2e-3)
+  assert np.isclose(commanded_offset, expected_offset, atol=2e-3)
+
+
+def test_existing_pose_encoder_remains_available_as_fallback():
+  model = _path(0.04)
+  fallback = FordPathController(dt=1.0, coherent_pose=False).update(model, 0.04, v_ego=8.0, current_curvature=0.04)
+  current_default = FordPathController(dt=1.0).update(model, 0.04, v_ego=8.0, current_curvature=0.04)
+
+  assert fallback == current_default
+
+
+def test_coherent_pose_slews_offset_and_angle_together():
+  model = _path(0.04)
+  target = FordPathController(dt=1.0, coherent_pose=True).update(model, 0.04, v_ego=8.0, current_curvature=0.04)
+  limited = FordPathController(dt=0.01, coherent_pose=True).update(model, 0.04, v_ego=8.0, current_curvature=0.04)
+
+  assert np.isclose(limited.path_offset / target.path_offset, limited.path_angle / target.path_angle)
+  assert abs(limited.path_offset) <= 0.04
+  assert abs(limited.path_angle) <= 0.01
+
+
 def test_steady_arc_keeps_c2_with_small_continuous_pose_authority():
   path = _command(_path(0.008), 0.008, v_ego=8.0)
 
