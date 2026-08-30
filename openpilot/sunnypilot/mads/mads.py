@@ -10,6 +10,7 @@ from openpilot.cereal import log, custom
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
 from openpilot.common.params import Params
+from openpilot.selfdrive.selfdrived.events import ET
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param, MADS_NO_ACC_MAIN_BUTTON
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
@@ -33,6 +34,7 @@ class ModularAssistiveDrivingSystem:
     self.enabled = False
     self.active = False
     self.available = False
+    self.clear_no_entry = False
     self.lateral_mismatch_counter = 0
     self.allow_always = False
     self.no_main_cruise = False
@@ -217,6 +219,9 @@ class ModularAssistiveDrivingSystem:
 
     if not self.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update()
+
+    cat = self.selfdrive.state_machine.current_alert_types
+    self.clear_no_entry = (ET.ENABLE in cat or ET.USER_DISABLE in cat) and ET.NO_ENTRY not in cat
 
     # Copy of previous SelfdriveD states for MADS events handling
     self.selfdrive.enabled_prev = self.selfdrive.enabled
