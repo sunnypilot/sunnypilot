@@ -21,7 +21,7 @@ from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.common.hardware import HARDWARE, COMMA_HARDWARE
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.hardware.usb import CHESTNUT_FW_VERSION, CHESTNUT_ROM_USB_IDS, CHESTNUT_USB_IDS, get_usb_state, get_usb_topology, set_usb_state
-from openpilot.system.hardware.chestnut.flash import vbus_write
+from openpilot.system.hardware.chestnut.flash import VBUS_PATH
 from openpilot.common.linux import LinuxSystemStats
 from openpilot.system.loggerd.config import get_available_percent
 from openpilot.common.swaglog import cloudlog
@@ -61,7 +61,7 @@ class Chestnut:
   def set_vbus(self, on: bool) -> None:
     if on == self.vbus_on:
       return
-    vbus_write("1" if on else "0")
+    subprocess.run(["sudo", "tee", VBUS_PATH], input=b"1" if on else b"0", stdout=subprocess.DEVNULL, check=False)
     self.vbus_on = on
 
   def update(self, offroad: bool, usb_state: list[dict]) -> None:
