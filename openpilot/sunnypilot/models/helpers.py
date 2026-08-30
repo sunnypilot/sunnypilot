@@ -16,7 +16,7 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.models.constants import Meta, MetaSimPose, MetaTombRaider
 from openpilot.common.hardware.hw import Paths
-from openpilot.selfdrive.modeld.helpers import usbgpu_present
+from openpilot.selfdrive.modeld.helpers import chestnut_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
 REQUIRED_JSON_VERSION = 18
@@ -27,7 +27,7 @@ ModelManager = custom.ModelManagerSP
 
 ACTIVE_BUNDLE_KEYS = {
   "qcom": "ModelManager_ActiveBundle",
-  "usbgpu": "ModelManager_ActiveBundleUSBGPU",
+  "chestnut": "ModelManager_ActiveBundleChestnut",
 }
 _LAST_VALIDATED_RAW: dict[str, dict | None] = {}
 
@@ -126,20 +126,20 @@ def get_selected_bundle(params: Params | None = None, source: str = "qcom") -> "
   return _parse_active_bundle(params.get(ACTIVE_BUNDLE_KEYS[source]))
 
 
-def get_active_source(usbgpu: bool | None = None, usbgpu_active: bool | None = None,
-                      usbgpu_loading: bool | None = None, offroad: bool | None = None) -> str:
-  if usbgpu is None:
-    usbgpu = usbgpu_present()
-  state_valid = usbgpu_active is not None or usbgpu_loading is not None or offroad is not None
-  big_active = usbgpu and (not state_valid or usbgpu_active or usbgpu_loading or offroad)
-  return "usbgpu" if big_active else "qcom"
+def get_active_source(chestnut: bool | None = None, chestnut_active: bool | None = None,
+                      chestnut_loading: bool | None = None, offroad: bool | None = None) -> str:
+  if chestnut is None:
+    chestnut = chestnut_present()
+  state_valid = chestnut_active is not None or chestnut_loading is not None or offroad is not None
+  big_active = chestnut and (not state_valid or chestnut_active or chestnut_loading or offroad)
+  return "chestnut" if big_active else "qcom"
 
 
-def get_active_bundle(params: Params | None = None, *, usbgpu: bool | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
+def get_active_bundle(params: Params | None = None, *, chestnut: bool | None = None) -> "custom.ModelManagerSP.ModelBundle | None":
   # no cross-slot fallback: an empty active slot means the hardware default, which
   # only stock modeld can run - modeld_v2 requires a real bundle
   params = params or Params()
-  return get_selected_bundle(params, get_active_source(usbgpu=usbgpu))
+  return get_selected_bundle(params, get_active_source(chestnut=chestnut))
 
 
 def resolve_bundle_by_ref(

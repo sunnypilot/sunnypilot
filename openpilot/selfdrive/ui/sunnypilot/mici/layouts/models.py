@@ -27,14 +27,14 @@ def _model_info() -> tuple[str, str, str]:
   state = big_model_state()
   _, _, carry_display = carrying_model()
   if carry_display is None:
-    big = get_selected_bundle(ui_state.params, "usbgpu")
-    carry_display = big.displayName if big else default_model_name("usbgpu")
+    big = get_selected_bundle(ui_state.params, "chestnut")
+    carry_display = big.displayName if big else default_model_name("chestnut")
   active_text = (carry_display or active_name).lower()
   if state == 'failed':
     return active_text, tr("big model"), tr("unavailable")
   if state == 'loading':
     return active_text, tr("big model"), tr("getting ready")
-  header = tr("small model") if source == "usbgpu" else tr("big model")
+  header = tr("small model") if source == "chestnut" else tr("big model")
   return active_text, header, other_name.lower()
 
 
@@ -113,7 +113,7 @@ class ModelsLayoutMici(NavScroller):
 
     hardware_btns = []
     active = active_source()
-    for source, label in (("qcom", tr("small models")), ("usbgpu", tr("big models"))):
+    for source, label in (("qcom", tr("small models")), ("chestnut", tr("big models"))):
       bundle = get_selected_bundle(ui_state.params, source)
       value = (bundle.internalName if bundle else default_model_name(source)).lower()
       if source == active:
