@@ -37,6 +37,7 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.modeld import ChestnutState
 
+from openpilot.sunnypilot.modeld_v2.egpu_load import EGPU_LOAD_TIMEOUT_TOTAL, load_with_retry
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
@@ -49,32 +50,6 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
 PROCESS_NAME = "openpilot.selfdrive.modeld.modeld_tinygrad"
-
-# tinygrad guards the AMD-over-USB device with a non-blocking flock on /tmp/am_usb:<bus>-<port>.lock;
-# a holder that has not exited yet (e.g. a previous modeld) fails the load instantly, so retry.
-EGPU_LOAD_ATTEMPTS = 5
-EGPU_LOCK_RETRY_WAIT = 3.0  # [s] between attempts
-EGPU_LOAD_TIMEOUT = 60  # [s] on top of the worst-case retry wait
-
-
-def _is_lock_contention(e: BaseException) -> bool:
-  # the real error is nested inside an ExceptionGroup, so match on the rendered text
-  return "Failed to acquire lock file" in repr(e)
-
-
-def _load_with_retry(make_model, attempts: int = EGPU_LOAD_ATTEMPTS, wait: float = EGPU_LOCK_RETRY_WAIT):
-  """Call make_model, retrying only on am_usb lock contention. Returns (model, error)."""
-  last: Exception | None = None
-  for attempt in range(1, attempts + 1):
-    try:
-      return make_model(), None
-    except Exception as e:  # an unhandled exception in the load thread would die silently
-      last = e
-      if not _is_lock_contention(e) or attempt == attempts:
-        break
-      cloudlog.warning(f"eGPU lock held (attempt {attempt}/{attempts}), retrying in {wait}s")
-      time.sleep(wait)
-  return None, last
 
 
 def _pkl_exists(path):
@@ -393,16 +368,15 @@ def main(demo=False):
     result: list = []
 
     def load():
-      result.append(_load_with_retry(lambda: ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)))
+      result.append(load_with_retry(lambda: ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)))
 
     t = threading.Thread(target=load, daemon=True)
     t.start()
-    load_timeout = EGPU_LOAD_TIMEOUT + (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT
-    t.join(load_timeout)
+    t.join(EGPU_LOAD_TIMEOUT_TOTAL)
     model, load_err = result[0] if result else (None, None)
     params.put_bool("ChestnutActive", model is not None)
     if model is None:
-      why = repr(load_err) if load_err else f"no result after {load_timeout:.0f}s"
+      why = repr(load_err) if load_err else f"no result after {EGPU_LOAD_TIMEOUT_TOTAL:.0f}s"
       raise RuntimeError(f"chestnut model load failed or timed out ({why})")
   else:
     model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False)
