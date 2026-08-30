@@ -24,6 +24,16 @@ sections:
     widget: toggle
     title: Display Turn Signals
     description: When enabled, visual turn indicators are drawn on the HUD.
+  - key: ShowDrivingPersonality
+    widget: toggle
+    title: Display Driving Personality
+    description: Show the current driving personality on the driving screen as follow-distance bars - one bar for Aggressive,
+      two for Standard, three for Relaxed. Updates live when the personality is changed from settings or the steering wheel
+      distance button.
+    visibility:
+    - {type: capability, field: device_type, equals: mici}
+    enablement:
+    - $ref: '#/macros/longitudinal'
   - key: RoadNameToggle
     widget: toggle
     title: Display Road Name
