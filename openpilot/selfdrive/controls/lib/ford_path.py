@@ -12,10 +12,6 @@ DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 _PATH_HORIZON = 7.0
-_CURVATURE_RATE_HORIZONS = (3.5, 5.0, 7.0)
-_FAST_POSE_CURVATURE_BAND = (0.009, 0.012)
-_CENTERING_CURVATURE_SHARE = 1.0
-_CURVATURE_NOISE_FLOOR = 0.0005
 _PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
 
@@ -30,10 +26,6 @@ class FordPath:
 
 def _finite(value: float) -> float:
   return float(value) if math.isfinite(value) else 0.0
-
-
-def _sample(distance: float, distances: list[float], values: list[float]) -> float:
-  return float(np.interp(distance, distances, values))
 
 
 def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
@@ -61,40 +53,15 @@ def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
   return distance, y, unwrapped_heading
 
 
-def _curvature_rate(path: tuple[list[float], list[float], list[float]]) -> float:
-  distance, _, heading = path
-  rates = []
-  for requested_horizon in _CURVATURE_RATE_HORIZONS:
-    horizon = min(requested_horizon, distance[-1])
-    start = _sample(0.0, distance, heading)
-    midpoint = _sample(0.5 * horizon, distance, heading)
-    end = _sample(horizon, distance, heading)
-    rates.append(4.0 * (start - 2.0 * midpoint + end) / horizon ** 2)
-
-  magnitude = sum(abs(rate) for rate in rates)
-  if magnitude == 0.0:
-    return 0.0
-  return sorted(rates)[1] * abs(sum(rates)) / magnitude
-
-
 def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None) -> FordPath:
-  path = _model_path(model)
-  if path is None:
+  if _model_path(model) is None:
     return FordPath()
 
-  model_curvature_rate = _curvature_rate(path)
   action_curvature = _finite(desired_curvature)
   measured_curvature = float(np.clip(_finite(current_curvature), -MAX_CURVATURE, MAX_CURVATURE)) \
     if current_curvature is not None else 0.0
 
-  future_curvature = action_curvature + model_curvature_rate * max(_finite(v_ego), _PATH_HORIZON)
-  sustained_curvature = 0.0
-  if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _CURVATURE_NOISE_FLOOR:
-    sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
-  maneuver_demand = abs(action_curvature)
-  maneuver_share = float(np.interp(maneuver_demand, _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
-  centering_curvature = sustained_curvature * _CENTERING_CURVATURE_SHARE * (1.0 - maneuver_share)
-
+  centering_curvature = float(np.clip(action_curvature, *DBC_CURVATURE))
   fast_curvature = (action_curvature - centering_curvature) + (action_curvature - measured_curvature)
   path_offset = 0.5 * fast_curvature * _PATH_HORIZON ** 2
   path_angle = fast_curvature * _PATH_HORIZON
