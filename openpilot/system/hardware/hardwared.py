@@ -52,8 +52,6 @@ class Chestnut:
     self.flashed = False
     self.vbus_on = None
     self.params = Params()
-    self.powersave = False
-    self.last_offroad = None
 
   def flash(self) -> None:
     ret = subprocess.run(["sudo", sys.executable, os.path.join(BASEDIR, "openpilot/system/hardware/chestnut/flash.py"), CHESTNUT_FW_VERSION],
@@ -70,10 +68,7 @@ class Chestnut:
   def update(self, offroad: bool, usb_state: list[dict]) -> None:
     mismatch = any((d["vendorId"], d["productId"]) in CHESTNUT_USB_IDS + CHESTNUT_ROM_USB_IDS and
                    d["product"] != f"custom {CHESTNUT_FW_VERSION}-CLEAN" for d in usb_state)
-    if offroad != self.last_offroad:
-      self.powersave = self.params.get_bool("AuxPowerSave")
-      self.last_offroad = offroad
-    self.set_vbus((not offroad or mismatch) or not self.powersave)
+    self.set_vbus((not offroad or mismatch) or not self.params.get_bool("AuxPowerSave"))
     if not mismatch:
       self.flashed = False
       return
