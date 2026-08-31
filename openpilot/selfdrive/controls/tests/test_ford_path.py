@@ -39,22 +39,22 @@ def _command(model, desired_curvature: float, *, v_ego: float = 0.0, current_cur
   return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego, current_curvature=current_curvature)
 
 
-def test_steady_arc_splits_hold_between_c2_and_fast_pose():
+def test_steady_gentle_arc_uses_full_c2_without_fast_pose():
   path = _command(_path(0.008), 0.008, v_ego=8.0, current_curvature=0.008)
 
   assert path.valid
-  assert np.isclose(_fast_curvatures(path)[0], 0.0028)
-  assert np.isclose(_fast_curvatures(path)[1], 0.0028)
-  assert np.isclose(path.curvature, 0.0052, atol=5e-5)
+  assert np.isclose(_fast_curvatures(path)[0], 0.0)
+  assert np.isclose(_fast_curvatures(path)[1], 0.0)
+  assert np.isclose(path.curvature, 0.008, atol=5e-5)
   assert abs(path.curvature_rate) < 1e-5
 
 
-def test_gentle_changing_curve_keeps_continuous_pose_authority():
+def test_gentle_changing_curve_stays_on_full_c2_when_tracking():
   path = _command(_path(0.004, 0.00015), 0.004, v_ego=8.0, current_curvature=0.004)
 
-  assert abs(path.path_offset) > 0.0001
-  assert abs(path.path_angle) > 0.0001
-  assert 0.0 < path.curvature < 0.004
+  assert path.path_offset == 0.0
+  assert path.path_angle == 0.0
+  assert np.isclose(path.curvature, 0.004)
 
 
 def test_c2_unloads_before_near_horizon_curve_exit():
@@ -245,8 +245,8 @@ def test_c2_uses_stable_action_curvature_not_independent_model_fit():
   first = controller.update(_path(0.004), 0.002, v_ego=8.0, current_curvature=0.002)
   second = controller.update(_path(0.006), 0.002, v_ego=8.0, current_curvature=0.002)
 
-  assert np.isclose(first.curvature, 0.0013)
-  assert np.isclose(second.curvature, 0.0013)
+  assert np.isclose(first.curvature, 0.002)
+  assert np.isclose(second.curvature, 0.002)
 
 
 def test_action_curvature_corrects_stale_opposing_model_at_low_speed():
@@ -332,8 +332,8 @@ def test_action_c2_remains_active_for_centering():
   centering = FordPathController(dt=1.0).update(_path(0.002), 0.002, v_ego=15.0, current_curvature=0.002)
 
   assert centering.curvature > 0.001
-  assert centering.path_offset > 0.0
-  assert centering.path_angle > 0.0
+  assert centering.path_offset == 0.0
+  assert centering.path_angle == 0.0
 
 
 def test_tight_turn_from_stop_builds_bounded_forward_pose_authority():
@@ -406,6 +406,6 @@ def test_gentle_c2_share_is_subtracted_once_from_fast_feedforward():
   command = _command(_path(0.004), 0.004, current_curvature=0.004)
   offset_curvature, angle_curvature = _fast_curvatures(command)
 
-  assert np.isclose(command.curvature, 0.0026)
-  assert np.isclose(offset_curvature, 0.0014)
-  assert np.isclose(angle_curvature, 0.0014)
+  assert np.isclose(command.curvature, 0.004)
+  assert np.isclose(offset_curvature, 0.0)
+  assert np.isclose(angle_curvature, 0.0)
