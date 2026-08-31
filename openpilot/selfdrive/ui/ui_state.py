@@ -220,6 +220,7 @@ class UIState(UIStateSP):
                              ChestnutState.UNCOMPILED if detected else ChestnutState.DISCONNECTED)
       return
 
+    self.chestnut_present = self.chestnut_present or detected
     model_seen = self.sm.recv_frame["modelV2"] > self.started_frame
     if not self.chestnut_present:
       self.chestnut_state = ChestnutState.DISCONNECTED
