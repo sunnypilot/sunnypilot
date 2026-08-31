@@ -366,15 +366,15 @@ def main(demo=False):
     import threading
     def load():
       nonlocal model
-      try:
-        model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)
-      except Exception:
-        cloudlog.exception("chestnut big model load failed")
+      model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)
     t = threading.Thread(target=load, daemon=True)
     t.start()
     t.join(60)
-    params.put_bool("ChestnutActive", model is not None)
-  if model is None:
+    if model is None:
+      params.put_bool("ChestnutActive", False)
+      raise RuntimeError("chestnut model load failed or timed out (60s)")
+    params.put_bool("ChestnutActive", True)
+  else:
     model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False)
 
   params.put_bool("ChestnutLoading", False)
