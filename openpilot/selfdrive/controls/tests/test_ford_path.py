@@ -53,7 +53,7 @@ def _equivalent_curvature(command) -> float:
 
 
 def test_gentle_path_uses_only_c2():
-  command = _command(_path(0.004, speed=20.0), 0.004, v_ego=20.0)
+  command = _command(_path(0.004, speed=20.0), 0.004, current_curvature=0.004, v_ego=20.0)
   assert command.valid
   assert command.path_offset == 0.0
   assert command.path_angle == 0.0
@@ -174,15 +174,41 @@ def test_100hz_handoff_preserves_total_authority_without_entry_drop_or_exit_over
   assert np.all(exit_authority >= 0.004 - 1e-9)
 
 
-def test_measured_undertracking_adds_fast_authority_without_overshoot_countersteer():
+def test_measured_tracking_error_closes_bidirectionally_without_abandoning_the_turn():
   model = _path(0.04)
   under = _command(model, 0.04, current_curvature=0.005)
   on_target = _command(model, 0.04, current_curvature=0.04)
   over = _command(model, 0.04, current_curvature=0.05)
   assert under.path_offset > on_target.path_offset
   assert under.path_angle > on_target.path_angle
-  assert over.path_offset == on_target.path_offset
-  assert over.path_angle == on_target.path_angle
+  assert 0.0 < over.path_offset < on_target.path_offset
+  assert 0.0 < over.path_angle < on_target.path_angle
+
+
+def test_gentle_curve_uses_fast_fields_to_correct_measured_error_but_retains_centering_c2():
+  model = _path(0.004)
+  under = _command(model, 0.004, current_curvature=0.002)
+  on_target = _command(model, 0.004, current_curvature=0.004)
+  over = _command(model, 0.004, current_curvature=0.006)
+  assert under.path_offset > on_target.path_offset == 0.0
+  assert under.path_angle > on_target.path_angle == 0.0
+  assert over.path_offset < on_target.path_offset
+  assert over.path_angle < on_target.path_angle
+  assert under.curvature == on_target.curvature == over.curvature == 0.004
+
+
+def test_model_path_exit_zeros_lingering_c2_and_countersteers():
+  command = _command(_path(0.0), 0.004, current_curvature=0.006)
+  assert command.path_offset < 0.0
+  assert command.path_angle < 0.0
+  assert command.curvature == 0.0
+
+
+def test_model_path_reversal_zeros_opposing_lingering_c2():
+  command = _command(_path(-0.004), 0.004, current_curvature=0.002)
+  assert command.path_offset < 0.0
+  assert command.path_angle < 0.0
+  assert command.curvature == 0.0
 
 
 def test_s_turn_reverses_model_pose_without_slow_c2():

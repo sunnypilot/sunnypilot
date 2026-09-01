@@ -76,21 +76,25 @@ def _encode_path(path: tuple[list[float], list[float], list[float]], desired_cur
   angle_curvature = model_angle / angle_horizon
   pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
 
-  tracking_error = desired_curvature - current_curvature
-  if tracking_error * desired_curvature > 0.0:
-    tracking_error = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
-    tracking_error = float(np.clip(tracking_error, -_TRACKING_ERROR_LIMIT, _TRACKING_ERROR_LIMIT))
-  else:
-    tracking_error = 0.0
+  # Close the loop on the path that C0/C1 describe, rather than the planner's
+  # instantaneous action. This remains bidirectional so measured overshoot can
+  # unwind while the forward model pose continues to carry the maneuver.
+  path_curvature = (_sample(offset_horizon, distance, heading) - _sample(0.0, distance, heading)) / offset_horizon
+  tracking_error = path_curvature - current_curvature
+  tracking_error = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
+  tracking_error = float(np.clip(tracking_error, -_TRACKING_ERROR_LIMIT, _TRACKING_ERROR_LIMIT))
 
   # C2 owns normal path following. As model pose demand grows, transfer the
-  # same path continuously to the faster C0/C1 fields. Measured shortfall is
-  # expressed in those same pose units and cannot initiate the transfer.
-  path_offset = pose_share * (model_offset + 0.5 * tracking_error * offset_horizon ** 2)
-  path_angle = pose_share * (model_angle + tracking_error * angle_horizon)
+  # same path continuously to the faster C0/C1 fields. Measured path error is
+  # independent of that feedforward split, so it can finish an unwind.
+  path_offset = pose_share * model_offset + 0.5 * tracking_error * offset_horizon ** 2
+  path_angle = pose_share * model_angle + tracking_error * offset_horizon
   limited_path_angle = float(np.clip(path_angle, *DBC_ANGLE))
   path_offset += (path_angle - limited_path_angle) * offset_horizon
   curvature = desired_curvature * (1.0 - pose_share)
+  path_support = math.copysign(1.0, desired_curvature) * path_curvature
+  if curvature * tracking_error < 0.0 and abs(desired_curvature) - path_support > _TRACKING_ERROR_DEADZONE:
+    curvature = 0.0
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
