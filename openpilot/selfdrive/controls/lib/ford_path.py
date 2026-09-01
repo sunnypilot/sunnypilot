@@ -1,3 +1,4 @@
+from collections import deque
 from dataclasses import dataclass, fields
 import math
 
@@ -12,6 +13,7 @@ DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 _PATH_HORIZON = 7.0
+_C2_DELAY = 0.05
 _PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
 
@@ -53,15 +55,11 @@ def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
   return distance, y, unwrapped_heading
 
 
-def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None) -> FordPath:
-  if _model_path(model) is None:
-    return FordPath()
-
+def _encode_path(desired_curvature: float, current_curvature: float | None, centering_curvature: float) -> FordPath:
   action_curvature = _finite(desired_curvature)
   measured_curvature = float(np.clip(_finite(current_curvature), -MAX_CURVATURE, MAX_CURVATURE)) \
     if current_curvature is not None else 0.0
 
-  centering_curvature = float(np.clip(action_curvature, *DBC_CURVATURE))
   fast_curvature = (action_curvature - centering_curvature) + (action_curvature - measured_curvature)
   path_offset = 0.5 * fast_curvature * _PATH_HORIZON ** 2
   path_angle = fast_curvature * _PATH_HORIZON
@@ -76,11 +74,20 @@ def _encode_path(model, desired_curvature: float, v_ego: float, current_curvatur
 
 
 class FordPathController:
-  """Convert the model path directly into one vehicle-independent Ford path command."""
+  """Split each Ford path command into one-model-frame fast and steady components."""
 
   def __init__(self, dt: float = 0.01):
     self.dt = dt
     self._last_path = FordPath(valid=True)
+    delay_steps = max(round(_C2_DELAY / dt), 1)
+    self._desired_history: deque[float] = deque(maxlen=delay_steps + 1)
+
+  def _delayed_curvature(self, desired_curvature: float) -> float:
+    curvature = float(np.clip(_finite(desired_curvature), *DBC_CURVATURE))
+    if not self._desired_history:
+      self._desired_history.extend([curvature] * self._desired_history.maxlen)
+    self._desired_history.append(curvature)
+    return self._desired_history[0]
 
   def _limit(self, target: FordPath) -> FordPath:
     values = []
@@ -95,7 +102,10 @@ class FordPathController:
              current_curvature: float | None = None) -> FordPath:
     if not active:
       self._last_path = FordPath(valid=True)
+      self._desired_history.clear()
       return FordPath()
-    if model is None:
+    if model is None or _model_path(model) is None:
+      self._desired_history.clear()
       return self._limit(FordPath(valid=True))
-    return self._limit(_encode_path(model, desired_curvature, v_ego, current_curvature))
+    centering_curvature = self._delayed_curvature(desired_curvature)
+    return self._limit(_encode_path(desired_curvature, current_curvature, centering_curvature))
