@@ -13,8 +13,7 @@ from openpilot.common.swaglog import cloudlog
 
 EGPU_LOAD_ATTEMPTS = 5
 EGPU_LOCK_RETRY_WAIT = 3.0  # [s] between attempts
-EGPU_LOAD_TIMEOUT = 60  # [s] on top of the worst-case retry wait
-EGPU_LOAD_TIMEOUT_TOTAL = EGPU_LOAD_TIMEOUT + (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT
+EGPU_RETRY_BUDGET = (EGPU_LOAD_ATTEMPTS - 1) * EGPU_LOCK_RETRY_WAIT  # [s] worst-case wait added to the load timeout
 
 
 def is_lock_contention(e: BaseException) -> bool:

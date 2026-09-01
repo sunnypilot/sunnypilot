@@ -8,22 +8,22 @@ See the LICENSE.md file in the root directory for more details.
 
 import os
 os.environ['GMMU'] = '0'
+import numpy as np
+import threading
+import time
+from setproctitle import setproctitle
+from tinygrad.tensor import Tensor
+
+import openpilot.cereal.messaging as messaging
 from openpilot.common.hardware import COMMA_HARDWARE
 from openpilot.selfdrive.modeld.helpers import chestnut_present, load_oob
-import time
-import numpy as np
-import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.cereal.services import SERVICE_LIST
-from setproctitle import setproctitle
 from openpilot.cereal.messaging import PubMaster, SubMaster
 from openpilot.cereal.visionipc import VisionStreamType
 from msgq.visionipc import VisionIpcClient, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
-
-from tinygrad.tensor import Tensor
-
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
@@ -37,19 +37,19 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.modeld import ChestnutState
 
-from openpilot.sunnypilot.modeld_v2.egpu_load import EGPU_LOAD_TIMEOUT_TOTAL, load_with_retry
+from openpilot.sunnypilot.modeld_v2.egpu_load import EGPU_RETRY_BUDGET, load_with_retry
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
 from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues, make_supercombo_input_queues, WARP_INPUTS, POLICY_INPUTS
-
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
 PROCESS_NAME = "openpilot.selfdrive.modeld.modeld_tinygrad"
+BIG_MODEL_TIMEOUT = 60
 
 
 def _pkl_exists(path):
@@ -69,6 +69,7 @@ def _find_driving_pkl(bundle):
   pkl_path = os.path.join(model_root, pkl_name)
   if _pkl_exists(pkl_path):
     return pkl_path
+  return None
 
 
 class FrameMeta:
@@ -103,7 +104,7 @@ class ModelState(ModelStateBase):
     self.chestnut = chestnut
 
     pkl_path = _find_driving_pkl(model_bundle)
-    assert pkl_path is not None, "No driving pkl found — all models must be compiled with compile_modeld.py"
+    assert pkl_path is not None, f"No driving pkl found for {'chestnut' if chestnut else 'small model'} — all models must be compiled with compile_modeld.py"
     self._init_combined(pkl_path, cam_w, cam_h, model_bundle)
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
@@ -185,9 +186,6 @@ class ModelState(ModelStateBase):
       self.warp(**self.input_queues, frame=frame_tensor, big_frame=big_frame_tensor)
     else:
       self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
-
-    if self.chestnut:
-      self.warmup()
 
   def warmup(self) -> None:
     dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
@@ -289,8 +287,7 @@ class ModelState(ModelStateBase):
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
 
     if self.chestnut and not np.all(np.isfinite(outputs.get('plan', np.array([0.])))):
-      cloudlog.error("model output not finite, dropping frame")
-      return None
+      raise RuntimeError("model output not finite")
 
     return outputs
 
@@ -364,24 +361,28 @@ def main(demo=False):
 
   model = None
   if CHESTNUT:
-    import threading
-    result: list = []
-
-    def load():
-      result.append(load_with_retry(lambda: ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)))
-
-    t = threading.Thread(target=load, daemon=True)
-    t.start()
-    t.join(EGPU_LOAD_TIMEOUT_TOTAL)
-    model, load_err = result[0] if result else (None, None)
+    big_model = None
+    def load_big():
+      nonlocal big_model
+      try:
+        m, load_err = load_with_retry(lambda: ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True))
+        if m is None:
+          raise RuntimeError(f"model load failed ({load_err!r})") from load_err
+        m.warmup()
+        big_model = m
+      except Exception:
+        cloudlog.exception("chestnut load failed")
+    loader = threading.Thread(target=load_big, daemon=True)
+    loader.start()
+    loader.join(BIG_MODEL_TIMEOUT + EGPU_RETRY_BUDGET)
+    model = big_model
     params.put_bool("ChestnutActive", model is not None)
-    if model is None:
-      why = repr(load_err) if load_err else f"no result after {EGPU_LOAD_TIMEOUT_TOTAL:.0f}s"
-      raise RuntimeError(f"chestnut model load failed or timed out ({why})")
-  else:
-    model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False)
 
+  small_model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False) if model is None or CHESTNUT else None
+  if model is None:
+    model = small_model
   params.put_bool("ChestnutLoading", False)
+  assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
@@ -390,7 +391,7 @@ def main(demo=False):
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
   publish_state = PublishState()
-  chestnut_state = ChestnutState(pm, CHESTNUT) if CHESTNUT else None
+  chestnut_state = ChestnutState(pm, model.chestnut) if CHESTNUT else None
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
@@ -513,7 +514,19 @@ def main(demo=False):
       inputs['action_t'] = np.array([lat_action_t, long_action_t], dtype=np.float32)
 
     mt1 = time.perf_counter()
-    model_output = model.run(bufs, transforms, inputs, prepare_only)
+    try:
+      model_output = model.run(bufs, transforms, inputs, prepare_only)
+    except Exception:
+      if not params.get_bool("ChestnutActive"):
+        raise
+      cloudlog.exception("chestnut failed, falling back to small")
+      params.put_bool("ChestnutActive", False)
+      assert small_model is not None
+      model = small_model
+      if chestnut_state is not None:
+        chestnut_state.big = False
+      run_count = 0
+      model_output = None
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
