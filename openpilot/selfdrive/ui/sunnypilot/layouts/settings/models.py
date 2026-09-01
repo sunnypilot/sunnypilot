@@ -62,14 +62,14 @@ class ModelsLayout(Widget):
     self.big_model_item = ListItemSP(
       title=tr("Big Model"),
       action_item=ScrollingButtonAction(tr("SELECT")),
-      callback=lambda: self._open_source_dialog("usbgpu")
+      callback=lambda: self._open_source_dialog("chestnut")
     )
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
     self.refresh_item = button_item(tr("Refresh Model List"), tr("REFRESH"), "",
                                     lambda: (ui_state.params.put("ModelManager_LastSyncTime", 0),
-                                             ui_state.params.put("ModelManager_LastSyncTime_USBGPU", 0),
+                                             ui_state.params.put("ModelManager_LastSyncTime_Chestnut", 0),
                                              gui_app.push_widget(alert_dialog(tr("Fetching Latest Models")))))
 
     self.clear_cache_item = ListItemSP(
@@ -177,14 +177,14 @@ class ModelsLayout(Widget):
     big_state = big_model_state()
     carry_source, carry_internal, _ = carrying_model()
     segments = []
-    for source, label in (("qcom", tr("small")), ("usbgpu", tr("big"))):
+    for source, label in (("qcom", tr("small")), ("chestnut", tr("big"))):
       if segments:
         segments.append(("|", rl.GRAY, None, None))
       bundle = get_selected_bundle(ui_state.params, source)
       name = bundle.internalName if bundle else default_model_name(source)
       color = ON_COLOR if (source == carry_source and name == carry_internal) else rl.LIGHTGRAY
       name = "● " + name
-      if source == "usbgpu":
+      if source == "chestnut":
         if big_state == 'failed':
           color = rl.RED
         elif big_state == 'loading':
@@ -208,10 +208,10 @@ class ModelsLayout(Widget):
     """The failover story for the Model Status row. One-way big -> small, and the
     fallback is runner-matched: a Default big can only fall back to the Default
     small (stock modeld), a custom big has no automatic fallback yet."""
-    if not ui_state.usbgpu:
+    if not ui_state.chestnut_present:
       return ""
-    big_bundle = get_selected_bundle(ui_state.params, "usbgpu")
-    big_name = big_bundle.internalName if big_bundle else default_model_name("usbgpu")
+    big_bundle = get_selected_bundle(ui_state.params, "chestnut")
+    big_name = big_bundle.internalName if big_bundle else default_model_name("chestnut")
     big_is_default = big_bundle is None
     fallback_name = default_model_name("qcom")
     state = big_model_state()
@@ -225,7 +225,7 @@ class ModelsLayout(Widget):
       return tr("Getting the big model ready.")
     if big_is_default:
       return tr("{} will drive. If it fails during a drive, {} takes over until the next drive.").format(big_name, fallback_name)
-    return tr("{} will drive when the eGPU is ready.").format(big_name)
+    return tr("{} will drive when the chestnut is ready.").format(big_name)
 
   @staticmethod
   def _download_row_state(progresses, name: str) -> dict:
@@ -261,7 +261,7 @@ class ModelsLayout(Widget):
       ui_state.params.put("ModelManager_DownloadRef", selected_bundle.ref)
 
   def _resolve_selected_bundle(self, ref):
-    source_bundles = {source: bundles_for_source(source) for source in ("qcom", "usbgpu")}
+    source_bundles = {source: bundles_for_source(source) for source in ("qcom", "chestnut")}
     resolved = resolve_bundle_by_ref(ref, source_bundles)
     return resolved[0] if resolved else None
 
@@ -329,7 +329,7 @@ class ModelsLayout(Widget):
     self._handle_bundle_download_progress()
 
     carry_source, _, carry_display = carrying_model()
-    for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "usbgpu")):
+    for item, item_source in ((self.small_model_item, "qcom"), (self.big_model_item, "chestnut")):
       bundle = get_selected_bundle(ui_state.params, item_source)
       name = bundle.displayName if bundle else default_model_name(item_source)
       color = ON_COLOR if (item_source == carry_source and name == carry_display) else style.ITEM_TEXT_VALUE_COLOR
