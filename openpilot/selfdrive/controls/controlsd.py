@@ -160,7 +160,8 @@ class Controls(ControlsExt):
       actuators.steeringAngleDeg = float(lateral_output)
     if self.CP.brand == "ford":
       self.ford_path = self.ford_path_controller.update(model_v2 if self.sm.valid['modelV2'] else None,
-                                                        self.desired_curvature, v_ego=CS.vEgo, active=CC.latActive)
+                                                        self.desired_curvature, current_curvature=self.curvature,
+                                                        v_ego=CS.vEgo, active=CC.latActive)
       actuators.curvature = float(self.ford_path.curvature)
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:

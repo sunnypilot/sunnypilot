@@ -25,35 +25,66 @@ def _path(curvature: float, speed: float = 8.0):
   )
 
 
-def _model_pose(model, lookahead: float) -> tuple[float, float]:
-  x = np.asarray(model.position.x)
-  y = np.asarray(model.position.y)
-  heading = np.asarray(model.orientation.z)
-  distance = np.concatenate(([0.0], np.cumsum(np.hypot(np.diff(x), np.diff(y)))))
-  horizon = min(lookahead, distance[-1])
-  return float(np.interp(horizon, distance, y)), float(np.interp(horizon, distance, heading))
+def _changing_path(start_curvature: float, end_curvature: float, speed: float = 8.0):
+  t = np.linspace(0.0, 3.0, 61)
+  distance = speed * t
+  curvature = np.interp(distance, [distance[0], min(distance[-1], 7.0)], [start_curvature, end_curvature])
+  heading = np.zeros_like(distance)
+  x = np.zeros_like(distance)
+  y = np.zeros_like(distance)
+  for i in range(1, len(distance)):
+    ds = distance[i] - distance[i - 1]
+    heading[i] = heading[i - 1] + 0.5 * (curvature[i] + curvature[i - 1]) * ds
+    average_heading = 0.5 * (heading[i] + heading[i - 1])
+    x[i] = x[i - 1] + ds * math.cos(average_heading)
+    y[i] = y[i - 1] + ds * math.sin(average_heading)
+  return SimpleNamespace(
+    position=SimpleNamespace(t=t.tolist(), x=x.tolist(), y=y.tolist()),
+    orientation=SimpleNamespace(z=heading.tolist()),
+  )
 
 
-def _command(model, desired_curvature: float, *, v_ego: float = 8.0):
-  return FordPathController(dt=1.0).update(model, desired_curvature, v_ego=v_ego)
+def _command(model, desired_curvature: float, *, current_curvature: float = 0.0, v_ego: float = 8.0):
+  return FordPathController(dt=1.0).update(model, desired_curvature, current_curvature=current_curvature, v_ego=v_ego)
+
+
+def _equivalent_curvature(command) -> float:
+  return 2.0 * command.path_offset / 7.0 ** 2 + 2.0 * command.path_angle / 7.0 + command.curvature
 
 
 def test_gentle_path_uses_only_c2():
-  command = _command(_path(0.008, speed=20.0), 0.008, v_ego=20.0)
+  command = _command(_path(0.004, speed=20.0), 0.004, v_ego=20.0)
   assert command.valid
   assert command.path_offset == 0.0
   assert command.path_angle == 0.0
-  assert np.isclose(command.curvature, 0.008)
+  assert np.isclose(command.curvature, 0.004)
   assert command.curvature_rate == 0.0
 
 
-def test_large_maneuver_uses_model_pose_and_immediately_zeros_c2():
-  model = _path(0.04)
-  expected_offset, expected_angle = _model_pose(model, 8.0)
-  command = _command(model, 0.04)
-  assert np.isclose(command.path_offset, expected_offset)
-  assert np.isclose(command.path_angle, expected_angle)
+def test_spatially_growing_path_adds_fast_pose_before_action_becomes_large():
+  controller = FordPathController(dt=1.0)
+  command = controller.update(_changing_path(0.0, 0.04), 0.012, current_curvature=0.0, v_ego=8.0)
+  assert command.path_offset > 0.0
+  assert command.path_angle > 0.0
+  assert command.curvature < 0.012
+  assert command.curvature_rate == 0.0
+
+
+def test_growing_model_pose_adds_authority_but_c3_is_never_transmitted():
+  constant = _command(_path(0.012), 0.012)
+  growing = _command(_changing_path(0.0, 0.04), 0.012)
+  assert growing.path_offset > constant.path_offset
+  assert growing.path_angle > constant.path_angle
+  assert constant.curvature_rate == 0.0
+  assert growing.curvature_rate == 0.0
+
+
+def test_large_maneuver_uses_fast_pose_and_zeros_c2():
+  command = _command(_path(0.04), 0.04)
+  assert command.path_offset > 0.5
+  assert command.path_angle > 0.2
   assert command.curvature == 0.0
+  assert command.curvature_rate == 0.0
 
 
 def test_model_pose_can_trigger_maneuver_when_action_is_late():
@@ -70,78 +101,88 @@ def test_action_can_trigger_maneuver_before_model_pose_grows():
   assert command.curvature == 0.0
 
 
-def test_large_offset_does_not_trigger_maneuver_without_heading_or_action_demand():
-  model = _path(0.008)
-  model.position.y = (np.asarray(model.position.y) + np.linspace(0.0, 4.0, len(model.position.y))).tolist()
-  command = _command(model, 0.008)
-  assert command.path_offset == 0.0
-  assert command.path_angle == 0.0
-  assert np.isclose(command.curvature, 0.008)
+def test_nearby_demands_blend_continuously_without_a_mode_threshold():
+  low = _command(_path(0.0119), 0.0119)
+  high = _command(_path(0.0121), 0.0121)
+  assert abs(high.path_offset - low.path_offset) < 0.05
+  assert abs(high.path_angle - low.path_angle) < 0.03
+  assert abs(high.curvature - low.curvature) < 0.001
 
 
-def test_maneuver_hysteresis_prevents_mode_chatter():
-  controller = FordPathController(dt=1.0)
-  entry = controller.update(_path(0.02), 0.02, v_ego=8.0)
-  held = controller.update(_path(0.015), 0.015, v_ego=8.0)
-  exited = controller.update(_path(0.01), 0.01, v_ego=8.0)
-  assert entry.path_angle != 0.0 and entry.curvature == 0.0
-  assert held.path_angle != 0.0 and held.curvature == 0.0
-  assert exited.path_offset == 0.0 and exited.path_angle == 0.0
-  assert np.isclose(exited.curvature, 0.01)
+def test_leaving_c2_normal_band_does_not_drop_total_authority():
+  normal = _command(_path(0.006), 0.006)
+  transition = _command(_path(0.0061), 0.0061)
+  assert transition.curvature <= normal.curvature
+  assert _equivalent_curvature(transition) >= _equivalent_curvature(normal)
 
 
-def test_low_speed_uses_seven_meter_lookahead_for_both_pose_fields():
-  model = _path(0.04, speed=2.0)
-  expected_offset, expected_angle = _model_pose(model, 7.0)
-  command = _command(model, 0.04, v_ego=2.0)
-  assert np.isclose(command.path_offset, expected_offset)
-  assert np.isclose(command.path_angle, expected_angle)
+def test_low_speed_still_uses_available_model_pose():
+  command = _command(_path(0.04, speed=2.0), 0.04, v_ego=2.0)
+  assert command.path_offset > 0.0
+  assert command.path_angle > 0.0
 
 
-def test_speed_uses_one_second_lookahead_for_both_pose_fields():
-  model = _path(0.02, speed=15.0)
-  expected_offset, expected_angle = _model_pose(model, 15.0)
-  command = _command(model, 0.02, v_ego=15.0)
-  assert np.isclose(command.path_offset, expected_offset)
-  assert np.isclose(command.path_angle, expected_angle)
+def test_higher_speed_extends_heading_horizon_without_moving_offset_horizon():
+  model = _changing_path(0.0, 0.04, speed=20.0)
+  slow = _command(model, 0.012, v_ego=7.0)
+  fast = _command(model, 0.012, v_ego=20.0)
+  assert np.isclose(fast.path_offset, slow.path_offset)
+  assert fast.path_angle > slow.path_angle
 
 
 def test_short_model_uses_available_endpoint():
   model = _path(0.04, speed=1.0)
-  expected_offset, expected_angle = _model_pose(model, math.inf)
   command = _command(model, 0.04, v_ego=1.0)
-  assert np.isclose(command.path_offset, expected_offset)
-  assert np.isclose(command.path_angle, expected_angle)
+  assert command.valid
+  assert command.path_offset > 0.0
+  assert command.path_angle > 0.0
 
 
-def test_turn_entry_does_not_retain_previous_gentle_c2():
-  controller = FordPathController()
-  for _ in range(20):
-    assert controller.update(_path(0.004), 0.004, v_ego=8.0).curvature > 0.0
-  turning = controller.update(_path(0.04), 0.04, v_ego=8.0)
-  assert turning.curvature == 0.0
-
-
-def test_turn_exit_never_stacks_pose_and_c2():
+def test_turn_entry_coordinates_c2_release_with_fast_pose_attack():
   controller = FordPathController(dt=0.01)
   for _ in range(20):
-    controller.update(_path(0.04), 0.04, v_ego=8.0)
-  outputs = [controller.update(_path(0.008), 0.008, v_ego=8.0) for _ in range(100)]
-  assert all(command.curvature == 0.0 or (command.path_offset == 0.0 and command.path_angle == 0.0) for command in outputs)
-  assert np.isclose(outputs[-1].curvature, 0.008)
+    assert controller.update(_path(0.004), 0.004, v_ego=8.0).curvature > 0.0
+  outputs = [controller.update(_path(0.04), 0.04, current_curvature=0.01, v_ego=8.0) for _ in range(100)]
+  assert 0.0 < outputs[0].curvature < 0.004
+  assert outputs[0].path_offset > 0.0
+  assert outputs[0].path_angle > 0.0
+  assert outputs[-1].curvature == 0.0
 
 
-def test_inactive_and_invalid_model_reset_maneuver_latch():
-  controller = FordPathController(dt=1.0)
-  controller.update(_path(0.02), 0.02, v_ego=8.0)
-  controller.update(None, 0.0, v_ego=8.0)
-  after_invalid = controller.update(_path(0.015), 0.015, v_ego=8.0)
-  assert after_invalid.path_angle == 0.0 and np.isclose(after_invalid.curvature, 0.015)
+def test_turn_exit_allows_c2_to_take_over_while_fast_pose_drains():
+  controller = FordPathController(dt=0.01)
+  for _ in range(20):
+    controller.update(_path(0.04), 0.04, current_curvature=0.02, v_ego=8.0)
+  outputs = [controller.update(_path(0.004), 0.004, current_curvature=0.004, v_ego=8.0) for _ in range(100)]
+  assert 0.0 < outputs[0].curvature < 0.004
+  assert outputs[0].path_offset != 0.0 or outputs[0].path_angle != 0.0
+  assert outputs[-1].path_offset == 0.0
+  assert outputs[-1].path_angle == 0.0
 
-  controller.update(_path(0.02), 0.02, v_ego=8.0)
-  controller.update(_path(0.0), 0.0, v_ego=8.0, active=False)
-  after_inactive = controller.update(_path(0.015), 0.015, v_ego=8.0)
-  assert after_inactive.path_angle == 0.0 and np.isclose(after_inactive.curvature, 0.015)
+
+def test_100hz_handoff_preserves_total_authority_without_entry_drop_or_exit_overshoot():
+  controller = FordPathController(dt=0.01)
+  normal = controller.update(_path(0.006), 0.006, current_curvature=0.006, v_ego=8.0)
+  entries = [controller.update(_path(0.04), 0.04, current_curvature=0.01, v_ego=8.0) for _ in range(100)]
+  entry_authority = np.asarray([_equivalent_curvature(command) for command in entries])
+  assert np.all(np.diff(entry_authority) >= -1e-9)
+  assert entry_authority[0] >= _equivalent_curvature(normal)
+
+  exits = [controller.update(_path(0.004), 0.004, current_curvature=0.004, v_ego=8.0) for _ in range(100)]
+  exit_authority = np.asarray([_equivalent_curvature(command) for command in exits])
+  assert np.all(np.diff(exit_authority) <= 1e-9)
+  assert np.all(exit_authority >= 0.004 - 1e-9)
+
+
+def test_measured_undertracking_adds_fast_authority_without_overshoot_countersteer():
+  model = _path(0.04)
+  under = _command(model, 0.04, current_curvature=0.005)
+  on_target = _command(model, 0.04, current_curvature=0.04)
+  over = _command(model, 0.04, current_curvature=0.05)
+  assert under.path_offset > on_target.path_offset
+  assert under.path_angle > on_target.path_angle
+  assert over.path_offset == on_target.path_offset
+  assert over.path_angle == on_target.path_angle
 
 
 def test_s_turn_reverses_model_pose_without_slow_c2():
