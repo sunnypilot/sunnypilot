@@ -1,3 +1,4 @@
+from collections import deque
 from dataclasses import dataclass
 import math
 
@@ -10,10 +11,8 @@ DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 _PATH_MIN_LOOKAHEAD = 7.0
-_TRACKING_LOOKAHEAD = 2.0
+_POSE_PREDICTION_TIME = 0.1
 _POSE_BLEND_CURVATURE = (0.006, 0.012)
-_TRACKING_ERROR_DEADZONE = 0.0005
-_TRACKING_ERROR_LIMIT = 0.012
 _PATH_OFFSET_RATE = 4.0
 _PATH_ANGLE_RATE = 1.0
 
@@ -40,7 +39,7 @@ def _blend_share(demand: float) -> float:
   return float(np.clip((demand - lower) / (upper - lower), 0.0, 1.0))
 
 
-def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
+def _model_path(model) -> tuple[list[float], list[float], list[float], list[float]] | None:
   try:
     x = [float(value) for value in model.position.x]
     y = [float(value) for value in model.position.y]
@@ -62,41 +61,56 @@ def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
   for value in heading[1:]:
     delta = (value - unwrapped_heading[-1] + math.pi) % (2.0 * math.pi) - math.pi
     unwrapped_heading.append(unwrapped_heading[-1] + delta)
-  return distance, y, unwrapped_heading
+  return distance, x, y, unwrapped_heading
 
 
-def _encode_path(path: tuple[list[float], list[float], list[float]], desired_curvature: float,
-                 current_curvature: float, v_ego: float) -> FordPath:
-  distance, offset, heading = path
-  offset_horizon = min(_PATH_MIN_LOOKAHEAD, distance[-1])
-  angle_horizon = min(max(v_ego, _PATH_MIN_LOOKAHEAD), distance[-1])
-  model_offset = _sample(offset_horizon, distance, offset)
-  model_angle = _sample(angle_horizon, distance, heading)
+def _predicted_pose(distance: float, current_curvature: float,
+                    curvature_delta: float) -> tuple[float, float, float]:
+  curvature = current_curvature + 0.5 * curvature_delta
+  heading = curvature * distance
+  if abs(curvature) < 1e-9:
+    return distance, 0.0, 0.0
+  return math.sin(heading) / curvature, (1.0 - math.cos(heading)) / curvature, heading
 
-  offset_curvature = 2.0 * model_offset / offset_horizon ** 2
-  angle_curvature = model_angle / angle_horizon
+
+def _relative_pose(target_distance: float, path: tuple[list[float], list[float], list[float], list[float]],
+                   vehicle_pose: tuple[float, float, float]) -> tuple[float, float]:
+  distance, x, y, heading = path
+  vehicle_x, vehicle_y, vehicle_heading = vehicle_pose
+  dx = _sample(target_distance, distance, x) - vehicle_x
+  dy = _sample(target_distance, distance, y) - vehicle_y
+  cosine = math.cos(vehicle_heading)
+  sine = math.sin(vehicle_heading)
+  offset = -sine * dx + cosine * dy
+  angle = math.atan2(math.sin(_sample(target_distance, distance, heading) - vehicle_heading),
+                     math.cos(_sample(target_distance, distance, heading) - vehicle_heading))
+  return offset, angle
+
+
+def _encode_path(path: tuple[list[float], list[float], list[float], list[float]], desired_curvature: float,
+                 current_curvature: float, curvature_delta: float, v_ego: float) -> FordPath:
+  distance, _, _, _ = path
+  advance = min(v_ego * _POSE_PREDICTION_TIME, distance[-1])
+  offset_horizon = min(_PATH_MIN_LOOKAHEAD, distance[-1] - advance)
+  angle_horizon = min(max(v_ego, _PATH_MIN_LOOKAHEAD), distance[-1] - advance)
+  vehicle_pose = _predicted_pose(advance, current_curvature, curvature_delta)
+  model_offset, _ = _relative_pose(advance + offset_horizon, path, vehicle_pose)
+  _, model_angle = _relative_pose(advance + angle_horizon, path, vehicle_pose)
+
+  offset_curvature = 2.0 * model_offset / max(offset_horizon, 1e-3) ** 2
+  angle_curvature = model_angle / max(angle_horizon, 1e-3)
   pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
-
-  # Close the loop on the path that C0/C1 describe, rather than the planner's
-  # instantaneous action. This remains bidirectional so measured overshoot can
-  # unwind while the forward model pose continues to carry the maneuver.
-  tracking_horizon = min(_TRACKING_LOOKAHEAD, distance[-1])
-  path_curvature = (_sample(tracking_horizon, distance, heading) - _sample(0.0, distance, heading)) / tracking_horizon
-  tracking_error = path_curvature - current_curvature
-  tracking_error = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
-  tracking_error = float(np.clip(tracking_error, -_TRACKING_ERROR_LIMIT, _TRACKING_ERROR_LIMIT))
+  curvature = desired_curvature * (1.0 - pose_share)
+  if curvature * model_angle < 0.0:
+    curvature = 0.0
+    pose_share = 1.0
 
   # C2 owns normal path following. As model pose demand grows, transfer the
-  # same path continuously to the faster C0/C1 fields. Measured path error is
-  # independent of that feedforward split, so it can finish an unwind.
-  path_offset = pose_share * model_offset + 0.5 * tracking_error * offset_horizon ** 2
-  path_angle = pose_share * model_angle + tracking_error * offset_horizon
+  # same delay-aligned path continuously to the faster C0/C1 fields.
+  path_offset = pose_share * model_offset
+  path_angle = pose_share * model_angle
   limited_path_angle = float(np.clip(path_angle, *DBC_ANGLE))
   path_offset += (path_angle - limited_path_angle) * offset_horizon
-  curvature = desired_curvature * (1.0 - pose_share)
-  path_support = math.copysign(1.0, desired_curvature) * path_curvature
-  if curvature * tracking_error < 0.0 and abs(desired_curvature) - path_support > _TRACKING_ERROR_DEADZONE:
-    curvature = 0.0
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
@@ -112,6 +126,7 @@ class FordPathController:
   def __init__(self, dt: float = 0.01):
     self.dt = dt
     self._last_path = FordPath(valid=True)
+    self._curvature_history = deque(maxlen=max(round(_POSE_PREDICTION_TIME / dt) + 1, 2))
 
   def _limit(self, target: FordPath) -> FordPath:
     offset_delta = target.path_offset - self._last_path.path_offset
@@ -134,9 +149,14 @@ class FordPathController:
              v_ego: float = 0.0, active: bool = True) -> FordPath:
     if not active:
       self._last_path = FordPath(valid=True)
+      self._curvature_history.clear()
       return FordPath()
+    current_curvature = _finite(current_curvature)
+    self._curvature_history.append(current_curvature)
+    curvature_delta = (current_curvature - self._curvature_history[0]
+                       if len(self._curvature_history) == self._curvature_history.maxlen else 0.0)
     path = _model_path(model) if model is not None else None
     if path is None:
       return self._limit(FordPath(valid=True))
-    return self._limit(_encode_path(path, _finite(desired_curvature), _finite(current_curvature),
+    return self._limit(_encode_path(path, _finite(desired_curvature), current_curvature, curvature_delta,
                                     max(_finite(v_ego), 0.0)))

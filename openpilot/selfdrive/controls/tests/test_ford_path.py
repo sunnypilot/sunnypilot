@@ -5,7 +5,8 @@ import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
-from openpilot.selfdrive.controls.lib.ford_path import DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPathController
+from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPathController,
+                                                        _encode_path, _model_path, _predicted_pose, _relative_pose)
 
 
 def _path(curvature: float, speed: float = 8.0):
@@ -132,11 +133,11 @@ def test_low_speed_still_uses_available_model_pose():
   assert command.path_angle > 0.0
 
 
-def test_higher_speed_extends_heading_horizon_without_moving_offset_horizon():
+def test_higher_speed_advances_predicted_pose_and_extends_heading_horizon():
   model = _changing_path(0.0, 0.015, speed=20.0)
   slow = _command(model, 0.012, v_ego=7.0)
   fast = _command(model, 0.012, v_ego=20.0)
-  assert np.isclose(fast.path_offset, slow.path_offset)
+  assert fast.path_offset > slow.path_offset
   assert fast.path_angle > slow.path_angle
 
 
@@ -195,16 +196,23 @@ def test_measured_tracking_error_closes_bidirectionally_without_abandoning_the_t
   assert 0.0 < over.path_angle < on_target.path_angle
 
 
-def test_gentle_curve_uses_fast_fields_to_correct_measured_error_but_retains_centering_c2():
+def test_gentle_curve_leaves_tracking_to_centering_c2():
   model = _path(0.004)
   under = _command(model, 0.004, current_curvature=0.002)
   on_target = _command(model, 0.004, current_curvature=0.004)
   over = _command(model, 0.004, current_curvature=0.006)
-  assert under.path_offset > on_target.path_offset == 0.0
-  assert under.path_angle > on_target.path_angle == 0.0
-  assert over.path_offset < on_target.path_offset
-  assert over.path_angle < on_target.path_angle
+  assert under.path_offset == on_target.path_offset == over.path_offset == 0.0
+  assert under.path_angle == on_target.path_angle == over.path_angle == 0.0
   assert under.curvature == on_target.curvature == over.curvature == 0.004
+
+
+def test_recent_curvature_trend_advances_vehicle_pose_without_a_response_gain():
+  model = _model_path(_path(0.04))
+  assert model is not None
+  constant = _encode_path(model, 0.04, current_curvature=0.02, curvature_delta=0.0, v_ego=8.0)
+  rising = _encode_path(model, 0.04, current_curvature=0.02, curvature_delta=0.01, v_ego=8.0)
+  assert 0.0 < rising.path_offset < constant.path_offset
+  assert 0.0 < rising.path_angle < constant.path_angle
 
 
 def test_model_path_exit_zeros_lingering_c2_and_countersteers():
@@ -248,10 +256,11 @@ def test_clipped_path_angle_uses_available_offset_to_preserve_endpoint():
   for curvature, angle_limit in ((-0.1, DBC_ANGLE[0]), (0.1, DBC_ANGLE[1])):
     model = _path(curvature)
     command = _command(model, curvature, current_curvature=curvature, v_ego=horizon)
-
-    distance = np.concatenate(([0.0], np.cumsum(np.hypot(np.diff(model.position.x), np.diff(model.position.y)))))
-    model_offset = np.interp(horizon, distance, model.position.y)
-    model_angle = np.interp(horizon, distance, model.orientation.z)
+    path = _model_path(model)
+    assert path is not None
+    advance = 0.1 * horizon
+    model_offset, model_angle = _relative_pose(advance + horizon, path,
+                                                _predicted_pose(advance, curvature, 0.0))
 
     assert command.path_angle == angle_limit
     assert np.isclose(command.path_offset + horizon * command.path_angle,
