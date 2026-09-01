@@ -88,11 +88,13 @@ def _encode_path(path: tuple[list[float], list[float], list[float]], desired_cur
   # expressed in those same pose units and cannot initiate the transfer.
   path_offset = pose_share * (model_offset + 0.5 * tracking_error * offset_horizon ** 2)
   path_angle = pose_share * (model_angle + tracking_error * angle_horizon)
+  limited_path_angle = float(np.clip(path_angle, *DBC_ANGLE))
+  path_offset += (path_angle - limited_path_angle) * offset_horizon
   curvature = desired_curvature * (1.0 - pose_share)
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
-    path_angle=float(np.clip(path_angle, *DBC_ANGLE)),
+    path_angle=limited_path_angle,
     curvature=float(np.clip(curvature, *DBC_CURVATURE)),
     curvature_rate=0.0,
   )

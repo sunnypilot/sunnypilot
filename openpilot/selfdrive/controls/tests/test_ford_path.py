@@ -123,7 +123,7 @@ def test_low_speed_still_uses_available_model_pose():
 
 
 def test_higher_speed_extends_heading_horizon_without_moving_offset_horizon():
-  model = _changing_path(0.0, 0.04, speed=20.0)
+  model = _changing_path(0.0, 0.015, speed=20.0)
   slow = _command(model, 0.012, v_ego=7.0)
   fast = _command(model, 0.012, v_ego=20.0)
   assert np.isclose(fast.path_offset, slow.path_offset)
@@ -205,6 +205,21 @@ def test_output_limits_and_rates_are_bounded():
   assert all(DBC_CURVATURE[0] <= command.curvature <= DBC_CURVATURE[1] for command in outputs)
   assert np.max(np.abs(np.diff([command.path_offset for command in outputs]))) <= 0.04 + 1e-9
   assert np.max(np.abs(np.diff([command.path_angle for command in outputs]))) <= 0.01 + 1e-9
+
+
+def test_clipped_path_angle_uses_available_offset_to_preserve_endpoint():
+  horizon = 7.0
+  for curvature, angle_limit in ((-0.1, DBC_ANGLE[0]), (0.1, DBC_ANGLE[1])):
+    model = _path(curvature)
+    command = _command(model, curvature, current_curvature=curvature, v_ego=horizon)
+
+    distance = np.concatenate(([0.0], np.cumsum(np.hypot(np.diff(model.position.x), np.diff(model.position.y)))))
+    model_offset = np.interp(horizon, distance, model.position.y)
+    model_angle = np.interp(horizon, distance, model.orientation.z)
+
+    assert command.path_angle == angle_limit
+    assert np.isclose(command.path_offset + horizon * command.path_angle,
+                      model_offset + horizon * model_angle)
 
 
 def test_invalid_model_ramps_pose_to_zero_and_inactive_resets():
