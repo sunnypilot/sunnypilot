@@ -37,7 +37,7 @@ class DummyModel:
 
 
 class DummyBundle:
-  def __init__(self, is_20hz=False, models=None, generation=10, is_big=False):
+  def __init__(self, is_20hz=False, models=None, generation=10):
     self.overrides = [DummyOverride('lat', '.1'), DummyOverride('long', '.3')]
     self.generation = generation
     self.is20hz = is_20hz
