@@ -10,6 +10,7 @@ DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 _PATH_MIN_LOOKAHEAD = 7.0
+_TRACKING_LOOKAHEAD = 2.0
 _POSE_BLEND_CURVATURE = (0.006, 0.012)
 _TRACKING_ERROR_DEADZONE = 0.0005
 _TRACKING_ERROR_LIMIT = 0.012
@@ -79,7 +80,8 @@ def _encode_path(path: tuple[list[float], list[float], list[float]], desired_cur
   # Close the loop on the path that C0/C1 describe, rather than the planner's
   # instantaneous action. This remains bidirectional so measured overshoot can
   # unwind while the forward model pose continues to carry the maneuver.
-  path_curvature = (_sample(offset_horizon, distance, heading) - _sample(0.0, distance, heading)) / offset_horizon
+  tracking_horizon = min(_TRACKING_LOOKAHEAD, distance[-1])
+  path_curvature = (_sample(tracking_horizon, distance, heading) - _sample(0.0, distance, heading)) / tracking_horizon
   tracking_error = path_curvature - current_curvature
   tracking_error = math.copysign(max(abs(tracking_error) - _TRACKING_ERROR_DEADZONE, 0.0), tracking_error)
   tracking_error = float(np.clip(tracking_error, -_TRACKING_ERROR_LIMIT, _TRACKING_ERROR_LIMIT))

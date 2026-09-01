@@ -73,10 +73,20 @@ def test_spatially_growing_path_adds_fast_pose_before_action_becomes_large():
 def test_growing_model_pose_adds_authority_but_c3_is_never_transmitted():
   constant = _command(_path(0.012), 0.012)
   growing = _command(_changing_path(0.0, 0.04), 0.012)
-  assert growing.path_offset > constant.path_offset
-  assert growing.path_angle > constant.path_angle
+  assert _equivalent_curvature(growing) > _equivalent_curvature(constant)
   assert constant.curvature_rate == 0.0
   assert growing.curvature_rate == 0.0
+
+
+def test_local_tracking_error_corrects_without_replacing_forward_pose():
+  model = _changing_path(0.0, 0.04)
+  local_curvature = 0.5 * 0.04 * 2.0 / 7.0
+  aligned = _command(model, 0.012, current_curvature=local_curvature)
+  under = _command(model, 0.012, current_curvature=0.0)
+  assert aligned.path_offset > 0.0
+  assert aligned.path_angle > 0.0
+  assert under.path_offset > aligned.path_offset
+  assert under.path_angle > aligned.path_angle
 
 
 def test_large_maneuver_uses_fast_pose_and_zeros_c2():
