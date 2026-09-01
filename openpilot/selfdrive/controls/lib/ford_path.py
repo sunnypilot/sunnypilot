@@ -1,4 +1,3 @@
-from collections import deque
 from dataclasses import dataclass, fields
 import math
 
@@ -13,7 +12,9 @@ DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 _PATH_HORIZON = 7.0
-_C2_DELAY = 0.05
+_CURVATURE_RATE_HORIZONS = (3.5, 5.0, 7.0)
+_FAST_POSE_CURVATURE_BAND = (0.009, 0.012)
+_CURVATURE_NOISE_FLOOR = 0.0005
 _PATH_RATES = (4.0, 1.0, math.inf, math.inf)
 
 
@@ -28,6 +29,10 @@ class FordPath:
 
 def _finite(value: float) -> float:
   return float(value) if math.isfinite(value) else 0.0
+
+
+def _sample(distance: float, distances: list[float], values: list[float]) -> float:
+  return float(np.interp(distance, distances, values))
 
 
 def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
@@ -55,11 +60,38 @@ def _model_path(model) -> tuple[list[float], list[float], list[float]] | None:
   return distance, y, unwrapped_heading
 
 
-def _encode_path(desired_curvature: float, current_curvature: float | None, centering_curvature: float) -> FordPath:
+def _curvature_rate(path: tuple[list[float], list[float], list[float]]) -> float:
+  distance, _, heading = path
+  rates = []
+  for requested_horizon in _CURVATURE_RATE_HORIZONS:
+    horizon = min(requested_horizon, distance[-1])
+    start = _sample(0.0, distance, heading)
+    midpoint = _sample(0.5 * horizon, distance, heading)
+    end = _sample(horizon, distance, heading)
+    rates.append(4.0 * (start - 2.0 * midpoint + end) / horizon ** 2)
+
+  magnitude = sum(abs(rate) for rate in rates)
+  if magnitude == 0.0:
+    return 0.0
+  return sorted(rates)[1] * abs(sum(rates)) / magnitude
+
+
+def _encode_path(model, desired_curvature: float, v_ego: float, current_curvature: float | None) -> FordPath:
+  path = _model_path(model)
+  if path is None:
+    return FordPath()
+
+  model_curvature_rate = _curvature_rate(path)
   action_curvature = _finite(desired_curvature)
   measured_curvature = float(np.clip(_finite(current_curvature), -MAX_CURVATURE, MAX_CURVATURE)) \
     if current_curvature is not None else 0.0
 
+  future_curvature = action_curvature + model_curvature_rate * max(_finite(v_ego), _PATH_HORIZON)
+  sustained_curvature = 0.0
+  if action_curvature * future_curvature > 0.0 and abs(future_curvature) > _CURVATURE_NOISE_FLOOR:
+    sustained_curvature = math.copysign(min(abs(action_curvature), abs(future_curvature)), action_curvature)
+  maneuver_share = float(np.interp(abs(action_curvature), _FAST_POSE_CURVATURE_BAND, (0.0, 1.0)))
+  centering_curvature = sustained_curvature * (1.0 - maneuver_share)
   fast_curvature = (action_curvature - centering_curvature) + (action_curvature - measured_curvature)
   path_offset = 0.5 * fast_curvature * _PATH_HORIZON ** 2
   path_angle = fast_curvature * _PATH_HORIZON
@@ -74,20 +106,11 @@ def _encode_path(desired_curvature: float, current_curvature: float | None, cent
 
 
 class FordPathController:
-  """Split each Ford path command into one-model-frame fast and steady components."""
+  """Convert the model path directly into one vehicle-independent Ford path command."""
 
   def __init__(self, dt: float = 0.01):
     self.dt = dt
     self._last_path = FordPath(valid=True)
-    delay_steps = max(round(_C2_DELAY / dt), 1)
-    self._desired_history: deque[float] = deque(maxlen=delay_steps + 1)
-
-  def _delayed_curvature(self, desired_curvature: float) -> float:
-    curvature = float(np.clip(_finite(desired_curvature), *DBC_CURVATURE))
-    if not self._desired_history:
-      self._desired_history.extend([curvature] * self._desired_history.maxlen)
-    self._desired_history.append(curvature)
-    return self._desired_history[0]
 
   def _limit(self, target: FordPath) -> FordPath:
     values = []
@@ -102,10 +125,7 @@ class FordPathController:
              current_curvature: float | None = None) -> FordPath:
     if not active:
       self._last_path = FordPath(valid=True)
-      self._desired_history.clear()
       return FordPath()
-    if model is None or _model_path(model) is None:
-      self._desired_history.clear()
+    if model is None:
       return self._limit(FordPath(valid=True))
-    centering_curvature = self._delayed_curvature(desired_curvature)
-    return self._limit(_encode_path(desired_curvature, current_curvature, centering_curvature))
+    return self._limit(_encode_path(model, desired_curvature, v_ego, current_curvature))
