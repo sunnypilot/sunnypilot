@@ -24,7 +24,7 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.selfdrive.test.helpers import http_server_context
 from openpilot.sunnypilot.models import manager as manager_module
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
+from openpilot.sunnypilot.models.fetcher import ModelFetcher, ModelParser, get_cached_bundles
 from openpilot.sunnypilot.models import helpers
 from openpilot.sunnypilot.models.helpers import (get_active_bundle, get_active_source, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles)
@@ -811,3 +811,63 @@ class TestLiveModelManifest(OpenpilotTestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
+
+class TestChunkManifestRepair(OpenpilotTestCase):
+  """qcom and chestnut list the same file with different chunk counts; the manifest must
+  describe the chunks on disk, not whichever was parsed last"""
+
+  CHUNKED_NAME = "shared_model.pkl"
+
+  def setUp(self):
+    super().setUp()
+    self.model_root = tempfile.mkdtemp()
+    patcher = mock.patch('openpilot.sunnypilot.models.fetcher.Paths')
+    self.addCleanup(patcher.stop)
+    patcher.start().model_root.return_value = self.model_root
+
+  def artifact_data(self, num_chunks: int, file_name: str | None = None) -> dict:
+    name = file_name or self.CHUNKED_NAME
+    return {
+      "file_name": name,
+      "download_uri": {"url": f"https://example.com/{name}", "sha256": "s"},
+      "chunks": [{"file_name": get_chunk_name(name, i, num_chunks), "sha256": "s"}
+                 for i in range(num_chunks)],
+    }
+
+  def manifest_text(self) -> str | None:
+    path = get_manifest_path(os.path.join(self.model_root, self.CHUNKED_NAME))
+    if not os.path.isfile(path):
+      return None
+    with open(path) as f:
+      return f.read().strip()
+
+  def place_chunks(self, num_chunks: int) -> None:
+    base = os.path.join(self.model_root, self.CHUNKED_NAME)
+    for i in range(num_chunks):
+      with open(get_chunk_name(base, i, num_chunks), 'wb') as f:
+        f.write(b'x')
+
+  def test_no_manifest_for_an_undownloaded_artifact(self):
+    ModelParser._parse_artifact(self.artifact_data(4))
+    assert self.manifest_text() is None, "wrote a manifest for chunks that are not on disk"
+
+  def test_manifest_repaired_for_a_downloaded_artifact(self):
+    self.place_chunks(4)
+    ModelParser._parse_artifact(self.artifact_data(4))
+    assert self.manifest_text() == "4"
+
+  def test_two_sources_disagreeing_do_not_thrash(self):
+    # qcom says 4 chunks, chestnut says 5, and only qcom's were downloaded
+    self.place_chunks(4)
+    for _ in range(3):
+      ModelParser._parse_artifact(self.artifact_data(4))
+      ModelParser._parse_artifact(self.artifact_data(5))
+      assert self.manifest_text() == "4", "the other source overwrote the manifest"
+
+  def test_unchunked_artifact_writes_nothing(self):
+    ModelParser._parse_artifact({
+      "file_name": self.CHUNKED_NAME,
+      "download_uri": {"url": "https://example.com/x", "sha256": "s"},
+    })
+    assert self.manifest_text() is None
