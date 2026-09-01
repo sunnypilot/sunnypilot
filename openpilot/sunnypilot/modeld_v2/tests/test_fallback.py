@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 
 import io
 import requests
-from unittest import mock
 
 from openpilot.common.file_chunker import get_chunk_name
 from openpilot.common.hardware import hw
