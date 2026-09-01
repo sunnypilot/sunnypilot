@@ -121,7 +121,7 @@ jobs:
           if-no-files-found: error
 
   build_model:
-    runs-on: [self-hosted, chestnut]
+    runs-on: [self-hosted, "${{ inputs.target_hardware == 'chestnut' && 'chestnut' || 'tici' }}"]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
