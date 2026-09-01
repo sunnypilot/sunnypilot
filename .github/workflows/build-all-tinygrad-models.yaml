@@ -8,13 +8,13 @@ on:
         required: true
         type: string
       target_hardware:
-        description: 'Hardware target to compile for (qcom or usbgpu)'
+        description: 'Hardware target to compile for (qcom or chestnut)'
         required: true
         type: choice
         default: 'qcom'
         options:
           - qcom
-          - usbgpu
+          - chestnut
       hf_repo:
         description: 'Hugging Face dataset repository'
         required: false
@@ -59,7 +59,7 @@ jobs:
         id: get-json
         run: |
           cd docs/docs
-          PREFIX="driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_' || '' }}v"
+          PREFIX="driving_models_${{ inputs.target_hardware == 'chestnut' && 'chestnut_' || '' }}v"
           latest=$(ls ${PREFIX}*.json | sed -E "s/${PREFIX}([0-9]+)\.json/\1/" | sort -n | tail -1)
           next=$((latest+1))
           json_file="${PREFIX}${next}.json"

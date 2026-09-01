@@ -10,7 +10,7 @@ import time
 import pyray as rl
 
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
-from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.icon_widget import IconWidget
@@ -33,13 +33,10 @@ class MiciHomeLayoutSP(MiciHomeLayout):
   def __init__(self):
     super().__init__()
     self._openpilot_label = UnifiedLabel("sunnypilot", font_size=88, font_weight=FontWeight.AUDIOWIDE, max_width=480, wrap_text=False)
-    self._egpu_icon_default = IconWidget("icons_mici/egpu.png", (50, 37))
-    self._egpu_icon_default.set_visible(False)
-    self._egpu_icon_orange = IconWidget("icons_mici/egpu_orange.png", (50, 37))
-    self._egpu_icon_orange.set_visible(False)
-    gray_idx = self._status_bar_layout.widgets.index(self._egpu_icon_gray)
-    self._status_bar_layout.widgets.insert(gray_idx + 1, self._egpu_icon_default)
-    self._status_bar_layout.widgets.insert(gray_idx + 2, self._egpu_icon_orange)
+    self._chestnut_loading_icon = IconWidget("icons_mici/chestnut.png", (68, 40))
+    self._chestnut_loading_icon.set_visible(False)
+    failed_idx = self._status_bar_layout.widgets.index(self._chestnut_failed_icon)
+    self._status_bar_layout.widgets.insert(failed_idx + 1, self._chestnut_loading_icon)
     initial_summary = ui_state.params.get("LastDriveAssistedDrivingSummary", return_default=True) or {}
     self._last_summary_id = initial_summary.get("id", 0)
     self._summary_wait_until = 0.0
@@ -87,27 +84,11 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     gui_label(rl.Rectangle(rect.x + rect.width / 2 + 10, rect.y + 116, rect.width / 2 - 30, 72), f"{full_assist:.1f} {unit}", 48,
               font_weight=FontWeight.DISPLAY, alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER)
 
-  def _set_egpu_visibility(self):
-    chestnut = ui_state.sm["deviceState"].chestnutPresent
-    if not chestnut:
-      self._egpu_icon.set_visible(False)
-      self._egpu_icon_default.set_visible(False)
-      self._egpu_icon_orange.set_visible(False)
-      self._egpu_icon_gray.set_visible(False)
-      return
-
-    big_model_selected = ui_state.usbgpu_compiled or ui_state.model_runner_tinygrad
-    big_model_failed = ui_state.started and ui_state.big_model_failed
-    loading = ui_state.usbgpu_loading or (big_model_selected and ui_state.started and ui_state.usbgpu_active is None)
-
-    if loading:
-      self._egpu_icon_default._opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
-      self._egpu_icon_default.set_visible(True)
-      self._egpu_icon.set_visible(False)
-      self._egpu_icon_orange.set_visible(False)
-      self._egpu_icon_gray.set_visible(False)
-    else:
-      self._egpu_icon_default.set_visible(False)
-      self._egpu_icon.set_visible(big_model_selected and not big_model_failed)
-      self._egpu_icon_orange.set_visible(big_model_selected and big_model_failed)
-      self._egpu_icon_gray.set_visible(not big_model_selected)
+  def _set_chestnut_visibility(self):
+    # stock has no loading tier: it shows green from the moment a big model is available. keep the
+    # pulse so the status bar and the onroad HUD agree on what loading looks like.
+    loading = ui_state.chestnut_state == ChestnutState.LOADING
+    self._chestnut_loading_icon._opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
+    self._chestnut_loading_icon.set_visible(loading)
+    self._chestnut_icon.set_visible(not loading and ui_state.chestnut_state in (ChestnutState.READY, ChestnutState.ACTIVE))
+    self._chestnut_failed_icon.set_visible(ui_state.chestnut_state in (ChestnutState.UNCOMPILED, ChestnutState.FAILED))

@@ -153,10 +153,13 @@ class UIStateSP:
       self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
 
     self._enforce_constraints()
-    source = get_active_source(usbgpu=self.usbgpu, usbgpu_active=self.usbgpu_active,
-                               usbgpu_loading=self.usbgpu_loading, offroad=self.is_offroad())
+    source = get_active_source(chestnut=self.chestnut_present, chestnut_active=self.chestnut_active,
+                               chestnut_loading=self.chestnut_loading, offroad=self.is_offroad())
     self.active_bundle = self.params.get(ACTIVE_BUNDLE_KEYS[source])
     self.model_runner_tinygrad = self.active_bundle is not None and self.active_bundle.get("runner") == "tinygrad"
+    # stock only counts the default big model's compiled pkl. a downloaded big bundle runs on the
+    # chestnut just the same, so ChestnutState has to see it as available too.
+    self.chestnut_compiled = self.chestnut_compiled or self.model_runner_tinygrad
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
