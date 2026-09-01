@@ -24,10 +24,6 @@ class FordPath:
   curvature_rate: float = 0.0
 
 
-def _finite(value: float) -> float:
-  return float(value) if math.isfinite(value) else 0.0
-
-
 def _sample(distance: float, distances: list[float], values: list[float]) -> float:
   return float(np.interp(distance, distances, values))
 
@@ -62,30 +58,15 @@ def _model_path(model) -> tuple[list[float], list[float], list[float], list[floa
   return distance, x, y, unwrapped_heading
 
 
-def _predicted_pose(distance: float, curvature: float) -> tuple[float, float, float]:
-  heading = curvature * distance
-  if abs(curvature) < 1e-9:
-    return distance, 0.0, 0.0
-  return math.sin(heading) / curvature, (1.0 - math.cos(heading)) / curvature, heading
+def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]) -> FordPath:
+  distance, _, y, heading = path
+  target_distance = min(_PATH_MIN_LOOKAHEAD, distance[-1])
+  horizon = max(target_distance, 1e-3)
 
-
-def _encode_path(path: tuple[list[float], list[float], list[float], list[float]], current_curvature: float,
-                 v_ego: float, actuator_delay: float) -> FordPath:
-  distance, x, y, heading = path
-  advance = min(v_ego * actuator_delay, distance[-1])
-  target_distance = min(advance + _PATH_MIN_LOOKAHEAD, distance[-1])
-  horizon = max(target_distance - advance, 1e-3)
-
-  vehicle_x, vehicle_y, vehicle_heading = _predicted_pose(advance, current_curvature)
-  dx = _sample(target_distance, distance, x) - vehicle_x
-  dy = _sample(target_distance, distance, y) - vehicle_y
-  cosine = math.cos(vehicle_heading)
-  sine = math.sin(vehicle_heading)
-  model_offset = -sine * dx + cosine * dy
-  model_angle = math.atan2(math.sin(_sample(target_distance, distance, heading) - vehicle_heading),
-                           math.cos(_sample(target_distance, distance, heading) - vehicle_heading))
-  start_heading = _sample(advance, distance, heading)
-  midpoint_heading = _sample(advance + 0.5 * horizon, distance, heading)
+  model_offset = _sample(target_distance, distance, y)
+  model_angle = _sample(target_distance, distance, heading)
+  start_heading = _sample(0.0, distance, heading)
+  midpoint_heading = _sample(0.5 * horizon, distance, heading)
   target_heading = _sample(target_distance, distance, heading)
   near_curvature = 2.0 * (midpoint_heading - start_heading) / horizon
   far_curvature = 2.0 * (target_heading - midpoint_heading) / horizon
@@ -98,7 +79,7 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
   change_share = min(abs(far_curvature - near_curvature) / curvature_sum, 1.0) if curvature_sum > 0.0 else 0.0
   pose_share = 1.0 - (1.0 - magnitude_share) * (1.0 - change_share)
 
-  # All fields describe the same delay-aligned rolling model path. C2 carries
+  # All fields describe the same current-frame rolling model path. C2 carries
   # steady gentle curvature; changing or larger remaining poses transfer
   # continuously to the faster C0/C1 fields.
   path_offset = pose_share * model_offset
@@ -116,7 +97,7 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
 
 
 class FordPathController:
-  """Encode one delay-aligned rolling model path as C0/C1/C2."""
+  """Encode one current-frame rolling model path as C0/C1/C2."""
 
   def __init__(self, dt: float = 0.01):
     self.dt = dt
@@ -139,13 +120,11 @@ class FordPathController:
     )
     return self._last_path
 
-  def update(self, model, *, actuator_delay: float, current_curvature: float = 0.0,
-             v_ego: float = 0.0, active: bool = True) -> FordPath:
+  def update(self, model, *, active: bool = True) -> FordPath:
     if not active:
       self._last_path = FordPath(valid=True)
       return FordPath()
     path = _model_path(model) if model is not None else None
     if path is None:
       return self._limit(FordPath(valid=True))
-    return self._limit(_encode_path(path, _finite(current_curvature), max(_finite(v_ego), 0.0),
-                                    max(_finite(actuator_delay), 0.0)))
+    return self._limit(_encode_path(path))
