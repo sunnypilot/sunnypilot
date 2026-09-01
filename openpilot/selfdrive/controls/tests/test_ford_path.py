@@ -49,7 +49,7 @@ def test_gentle_path_uses_only_c2():
 
 def test_large_maneuver_uses_model_pose_and_immediately_zeros_c2():
   model = _path(0.04)
-  expected_offset, expected_angle = _model_pose(model, 7.0)
+  expected_offset, expected_angle = _model_pose(model, 8.0)
   command = _command(model, 0.04)
   assert np.isclose(command.path_offset, expected_offset)
   assert np.isclose(command.path_angle, expected_angle)
@@ -70,15 +70,24 @@ def test_action_can_trigger_maneuver_before_model_pose_grows():
   assert command.curvature == 0.0
 
 
-def test_maneuver_handoff_blends_continuously():
-  model = _path(0.0105)
-  expected_offset, expected_angle = _model_pose(model, 7.0)
-  command = _command(model, 0.0105)
-  offset_share = command.path_offset / expected_offset
-  angle_share = command.path_angle / expected_angle
-  assert 0.4 < offset_share < 0.6
-  assert np.isclose(offset_share, angle_share)
-  assert np.isclose(command.curvature / 0.0105, 1.0 - offset_share)
+def test_large_offset_does_not_trigger_maneuver_without_heading_or_action_demand():
+  model = _path(0.008)
+  model.position.y = (np.asarray(model.position.y) + np.linspace(0.0, 4.0, len(model.position.y))).tolist()
+  command = _command(model, 0.008)
+  assert command.path_offset == 0.0
+  assert command.path_angle == 0.0
+  assert np.isclose(command.curvature, 0.008)
+
+
+def test_maneuver_hysteresis_prevents_mode_chatter():
+  controller = FordPathController(dt=1.0)
+  entry = controller.update(_path(0.02), 0.02, v_ego=8.0)
+  held = controller.update(_path(0.015), 0.015, v_ego=8.0)
+  exited = controller.update(_path(0.01), 0.01, v_ego=8.0)
+  assert entry.path_angle != 0.0 and entry.curvature == 0.0
+  assert held.path_angle != 0.0 and held.curvature == 0.0
+  assert exited.path_offset == 0.0 and exited.path_angle == 0.0
+  assert np.isclose(exited.curvature, 0.01)
 
 
 def test_low_speed_uses_seven_meter_lookahead_for_both_pose_fields():
@@ -89,9 +98,9 @@ def test_low_speed_uses_seven_meter_lookahead_for_both_pose_fields():
   assert np.isclose(command.path_angle, expected_angle)
 
 
-def test_speed_uses_half_second_lookahead_for_both_pose_fields():
+def test_speed_uses_one_second_lookahead_for_both_pose_fields():
   model = _path(0.02, speed=15.0)
-  expected_offset, expected_angle = _model_pose(model, 7.5)
+  expected_offset, expected_angle = _model_pose(model, 15.0)
   command = _command(model, 0.02, v_ego=15.0)
   assert np.isclose(command.path_offset, expected_offset)
   assert np.isclose(command.path_angle, expected_angle)
@@ -111,6 +120,28 @@ def test_turn_entry_does_not_retain_previous_gentle_c2():
     assert controller.update(_path(0.004), 0.004, v_ego=8.0).curvature > 0.0
   turning = controller.update(_path(0.04), 0.04, v_ego=8.0)
   assert turning.curvature == 0.0
+
+
+def test_turn_exit_never_stacks_pose_and_c2():
+  controller = FordPathController(dt=0.01)
+  for _ in range(20):
+    controller.update(_path(0.04), 0.04, v_ego=8.0)
+  outputs = [controller.update(_path(0.008), 0.008, v_ego=8.0) for _ in range(100)]
+  assert all(command.curvature == 0.0 or (command.path_offset == 0.0 and command.path_angle == 0.0) for command in outputs)
+  assert np.isclose(outputs[-1].curvature, 0.008)
+
+
+def test_inactive_and_invalid_model_reset_maneuver_latch():
+  controller = FordPathController(dt=1.0)
+  controller.update(_path(0.02), 0.02, v_ego=8.0)
+  controller.update(None, 0.0, v_ego=8.0)
+  after_invalid = controller.update(_path(0.015), 0.015, v_ego=8.0)
+  assert after_invalid.path_angle == 0.0 and np.isclose(after_invalid.curvature, 0.015)
+
+  controller.update(_path(0.02), 0.02, v_ego=8.0)
+  controller.update(_path(0.0), 0.0, v_ego=8.0, active=False)
+  after_inactive = controller.update(_path(0.015), 0.015, v_ego=8.0)
+  assert after_inactive.path_angle == 0.0 and np.isclose(after_inactive.curvature, 0.015)
 
 
 def test_s_turn_reverses_model_pose_without_slow_c2():
