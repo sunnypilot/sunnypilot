@@ -248,32 +248,46 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
     input_shapes = {
       'img': (1, 12, 128, 256),
       'desire_pulse': (1, 25, 8),
-      'features_buffer': (1, 24, 512),  # when https://github.com/commaai/openpilot/pull/38681 merges, update to 1,24,32,512
+      'features_buffer': (1, 24, 32, 512),
       'traffic_convention': (1, 2),
       'action_t': (1, 2),
     }
     frame_skip = 4
 
-    stock_queues, stock_npy = stock_make_input_queues(input_shapes, frame_skip, device='NPY')
+    stock_queues, stock_npy, _ = stock_make_input_queues(input_shapes, frame_skip, device='NPY', frame_copy_size=0)
     sunny_queues, sunny_npy = sunny_make_supercombo_input_queues(input_shapes, frame_skip, device='NPY')
-    assert set(sunny_queues.keys()) == set(stock_queues.keys())
+    # upstream merged warp tensors into packed_npy_inputs; sunnypilot keeps them as separate queue entries
+    warp_keys = {'tfm', 'big_tfm'}
+    assert set(sunny_queues.keys()) - warp_keys == set(stock_queues.keys())
     for key in stock_queues:
+      if key == 'packed_npy_inputs':
+        continue  # upstream packs warp+frame data here; size legitimately differs
       assert sunny_queues[key].shape == stock_queues[key].shape, \
         f"Queue shape mismatch for {key}: sunny {sunny_queues[key].shape} != stock {stock_queues[key].shape}"
-    assert set(sunny_npy.keys()) == set(stock_npy.keys())
-    for key in stock_npy:
+    # both have tfm/big_tfm in npy; compare all shared keys
+    shared_npy = set(sunny_npy.keys()) & set(stock_npy.keys())
+    assert shared_npy == set(stock_npy.keys()), f"stock npy keys not covered: {set(stock_npy.keys()) - shared_npy}"
+    for key in shared_npy:
       assert sunny_npy[key].shape == stock_npy[key].shape, \
         f"Numpy array shape mismatch for {key}: sunny {sunny_npy[key].shape} != stock {stock_npy[key].shape}"
 
   def test_make_warp_queues_stock_equivalence(self):
-    from openpilot.selfdrive.modeld.compile_modeld import make_warp_input_queues as stock_make_warp_queues
+    # upstream merged warp queues into make_input_queues — verify tfm/big_tfm shapes still match
+    from openpilot.selfdrive.modeld.compile_modeld import make_input_queues as stock_make_input_queues
     from openpilot.sunnypilot.modeld_v2.compile_modeld import make_warp_queues as sunny_make_warp_queues
-    stock_vision_shapes = {'img': (1, 12, 128, 256)}  # for now?
-    stock_queues, stock_npy = stock_make_warp_queues(stock_vision_shapes, frame_skip=4, device='NPY')
+    input_shapes = {
+      'img': (1, 12, 128, 256),
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 32, 512),
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2),
+    }
+    _, stock_npy, _ = stock_make_input_queues(input_shapes, frame_skip=4, device='NPY', frame_copy_size=0)
     sunny_queues, sunny_npy = sunny_make_warp_queues(device='NPY')
 
-    assert set(sunny_npy.keys()) == set(stock_npy.keys()) == {'tfm', 'big_tfm'}
-    for key in sunny_npy:
+    for key in ('tfm', 'big_tfm'):
+      assert key in stock_npy, f"{key} missing from stock npy"
+      assert key in sunny_npy, f"{key} missing from sunny npy"
       assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)
 
 
