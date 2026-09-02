@@ -108,22 +108,22 @@ def test_model_pose_can_trigger_maneuver_when_action_is_late():
 
 def test_model_pose_preserves_a_gentle_arc_when_the_action_collapses():
   command = _command(_path(0.006), 0.002, current_curvature=0.006)
-  assert command.path_offset == 0.0
-  assert command.path_angle == 0.0
-  assert np.isclose(command.curvature, 0.006, atol=5e-6)
+  assert command.path_offset > 0.05
+  assert command.path_angle > 0.02
+  assert np.isclose(command.curvature, 0.002, atol=2e-6)
 
 
-def test_changing_gentle_curve_keeps_only_its_common_part_in_c2():
+def test_changing_gentle_curve_keeps_upstream_strength_c2():
   command = _command(_changing_path(0.0, 0.008), 0.004, current_curvature=0.0)
-  assert 0.0 < command.curvature < 0.004
+  assert np.isclose(command.curvature, 0.004)
   assert command.path_angle > 0.0
 
 
-def test_action_cannot_invent_a_maneuver_missing_from_the_model_path():
+def test_action_only_maneuver_cannot_invent_large_model_pose():
   command = _command(_path(0.002), 0.04)
-  assert command.path_offset == 0.0
-  assert 0.0 < command.path_angle < 0.002
-  assert np.isclose(command.curvature, 0.002)
+  assert 0.0 < command.path_offset < 0.1
+  assert 0.0 < command.path_angle < 0.03
+  assert command.curvature == 0.0
 
 
 def test_nearby_demands_blend_continuously_without_a_mode_threshold():

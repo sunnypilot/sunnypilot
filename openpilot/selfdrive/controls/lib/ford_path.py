@@ -125,14 +125,12 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
 
   offset_curvature = 2.0 * model_offset / max(offset_horizon, 1e-3) ** 2
   angle_curvature = model_angle / max(angle_horizon, 1e-3)
-  pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature)))
+  pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
 
-  # Only curvature common to both model offset and heading is steady enough
-  # for sticky C2. C0/C1 carry the changing remainder and measured pose error.
-  same_direction = offset_curvature * angle_curvature > 0.0
-  model_support = math.copysign(min(abs(offset_curvature), abs(angle_curvature)), model_angle) if same_direction else 0.0
-  curvature = float(np.clip(model_support, -_POSE_BLEND_CURVATURE[0], _POSE_BLEND_CURVATURE[0])) * (1.0 - pose_share)
-  if curvature * desired_curvature < 0.0:
+  # Preserve upstream-strength C2 for normal driving. C0/C1 carry the model
+  # geometry not represented by C2, so action collapse cannot erase the path.
+  curvature = desired_curvature * (1.0 - pose_share)
+  if curvature * model_angle <= 0.0:
     curvature = 0.0
 
   path_offset = model_offset - 0.5 * curvature * offset_horizon ** 2 + feedback_offset
