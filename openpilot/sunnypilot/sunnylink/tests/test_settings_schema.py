@@ -278,6 +278,13 @@ class TestKnownPanels(OpenpilotTestCase):
 
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
+  def test_ford_has_native_path_toggle(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    native_path = next((item for item in items if item["key"] == "FordNativePath"), None)
+    assert native_path is not None
+    assert native_path["enablement"] == [{"type": "offroad_only"}]
+    assert native_path["needs_onroad_cycle"] is True
+
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys

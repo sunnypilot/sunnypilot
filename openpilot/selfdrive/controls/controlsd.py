@@ -11,9 +11,10 @@ from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
+from opendbc.car.ford.values import FordFlags
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
-from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController
+from openpilot.selfdrive.controls.lib.ford_path import FordNativePathController, FordPath, FordPathController
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -53,7 +54,9 @@ class Controls(ControlsExt):
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
-    self.ford_path_controller = FordPathController()
+    self.native_ford_path = (self.CP.brand == "ford" and self.CP.flags & FordFlags.CANFD and
+                             self.params.get_bool("FordNativePath"))
+    self.ford_path_controller = FordNativePathController() if self.native_ford_path else FordPathController()
     self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()
@@ -159,9 +162,13 @@ class Controls(ControlsExt):
     else:
       actuators.steeringAngleDeg = float(lateral_output)
     if self.CP.brand == "ford":
-      self.ford_path = self.ford_path_controller.update(model_v2 if self.sm.valid['modelV2'] else None,
-                                                        self.desired_curvature, current_curvature=self.curvature,
-                                                        v_ego=CS.vEgo, active=CC.latActive)
+      ford_model = model_v2 if self.sm.valid['modelV2'] else None
+      if self.native_ford_path:
+        self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature, current_curvature=self.curvature,
+                                                          v_ego=CS.vEgo, v_ego_raw=CS.vEgoRaw, active=CC.latActive)
+      else:
+        self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature, current_curvature=self.curvature,
+                                                          v_ego=CS.vEgo, active=CC.latActive)
       actuators.curvature = float(self.ford_path.curvature)
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:

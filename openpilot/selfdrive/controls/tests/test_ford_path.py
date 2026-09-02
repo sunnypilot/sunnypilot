@@ -4,9 +4,11 @@ from types import SimpleNamespace
 import numpy as np
 
 from openpilot.cereal import custom
+from opendbc.car.lateral import MAX_LATERAL_JERK
 from openpilot.selfdrive.car.helpers import convert_carControlSP
-from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPathController,
-                                                        _encode_path, _model_path, _predicted_pose, _relative_pose)
+from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordNativePathController,
+                                                        FordPathController, _encode_path, _model_path, _predicted_pose,
+                                                        _relative_pose)
 
 
 def _path(curvature: float, speed: float = 8.0):
@@ -47,6 +49,10 @@ def _changing_path(start_curvature: float, end_curvature: float, speed: float = 
 
 def _command(model, desired_curvature: float, *, current_curvature: float = 0.0, v_ego: float = 8.0):
   return FordPathController(dt=1.0).update(model, desired_curvature, current_curvature=current_curvature, v_ego=v_ego)
+
+
+def _native_command(model, *, current_curvature: float = 0.0, v_ego: float = 8.0):
+  return FordNativePathController(dt=1.0).update(model, 0.0, current_curvature=current_curvature, v_ego=v_ego)
 
 
 def _equivalent_curvature(command) -> float:
@@ -291,3 +297,63 @@ def test_sunnypilot_path_message_round_trip():
   assert np.isclose(path.curvature, 0.008)
   assert np.isclose(path.curvatureRate, -0.0004)
   assert path.valid
+
+
+def test_native_polynomial_keeps_fast_authority_for_large_maneuvers():
+  model = _path(0.05, speed=20.0)
+  model.position.y = [offset + 0.06 for offset in model.position.y]
+  command = _native_command(model, current_curvature=0.0, v_ego=20.0)
+  assert command.valid
+  assert command.path_offset > 0.06
+  assert command.path_angle > 0.2
+  assert _equivalent_curvature(command) > 0.05
+  assert 0.0 < command.curvature <= 0.006
+  assert command.curvature_rate == 0.0
+
+
+def test_native_polynomial_is_driven_by_model_position_not_action_curvature():
+  controller = FordNativePathController(dt=1.0)
+  low_action = controller.update(_path(0.04), 0.0, current_curvature=0.0, v_ego=8.0)
+  controller = FordNativePathController(dt=1.0)
+  high_action = controller.update(_path(0.04), 0.2, current_curvature=0.0, v_ego=8.0)
+  assert low_action == high_action
+
+
+def test_native_polynomial_countersteers_while_c2_unloads():
+  controller = FordNativePathController(dt=0.1)
+  for _ in range(30):
+    controller.update(_path(0.006), 0.006, current_curvature=0.006, v_ego=8.0)
+  reversal = controller.update(_path(-0.04), -0.04, current_curvature=0.004, v_ego=8.0)
+  assert reversal.path_offset < 0.0
+  assert reversal.path_angle < 0.0
+  assert reversal.curvature < 0.0
+
+
+def test_native_polynomial_fast_field_rates_and_limits_are_bounded():
+  controller = FordNativePathController(dt=0.01)
+  outputs = [controller.update(_path(0.2), 0.2, current_curvature=0.0, v_ego=20.0) for _ in range(100)]
+  assert all(DBC_OFFSET[0] <= command.path_offset <= DBC_OFFSET[1] for command in outputs)
+  assert all(DBC_ANGLE[0] <= command.path_angle <= DBC_ANGLE[1] for command in outputs)
+  assert all(abs(command.curvature) <= 0.006 for command in outputs)
+  assert all(command.curvature_rate == 0.0 for command in outputs)
+  assert np.max(np.abs(np.diff([command.path_offset for command in outputs]))) <= 0.04 + 1e-9
+  assert np.max(np.abs(np.diff([command.path_angle for command in outputs]))) <= 0.01 + 1e-9
+
+
+def test_native_polynomial_models_can_c2_limiter_with_raw_speed():
+  controller = FordNativePathController(dt=0.01)
+  controller.update(_path(0.006), 0.006, current_curvature=0.0, v_ego=8.0, v_ego_raw=20.0)
+  expected_step = MAX_LATERAL_JERK / 20.0 ** 2 * 0.01
+  assert np.isclose(controller._c2_command, expected_step)
+
+
+def test_native_polynomial_invalid_model_ramps_fast_fields_and_inactive_resets():
+  controller = FordNativePathController(dt=0.01)
+  for _ in range(20):
+    active = controller.update(_path(0.04), 0.04, current_curvature=0.0, v_ego=8.0)
+  invalid = controller.update(None, 0.0, current_curvature=0.0, v_ego=8.0)
+  assert invalid.valid
+  assert abs(invalid.path_offset) < abs(active.path_offset)
+  assert abs(invalid.path_angle) < abs(active.path_angle)
+  assert invalid.curvature == 0.0
+  assert not controller.update(_path(0.0), 0.0, v_ego=8.0, active=False).valid
