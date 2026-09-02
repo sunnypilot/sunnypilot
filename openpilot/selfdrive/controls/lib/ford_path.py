@@ -127,14 +127,18 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
   angle_curvature = model_angle / max(angle_horizon, 1e-3)
   pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
 
-  # Preserve upstream-strength C2 for normal driving. C0/C1 carry the model
-  # geometry not represented by C2, so action collapse cannot erase the path.
-  curvature = desired_curvature * (1.0 - pose_share)
-  if curvature * model_angle <= 0.0:
+  # Match upstream's C2-only normal driving, then continuously transfer the
+  # command to the model pose for larger maneuvers. An opposing/finished model
+  # path must unload sticky C2 and retain the fast pose needed to unwind it.
+  c2_opposes_path = desired_curvature != 0.0 and desired_curvature * model_angle <= 0.0
+  if c2_opposes_path:
+    pose_share = 1.0
     curvature = 0.0
+  else:
+    curvature = desired_curvature * (1.0 - pose_share)
 
-  path_offset = model_offset - 0.5 * curvature * offset_horizon ** 2 + feedback_offset
-  path_angle = model_angle - curvature * angle_horizon + feedback_angle
+  path_offset = pose_share * (model_offset + feedback_offset)
+  path_angle = pose_share * (model_angle + feedback_angle)
   if abs(path_offset) < 0.5 * DBC_OFFSET_RESOLUTION:
     path_offset = 0.0
   if abs(path_angle) < 0.5 * DBC_ANGLE_RESOLUTION:

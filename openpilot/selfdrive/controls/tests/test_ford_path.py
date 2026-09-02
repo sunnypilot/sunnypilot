@@ -63,6 +63,13 @@ def test_gentle_path_uses_only_c2():
   assert command.curvature_rate == 0.0
 
 
+def test_gentle_path_uses_only_c2_when_model_and_action_disagree():
+  command = _command(_path(0.005), 0.002, current_curvature=0.005)
+  assert command.path_offset == 0.0
+  assert command.path_angle == 0.0
+  assert np.isclose(command.curvature, 0.002, atol=1e-6)
+
+
 def test_spatially_growing_path_adds_fast_pose_before_action_becomes_large():
   controller = FordPathController(dt=1.0)
   command = controller.update(_changing_path(0.0, 0.04), 0.012, current_curvature=0.0, v_ego=8.0)
@@ -106,17 +113,18 @@ def test_model_pose_can_trigger_maneuver_when_action_is_late():
   assert command.curvature == 0.0
 
 
-def test_model_pose_preserves_a_gentle_arc_when_the_action_collapses():
-  command = _command(_path(0.006), 0.002, current_curvature=0.006)
-  assert command.path_offset > 0.05
-  assert command.path_angle > 0.02
-  assert np.isclose(command.curvature, 0.002, atol=2e-6)
+def test_gentle_model_pose_does_not_replace_a_collapsed_action():
+  command = _command(_path(0.005), 0.0, current_curvature=0.005)
+  assert command.path_offset == 0.0
+  assert command.path_angle == 0.0
+  assert command.curvature == 0.0
 
 
 def test_changing_gentle_curve_keeps_upstream_strength_c2():
   command = _command(_changing_path(0.0, 0.008), 0.004, current_curvature=0.0)
   assert np.isclose(command.curvature, 0.004)
-  assert command.path_angle > 0.0
+  assert command.path_offset == 0.0
+  assert command.path_angle == 0.0
 
 
 def test_action_only_maneuver_cannot_invent_large_model_pose():
@@ -210,15 +218,13 @@ def test_measured_tracking_error_closes_bidirectionally_without_abandoning_the_t
   assert 0.0 < over.path_angle < on_target.path_angle
 
 
-def test_gentle_curve_keeps_c2_and_adds_only_a_small_fast_tracking_trim():
+def test_gentle_curve_does_not_add_fast_tracking_trim():
   model = _path(0.004)
   under = _command(model, 0.004, current_curvature=0.002)
   on_target = _command(model, 0.004, current_curvature=0.004)
   over = _command(model, 0.004, current_curvature=0.006)
   assert under.path_offset == on_target.path_offset == over.path_offset == 0.0
-  assert 0.0 < under.path_angle < 0.002
-  assert on_target.path_angle == 0.0
-  assert -0.002 < over.path_angle < 0.0
+  assert under.path_angle == on_target.path_angle == over.path_angle == 0.0
   assert np.allclose([under.curvature, on_target.curvature, over.curvature], 0.004, atol=2e-6)
 
 
