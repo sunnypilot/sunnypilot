@@ -73,12 +73,12 @@ class Chestnut:
     self.vbus_on = on
 
   def update(self, offroad: bool, usb_state: list[dict]) -> None:
+    self.mismatch = any(is_chestnut_usb_id(d["vendorId"], d["productId"], include_bootloader=True) and
+                        d["product"] != CHESTNUT_USB_PRODUCT for d in usb_state)
     if offroad != self.last_offroad:
       self.powersave = self.params.get_bool("AuxPowerSave")
       self.last_offroad = offroad
-    self.set_vbus((not offroad or mismatch) or not self.powersave)
-    self.mismatch = any(is_chestnut_usb_id(d["vendorId"], d["productId"], include_bootloader=True) and
-                        d["product"] != CHESTNUT_USB_PRODUCT for d in usb_state)
+    self.set_vbus((not offroad or self.mismatch) or not self.powersave)
     if not self.mismatch:
       self.flashed = False
       return
