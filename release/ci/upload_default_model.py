@@ -38,7 +38,8 @@ def main():
   api = HfApi()
   onnx_sha256 = hash_file(args.onnx_path)
   short_ref = args.onnx_ref[:8]
-  folder_name = f"model-{args.model_name}-{short_ref}-{args.run_number}"
+  safe_name = args.model_name.replace(" ", "-")
+  folder_name = f"model-{safe_name}-{short_ref}-{args.run_number}"
 
   print(f"ONNX hash: {onnx_sha256}")
   print(f"ONNX ref: {args.onnx_ref} (short: {short_ref})")
