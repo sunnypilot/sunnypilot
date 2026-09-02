@@ -75,11 +75,11 @@ class TestStockEquivalence(OpenpilotTestCase):
 
     frame_skip = derive_frame_skip(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES)
     stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
-    stock_queues, stock_npy = make_input_queues(stock_shapes, frame_skip, device='NPY')
+    stock_queues, stock_npy, _frame_views = make_input_queues(stock_shapes, frame_skip, device='NPY', frame_copy_size=49152)
 
-    assert set(state.input_queues.keys()) == set(stock_queues.keys())
+    # sunnypilot split pipeline has tfm/big_tfm as queues (stock has them in npy only)
+    assert set(stock_queues.keys()) <= set(state.input_queues.keys())
     assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
-    assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - {'action_t', 'prev_feat'}
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues

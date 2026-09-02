@@ -25,9 +25,22 @@ SUPERCOMBO_ONNX_PATH = os.path.join(BASEDIR, "openpilot", "selfdrive", "modeld",
 BIG_SUPERCOMBO_ONNX_PATH = os.path.join(BASEDIR, "openpilot", "selfdrive", "modeld", "models", "big_driving_supercombo.onnx")
 
 
+def _read_model_name_fields():
+  with open(DEFAULT_MODEL_NAME_PATH) as f:
+    content = f.read()
+  fields = {}
+  for line in content.splitlines():
+    if "=" in line:
+      key, val = line.split("=", 1)
+      fields[key.strip()] = val.strip().strip('"')
+  return fields
+
+
 def update_model_hash():
+  fields = _read_model_name_fields()
   supercombo_hash = get_file_hash(SUPERCOMBO_ONNX_PATH)
-  combined_hash = hashlib.sha256(supercombo_hash.encode()).hexdigest()
+  fingerprint = f"{supercombo_hash}:{fields.get('DEFAULT_MODEL', '')}:{fields.get('DEFAULT_MODEL_REF', '')}"
+  combined_hash = hashlib.sha256(fingerprint.encode()).hexdigest()
 
   with open(MODEL_HASH_PATH, "w") as f:
     f.write(combined_hash)
@@ -39,7 +52,8 @@ def update_model_hash():
     rel = os.path.relpath(BIG_SUPERCOMBO_ONNX_PATH, os.getcwd())
     pointer = subprocess.check_output(["git", "show", f"HEAD:{rel}"], text=True)
     oid = next(l.split(":", 1)[1] for l in pointer.splitlines() if l.startswith("oid sha256:"))
-    big_combined_hash = hashlib.sha256(oid.encode()).hexdigest()
+    big_fingerprint = f"{oid}:{fields.get('DEFAULT_BIG_MODEL', '')}:{fields.get('DEFAULT_BIG_MODEL_REF', '')}"
+    big_combined_hash = hashlib.sha256(big_fingerprint.encode()).hexdigest()
 
     with open(BIG_MODEL_HASH_PATH, "w") as f:
       f.write(big_combined_hash)
