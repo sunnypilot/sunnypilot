@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       model_name: ${{ steps.resolve.outputs.model_name }}
+      safe_model_name: ${{ steps.resolve.outputs.safe_model_name }}
       onnx_ref: ${{ steps.resolve.outputs.onnx_ref }}
       onnx_path: ${{ steps.resolve.outputs.onnx_path }}
       hf_defaults_path: ${{ steps.resolve.outputs.hf_defaults_path }}
@@ -64,7 +65,9 @@ jobs:
             exit 1
           fi
 
+          SAFE_NAME="${NAME// /-}"
           echo "model_name=${NAME}" >> $GITHUB_OUTPUT
+          echo "safe_model_name=${SAFE_NAME}" >> $GITHUB_OUTPUT
           echo "onnx_ref=${ONNX_REF}" >> $GITHUB_OUTPUT
           echo "onnx_path=${ONNX_PATH}" >> $GITHUB_OUTPUT
           echo "hf_defaults_path=${HF_DEFAULTS_PATH}" >> $GITHUB_OUTPUT
@@ -135,7 +138,7 @@ jobs:
 
       - name: Prepare output
         env:
-          MODEL_NAME: ${{ needs.resolve.outputs.model_name }}
+          MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
         run: |
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH=${{ github.workspace }}
@@ -158,13 +161,13 @@ jobs:
       - name: Upload small model artifact
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ needs.resolve.outputs.model_name }}-${{ github.run_number }}
+          name: model-${{ needs.resolve.outputs.safe_model_name }}-${{ github.run_number }}
           path: ${{ github.workspace }}/small_output/
 
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4
         with:
-          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          name: artifact-name-${{ needs.resolve.outputs.safe_model_name }}
           path: ${{ github.workspace }}/small_output/artifact_name.txt
 
       - name: Re-enable powersave
@@ -254,7 +257,7 @@ jobs:
 
       - name: Prepare output
         env:
-          MODEL_NAME: ${{ needs.resolve.outputs.model_name }}
+          MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
         run: |
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH=${{ github.workspace }}
@@ -277,13 +280,13 @@ jobs:
       - name: Upload big model artifact
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ needs.resolve.outputs.model_name }}-${{ github.run_number }}
+          name: model-${{ needs.resolve.outputs.safe_model_name }}-${{ github.run_number }}
           path: ${{ github.workspace }}/big_output/
 
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4
         with:
-          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          name: artifact-name-${{ needs.resolve.outputs.safe_model_name }}
           path: ${{ github.workspace }}/big_output/artifact_name.txt
 
       - name: Re-enable powersave
@@ -318,7 +321,7 @@ jobs:
         if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         uses: actions/download-artifact@v4
         with:
-          name: artifact-name-${{ needs.resolve.outputs.model_name }}
+          name: artifact-name-${{ needs.resolve.outputs.safe_model_name }}
           path: artifact_name
 
       - name: Read artifact name
