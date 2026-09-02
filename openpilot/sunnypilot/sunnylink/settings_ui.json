@@ -2174,25 +2174,6 @@
     }
   ],
   "vehicle_settings": {
-    "ford": {
-      "title": "Ford Settings",
-      "description": "",
-      "items": [
-        {
-          "key": "FordNativePath",
-          "widget": "toggle",
-          "needs_onroad_cycle": true,
-          "title": "Native Path Polynomial (Experimental)",
-          "description": "Fit one delay-aligned Ford path polynomial directly from the model path on CAN FD vehicles. Disable to use the current Ford path controller.",
-          "details": "This changes live steering behavior. Use only for supervised testing, remain attentive, and be ready to take over immediately.",
-          "enablement": [
-            {
-              "type": "offroad_only"
-            }
-          ]
-        }
-      ]
-    },
     "hyundai": {
       "title": "Hyundai / Kia / Genesis Settings",
       "description": "",
