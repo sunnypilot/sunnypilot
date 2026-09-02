@@ -6,7 +6,8 @@ import numpy as np
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPathController,
-                                                        _encode_path, _model_path, _predicted_pose, _relative_pose)
+                                                        _bounded_feedback, _encode_path, _model_path, _predicted_pose,
+                                                        _relative_pose)
 
 
 def _path(curvature: float, speed: float = 8.0):
@@ -58,7 +59,7 @@ def test_gentle_path_uses_only_c2():
   assert command.valid
   assert command.path_offset == 0.0
   assert command.path_angle == 0.0
-  assert np.isclose(command.curvature, 0.004)
+  assert np.isclose(command.curvature, 0.004, atol=1e-6)
   assert command.curvature_rate == 0.0
 
 
@@ -105,11 +106,24 @@ def test_model_pose_can_trigger_maneuver_when_action_is_late():
   assert command.curvature == 0.0
 
 
-def test_action_can_trigger_maneuver_before_model_pose_grows():
-  command = _command(_path(0.002), 0.04)
-  assert command.path_offset > 0.0
+def test_model_pose_preserves_a_gentle_arc_when_the_action_collapses():
+  command = _command(_path(0.006), 0.002, current_curvature=0.006)
+  assert command.path_offset == 0.0
+  assert command.path_angle == 0.0
+  assert np.isclose(command.curvature, 0.006, atol=5e-6)
+
+
+def test_changing_gentle_curve_keeps_only_its_common_part_in_c2():
+  command = _command(_changing_path(0.0, 0.008), 0.004, current_curvature=0.0)
+  assert 0.0 < command.curvature < 0.004
   assert command.path_angle > 0.0
-  assert command.curvature == 0.0
+
+
+def test_action_cannot_invent_a_maneuver_missing_from_the_model_path():
+  command = _command(_path(0.002), 0.04)
+  assert command.path_offset == 0.0
+  assert 0.0 < command.path_angle < 0.002
+  assert np.isclose(command.curvature, 0.002)
 
 
 def test_nearby_demands_blend_continuously_without_a_mode_threshold():
@@ -196,14 +210,37 @@ def test_measured_tracking_error_closes_bidirectionally_without_abandoning_the_t
   assert 0.0 < over.path_angle < on_target.path_angle
 
 
-def test_gentle_curve_leaves_tracking_to_centering_c2():
+def test_gentle_curve_keeps_c2_and_adds_only_a_small_fast_tracking_trim():
   model = _path(0.004)
   under = _command(model, 0.004, current_curvature=0.002)
   on_target = _command(model, 0.004, current_curvature=0.004)
   over = _command(model, 0.004, current_curvature=0.006)
   assert under.path_offset == on_target.path_offset == over.path_offset == 0.0
-  assert under.path_angle == on_target.path_angle == over.path_angle == 0.0
-  assert under.curvature == on_target.curvature == over.curvature == 0.004
+  assert 0.0 < under.path_angle < 0.002
+  assert on_target.path_angle == 0.0
+  assert -0.002 < over.path_angle < 0.0
+  assert np.allclose([under.curvature, on_target.curvature, over.curvature], 0.004, atol=2e-6)
+
+
+def test_overshoot_trim_cannot_erase_a_modeled_turn():
+  model = _path(0.04)
+  on_target = _command(model, 0.04, current_curvature=0.04)
+  over = _command(model, 0.04, current_curvature=0.06)
+  assert over.path_offset > 0.95 * on_target.path_offset
+  assert over.path_angle > 0.9 * on_target.path_angle
+
+
+def test_corrupt_measured_curvature_cannot_reverse_a_modeled_turn():
+  command = _command(_path(0.04), 0.04, current_curvature=0.5)
+  assert command.path_offset > 0.0
+  assert command.path_angle > 0.0
+  assert command.curvature == 0.0
+
+
+def test_feedback_preserves_half_lsb_feedforward_direction():
+  for feedforward, resolution in ((0.006, 0.01), (0.0004, 0.0005)):
+    result = feedforward + _bounded_feedback(feedforward, -1.0, resolution, 1.0)
+    assert result >= 0.5 * resolution
 
 
 def test_recent_curvature_trend_advances_vehicle_pose_without_a_response_gain():
@@ -217,7 +254,7 @@ def test_recent_curvature_trend_advances_vehicle_pose_without_a_response_gain():
 
 def test_model_path_exit_zeros_lingering_c2_and_countersteers():
   command = _command(_path(0.0), 0.004, current_curvature=0.006)
-  assert command.path_offset < 0.0
+  assert command.path_offset <= 0.0
   assert command.path_angle < 0.0
   assert command.curvature == 0.0
 

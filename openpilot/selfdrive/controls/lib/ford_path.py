@@ -10,6 +10,8 @@ DBC_ANGLE = (-0.5, 0.5235)
 DBC_CURVATURE = (-0.02, 0.02)
 DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
+DBC_OFFSET_RESOLUTION = 0.01
+DBC_ANGLE_RESOLUTION = 0.0005
 _PATH_MIN_LOOKAHEAD = 7.0
 _POSE_PREDICTION_TIME = 0.1
 _POSE_BLEND_CURVATURE = (0.006, 0.012)
@@ -87,28 +89,58 @@ def _relative_pose(target_distance: float, path: tuple[list[float], list[float],
   return offset, angle
 
 
+def _path_pose(target_distance: float,
+               path: tuple[list[float], list[float], list[float], list[float]]) -> tuple[float, float, float]:
+  distance, x, y, heading = path
+  return (_sample(target_distance, distance, x), _sample(target_distance, distance, y),
+          _sample(target_distance, distance, heading))
+
+
+def _bounded_feedback(feedforward: float, feedback: float, resolution: float, zero_path_limit: float) -> float:
+  quantization_threshold = 0.5 * resolution
+  limit = max(abs(feedforward) - resolution, 0.0) if abs(feedforward) >= quantization_threshold else zero_path_limit
+  return float(np.clip(feedback, -limit, limit))
+
+
 def _encode_path(path: tuple[list[float], list[float], list[float], list[float]], desired_curvature: float,
                  current_curvature: float, curvature_delta: float, v_ego: float) -> FordPath:
   distance, _, _, _ = path
   advance = min(v_ego * _POSE_PREDICTION_TIME, distance[-1])
   offset_horizon = min(_PATH_MIN_LOOKAHEAD, distance[-1] - advance)
   angle_horizon = min(max(v_ego, _PATH_MIN_LOOKAHEAD), distance[-1] - advance)
+
+  # Keep the model's remaining path as feedforward. Measured vehicle motion is
+  # a separate, short delay-aligned correction, so catching the requested
+  # curvature cannot erase a turn that is still present in the model path.
+  model_pose = _path_pose(advance, path)
+  model_offset, _ = _relative_pose(advance + offset_horizon, path, model_pose)
+  _, model_angle = _relative_pose(advance + angle_horizon, path, model_pose)
   vehicle_pose = _predicted_pose(advance, current_curvature, curvature_delta)
-  model_offset, _ = _relative_pose(advance + offset_horizon, path, vehicle_pose)
-  _, model_angle = _relative_pose(advance + angle_horizon, path, vehicle_pose)
+  feedback_offset, feedback_angle = _relative_pose(advance, path, vehicle_pose)
+  gentle_curvature = _POSE_BLEND_CURVATURE[0]
+  feedback_offset = _bounded_feedback(model_offset, feedback_offset, DBC_OFFSET_RESOLUTION,
+                                       0.5 * gentle_curvature * advance ** 2)
+  feedback_angle = _bounded_feedback(model_angle, feedback_angle, DBC_ANGLE_RESOLUTION,
+                                      gentle_curvature * advance)
 
   offset_curvature = 2.0 * model_offset / max(offset_horizon, 1e-3) ** 2
   angle_curvature = model_angle / max(angle_horizon, 1e-3)
-  pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
-  curvature = desired_curvature * (1.0 - pose_share)
-  if curvature * model_angle < 0.0:
-    curvature = 0.0
-    pose_share = 1.0
+  pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature)))
 
-  # C2 owns normal path following. As model pose demand grows, transfer the
-  # same delay-aligned path continuously to the faster C0/C1 fields.
-  path_offset = pose_share * model_offset
-  path_angle = pose_share * model_angle
+  # Only curvature common to both model offset and heading is steady enough
+  # for sticky C2. C0/C1 carry the changing remainder and measured pose error.
+  same_direction = offset_curvature * angle_curvature > 0.0
+  model_support = math.copysign(min(abs(offset_curvature), abs(angle_curvature)), model_angle) if same_direction else 0.0
+  curvature = float(np.clip(model_support, -_POSE_BLEND_CURVATURE[0], _POSE_BLEND_CURVATURE[0])) * (1.0 - pose_share)
+  if curvature * desired_curvature < 0.0:
+    curvature = 0.0
+
+  path_offset = model_offset - 0.5 * curvature * offset_horizon ** 2 + feedback_offset
+  path_angle = model_angle - curvature * angle_horizon + feedback_angle
+  if abs(path_offset) < 0.5 * DBC_OFFSET_RESOLUTION:
+    path_offset = 0.0
+  if abs(path_angle) < 0.5 * DBC_ANGLE_RESOLUTION:
+    path_angle = 0.0
   limited_path_angle = float(np.clip(path_angle, *DBC_ANGLE))
   path_offset += (path_angle - limited_path_angle) * offset_horizon
   return FordPath(
