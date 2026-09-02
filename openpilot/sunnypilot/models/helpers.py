@@ -19,7 +19,7 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 18
+REQUIRED_JSON_VERSION = 19
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
