@@ -2174,6 +2174,25 @@
     }
   ],
   "vehicle_settings": {
+    "ford": {
+      "title": "Ford Settings",
+      "description": "",
+      "items": [
+        {
+          "key": "FordPscmObserver",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "PSCM Coefficient Observer (Experimental)",
+          "description": "Track the Ford steering controller's internal polynomial states and use fast path terms only for the response that slow curvature cannot provide.",
+          "details": "This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
+        }
+      ]
+    },
     "hyundai": {
       "title": "Hyundai / Kia / Genesis Settings",
       "description": "",

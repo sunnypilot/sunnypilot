@@ -4,6 +4,8 @@ import math
 
 import numpy as np
 
+from opendbc.car.ford.values import CarControllerParams
+
 
 DBC_OFFSET = (-5.12, 5.11)
 DBC_ANGLE = (-0.5, 0.5235)
@@ -12,11 +14,22 @@ DBC_CURVATURE_RATE = (-0.001024, 0.001023)
 
 DBC_OFFSET_RESOLUTION = 0.01
 DBC_ANGLE_RESOLUTION = 0.0005
+DBC_CURVATURE_RESOLUTION = 0.00002
+DBC_CURVATURE_RATE_RESOLUTION = 0.000001
 _PATH_MIN_LOOKAHEAD = 7.0
 _POSE_PREDICTION_TIME = 0.1
 _POSE_BLEND_CURVATURE = (0.006, 0.012)
 _PATH_OFFSET_RATE = 4.0
 _PATH_ANGLE_RATE = 1.0
+
+_PSCM_DT = 0.004
+_PSCM_C0_RATE = 1.5
+_PSCM_C1_RATE = 0.100006103515625
+_PSCM_C2_RATE = 0.0030059814453125
+_PSCM_SPEED_KPH = (0.0, 15.0, 40.0, 70.0, 100.0, 150.0, 200.0, 250.0)
+_PSCM_SPEED_GAIN = (32.0, 32.0, 32.0, 30.0, 30.0, 24.0, 12.0, 0.0)
+_PSCM_C0_EFFECTIVE_LIMIT = 1.0
+_PSCM_C1_EFFECTIVE_LIMIT = 0.349609375 / 10.0
 
 
 @dataclass(frozen=True)
@@ -26,6 +39,13 @@ class FordPath:
   path_angle: float = 0.0
   curvature: float = 0.0
   curvature_rate: float = 0.0
+
+
+@dataclass(frozen=True)
+class FordPscmState:
+  path_offset: float = 0.0
+  path_angle: float = 0.0
+  curvature: float = 0.0
 
 
 def _finite(value: float) -> float:
@@ -194,3 +214,135 @@ class FordPathController:
       return self._limit(FordPath(valid=True))
     return self._limit(_encode_path(path, _finite(desired_curvature), current_curvature, curvature_delta,
                                     max(_finite(v_ego), 0.0)))
+
+
+def _pscm_slew(value: float, target: float, rate: float, ticks: int) -> float:
+  step = rate * _PSCM_DT * ticks
+  return float(np.clip(target, value - step, value + step))
+
+
+def _pscm_speed_gain(v_ego: float) -> float:
+  return float(np.interp(max(v_ego, 0.0) * 3.6, _PSCM_SPEED_KPH, _PSCM_SPEED_GAIN))
+
+
+def _wire_path(path: FordPath) -> FordPath:
+  return FordPath(
+    valid=path.valid,
+    path_offset=round(path.path_offset / DBC_OFFSET_RESOLUTION) * DBC_OFFSET_RESOLUTION,
+    path_angle=round(path.path_angle / DBC_ANGLE_RESOLUTION) * DBC_ANGLE_RESOLUTION,
+    curvature=round(path.curvature / DBC_CURVATURE_RESOLUTION) * DBC_CURVATURE_RESOLUTION,
+    curvature_rate=round(path.curvature_rate / DBC_CURVATURE_RATE_RESOLUTION) * DBC_CURVATURE_RATE_RESOLUTION,
+  )
+
+
+def _pscm_contributions(state: FordPscmState, v_ego: float) -> tuple[float, float, float]:
+  gain = _pscm_speed_gain(v_ego)
+  return (
+    float(np.clip(0.5 * gain * state.path_offset, -0.5 * gain, 0.5 * gain)),
+    float(np.clip(10.0 * gain * state.path_angle, -0.349609375 * gain, 0.349609375 * gain)),
+    float(np.clip(0.30078125 * gain * state.curvature * v_ego ** 2, -0.5 * gain, 0.5 * gain)),
+  )
+
+
+class FordPscmObserver:
+  """Mirror the firmware's held-command coefficient states at its 250 Hz step."""
+
+  def __init__(self):
+    self.state = FordPscmState()
+    self.command = FordPath(valid=True)
+    self._phase = 0.0
+
+  def reset(self) -> None:
+    self.state = FordPscmState()
+    self.command = FordPath(valid=True)
+    self._phase = 0.0
+
+  def advance(self, elapsed: float) -> None:
+    self._phase += max(elapsed, 0.0)
+    ticks = int((self._phase + 1e-12) / _PSCM_DT)
+    self._phase -= ticks * _PSCM_DT
+    if ticks == 0:
+      return
+    self.state = FordPscmState(
+      _pscm_slew(self.state.path_offset, self.command.path_offset, _PSCM_C0_RATE, ticks),
+      _pscm_slew(self.state.path_angle, self.command.path_angle, _PSCM_C1_RATE, ticks),
+      _pscm_slew(self.state.curvature, self.command.curvature + 10.0 * self.command.curvature_rate,
+                  _PSCM_C2_RATE, ticks),
+    )
+
+  def set_command(self, command: FordPath) -> None:
+    self.command = _wire_path(command)
+
+
+class FordPscmObserverPathController:
+  """Compensate model-path commands for the PSCM coefficient state it still carries."""
+
+  def __init__(self, dt: float = 0.01):
+    self.dt = dt
+    self._last_path = FordPath(valid=True)
+    self._curvature_history = deque(maxlen=max(round(_POSE_PREDICTION_TIME / dt) + 1, 2))
+    self.observer = FordPscmObserver()
+    self._sent_c2 = 0.0
+
+  def _reset(self) -> None:
+    self._last_path = FordPath(valid=True)
+    self._curvature_history.clear()
+    self.observer.reset()
+    self._sent_c2 = 0.0
+
+  def _command_for_state(self, target: FordPath, v_ego: float) -> FordPath:
+    # The target describes the desired fully-settled PSCM contribution. C0 keeps
+    # the remaining C1-saturated residual. C1 supplies the primary contribution
+    # that the known slow C2 state does not yet provide, without a guessed gain.
+    target_state = FordPscmState(target.path_offset, target.path_angle, target.curvature)
+    target_contribution = sum(_pscm_contributions(target_state, v_ego))
+    _, _, observed_c2 = _pscm_contributions(self.observer.state, v_ego)
+    gain = _pscm_speed_gain(v_ego)
+    required_fast = target_contribution - observed_c2
+    c1_contribution = float(np.clip(required_fast, -0.349609375 * gain, 0.349609375 * gain))
+    c0_contribution = required_fast - c1_contribution
+    path_offset = c0_contribution / (0.5 * gain) if gain > 0.0 else 0.0
+    path_angle = c1_contribution / (10.0 * gain) if gain > 0.0 else 0.0
+    return FordPath(
+      valid=True,
+      path_offset=float(np.clip(path_offset, -_PSCM_C0_EFFECTIVE_LIMIT, _PSCM_C0_EFFECTIVE_LIMIT)),
+      path_angle=float(np.clip(path_angle, -_PSCM_C1_EFFECTIVE_LIMIT, _PSCM_C1_EFFECTIVE_LIMIT)),
+      curvature=target.curvature,
+      curvature_rate=target.curvature_rate,
+    )
+
+  def _limit(self, target: FordPath, v_ego_raw: float) -> FordPath:
+    path_offset = float(np.clip(target.path_offset,
+                                self._last_path.path_offset - _PATH_OFFSET_RATE * self.dt,
+                                self._last_path.path_offset + _PATH_OFFSET_RATE * self.dt))
+    path_angle = float(np.clip(target.path_angle,
+                               self._last_path.path_angle - _PATH_ANGLE_RATE * self.dt,
+                               self._last_path.path_angle + _PATH_ANGLE_RATE * self.dt))
+    curvature = CarControllerParams.CURVATURE_LIMITS.apply_limits(
+      target.curvature, self._sent_c2, v_ego_raw, 0.0, True, CarControllerParams.LMC2_STEP,
+    )
+    self._sent_c2 = curvature
+    self._last_path = FordPath(True, path_offset, path_angle, curvature, target.curvature_rate)
+    self.observer.set_command(self._last_path)
+    return self._last_path
+
+  def update(self, model, desired_curvature: float, *, current_curvature: float = 0.0,
+             v_ego: float = 0.0, v_ego_raw: float = 0.0, active: bool = True) -> FordPath:
+    if not active:
+      self._reset()
+      return FordPath()
+
+    self.observer.advance(self.dt)
+    current_curvature = _finite(current_curvature)
+    self._curvature_history.append(current_curvature)
+    curvature_delta = (current_curvature - self._curvature_history[0]
+                       if len(self._curvature_history) == self._curvature_history.maxlen else 0.0)
+    path = _model_path(model) if model is not None else None
+    if path is None:
+      target = FordPath(valid=True)
+    else:
+      target = _encode_path(path, _finite(desired_curvature), current_curvature, curvature_delta,
+                            max(_finite(v_ego), 0.0))
+    v_ego_raw = max(_finite(v_ego_raw), 0.0)
+    command = self._command_for_state(target, v_ego_raw)
+    return self._limit(command, v_ego_raw)

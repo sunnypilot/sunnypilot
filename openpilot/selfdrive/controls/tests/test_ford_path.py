@@ -5,9 +5,10 @@ import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
-from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPathController,
+from openpilot.selfdrive.controls.lib.ford_path import (DBC_ANGLE, DBC_CURVATURE, DBC_OFFSET, FordPath, FordPathController,
+                                                        FordPscmObserver, FordPscmObserverPathController, FordPscmState,
                                                         _bounded_feedback, _encode_path, _model_path, _predicted_pose,
-                                                        _relative_pose)
+                                                        _pscm_contributions, _relative_pose)
 
 
 def _path(curvature: float, speed: float = 8.0):
@@ -334,3 +335,88 @@ def test_sunnypilot_path_message_round_trip():
   assert np.isclose(path.curvature, 0.008)
   assert np.isclose(path.curvatureRate, -0.0004)
   assert path.valid
+
+
+def test_pscm_observer_mirrors_exact_250hz_slew_and_c3_target():
+  observer = FordPscmObserver()
+  observer.set_command(FordPath(True, 1.0, 0.5, 0.0, 0.001))
+  observer.advance(1.0)
+  assert np.isclose(observer.state.path_offset, 1.0)
+  assert np.isclose(observer.state.path_angle, 0.100006103515625)
+  assert np.isclose(observer.state.curvature, 0.0030059814453125)
+
+
+def test_pscm_observer_tracks_wire_quantized_commands():
+  observer = FordPscmObserver()
+  observer.set_command(FordPath(True, 0.006, 0.0004, 0.000011, 0.0))
+  assert observer.command.path_offset == 0.01
+  assert observer.command.path_angle == 0.0005
+  assert observer.command.curvature == 0.00002
+
+
+def test_pscm_c2_contribution_is_speed_scheduled():
+  state = FordPscmObserver().state
+  state = type(state)(curvature=0.004)
+  low = _pscm_contributions(state, 5.0)[2]
+  high = _pscm_contributions(state, 20.0)[2]
+  assert high > low * 10.0
+
+
+def test_pscm_observer_fills_missing_gentle_c2_with_fast_fields():
+  controller = FordPscmObserverPathController(dt=0.01)
+  command = controller.update(_path(0.004, speed=20.0), 0.004, current_curvature=0.004,
+                              v_ego=20.0, v_ego_raw=20.0)
+  assert command.path_offset > 0.0
+  assert command.path_angle > 0.0
+  assert command.curvature > 0.0
+
+
+def test_pscm_observer_uses_c0_only_after_c1_reaches_its_effective_limit():
+  controller = FordPscmObserverPathController(dt=0.01)
+  small = controller._command_for_state(FordPath(True, 0.2, 0.0, 0.0, 0.0), 8.0)
+  large = controller._command_for_state(FordPath(True, 1.0, 0.5, 0.0, 0.0), 8.0)
+  assert small.path_offset == 0.0
+  assert small.path_angle > 0.0
+  assert large.path_offset > 0.0
+  assert large.path_angle == 0.349609375 / 10.0
+
+
+def test_pscm_observer_preserves_c2_residual_across_c0_c1_headroom():
+  controller = FordPscmObserverPathController(dt=0.01)
+  target = FordPath(True, 0.0, 0.0, 0.004, 0.0)
+  command = controller._command_for_state(target, 20.0)
+  target_contribution = sum(_pscm_contributions(FordPscmState(curvature=target.curvature), 20.0))
+  command_contributions = _pscm_contributions(FordPscmState(command.path_offset, command.path_angle), 20.0)
+  assert np.isclose(sum(command_contributions), target_contribution)
+
+  controller.observer.state = FordPscmState(curvature=0.004)
+  unwind = controller._command_for_state(FordPath(valid=True), 20.0)
+  unwind_contributions = _pscm_contributions(FordPscmState(unwind.path_offset, unwind.path_angle), 20.0)
+  lingering_c2 = _pscm_contributions(controller.observer.state, 20.0)[2]
+  assert np.isclose(sum(unwind_contributions) + lingering_c2, 0.0)
+
+
+def test_pscm_observer_unloads_fast_residual_as_c2_loads():
+  controller = FordPscmObserverPathController(dt=0.01)
+  outputs = [controller.update(_path(0.004, speed=20.0), 0.004, current_curvature=0.004,
+                               v_ego=20.0, v_ego_raw=20.0) for _ in range(200)]
+  assert outputs[0].path_angle > outputs[-1].path_angle >= 0.0
+  assert controller.observer.state.curvature > 0.003
+
+
+def test_pscm_observer_counters_lingering_c2_during_model_exit():
+  controller = FordPscmObserverPathController(dt=0.01)
+  for _ in range(200):
+    controller.update(_path(0.004, speed=20.0), 0.004, current_curvature=0.004,
+                      v_ego=20.0, v_ego_raw=20.0)
+  command = controller.update(_path(0.0, speed=20.0), 0.0, current_curvature=0.004,
+                              v_ego=20.0, v_ego_raw=20.0)
+  assert command.path_angle < 0.0
+  assert command.curvature < controller.observer.state.curvature
+
+
+def test_pscm_observer_avoids_ineffective_c0_c1_windup():
+  controller = FordPscmObserverPathController(dt=1.0)
+  command = controller.update(_path(0.2), 0.2, v_ego=8.0, v_ego_raw=8.0)
+  assert abs(command.path_offset) <= 1.0
+  assert abs(command.path_angle) <= 0.349609375 / 10.0

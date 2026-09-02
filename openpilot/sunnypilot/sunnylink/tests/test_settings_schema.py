@@ -278,6 +278,12 @@ class TestKnownPanels(OpenpilotTestCase):
 
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
+  def test_ford_has_pscm_observer(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    observer = next(item for item in items if item["key"] == "FordPscmObserver")
+    assert observer["needs_onroad_cycle"] is True
+    assert observer["enablement"] == [{"type": "offroad_only"}]
+
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
