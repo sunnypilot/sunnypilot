@@ -21,6 +21,7 @@ from openpilot.common.hardware import HARDWARE, COMMA_HARDWARE
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.git import get_short_branch
 from openpilot.common.hardware.usb import CHESTNUT_FW_VERSION, CHESTNUT_USB_PRODUCT, get_usb_state, get_usb_topology, is_chestnut_usb_id, set_usb_state
+from openpilot.system.hardware.chestnut.flash import VBUS_PATH
 from openpilot.common.linux import LinuxSystemStats
 from openpilot.system.loggerd.config import get_available_percent
 from openpilot.common.swaglog import cloudlog
@@ -50,6 +51,10 @@ class Chestnut:
     self.last_attempt = 0.
     self.flashed = False
     self.mismatch = False
+    self.vbus_on = None
+    self.params = Params()
+    self.powersave = False
+    self.last_offroad = None
 
   @property
   def failed(self) -> bool:
@@ -61,9 +66,19 @@ class Chestnut:
     cloudlog.event("chestnut flash done", returncode=ret.returncode, output=ret.stdout[-1000:], error=ret.returncode != 0)
     self.flashed = ret.returncode == 0
 
+  def set_vbus(self, on: bool) -> None:
+    if on == self.vbus_on:
+      return
+    subprocess.run(["sudo", "tee", VBUS_PATH], input=b"1" if on else b"0", stdout=subprocess.DEVNULL, check=False)
+    self.vbus_on = on
+
   def update(self, offroad: bool, usb_state: list[dict]) -> None:
     self.mismatch = any(is_chestnut_usb_id(d["vendorId"], d["productId"], include_bootloader=True) and
                         d["product"] != CHESTNUT_USB_PRODUCT for d in usb_state)
+    if offroad != self.last_offroad:
+      self.powersave = self.params.get_bool("AuxPowerSave")
+      self.last_offroad = offroad
+    self.set_vbus((not offroad or self.mismatch) or not self.powersave)
     if not self.mismatch:
       self.flashed = False
       return
