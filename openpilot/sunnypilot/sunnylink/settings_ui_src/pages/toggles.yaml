@@ -1,0 +1,49 @@
+# Page: toggles
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: toggles
+label: Toggles
+icon: toggles
+order: 5
+remote_configurable: true
+description: Core openpilot feature toggles
+sections:
+- id: core_toggles
+  title: ''
+  description: ''
+  items:
+  - key: OpenpilotEnabledToggle
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Enable sunnypilot
+    description: Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is
+      required at all times to use this feature.
+    enablement:
+    - $ref: '#/macros/offroad'
+  - key: IsLdwEnabled
+    widget: toggle
+    title: Enable Lane Departure Warnings
+    description: Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn
+      signal activated while driving over 31 mph (50 km/h).
+  - key: AlwaysOnDM
+    widget: toggle
+    title: Always-On Driver Monitoring
+    description: Enable driver monitoring even when sunnypilot is not engaged.
+  - key: IsMetric
+    widget: toggle
+    title: Use Metric System
+    description: Display speed in km/h instead of mph.
+- id: recording
+  title: Recording
+  description: Camera and audio recording during drives
+  items:
+  - key: RecordFront
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Record and Upload Driver Camera
+    description: Upload data from the driver facing camera and help improve the driver monitoring algorithm.
+  - key: RecordAudio
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Record and Upload Microphone Audio
+    description: Record and store microphone audio while driving. The audio will be included in the dashcam video in comma
+      connect.
