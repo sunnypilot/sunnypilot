@@ -78,6 +78,7 @@ jobs:
       - name: Get next recompiled dir number
         id: create-recompiled-dir
         env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ github.event.inputs.hf_repo }}
         run: |
           pip install huggingface_hub

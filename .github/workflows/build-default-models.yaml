@@ -341,7 +341,7 @@ jobs:
       - name: Upload model to HF
         if: ${{ inputs.target == 'small' || inputs.target == 'big' }}
         env:
-          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           ARTIFACT_NAME: ${{ steps.artifact.outputs.artifact_name }}
         run: |
           rm -f output/artifact_name.txt
@@ -367,7 +367,7 @@ jobs:
       - name: Generate DM metadata and upload to HF
         if: ${{ inputs.target == 'dm' }}
         env:
-          HF_OIDC_RESOURCE: datasets/${{ env.HF_REPO }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           export PYTHONPATH=$(pwd)
           python3 -c "
