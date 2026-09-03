@@ -136,7 +136,7 @@ def generate_chunked_model(driving_pkl: Path) -> dict:
 
 
 def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown",
-                         onnx_sha256=None) -> None:
+                         onnx_sha256=None, is_big=False) -> None:
   bundle_json = {
     "short_name": short_name,
     "display_name": custom_name or upstream_branch,
@@ -149,6 +149,7 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "generation": "-1",
     "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "overrides": {},
+    "is_big": is_big,
     "models": models,
   }
 
@@ -186,6 +187,8 @@ if __name__ == "__main__":
     print(f"No driving_tinygrad.pkl found in {_output_dir}", file=sys.stderr)
     sys.exit(1)
 
+  is_big = _driving_pkl.name.startswith('big_')
+
   if _pkl:
     new_pkl = _output_dir / f"driving_{_pkl}_tinygrad.pkl"
     if not new_pkl.exists():
@@ -196,4 +199,4 @@ if __name__ == "__main__":
   _model_metadata = generate_chunked_model(_driving_pkl)
   _onnx_sha256 = _hash_onnx_files(Path(args.model_dir))
   create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch,
-                       onnx_sha256=_onnx_sha256)
+                       onnx_sha256=_onnx_sha256, is_big=is_big)
