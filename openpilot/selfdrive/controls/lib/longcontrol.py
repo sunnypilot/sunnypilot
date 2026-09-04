@@ -8,6 +8,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
 STOPPING_DECEL_RATE = 0.3  # m/s^2/s while trying to stop
+STOPPING_SPEED = 2.0
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
