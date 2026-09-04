@@ -222,10 +222,13 @@ class ContributionAllocator:
     # on a nominal plateau. Extra outward demand must not erase raw geometry.
     backing_off = any(total * (requested - total) < -tolerance * abs(total)
                       for total in (sum(qpref), sum(contributions(state, speed))))
-    # Extend only a field already on its same-direction nominal plateau, not
-    # one still reversing or helping the other coefficient settle a correction.
+    # Joint outward buildup need not wait for the nominal plateaus. If either
+    # fast field must reverse or drain toward its preference, keep the plateau
+    # guard: extending the other field can disrupt a settling correction.
+    building = requested != 0.0 and all(requested * current >= 0.0 and requested * (value - current) >= 0.0
+                                       for current, value in zip(state[:2], preferred_values[:2], strict=True))
     preserve_geometry = tuple(not backing_off and abs(weight * value) > limit
-                              and current * value > 0.0 and abs(weight * current) >= limit
+                              and current * value > 0.0 and (building or abs(weight * current) >= limit)
                               for weight, value, current, limit in
                               zip(weights[:2], preferred_values[:2], state[:2], _CONTRIBUTION_LIMITS[:2], strict=True))
     candidates = {tuple(_clip(v, lo, hi) for v, lo, hi in zip(_values(path), low, high, strict=True))
