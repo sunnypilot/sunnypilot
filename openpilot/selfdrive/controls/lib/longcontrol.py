@@ -66,11 +66,13 @@ class LongControl:
       output_accel = 0.
 
     elif self.long_control_state == LongCtrlState.stopping:
-      output_accel = self.last_output_accel
-      if output_accel > self.CP.stopAccel:
-        output_accel = min(output_accel, 0.0)
-        # TODO: can we just go straight to stopAccel?
-        output_accel -= STOPPING_DECEL_RATE * DT_CTRL
+      output_accel = min(self.last_output_accel, 0.0)
+      # Blend from the PID's decel toward the car's stopAccel hold value,
+      # but never toward a harsher value.  The gentler of the two is used
+      # as the target so each car gets its own inherent feel.
+      hold_accel = max(output_accel, self.CP.stopAccel)
+      speed_factor = np.clip(CS.vEgo / STOPPING_SPEED, 0.0, 1.0)
+      output_accel = output_accel * speed_factor + hold_accel * (1.0 - speed_factor)
       self.reset()
 
     else:  # LongCtrlState.pid
