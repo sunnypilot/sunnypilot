@@ -63,7 +63,7 @@ class Controls(ControlsExt):
                                                              self.params.get_bool("FordSharedPathController"), self.ford_path_controller)
     self.ford_shared_path = isinstance(self.ford_path_controller, FordSharedPathController)
     if self.CP.brand == "ford":
-      cloudlog.info("Ford path controller selected", controller=type(self.ford_path_controller).__name__)
+      cloudlog.event("Ford path controller selected", controller=type(self.ford_path_controller).__name__)
     self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()
@@ -175,8 +175,8 @@ class Controls(ControlsExt):
                                                           current_curvature=self.curvature, v_ego=CS.vEgo,
                                                           v_ego_raw=CS.vEgoRaw, active=CC.latActive, now=time.monotonic())
         if self.sm.frame % 20 == 0:
-          cloudlog.info("Ford shared path experiment", model_mono_time=self.sm.logMonoTime['modelV2'],
-                        **self.ford_path_controller.diagnostics)
+          cloudlog.event("Ford shared path experiment", model_mono_time=self.sm.logMonoTime['modelV2'],
+                         **self.ford_path_controller.diagnostics)
       elif self.ford_pscm_observer:
         self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
                                                           current_curvature=self.curvature, v_ego=CS.vEgo,
