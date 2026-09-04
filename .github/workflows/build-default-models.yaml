@@ -484,11 +484,29 @@ jobs:
           print(f'Chunked {pkl} into {len(targets)} chunks')
           "
 
+      - name: Compile DM warp
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          MODEL_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld"
+          DM_SIZE=$(python3 -c "from openpilot.common.transformations.model import DM_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+
+          for res in $(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')"); do
+            WARP_PKL="${MODEL_DIR}/models/dm_warp_${res}_tinygrad.pkl"
+            taskset -c 7 env ${TG_FLAGS} python3 ${MODEL_DIR}/compile_dm_warp.py \
+              --camera-resolution ${res} \
+              --warp-to ${DM_SIZE} \
+              --output ${WARP_PKL}
+          done
+
       - name: Prepare DM output
         run: |
           mkdir -p dm_output
           cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunk* dm_output/
           cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunkmanifest dm_output/
+          cp ${{ github.workspace }}/openpilot/selfdrive/modeld/models/dm_warp_* dm_output/
 
       - name: Upload DM artifact
         uses: actions/upload-artifact@v4
