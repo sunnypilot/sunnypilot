@@ -10,6 +10,7 @@ from unittest.mock import Mock
 from openpilot.common.logging_extra import SwagFormatter, SwagLogger
 from openpilot.selfdrive.controls.lib.ford_path import FordPathController, FordPscmObserverPathController
 from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController
+from openpilot.selfdrive.controls.tests.test_ford_path_reference import circle
 
 
 class TestFordControlsLogging(unittest.TestCase):
@@ -48,20 +49,20 @@ class TestFordControlsLogging(unittest.TestCase):
   def test_periodic_diagnostics_log_without_crashing(self):
     controller = FordVirtualAngleController()
     for active in (False, True):
-      controller.update(0.01, current_curvature=0.005, speed=10.0, now=1.0,
-                        measurement_time=1.0, reference_time=1.0, active=active)
-      controls = SimpleNamespace(ford_path_controller=controller, sm=SimpleNamespace(logMonoTime={'modelV2': 123456789, 'carState': 123450000}))
-      record = self.emit_controls_event('Ford virtual angle experiment', controls)
+      controller.update(circle(.01), yaw_rate=.05, speed=10.0, now=1.0,
+                        measurement_time=1.0, model_time=1.0, active=active)
+      controls = SimpleNamespace(ford_path_controller=controller, desired_curvature=.01, curvature=.005,
+                                 sm=SimpleNamespace(logMonoTime={'modelV2': 123456789, 'carState': 123450000}))
+      record = self.emit_controls_event('Ford C2-free path tracking', controls)
       self.assertEqual(record['model_mono_time'], 123456789)
-      self.assertEqual(record['reference_mono_time'], 123456789)
       self.assertEqual(record['measurement_mono_time'], 123450000)
       self.assertEqual(record['status'], controller.diagnostics['status'])
       self.assertEqual(record['command'], list(controller.diagnostics['command']))
       if active:
         self.assertEqual(record['response_delay'], 0.2)
-        self.assertEqual(record['reference'], 0.01)
-        self.assertEqual(record['measured'], 0.005)
-        self.assertTrue(all(key in record for key in ('p', 'i', 'd', 'pending_feedback', 'integrator_frozen')))
+        self.assertEqual(record['action_curvature'], 0.01)
+        self.assertEqual(record['measured_curvature'], 0.005)
+        self.assertTrue(all(key in record for key in ('offset_target', 'heading_target', 'model_age', 'reference_filter_time')))
 
   def test_actual_ford_branch_uses_selected_reference_and_disables_invalid_output(self):
     source_path = Path(__file__).resolve().parents[1] / 'controlsd.py'
@@ -86,30 +87,28 @@ class TestFordControlsLogging(unittest.TestCase):
       controller.update = Mock(wraps=controller.update)
       controls = SimpleNamespace(CP=SimpleNamespace(brand='ford'), sm=sm, ford_virtual_angle=True, ford_path_controller=controller,
                                  desired_curvature=0.007, curvature=0.002, steer_limited_by_safety=True)
-      cs = SimpleNamespace(vEgo=8.0, canValid=True, steeringPressed=False)
+      cs = SimpleNamespace(vEgo=8.0, yawRate=-.015, canValid=True, steeringPressed=False)
       cc = SimpleNamespace(latActive=True)
       actuator = SimpleNamespace(curvature=0.007)
-      environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': actuator, 'model_v2': object(),
+      environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': actuator, 'model_v2': circle(.007),
                      'time': SimpleNamespace(monotonic=lambda: 1.0)}
       exec(code, environment)
       self.assertTrue(controls.ford_path.valid)
       self.assertTrue(cc.latActive)
-      self.assertEqual(controller.update.call_args.args, (0.007,))
+      self.assertIs(controller.update.call_args.args[0], environment['model_v2'])
       args = controller.update.call_args.kwargs
-      self.assertEqual(args['current_curvature'], 0.002)
+      self.assertEqual(args['yaw_rate'], .015)
       self.assertAlmostEqual(args['measurement_time'], 0.995)
-      self.assertAlmostEqual(args['reference_time'], 0.99 if maneuver else 0.98)
-      self.assertTrue(args['limited'])
+      self.assertAlmostEqual(args['model_time'], 0.98)
       self.assertEqual(actuator.curvature, 0.0)
-      self.assertTrue(controller.diagnostics['integrator_frozen'])
 
       # A stale selected reference must cancel the transmitted lateral request,
       # rather than send an active zero path or silently switch controllers.
-      sm.logMonoTime = dict(sm.logMonoTime, **{'lateralManeuverPlan' if maneuver else 'modelV2': 500_000_000})
+      sm.logMonoTime = dict(sm.logMonoTime, modelV2=500_000_000)
       exec(code, environment)
       self.assertFalse(controls.ford_path.valid)
       self.assertFalse(cc.latActive)
-      self.assertFalse(controller.history)
+      self.assertIsNone(controller.reference.path)
 
 
 if __name__ == '__main__':

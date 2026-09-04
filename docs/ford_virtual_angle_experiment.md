@@ -1,111 +1,145 @@
-# Ford virtual angle controller
+# Ford C2-free path tracking
 
-Replaces the failed Shared Path experiment from `daeb966d0`. That controller
-fed temporal model displacement and heading directly into C0/C1 and oscillated
-on route78. The replacement tracks `controlsd.desired_curvature`, after its
-existing planner selection and curvature limits. Measured curvature comes from
-the same vehicle model, steering angle, angle offset and roll used by
-`LatControlAngle`. Zero error therefore corresponds to the same planned angle
-at a given speed and calibration.
+This replaces the weak Virtual Angle controller in `7d558c065`. C0/C1 are
+spatial path requests to the PSCM's own controller. They are not mapped to
+wheel angle, torque, or acceleration through fitted channel gains. C2 and C3
+are always zero while this experiment is selected.
+
+## Why the previous controller failed
+
+The supplied route7a ran `7d558c065` with the experimental controller selected.
+In its first two turns, before the steeringPressed flag, the median measured
+to requested curvature ratios were 0.120 and 0.263. The first requested wheel
+angle rose from 41.1 to 79.8 degrees while measured wheel angle rose from 1.8
+to 19.8 degrees. Median absolute C1 was only 0.0025 rad in that window, versus
+roughly 0.08–0.25 rad in earlier large-maneuver examples.
+
+This was not a stall-latch or CAN-packing failure. There were zero logged
+stall events. Both weak-turn windows had continuous mode-2 requests, EPS
+InProgress, full reported capability, no reported limit and no denial. The
+wire coefficients matched the published requests. Reported full capability
+does not establish unlimited physical steering authority.
+
+The v1 acceleration conversion discarded useful path information: C0 did not
+represent lane-centering displacement, and C1 was reduced to a small curvature
+error correction. Making replayed commands quiet did not establish a useful
+controller. The replacement explicitly retains centering and large-turn demand.
+
+## Reference and command construction
+
+`openpilot/selfdrive/controls/lib/ford_virtual_angle.py` retains its historical
+filename, class and parameter key for compatibility. Its reference is now the
+**model's full spatial path**, as in the default Ford path allocator. The
+existing action/maneuver-plan curvature remains available in diagnostics but
+is not the command reference. Consequently this is not an angle servo and
+must not be assessed as exact tracking of the logged planned wheel angle.
+
+The retained path is moved into the current vehicle frame on each control tick
+using traveled distance and measured CAN yaw rate. New model geometry is
+aligned to that same frame and arc station before its difference from the
+retained path is filtered. This avoids adding the model-filter delay to the
+vehicle-frame motion correction. Publication age is compensated with the
+current speed and yaw rate; this is a planar motion approximation, not a
+model of the PSCM or a reconstruction of camera latency.
+
+A short predicted ego pose accounts for the response interval. Relative to
+that pose, C0 is the lateral error at a 7 m preview and C1 is the full path
+heading at a speed-dependent preview. The model's own initial pose is not
+subtracted: a straight path displaced sideways must continue to request C0
+even when desired curvature and heading are zero. Likewise, a curved path
+continues to request substantial C0/C1 when measured curvature catches up.
+
+| Parameter | Value |
+|---|---:|
+| Model-innovation filter time constant | 0.30 s |
+| C0 spatial preview | 7 m |
+| C1 spatial preview | max(7 m, speed × 1.0 s) |
+| Response interval | CarParams.steerActuatorDelay; 0.20 s in these routes |
+| Host C0 / C1 slew limits | 4 m/s / 0.5 rad/s |
+| C0 / C1 request bounds | ±5.11 m / ±0.5 rad |
+
+Preview distances are limited to available path coverage. Heading outside the
+C1 bound contributes its remaining lateral displacement to C0, subject to the
+C0 bound. C0/C1 share one slew factor so their transition is coordinated.
+Fractional wire-resolution increments accumulate internally; published values
+mirror the actual Float32 and sign-reversed Ford CAN packing. These are
+reference-shaping parameters, not identified PSCM gains or stability margins.
+
+There is no external wheel-error integrator, learned channel gain, or stall
+latch. While lateral control remains authorized, driver input leaves the path
+request present, as in the default allocator; the PSCM handles its existing
+driver arbitration. The diagnostic driver_override label records the flag,
+not a promise that lateral mode has been disabled.
+
+Invalid services or geometry, inputs older than 150 ms, backward timestamps,
+control intervals outside 2–100 ms, speed outside 0.3–55 m/s, or yaw-rate
+magnitude above 3 rad/s clear state and invalidate the request. controlsd then
+clears latActive, producing inactive Ford lateral mode. Reengagement starts
+from zero slew state.
 
 ## Selection and rollback
 
-Vehicle → Ford → **Virtual Angle Controller (Experimental)** is default off.
-Selection happens at controlsd startup following an offroad-to-onroad cycle.
-It requires CAN FD, `FORD_F_150_LIGHTNING_MK1`, and EPS firmware
-`RL38-14D003-AA`. This combination was verified against route78's actual
-CarParams. Other vehicles retain the previously selected controller.
+Vehicle → Ford → **C2-Free Path Tracking (Experimental)** uses the existing
+`FordVirtualAngleController` setting. An already-enabled setting selects this
+replacement after updating and restarting controlsd; it has not been silently
+reset. Changes to the toggle require an offroad-to-onroad cycle. New settings
+remain default off.
 
-The old `FordSharedPathController` setting, registry entry, selector, module and
-UI toggle are removed. An old saved value cannot activate the replacement;
-there is no migration to the new `FordVirtualAngleController` key. An obsolete
-parameter file may remain until normal parameter cleanup, but is never read.
+Selection requires CAN FD, `FORD_F_150_LIGHTNING_MK1`, and EPS firmware
+`RL38-14D003-AA`. It takes priority over PSCM Coefficient Observer on that
+combination. Turning it off and cycling offroad/onroad restores the previous
+controller selection. The obsolete `FordSharedPathController` switch remains
+removed. No live device setting is changed by this commit.
 
-When selected, Virtual Angle takes priority over PSCM Coefficient Observer.
-Turning it off and cycling offroad/onroad restores the previous default or
-observer selection. No setting on a device has been enabled by this change.
+## Verification and remaining uncertainty
 
-## Control law and initial values
+The committed seven-episode fixture contains 3,897 control samples from
+routes77, 78 and 7a, including the large left/right maneuvers, oscillation and
+both weak turns. It records geometry, control signals and source hashes,
+without GPS. Tests check C0 centering with zero curvature/heading, sustained
+large-turn requests, motion-frame alignment, attenuation of model innovations,
+fault resets, command bounds, real CAN packing, controlsd wiring, selection
+and settings schema. Existing Ford path-controller tests also run.
 
-The implementation is `openpilot/selfdrive/controls/lib/ford_virtual_angle.py`.
-C0 carries the planned nominal lateral acceleration (`v² × desired curvature`).
-C1 carries bounded proportional, integral and measured-rate feedback. C2 and
-C3 remain zero. There is no second fast input from raw model pose.
+Full-route command replay covers 138,287 control cycles from all 24 supplied
+segments. There are no invalid-input or timing resets during recorded moving,
+active cycles. Median absolute requests in the selected windows are:
 
-| Quantity | Initial value |
-|---|---:|
-| Nominal C0 per acceleration | 0.6015625 m / (m/s²) |
-| Nominal C1 per corrective acceleration | 0.030078125 rad / (m/s²) |
-| Proportional / integral / rate gains | 0.35 / 0.15 / 0.04 |
-| Measurement-rate filter time constant | 0.15 s |
-| Response interval | CarParams.steerActuatorDelay, 0.20 s on this vehicle |
-| Corrective acceleration / integral bounds | ±1.5 / ±0.75 nominal m/s² |
-| Host C0 / C1 slew | 1.5 m/s / 0.10 rad/s |
+| Recorded window | Recorded C0 / C1 | Replacement C0 / C1 |
+|---|---:|---:|
+| Route77 large left, 812.1–814.0 s | 0.99 m / 0.1723 rad | 1.57 m / 0.2435 rad |
+| Route77 large right, 869.5–871.0 s | 0.99 m / 0.1437 rad | 1.45 m / 0.2240 rad |
+| Route77 very large left, 882.9–883.32 s | 1.73 m / 0.2542 rad | 2.11 m / 0.2455 rad |
+| Route77 right plateau, 967.2–968.93 s | 0.73 m / 0.0816 rad | 0.96 m / 0.1875 rad |
+| Route7a first weak turn, 93.5–95.08 s | 0.15 m / 0.0025 rad | 1.27 m / 0.2400 rad |
+| Route7a second weak turn, 122.5–125.2 s | 0.44 m / 0.0070 rad | 0.26 m / 0.0495 rad |
 
-**These are experimental initial values, not gains identified or validated on
-the Lightning.** The nominal conversion comes from ML3V-BD firmware algebra.
-It does not establish RL38 channel sensitivity, available wheel authority or
-stability. Host slew limits likewise make no claim about internal RL38 limits.
+Some large-maneuver windows include driver input or follow it. These are
+command-envelope comparisons, not identified actuator responses. The two
+weak-turn windows precede their steeringPressed flags, which also cannot rule
+out subthreshold driver torque.
 
-The reference history contains limited, Float32/CAN-quantized C0 requests.
-Feedback compares the measured curvature with the reference issued one
-response interval before the **measurement timestamp**. It subtracts the
-nominal C1 correction still pending within that interval from the proportional
-error. This is a simple delay compensation assumption, not a learned plant or
-an EPS acknowledgment. The input target already includes upstream delay
-handling and is not extrapolated again.
+**This version has not been validated on the vehicle.** Frozen-motion replay
+cannot establish stability, physical centering or improved wheel tracking.
+The route78 replay still contains oscillatory countercommands in response to
+recorded oscillatory motion; suppressing every such command is not a valid
+success criterion. The change filters model innovations while preserving
+steady path demand, but the resulting closed-loop PSCM behavior remains to
+be measured.
 
-Steering rate is derived only when the measurement timestamp advances; Ford's
-generic steeringRateDeg field was zero in these logs. There is no constant-rate
-future-wheel projection. The integral is bounded, discharges with turn release,
-and stops accumulating during command/rate limits, reported host limiting,
-driver input, or a correction increase with little observed response. Driver
-input clears feedback bias and slews C1 toward zero; planned C0 remains active
-when the upstream system still authorizes lateral control.
-
-Invalid/stale inputs, backward timestamps, control gaps over 100 ms, or speeds
-outside 0.3–55 m/s clear state and invalidate the path. controlsd also clears
-the outgoing latActive request, producing inactive Ford lateral mode instead
-of an active zero path. Valid control resumes from reset slew state. The
-measurement and reference freshness limit is 150 ms.
-
-## Validation and limits
-
-85 focused tests passed: controller state/timing, accumulated slew across cycle
-rates and both turn directions, anti-windup, override and release, hypothetical
-delayed plants, real Float32-to-Ford-CAN packing, actual controlsd branch wiring
-and logging, native parameter defaults, settings schema and existing Ford path
-controllers. Ruff and settings generation checks passed.
-
-The route78 regression fixture covers 27–41 s and contains only steering,
-reference, timing and command signals, with source and fixture hashes. Replaying
-the new controller against the recorded motion reduces the 1.78-Hz command
-amplitudes by **93.1% for C0 and 99.2% for C1** over 32.5–36.1 s. The regression
-also checks the onset before the first steeringPressed flag. These results
-show reduced command forcing, **not elimination of physical wheel oscillation**.
-
-Route77's B7 plateau receives median C0/C1 of 0.89 m / 0.009 rad in replay,
-versus recorded 0.73 m / 0.0816 rad. The correction points toward the measured
-undertracking, but there is no evidence yet that physical turn authority is
-preserved or improved. In another tight left, the planner target itself
-understates model-path curvature; tracking it more faithfully cannot solve
-that reference error. These limitations prevent calling this a proven better
-controller. Hardware validation must establish damping, authority and release.
-
-Startup logs identify the selected class. `Ford virtual angle experiment`
-records reference/measurement timestamps and ages, reference/measured/delayed
-curvature, P/I/D, pending correction, integrator freeze/stall state and all four
-commands at 5 Hz. A short next capture containing engagement, turn-in and release
-can distinguish reference error, feedback response and insufficient authority.
+Startup logs retain the controller class name. The 5 Hz event
+`Ford C2-free path tracking` identifies hypothesis `spatial-path-v2` and records
+input times/ages, action/measured curvature, CAN yaw, target C0/C1, preview
+horizons, filter/response times, slew factor and actual commands.
 
 Reproduce focused checks from the repository environment:
 
 ```sh
-python -m pytest -q openpilot/selfdrive/controls/tests/test_ford_virtual_angle.py openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py openpilot/selfdrive/controls/tests/test_ford_path.py openpilot/sunnypilot/sunnylink/tests/test_settings_schema.py
+python -m pytest -q openpilot/selfdrive/controls/tests/test_ford_path_reference.py openpilot/selfdrive/controls/tests/test_ford_virtual_angle.py openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py openpilot/selfdrive/controls/tests/test_ford_path.py openpilot/sunnypilot/sunnylink/tests/test_settings_schema.py
 python openpilot/sunnypilot/sunnylink/tools/compile_settings_ui.py --check
 ```
 
-Full local route analysis and replay are in
-`analysis/controller_search_20260904/replay_virtual_angle.py`. The historical
-recorded-motion failure witnesses remain failures by design: editing a
-controller cannot alter an already recorded drive.
+The local analysis directory contains `replay_path_tracking.py` and the
+route-specific `path_tracking_replay.json` outputs. Historical v1 recordings
+and failure witnesses remain unchanged: code edits cannot repair an already
+recorded drive.

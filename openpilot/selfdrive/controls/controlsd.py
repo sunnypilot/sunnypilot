@@ -171,20 +171,19 @@ class Controls(ControlsExt):
     if self.CP.brand == "ford":
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
       if self.ford_virtual_angle:
-        reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
         self.ford_path = self.ford_path_controller.update(
-          self.desired_curvature, current_curvature=self.curvature, speed=CS.vEgo, now=time.monotonic(),
+          ford_model, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
-          reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
-          active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', reference_service]),
-          steering_pressed=CS.steeringPressed, limited=self.steer_limited_by_safety,
+          model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
+          active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2']),
+          steering_pressed=CS.steeringPressed,
         )
         if not self.ford_path.valid:
           CC.latActive = False
         if self.sm.frame % 20 == 0:
-          cloudlog.event("Ford virtual angle experiment", model_mono_time=self.sm.logMonoTime['modelV2'],
+          cloudlog.event("Ford C2-free path tracking", model_mono_time=self.sm.logMonoTime['modelV2'],
                          measurement_mono_time=self.sm.logMonoTime['carState'],
-                         reference_mono_time=self.sm.logMonoTime[reference_service],
+                         action_curvature=self.desired_curvature, measured_curvature=self.curvature,
                          **self.ford_path_controller.diagnostics)
       elif self.ford_pscm_observer:
         self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,

@@ -283,7 +283,7 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     items = _brand_items(schema["vehicle_settings"].get("ford"))
     assert "FordSharedPathController" not in {item["key"] for item in items}
     servo = next(item for item in items if item["key"] == "FordVirtualAngleController")
-    assert servo["title"] == "Virtual Angle Controller (Experimental)"
+    assert servo["title"] == "C2-Free Path Tracking (Experimental)"
     assert servo["widget"] == "toggle"
     assert servo["needs_onroad_cycle"] is True
     # No other toggle can prevent disabling this experiment while offroad.

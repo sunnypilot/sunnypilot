@@ -1,0 +1,227 @@
+{
+  "description": "Path-command and centering regression; does not predict counterfactual wheel response. Contains geometry and control signals only, no GPS.",
+  "fixture_sha256": "c572d8cbe58f01dad273da59cb7e1fdf6b9700e51267ecdb13775e3f22c5faa6",
+  "episodes": [
+    {
+      "name": "left_large",
+      "route": "84865544361f55cb_00000077--4b55791ce6",
+      "range_seconds": [
+        809.5,
+        815.0
+      ],
+      "evidence_seconds": [
+        812.1,
+        814.0
+      ],
+      "samples": 532
+    },
+    {
+      "name": "right_large",
+      "route": "84865544361f55cb_00000077--4b55791ce6",
+      "range_seconds": [
+        866.5,
+        872.0
+      ],
+      "evidence_seconds": [
+        869.5,
+        871.0
+      ],
+      "samples": 547
+    },
+    {
+      "name": "left_very_large",
+      "route": "84865544361f55cb_00000077--4b55791ce6",
+      "range_seconds": [
+        880.0,
+        884.0
+      ],
+      "evidence_seconds": [
+        882.9,
+        883.32
+      ],
+      "samples": 397
+    },
+    {
+      "name": "right_plateau",
+      "route": "84865544361f55cb_00000077--4b55791ce6",
+      "range_seconds": [
+        964.0,
+        970.0
+      ],
+      "evidence_seconds": [
+        967.2,
+        968.93
+      ],
+      "samples": 583
+    },
+    {
+      "name": "oscillation",
+      "route": "84865544361f55cb_00000078--349f5b8695",
+      "range_seconds": [
+        29.0,
+        37.0
+      ],
+      "evidence_seconds": [
+        32.5,
+        36.1
+      ],
+      "samples": 795
+    },
+    {
+      "name": "weak_first",
+      "route": "84865544361f55cb_0000007a--5a95fc717e",
+      "range_seconds": [
+        90.5,
+        95.2
+      ],
+      "evidence_seconds": [
+        93.5,
+        95.08
+      ],
+      "samples": 467
+    },
+    {
+      "name": "weak_second",
+      "route": "84865544361f55cb_0000007a--5a95fc717e",
+      "range_seconds": [
+        119.5,
+        125.3
+      ],
+      "evidence_seconds": [
+        122.5,
+        125.2
+      ],
+      "samples": 576
+    }
+  ],
+  "sources": {
+    "84865544361f55cb_00000077--4b55791ce6": [
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--0--rlog.zst",
+        "bytes": 10342855,
+        "sha256": "2f072eff3076f4d32dbc1a077f24fc85818abeafd13a4b970b1ba558a0d2ca52"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--1--rlog.zst",
+        "bytes": 11688902,
+        "sha256": "bbbbf7fc79b1c7133b83678a5202ac41cd8b3dcdd0bb358843d43fdb38f25e1e"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--2--rlog.zst",
+        "bytes": 11875525,
+        "sha256": "18d7e0224a61d068aeeef0e176da071f5e67d77fcb7ebaa7b5854756d4438add"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--3--rlog.zst",
+        "bytes": 12489313,
+        "sha256": "7869f95c87849018df07c680e0584145a31c407608f96f2fc77f35b729f02d2c"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--4--rlog.zst",
+        "bytes": 12301118,
+        "sha256": "2c2125fb2320b9bc6620fc586cedb6558b33e8475d0cce3fb361db4eea6a1c28"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--5--rlog.zst",
+        "bytes": 12976655,
+        "sha256": "b18c448786daf46cfa05bf0352396ce5851a09603d34ee5b989e096da5ee5180"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--6--rlog.zst",
+        "bytes": 13223857,
+        "sha256": "8c08b8d47ebca38c70aa94a1cdda25443ed3be94727bb487406b518471c88dd1"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--7--rlog.zst",
+        "bytes": 13043701,
+        "sha256": "638948d7e5853046773f82df8a531c518c42883c77f060e61ff683ccb59d52af"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--8--rlog.zst",
+        "bytes": 12569024,
+        "sha256": "41e5c83d2205964889579cf24967712dd0340da5f30f213409f2b1e04e6eb78a"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--9--rlog.zst",
+        "bytes": 11926213,
+        "sha256": "6034a90e817424c02755c2c0d9bdbad088c4286edfb887d9f2acbd60d7818da7"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--10--rlog.zst",
+        "bytes": 13010961,
+        "sha256": "23958a1ac8277977952c73e889fbfd9245bc2cf82b3af58233c245dbf1e76545"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--11--rlog.zst",
+        "bytes": 13204208,
+        "sha256": "f78d65b7b5927a8570f52d765f9af45431f8ab72260987f718321ad1b03c70af"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--12--rlog.zst",
+        "bytes": 12562994,
+        "sha256": "485621d1cf71605fccc8c679cb146b1f0954078849db7c74b1b65b166d741025"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--13--rlog.zst",
+        "bytes": 12610836,
+        "sha256": "0b4b0c01caae39a7dc4ff2219ab168029ea12c43b1966b8c204972743627c24b"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--14--rlog.zst",
+        "bytes": 13114068,
+        "sha256": "f18769800bd08c7614280916b50ec0274eca9b4765ad26d6549b72912321dac0"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--15--rlog.zst",
+        "bytes": 13113162,
+        "sha256": "abf0adc702db6f5fdd78a145709504c7061255bc9b9a61329a575707d5bd2f74"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--16--rlog.zst",
+        "bytes": 13029294,
+        "sha256": "a76ed74b889bda60e2d929123186df83653591d1e058fbd1497551fbbf23941e"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--17--rlog.zst",
+        "bytes": 12429846,
+        "sha256": "51d3aff2afa1a7ce3c5372a499b14394f22ac730e952273a69496c65ef726ed2"
+      },
+      {
+        "name": "84865544361f55cb_00000077--4b55791ce6--18--rlog.zst",
+        "bytes": 9241845,
+        "sha256": "2a1646227f9cdb1ab7eaf79fa653b7f4443a629a703577ff6c38a715dbced3a4"
+      }
+    ],
+    "84865544361f55cb_00000078--349f5b8695": [
+      {
+        "name": "84865544361f55cb_00000078--349f5b8695--0--rlog.zst",
+        "bytes": 10919702,
+        "sha256": "2d35f6c9ac9b09f8b86b3fe2fbe864e4af0d50c411e3dd56572b5aa113bf1973"
+      },
+      {
+        "name": "84865544361f55cb_00000078--349f5b8695--1--rlog.zst",
+        "bytes": 10600112,
+        "sha256": "6cabb48ea0caeb2fddd58be35b5c7e7c42faf87fc01991c4603573bffe33eaeb"
+      }
+    ],
+    "84865544361f55cb_0000007a--5a95fc717e": [
+      {
+        "name": "84865544361f55cb_0000007a--5a95fc717e--0--rlog.zst",
+        "bytes": 10841486,
+        "sha256": "bfc9e3308e5241e76cba57f2441043710fe8b18ade314221ee5e423f640c211a"
+      },
+      {
+        "name": "84865544361f55cb_0000007a--5a95fc717e--1--rlog.zst",
+        "bytes": 12567837,
+        "sha256": "ab9eb05c5805e286a6ec639bbbbc1cf086bfcf1b440801ad000713db95dfa7fc"
+      },
+      {
+        "name": "84865544361f55cb_0000007a--5a95fc717e--2--rlog.zst",
+        "bytes": 11015857,
+        "sha256": "af4f87f39be37f0a5b23b58de50c2ed8801bdbda6544cd6cd292525fc3bd4fb3"
+      }
+    ]
+  },
+  "pairing": "controlsState cycle time; causal carState speed/yaw/pressed; exact consumed model timestamp and geometry; nearest same-cycle carControl and carControlSP within 5ms.",
+  "yaw_rate": "Negative carState.yawRate, matching the model/control curvature coordinate sign; no wheel-to-curvature conversion."
+}

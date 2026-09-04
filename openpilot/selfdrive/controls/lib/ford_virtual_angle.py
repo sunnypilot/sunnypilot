@@ -1,199 +1,161 @@
-"""Experimental curvature-equivalent angle servo for the Lightning RL38 EPS.
+"""C2-free spatial path tracking for the Lightning RL38 PSCM.
 
-One planner reference, bounded PI/rate feedback, and delayed command history.
-The C0/C1 conversion is nominal firmware algebra, NOT an identified wheel plant.
+The historical Virtual Angle name/key is retained for settings compatibility.
+C0/C1 remain path geometry, never a fitted wheel-angle or torque command.
 """
-from collections import deque
 from dataclasses import dataclass
 import math
 import struct
+import numpy as np
 
+from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path, _relative_pose, _predicted_pose
 from opendbc.car.ford.values import FordFlags
-from openpilot.selfdrive.controls.lib.ford_path import DBC_ANGLE, DBC_OFFSET, FordPath
-
-
-# Normalized field conversion from ML3V-BD. RL38 road validation is still needed.
-# C0 carries the reference; C1 carries a bounded corrective acceleration.
-C0_PER_ACCEL = 0.6015625
-C1_PER_ACCEL = 0.030078125
-_C0_LIMIT = min(abs(v) for v in DBC_OFFSET)
-_C1_LIMIT = min(abs(v) for v in DBC_ANGLE)
-_MAX_AGE = 0.15
-_MAX_DT = 0.1
-
-
-def _clip(value, lower, upper):
-  return min(max(value, lower), upper)
 
 
 def _packed(value, resolution, offset):
-  """Mirror Float32 carControlSP and the sign-reversed CANPacker rounding."""
-  value = struct.unpack('f', struct.pack('f', value))[0]
+  """Mirror Float32 carControlSP and sign-reversed CANPacker rounding."""
+  value = struct.unpack("f", struct.pack("f", value))[0]
   return -(math.floor((-value - offset) / resolution + 0.5) * resolution + offset)
 
 
 @dataclass(frozen=True)
-class ServoTuning:
-  kp: float = 0.35
-  ki: float = 0.15
-  kd: float = 0.04
-  rate_filter: float = 0.15
-  feedback_limit: float = 1.5  # nominal m/s^2, not measured EPS authority
-  integral_limit: float = 0.75
-  offset_rate: float = 1.5  # m/s, limits host requests, not a claim about RL38 internal slew
-  heading_rate: float = 0.1  # rad/s
+class PathTuning:
+  filter_time: float = 0.3
+  offset_horizon: float = 7.0
+  heading_time: float = 1.0
+  offset_rate: float = 4.0
+  heading_rate: float = 0.5
+
+
+class PathReference:
+  """Retain model geometry in the current ego frame between model messages."""
+  def __init__(self, tuning):
+    self.tuning = tuning
+    self.path = None
+    self.model_time = None
+
+  def reset(self):
+    self.path = None
+    self.model_time = None
+
+  @staticmethod
+  def advance(path, distance, curvature):
+    stations, x, y, heading = path
+    dx, dy, yaw = _predicted_pose(distance, curvature, 0.0)
+    cosine, sine = math.cos(yaw), math.sin(yaw)
+    return stations - distance, cosine * (x - dx) + sine * (y - dy), -sine * (x - dx) + cosine * (y - dy), heading - yaw
+
+  def update(self, model, *, model_time, now, dt, speed, curvature):
+    if self.path is not None:
+      self.path = self.advance(self.path, speed * dt, curvature)
+    if model_time == self.model_time:
+      return self.path
+    raw = _model_path(model)
+    if raw is None or not all(np.isfinite(a).all() for a in raw):
+      self.reset()
+      return None
+    new = self.advance(tuple(np.array(a) for a in raw), speed * max(now - model_time, 0.0), curvature)
+    if self.path is not None:
+      # Both paths now describe the same ego frame and traveled arc. Only the
+      # model innovation is filtered; measured ego motion is accounted for at
+      # every control tick. Never average two unaligned vehicle-frame paths.
+      elapsed = model_time - self.model_time
+      alpha = elapsed / (self.tuning.filter_time + elapsed)
+      old = self.path
+      values = [new[0]]
+      for index in (1, 2, 3):
+        prior = np.interp(new[0], old[0], old[index])
+        delta = new[index] - prior
+        if index == 3:
+          delta = (delta + np.pi) % (2 * np.pi) - np.pi
+        values.append(prior + alpha * delta)
+      # Do not invent reference history beyond the previous path's coverage.
+      outside = (new[0] < old[0][0]) | (new[0] > old[0][-1])
+      for index in (1, 2, 3):
+        values[index][outside] = new[index][outside]
+      new = tuple(values)
+    self.path = new
+    self.model_time = model_time
+    return self.path
 
 
 class FordVirtualAngleController:
-  """Track the bounded planner curvature, equivalent to its vehicle-model angle.
+  """Supply spatial path offsets/headings to the PSCM's own controller.
 
-  Histories contain published, packing-equivalent requests, not EPS execution
-  acknowledgments. Feedback waits for the configured response interval, and
-  discounts corrections still pending within that interval. It never projects
-  the wheel with an unbounded constant-rate extrapolation.
+  Measured CAN yaw rate is used only to move the reference between ego frames
+  and align its preview with the response interval. No EPS gain is assumed.
   """
-
-  def __init__(self, response_delay=0.2, tuning: ServoTuning | None = None):
-    tuning = tuning if tuning is not None else ServoTuning()
-    if not math.isfinite(response_delay) or not 0.05 <= response_delay <= 0.5:
+  def __init__(self, response_delay=.2, tuning: PathTuning | None = None):
+    self.tuning = tuning if tuning is not None else PathTuning()
+    if not math.isfinite(response_delay) or not .05 <= response_delay <= .5:
       raise ValueError("response delay must be within 0.05..0.5 seconds")
-    if not all(math.isfinite(v) and v >= 0 for v in vars(tuning).values()) or min(
-      tuning.rate_filter, tuning.feedback_limit, tuning.integral_limit, tuning.offset_rate, tuning.heading_rate,
+    if not all(math.isfinite(v) and v >= 0 for v in vars(self.tuning).values()) or min(
+      self.tuning.offset_horizon, self.tuning.heading_time, self.tuning.offset_rate, self.tuning.heading_rate,
     ) <= 0:
-      raise ValueError("invalid servo tuning")
+      raise ValueError("invalid path tuning")
     self.delay = response_delay
-    self.tuning = tuning
-    self.history = deque(maxlen=512)
-    self.diagnostics = {}
+    self.reference = PathReference(self.tuning)
     self.reset()
 
   def reset(self):
-    self.history.clear()
+    self.reference.reset()
+    self.command = FordPath()
     self.last_time = None
     self.last_measurement_time = None
-    self.last_curvature = 0.0
-    self.curvature_rate = 0.0
-    self.integral = 0.0
-    self.last_reference_accel = 0.0
-    self.command = FordPath()
-    self.offset_request = 0.0
-    self.heading_request = 0.0
-    self.stalled = False
-    self.diagnostics = {"status": "inactive", "hypothesis": "virtual-angle-v1", "command": (0.0, 0.0, 0.0, 0.0)}
+    self.offset_request = self.heading_request = 0.0
+    self.diagnostics = {'status': 'inactive', 'hypothesis': 'spatial-path-v2', 'command': (0., 0., 0., 0.)}
 
-  def _at(self, time):
-    """Causal interpolation of retained (time, reference curvature, feedback, measurement)."""
-    previous = self.history[0]
-    for current in self.history:
-      if current[0] >= time:
-        fraction = _clip((time - previous[0]) / max(current[0] - previous[0], 1e-9), 0.0, 1.0)
-        return tuple(a + fraction * (b - a) for a, b in zip(previous[1:], current[1:], strict=True))
-      previous = current
-    return previous[1:]
-
-  def update(self, desired_curvature, *, current_curvature, speed, now, measurement_time, reference_time,
-             active, valid=True, steering_pressed=False, limited=False):
-    finite = all(math.isfinite(v) for v in (desired_curvature, current_curvature, speed, now, measurement_time, reference_time))
-    fresh = finite and -0.005 <= now - measurement_time <= _MAX_AGE and -0.005 <= now - reference_time <= _MAX_AGE
-    if not active or not valid or not fresh or not 0.3 <= speed <= 55.0 or max(abs(desired_curvature), abs(current_curvature)) > 1.0:
+  def update(self, model, *, yaw_rate, speed, now, measurement_time, model_time, active, valid=True, steering_pressed=False):
+    finite = all(math.isfinite(v) for v in (yaw_rate, speed, now, measurement_time, model_time))
+    fresh = finite and -.005 <= now - measurement_time <= .15 and -.005 <= now - model_time <= .15
+    if not active or not valid or model is None or not fresh or not .3 <= speed <= 55 or abs(yaw_rate) > 3:
       self.reset()
       self.diagnostics['status'] = 'inactive' if not active else 'invalid_input'
+      self.diagnostics['reason'] = ('inactive' if not active else 'invalid_service' if not valid else 'missing_model' if model is None else
+                                    'nonfinite' if not finite else 'stale_input' if not fresh else 'speed' if not .3 <= speed <= 55 else 'yaw_rate')
       return self.command
-
-    dt = 0.01 if self.last_time is None else now - self.last_time
-    if not 0.002 <= dt <= _MAX_DT or (self.last_measurement_time is not None and measurement_time < self.last_measurement_time):
+    dt = .01 if self.last_time is None else now - self.last_time
+    if not .002 <= dt <= .1 or (self.last_measurement_time is not None and measurement_time < self.last_measurement_time) or (
+      self.reference.model_time is not None and model_time < self.reference.model_time
+    ):
       self.reset()
       self.diagnostics['status'] = 'timing_reset'
       return self.command
+    current_curvature = yaw_rate / speed
     self.last_time = now
-    tuning = self.tuning
-    speed_squared = speed * speed
-
-    if not self.history:
-      self.history.append((now - self.delay, current_curvature, 0.0, current_curvature))
-      self.last_curvature = current_curvature
-      self.last_measurement_time = measurement_time
-    if measurement_time > self.last_measurement_time:
-      measurement_dt = measurement_time - self.last_measurement_time
-      rate = (current_curvature - self.last_curvature) / measurement_dt
-      alpha = measurement_dt / (tuning.rate_filter + measurement_dt)
-      self.curvature_rate += alpha * (rate - self.curvature_rate)
-      self.last_curvature = current_curvature
-      self.last_measurement_time = measurement_time
-
-    # The input is already the planner's actuator-delay-aware, bounded reference.
-    # Do not advance it again or add a second model-pose reference.
-    reference_accel = desired_curvature * speed_squared
-    offset_target = _clip(C0_PER_ACCEL * reference_accel, -_C0_LIMIT, _C0_LIMIT)
-    # Preserve fractional LSBs between cycles; limiting the rounded value can
-    # otherwise change the sustained slew rate with cycle time or turn sign.
-    self.offset_request = _clip(offset_target, self.offset_request - tuning.offset_rate * dt,
-                                self.offset_request + tuning.offset_rate * dt)
-    offset = _packed(self.offset_request, 0.01, DBC_OFFSET[0])
-
-    delayed_reference, delayed_feedback, _ = self._at(measurement_time - self.delay)
-    error = (delayed_reference - current_curvature) * speed_squared
-    previous_feedback = self.command.path_angle / C1_PER_ACCEL
-    pending = previous_feedback - delayed_feedback
-    proportional = tuning.kp * (error - pending)
-    damping = _clip(-tuning.kd * self.curvature_rate * speed_squared, -tuning.feedback_limit, tuning.feedback_limit)
-
-    # Old-direction bias must discharge with the reference, including release
-    # to straight. Avoid spending seconds unwinding an integral after a turn.
-    if reference_accel * self.last_reference_accel <= 0:
-      self.integral = 0.0
-    elif abs(reference_accel) < abs(self.last_reference_accel):
-      self.integral *= abs(reference_accel / self.last_reference_accel)
-    self.last_reference_accel = reference_accel
-
-    # A sizable corrective-command increase without corresponding motion is
-    # evidence against further integration even if EPS reports no limit flag.
-    stalled_evidence = False
-    if self.history[0][0] <= now - 1.0:
-      _, old_feedback, old_curvature = self._at(now - 1.0)
-      correction_change = previous_feedback - old_feedback
-      measured_change = (current_curvature - old_curvature) * speed_squared
-      stalled_evidence = correction_change * error > 0 and abs(correction_change) > 0.2 and abs(measured_change) < 0.02
-      if abs(measured_change) > 0.05 or self.integral * error <= 0:
-        self.stalled = False
-    self.stalled |= stalled_evidence
-
-    # About one C1 LSB in nominal corrective acceleration: do not integrate
-    # sub-resolution error. Integral state is independent of road speed.
-    integral_error = math.copysign(max(abs(error) - 0.02, 0.0), error)
-    candidate_integral = _clip(self.integral + tuning.ki * integral_error * dt, -tuning.integral_limit, tuning.integral_limit)
-    freeze = limited or self.stalled or abs(offset - offset_target) > 0.0051
-    if freeze:
-      candidate_integral = self.integral
-    if steering_pressed:
-      candidate_integral = self.integral = 0.0
-      proportional = damping = 0.0
-      self.stalled = False
-
-    requested_feedback = proportional + damping + candidate_integral
-    feedback = _clip(requested_feedback, -tuning.feedback_limit, tuning.feedback_limit)
-    heading_target = _clip(C1_PER_ACCEL * feedback, -_C1_LIMIT, _C1_LIMIT)
-    self.heading_request = _clip(heading_target, self.heading_request - tuning.heading_rate * dt,
-                                 self.heading_request + tuning.heading_rate * dt)
-    heading = _packed(self.heading_request, 0.0005, DBC_ANGLE[0])
-    applied_feedback = heading / C1_PER_ACCEL
-    # Conditional integration at output/rate limits; allow error to unwind it.
-    output_limited = abs(requested_feedback - applied_feedback) > 0.00026 / C1_PER_ACCEL
-    if not freeze and (not output_limited or error * (requested_feedback - applied_feedback) <= 0):
-      self.integral = candidate_integral
-
-    self.command = FordPath(True, offset, heading, 0.0, 0.0)
-    self.history.append((now, offset / C0_PER_ACCEL / speed_squared, applied_feedback, current_curvature))
-    while len(self.history) > 2 and self.history[1][0] < now - 1.5:
-      self.history.popleft()
-    self.diagnostics = {
-      "status": "driver_override" if steering_pressed else "active", "hypothesis": "virtual-angle-v1",
-      "reference": desired_curvature, "measured": current_curvature, "delayed_reference": delayed_reference,
-      "error_accel": error, "pending_feedback": pending, "p": proportional, "d": damping, "i": self.integral,
-      "integrator_frozen": bool(freeze or steering_pressed or output_limited), "stalled": bool(self.stalled),
-      "response_delay": self.delay, "measurement_age": now - measurement_time, "reference_age": now - reference_time,
-      "command": (offset, heading, 0.0, 0.0),
-    }
+    self.last_measurement_time = measurement_time
+    path = self.reference.update(model, model_time=model_time, now=now, dt=dt, speed=speed, curvature=current_curvature)
+    if path is None or path[0][-1] <= 0:
+      self.reset()
+      self.diagnostics['status'] = 'invalid_path'
+      return self.command
+    advance = min(speed * self.delay, path[0][-1])
+    offset_horizon = min(self.tuning.offset_horizon, max(path[0][-1] - advance, 0.0))
+    heading_horizon = min(max(speed * self.tuning.heading_time, self.tuning.offset_horizon), max(path[0][-1] - advance, 0.0))
+    ego = _predicted_pose(advance, current_curvature, 0.)
+    offset, _ = _relative_pose(advance + offset_horizon, path, ego)
+    _, heading = _relative_pose(advance + heading_horizon, path, ego)
+    # Keep the complete lateral/heading error in the predicted ego frame.
+    # Subtracting the model's own initial pose would erase centering offsets.
+    heading_limited = float(np.clip(heading, -.5, .5))
+    offset += (heading - heading_limited) * offset_horizon
+    target_offset = float(np.clip(offset, -5.11, 5.11))
+    target_heading = heading_limited
+    delta_offset = target_offset - self.offset_request
+    delta_heading = target_heading - self.heading_request
+    scale = min(1., self.tuning.offset_rate * dt / abs(delta_offset) if delta_offset else 1.,
+                self.tuning.heading_rate * dt / abs(delta_heading) if delta_heading else 1.)
+    self.offset_request += scale * delta_offset
+    self.heading_request += scale * delta_heading
+    offset = _packed(self.offset_request, .01, -5.12)
+    heading = _packed(self.heading_request, .0005, -.5)
+    self.command = FordPath(True, offset, heading, 0., 0.)
+    self.diagnostics = {'status': 'driver_override' if steering_pressed else 'active', 'hypothesis': 'spatial-path-v2',
+                        'offset_target': target_offset, 'heading_target': target_heading, 'slew_scale': scale,
+                        'measurement_age': now - measurement_time, 'model_age': now - model_time,
+                        'response_delay': self.delay, 'reference_filter_time': self.tuning.filter_time, 'yaw_rate': yaw_rate,
+                        'offset_horizon': offset_horizon, 'heading_horizon': heading_horizon,
+                        'command': (offset, heading, 0., 0.)}
     return self.command
 
 

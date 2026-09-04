@@ -2182,9 +2182,9 @@
           "key": "FordVirtualAngleController",
           "widget": "toggle",
           "needs_onroad_cycle": true,
-          "title": "Virtual Angle Controller (Experimental)",
-          "description": "Track the planned steering target with measured steering feedback on the F-150 Lightning.",
-          "details": "Default off and not road-validated. Available only on the F-150 Lightning with RL38-14D003-AA steering firmware; other vehicles retain their existing controller. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
+          "title": "C2-Free Path Tracking (Experimental)",
+          "description": "Preserve path centering and full turn heading on the F-150 Lightning while keeping C2 off.",
+          "details": "Replaces the weak Virtual Angle experiment. Default off and not road-validated. Available only on the F-150 Lightning with RL38-14D003-AA steering firmware; other vehicles retain their existing controller. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
           "enablement": [
             {
               "type": "offroad_only"
@@ -2197,7 +2197,7 @@
           "needs_onroad_cycle": true,
           "title": "PSCM Coefficient Observer (Experimental)",
           "description": "Track the Ford steering controller's internal polynomial states and use fast path terms only for the response that slow curvature cannot provide.",
-          "details": "This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This strategy is bypassed when Virtual Angle Controller is selected on a supported vehicle; its selection is retained when that experiment is turned off.",
+          "details": "This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This strategy is bypassed when C2-Free Path Tracking is selected on a supported vehicle; its selection is retained when that experiment is turned off.",
           "enablement": [
             {
               "type": "offroad_only"
