@@ -52,28 +52,28 @@ class TestFordControlsLogging(unittest.TestCase):
       record = self.emit_controls_event('Ford shared path experiment', controls)
       self.assertEqual(record['model_mono_time'], 123456789)
       self.assertEqual(record['status'], controller.diagnostics['status'])
-      self.assertEqual(record['state'], list(controller.diagnostics['state']))
-      self.assertEqual(record['requested'], controller.diagnostics['requested'])
+      self.assertEqual(record['command'], list(controller.diagnostics['command']))
+      self.assertEqual(record['horizon_s'], controller.diagnostics['horizon_s'])
 
-  def test_geometric_request_logs_and_clears_without_changing_allocation_meaning(self):
+  def test_temporal_model_pose_diagnostics_log_and_clear(self):
     controller = FordSharedPathController()
-    model = SimpleNamespace(position=SimpleNamespace(x=[0.0, 20.0], y=[0.0, -10.0]),
+    model = SimpleNamespace(position=SimpleNamespace(t=[0.0, 2.0], x=[0.0, 20.0], y=[0.0, -10.0]),
                             orientation=SimpleNamespace(z=[0.0, -1.0]))
-    for _ in range(4):
-      controller.update(model, 0.0, active=False)
-    for _ in range(150):
-      controller.update(model, 0.0, current_curvature=-0.019, v_ego=2.1, v_ego_raw=2.1)
+    controller.update(model, 0.0, current_curvature=-0.019, v_ego=2.1, v_ego_raw=2.1)
     controls = SimpleNamespace(ford_path_controller=controller, sm=SimpleNamespace(logMonoTime={'modelV2': 123456789}))
     record = self.emit_controls_event('Ford shared path experiment', controls)
-    self.assertEqual(record['geometric_request'], list(controller.diagnostics['geometric_request']))
-    self.assertEqual(record['packed_command'], list(controller.diagnostics['packed_command']))
-    self.assertLess(record['geometric_request'][1], record['packed_command'][1])
-    self.assertAlmostEqual(record['shortfall'], 0.0)
+    self.assertEqual(record['model_offset'], controller.diagnostics['model_offset'])
+    self.assertEqual(record['model_heading'], controller.diagnostics['model_heading'])
+    self.assertEqual(record['predicted_heading'], controller.diagnostics['predicted_heading'])
+    self.assertEqual(record['heading_residual'], controller.diagnostics['heading_residual'])
+    self.assertEqual(record['arc'], controller.diagnostics['arc'])
+    self.assertEqual(record['command'], list(controller.diagnostics['command']))
 
     for active in (True, False):
       controller.update(None, 0.0, active=active)
       record = self.emit_controls_event('Ford shared path experiment', controls)
-      self.assertIsNone(record['geometric_request'])
+      self.assertIsNone(record['model_offset'])
+      self.assertIsNone(record['heading_residual'])
 
 
 if __name__ == '__main__':

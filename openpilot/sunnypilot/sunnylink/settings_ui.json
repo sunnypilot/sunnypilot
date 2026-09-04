@@ -2183,8 +2183,8 @@
           "widget": "toggle",
           "needs_onroad_cycle": true,
           "title": "Shared Path Controller (Experimental)",
-          "description": "Experimental live steering for Ford CAN FD vehicles, combining path feedback with a state-aware C0/C1/C2 handoff.",
-          "details": "Default off. Uses nominal firmware response assumptions that are unverified across Ford models; this controller is not road-validated. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
+          "description": "Experimental live steering for Ford CAN FD vehicles, using a temporal model-path C0 offset and C1 heading residual while keeping C2/C3 zero.",
+          "details": "Default off. The 1.097-second model horizon is derived from decoded Raptor firmware coefficients and is unverified across Ford models; this controller is not road-validated. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
           "enablement": [
             {
               "type": "offroad_only"

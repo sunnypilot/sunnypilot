@@ -13,88 +13,73 @@ Turning it off restores the prior selection, including the older observer if
 that option was already enabled. No mid-drive controller switching is added.
 
 Neither the CAN frequency (100 Hz for LMC2), driver/fault enablement, nor the
-existing downstream curvature and Panda checks are changed by this experiment.
-No new per-vehicle tuning table or online learner is added.
+existing Panda checks are changed by this experiment. No per-vehicle tuning
+table, online learner, host-side slew, or coefficient handoff is added.
 
-## One request, then allocation
+## C2-free request
 
-The controller keeps three decisions separate:
+The controller samples one model pose at a firmware-derived temporal horizon:
 
-1. **Hold request.** Use a single 7 m remaining-model preview for offset and
-   heading. Advance the reference by the existing 0.1 s nominal prediction
-   interval. Keep a bounded gentle C2 contribution, and add only the model pose
-   beyond the existing 0.006 /m gentle envelope. That excess grows linearly for
-   a circular-path fixture; it is not the old blend share multiplied by pose.
-2. **Correction.** Compare model pose at the prediction interval with a
-   constant-curvature projection from measured steering-derived curvature.
-   Express offset/heading error in the predicted vehicle frame. Apply its
-   normalized contribution **after** hold-request saturation so a large raw
-   preview cannot swallow an unwind correction. At the modeled arc, this
-   correction is zero while the holding request remains. No noisy measured
-   curvature derivative or integral accumulation is used. If the model path
-   straightens while measured curvature is still large, recovery keeps the
-   opposing pose correction active until actual motion returns to the gentle
-   envelope; the reference alone cannot switch that correction off.
-3. **Allocation.** Independently supply that total with reachable C0/C1/C2
-   states. Channel preference cannot change the requested total. C2 is preferred
-   for settled gentle driving, reduced across the existing 0.006–0.012 /m band,
-   and requested zero for large maneuvers or a still-large measured turn.
-   Unreachable fast demand is reported,
-   not used as permission to refill C2. C3 remains zero.
+```text
+H  = sqrt(0.30078125 / 0.25) = 1.096870548 seconds
+C0 = model lateral displacement at H
+C1 = wrap(model heading change at H - measured curvature * model arc to H)
+C2 = 0
+C3 = 0
+```
 
-The allocator scores candidate packets against every nominal 4 ms tick in the
-next 100 Hz period, not just its endpoint. It considers neighboring wire
-quantizations. First minimize total-contribution error beyond half-LSB encoding
-uncertainty, then favor the C2 endpoint and coordinated C0/C1 preference. Avoid
-unnecessary latent coefficient accumulation beyond nominal contribution caps.
+The model endpoint is translated and rotated from the model's first pose before
+encoding. `position.y[0]` is not used because the rolling model begins at ego.
+C0 carries the ordinary arc and centering request. C1 carries only the heading
+that the current measured curvature is not predicted to cover: it adds when the
+vehicle is behind, approaches zero on an aligned arc, and reverses when measured
+curvature is ahead of the model.
 
-## Explicit assumptions and limitations
+The horizon comes from the decoded ML3V-14D003-BD normalized contributions:
 
-The contribution/slew model comes from decoded **ML3V-14D003-BD**, not verified
-Lightning RL38-14D003-AA or logged Raptor BC firmware. Factoring out its common
-speed gain leaves:
+```text
+q0 = clip(0.5*C0_state, ±0.5)
+q2 = clip(0.30078125*v²*C2_state, ±0.5)
+```
 
-- `q0 = clip(0.5*C0_state, ±0.5)`
-- `q1 = clip(10*C1_state, ±0.349609375)`
-- `q2 = clip(0.30078125*vRaw²*C2_state, ±0.5)`
+For a constant-curvature path, `y(H) ≈ 0.5*curvature*(vH)²`. Equating its C0
+contribution with C2 gives the horizon above. This is a field conversion from
+one decoded firmware, not a fitted Lightning response gain.
 
-These are nominal internal contributions, **not steering angle, torque, yaw, or
-curvature**. They are fixed response assumptions, not a newly identified plant.
-The hold request is bounded to nominal fast-channel authority before adding
-bounded feedback. This sacrifices excess raw coefficient windup under the BD
-hypothesis; if that hypothesis is wrong, actual maneuver authority may be weaker.
+C0/C1 retain the full symmetric DBC-safe ranges (±5.11 m and ±0.5 rad). The
+smaller contribution plateaus decoded from Raptor BD are not treated as proven
+Lightning command limits; earlier physical testing found that doing so weakened
+turn authority. The downstream CAN packer still quantizes the fields, and the
+PSCM still owns any internal coefficient slew.
 
-Primary states use the decoded 4 ms slew steps; inactive states drain at their
-separate finite rates. Startup/gaps start with uncertainty intervals rather than
-assumed zero. Before nominal history initializes, the prior default encoder is
-used with output continuity. Missing/invalid model or motion input ramps the
-requested path toward zero through existing limits rather than inventing error
-correction. Packet prediction includes Float32 serialization, the existing
-downstream C2 rate limiter, and sign-reversed DBC rounding. It does not have
-PSCM execution acknowledgments or a verified delivery
-delay model. Unmodeled firmware shaping remains unmodeled.
+## Explicit limitations
 
-The 0.1 s prediction is inherited as a short nominal horizon; it is **not a
-verified learned lateral delay**. Wheel-derived curvature is not a complete
-vehicle-motion measurement. This is not a claim of universal Ford stability or
-servo-like tracking. Unchanged safety checks do not by themselves certify the
-new control law. Offline replay holds actual motion/model replanning fixed and
-cannot predict changed intervention rates or prove a physical steering cure.
+The coefficient relationship has not been confirmed in Lightning RL38 firmware
+or across Ford models. Model output updates at approximately 20 Hz even though
+the latest command is repeated at 100 Hz. Wheel-derived curvature is not a
+complete vehicle-motion measurement, and its multiplication by the model arc
+can reintroduce a heading correction when model and measured motion are not
+latency-aligned. Offline route analysis found no systematic high-speed early
+entry and retained the large fast request at selected failed turns, but one
+recorded hunting window became better and another became worse.
+
+Missing or invalid model input sends a valid zero-coefficient path while lateral
+control remains active; it never falls back to a C2-producing controller. On
+inactive lateral control the path is invalid and the existing car controller
+sends zero coefficients. This experiment cannot prove physical tracking from
+offline replay because the PSCM's inner controller and vehicle response remain
+black boxes.
 
 ## Diagnostics and validation
 
 `Ford path controller selected` records the class at startup. When selected,
-`Ford shared path experiment` records the nominal hypothesis, status, consumed
-model timestamp, holding request, feedback, total, pose errors, state intervals,
-predicted contribution error and shortfall at 5 Hz. Existing rlogs retain the
-actual outgoing path/CAN commands at their original rate. `active` means the
-experimental allocator is selected with initialized nominal history, not that
-the model has been validated against the PSCM.
+`Ford shared path experiment` records the hypothesis, status, consumed model
+timestamp, temporal horizon, model offset/heading, predicted heading, heading
+residual, model arc, and output fields at 5 Hz. Existing rlogs retain the actual
+outgoing path/CAN commands at their original rate.
 
-Unit tests cover hold-versus-correction behavior, both transfer directions,
-unknown history, inactive drain, intermediate ticks, quantization, saturation,
-S-shaped preferences, invalid input, timing gaps, unchanged downstream limits,
-and default-off selection. Replay includes interventions; it is a command audit,
-not a new simulated vehicle trajectory. Hardware validation must separately
-assess authority, oscillation, tracking, overrides, and availability in a
-controlled test environment before treating this as a driving improvement.
+Unit tests cover temporal interpolation, coordinate transforms, constant-curve
+equivalence, under/aligned/overtracking C1 behavior, direct sign reversal,
+C2/C3 exclusion, invalid input, DBC bounds, logging, and default-off selection.
+Hardware validation must separately assess turn authority, oscillation,
+tracking, overrides, and availability in a controlled test environment.

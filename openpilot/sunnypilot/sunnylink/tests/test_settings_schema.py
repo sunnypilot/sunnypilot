@@ -288,6 +288,8 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     # No other toggle can prevent disabling this experiment while offroad.
     assert shared["enablement"] == [{"type": "offroad_only"}]
     assert "Ford CAN FD" in shared["description"]
+    assert "C0" in shared["description"] and "C1" in shared["description"]
+    assert "C2/C3 zero" in shared["description"]
     assert "not road-validated" in shared["details"]
     assert "offroad" in shared["details"] and "onroad" in shared["details"]
 
