@@ -10,14 +10,25 @@ sections:
   title: Ford Settings
   description: ''
   items:
+  - key: FordSharedPathController
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Shared Path Controller (Experimental)
+    description: Experimental live steering for Ford CAN FD vehicles, combining path feedback with a state-aware C0/C1/C2 handoff.
+    details: Default off. Uses nominal firmware response assumptions that are unverified across Ford models; this controller is not road-validated. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
+    enablement:
+    - $ref: '#/macros/offroad'
   - key: FordPscmObserver
     widget: toggle
     needs_onroad_cycle: true
     title: PSCM Coefficient Observer (Experimental)
     description: Track the Ford steering controller's internal polynomial states and use fast path terms only for the response that slow curvature cannot provide.
-    details: This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately.
+    details: This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This is the older strategy and is bypassed while Shared Path Controller is enabled; its selection is retained when that experiment is turned off.
     enablement:
     - $ref: '#/macros/offroad'
+    - type: param
+      key: FordSharedPathController
+      equals: false
 - id: hyundai
   title: Hyundai / Kia / Genesis Settings
   description: ''

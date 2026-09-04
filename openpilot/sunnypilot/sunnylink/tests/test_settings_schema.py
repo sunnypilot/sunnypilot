@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import json
+import tempfile
 
 from openpilot.common.params import Params
 from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import (
@@ -278,11 +279,31 @@ class TestKnownPanels(OpenpilotTestCase):
 
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
+  def test_ford_shared_path_is_opt_in_and_cycle_only(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    shared = next(item for item in items if item["key"] == "FordSharedPathController")
+    assert shared["title"] == "Shared Path Controller (Experimental)"
+    assert shared["widget"] == "toggle"
+    assert shared["needs_onroad_cycle"] is True
+    # No other toggle can prevent disabling this experiment while offroad.
+    assert shared["enablement"] == [{"type": "offroad_only"}]
+    assert "Ford CAN FD" in shared["description"]
+    assert "not road-validated" in shared["details"]
+    assert "offroad" in shared["details"] and "onroad" in shared["details"]
+
+  def test_ford_shared_path_defaults_off(self):
+    with tempfile.TemporaryDirectory() as path:
+      params = Params(path)
+      assert params.get_default_value("FordSharedPathController") is False
+
   def test_ford_has_pscm_observer(self, schema):
     items = _brand_items(schema["vehicle_settings"].get("ford"))
     observer = next(item for item in items if item["key"] == "FordPscmObserver")
     assert observer["needs_onroad_cycle"] is True
-    assert observer["enablement"] == [{"type": "offroad_only"}]
+    assert observer["enablement"] == [
+      {"type": "offroad_only"},
+      {"type": "param", "key": "FordSharedPathController", "equals": False},
+    ]
 
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}

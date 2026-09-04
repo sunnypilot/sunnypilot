@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import math
+import time
 from numbers import Number
 
 from openpilot.cereal import log
@@ -15,6 +16,7 @@ from opendbc.car.ford.values import FordFlags
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController, FordPscmObserverPathController
+from openpilot.selfdrive.controls.lib.ford_shared_path import FordSharedPathController, select_shared_path_controller
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -57,6 +59,11 @@ class Controls(ControlsExt):
     self.ford_pscm_observer = (self.CP.brand == "ford" and self.CP.flags & FordFlags.CANFD and
                                self.params.get_bool("FordPscmObserver"))
     self.ford_path_controller = FordPscmObserverPathController() if self.ford_pscm_observer else FordPathController()
+    self.ford_path_controller = select_shared_path_controller(self.CP.brand, self.CP.flags,
+                                                             self.params.get_bool("FordSharedPathController"), self.ford_path_controller)
+    self.ford_shared_path = isinstance(self.ford_path_controller, FordSharedPathController)
+    if self.CP.brand == "ford":
+      cloudlog.info("Ford path controller selected", controller=type(self.ford_path_controller).__name__)
     self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()
@@ -163,7 +170,14 @@ class Controls(ControlsExt):
       actuators.steeringAngleDeg = float(lateral_output)
     if self.CP.brand == "ford":
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
-      if self.ford_pscm_observer:
+      if self.ford_shared_path:
+        self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
+                                                          current_curvature=self.curvature, v_ego=CS.vEgo,
+                                                          v_ego_raw=CS.vEgoRaw, active=CC.latActive, now=time.monotonic())
+        if self.sm.frame % 20 == 0:
+          cloudlog.info("Ford shared path experiment", model_mono_time=self.sm.logMonoTime['modelV2'],
+                        **self.ford_path_controller.diagnostics)
+      elif self.ford_pscm_observer:
         self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
                                                           current_curvature=self.curvature, v_ego=CS.vEgo,
                                                           v_ego_raw=CS.vEgoRaw, active=CC.latActive)
