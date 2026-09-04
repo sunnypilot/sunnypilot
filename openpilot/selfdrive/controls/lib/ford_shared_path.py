@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from itertools import product
 import math
 import struct
+from typing import Any
 
 from opendbc.can import CANPacker
 from opendbc.car.ford.values import CarControllerParams, FordFlags
@@ -56,6 +57,7 @@ class PathRequest:
   preferred: FordPath
   offset_error: float
   heading_error: float
+  geometric_request: tuple[float, float]
 
 
 def request_for_model(model, desired_curvature: float, *, current_curvature: float, v_ego: float,
@@ -90,10 +92,13 @@ def request_for_model(model, desired_curvature: float, *, current_curvature: flo
 
   allocation_demand = max(demand, abs(current_curvature))
   share = _clip((allocation_demand - _GENTLE_CURVATURE) / (_FULL_POSE_CURVATURE - _GENTLE_CURVATURE), 0.0, 1.0)
-  preferred = FordPath(True, _clip(offset_ff + correction_share * error_y, *_RANGES[0]),
-                       _clip(angle_ff + correction_share * error_heading, *_RANGES[1]),
+  # Retain metres/radians before wire or nominal-contribution clipping. These
+  # are requested geometry, not measured path error or additional authority.
+  geometric_request = (offset_ff + correction_share * error_y, angle_ff + correction_share * error_heading)
+  preferred = FordPath(True, _clip(geometric_request[0], *_RANGES[0]),
+                       _clip(geometric_request[1], *_RANGES[1]),
                        _clip(desired_curvature * (1.0 - share), *_RANGES[2]), 0.0)
-  return PathRequest(total, feedforward, feedback, preferred, error_y, error_heading)
+  return PathRequest(total, feedforward, feedback, preferred, error_y, error_heading, geometric_request)
 
 
 class ContributionAllocator:
@@ -263,7 +268,7 @@ class FordSharedPathController:
     self.allocator = ContributionAllocator(dt)
     self.fallback = FordPathController(dt)
     self.last_time = None
-    self.diagnostics = {"status": "initializing", "hypothesis": "ML3V-BD-normalized-v1"}
+    self.diagnostics: dict[str, Any] = {"status": "initializing", "hypothesis": "ML3V-BD-normalized-v1"}
 
   def update(self, model, desired_curvature: float, *, current_curvature=0.0, v_ego=0.0,
              v_ego_raw=0.0, active=True, now=None):
@@ -297,10 +302,14 @@ class FordSharedPathController:
       "feedback": request.feedback if request else 0.0,
       "offset_error": request.offset_error if request else 0.0,
       "heading_error": request.heading_error if request else 0.0,
+      "geometric_request": request.geometric_request if request else None,
+      # Locally predicted packet fields, not a PSCM execution acknowledgment.
+      "packed_command": _values(self.allocator.command),
       "state": self.allocator.state,
       "state_width": tuple(hi - lo for lo, hi in zip(self.allocator.lower, self.allocator.upper, strict=True)),
       "predicted_total": self.allocator.predicted_total if status == "active" else 0.0,
       "predicted_peak_error": self.allocator.predicted_peak_error if status == "active" else 0.0,
+      # Nominal allocation error only: zero is NOT successful path tracking.
       "shortfall": self.allocator.shortfall if status == "active" else 0.0,
     }
     return result

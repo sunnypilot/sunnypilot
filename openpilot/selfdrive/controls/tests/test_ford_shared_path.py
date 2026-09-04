@@ -201,6 +201,27 @@ class TestSharedController(unittest.TestCase):
     self.assertGreater(command.path_offset, 0.0)
     self.assertGreater(command.path_angle, 0.0)
 
+  def test_nominal_allocation_success_preserves_unsatisfied_geometric_request(self):
+    controller = FordSharedPathController()
+    model = circle(-0.12)
+    for _ in range(4):
+      controller.update(model, 0.0, active=False)
+    for _ in range(150):
+      command = controller.update(model, 0.0, current_curvature=-0.019, v_ego=2.1, v_ego_raw=2.1)
+
+    diagnostic = controller.diagnostics
+    self.assertEqual(diagnostic['status'], 'active')
+    self.assertAlmostEqual(diagnostic['shortfall'], 0.0)
+    # Allocation success is only agreement with the nominal coefficient map.
+    # Keep the geometric request even beyond the DBC heading range, rather
+    # than presenting the held coefficient command as the model's full path.
+    offset, heading = diagnostic['geometric_request']
+    self.assertLess(offset, command.path_offset - 1.0)
+    self.assertLess(heading, -0.5)
+    self.assertAlmostEqual(diagnostic['packed_command'][0], -1.0)
+    self.assertAlmostEqual(diagnostic['packed_command'][1], -0.035)
+    self.assertEqual(diagnostic['packed_command'][2], 0.0)
+
   def test_default_off_and_unsupported_cars_retain_the_exact_previous_object(self):
     for previous in (FordPathController(), FordPscmObserverPathController()):
       for brand, flags, enabled in (("ford", FordFlags.CANFD, False), ("ford", 0, True), ("tesla", FordFlags.CANFD, True)):
