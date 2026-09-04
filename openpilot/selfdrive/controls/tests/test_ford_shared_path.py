@@ -1,3 +1,4 @@
+import cProfile
 import math
 import random
 import tempfile
@@ -58,6 +59,18 @@ class TestSharedRequest(unittest.TestCase):
 
 
 class TestContributionAllocator(unittest.TestCase):
+  def test_candidate_search_has_bounded_curvature_limiter_work(self):
+    allocator = ContributionAllocator(initial_state=(0.2, 0.01, 0.003))
+    allocator.set_command(FordPath(True, 0.2, 0.01, 0.003))
+    profile = cProfile.Profile()
+    profile.runcall(allocator.allocate, 0.3, FordPath(True, 0.4, 0.02, 0.002), 12.0)
+    limit_code = CarControllerParams.CURVATURE_LIMITS.apply_limits.__func__.__code__
+    calls = sum(entry.callcount for entry in profile.getstats() if entry.code is limit_code)
+    # Two bounds, at most eight distinct candidate C2 values, and final packet.
+    # This operation budget catches repeated work without flaky wall-clock limits.
+    self.assertGreater(calls, 0)
+    self.assertLessEqual(calls, 11)
+
   def test_fixed_request_is_preserved_while_c2_unloads(self):
     speed = 10.0
     initial = (0.0, 0.0, 0.004)

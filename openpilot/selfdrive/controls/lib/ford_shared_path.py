@@ -142,17 +142,20 @@ class ContributionAllocator:
     self.lower = _advance(self.lower, _values(self.command), ticks, rates)
     self.upper = _advance(self.upper, _values(self.command), ticks, rates)
 
-  def _packet(self, values, speed=None):
+  def _packet_field(self, index, value, speed):
     # carControlSP uses Float32; CANPacker rounds in the sign-reversed DBC
     # coordinate system with floor(x + .5), NOT Python's ties-to-even round.
-    offset, angle, curvature = struct.unpack('fff', struct.pack('fff', *values))
-    if speed is not None:
-      curvature = CarControllerParams.CURVATURE_LIMITS.apply_limits(
-        curvature, self.sent_curvature, speed, 0.0, True, CarControllerParams.LMC2_STEP,
+    value = struct.unpack('f', struct.pack('f', value))[0]
+    if index == 2 and speed is not None:
+      value = CarControllerParams.CURVATURE_LIMITS.apply_limits(
+        value, self.sent_curvature, speed, 0.0, True, CarControllerParams.LMC2_STEP,
       )
-    packed = tuple(-(math.floor((-value - signal.offset) / signal.factor + 0.5) * signal.factor + signal.offset)
-                   for value, signal in zip((offset, angle, curvature), self._wire_signals, strict=True))
-    return packed, curvature
+    signal = self._wire_signals[index]
+    return -(math.floor((-value - signal.offset) / signal.factor + 0.5) * signal.factor + signal.offset), value
+
+  def _packet(self, values, speed=None):
+    fields = tuple(self._packet_field(i, value, speed) for i, value in enumerate(values))
+    return tuple(field[0] for field in fields), fields[2][1]
 
   def set_command(self, command, speed=None):
     if command.curvature_rate != 0.0:
@@ -215,14 +218,29 @@ class ContributionAllocator:
     qpref = contributions(_values(preferred), speed)
     weights = (0.5, 10.0, 0.30078125 * speed ** 2)
     tolerance = self.tolerance(speed)
+    state = self.state
+    effects = []
+    # Candidate packets share most coefficient values. Packing, limiting and
+    # projecting each field once avoids repeating them for every combination.
+    # Keep the original candidates, score order and all intermediate ticks.
+    for i, (weight, limit, rate) in enumerate(zip(weights, _CONTRIBUTION_LIMITS, _STATE_RATES, strict=True)):
+      cache = {}
+      for value in {candidate[i] for candidate in candidates}:
+        packed, _ = self._packet_field(i, value, speed)
+        totals = tuple(_clip(weight * _clip(packed, bound[i] - rate * tick * _FIRMWARE_DT,
+                                            bound[i] + rate * tick * _FIRMWARE_DT), -limit, limit)
+                       for bound in (self.lower, self.upper) for tick in range(1, ticks + 1))
+        endpoint = _clip(weight * _clip(packed, state[i] - rate * ticks * _FIRMWARE_DT,
+                                       state[i] + rate * ticks * _FIRMWARE_DT), -limit, limit)
+        cache[value] = totals, endpoint, max(0.0, abs(weight * packed) - limit)
+      effects.append(cache)
     best = None
     for candidate in sorted(candidates):
-      packed, _ = self._packet(candidate, speed)
-      totals = [sum(contributions(_advance(state, packed, tick), speed))
-                for state in (self.lower, self.upper) for tick in range(1, ticks + 1)]
-      endpoint = contributions(_advance(self.state, packed, ticks), speed)
+      fields = tuple(cache[value] for cache, value in zip(effects, candidate, strict=True))
+      totals = [sum(parts) for parts in zip(*(field[0] for field in fields), strict=True)]
+      endpoint = tuple(field[1] for field in fields)
       worst_error = max(abs(total - requested) for total in totals)
-      latent = sum(max(0.0, abs(weight * value) - limit) for weight, value, limit in zip(weights, packed, _CONTRIBUTION_LIMITS, strict=True))
+      latent = sum(field[2] for field in fields)
       score = (round(max(0.0, worst_error - tolerance), 12), abs(endpoint[2] - qpref[2]),
                (endpoint[0] - qpref[0]) ** 2 + (endpoint[1] - qpref[1]) ** 2, latent,
                sum((new - old) ** 2 for new, old in zip(candidate, _values(self.last_path), strict=True)))
