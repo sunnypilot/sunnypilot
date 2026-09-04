@@ -279,24 +279,25 @@ class TestKnownPanels(OpenpilotTestCase):
 
 
 class TestKnownVehicleSettings(OpenpilotTestCase):
-  def test_ford_shared_path_is_opt_in_and_cycle_only(self, schema):
+  def test_ford_virtual_angle_replaces_shared_path_and_is_cycle_only(self, schema):
     items = _brand_items(schema["vehicle_settings"].get("ford"))
-    shared = next(item for item in items if item["key"] == "FordSharedPathController")
-    assert shared["title"] == "Shared Path Controller (Experimental)"
-    assert shared["widget"] == "toggle"
-    assert shared["needs_onroad_cycle"] is True
+    assert "FordSharedPathController" not in {item["key"] for item in items}
+    servo = next(item for item in items if item["key"] == "FordVirtualAngleController")
+    assert servo["title"] == "Virtual Angle Controller (Experimental)"
+    assert servo["widget"] == "toggle"
+    assert servo["needs_onroad_cycle"] is True
     # No other toggle can prevent disabling this experiment while offroad.
-    assert shared["enablement"] == [{"type": "offroad_only"}]
-    assert "Ford CAN FD" in shared["description"]
-    assert "C0" in shared["description"] and "C1" in shared["description"]
-    assert "C2/C3 zero" in shared["description"]
-    assert "not road-validated" in shared["details"]
-    assert "offroad" in shared["details"] and "onroad" in shared["details"]
+    assert servo["enablement"] == [{"type": "offroad_only"}]
+    assert "F-150 Lightning" in servo["description"]
+    assert "RL38-14D003-AA" in servo["details"]
+    assert "not road-validated" in servo["details"]
+    assert "offroad" in servo["details"] and "onroad" in servo["details"]
 
-  def test_ford_shared_path_defaults_off(self):
+  def test_ford_virtual_angle_defaults_off(self):
     with tempfile.TemporaryDirectory() as path:
       params = Params(path)
-      assert params.get_default_value("FordSharedPathController") is False
+      assert params.get_default_value("FordVirtualAngleController") is False
+      assert b"FordSharedPathController" not in params.all_keys()
 
   def test_ford_has_pscm_observer(self, schema):
     items = _brand_items(schema["vehicle_settings"].get("ford"))
@@ -304,7 +305,7 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     assert observer["needs_onroad_cycle"] is True
     assert observer["enablement"] == [
       {"type": "offroad_only"},
-      {"type": "param", "key": "FordSharedPathController", "equals": False},
+      {"type": "param", "key": "FordVirtualAngleController", "equals": False},
     ]
 
   def test_hyundai_has_longitudinal_tuning(self, schema):

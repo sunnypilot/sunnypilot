@@ -10,12 +10,12 @@ sections:
   title: Ford Settings
   description: ''
   items:
-  - key: FordSharedPathController
+  - key: FordVirtualAngleController
     widget: toggle
     needs_onroad_cycle: true
-    title: Shared Path Controller (Experimental)
-    description: Experimental live steering for Ford CAN FD vehicles, using a temporal model-path C0 offset and C1 heading residual while keeping C2/C3 zero.
-    details: Default off. The 1.097-second model horizon is derived from decoded Raptor firmware coefficients and is unverified across Ford models; this controller is not road-validated. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
+    title: Virtual Angle Controller (Experimental)
+    description: Track the planned steering target with measured steering feedback on the F-150 Lightning.
+    details: Default off and not road-validated. Available only on the F-150 Lightning with RL38-14D003-AA steering firmware; other vehicles retain their existing controller. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
     enablement:
     - $ref: '#/macros/offroad'
   - key: FordPscmObserver
@@ -23,11 +23,11 @@ sections:
     needs_onroad_cycle: true
     title: PSCM Coefficient Observer (Experimental)
     description: Track the Ford steering controller's internal polynomial states and use fast path terms only for the response that slow curvature cannot provide.
-    details: This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This is the older strategy and is bypassed while Shared Path Controller is enabled; its selection is retained when that experiment is turned off.
+    details: This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This strategy is bypassed when Virtual Angle Controller is selected on a supported vehicle; its selection is retained when that experiment is turned off.
     enablement:
     - $ref: '#/macros/offroad'
     - type: param
-      key: FordSharedPathController
+      key: FordVirtualAngleController
       equals: false
 - id: hyundai
   title: Hyundai / Kia / Genesis Settings
