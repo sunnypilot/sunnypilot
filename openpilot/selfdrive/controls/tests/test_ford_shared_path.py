@@ -59,6 +59,24 @@ class TestSharedRequest(unittest.TestCase):
 
 
 class TestContributionAllocator(unittest.TestCase):
+  def test_short_turn_release_preserves_command_history_not_just_coefficient_state(self):
+    for sign in (-1, 1):
+      allocator = ContributionAllocator(initial_state=(0.0, 0.0, 0.0))
+      preferred = FordPath(True, sign * 3.5, sign * 0.5, 0.0)
+      requested = sum(contributions((preferred.path_offset, preferred.path_angle, 0.0), 8.0))
+      for _ in range(30):
+        allocator.allocate(requested, preferred, 8.0)
+        allocator.advance(allocator.dt)
+      initial_total = sign * sum(contributions(allocator.state, 8.0))
+      # Continue the same allocator. Recreating it with command=state hides
+      # queued commands that can keep building after the request disappears.
+      for _ in range(30):
+        command = allocator.allocate(0.0, FordPath(True), 8.0)
+        self.assertEqual(command.curvature, 0.0)
+        allocator.advance(allocator.dt)
+        self.assertLessEqual(sign * sum(contributions(allocator.state, 8.0)), initial_total + allocator.tolerance(8.0))
+      self.assertLessEqual(abs(sum(contributions(allocator.state, 8.0))), allocator.tolerance(8.0))
+
   def test_nominal_plateau_does_not_erase_requested_fast_geometry(self):
     allocator = ContributionAllocator(initial_state=(0.0, 0.0, 0.0))
     preferred = FordPath(True, 2.0, 0.12, 0.0, 0.0)
