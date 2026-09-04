@@ -59,6 +59,75 @@ class TestSharedRequest(unittest.TestCase):
 
 
 class TestContributionAllocator(unittest.TestCase):
+  def test_nominal_plateau_does_not_erase_requested_fast_geometry(self):
+    allocator = ContributionAllocator(initial_state=(0.0, 0.0, 0.0))
+    preferred = FordPath(True, 2.0, 0.12, 0.0, 0.0)
+    requested = sum(contributions((preferred.path_offset, preferred.path_angle, 0.0), 5.0))
+    for _ in range(150):
+      command = allocator.allocate(requested, preferred, 5.0)
+      self.assertEqual(command.curvature, 0.0)
+      allocator.advance(0.01)
+    self.assertAlmostEqual(command.path_offset, preferred.path_offset)
+    self.assertAlmostEqual(command.path_angle, preferred.path_angle)
+    self.assertAlmostEqual(allocator.shortfall, 0.0)
+
+  def test_overturn_correction_releases_large_geometry_still_in_model(self):
+    for sign in (-1, 1):
+      model = circle(sign * 0.06)
+      hold = request_for_model(model, sign * 0.06, current_curvature=sign * 0.06, v_ego=2.0)
+      correction = request_for_model(model, sign * 0.06, current_curvature=sign * 0.10, v_ego=2.0)
+      initial = (hold.preferred.path_offset, hold.preferred.path_angle, 0.0)
+      allocator = ContributionAllocator(initial_state=initial)
+      allocator.set_command(hold.preferred, 2.0)
+      self.assertLess(sign * correction.total, sign * hold.total)
+      self.assertGreater(abs(correction.preferred.path_angle), 0.3)
+      for _ in range(100):
+        command = allocator.allocate(correction.total, correction.preferred, 2.0)
+        self.assertEqual(command.curvature, 0.0)
+        allocator.advance(0.01)
+      self.assertLessEqual(abs(allocator.shortfall), allocator.tolerance(2.0))
+
+  def test_extra_outward_demand_does_not_erase_preferred_fast_geometry(self):
+    for sign in (-1, 1):
+      allocator = ContributionAllocator(initial_state=(0.0, 0.0, 0.0))
+      preferred = FordPath(True, sign * 0.24, sign * 0.0515, 0.0)
+      requested = sign * 0.6644
+      self.assertGreater(abs(requested), abs(sum(contributions((preferred.path_offset, preferred.path_angle, 0.0), 10.0))))
+      for _ in range(150):
+        command = allocator.allocate(requested, preferred, 10.0)
+        self.assertEqual(command.curvature, 0.0)
+        allocator.advance(0.01)
+      self.assertAlmostEqual(command.path_angle, preferred.path_angle)
+      self.assertLessEqual(abs(allocator.shortfall), allocator.tolerance(10.0))
+
+  def test_straight_release_does_not_reintroduce_geometry_during_latent_unwind(self):
+    for sign in (-1, 1):
+      initial = (sign * 3.5, sign * 0.5, 0.0)
+      allocator = ContributionAllocator(initial_state=initial)
+      allocator.set_command(FordPath(True, *initial), 8.0)
+      # A deliberately charged nominal state takes seconds to drain. Once
+      # its total settles, preferring zero geometry must not create a second
+      # opposite contribution as the remaining C1 state leaves saturation.
+      for i in range(600):
+        command = allocator.allocate(0.0, FordPath(True), 8.0)
+        self.assertEqual(command.curvature, 0.0)
+        allocator.advance(0.01)
+        if i >= 310:
+          self.assertLessEqual(abs(sum(contributions(allocator.state, 8.0))), allocator.tolerance(8.0) + 1e-8)
+
+  def test_larger_heading_does_not_displace_corrected_offset_during_model_unwind(self):
+    for sign in (-1, 1):
+      initial = (sign * 3.5, sign * 0.5, 0.0)
+      allocator = ContributionAllocator(initial_state=initial)
+      allocator.set_command(FordPath(True, *initial), 20.0)
+      request = request_for_model(circle(0.0), sign * 0.002, current_curvature=sign * 0.04, v_ego=20.0)
+      for i in range(650):
+        command = allocator.allocate(request.total, request.preferred, 20.0)
+        self.assertEqual(command.curvature, 0.0)
+        allocator.advance(0.01)
+        if i >= 500:
+          self.assertLessEqual(abs(sum(contributions(allocator.state, 20.0)) - request.total), allocator.tolerance(20.0) + 1e-8)
+
   def test_candidate_search_has_bounded_curvature_limiter_work(self):
     allocator = ContributionAllocator(initial_state=(0.2, 0.01, 0.003))
     allocator.set_command(FordPath(True, 0.2, 0.01, 0.003))
@@ -201,7 +270,7 @@ class TestSharedController(unittest.TestCase):
     self.assertGreater(command.path_offset, 0.0)
     self.assertGreater(command.path_angle, 0.0)
 
-  def test_nominal_allocation_success_preserves_unsatisfied_geometric_request(self):
+  def test_large_model_geometry_reaches_wire_limits_without_losing_raw_request(self):
     controller = FordSharedPathController()
     model = circle(-0.12)
     for _ in range(4):
@@ -216,10 +285,10 @@ class TestSharedController(unittest.TestCase):
     # Keep the geometric request even beyond the DBC heading range, rather
     # than presenting the held coefficient command as the model's full path.
     offset, heading = diagnostic['geometric_request']
-    self.assertLess(offset, command.path_offset - 1.0)
+    self.assertAlmostEqual(offset, command.path_offset)
     self.assertLess(heading, -0.5)
-    self.assertAlmostEqual(diagnostic['packed_command'][0], -1.0)
-    self.assertAlmostEqual(diagnostic['packed_command'][1], -0.035)
+    self.assertAlmostEqual(diagnostic['packed_command'][0], offset, delta=0.005)
+    self.assertAlmostEqual(diagnostic['packed_command'][1], -0.5)
     self.assertEqual(diagnostic['packed_command'][2], 0.0)
 
   def test_default_off_and_unsupported_cars_retain_the_exact_previous_object(self):

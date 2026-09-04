@@ -200,8 +200,8 @@ class ContributionAllocator:
     fast = total - slow
     q0 = _clip(0.5 * (fast + qpref[0] - qpref[1]), max(qlow[0], fast - qhigh[1]), min(qhigh[0], fast - qlow[1]))
     weights = (0.5, 10.0, 0.30078125 * speed ** 2)
-    # Minimum latent coefficient for this contribution; no benefit is assumed
-    # from continuing to wind a state beyond its nominal contribution plateau.
+    # A minimum-state candidate under the nominal map, not a wire-authority
+    # limit. The full geometric preference is also considered by allocate().
     return tuple(_clip(q / weight if weight else pref, lo, hi)
                  for q, weight, pref, lo, hi in zip((q0, fast - q0, slow), weights, _values(preferred), low, high, strict=True))
 
@@ -212,22 +212,39 @@ class ContributionAllocator:
       raise ValueError("invalid allocation request")
     low, high = self._bounds(preferred, speed)
     ticks = max(1, int((self.phase + self.dt + 1e-12) / _FIRMWARE_DT))
+    preferred_values = _values(preferred)
+    qpref = contributions(preferred_values, speed)
+    weights = (0.5, 10.0, 0.30078125 * speed ** 2)
+    tolerance = self.tolerance(speed)
+    state = self.state
+    # Back-off relative to either the preferred path or retained state must
+    # drain latent coefficients, even if every next-tick candidate still sits
+    # on a nominal plateau. Extra outward demand must not erase raw geometry.
+    backing_off = any(total * (requested - total) < -tolerance * abs(total)
+                      for total in (sum(qpref), sum(contributions(state, speed))))
+    # Extend only a field already on its same-direction nominal plateau, not
+    # one still reversing or helping the other coefficient settle a correction.
+    preserve_geometry = tuple(not backing_off and abs(weight * value) > limit
+                              and current * value > 0.0 and abs(weight * current) >= limit
+                              for weight, value, current, limit in
+                              zip(weights[:2], preferred_values[:2], state[:2], _CONTRIBUTION_LIMITS[:2], strict=True))
     candidates = {tuple(_clip(v, lo, hi) for v, lo, hi in zip(_values(path), low, high, strict=True))
                   for path in (preferred, self.last_path)}
     for horizon in {1, ticks}:
       candidate = self._continuous_candidate(requested, preferred, speed, low, high, horizon)
-      neighbors = [tuple({_clip(round(value / resolution) * resolution + shift * resolution, lo, hi) for shift in (-1, 0, 1)})
+      neighbors = [{_clip(round(value / resolution) * resolution + shift * resolution, lo, hi) for shift in (-1, 0, 1)}
                    for value, resolution, lo, hi in zip(candidate, _RESOLUTIONS, low, high, strict=True)]
+      # Allow a larger geometric field alongside a corrected other field,
+      # without pulling that correction back toward the raw preference.
+      for i, preserve in enumerate(preserve_geometry):
+        if preserve:
+          neighbors[i].add(_clip(preferred_values[i], low[i], high[i]))
       candidates.update(product(*neighbors))
 
-    qpref = contributions(_values(preferred), speed)
-    weights = (0.5, 10.0, 0.30078125 * speed ** 2)
-    tolerance = self.tolerance(speed)
-    state = self.state
     effects = []
     # Candidate packets share most coefficient values. Packing, limiting and
     # projecting each field once avoids repeating them for every combination.
-    # Keep the original candidates, score order and all intermediate ticks.
+    # Keep every candidate and all intermediate ticks in the evaluation.
     for i, (weight, limit, rate) in enumerate(zip(weights, _CONTRIBUTION_LIMITS, _STATE_RATES, strict=True)):
       cache = {}
       for value in {candidate[i] for candidate in candidates}:
@@ -237,7 +254,8 @@ class ContributionAllocator:
                        for bound in (self.lower, self.upper) for tick in range(1, ticks + 1))
         endpoint = _clip(weight * _clip(packed, state[i] - rate * ticks * _FIRMWARE_DT,
                                        state[i] + rate * ticks * _FIRMWARE_DT), -limit, limit)
-        cache[value] = totals, endpoint, max(0.0, abs(weight * packed) - limit)
+        cache[value] = (totals, endpoint, max(0.0, abs(weight * packed) - limit),
+                        abs(packed - preferred_values[i]) / _RESOLUTIONS[i])
       effects.append(cache)
     best = None
     for candidate in sorted(candidates):
@@ -246,8 +264,11 @@ class ContributionAllocator:
       endpoint = tuple(field[1] for field in fields)
       worst_error = max(abs(total - requested) for total in totals)
       latent = sum(field[2] for field in fields)
+      # Among nominally equivalent allocations, retain the requested fast
+      # geometry instead of treating the unverified BD plateaus as wire caps.
+      geometry_error = round(sum(field[3] for field, preserve in zip(fields[:2], preserve_geometry, strict=True) if preserve), 9)
       score = (round(max(0.0, worst_error - tolerance), 12), abs(endpoint[2] - qpref[2]),
-               (endpoint[0] - qpref[0]) ** 2 + (endpoint[1] - qpref[1]) ** 2, latent,
+               (endpoint[0] - qpref[0]) ** 2 + (endpoint[1] - qpref[1]) ** 2, geometry_error, latent,
                sum((new - old) ** 2 for new, old in zip(candidate, _values(self.last_path), strict=True)))
       if best is None or score < best[0]:
         best = score, candidate, sum(endpoint), worst_error
