@@ -1676,6 +1676,12 @@
               "title": "Onroad Uploads"
             },
             {
+              "key": "AuxPowerSave",
+              "widget": "toggle",
+              "title": "Disable Aux Port When Offroad",
+              "description": "Power off the aux USB-C port while offroad to save power. It powers back on automatically when you go onroad."
+            },
+            {
               "key": "MaxTimeOffroad",
               "widget": "option",
               "title": "Max Time Offroad",
