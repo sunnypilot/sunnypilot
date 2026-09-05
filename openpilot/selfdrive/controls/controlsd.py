@@ -16,7 +16,7 @@ from opendbc.car.ford.values import FordFlags
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController, FordPscmObserverPathController
-from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, select_virtual_angle_controller
+from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, PscmStatus, select_virtual_angle_controller
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -48,7 +48,7 @@ class Controls(ControlsExt):
     self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
     self.sm = messaging.SubMaster(['lateralDelay', 'vehicleParameters', 'lateralTorqueParameters', 'modelV2', 'selfdriveState',
-                                   'extrinsicsCalibration', 'deviceMotion', 'longitudinalPlan', 'lateralManeuverPlan', 'carState', 'carOutput',
+                                   'extrinsicsCalibration', 'deviceMotion', 'longitudinalPlan', 'lateralManeuverPlan', 'carState', 'carStateSP', 'carOutput',
                                    'driverMonitoringState', 'onroadEvents', 'driverAssistance'] + self.sm_services_ext,
                                   poll='selfdriveState')
     self.pm = messaging.PubMaster(['carControl', 'controlsState'] + self.pm_services_ext)
@@ -172,13 +172,17 @@ class Controls(ControlsExt):
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
       if self.ford_virtual_angle:
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
+        pscm = self.sm['carStateSP'].fordPscmStatus
+        pscm_status = PscmStatus(timestamp=pscm.canMonoTime * 1e-9, lateral_state=pscm.lateralState,
+                                 limit=pscm.limit, capability=pscm.capability, denied=pscm.denied,
+                                 valid=pscm.valid and self.sm.all_checks(['carStateSP']))
         self.ford_path = self.ford_path_controller.update(
           ford_model, self.desired_curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
-          steering_pressed=CS.steeringPressed,
+          steering_pressed=CS.steeringPressed, steering_torque=CS.steeringTorque, pscm_status=pscm_status,
         )
         if not self.ford_path.valid:
           CC.latActive = False

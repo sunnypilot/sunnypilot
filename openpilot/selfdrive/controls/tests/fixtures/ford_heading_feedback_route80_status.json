@@ -1,0 +1,13 @@
+{
+  "description": "PSCM status and raw driver-torque overlay for the existing three route80 request windows. No GPS. No counterfactual vehicle response.",
+  "fixture_sha256": "a9defdc5abdf26724358d606beb16becbdf30faa972974d49b179a9e004d7629",
+  "base_fixture": "ford_curvature_heading_route80.npz",
+  "base_fixture_sha256": "c1460e2cf1d3fd52b1a036d923fec7835a7d361126ee0c2decbc3f101ee6653c",
+  "source_route": "84865544361f55cb_00000080--1643deea7e",
+  "source_commit": "98662df401217a00ec9fc8e73b16857b6c220150",
+  "samples": 1838,
+  "source_cache_sha256": "1cd3e0c00805869ace1c5954dc682644f36f5eddb71785b69e4cb9da40f7f04f",
+  "pairing": "Latest actual bus-0 EPS 972 frame at or before each controlsState cycle; raw steering torque from the exact causal carState used by the base fixture.",
+  "timestamp_policy": "Actual CAN event logMonoTime in route-relative seconds, not the benchmark response-shifted status. The old route predates the new carStateSP status telemetry; source CAN timestamps are an explicit replay approximation.",
+  "validity": "Replay validity uses the paired carState valid and canValid values; enum validity, availability and age are checked by the production feedback controller."
+}

@@ -456,6 +456,16 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
 
 struct CarStateSP @0xb86e6369214c01c8 {
   speedLimit @0 :Float32;
+  fordPscmStatus @1 :FordPscmStatus;
+
+  struct FordPscmStatus {
+    valid @0 :Bool;
+    canMonoTime @1 :UInt64;  # Last accepted Lane_Assist_Data3_FD1 CAN receipt, not carStateSP publication time.
+    lateralState @2 :UInt8;  # LatCtlSte_D_Stat
+    limit @3 :UInt8;  # LatCtlLim_D_Stat: generic lateral limit, not a torque/rate diagnosis.
+    capability @4 :UInt8;  # LatCtlCpblty_D_Stat
+    denied @5 :Bool;  # LaActDeny_B_Actl
+  }
 }
 
 struct LiveMapDataSP @0xf416ec09499d9d19 {

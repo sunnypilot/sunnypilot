@@ -7,9 +7,10 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
+from openpilot.cereal import custom
 from openpilot.common.logging_extra import SwagFormatter, SwagLogger
 from openpilot.selfdrive.controls.lib.ford_path import FordPathController, FordPscmObserverPathController
-from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController
+from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, PscmStatus
 from openpilot.selfdrive.controls.tests.test_ford_path_reference import circle
 
 
@@ -61,7 +62,7 @@ class TestFordControlsLogging(unittest.TestCase):
       self.assertEqual(record['reference_service'], 'modelV2')
       self.assertEqual(record['reference_mono_time'], 123456789)
       self.assertEqual(record['status'], controller.diagnostics['status'])
-      self.assertEqual(record['hypothesis'], 'curvature-c0-c1-v4')
+      self.assertEqual(record['hypothesis'], 'curvature-c0-c1-feedback-v5')
       self.assertEqual(record['command'], list(controller.diagnostics['command']))
       if active and valid:
         self.assertEqual(record['response_delay'], 0.2)
@@ -81,9 +82,19 @@ class TestFordControlsLogging(unittest.TestCase):
 
     class Subscriptions:
       frame = 1  # periodic logging is covered separately
-      valid = {'lateralManeuverPlan': False, 'modelV2': True}
-      logMonoTime = {'carState': 995_000_000, 'modelV2': 980_000_000, 'lateralManeuverPlan': 990_000_000}
+      valid = {'lateralManeuverPlan': False, 'modelV2': True, 'carStateSP': True}
+      logMonoTime = {'carState': 995_000_000, 'modelV2': 980_000_000, 'lateralManeuverPlan': 990_000_000, 'carStateSP': 998_000_000}
       failed_checks = set()
+
+      def __init__(self):
+        self.state_sp = custom.CarStateSP.new_message()
+        self.state_sp.fordPscmStatus = {'valid': True, 'canMonoTime': 970_000_000, 'lateralState': 2,
+                                      'limit': 1, 'capability': 2, 'denied': False}
+
+      def __getitem__(self, service):
+        if service == 'carStateSP':
+          return self.state_sp
+        raise KeyError(service)
 
       def all_checks(self, services):
         return all(self.valid.get(service, True) and service not in self.failed_checks for service in services)
@@ -95,11 +106,11 @@ class TestFordControlsLogging(unittest.TestCase):
       controller.update = Mock(wraps=controller.update)
       controls = SimpleNamespace(CP=SimpleNamespace(brand='ford'), sm=sm, ford_virtual_angle=True, ford_path_controller=controller,
                                  desired_curvature=0.007, curvature=0.002, steer_limited_by_safety=True)
-      cs = SimpleNamespace(vEgo=8.0, yawRate=-.015, canValid=True, steeringPressed=False)
+      cs = SimpleNamespace(vEgo=8.0, yawRate=-.015, canValid=True, steeringPressed=False, steeringTorque=.75)
       cc = SimpleNamespace(latActive=True)
       actuator = SimpleNamespace(curvature=0.007)
       environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': actuator, 'model_v2': circle(.007),
-                     'time': SimpleNamespace(monotonic=lambda: 1.0)}
+                     'time': SimpleNamespace(monotonic=lambda: 1.0), 'PscmStatus': PscmStatus}
       exec(code, environment)
       self.assertTrue(controls.ford_path.valid)
       self.assertTrue(cc.latActive)
@@ -107,6 +118,10 @@ class TestFordControlsLogging(unittest.TestCase):
       self.assertEqual(controller.update.call_args.args[1], controls.desired_curvature)
       args = controller.update.call_args.kwargs
       self.assertEqual(args['yaw_rate'], .015)
+      self.assertEqual(args['steering_torque'], .75)
+      status = args['pscm_status']
+      self.assertAlmostEqual(status.timestamp, .97)
+      self.assertEqual((status.lateral_state, status.limit, status.capability, status.denied, status.valid), (2, 1, 2, False, True))
       self.assertAlmostEqual(args['measurement_time'], 0.995)
       self.assertAlmostEqual(args['model_time'], 0.98)
       reference_service = 'lateralManeuverPlan' if maneuver else 'modelV2'
@@ -146,6 +161,24 @@ class TestFordControlsLogging(unittest.TestCase):
         exec(code, environment)
         self.assertTrue(controls.ford_path.valid)
         self.assertTrue(cc.latActive)
+
+      # A missing, stale or invalid optional PSCM status must not disable the
+      # existing feedforward request. Feedback receives its own validity/age.
+      for fault in ('service', 'missing', 'stale_can'):
+        with self.subTest(maneuver=maneuver, pscm_fault=fault):
+          controller.reset()
+          cc.latActive = True
+          sm.logMonoTime = Subscriptions.logMonoTime.copy()
+          sm.failed_checks = {'carStateSP'} if fault == 'service' else set()
+          sm.state_sp.fordPscmStatus.valid = fault != 'missing'
+          sm.state_sp.fordPscmStatus.canMonoTime = 500_000_000 if fault == 'stale_can' else 970_000_000
+          exec(code, environment)
+          status = controller.update.call_args.kwargs['pscm_status']
+          self.assertEqual(status.valid, fault == 'stale_can')
+          self.assertAlmostEqual(status.timestamp, .5 if fault == 'stale_can' else .97)
+          self.assertTrue(controller.update.call_args.kwargs['valid'])
+          self.assertTrue(controls.ford_path.valid)
+          self.assertTrue(cc.latActive)
 
 
 if __name__ == '__main__':

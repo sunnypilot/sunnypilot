@@ -1,15 +1,20 @@
-"""C2-free offset and heading from one curvature action for the Lightning RL38 PSCM.
+"""C2-free curvature requests with bounded yaw tracking for the Lightning RL38 PSCM.
 
 The historical Virtual Angle name/key is retained for settings compatibility.
 C0/C1 remain path geometry, never a fitted wheel-angle or torque command.
 """
+from collections import deque
 from dataclasses import dataclass
 import math
 import struct
 import numpy as np
 
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path, _relative_pose, _predicted_pose
-from opendbc.car.ford.values import FordFlags
+from opendbc.car.ford.values import CarControllerParams, FordFlags
+
+
+FEEDBACK_MIN_SPEED = 2.0
+HEADING_RESOLUTION = .0005
 
 
 def _packed(value, resolution, offset):
@@ -26,6 +31,114 @@ class PathTuning:
   heading_time: float = 1.0
   offset_rate: float = 4.0
   heading_rate: float = 0.5
+  feedback_gain: float = 1.0
+
+
+@dataclass(frozen=True)
+class PscmStatus:
+  timestamp: float
+  lateral_state: int
+  limit: int
+  capability: int
+  denied: bool
+  valid: bool = True
+
+  def invalid_reason(self, now):
+    if not self.valid or not math.isfinite(self.timestamp) or any(v not in (0, 1, 2, 3) for v in (
+      self.lateral_state, self.limit, self.capability,
+    )):
+      return 'invalid_pscm'
+    if not -.005 <= now - self.timestamp <= .15:
+      return 'stale_pscm'
+    if self.denied or self.lateral_state != 2 or self.capability not in (1, 2):
+      return 'unavailable_pscm'
+    return None
+
+
+class HeadingFeedback:
+  """Bound a heading correction using measured yaw error, not an EPS gain fit.
+
+  The nominal response interval, integration gain and low-speed policy remain
+  experimental. A downstream limit report cannot identify motor effort from
+  the sign of C1 while C0 and the PSCM's own controller are also acting.
+  """
+  def __init__(self, delay, tuning):
+    self.delay, self.tuning = delay, tuning
+    self.reset()
+
+  def reset(self, status='inactive'):
+    self.history = deque()
+    self.bias = 0.
+    self.previous_base = None
+    self.last_measurement_time = self.last_pscm_time = None
+    self.diagnostics = {'heading_bias': 0., 'feedback_status': status, 'feedback_reference_time': None,
+                        'feedback_reference_curvature': None, 'feedback_yaw_error': None}
+
+  def update(self, base, desired, *, yaw_rate, speed, now, measurement_time, dt, previous_command, heading_horizon, driver_override, pscm_status):
+    reason = ('missing_pscm' if pscm_status is None else pscm_status.invalid_reason(now))
+    if reason is None and self.last_pscm_time is not None and pscm_status.timestamp < self.last_pscm_time:
+      reason = 'pscm_timing'
+    if reason is None:
+      reason = ('driver_override' if driver_override or pscm_status.limit == 3 else 'low_speed' if speed < FEEDBACK_MIN_SPEED else
+                'zero_request' if base == 0. else 'disabled' if self.tuning.feedback_gain == 0. else None)
+    if reason is not None:
+      self.reset(reason)
+      return base
+
+    if self.previous_base is not None and base * self.previous_base < 0.:
+      self.reset('reversal')
+    elif self.previous_base and abs(base) < abs(self.previous_base):
+      # Releasing a clipped base, rather than raw curvature, avoids increasing
+      # total C1 by shrinking a negative correction while the base stays capped.
+      self.bias *= abs(base / self.previous_base)
+    self.previous_base = base
+    self.last_pscm_time = pscm_status.timestamp
+    self.history.append((now, desired))
+    while len(self.history) > 2 and self.history[1][0] < now - self.delay - .25:
+      self.history.popleft()
+
+    status = 'no_new_measurement'
+    reference_time = reference_curvature = yaw_error = None
+    if measurement_time != self.last_measurement_time:
+      measurement_dt = 0. if self.last_measurement_time is None else measurement_time - self.last_measurement_time
+      self.last_measurement_time = measurement_time
+      target_time = measurement_time - self.delay
+      # Use the command actually held at the historical instant. Interpolating
+      # toward a later publication would compare against a different request.
+      reference = next((sample for sample in reversed(self.history) if sample[0] <= target_time), None)
+      if reference is None:
+        status = 'history'
+      elif not .002 <= measurement_dt <= .1:
+        status = 'measurement_timing'
+      else:
+        reference_time, reference_curvature = reference
+        yaw_error = speed * reference_curvature - yaw_rate
+        releasing = reference_curvature * desired <= 0. or (abs(reference_curvature) - abs(desired)) * heading_horizon > HEADING_RESOLUTION
+        if releasing:
+          status = 'release'
+        elif pscm_status.limit >= 2:
+          # Freeze all integration: C1 direction is not measured motor effort.
+          # Base-driven release still removes stored demand as the action eases.
+          status = 'pscm_limit'
+        else:
+          increment = self.tuning.feedback_gain * yaw_error * measurement_dt
+          proposed = base + self.bias + increment
+          field_limited = float(np.clip(proposed, -.5, .5))
+          host_limited = previous_command + float(np.clip(field_limited - previous_command,
+                                                          -self.tuning.heading_rate * dt, self.tuning.heading_rate * dt))
+          # Admit the reachable portion of an outward increment, rather than
+          # freezing forever when a large/batched error exceeds one tick's slew.
+          # A base transition must not fabricate a correction opposite the error.
+          if yaw_error * (proposed - host_limited) > 1e-12:
+            self.bias += float(np.clip(host_limited - (base + self.bias), min(0., increment), max(0., increment)))
+            status = 'host_limit'
+          else:
+            self.bias += increment
+            status = 'integrating'
+    self.bias = float(np.clip(self.bias, -.5 - base, .5 - base))
+    self.diagnostics = {'heading_bias': self.bias, 'feedback_status': status, 'feedback_reference_time': reference_time,
+                        'feedback_reference_curvature': reference_curvature, 'feedback_yaw_error': yaw_error}
+    return float(np.clip(base + self.bias, -.5, .5))
 
 
 class PathReference:
@@ -84,7 +197,8 @@ class FordVirtualAngleController:
   """Encode the same absolute planned curvature as C0 and C1.
 
   The former spatial-heading reference is retained for diagnostic comparison
-  and the existing input-validity gates. No EPS gain is assumed.
+  and the existing input-validity gates. A bounded yaw-error integral corrects
+  C1 when fresh PSCM status permits; no fixed EPS gain is assumed.
   """
   def __init__(self, response_delay=.2, tuning: PathTuning | None = None):
     self.tuning = tuning if tuning is not None else PathTuning()
@@ -96,18 +210,21 @@ class FordVirtualAngleController:
       raise ValueError("invalid path tuning")
     self.delay = response_delay
     self.reference = PathReference(self.tuning)
+    self.feedback = HeadingFeedback(self.delay, self.tuning)
     self.reset()
 
   def reset(self):
     self.reference.reset()
+    self.feedback.reset()
     self.command = FordPath()
     self.last_time = None
     self.last_measurement_time = None
     self.offset_request = self.heading_request = 0.0
-    self.diagnostics = {'status': 'inactive', 'hypothesis': 'curvature-c0-c1-v4', 'command': (0., 0., 0., 0.)}
+    self.diagnostics = {'status': 'inactive', 'hypothesis': 'curvature-c0-c1-feedback-v5', 'command': (0., 0., 0., 0.),
+                        **self.feedback.diagnostics}
 
   def update(self, model, desired_curvature, *, yaw_rate, speed, now, measurement_time, model_time, reference_time,
-             active, valid=True, steering_pressed=False):
+             active, valid=True, steering_pressed=False, steering_torque=0., pscm_status: PscmStatus | None = None):
     finite = all(math.isfinite(v) for v in (desired_curvature, yaw_rate, speed, now, measurement_time, model_time, reference_time))
     fresh = finite and all(-.005 <= now - timestamp <= .15 for timestamp in (measurement_time, model_time, reference_time))
     if not active or not valid or model is None or not fresh or not .3 <= speed <= 55 or abs(yaw_rate) > 3 or abs(desired_curvature) > 1:
@@ -144,10 +261,13 @@ class FordVirtualAngleController:
     # This preview sets command scale, not a model of the PSCM's wheel response.
     offset = .5 * desired_curvature * offset_horizon ** 2
     target_offset = float(np.clip(offset, -5.11, 5.11))
-    # Keep full absolute heading demand when actual curvature catches up, and
-    # release it when the selected action changes. The spatial reference above
-    # is diagnostic only: neither its filter nor yaw correction steers C1.
-    target_heading = float(np.clip(desired_curvature * heading_horizon, -.5, .5))
+    # Absolute feedforward retains sustained turn demand. Measured tracking can
+    # add or subtract a bounded correction; model geometry remains diagnostic.
+    base_heading = float(np.clip(desired_curvature * heading_horizon, -.5, .5))
+    driver_override = steering_pressed or not math.isfinite(steering_torque) or abs(steering_torque) > CarControllerParams.STEER_DRIVER_ALLOWANCE
+    target_heading = self.feedback.update(base_heading, desired_curvature, yaw_rate=yaw_rate, speed=speed, now=now,
+                                          measurement_time=measurement_time, dt=dt, previous_command=self.heading_request,
+                                          heading_horizon=heading_horizon, driver_override=driver_override, pscm_status=pscm_status)
     delta_offset = target_offset - self.offset_request
     delta_heading = target_heading - self.heading_request
     # A slow C1 transition must not hold a C0 correction after action releases it.
@@ -158,8 +278,18 @@ class FordVirtualAngleController:
     offset = _packed(self.offset_request, .01, -5.12)
     heading = _packed(self.heading_request, .0005, -.5)
     self.command = FordPath(True, offset, heading, 0., 0.)
-    self.diagnostics = {'status': 'driver_override' if steering_pressed else 'active', 'hypothesis': 'curvature-c0-c1-v4',
+    self.diagnostics = {'status': 'driver_override' if driver_override else 'active', 'hypothesis': 'curvature-c0-c1-feedback-v5',
                         'desired_curvature': desired_curvature, 'offset_target': target_offset, 'heading_target': target_heading,
+                        'heading_base': base_heading, 'feedback_gain': self.tuning.feedback_gain, 'feedback_min_speed': FEEDBACK_MIN_SPEED,
+                        'steering_torque': steering_torque if math.isfinite(steering_torque) else None,
+                        'pscm_valid': pscm_status.valid if pscm_status is not None else False,
+                        'pscm_timestamp': pscm_status.timestamp if pscm_status is not None and math.isfinite(pscm_status.timestamp) else None,
+                        'pscm_age': now - pscm_status.timestamp if pscm_status is not None and math.isfinite(pscm_status.timestamp) else None,
+                        'pscm_limit': pscm_status.limit if pscm_status is not None else None,
+                        'pscm_capability': pscm_status.capability if pscm_status is not None else None,
+                        'pscm_lateral_state': pscm_status.lateral_state if pscm_status is not None else None,
+                        'pscm_denied': pscm_status.denied if pscm_status is not None else None,
+                        **self.feedback.diagnostics,
                         'model_heading_target': float(np.clip(model_heading, -.5, .5)), 'model_heading_horizon': model_heading_horizon,
                         'offset_slew_scale': offset_scale, 'heading_slew_scale': heading_scale,
                         'measurement_age': now - measurement_time, 'model_age': now - model_time, 'reference_age': now - reference_time,
