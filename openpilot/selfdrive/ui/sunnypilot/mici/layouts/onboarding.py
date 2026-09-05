@@ -8,6 +8,7 @@ from collections.abc import Callable
 
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationCircleButton
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.mici_setup import GreyBigButton
 from openpilot.system.ui.widgets.scroller import NavScroller
 
@@ -19,16 +20,16 @@ class SunnylinkConsentPage(NavScroller):
     assert on_accept is not None and callable(on_accept)
     assert on_decline is not None and callable(on_decline)
 
-    self._accept_button = BigConfirmationCircleButton("enable\nsunnylink", gui_app.texture("icons_mici/setup/driver_monitoring/dm_check.png", 64, 64),
+    self._accept_button = BigConfirmationCircleButton(tr("enable\nsunnylink"), gui_app.texture("icons_mici/setup/driver_monitoring/dm_check.png", 64, 64),
                                                       on_accept,  exit_on_confirm=False)
 
-    self._decline_button = BigConfirmationCircleButton("disable\nsunnylink", gui_app.texture("icons_mici/setup/cancel.png", 64, 64),
+    self._decline_button = BigConfirmationCircleButton(tr("disable\nsunnylink"), gui_app.texture("icons_mici/setup/cancel.png", 64, 64),
                                                        on_decline, red=True, exit_on_confirm=False)
 
     self._scroller.add_widgets([
-      GreyBigButton("sunnylink", "scroll to continue",
+      GreyBigButton("sunnylink", tr("scroll to continue"),
                     gui_app.texture("../../sunnypilot/selfdrive/assets/logo.png", 64, 64)),
-      GreyBigButton("", "sunnylink enables secured remote access to your comma device from anywhere."),
+      GreyBigButton("", tr("sunnylink enables secured remote access to your comma device from anywhere.")),
       self._accept_button,
       self._decline_button,
     ])
