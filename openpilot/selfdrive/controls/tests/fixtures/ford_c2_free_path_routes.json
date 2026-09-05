@@ -1,6 +1,6 @@
 {
-  "description": "Path-command and centering regression; does not predict counterfactual wheel response. Contains geometry and control signals only, no GPS.",
-  "fixture_sha256": "c572d8cbe58f01dad273da59cb7e1fdf6b9700e51267ecdb13775e3f22c5faa6",
+  "description": "Curvature-driven C0 and full-heading C1 command regression; does not predict counterfactual wheel response. Contains geometry and control signals only, no GPS.",
+  "fixture_sha256": "12782ac1b0d0637945f729a46ad03af16cd58188872b6a65f104e32c4db70e9b",
   "episodes": [
     {
       "name": "left_large",
@@ -223,5 +223,7 @@
     ]
   },
   "pairing": "controlsState cycle time; causal carState speed/yaw/pressed; exact consumed model timestamp and geometry; nearest same-cycle carControl and carControlSP within 5ms.",
-  "yaw_rate": "Negative carState.yawRate, matching the model/control curvature coordinate sign; no wheel-to-curvature conversion."
+  "yaw_rate": "Negative carState.yawRate, matching the model/control curvature coordinate sign; no wheel-to-curvature conversion.",
+  "desired_curvature": "Exact controlsState.desiredCurvature from the matching controlsState cycle. This is the post-selection, post-limiting request consumed by controlsd; it is not a wheel-angle-to-curvature fit.",
+  "reference_time": "Exact consumed modelV2 publication time, in the same relative seconds as each episode. The extraction cache does not retain consumed lateralManeuverPlan timestamps or validity; model time is an explicit replay assumption and cannot verify alternate-reference freshness."
 }

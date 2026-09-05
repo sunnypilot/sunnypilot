@@ -23,21 +23,21 @@ def circle(curvature=0.0, offset=0.0):
   return SimpleNamespace(position=SimpleNamespace(x=x, y=y + offset), orientation=SimpleNamespace(z=heading))
 
 
-def run_step(controller, model, t, curvature=0.0, speed=8.0, **kwargs):
+def run_step(controller, model, t, curvature=0.0, speed=8.0, desired_curvature=0.0, **kwargs):
   inputs = {'yaw_rate': curvature * speed, 'speed': speed, 'now': t, 'measurement_time': t,
-            'model_time': math.floor((t + 1e-6) / .05) * .05, 'active': True}
+            'model_time': math.floor((t + 1e-6) / .05) * .05, 'reference_time': t, 'active': True}
   inputs.update(kwargs)
-  return controller.update(model, **inputs)
+  return controller.update(model, desired_curvature, **inputs)
 
 
 class TestFordPathReference(unittest.TestCase):
-  def test_c0_preserves_centering_when_curvature_and_heading_are_zero(self):
+  def test_model_translation_cannot_add_c0_when_action_is_zero(self):
     for offset in (-.8, .8):
       controller = FordVirtualAngleController()
       model = circle(offset=offset)
       for i in range(500):
         path = run_step(controller, model, i * .01)
-      self.assertAlmostEqual(path.path_offset, offset, delta=.01)
+      self.assertAlmostEqual(path.path_offset, 0., delta=.01)
       self.assertAlmostEqual(path.path_angle, 0., delta=.0005)
       self.assertEqual((path.curvature, path.curvature_rate), (0, 0))
 
@@ -47,7 +47,7 @@ class TestFordPathReference(unittest.TestCase):
         controller = FordVirtualAngleController()
         model = circle(sign * curvature)
         for i in range(600):
-          path = run_step(controller, model, i * .01, curvature=sign * curvature, speed=speed)
+          path = run_step(controller, model, i * .01, curvature=sign * curvature, speed=speed, desired_curvature=sign * curvature)
         self.assertGreater(sign * path.path_offset, min_offset)
         self.assertGreater(sign * path.path_angle, min_heading)
         self.assertEqual((path.curvature, path.curvature_rate), (0, 0))
@@ -68,27 +68,31 @@ class TestFordPathReference(unittest.TestCase):
     np.testing.assert_allclose(y, expected_y, atol=1e-10)
     np.testing.assert_allclose(heading, initial[3] - yaw, atol=1e-10)
 
-  def test_model_noise_is_filtered_without_losing_a_centering_offset(self):
+  def test_model_noise_is_filtered_without_losing_heading_demand(self):
     controller = FordVirtualAngleController()
     values = []
     for i in range(1600):
       t = i * .01
       mt = math.floor((t + 1e-6) / .05) * .05
-      model = circle(offset=.8 + .1 * math.sin(2 * math.pi * 1.78 * mt))
+      angle = .02 + .01 * math.sin(2 * math.pi * 1.78 * mt)
+      model = circle()
+      model.position.y = model.position.x * math.sin(angle)
+      model.position.x = model.position.x * math.cos(angle)
+      model.orientation.z[:] = angle
       path = run_step(controller, model, t)
-      values.append(path.path_offset)
+      values.append(path.path_angle)
     values = np.array(values[600:])
-    self.assertAlmostEqual(float(np.mean(values)), .8, delta=.015)
-    self.assertLess(float(np.ptp(values)), .09)  # raw offset varies by 0.2 m
+    self.assertAlmostEqual(float(np.mean(values)), .02, delta=.001)
+    self.assertLess(float(np.ptp(values)), .009)  # raw heading varies by 0.02 rad
 
   def test_invalid_or_stale_path_resets_and_reengages_from_zero(self):
     for overrides in ({'valid': False}, {'active': False}, {'speed': .1}, {'model_time': 0.},
                       {'measurement_time': 0.}, {'yaw_rate': float('nan')}):
       controller = FordVirtualAngleController()
       for i in range(100):
-        run_step(controller, circle(.03), i * .01)
+        run_step(controller, circle(.03), i * .01, desired_curvature=.03)
       self.assertEqual(run_step(controller, circle(.03), 1., **overrides), FordPath())
-      path = run_step(controller, circle(.03), 1.01)
+      path = run_step(controller, circle(.03), 1.01, desired_curvature=.03)
       self.assertLessEqual(abs(path.path_offset), .05)
       self.assertLessEqual(abs(path.path_angle), .0055)
 
@@ -114,19 +118,21 @@ class TestFordPathReference(unittest.TestCase):
       self.assertEqual(run_step(controller, model, 1.05), FordPath())
       self.assertIsNone(controller.reference.path)
 
-  def test_paired_slew_and_dbc_bounds_during_large_reversal(self):
+  def test_independent_slew_and_dbc_bounds_during_large_reversal(self):
     controller = FordVirtualAngleController()
     previous = FordPath()
     for i in range(900):
-      model = circle(.1 if i < 400 else -.1)
-      path = run_step(controller, model, i * .01, speed=5.)
+      curvature = .1 if i < 400 else -.1
+      path = run_step(controller, circle(curvature), i * .01, speed=5., desired_curvature=2 * curvature)
       self.assertLessEqual(abs(path.path_offset), 5.11)
       self.assertLessEqual(abs(path.path_angle), .5)
       self.assertLessEqual(abs(path.path_offset - previous.path_offset), .050001)
       self.assertLessEqual(abs(path.path_angle - previous.path_angle), .005501)
       self.assertEqual((path.curvature, path.curvature_rate), (0, 0))
       previous = path
-    self.assertLess(path.path_offset, -1.)
+      if i == 399:
+        self.assertAlmostEqual(path.path_offset, 5.11)
+    self.assertAlmostEqual(path.path_offset, -5.11)
     self.assertLess(path.path_angle, -.3)
 
   def test_float32_and_can_packing_preserve_the_path(self):
@@ -135,7 +141,8 @@ class TestFordPathReference(unittest.TestCase):
     parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], 0)
     bus = CanBus(fingerprint={0: {}})
     for i in range(600):
-      path = run_step(controller, circle(.08 if i < 300 else -.08), i * .01, speed=5.)
+      curvature = .08 if i < 300 else -.08
+      path = run_step(controller, circle(curvature), i * .01, speed=5., desired_curvature=curvature)
       msg = custom.CarControlSP.new_message()
       msg.fordLateralPath.pathOffset = path.path_offset
       msg.fordLateralPath.pathAngle = path.path_angle
@@ -158,8 +165,9 @@ class TestFordPathReference(unittest.TestCase):
       if z['episode'][i] != previous_episode:
         controller = FordVirtualAngleController()
         previous_episode = z['episode'][i]
-      path = controller.update(models[z['model_index'][i]], yaw_rate=z['yaw_rate'][i], speed=z['speed'][i], now=t,
+      path = controller.update(models[z['model_index'][i]], z['desired_curvature'][i], yaw_rate=z['yaw_rate'][i], speed=z['speed'][i], now=t,
                                measurement_time=z['measurement_time'][i], model_time=z['model_time'][i],
+                               reference_time=z['reference_time'][i],
                                active=bool(z['active'][i]), valid=bool(z['valid'][i]), steering_pressed=bool(z['pressed'][i]))
       commands.append((path.path_offset, path.path_angle))
       self.assertEqual((path.curvature, path.curvature_rate), (0, 0))

@@ -48,21 +48,25 @@ class TestFordControlsLogging(unittest.TestCase):
 
   def test_periodic_diagnostics_log_without_crashing(self):
     controller = FordVirtualAngleController()
-    for active in (False, True):
-      controller.update(circle(.01), yaw_rate=.05, speed=10.0, now=1.0,
-                        measurement_time=1.0, model_time=1.0, active=active)
+    for active, valid, pressed in ((False, True, False), (True, True, False), (True, True, True), (True, False, False)):
+      controller.reset()
+      controller.update(circle(.01), .01, yaw_rate=.05, speed=10.0, now=1.0,
+                        measurement_time=1.0, model_time=1.0, reference_time=1.0, active=active,
+                        valid=valid, steering_pressed=pressed)
       controls = SimpleNamespace(ford_path_controller=controller, desired_curvature=.01, curvature=.005,
                                  sm=SimpleNamespace(logMonoTime={'modelV2': 123456789, 'carState': 123450000}))
       record = self.emit_controls_event('Ford C2-free path tracking', controls)
       self.assertEqual(record['model_mono_time'], 123456789)
       self.assertEqual(record['measurement_mono_time'], 123450000)
+      self.assertEqual(record['reference_service'], 'modelV2')
+      self.assertEqual(record['reference_mono_time'], 123456789)
       self.assertEqual(record['status'], controller.diagnostics['status'])
       self.assertEqual(record['command'], list(controller.diagnostics['command']))
-      if active:
+      if active and valid:
         self.assertEqual(record['response_delay'], 0.2)
-        self.assertEqual(record['action_curvature'], 0.01)
+        self.assertEqual(record['desired_curvature'], 0.01)
         self.assertEqual(record['measured_curvature'], 0.005)
-        self.assertTrue(all(key in record for key in ('offset_target', 'heading_target', 'model_age', 'reference_filter_time')))
+        self.assertTrue(all(key in record for key in ('offset_target', 'heading_target', 'model_age', 'reference_age', 'reference_filter_time')))
 
   def test_actual_ford_branch_uses_selected_reference_and_disables_invalid_output(self):
     source_path = Path(__file__).resolve().parents[1] / 'controlsd.py'
@@ -76,9 +80,10 @@ class TestFordControlsLogging(unittest.TestCase):
       frame = 1  # periodic logging is covered separately
       valid = {'lateralManeuverPlan': False, 'modelV2': True}
       logMonoTime = {'carState': 995_000_000, 'modelV2': 980_000_000, 'lateralManeuverPlan': 990_000_000}
+      failed_checks = set()
 
       def all_checks(self, services):
-        return all(self.valid.get(service, True) for service in services)
+        return all(self.valid.get(service, True) and service not in self.failed_checks for service in services)
 
     for maneuver in (False, True):
       sm = Subscriptions()
@@ -96,19 +101,48 @@ class TestFordControlsLogging(unittest.TestCase):
       self.assertTrue(controls.ford_path.valid)
       self.assertTrue(cc.latActive)
       self.assertIs(controller.update.call_args.args[0], environment['model_v2'])
+      self.assertEqual(controller.update.call_args.args[1], controls.desired_curvature)
       args = controller.update.call_args.kwargs
       self.assertEqual(args['yaw_rate'], .015)
       self.assertAlmostEqual(args['measurement_time'], 0.995)
       self.assertAlmostEqual(args['model_time'], 0.98)
+      reference_service = 'lateralManeuverPlan' if maneuver else 'modelV2'
+      self.assertAlmostEqual(args['reference_time'], sm.logMonoTime[reference_service] * 1e-9)
       self.assertEqual(actuator.curvature, 0.0)
 
-      # A stale selected reference must cancel the transmitted lateral request,
-      # rather than send an active zero path or silently switch controllers.
-      sm.logMonoTime = dict(sm.logMonoTime, modelV2=500_000_000)
-      exec(code, environment)
-      self.assertFalse(controls.ford_path.valid)
-      self.assertFalse(cc.latActive)
-      self.assertIsNone(controller.reference.path)
+      # C0 needs the selected action service; C1 independently needs modelV2.
+      # Reject stale/failed selected services rather than silently fall back or
+      # transmit an active zero path. A non-selected maneuver service is ignored.
+      for stale_service in {reference_service, 'modelV2'}:
+        with self.subTest(maneuver=maneuver, stale_service=stale_service):
+          controller.reset()
+          cc.latActive = True
+          sm.logMonoTime = dict(Subscriptions.logMonoTime, **{stale_service: 500_000_000})
+          exec(code, environment)
+          self.assertFalse(controls.ford_path.valid)
+          self.assertFalse(cc.latActive)
+          self.assertIsNone(controller.reference.path)
+
+      for failed_service in {reference_service, 'modelV2', 'carState', 'vehicleParameters'}:
+        with self.subTest(maneuver=maneuver, failed_service=failed_service):
+          controller.reset()
+          cc.latActive = True
+          sm.logMonoTime = Subscriptions.logMonoTime.copy()
+          sm.failed_checks = {failed_service}
+          exec(code, environment)
+          self.assertFalse(controller.update.call_args.kwargs['valid'])
+          self.assertFalse(controls.ford_path.valid)
+          self.assertFalse(cc.latActive)
+          self.assertIsNone(controller.reference.path)
+
+      if not maneuver:
+        controller.reset()
+        cc.latActive = True
+        sm.logMonoTime = dict(Subscriptions.logMonoTime, lateralManeuverPlan=500_000_000)
+        sm.failed_checks = {'lateralManeuverPlan'}
+        exec(code, environment)
+        self.assertTrue(controls.ford_path.valid)
+        self.assertTrue(cc.latActive)
 
 
 if __name__ == '__main__':
