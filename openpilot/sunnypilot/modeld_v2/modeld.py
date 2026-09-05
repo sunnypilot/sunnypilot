@@ -38,6 +38,7 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.modeld import ChestnutState
 
+from openpilot.sunnypilot.modeld_v2.egpu_load import EGPU_RETRY_BUDGET, load_with_retry
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
@@ -351,14 +352,16 @@ def main(demo=False):
     def load_big():
       nonlocal big_model
       try:
-        m = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)
+        m, load_err = load_with_retry(lambda: ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True))
+        if m is None:
+          raise RuntimeError(f"model load failed ({load_err!r})") from load_err
         m.warmup()
         big_model = m
       except Exception:
         cloudlog.exception("chestnut load failed")
     loader = threading.Thread(target=load_big, daemon=True)
     loader.start()
-    loader.join(BIG_MODEL_TIMEOUT)
+    loader.join(BIG_MODEL_TIMEOUT + EGPU_RETRY_BUDGET)
     model = big_model
     params.put_bool("ChestnutActive", model is not None)
 
