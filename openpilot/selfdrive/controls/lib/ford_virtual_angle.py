@@ -1,4 +1,4 @@
-"""C2-free action offset and spatial heading for the Lightning RL38 PSCM.
+"""C2-free offset and heading from one curvature action for the Lightning RL38 PSCM.
 
 The historical Virtual Angle name/key is retained for settings compatibility.
 C0/C1 remain path geometry, never a fitted wheel-angle or torque command.
@@ -81,10 +81,10 @@ class PathReference:
 
 
 class FordVirtualAngleController:
-  """Encode the planned curvature as C0 and retain model heading as C1.
+  """Encode the same absolute planned curvature as C0 and C1.
 
-  Measured CAN yaw rate is used only to move the reference between ego frames
-  and align its preview with the response interval. No EPS gain is assumed.
+  The former spatial-heading reference is retained for diagnostic comparison
+  and the existing input-validity gates. No EPS gain is assumed.
   """
   def __init__(self, response_delay=.2, tuning: PathTuning | None = None):
     self.tuning = tuning if tuning is not None else PathTuning()
@@ -104,7 +104,7 @@ class FordVirtualAngleController:
     self.last_time = None
     self.last_measurement_time = None
     self.offset_request = self.heading_request = 0.0
-    self.diagnostics = {'status': 'inactive', 'hypothesis': 'curvature-c0-v3', 'command': (0., 0., 0., 0.)}
+    self.diagnostics = {'status': 'inactive', 'hypothesis': 'curvature-c0-c1-v4', 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, yaw_rate, speed, now, measurement_time, model_time, reference_time,
              active, valid=True, steering_pressed=False):
@@ -134,16 +134,20 @@ class FordVirtualAngleController:
       return self.command
     advance = min(speed * self.delay, path[0][-1])
     offset_horizon = max(self.tuning.offset_horizon, speed * self.tuning.heading_time)
-    heading_horizon = min(max(speed * self.tuning.heading_time, self.tuning.heading_horizon), max(path[0][-1] - advance, 0.0))
+    heading_horizon = max(speed * self.tuning.heading_time, self.tuning.heading_horizon)
+    model_heading_horizon = min(heading_horizon, max(path[0][-1] - advance, 0.0))
     ego = _predicted_pose(advance, current_curvature, 0.)
-    _, heading = _relative_pose(advance + heading_horizon, path, ego)
+    _, model_heading = _relative_pose(advance + model_heading_horizon, path, ego)
     # The selected action already contains the planner's steering correction and
     # upstream delay handling. Encode absolute curvature as a virtual parabolic
     # displacement; measured curvature must not erase a sustained turn request.
     # This preview sets command scale, not a model of the PSCM's wheel response.
     offset = .5 * desired_curvature * offset_horizon ** 2
     target_offset = float(np.clip(offset, -5.11, 5.11))
-    target_heading = float(np.clip(heading, -.5, .5))
+    # Keep full absolute heading demand when actual curvature catches up, and
+    # release it when the selected action changes. The spatial reference above
+    # is diagnostic only: neither its filter nor yaw correction steers C1.
+    target_heading = float(np.clip(desired_curvature * heading_horizon, -.5, .5))
     delta_offset = target_offset - self.offset_request
     delta_heading = target_heading - self.heading_request
     # A slow C1 transition must not hold a C0 correction after action releases it.
@@ -154,8 +158,9 @@ class FordVirtualAngleController:
     offset = _packed(self.offset_request, .01, -5.12)
     heading = _packed(self.heading_request, .0005, -.5)
     self.command = FordPath(True, offset, heading, 0., 0.)
-    self.diagnostics = {'status': 'driver_override' if steering_pressed else 'active', 'hypothesis': 'curvature-c0-v3',
+    self.diagnostics = {'status': 'driver_override' if steering_pressed else 'active', 'hypothesis': 'curvature-c0-c1-v4',
                         'desired_curvature': desired_curvature, 'offset_target': target_offset, 'heading_target': target_heading,
+                        'model_heading_target': float(np.clip(model_heading, -.5, .5)), 'model_heading_horizon': model_heading_horizon,
                         'offset_slew_scale': offset_scale, 'heading_slew_scale': heading_scale,
                         'measurement_age': now - measurement_time, 'model_age': now - model_time, 'reference_age': now - reference_time,
                         'response_delay': self.delay, 'reference_filter_time': self.tuning.filter_time, 'yaw_rate': yaw_rate,

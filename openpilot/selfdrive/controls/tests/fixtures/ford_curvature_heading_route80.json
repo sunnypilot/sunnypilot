@@ -1,0 +1,67 @@
+{
+  "description": "Real route80 turn-command regressions. Signal-only fixture; no GPS. Counterfactual commands do not predict physical vehicle response.",
+  "route": "84865544361f55cb_00000080--1643deea7e",
+  "source_commit": "98662df401217a00ec9fc8e73b16857b6c220150",
+  "frozen_v3_controller_sha256": "576f4ec6f2dbc93f7e6c93a69839f69447eb5a0c2f834bd48b24f84a163dc2eb",
+  "fixture_sha256": "c1460e2cf1d3fd52b1a036d923fec7835a7d361126ee0c2decbc3f101ee6653c",
+  "episodes": [
+    {
+      "name": "under_333_339",
+      "range_seconds": [
+        331.5,
+        339.0
+      ],
+      "evidence_seconds": [
+        333.0,
+        339.0
+      ],
+      "samples": 745
+    },
+    {
+      "name": "over_417_420",
+      "range_seconds": [
+        415.5,
+        420.0
+      ],
+      "evidence_seconds": [
+        417.0,
+        420.0
+      ],
+      "samples": 447
+    },
+    {
+      "name": "under_430_435",
+      "range_seconds": [
+        428.5,
+        435.0
+      ],
+      "evidence_seconds": [
+        430.0,
+        435.0
+      ],
+      "samples": 646
+    }
+  ],
+  "sources": [
+    {
+      "name": "84865544361f55cb_00000080--1643deea7e--5--rlog.zst",
+      "bytes": 12531711,
+      "sha256": "059482830794cb0eabe6069b75a9610b900bf2a93d7a6624f53c575cef997157"
+    },
+    {
+      "name": "84865544361f55cb_00000080--1643deea7e--6--rlog.zst",
+      "bytes": 12560505,
+      "sha256": "147276789f5b14913adc4cd16db18f3d4bd27ce8497c9ff96fdf0315c219339f"
+    },
+    {
+      "name": "84865544361f55cb_00000080--1643deea7e--7--rlog.zst",
+      "bytes": 12660797,
+      "sha256": "b311b6ace75819db52b9618154d68c7d12e2751d5046b6d174adb89ef87a223c"
+    }
+  ],
+  "pairing": "Exact controlsState desiredCurvature and consumed model publication timestamp; causal carState speed, negative CAN yaw, and steeringPressed; nearest same-cycle carControl/carControlSP within 5 ms.",
+  "reference_time": "Consumed modelV2 publication time. Controller audit confirms route80 used modelV2 as reference throughout.",
+  "preroll": "Each episode starts from reset 1.5 s before evidence; v3_replay stores those exact cold-start commands and gates, while recorded stores original live path fields.",
+  "benchmark_clean": "Existing route80 benchmark mask: whole interval request minus 0.5 s through response (0.2 s) plus 0.25 s active, unpressed, valid, fresh, and speed >= 2 m/s.",
+  "expected_common_c1": "Independent shadow: clip(desiredCurvature * max(7 m, vEgo * 1 s), +/-0.5 rad), independently slewed at 0.5 rad/s and packed to Float32/sign-reversed CAN semantics. No subtraction of measured curvature."
+}

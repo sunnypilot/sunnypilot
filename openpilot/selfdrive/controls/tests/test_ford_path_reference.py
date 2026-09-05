@@ -68,7 +68,7 @@ class TestFordPathReference(unittest.TestCase):
     np.testing.assert_allclose(y, expected_y, atol=1e-10)
     np.testing.assert_allclose(heading, initial[3] - yaw, atol=1e-10)
 
-  def test_model_noise_is_filtered_without_losing_heading_demand(self):
+  def test_model_noise_is_filtered_for_diagnostics_without_steering_the_command(self):
     controller = FordVirtualAngleController()
     values = []
     for i in range(1600):
@@ -80,7 +80,8 @@ class TestFordPathReference(unittest.TestCase):
       model.position.x = model.position.x * math.cos(angle)
       model.orientation.z[:] = angle
       path = run_step(controller, model, t)
-      values.append(path.path_angle)
+      self.assertAlmostEqual(path.path_angle, 0.)
+      values.append(controller.diagnostics['model_heading_target'])
     values = np.array(values[600:])
     self.assertAlmostEqual(float(np.mean(values)), .02, delta=.001)
     self.assertLess(float(np.ptp(values)), .009)  # raw heading varies by 0.02 rad

@@ -1,10 +1,9 @@
 """Action-to-C0 regressions; these do not simulate PSCM/vehicle response."""
-from dataclasses import replace
 import math
 import unittest
 
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
-from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, PathTuning
+from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController
 from openpilot.selfdrive.controls.tests.test_ford_path_reference import circle
 
 
@@ -23,7 +22,7 @@ class TestFordCurvatureC0(unittest.TestCase):
         # Action can request recovery even when the short model preview is flat.
         path = step(controller, i * .01, sign * .002, speed=20.)
       self.assertAlmostEqual(path.path_offset, sign * .4, delta=.0051)
-      self.assertAlmostEqual(path.path_angle, 0., delta=.00025)
+      self.assertAlmostEqual(path.path_angle, sign * .04, delta=.000251)
       self.assertEqual((path.curvature, path.curvature_rate), (0., 0.))
 
   def test_slow_turns_retain_large_absolute_demand_after_curvature_matches(self):
@@ -35,26 +34,29 @@ class TestFordCurvatureC0(unittest.TestCase):
         self.assertAlmostEqual(path.path_offset, sign * 1.28, delta=.0051)
         self.assertGreater(sign * path.path_angle, .2)
 
-  def test_model_heading_cannot_inject_c0_when_action_requests_zero(self):
+  def test_model_heading_cannot_inject_commands_when_action_requests_zero(self):
     for sign in (-1, 1):
       controller = FordVirtualAngleController()
       for i in range(250):
         path = step(controller, i * .01, 0., circle(sign * .12), speed=5.)
       self.assertAlmostEqual(path.path_offset, 0., delta=.0051)
-      self.assertGreater(sign * path.path_angle, .4)
+      self.assertAlmostEqual(path.path_angle, 0., delta=.000251)
+      self.assertGreater(sign * controller.diagnostics['model_heading_target'], .4)
 
   def test_c1_reversal_cannot_delay_action_c0_release(self):
-    controller = FordVirtualAngleController(tuning=replace(PathTuning(), filter_time=0.))
+    controller = FordVirtualAngleController()
     for i in range(200):
+      path = step(controller, i * .01, .1, circle(.12), speed=5.)
+    for i in range(200, 280):
       path = step(controller, i * .01, .003125, circle(.12), speed=5.)
     self.assertAlmostEqual(path.path_offset, .1)
-    self.assertAlmostEqual(path.path_angle, .5)
-    for i in range(200, 203):
+    self.assertAlmostEqual(path.path_angle, .1)
+    for i in range(280, 283):
       path = step(controller, i * .01, 0., circle(-.12), speed=5.)
     self.assertAlmostEqual(path.path_offset, 0., delta=.0051)
-    self.assertGreater(path.path_angle, .45)  # C1 is still in its own limited transition.
+    self.assertGreater(path.path_angle, .08)  # C1 is still in its own limited transition.
 
-  def test_c0_can_reverse_while_model_heading_still_requests_the_old_turn(self):
+  def test_both_commands_reverse_while_model_heading_requests_the_old_turn(self):
     controller = FordVirtualAngleController()
     model = circle(.04)
     for i in range(200):
@@ -62,7 +64,7 @@ class TestFordCurvatureC0(unittest.TestCase):
     for i in range(200, 240):
       path = step(controller, i * .01, -.01, model)
     self.assertLess(path.path_offset, -.3)
-    self.assertGreater(path.path_angle, .2)
+    self.assertLess(path.path_angle, -.07)
 
   def test_invalid_or_stale_action_clears_both_requests(self):
     for desired, overrides in ((float('nan'), {}), (float('inf'), {}), (2., {}), (.01, {'reference_time': 0.}),

@@ -61,12 +61,15 @@ class TestFordControlsLogging(unittest.TestCase):
       self.assertEqual(record['reference_service'], 'modelV2')
       self.assertEqual(record['reference_mono_time'], 123456789)
       self.assertEqual(record['status'], controller.diagnostics['status'])
+      self.assertEqual(record['hypothesis'], 'curvature-c0-c1-v4')
       self.assertEqual(record['command'], list(controller.diagnostics['command']))
       if active and valid:
         self.assertEqual(record['response_delay'], 0.2)
         self.assertEqual(record['desired_curvature'], 0.01)
         self.assertEqual(record['measured_curvature'], 0.005)
-        self.assertTrue(all(key in record for key in ('offset_target', 'heading_target', 'model_age', 'reference_age', 'reference_filter_time')))
+        self.assertAlmostEqual(record['heading_target'], .1)
+        self.assertTrue(all(key in record for key in ('offset_target', 'heading_target', 'model_heading_target', 'model_heading_horizon',
+                                                    'model_age', 'reference_age', 'reference_filter_time')))
 
   def test_actual_ford_branch_uses_selected_reference_and_disables_invalid_output(self):
     source_path = Path(__file__).resolve().parents[1] / 'controlsd.py'
