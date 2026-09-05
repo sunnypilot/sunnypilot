@@ -42,7 +42,9 @@ from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_p
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues, make_supercombo_input_queues, WARP_INPUTS, POLICY_INPUTS
+from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
+                                                           make_supercombo_input_queues, nv12_copy_size,
+                                                           WARP_INPUTS, POLICY_INPUTS)
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -174,8 +176,9 @@ class ModelState(ModelStateBase):
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
     yuv_size = nv12_info[3]
+    self.frame_copy_size = nv12_copy_size(*nv12_info[:3])
     if self.use_frame_buffers:
-      self.frame_buffers = {k: np.zeros(yuv_size, dtype=np.uint8) for k in self._vision_input_names}
+      self.frame_buffers = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self._vision_input_names}
       self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
     else:
       self.frame_buffers = {}
@@ -183,7 +186,8 @@ class ModelState(ModelStateBase):
     self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
-    dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
+    dummy_size = self.frame_copy_size if self.use_frame_buffers else self.frame_buf_params[self._road_key][3]
+    dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
 
     dummy_inputs = {}
@@ -218,7 +222,7 @@ class ModelState(ModelStateBase):
           after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
     if self.use_frame_buffers:
       for key, buf in bufs.items():
-        np.copyto(self.frame_buffers[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_buf_params[key][3]))
+        np.copyto(self.frame_buffers[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key, buf in bufs.items():
         ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data

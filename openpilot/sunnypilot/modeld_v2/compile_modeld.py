@@ -32,7 +32,7 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, sample_desire, sample_skip, shift_and_sample
+from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, nv12_copy_size, sample_desire, sample_skip, shift_and_sample
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -377,8 +377,9 @@ if __name__ == "__main__":
   for cam_w, cam_h in args.camera_resolutions:
     print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
     nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+    frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
     warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
-    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=warp_input_dev)
+    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
     warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
     output_data[(cam_w, cam_h)] = compile_jit(warp, make_random_warp_inputs, WARP_INPUTS, make_warp_queues)
 
