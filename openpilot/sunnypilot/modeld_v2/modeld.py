@@ -42,7 +42,9 @@ from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_p
 from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues, make_supercombo_input_queues, WARP_INPUTS, POLICY_INPUTS
+from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
+                                                           make_supercombo_input_queues, nv12_copy_size,
+                                                           WARP_INPUTS, POLICY_INPUTS)
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -112,8 +114,9 @@ class ModelState(ModelStateBase):
     jits = load_oob(open_file_chunked(pkl_path))
 
     metadata = jits['metadata']
-    self.WARP_DEV = metadata.get('warp_dev', 'QCOM' if COMMA_HARDWARE else 'CPU')
-    self.DEV = 'AMD' if self.chestnut else ('QCOM' if COMMA_HARDWARE else 'CPU')
+    self.use_frame_buffers = metadata.get('warp_dev') == 'AMD'
+    self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
+    self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.QUEUE_DEV = self.DEV
     self.run_policy = jits['run_policy']
     self.warp = jits[(cam_w, cam_h)]
@@ -130,7 +133,7 @@ class ModelState(ModelStateBase):
                                                                           frame_skip, device=self.QUEUE_DEV)
     else:
       vision_metadata = metadata['vision']
-      policy_keys = [k for k in metadata if k != 'vision']
+      policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]
       if policy_keys == ['policy']:
         self._combined_model_type = 'split'
       else:
@@ -172,13 +175,19 @@ class ModelState(ModelStateBase):
     nv12_info = get_nv12_info(cam_w, cam_h)
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
-    yuv_size = self.frame_buf_params[self._road_key][3]
-    frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-    big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
+    yuv_size = nv12_info[3]
+    self.frame_copy_size = nv12_copy_size(*nv12_info[:3])
+    if self.use_frame_buffers:
+      self.frame_buffers = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self._vision_input_names}
+      self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
+    else:
+      self.frame_buffers = {}
+      self.full_frames = {k: Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
-    dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
+    dummy_size = self.frame_copy_size if self.use_frame_buffers else self.frame_buf_params[self._road_key][3]
+    dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
 
     dummy_inputs = {}
@@ -186,13 +195,14 @@ class ModelState(ModelStateBase):
       if k not in ['tfm', 'big_tfm', 'prev_feat']:
         dummy_inputs[k] = np.zeros(v.shape, dtype=v.dtype)
 
-    self.run(dummy_frames, transforms, dummy_inputs, prepare_only=False)
+    self.run(dummy_frames, transforms, dummy_inputs)
 
     for v in self.numpy_inputs.values():
       v[:] = 0
     self.prev_desire[:] = 0
-    self.full_frames.clear()
-    self._blob_cache.clear()
+    if not self.use_frame_buffers:
+      self.full_frames.clear()
+      self._blob_cache.clear()
 
 
   @property
@@ -208,15 +218,18 @@ class ModelState(ModelStateBase):
     return self._desire_key
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
-          inputs: dict[str, np.ndarray], prepare_only: bool,
+          inputs: dict[str, np.ndarray],
           after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
-    for key in bufs.keys():
-      ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data
-      yuv_size = self.frame_buf_params[key][3]
-      cache_key = (key, ptr)
-      if cache_key not in self._blob_cache:
-        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
-      self.full_frames[key] = self._blob_cache[cache_key]
+    if self.use_frame_buffers:
+      for key, buf in bufs.items():
+        np.copyto(self.frame_buffers[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_copy_size))
+    else:
+      for key, buf in bufs.items():
+        ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
+        cache_key = (key, ptr)
+        if cache_key not in self._blob_cache:
+          self._blob_cache[cache_key] = Tensor.from_blob(ptr, (self.frame_buf_params[key][3],), dtype='uint8', device=self.WARP_DEV)
+        self.full_frames[key] = self._blob_cache[cache_key]
 
     desire_key = self.desire_key
     inputs[desire_key][0] = 0
@@ -231,9 +244,6 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 
-    if prepare_only:
-      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-      return None
     warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
     raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
     if after_enqueue is not None:
@@ -360,7 +370,11 @@ def main(demo=False):
     loader.start()
     loader.join(BIG_MODEL_TIMEOUT)
     model = big_model
+    if model is None:
+      params.put_bool("ChestnutModelError", True)
     params.put_bool("ChestnutActive", model is not None)
+    if model is not None:
+      params.remove("ChestnutModelError")
 
   small_model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False) if model is None or CHESTNUT else None
   if model is None:
@@ -474,9 +488,6 @@ def main(demo=False):
     run_count = run_count + 1
 
     frame_drop_ratio = frames_dropped / (1 + frames_dropped)
-    prepare_only = vipc_dropped_frames > 0
-    if prepare_only:
-      cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
@@ -501,11 +512,12 @@ def main(demo=False):
     try:
       send_chestnut = (chestnut_state is not None and
                        run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0)
-      model_output = model.run(bufs, transforms, inputs, prepare_only, chestnut_state.send if send_chestnut else None)
+      model_output = model.run(bufs, transforms, inputs, chestnut_state.send if send_chestnut else None)
     except Exception:
       if not params.get_bool("ChestnutActive"):
         raise
       cloudlog.exception("chestnut failed, falling back to small")
+      params.put_bool("ChestnutModelError", True)
       params.put_bool("ChestnutActive", False)
       assert small_model is not None
       model = small_model

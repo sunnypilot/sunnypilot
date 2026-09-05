@@ -32,7 +32,7 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, sample_desire, sample_skip, shift_and_sample
+from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, nv12_copy_size, sample_desire, sample_skip, shift_and_sample
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -138,7 +138,9 @@ def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
   return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True)
 
 
-def make_random_images(keys, shape, device):
+def make_random_images(keys, shape, device, rng):
+  if device == 'NPY':
+    return {k: Tensor(rng.integers(0, 256, size=shape, dtype=np.uint8), device='NPY').realize() for k in keys}
   return {k: Tensor.randint(shape, low=0, high=256, dtype=dtypes.uint8, device=device).realize() for k in keys}
 
 
@@ -157,8 +159,9 @@ def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
   def warp(tfm, big_tfm, frame, big_frame):
     tfm = tfm.to(Device.DEFAULT)
     big_tfm = big_tfm.to(Device.DEFAULT)
-    frame = frame.to(Device.DEFAULT)
-    big_frame = big_frame.to(Device.DEFAULT)
+    if Device.DEFAULT == 'AMD':
+      frame = frame.to(Device.DEFAULT)
+      big_frame = big_frame.to(Device.DEFAULT)
     Tensor.realize(tfm, big_tfm, frame, big_frame)
 
     warped_frame = frame_prepare(frame, tfm).unsqueeze(0)
@@ -239,7 +242,7 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
       for v in npy.values():
         v[:] = rng.standard_normal(v.shape).astype(v.dtype)
       Device.default.synchronize()
-      random_inputs = make_random_inputs()
+      random_inputs = make_random_inputs(rng=rng)
       st = time.perf_counter()
       outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
       mt = time.perf_counter()
@@ -374,7 +377,9 @@ if __name__ == "__main__":
   for cam_w, cam_h in args.camera_resolutions:
     print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
     nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=Device.DEFAULT)
+    frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+    warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
+    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
     warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
     output_data[(cam_w, cam_h)] = compile_jit(warp, make_random_warp_inputs, WARP_INPUTS, make_warp_queues)
 
