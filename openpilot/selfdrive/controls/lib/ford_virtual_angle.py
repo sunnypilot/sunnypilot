@@ -300,9 +300,9 @@ class FordVirtualAngleController:
 
 
 def select_virtual_angle_controller(CP, enabled, previous_controller):
-  # The source route analysis covers only this vehicle/firmware.
+  # The Sunnylink toggle selects this controller on the Lightning even when
+  # the startup firmware query omits EPS identification.
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD and CP.carFingerprint == 'FORD_F_150_LIGHTNING_MK1'
-  firmware = compatible and any(str(fw.ecu) == 'eps' and bytes(fw.fwVersion).rstrip(b'\0') == b'RL38-14D003-AA' for fw in CP.carFw)
-  if enabled and firmware:
+  if enabled and compatible:
     return FordVirtualAngleController(CP.steerActuatorDelay)
   return previous_controller

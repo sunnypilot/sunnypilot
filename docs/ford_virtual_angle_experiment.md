@@ -31,6 +31,13 @@ measured correction can distinguish them. Replaying old motion verifies
 command construction, not the truck's counterfactual response or a fix for
 the unrecorded plateau.
 
+Route83 had the sunnylink toggle on, but its current CarParams omitted the
+EPS firmware responses. The former firmware eligibility check therefore
+selected the default `FordPathController`; replay reproduced its recorded
+C0/C1/C2 requests. Those favorable driving results do not validate v5. The
+toggle now selects this experiment on the supported Lightning platform
+without depending on firmware-query results.
+
 ## Base request and feedback
 
 controlsd uses valid `lateralManeuverPlan.desiredCurvature`, otherwise
@@ -128,11 +135,19 @@ filtered heading does not command C1.
 
 Vehicle → Ford → **C2-Free Path Tracking (Experimental)** retains the existing
 `FordVirtualAngleController` key and default-off setting. An already-enabled
-setting selects v5 after updating and restarting controlsd. Selection remains
-limited to Ford CAN FD, `FORD_F_150_LIGHTNING_MK1`, and EPS firmware
-`RL38-14D003-AA`. It takes priority over PSCM Coefficient Observer. Turning it
-off and cycling offroad/onroad restores the previous controller selection.
-No live device setting is changed by this commit.
+setting selects v5 after updating and restarting controlsd. The toggle
+controls selection on Ford CAN FD `FORD_F_150_LIGHTNING_MK1`: missing or
+different EPS firmware-query results no longer cause a fallback. Other
+platforms retain their existing controller. V5 takes priority over PSCM
+Coefficient Observer while selected. Turning it off and cycling offroad/onroad
+restores the previous controller selection; changes are not applied live onroad.
+
+Controller selection does not bypass lateral engagement, input-validity,
+driver-override or fresh-PSCM-status requirements. The feedback eligibility
+rules above still apply, and all C0/C1 bounds and C2/C3 behavior are unchanged.
+The analyzed firmware remains `RL38-14D003-AA`; removing the selection check
+does not establish validation on other firmware. No live device setting is
+changed by this commit.
 
 ## Diagnostics and verification
 

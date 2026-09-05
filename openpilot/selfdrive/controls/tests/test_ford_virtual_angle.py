@@ -18,13 +18,24 @@ def car_params(**kwargs):
 
 
 class TestVirtualAngleSelection(unittest.TestCase):
-  def test_opt_in_and_exact_vehicle_firmware_scope(self):
+  def test_opt_in_and_exact_vehicle_scope(self):
     for previous in (FordPathController(), FordPscmObserverPathController()):
       self.assertIs(select_virtual_angle_controller(car_params(), False, previous), previous)
-      for overrides in ({'brand': 'tesla'}, {'flags': 0}, {'carFingerprint': 'FORD_F_150_MK14'},
-                        {'carFw': []}, {'carFw': [SimpleNamespace(ecu='eps', fwVersion=b'ML3V')]}):
+      for overrides in ({'brand': 'tesla'}, {'flags': 0}, {'carFingerprint': 'FORD_F_150_MK14'}):
         self.assertIs(select_virtual_angle_controller(car_params(**overrides), True, previous), previous)
       self.assertIsInstance(select_virtual_angle_controller(car_params(), True, previous), FordVirtualAngleController)
+
+  def test_toggle_controls_selection_independently_of_firmware_query(self):
+    for firmware in ([], [SimpleNamespace(ecu='engine', fwVersion=b'engine')],
+                     [SimpleNamespace(ecu='eps', fwVersion=b'RL38-14D003-AA')],
+                     [SimpleNamespace(ecu='eps', fwVersion=b'other')]):
+      for previous in (FordPathController(), FordPscmObserverPathController()):
+        with self.subTest(firmware=firmware, previous=type(previous).__name__):
+          cp = car_params(carFw=firmware, steerActuatorDelay=.3)
+          self.assertIs(select_virtual_angle_controller(cp, False, previous), previous)
+          chosen = select_virtual_angle_controller(cp, True, previous)
+          self.assertIsInstance(chosen, FordVirtualAngleController)
+          self.assertEqual(chosen.delay, .3)
 
   def test_old_setting_cannot_enable_new_controller(self):
     from openpilot.common.params import Params
@@ -36,11 +47,14 @@ class TestVirtualAngleSelection(unittest.TestCase):
       self.assertIs(params.get_default_value('FordVirtualAngleController'), False)
       self.assertFalse(params.get_bool('FordVirtualAngleController'))
       previous = FordPathController()
-      self.assertIs(select_virtual_angle_controller(car_params(), params.get_bool('FordVirtualAngleController'), previous), previous)
+      # Route83 had the toggle on but no EPS firmware records in CarParams.
+      cp = car_params(carFw=[])
+      self.assertIs(select_virtual_angle_controller(cp, params.get_bool('FordVirtualAngleController'), previous), previous)
       params.put_bool('FordVirtualAngleController', True, block=True)
-      chosen = select_virtual_angle_controller(car_params(), params.get_bool('FordVirtualAngleController'), previous)
+      chosen = select_virtual_angle_controller(cp, params.get_bool('FordVirtualAngleController'), previous)
       params.put_bool('FordVirtualAngleController', False, block=True)
       self.assertIsInstance(chosen, FordVirtualAngleController)  # only selected at startup
+      self.assertIs(select_virtual_angle_controller(cp, params.get_bool('FordVirtualAngleController'), previous), previous)
 
 
 if __name__ == '__main__':

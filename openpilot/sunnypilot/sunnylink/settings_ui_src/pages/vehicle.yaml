@@ -15,7 +15,7 @@ sections:
     needs_onroad_cycle: true
     title: C2-Free Path Tracking (Experimental)
     description: Follow the planned turn with a measured steering correction on the F-150 Lightning with C2 off.
-    details: Uses planned curvature for centering and heading, with a bounded correction when measured turning differs from the request. The correction requires fresh steering-controller status and clears during driver override. Default off and this version is not road-validated. Available only on the F-150 Lightning with RL38-14D003-AA steering firmware; other vehicles retain their existing controller. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
+    details: Uses planned curvature for centering and heading, with a bounded correction when measured turning differs from the request. The correction requires fresh steering-controller status and clears during driver override. Default off and this version is not road-validated. When enabled, this controller is always selected on the Ford CAN FD F-150 Lightning regardless of steering-firmware identification; other vehicles retain their existing controller. Enable only for controlled testing. Takes priority over PSCM Coefficient Observer while enabled. Turning it off restores the previous controller selection. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
     enablement:
     - $ref: '#/macros/offroad'
   - key: FordPscmObserver
