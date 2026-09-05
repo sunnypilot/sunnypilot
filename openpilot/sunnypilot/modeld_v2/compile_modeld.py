@@ -41,7 +41,6 @@ from tinygrad.tensor import Tensor
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']
 POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
-WARP_DEV = os.getenv('WARP_DEV')
 
 
 def _detect_desire_key(shapes: dict) -> str | None:
@@ -154,12 +153,13 @@ def make_warp_queues(device=Device.DEFAULT):
 
 def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
   frame_prepare = make_frame_prepare(nv12, model_w, model_h)
-  WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
 
   def warp(tfm, big_tfm, frame, big_frame):
-    tfm = tfm.to(WARP_DEV)
-    big_tfm = big_tfm.to(WARP_DEV)
-    Tensor.realize(tfm, big_tfm)
+    tfm = tfm.to(Device.DEFAULT)
+    big_tfm = big_tfm.to(Device.DEFAULT)
+    frame = frame.to(Device.DEFAULT)
+    big_frame = big_frame.to(Device.DEFAULT)
+    Tensor.realize(tfm, big_tfm, frame, big_frame)
 
     warped_frame = frame_prepare(frame, tfm).unsqueeze(0)
     warped_big_frame = frame_prepare(big_frame, big_tfm).unsqueeze(0)
@@ -368,15 +368,17 @@ if __name__ == "__main__":
   run_policy_func = make_run_policy(vision_runner, policy_runners, features_slice, derived_frame_skip, all_shapes)
   run_policy_jit = TinyJit(run_policy_func, prune=True)
   make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=is_supercombo)
-  make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
+  make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=Device.DEFAULT)
   output_data['run_policy'] = compile_jit(run_policy_jit, make_random_model_inputs, POLICY_INPUTS, make_policy_queues)
 
   for cam_w, cam_h in args.camera_resolutions:
     print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
     nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=WARP_DEV)
+    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=Device.DEFAULT)
     warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
     output_data[(cam_w, cam_h)] = compile_jit(warp, make_random_warp_inputs, WARP_INPUTS, make_warp_queues)
+
+  output_data['metadata']['warp_dev'] = Device.DEFAULT
 
   with open(args.output, "wb") as file:
     dump_oob(output_data, file)

@@ -6,6 +6,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+from collections.abc import Callable
 import os
 os.environ['GMMU'] = '0'
 import numpy as np
@@ -110,18 +111,12 @@ class ModelState(ModelStateBase):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
     jits = load_oob(open_file_chunked(pkl_path))
 
-    self.WARP_DEV = 'QCOM' if COMMA_HARDWARE else 'CPU'
-    self.DEV = 'AMD' if self.chestnut else self.WARP_DEV
-    self.QUEUE_DEV = self.DEV
     metadata = jits['metadata']
-
-    self.is_legacy_model = 'run_policy' not in jits  # remove after next recompile
-    if self.is_legacy_model:
-      self.warp = jits[(cam_w, cam_h)]['warp_enqueue']
-      self.run_policy = jits[(cam_w, cam_h)]['run_policy']
-    else:
-      self.run_policy = jits['run_policy']
-      self.warp = jits[(cam_w, cam_h)]
+    self.WARP_DEV = metadata.get('warp_dev', 'QCOM' if COMMA_HARDWARE else 'CPU')
+    self.DEV = 'AMD' if self.chestnut else ('QCOM' if COMMA_HARDWARE else 'CPU')
+    self.QUEUE_DEV = self.DEV
+    self.run_policy = jits['run_policy']
+    self.warp = jits[(cam_w, cam_h)]
 
     if 'model' in metadata:
       model_metadata = metadata['model']
@@ -180,11 +175,7 @@ class ModelState(ModelStateBase):
     yuv_size = self.frame_buf_params[self._road_key][3]
     frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
     big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-
-    if self.is_legacy_model: # Remove this conditional hack after recompile
-      self.warp(**self.input_queues, frame=frame_tensor, big_frame=big_frame_tensor)
-    else:
-      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
+    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
 
   def warmup(self) -> None:
     dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
@@ -217,7 +208,8 @@ class ModelState(ModelStateBase):
     return self._desire_key
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
-                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], prepare_only: bool,
+          after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
     for key in bufs.keys():
       ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data
       yuv_size = self.frame_buf_params[key][3]
@@ -239,20 +231,18 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
 
-    if self.is_legacy_model:  # remove after next recompile
-      if prepare_only:
-        self.warp(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-        return None
-      raw_outputs = self.run_policy(**self.input_queues, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-    else:
-      if prepare_only:
-        self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-        return None
-      warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-      raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+    if prepare_only:
+      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+      return None
+    warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
+    raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+    if after_enqueue is not None:
+      after_enqueue()
 
     if self._combined_model_type == 'supercombo':
       model_output = raw_outputs.numpy().flatten()
+      if self.chestnut and not np.all(np.isfinite(model_output)):
+        raise RuntimeError("model output not finite")
       sliced = {k: model_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_outputs(sliced)
       if 'prev_feat' in self.numpy_inputs:
@@ -284,9 +274,6 @@ class ModelState(ModelStateBase):
       buf = self.numpy_inputs['prev_desired_curv']
       buf[0, :-1] = buf[0, 1:]
       buf[0, -1, :] = outputs['desired_curvature'][0, :] if not self.mlsim else 0
-
-    if self.chestnut and not np.all(np.isfinite(outputs.get('plan', np.array([0.])))):
-      raise RuntimeError("model output not finite")
 
     return outputs
 
@@ -512,7 +499,9 @@ def main(demo=False):
 
     mt1 = time.perf_counter()
     try:
-      model_output = model.run(bufs, transforms, inputs, prepare_only)
+      send_chestnut = (chestnut_state is not None and
+                       run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0)
+      model_output = model.run(bufs, transforms, inputs, prepare_only, chestnut_state.send if send_chestnut else None)
     except Exception:
       if not params.get_bool("ChestnutActive"):
         raise
@@ -558,9 +547,6 @@ def main(demo=False):
       pm.send('cameraOdometry', posenet_send)
       pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
-
-    if chestnut_state is not None and run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0:
-      chestnut_state.send()
 
 if __name__ == "__main__":
   try:
