@@ -138,9 +138,7 @@ def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
   return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True)
 
 
-def make_random_images(keys, shape, device, rng):
-  if device == 'NPY':
-    return {k: Tensor(rng.integers(0, 256, size=shape, dtype=np.uint8), device='NPY').realize() for k in keys}
+def make_random_images(keys, shape, device, rng=None):
   return {k: Tensor.randint(shape, low=0, high=256, dtype=dtypes.uint8, device=device).realize() for k in keys}
 
 
@@ -151,23 +149,6 @@ def make_warp_queues(device=Device.DEFAULT):
   }
   queues = {k: Tensor(v, device='NPY').realize() for k, v in npy.items()}
   return queues, npy
-
-
-def make_warp(nv12: stock.NV12Frame, model_w: int, model_h: int):
-  frame_prepare = stock.make_frame_prepare(nv12, model_w, model_h)
-
-  def warp(tfm, big_tfm, frame, big_frame):
-    tfm = tfm.to(Device.DEFAULT)
-    big_tfm = big_tfm.to(Device.DEFAULT)
-    if Device.DEFAULT == 'AMD':
-      frame = frame.to(Device.DEFAULT)
-      big_frame = big_frame.to(Device.DEFAULT)
-    Tensor.realize(tfm, big_tfm, frame, big_frame)
-
-    warped_frame = frame_prepare(frame, tfm).unsqueeze(0)
-    warped_big_frame = frame_prepare(big_frame, big_tfm).unsqueeze(0)
-    return Tensor.cat(warped_frame, warped_big_frame)
-  return warp
 
 
 def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, frame_skip: int, input_shapes: dict):
@@ -395,7 +376,7 @@ if __name__ == "__main__":
       nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
       frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
       make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=Device.DEFAULT)
-      warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
+      warp = TinyJit(stock.make_warp(nv12, model_w, model_h), prune=True)
       output_data[(cam_w, cam_h)] = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs)
 
     output_data['metadata']['warp_dev'] = Device.DEFAULT
