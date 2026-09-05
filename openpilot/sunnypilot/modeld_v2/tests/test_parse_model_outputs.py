@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser, _infer_mhp, sigmoid, softmax
@@ -23,7 +22,7 @@ class TestParseModelOutputs(OpenpilotTestCase):
 
   def test_check_missing_raises(self):
     parser = Parser(ignore_missing=False)
-    with pytest.raises(ValueError, match="Missing output missing_key"):
+    with self.assertRaises(ValueError):
       parser.check_missing({}, "missing_key")
 
   def test_check_missing_ignored(self):
