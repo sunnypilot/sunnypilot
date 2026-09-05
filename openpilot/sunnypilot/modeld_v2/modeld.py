@@ -119,7 +119,6 @@ class ModelState(ModelStateBase):
     jits = load_oob(open_file_chunked(pkl_path))
 
     metadata = jits['metadata']
-    self.use_frame_buffers = metadata.get('warp_dev') == 'AMD'
     self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.QUEUE_DEV = self.DEV
@@ -185,16 +184,12 @@ class ModelState(ModelStateBase):
 
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
-    if not self.is_run_model:
-      if self.use_frame_buffers:
-        self.frame_buffers = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self._vision_input_names}
-        self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
-      else:
-        self.full_frames = {k: Tensor(np.zeros(nv12_info[3], dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+    if self.warp is not None:
+      self.full_frames = {k: Tensor(np.zeros(nv12_info[3], dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
       self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
-    dummy_size = self.frame_copy_size if (self.is_run_model or self.use_frame_buffers) else self.frame_buf_params[self._road_key][3]
+    dummy_size = self.frame_copy_size if self.is_run_model else self.frame_buf_params[self._road_key][3]
     dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
@@ -207,9 +202,8 @@ class ModelState(ModelStateBase):
     else:
       for v in self.numpy_inputs.values():
         v[:] = 0
-      if not self.use_frame_buffers:
-        self.full_frames.clear()
-        self._blob_cache.clear()
+      self.full_frames.clear()
+      self._blob_cache.clear()
     self.prev_desire[:] = 0
 
   @property
@@ -227,7 +221,7 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray],
           after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
-    if self.is_run_model or self.use_frame_buffers:
+    if self.is_run_model:
       for key, buf in bufs.items():
         data = buf.data if hasattr(buf, 'data') else buf
         np.copyto(self.frame_buffers[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
@@ -251,10 +245,11 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
 
-    if self.is_run_model:
+    if self.run_model is not None:
       outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
       raw_outputs = outs
     else:
+      assert self.warp is not None and self.run_policy is not None
       warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
       raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 

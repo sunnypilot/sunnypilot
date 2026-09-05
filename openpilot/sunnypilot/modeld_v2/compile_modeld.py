@@ -394,8 +394,7 @@ if __name__ == "__main__":
       print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
       nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
       frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-      warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
-      make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
+      make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=Device.DEFAULT)
       warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
       output_data[(cam_w, cam_h)] = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs)
 
