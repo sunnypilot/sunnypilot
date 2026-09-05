@@ -19,7 +19,7 @@ class TestFordCurvatureHeadingRoutes(unittest.TestCase):
     cls.data = data = dict(np.load(fixture))
     models = [SimpleNamespace(position=SimpleNamespace(x=p[0], y=p[1]), orientation=SimpleNamespace(z=p[2])) for p in data['models']]
     previous_episode = None
-    commands, gates, statuses = [], [], []
+    commands, gates, statuses, biases = [], [], [], []
     for i, now in enumerate(data['t']):
       if data['episode'][i] != previous_episode:
         controller = FordVirtualAngleController()
@@ -32,29 +32,35 @@ class TestFordCurvatureHeadingRoutes(unittest.TestCase):
       commands.append((command.path_offset, command.path_angle, command.curvature, command.curvature_rate))
       gates.append(command.valid)
       statuses.append(controller.diagnostics['status'])
+      biases.append(controller.diagnostics['heading_bias'])
     cls.commands = np.array(commands)
     cls.gates = np.array(gates)
     cls.statuses = np.array(statuses)
+    cls.biases = np.array(biases)
 
-  def test_c0_and_output_gates_match_frozen_v3(self):
-    np.testing.assert_array_equal(self.commands[:, 0], self.data['v3_replay'][:, 0])
+  def test_output_gates_match_frozen_v3(self):
     np.testing.assert_array_equal(self.gates, self.data['v3_valid'])
     np.testing.assert_array_equal(self.statuses, self.data['v3_status'])
     np.testing.assert_array_equal(self.commands[:, 2:], 0.)
 
-  def test_recorded_turns_follow_the_common_curvature_heading(self):
-    # Expected values come from the independent shadow candidate evaluated on
-    # these frozen route inputs. This checks commands, not new vehicle motion.
-    np.testing.assert_array_equal(self.commands[:, 1], self.data['expected_common_c1'])
-    for episode, expected_heading in enumerate((.14375, .286, .1895)):
+  def test_missing_pscm_retains_bounded_base_without_integrating(self):
+    # These older inputs omit PSCM status. They must retain a usable base and
+    # normal output guards without inventing feedback eligibility. Large-turn
+    # authority and measured backoff have separate route83 evidence fixtures.
+    np.testing.assert_array_equal(self.biases, 0.)
+    self.assertTrue(np.isfinite(self.commands).all())
+    self.assertLessEqual(float(np.max(abs(self.commands[:, 0]))), 5.11 + 1e-9)
+    self.assertLessEqual(float(np.max(abs(self.commands[:, 1]))), .5 + 1e-9)
+    np.testing.assert_array_equal(self.commands[~self.gates], 0.)
+    for episode in range(3):
       mask = (self.data['episode'] == episode) & self.data['evidence'] & self.data['benchmark_clean']
       self.assertGreater(int(mask.sum()), 100)
-      self.assertAlmostEqual(float(np.median(abs(self.commands[mask, 1]))), expected_heading, delta=.001)
-    # The over-response witness previously held C1 at its bound even though the
-    # selected action requested substantially less heading over the same preview.
-    mask = (self.data['episode'] == 1) & self.data['evidence'] & self.data['benchmark_clean']
-    self.assertAlmostEqual(float(np.median(abs(self.data['recorded'][mask, 1]))), .5, delta=.0005)
-    self.assertLess(float(np.median(abs(self.commands[mask, 1]))), .30)
+      self.assertGreater(float(np.median(abs(self.commands[mask, 1]))), .03)
+    continuing = self.gates[1:] & self.gates[:-1] & (np.diff(self.data['episode']) == 0)
+    elapsed = np.diff(self.data['t'])[continuing]
+    steps = abs(np.diff(self.commands[:, :2], axis=0))[continuing]
+    self.assertTrue(np.all(steps[:, 0] <= 4. * elapsed + .010001))
+    self.assertTrue(np.all(steps[:, 1] <= .5 * elapsed + .000501))
 
 
 if __name__ == '__main__':

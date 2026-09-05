@@ -289,6 +289,8 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     # No other toggle can prevent disabling this experiment while offroad.
     assert servo["enablement"] == [{"type": "offroad_only"}]
     assert "F-150 Lightning" in servo["description"]
+    assert "model path" in servo["description"]
+    assert "planned-curvature centering" in servo["description"]
     assert "always selected on the Ford CAN FD F-150 Lightning regardless of steering-firmware identification" in servo["details"]
     assert "Turning it off restores the previous controller selection" in servo["details"]
     assert "RL38-14D003-AA" not in servo["details"]

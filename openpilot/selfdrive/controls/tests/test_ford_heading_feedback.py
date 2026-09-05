@@ -10,7 +10,7 @@ import numpy as np
 from opendbc.can import CANPacker, CANParser
 from opendbc.car.ford.fordcan import CanBus, create_lat_ctl2_msg
 from openpilot.cereal import custom
-from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, PscmStatus
+from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController, HeadingFeedback, PathTuning, PscmStatus
 
 
 MODEL = SimpleNamespace(position=SimpleNamespace(x=np.linspace(0., 100., 33), y=np.zeros(33)),
@@ -36,6 +36,31 @@ def warm(controller, desired=.02, yaw_rate=.08, speed=8., count=200):
 
 
 class TestFordHeadingFeedback(unittest.TestCase):
+  def test_limited_backoff_cannot_grow_the_command_when_model_base_rises(self):
+    for sign in (-1, 1):
+      feedback = HeadingFeedback(.2, PathTuning())
+      previous = sign * .2
+      for i in range(40):
+        now = i * .01
+        previous = feedback.update(sign * .2, sign * .02, yaw_rate=sign * .1, speed=5., now=now,
+                                   measurement_time=now, dt=.01, previous_command=previous, heading_horizon=7.,
+                                   driver_override=False, pscm_status=PscmStatus(now, 2, 0, 2, False))
+      # A larger model base must not defeat the measured backoff by outweighing
+      # its subtractive integral increment while the PSCM is already limited.
+      target = feedback.update(sign * .4, sign * .02, yaw_rate=sign * .3, speed=5., now=.4,
+                               measurement_time=.4, dt=.01, previous_command=previous, heading_horizon=7.,
+                               driver_override=False, pscm_status=PscmStatus(.4, 2, 2, 2, False))
+      self.assertGreaterEqual(sign * target, 0.)
+      self.assertLessEqual(sign * target, sign * previous)
+      # A model-base change is not measured yaw error. Its temporary output
+      # ceiling must not become a persistent, artificially large integral.
+      self.assertAlmostEqual(sign * feedback.bias, -.002)
+      repeated = feedback.update(sign * .5, sign * .02, yaw_rate=sign * .3, speed=5., now=.41,
+                                 measurement_time=.4, dt=.01, previous_command=target, heading_horizon=7.,
+                                 driver_override=False, pscm_status=PscmStatus(.41, 2, 2, 2, False))
+      self.assertGreaterEqual(sign * repeated, 0.)
+      self.assertLessEqual(sign * repeated, sign * target)
+
   def test_under_and_over_response_change_only_heading(self):
     for sign in (-1, 1):
       deficient = FordVirtualAngleController()
@@ -58,16 +83,36 @@ class TestFordHeadingFeedback(unittest.TestCase):
     self.assertAlmostEqual(command.path_angle, .16, delta=.0005)
     self.assertAlmostEqual(command.path_offset, .64, delta=.01)
 
-  def test_generic_eps_limit_freezes_both_error_directions(self):
-    for yaw_rate in (0., .4):
+  def test_generic_eps_limit_blocks_growth_but_allows_same_direction_backoff(self):
+    for sign in (-1, 1):
+      for yaw_rate in (0., .4):
+        controller = FordVirtualAngleController()
+        before = warm(controller, desired=sign * .02, yaw_rate=sign * .08)
+        previous = sign * before.path_angle
+        for i in range(200, 500):
+          now = i * .01
+          command = step(controller, now, desired=sign * .02, yaw_rate=sign * yaw_rate,
+                         pscm_status=PscmStatus(now, 2, 2, 2, False))
+          self.assertGreaterEqual(sign * command.path_angle, -.000501)
+          self.assertLessEqual(sign * command.path_angle, previous + .000501)
+          previous = sign * command.path_angle
+          if yaw_rate == 0.:
+            self.assertAlmostEqual(command.path_angle, before.path_angle, delta=.0005)
+        if yaw_rate > 0.:
+          self.assertAlmostEqual(command.path_angle, 0., delta=.0005)
+
+  def test_release_allows_backoff_without_rebuilding_turn_demand(self):
+    for sign in (-1, 1):
       controller = FordVirtualAngleController()
-      before = warm(controller)
-      self.assertGreater(before.path_angle, .20)
-      for i in range(200, 260):
-        now = i * .01
-        command = step(controller, now, yaw_rate=yaw_rate,
-                       pscm_status=PscmStatus(now, 2, 2, 2, False))
-        self.assertAlmostEqual(command.path_angle, before.path_angle, delta=.0005)
+      warm(controller, desired=sign * .04, yaw_rate=sign * .32)
+      previous = .32
+      for i in range(200, 219):
+        command = step(controller, i * .01, desired=sign * .035, yaw_rate=sign * .5)
+        self.assertGreaterEqual(sign * command.path_angle, -.000501)
+        self.assertLessEqual(sign * command.path_angle, previous + .000501)
+        previous = sign * command.path_angle
+      self.assertLess(sign * controller.diagnostics['heading_bias'], 0.)
+      self.assertEqual(controller.diagnostics['feedback_status'], 'release_backoff')
 
   def test_ineligible_feedback_clears_bias_and_requires_fresh_history(self):
     # These guards affect feedback eligibility, while the existing base path
@@ -168,8 +213,9 @@ class TestFordHeadingFeedback(unittest.TestCase):
     # Both requests give clipped base C1=.5. Scaling a negative bias by the raw
     # curvature reduction would increase total C1 during a release.
     after = step(controller, 2., desired=.09, yaw_rate=1., pscm_status=PscmStatus(2., 2, 2, 2, False))
-    self.assertAlmostEqual(controller.diagnostics['heading_bias'], before_bias, places=10)
-    self.assertAlmostEqual(after.path_angle, before.path_angle, delta=.0005)
+    self.assertLessEqual(controller.diagnostics['heading_bias'], before_bias)
+    self.assertLessEqual(after.path_angle, before.path_angle + .0005)
+    self.assertGreaterEqual(after.path_angle, 0.)
 
   def test_host_field_limit_prevents_hidden_integral_growth(self):
     controller = FordVirtualAngleController()
@@ -242,36 +288,39 @@ class TestFordHeadingFeedback(unittest.TestCase):
     np.testing.assert_array_equal(data['t'], eps['t'])
     models = [SimpleNamespace(position=SimpleNamespace(x=p[0], y=p[1]), orientation=SimpleNamespace(z=p[2])) for p in data['models']]
     previous_episode = None
-    commands, biases, gates = [], [], []
-    limit_freezes = 0
+    commands, bases, biases, gates = [], [], [], []
+    limit_guards = 0
     for i, now in enumerate(data['t']):
       if data['episode'][i] != previous_episode:
         controller = FordVirtualAngleController()
+        base_controller = FordVirtualAngleController(tuning=PathTuning(feedback_gain=0.))
         previous_episode = data['episode'][i]
       pscm = PscmStatus(float(eps['pscm_timestamp'][i]), int(eps['lateral_state'][i]), int(eps['limit'][i]),
                         int(eps['capability'][i]), bool(eps['denied'][i]), bool(eps['valid'][i]))
-      command = controller.update(models[data['model_index'][i]], data['desired_curvature'][i],
-                                  yaw_rate=data['yaw_rate'][i], speed=data['speed'][i], now=now,
-                                  measurement_time=data['measurement_time'][i], model_time=data['model_time'][i],
-                                  reference_time=data['reference_time'][i], active=bool(data['active'][i]), valid=bool(data['valid'][i]),
-                                  steering_pressed=bool(data['pressed'][i]), steering_torque=float(eps['steering_torque'][i]), pscm_status=pscm)
+      inputs = {'yaw_rate': data['yaw_rate'][i], 'speed': data['speed'][i], 'now': now,
+                'measurement_time': data['measurement_time'][i], 'model_time': data['model_time'][i],
+                'reference_time': data['reference_time'][i], 'active': bool(data['active'][i]), 'valid': bool(data['valid'][i]),
+                'steering_pressed': bool(data['pressed'][i]), 'steering_torque': float(eps['steering_torque'][i]), 'pscm_status': pscm}
+      command = controller.update(models[data['model_index'][i]], data['desired_curvature'][i], **inputs)
+      base = base_controller.update(models[data['model_index'][i]], data['desired_curvature'][i], **inputs)
       commands.append((command.path_offset, command.path_angle, command.curvature, command.curvature_rate))
+      bases.append((base.path_offset, base.path_angle))
       gates.append(command.valid)
       biases.append(controller.diagnostics['heading_bias'])
       if pscm.limit == 2:
         self.assertNotEqual(controller.diagnostics['feedback_status'], 'integrating')
-      limit_freezes += controller.diagnostics['feedback_status'] == 'pscm_limit'
-    commands, biases = np.array(commands), np.array(biases)
-    np.testing.assert_array_equal(commands[:, 0], data['v3_replay'][:, 0])
+      limit_guards += controller.diagnostics['feedback_status'] in ('pscm_limit', 'pscm_backoff')
+    commands, bases, biases = np.array(commands), np.array(bases), np.array(biases)
+    np.testing.assert_array_equal(commands[:, 0], bases[:, 0])
     np.testing.assert_array_equal(gates, data['v3_valid'])
     np.testing.assert_array_equal(commands[:, 2:], 0.)
-    self.assertGreater(limit_freezes, 0)
+    self.assertGreater(limit_guards, 0)
     for episode in (0, 2):
       mask = (data['episode'] == episode) & data['evidence'] & data['benchmark_clean']
       # Recorded motion is frozen: this establishes correction direction only,
       # not that a new vehicle drive will close the observed tracking deficit.
       self.assertGreater(float(np.max(biases[mask])), .001)
-      self.assertGreater(float(np.max(commands[mask, 1] - data['expected_common_c1'][mask])), .005)
+      self.assertGreater(float(np.max(commands[mask, 1] - bases[mask, 1])), .005)
 
 
 if __name__ == '__main__':

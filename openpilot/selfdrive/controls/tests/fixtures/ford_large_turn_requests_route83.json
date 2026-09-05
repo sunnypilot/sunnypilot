@@ -1,0 +1,247 @@
+{
+  "description": "Signal-only historical fallback evidence and frozen-v5 comparison; no GPS or inferred counterfactual vehicle response.",
+  "route": "route83",
+  "recorded_commit": "79a4caa1f6b71488949108aee9ae6ae6566347b1",
+  "fixture_sha256": "d00312c430ace47000c05b8284ee8d56df56ec24bb17a9ea8f4dce83133527c3",
+  "samples": 11744,
+  "model_count": 2367,
+  "source_cache_sha256": "53d786aff2e0b6338e1991320145305fda3101f7b76e50bd2929adbcaea95b28",
+  "response_delay": 0.20000000298023224,
+  "episodes": [
+    [
+      1861.2933736250002,
+      1874.756970279
+    ],
+    [
+      1878.07372132,
+      1892.07372132
+    ],
+    [
+      1950.874232409,
+      1964.874232409
+    ],
+    [
+      2440.9020600930003,
+      2456.964158177
+    ],
+    [
+      2580.722658577,
+      2611.364366768
+    ],
+    [
+      2734.478264791,
+      2764.574374172
+    ]
+  ],
+  "windows": [
+    {
+      "name": "successful_large_early",
+      "role": "authority_target",
+      "range_s": [
+        1866.722720383,
+        1874.756970279
+      ],
+      "samples": 426,
+      "substantial_demand_required": true,
+      "recorded_can_ratio_02s_median": 1.0233371460413845,
+      "published_median_abs_c0_c1": [
+        1.6002928018569946,
+        0.2796146124601364
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        1.6002928018569946,
+        0.2796146124601364
+      ],
+      "phase_samples": {
+        "phase_turn_in": 15,
+        "phase_held": 122,
+        "phase_release": 402,
+        "phase_reversal": 0
+      }
+    },
+    {
+      "name": "centering_reversal_positive_to_negative",
+      "role": "reversal",
+      "range_s": [
+        1888.07372132,
+        1892.07372132
+      ],
+      "samples": 396,
+      "substantial_demand_required": false,
+      "recorded_can_ratio_02s_median": null,
+      "published_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "phase_samples": {
+        "phase_turn_in": 283,
+        "phase_held": 48,
+        "phase_release": 104,
+        "phase_reversal": 21
+      }
+    },
+    {
+      "name": "centering_reversal_negative_to_positive",
+      "role": "reversal",
+      "range_s": [
+        1960.874232409,
+        1964.874232409
+      ],
+      "samples": 397,
+      "substantial_demand_required": false,
+      "recorded_can_ratio_02s_median": null,
+      "published_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "phase_samples": {
+        "phase_turn_in": 154,
+        "phase_held": 0,
+        "phase_release": 183,
+        "phase_reversal": 21
+      }
+    },
+    {
+      "name": "clean_release",
+      "role": "release",
+      "range_s": [
+        2453.714158177,
+        2456.964158177
+      ],
+      "samples": 323,
+      "substantial_demand_required": false,
+      "recorded_can_ratio_02s_median": null,
+      "published_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        0.0,
+        0.0
+      ],
+      "phase_samples": {
+        "phase_turn_in": 4,
+        "phase_held": 0,
+        "phase_release": 305,
+        "phase_reversal": 17
+      }
+    },
+    {
+      "name": "successful_smaller_positive",
+      "role": "sign_coverage_only",
+      "range_s": [
+        2590.722658577,
+        2600.918740146
+      ],
+      "samples": 175,
+      "substantial_demand_required": true,
+      "recorded_can_ratio_02s_median": 1.0960646334373787,
+      "published_median_abs_c0_c1": [
+        0.42173025012016296,
+        0.1222948431968689
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        0.42173025012016296,
+        0.1222948431968689
+      ],
+      "phase_samples": {
+        "phase_turn_in": 170,
+        "phase_held": 61,
+        "phase_release": 0,
+        "phase_reversal": 0
+      }
+    },
+    {
+      "name": "large_under_response",
+      "role": "under_response_challenge",
+      "range_s": [
+        2604.2254721,
+        2611.364366768
+      ],
+      "samples": 128,
+      "substantial_demand_required": true,
+      "recorded_can_ratio_02s_median": 0.7322859508492778,
+      "published_median_abs_c0_c1": [
+        2.4204851388931274,
+        0.42145511507987976
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        2.4204851388931274,
+        0.42145511507987976
+      ],
+      "phase_samples": {
+        "phase_turn_in": 68,
+        "phase_held": 96,
+        "phase_release": 56,
+        "phase_reversal": 0
+      }
+    },
+    {
+      "name": "successful_large_181deg",
+      "role": "authority_target",
+      "range_s": [
+        2744.478264791,
+        2750.573209708
+      ],
+      "samples": 207,
+      "substantial_demand_required": true,
+      "recorded_can_ratio_02s_median": 1.0087938914780248,
+      "published_median_abs_c0_c1": [
+        2.1044259071350098,
+        0.3815947473049164
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        2.1044259071350098,
+        0.3815947473049164
+      ],
+      "phase_samples": {
+        "phase_turn_in": 137,
+        "phase_held": 94,
+        "phase_release": 64,
+        "phase_reversal": 0
+      }
+    },
+    {
+      "name": "large_over_response_290deg",
+      "role": "over_response_challenge_not_target",
+      "range_s": [
+        2760.493612962,
+        2764.574374172
+      ],
+      "samples": 181,
+      "substantial_demand_required": true,
+      "recorded_can_ratio_02s_median": 1.2515789463064766,
+      "published_median_abs_c0_c1": [
+        4.737145900726318,
+        0.5235000252723694
+      ],
+      "send_clamped_median_abs_c0_c1": [
+        4.737145900726318,
+        0.5
+      ],
+      "phase_samples": {
+        "phase_turn_in": 139,
+        "phase_held": 90,
+        "phase_release": 41,
+        "phase_reversal": 0
+      }
+    }
+  ],
+  "selection": "Authority targets require automatic turn windows with >=1 second strict torque eligibility, eligible |wheel|>=150 degrees, and whole-window CAN response ratio median 0.90..1.10 at fixed 0.2 s. No positive-request large turn qualifies.",
+  "non_targets": "Positive smaller turn supplies sign coverage only. Under/over response and release/reversal windows are regression challenges, not authority targets.",
+  "context": "At least 10 s pre-roll or available route start, extended to include the preceding feedback reset/sign reversal. Overlapping intervals are merged. First episode begins at the partial route boundary with unobserved earlier history.",
+  "phase_policy": "Held means request curvature range over +/-0.25 s times speed squared <0.15 m/s2 at demand>=0.5. Turn-in/release compare current absolute curvature with the historical held request at measurement_time-delay, scaled by max(7,speed), using +/-0.0005 rad. These masks can overlap held; reversal means opposing delayed/current signs.",
+  "wire_policy": "Published coefficients preserve Float32 values. Send-clamped copy caps C0 to +/-5.11 and C1 to +/-0.5 before packing. Actual decoded wire is normalized to controller sign, nearest within 15 ms; wire_time/fresh/mode expose timing approximation.",
+  "model_schema": "models[model_index] contains position.x, position.y, orientation.z; Float32 conversion preserves the original model payload precision.",
+  "v5_reference": "Frozen full sequential replay from command_replay.npz, whose source hash and limitations are recorded in command_replay.json.",
+  "frozen_v5_revision": "09acf8ec2f327769f00ee53563ad2dd9225e37a7",
+  "preroll_validation": "Compact reset replay exactly matches full sequential frozen-v5 C0/C1, gates and bias on all 2233 evidence samples."
+}

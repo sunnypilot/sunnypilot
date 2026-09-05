@@ -48,6 +48,15 @@ class FordPscmState:
   curvature: float = 0.0
 
 
+@dataclass(frozen=True)
+class FordModelPose:
+  path_offset: float
+  path_angle: float
+  offset_horizon: float
+  curvature_demand: float
+  forward_angle: float
+
+
 def _finite(value: float) -> float:
   return float(value) if math.isfinite(value) else 0.0
 
@@ -122,8 +131,8 @@ def _bounded_feedback(feedforward: float, feedback: float, resolution: float, ze
   return float(np.clip(feedback, -limit, limit))
 
 
-def _encode_path(path: tuple[list[float], list[float], list[float], list[float]], desired_curvature: float,
-                 current_curvature: float, curvature_delta: float, v_ego: float) -> FordPath:
+def _model_pose(path: tuple[list[float], list[float], list[float], list[float]],
+                current_curvature: float, curvature_delta: float, v_ego: float) -> FordModelPose:
   distance, _, _, _ = path
   advance = min(v_ego * _POSE_PREDICTION_TIME, distance[-1])
   offset_horizon = min(_PATH_MIN_LOOKAHEAD, distance[-1] - advance)
@@ -145,26 +154,19 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
 
   offset_curvature = 2.0 * model_offset / max(offset_horizon, 1e-3) ** 2
   angle_curvature = model_angle / max(angle_horizon, 1e-3)
-  pose_share = _blend_share(max(abs(offset_curvature), abs(angle_curvature), abs(desired_curvature)))
+  return FordModelPose(model_offset + feedback_offset, model_angle + feedback_angle, offset_horizon,
+                       max(abs(offset_curvature), abs(angle_curvature)), model_angle)
 
-  # Match upstream's C2-only normal driving, then continuously transfer the
-  # command to the model pose for larger maneuvers. An opposing/finished model
-  # path must unload sticky C2 and retain the fast pose needed to unwind it.
-  c2_opposes_path = desired_curvature != 0.0 and desired_curvature * model_angle <= 0.0
-  if c2_opposes_path:
-    pose_share = 1.0
-    curvature = 0.0
-  else:
-    curvature = desired_curvature * (1.0 - pose_share)
 
-  path_offset = pose_share * (model_offset + feedback_offset)
-  path_angle = pose_share * (model_angle + feedback_angle)
+def _encode_pose(pose: FordModelPose, pose_share: float, curvature: float) -> FordPath:
+  path_offset = pose_share * pose.path_offset
+  path_angle = pose_share * pose.path_angle
   if abs(path_offset) < 0.5 * DBC_OFFSET_RESOLUTION:
     path_offset = 0.0
   if abs(path_angle) < 0.5 * DBC_ANGLE_RESOLUTION:
     path_angle = 0.0
   limited_path_angle = float(np.clip(path_angle, *DBC_ANGLE))
-  path_offset += (path_angle - limited_path_angle) * offset_horizon
+  path_offset += (path_angle - limited_path_angle) * pose.offset_horizon
   return FordPath(
     valid=True,
     path_offset=float(np.clip(path_offset, *DBC_OFFSET)),
@@ -172,6 +174,24 @@ def _encode_path(path: tuple[list[float], list[float], list[float], list[float]]
     curvature=float(np.clip(curvature, *DBC_CURVATURE)),
     curvature_rate=0.0,
   )
+
+
+def _encode_path(path: tuple[list[float], list[float], list[float], list[float]], desired_curvature: float,
+                 current_curvature: float, curvature_delta: float, v_ego: float) -> FordPath:
+  pose = _model_pose(path, current_curvature, curvature_delta, v_ego)
+  pose_share = _blend_share(max(pose.curvature_demand, abs(desired_curvature)))
+
+  # Match upstream's C2-only normal driving, then continuously transfer the
+  # command to the model pose for larger maneuvers. An opposing/finished model
+  # path must unload sticky C2 and retain the fast pose needed to unwind it.
+  c2_opposes_path = desired_curvature != 0.0 and desired_curvature * pose.forward_angle <= 0.0
+  if c2_opposes_path:
+    pose_share = 1.0
+    curvature = 0.0
+  else:
+    curvature = desired_curvature * (1.0 - pose_share)
+
+  return _encode_pose(pose, pose_share, curvature)
 
 
 class FordPathController:

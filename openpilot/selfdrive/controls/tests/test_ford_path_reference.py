@@ -114,16 +114,17 @@ class TestFordPathReference(unittest.TestCase):
     malformed[2].position.x = []
     malformed[3].position.x[:] = 0.
     for model in malformed:
-      controller = FordVirtualAngleController()
-      run_step(controller, circle(.03), 1.)
-      self.assertEqual(run_step(controller, model, 1.05), FordPath())
-      self.assertIsNone(controller.reference.path)
+      for now, model_time in ((1.05, 1.05), (1.01, 1.)):
+        controller = FordVirtualAngleController()
+        run_step(controller, circle(.03), 1.)
+        self.assertEqual(run_step(controller, model, now, model_time=model_time), FordPath())
+        self.assertIsNone(controller.reference.path)
 
   def test_independent_slew_and_dbc_bounds_during_large_reversal(self):
     controller = FordVirtualAngleController()
     previous = FordPath()
     for i in range(900):
-      curvature = .1 if i < 400 else -.1
+      curvature = .2 if i < 400 else -.2
       path = run_step(controller, circle(curvature), i * .01, speed=5., desired_curvature=2 * curvature)
       self.assertLessEqual(abs(path.path_offset), 5.11)
       self.assertLessEqual(abs(path.path_angle), .5)

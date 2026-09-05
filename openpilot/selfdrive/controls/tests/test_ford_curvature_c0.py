@@ -2,7 +2,7 @@
 import math
 import unittest
 
-from openpilot.selfdrive.controls.lib.ford_path import FordPath
+from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController
 from openpilot.selfdrive.controls.lib.ford_virtual_angle import FordVirtualAngleController
 from openpilot.selfdrive.controls.tests.test_ford_path_reference import circle
 
@@ -29,9 +29,13 @@ class TestFordCurvatureC0(unittest.TestCase):
     for speed in (2., 4., 6.):
       for sign in (-1, 1):
         controller = FordVirtualAngleController()
+        baseline = FordPathController()
+        model = circle(sign * .04)
         for i in range(250):
-          path = step(controller, i * .01, sign * .04, circle(sign * .04), speed, sign * .04 * speed)
-        self.assertAlmostEqual(path.path_offset, sign * 1.28, delta=.0051)
+          path = step(controller, i * .01, sign * .04, model, speed, sign * .04 * speed)
+          recorded_base = baseline.update(model, sign * .04, current_curvature=sign * .04, v_ego=speed)
+        self.assertAlmostEqual(path.path_offset, recorded_base.path_offset, delta=.0051)
+        self.assertGreater(sign * path.path_offset, .9)
         self.assertGreater(sign * path.path_angle, .2)
 
   def test_model_heading_cannot_inject_commands_when_action_requests_zero(self):
@@ -45,13 +49,17 @@ class TestFordCurvatureC0(unittest.TestCase):
 
   def test_c1_reversal_cannot_delay_action_c0_release(self):
     controller = FordVirtualAngleController()
+    # A shallow lateral displacement with a stronger heading request exercises
+    # independent release: the small C0 move must finish before the C1 slew.
+    model = circle(.06)
+    model.position.y *= .1
     for i in range(200):
-      path = step(controller, i * .01, .1, circle(.12), speed=5.)
-    for i in range(200, 280):
-      path = step(controller, i * .01, .003125, circle(.12), speed=5.)
+      path = step(controller, i * .01, .04, model, speed=5.)
+    for i in range(200, 240):
+      path = step(controller, i * .01, .003125, model, speed=5.)
     self.assertAlmostEqual(path.path_offset, .1)
-    self.assertAlmostEqual(path.path_angle, .1)
-    for i in range(280, 283):
+    self.assertGreater(path.path_angle, .2)
+    for i in range(240, 243):
       path = step(controller, i * .01, 0., circle(-.12), speed=5.)
     self.assertAlmostEqual(path.path_offset, 0., delta=.0051)
     self.assertGreater(path.path_angle, .08)  # C1 is still in its own limited transition.
@@ -61,7 +69,8 @@ class TestFordCurvatureC0(unittest.TestCase):
     model = circle(.04)
     for i in range(200):
       path = step(controller, i * .01, .01, model)
-    for i in range(200, 240):
+    # Allow the bounded larger initial C1 request to cross zero at 0.5 rad/s.
+    for i in range(200, 320):
       path = step(controller, i * .01, -.01, model)
     self.assertLess(path.path_offset, -.3)
     self.assertLess(path.path_angle, -.07)

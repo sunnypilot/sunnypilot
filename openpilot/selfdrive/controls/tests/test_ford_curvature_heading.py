@@ -12,8 +12,8 @@ class TestFordCurvatureHeading(unittest.TestCase):
     model = circle(.12)
     for i in range(200):
       path = step(controller, i * .01, .04, model, speed=5.)
-    self.assertAlmostEqual(path.path_angle, .28, delta=.000251)
-    for i in range(200, 270):
+    self.assertAlmostEqual(path.path_angle, .5, delta=.000251)
+    for i in range(200, 330):
       path = step(controller, i * .01, 0., model, speed=5.)
     self.assertAlmostEqual(path.path_angle, 0., delta=.000251)
     self.assertAlmostEqual(path.path_offset, 0., delta=.0051)
@@ -32,18 +32,22 @@ class TestFordCurvatureHeading(unittest.TestCase):
     model = circle(.12)
     for i in range(200):
       path = step(controller, i * .01, .04, model, speed=5.)
-    for i in range(200, 320):
+    for i in range(200, 360):
       path = step(controller, i * .01, -.04, model, speed=5.)
     self.assertAlmostEqual(path.path_angle, -.28, delta=.000251)
     self.assertLess(path.path_offset, 0.)
 
-  def test_model_shape_does_not_change_valid_action_commands(self):
+  def test_forward_geometry_supplies_large_turns_only_while_aligned(self):
     straight, bent = FordVirtualAngleController(), FordVirtualAngleController()
-    for i in range(300):
-      desired = .04 if i < 150 else -.04
-      left = step(straight, i * .01, desired, circle(), speed=8.)
-      right = step(bent, i * .01, desired, circle(.12), speed=8.)
-      self.assertEqual(left, right)
+    for i in range(200):
+      plain = step(straight, i * .01, .04, circle(), speed=5.)
+      turn = step(bent, i * .01, .04, circle(.065), speed=5.)
+    self.assertGreater(turn.path_offset, plain.path_offset)
+    self.assertGreater(turn.path_angle, plain.path_angle)
+    for i in range(200, 400):
+      plain = step(straight, i * .01, -.04, circle(), speed=5.)
+      turn = step(bent, i * .01, -.04, circle(.065), speed=5.)
+    self.assertEqual(turn, plain)
 
 
 if __name__ == '__main__':
