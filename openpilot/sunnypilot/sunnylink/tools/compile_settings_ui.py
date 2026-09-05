@@ -118,6 +118,7 @@ _ITEM_KEY_ORDER = [
   "max",
   "step",
   "unit",
+  "value_transform",
   "options",
   "visibility",
   "enablement",
