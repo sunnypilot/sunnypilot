@@ -112,8 +112,9 @@ class ModelState(ModelStateBase):
     jits = load_oob(open_file_chunked(pkl_path))
 
     metadata = jits['metadata']
-    self.WARP_DEV = metadata.get('warp_dev', 'QCOM' if COMMA_HARDWARE else 'CPU')
-    self.DEV = 'AMD' if self.chestnut else ('QCOM' if COMMA_HARDWARE else 'CPU')
+    self.use_frame_buffers = metadata.get('warp_dev') == 'AMD'
+    self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
+    self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.QUEUE_DEV = self.DEV
     self.run_policy = jits['run_policy']
     self.warp = jits[(cam_w, cam_h)]
@@ -130,7 +131,7 @@ class ModelState(ModelStateBase):
                                                                           frame_skip, device=self.QUEUE_DEV)
     else:
       vision_metadata = metadata['vision']
-      policy_keys = [k for k in metadata if k != 'vision']
+      policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]
       if policy_keys == ['policy']:
         self._combined_model_type = 'split'
       else:
@@ -172,10 +173,14 @@ class ModelState(ModelStateBase):
     nv12_info = get_nv12_info(cam_w, cam_h)
     self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
-    yuv_size = self.frame_buf_params[self._road_key][3]
-    frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-    big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=frame_tensor, big_frame=big_frame_tensor)
+    yuv_size = nv12_info[3]
+    if self.use_frame_buffers:
+      self.frame_buffers = {k: np.zeros(yuv_size, dtype=np.uint8) for k in self._vision_input_names}
+      self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
+    else:
+      self.frame_buffers = {}
+      self.full_frames = {k: Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
     dummy_frames = {k: np.zeros(self.frame_buf_params[k][3], dtype=np.uint8) for k in self._vision_input_names}
@@ -191,8 +196,9 @@ class ModelState(ModelStateBase):
     for v in self.numpy_inputs.values():
       v[:] = 0
     self.prev_desire[:] = 0
-    self.full_frames.clear()
-    self._blob_cache.clear()
+    if not self.use_frame_buffers:
+      self.full_frames.clear()
+      self._blob_cache.clear()
 
 
   @property
@@ -210,13 +216,16 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray], prepare_only: bool,
           after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
-    for key in bufs.keys():
-      ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data
-      yuv_size = self.frame_buf_params[key][3]
-      cache_key = (key, ptr)
-      if cache_key not in self._blob_cache:
-        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
-      self.full_frames[key] = self._blob_cache[cache_key]
+    if self.use_frame_buffers:
+      for key, buf in bufs.items():
+        np.copyto(self.frame_buffers[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_buf_params[key][3]))
+    else:
+      for key, buf in bufs.items():
+        ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
+        cache_key = (key, ptr)
+        if cache_key not in self._blob_cache:
+          self._blob_cache[cache_key] = Tensor.from_blob(ptr, (self.frame_buf_params[key][3],), dtype='uint8', device=self.WARP_DEV)
+        self.full_frames[key] = self._blob_cache[cache_key]
 
     desire_key = self.desire_key
     inputs[desire_key][0] = 0
