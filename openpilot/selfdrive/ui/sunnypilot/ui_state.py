@@ -46,6 +46,7 @@ class UIStateSP:
     self.active_bundle = None
     self.model_runner_tinygrad: bool = False
     self.blindspot: bool = False
+    self.show_driving_personality: bool = False
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
     self.developer_ui = None
@@ -160,6 +161,7 @@ class UIStateSP:
     # chestnut just the same, so ChestnutState has to see it as available too.
     self.chestnut_compiled = self.chestnut_compiled or self.model_runner_tinygrad
     self.blindspot = self.params.get_bool("BlindSpot")
+    self.show_driving_personality = self.params.get_bool("ShowDrivingPersonality")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.developer_ui = self.params.get("DevUIInfo")
