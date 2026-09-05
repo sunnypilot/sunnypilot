@@ -138,9 +138,10 @@ def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
   return generate_queues_and_npy(input_shapes, frame_skip, device, is_supercombo=True)
 
 
-def make_random_images(keys, shape, device):
+def make_random_images(keys, shape, device, rng=None):
   if device == 'NPY':
-    return {k: Tensor(np.random.default_rng().integers(0, 256, size=shape, dtype=np.uint8), device='NPY').realize() for k in keys}
+    generator = rng if rng is not None else np.random.default_rng()
+    return {k: Tensor(generator.integers(0, 256, size=shape, dtype=np.uint8), device='NPY').realize() for k in keys}
   return {k: Tensor.randint(shape, low=0, high=256, dtype=dtypes.uint8, device=device).realize() for k in keys}
 
 
@@ -242,7 +243,7 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
       for v in npy.values():
         v[:] = rng.standard_normal(v.shape).astype(v.dtype)
       Device.default.synchronize()
-      random_inputs = make_random_inputs()
+      random_inputs = make_random_inputs(rng=rng)
       st = time.perf_counter()
       outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
       mt = time.perf_counter()
