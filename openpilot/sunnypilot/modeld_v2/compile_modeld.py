@@ -139,6 +139,8 @@ def make_supercombo_input_queues(input_shapes: dict, frame_skip: int,
 
 
 def make_random_images(keys, shape, device):
+  if device == 'NPY':
+    return {k: Tensor(np.random.default_rng().integers(0, 256, size=shape, dtype=np.uint8), device='NPY').realize() for k in keys}
   return {k: Tensor.randint(shape, low=0, high=256, dtype=dtypes.uint8, device=device).realize() for k in keys}
 
 
