@@ -38,8 +38,13 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.modeld import ChestnutState
 
+from openpilot.selfdrive.modeld.compile_modeld import (
+  MODELD_INPUTS,
+  make_input_queues as make_stock_input_queues,
+)
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
-from openpilot.sunnypilot.modeld_v2.constants import Plan
+from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
@@ -118,26 +123,36 @@ class ModelState(ModelStateBase):
     self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.QUEUE_DEV = self.DEV
-    self.run_policy = jits['run_policy']
-    self.warp = jits[(cam_w, cam_h)]
+    self.is_run_model = 'run_model' in jits
 
-    if 'model' in metadata:
-      model_metadata = metadata['model']
+    nv12_info = get_nv12_info(cam_w, cam_h)
+    self.frame_copy_size = nv12_copy_size(*nv12_info[:3])
+    self.full_frames: dict = {}
+    self._blob_cache: dict = {}
+    self.frame_buffers: dict = {}
+
+    if self.is_run_model or 'model' in metadata:
+      model_metadata = metadata.get('model', metadata)
+      self.input_shapes = model_metadata['input_shapes']
       self.vision_output_slices = model_metadata['output_slices']
       self.policy_output_slices = {}
       self._policy_slices_list = []
       self._combined_model_type = 'supercombo'
-      self._vision_input_names = [key for key in model_metadata['input_shapes'] if 'img' in key]
-      frame_skip = derive_frame_skip({}, model_metadata['input_shapes'])
-      self.input_queues, self.numpy_inputs = make_supercombo_input_queues(model_metadata['input_shapes'],
-                                                                          frame_skip, device=self.QUEUE_DEV)
+      self._vision_input_names = [key for key in self.input_shapes if 'img' in key]
+      self.frame_skip = derive_frame_skip({}, self.input_shapes)
+      if self.is_run_model:
+        self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
+          self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
+        self.frame_views, self.npy = self.frame_buffers, self.numpy_inputs
+        self.run_model, self.run_policy, self.warp = jits['run_model'][(cam_w, cam_h)], None, None
+      else:
+        self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
+        self.run_model, self.run_policy, self.warp = None, jits['run_policy'], jits[(cam_w, cam_h)]
     else:
+      self.run_model, self.run_policy, self.warp = None, jits['run_policy'], jits[(cam_w, cam_h)]
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]
-      if policy_keys == ['policy']:
-        self._combined_model_type = 'split'
-      else:
-        self._combined_model_type = 'multi_policy'
+      self._combined_model_type = 'split' if policy_keys == ['policy'] else 'multi_policy'
       self.vision_output_slices = vision_metadata['output_slices']
       self._policy_keys = policy_keys
       self._policy_slices_list = [metadata[k]['output_slices'] for k in policy_keys]
@@ -153,57 +168,49 @@ class ModelState(ModelStateBase):
     self._desire_key = next(key for key in self.numpy_inputs if key.startswith('desire'))
     self._road_key = next(key for key in self._vision_input_names if 'big' not in key)
     self._wide_key = next(key for key in self._vision_input_names if 'big' in key)
+    self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
     is_20hz = bundle.is20hz if bundle else self._combined_model_type in ('split', 'multi_policy')
     if is_20hz:
       from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
       self.constants = SplitModelConstants()
     else:
-      from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
       self.constants = ModelConstants()
 
     if self._combined_model_type != 'supercombo':
       from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
       self.parser = SplitParser()
     else:
-      from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
       self.parser = CombinedParser()
 
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
-    self.full_frames: dict = {}
-    self._blob_cache: dict = {}
-    nv12_info = get_nv12_info(cam_w, cam_h)
-    self.frame_buf_params = dict.fromkeys(self._vision_input_names, nv12_info)
 
-    yuv_size = nv12_info[3]
-    self.frame_copy_size = nv12_copy_size(*nv12_info[:3])
-    if self.use_frame_buffers:
-      self.frame_buffers = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self._vision_input_names}
-      self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
-    else:
-      self.frame_buffers = {}
-      self.full_frames = {k: Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
-    self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+    if not self.is_run_model:
+      if self.use_frame_buffers:
+        self.frame_buffers = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self._vision_input_names}
+        self.full_frames = {k: Tensor(self.frame_buffers[k], device='NPY').realize() for k in self._vision_input_names}
+      else:
+        self.full_frames = {k: Tensor(np.zeros(nv12_info[3], dtype=np.uint8), device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+      self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
-    dummy_size = self.frame_copy_size if self.use_frame_buffers else self.frame_buf_params[self._road_key][3]
+    dummy_size = self.frame_copy_size if (self.is_run_model or self.use_frame_buffers) else self.frame_buf_params[self._road_key][3]
     dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
-
-    dummy_inputs = {}
-    for k, v in self.numpy_inputs.items():
-      if k not in ['tfm', 'big_tfm', 'prev_feat']:
-        dummy_inputs[k] = np.zeros(v.shape, dtype=v.dtype)
-
+    dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     self.run(dummy_frames, transforms, dummy_inputs)
-
-    for v in self.numpy_inputs.values():
-      v[:] = 0
+    if self.is_run_model:
+      self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
+        self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
+      self.frame_views = self.frame_buffers
+      self.npy = self.numpy_inputs
+    else:
+      for v in self.numpy_inputs.values():
+        v[:] = 0
+      if not self.use_frame_buffers:
+        self.full_frames.clear()
+        self._blob_cache.clear()
     self.prev_desire[:] = 0
-    if not self.use_frame_buffers:
-      self.full_frames.clear()
-      self._blob_cache.clear()
-
 
   @property
   def mlsim(self) -> bool:
@@ -220,9 +227,10 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray],
           after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray] | None:
-    if self.use_frame_buffers:
+    if self.is_run_model or self.use_frame_buffers:
       for key, buf in bufs.items():
-        np.copyto(self.frame_buffers[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_copy_size))
+        data = buf.data if hasattr(buf, 'data') else buf
+        np.copyto(self.frame_buffers[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key, buf in bufs.items():
         ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
@@ -235,17 +243,21 @@ class ModelState(ModelStateBase):
     inputs[desire_key][0] = 0
     self.numpy_inputs[desire_key][:] = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
     self.prev_desire[:] = inputs[desire_key]
+
     for key in ('traffic_convention', 'lateral_control_params', 'action_t'):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
-    road_key = self._road_key
-    wide_key = self._wide_key
-    self.numpy_inputs['tfm'][:, :] = transforms[road_key].reshape(3, 3)
-    self.numpy_inputs['big_tfm'][:, :] = transforms[wide_key].reshape(3, 3)
+    self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
+    self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
 
-    warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[road_key], big_frame=self.full_frames[wide_key])
-    raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+    if self.is_run_model:
+      outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
+      raw_outputs = outs
+    else:
+      warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+      raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+
     if after_enqueue is not None:
       after_enqueue()
 
@@ -255,7 +267,7 @@ class ModelState(ModelStateBase):
         raise RuntimeError("model output not finite")
       sliced = {k: model_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_outputs(sliced)
-      if 'prev_feat' in self.numpy_inputs:
+      if 'prev_feat' in self.numpy_inputs and 'hidden_state' in self.vision_output_slices:
         self.numpy_inputs['prev_feat'][:] = model_output[self.vision_output_slices['hidden_state']]
     else:
       vision_output = raw_outputs[0].numpy().flatten()

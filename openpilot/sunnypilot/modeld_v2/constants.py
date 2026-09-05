@@ -14,6 +14,8 @@ class ModelConstants:
 
   # model inputs constants
   MODEL_FREQ = 20
+  MODEL_RUN_FREQ = 20
+  MODEL_CONTEXT_FREQ = 5
   FEATURE_LEN = 512
   FULL_HISTORY_BUFFER_LEN = 99
   DESIRE_LEN = 8

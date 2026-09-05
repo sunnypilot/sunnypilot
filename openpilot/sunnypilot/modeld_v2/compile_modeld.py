@@ -32,7 +32,19 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-from openpilot.selfdrive.modeld.compile_modeld import NV12Frame, make_frame_prepare, nv12_copy_size, sample_desire, sample_skip, shift_and_sample
+from openpilot.selfdrive.modeld.compile_modeld import (
+  MODELD_INPUTS,
+  NV12Frame,
+  make_frame_prepare,
+  make_input_queues as make_stock_input_queues,
+  make_run_model,
+  make_run_policy as make_stock_run_policy,
+  make_warp as make_stock_warp,
+  nv12_copy_size,
+  sample_desire,
+  sample_skip,
+  shift_and_sample,
+)
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -228,21 +240,22 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
   return run_policy
 
 
-def compile_jit(jit, make_random_inputs, input_keys, make_queues):
+def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark_runs: int = 1):
   SEED = 42
-  def random_inputs_run(fn, seed, test_val=None, test_buffers=None, expect_match=True):
-    input_queues, npy = make_queues(Device.DEFAULT)
+  def random_inputs_run(fn, seed, n_runs, test_val=None, test_buffers=None, expect_match=True):
+    queues_res = make_queues(Device.DEFAULT)
+    input_queues, npy = queues_res[0], queues_res[1]
+    frame_views = queues_res[2] if len(queues_res) > 2 else {}
     rng = np.random.default_rng(seed)
     Tensor.manual_seed(seed)
-
-    testing = test_val is not None or test_buffers is not None
-    n_runs = 1 if testing else 3
 
     for i in range(n_runs):
       for v in npy.values():
         v[:] = rng.standard_normal(v.shape).astype(v.dtype)
+      for v in frame_views.values():
+        v[:] = rng.integers(0, 256, size=v.shape, dtype=np.uint8)
       Device.default.synchronize()
-      random_inputs = make_random_inputs(rng=rng)
+      random_inputs = make_random_inputs(rng=rng) if make_random_inputs is not None else {}
       st = time.perf_counter()
       outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
       mt = time.perf_counter()
@@ -263,14 +276,15 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
     return val, buffers
 
   print('capture + replay')
-  test_val, test_buffers = random_inputs_run(jit, SEED)
-  print('pickle round trip')
+  test_val, test_buffers = random_inputs_run(jit, SEED, 3)
+  print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
     f.seek(0)
-    deserialized_jit = load_oob(f)
-  random_inputs_run(deserialized_jit, SEED, test_val=test_val, test_buffers=test_buffers)
-  return deserialized_jit
+    loaded_jit = load_oob(f)
+  random_inputs_run(loaded_jit, SEED, benchmark_runs, test_val, test_buffers, expect_match=True)
+  random_inputs_run(loaded_jit, SEED+1, benchmark_runs, test_val, test_buffers, expect_match=False)
+  return jit
 
 
 def _parse_size(size_str: str) -> tuple[int, int]:
@@ -320,6 +334,7 @@ if __name__ == "__main__":
   parser.add_argument('--model-size', type=_parse_size, required=True, help='model input WxH')
   parser.add_argument('--camera-resolutions', type=_parse_size, nargs='+', required=True)
   parser.add_argument('--frame-skip', type=int, default=None, help='frame skip value (auto-derived if not provided)')
+  parser.add_argument('--benchmark-runs', type=int, default=1, help='benchmark runs')
   parser.add_argument('--output', required=True)
 
   parser.add_argument('--vision-onnx', help='vision ONNX (for split models)')
@@ -338,52 +353,65 @@ if __name__ == "__main__":
   args.on_policy_onnx = read_file_chunked_to_disk(args.on_policy_onnx)
   args.supercombo_onnx = read_file_chunked_to_disk(args.supercombo_onnx)
 
-  vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
-
-  if args.model_type == 'vision_policy':
-    assert vision_runner and args.policy_onnx
-    policy_runners = [OnnxRunner(args.policy_onnx)]
-    output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx), 'policy': make_metadata_dict(args.policy_onnx)}
-  elif args.model_type == 'supercombo':
+  if args.model_type == 'supercombo':
     assert args.supercombo_onnx
-    policy_runners = [OnnxRunner(args.supercombo_onnx)]
-    output_data['metadata'] = {'model': make_metadata_dict(args.supercombo_onnx)}
-  elif args.model_type == 'vision_multi_policy':
-    assert vision_runner
-    policy_runners, policy_names = _load_policy_runners(args)
-    output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx)}
-    for name in policy_names:
-      runner_arg = getattr(args, f"{name}_onnx")
-      output_data['metadata'][name] = make_metadata_dict(runner_arg)
+    model_metadata = make_metadata_dict(args.supercombo_onnx)
+    output_data['metadata'] = {'model': model_metadata, **model_metadata}
+    output_data['input_devices'] = {'model': Device.DEFAULT}
+    output_data['run_model'] = {}
+    derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
+    model_runner = OnnxRunner(args.supercombo_onnx)
+    run_policy = make_stock_run_policy(model_runner, model_metadata, derived_frame_skip)
+    for cam_w, cam_h in args.camera_resolutions:
+      print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
+      nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      make_model_queues = partial(make_stock_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+                                  frame_copy_size=frame_copy_size)
+      warp = make_stock_warp(nv12, model_w, model_h)
+      run_model_jit = TinyJit(make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+      output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
+  else:
+    vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
+    if args.model_type == 'vision_policy':
+      assert vision_runner and args.policy_onnx
+      policy_runners = [OnnxRunner(args.policy_onnx)]
+      output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx), 'policy': make_metadata_dict(args.policy_onnx)}
+    elif args.model_type == 'vision_multi_policy':
+      assert vision_runner
+      policy_runners, policy_names = _load_policy_runners(args)
+      output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx)}
+      for name in policy_names:
+        runner_arg = getattr(args, f"{name}_onnx")
+        output_data['metadata'][name] = make_metadata_dict(runner_arg)
 
-  policy_keys = [key for key in output_data['metadata'].keys() if key != 'vision']
-  first_policy_meta = output_data['metadata'][policy_keys[0]] if policy_keys else {}
-  vision_meta = output_data['metadata'].get('vision', {})
+    policy_keys = [key for key in output_data['metadata'].keys() if key != 'vision']
+    first_policy_meta = output_data['metadata'][policy_keys[0]] if policy_keys else {}
+    vision_meta = output_data['metadata'].get('vision', {})
 
-  derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
-  all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
-  feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('model') or output_data['metadata'].get('policy')
-  assert feat_meta is not None
-  features_slice = feat_meta['output_slices']['hidden_state']
-  is_supercombo = vision_runner is None
+    derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
+    all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
+    feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('policy')
+    assert feat_meta is not None
+    features_slice = feat_meta['output_slices']['hidden_state']
 
-  print(f"Compiling run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})...")
-  run_policy_func = make_run_policy(vision_runner, policy_runners, features_slice, derived_frame_skip, all_shapes)
-  run_policy_jit = TinyJit(run_policy_func, prune=True)
-  make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=is_supercombo)
-  make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=Device.DEFAULT)
-  output_data['run_policy'] = compile_jit(run_policy_jit, make_random_model_inputs, POLICY_INPUTS, make_policy_queues)
+    print(f"Compiling run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})...")
+    run_policy_func = make_run_policy(vision_runner, policy_runners, features_slice, derived_frame_skip, all_shapes)
+    run_policy_jit = TinyJit(run_policy_func, prune=True)
+    make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=False)
+    make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=Device.DEFAULT)
+    output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues, make_random_inputs=make_random_model_inputs)
 
-  for cam_w, cam_h in args.camera_resolutions:
-    print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
-    nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-    frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-    warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
-    make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
-    warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
-    output_data[(cam_w, cam_h)] = compile_jit(warp, make_random_warp_inputs, WARP_INPUTS, make_warp_queues)
+    for cam_w, cam_h in args.camera_resolutions:
+      print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
+      nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
+      make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
+      warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)
+      output_data[(cam_w, cam_h)] = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs)
 
-  output_data['metadata']['warp_dev'] = Device.DEFAULT
+    output_data['metadata']['warp_dev'] = Device.DEFAULT
 
   with open(args.output, "wb") as file:
     dump_oob(output_data, file)
