@@ -157,9 +157,7 @@ def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
   def warp(tfm, big_tfm, frame, big_frame):
     tfm = tfm.to(Device.DEFAULT)
     big_tfm = big_tfm.to(Device.DEFAULT)
-    frame = frame.to(Device.DEFAULT)
-    big_frame = big_frame.to(Device.DEFAULT)
-    Tensor.realize(tfm, big_tfm, frame, big_frame)
+    Tensor.realize(tfm, big_tfm)
 
     warped_frame = frame_prepare(frame, tfm).unsqueeze(0)
     warped_big_frame = frame_prepare(big_frame, big_tfm).unsqueeze(0)
