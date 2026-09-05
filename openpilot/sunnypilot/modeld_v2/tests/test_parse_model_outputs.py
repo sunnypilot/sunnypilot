@@ -74,7 +74,8 @@ class TestParseModelOutputs(OpenpilotTestCase):
 
   def test_parse_outputs_combined(self):
     parser = Parser()
-    outputs = {"plan": np.zeros((1, 4955), dtype=np.float32), "pose": np.zeros((1, ModelConstants.POSE_WIDTH * 2), dtype=np.float32), "meta": np.zeros((1, 55), dtype=np.float32)}
+    outputs = {"plan": np.zeros((1, 4955), dtype=np.float32), "pose": np.zeros((1, ModelConstants.POSE_WIDTH * 2),
+               dtype=np.float32), "meta": np.zeros((1, 55), dtype=np.float32)}
     parsed = parser.parse_outputs(outputs)
     assert parsed["plan"].shape == (1, ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH)
     assert parsed["pose"].shape == (1, ModelConstants.POSE_WIDTH)
