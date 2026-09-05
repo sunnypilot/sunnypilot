@@ -7,14 +7,11 @@ See the LICENSE.md file in the root directory for more details.
 
 import hashlib
 import os
-import pickle
-from pathlib import Path
 import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.models.constants import Meta, MetaSimPose, MetaTombRaider
 from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 
@@ -22,7 +19,6 @@ from openpilot.selfdrive.modeld.helpers import chestnut_present
 REQUIRED_JSON_VERSION = 19
 
 CUSTOM_MODEL_PATH = Paths.model_root()
-METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 ModelManager = custom.ModelManagerSP
 
 ACTIVE_BUNDLE_KEYS = {
@@ -199,33 +195,6 @@ def _get_model():
     drive_model = next(model for model in bundle.models if model.type == ModelManager.Model.Type.supercombo)
     return drive_model
   return None
-
-
-def load_metadata():
-  metadata_path = METADATA_PATH
-
-  with open(metadata_path, 'rb') as f:
-    return pickle.load(f)
-
-
-def prepare_inputs(model_metadata: dict) -> dict[str, np.ndarray]:
-  return {
-    key: np.zeros(shape, dtype=np.float32).flatten()
-    for key, shape in model_metadata['input_shapes'].items()
-    if 'img' not in key
-  }
-
-
-def load_meta_constants(model_metadata: dict):
-  """ Loads the appropriate meta model class based on key shapes"""
-  if 'sim_pose' in model_metadata['input_shapes']:
-    return MetaSimPose
-
-  meta_slice = model_metadata['output_slices']['meta']
-  if (meta_slice.start, meta_slice.stop, meta_slice.step) == (5868, 5921, None):
-    return MetaTombRaider
-
-  return Meta
 
 
 # The following method(s) are modeld helper methods
