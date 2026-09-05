@@ -32,19 +32,7 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-from openpilot.selfdrive.modeld.compile_modeld import (
-  MODELD_INPUTS,
-  NV12Frame,
-  make_frame_prepare,
-  make_input_queues as make_stock_input_queues,
-  make_run_model,
-  make_run_policy as make_stock_run_policy,
-  make_warp as make_stock_warp,
-  nv12_copy_size,
-  sample_desire,
-  sample_skip,
-  shift_and_sample,
-)
+import openpilot.selfdrive.modeld.compile_modeld as stock
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -53,7 +41,7 @@ from tinygrad.tensor import Tensor
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']
 POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
-
+nv12_copy_size = stock.nv12_copy_size
 
 def _detect_desire_key(shapes: dict) -> str | None:
   return next((key for key in shapes if key.startswith('desire')), None)
@@ -165,8 +153,8 @@ def make_warp_queues(device=Device.DEFAULT):
   return queues, npy
 
 
-def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
-  frame_prepare = make_frame_prepare(nv12, model_w, model_h)
+def make_warp(nv12: stock.NV12Frame, model_w: int, model_h: int):
+  frame_prepare = stock.make_frame_prepare(nv12, model_w, model_h)
 
   def warp(tfm, big_tfm, frame, big_frame):
     tfm = tfm.to(Device.DEFAULT)
@@ -183,8 +171,8 @@ def make_warp(nv12: NV12Frame, model_w: int, model_h: int):
 
 
 def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, frame_skip: int, input_shapes: dict):
-  sample_skip_fn = partial(sample_skip, frame_skip=frame_skip)
-  sample_desire_fn = partial(sample_desire, frame_skip=frame_skip)
+  sample_skip_fn = partial(stock.sample_skip, frame_skip=frame_skip)
+  sample_desire_fn = partial(stock.sample_desire, frame_skip=frame_skip)
 
   desire_key = _detect_desire_key(input_shapes)
   road_key, wide_key = _detect_vision_keys(input_shapes)
@@ -201,14 +189,14 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    img = shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
-    big_img = shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
+    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
+    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
 
     desire_dev = unpacked_dict['desire']
-    desire_buf = shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
+    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
 
     inputs = {desire_key: desire_buf}
     for key, tensor_val in unpacked_dict.items():
@@ -217,13 +205,13 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
+      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
 
     if vision_runner:
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
-        inputs['features_buffer'] = shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+        inputs['features_buffer'] = stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
       policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
@@ -234,7 +222,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').realize()
     if 'features_buffer' not in inputs and features_slice is not None:
       new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-      shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+      stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
 
   return run_policy
@@ -361,16 +349,16 @@ if __name__ == "__main__":
     output_data['run_model'] = {}
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
     model_runner = OnnxRunner(args.supercombo_onnx)
-    run_policy = make_stock_run_policy(model_runner, model_metadata, derived_frame_skip)
+    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
     for cam_w, cam_h in args.camera_resolutions:
       print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
-      nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-      frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-      make_model_queues = partial(make_stock_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
                                   frame_copy_size=frame_copy_size)
-      warp = make_stock_warp(nv12, model_w, model_h)
-      run_model_jit = TinyJit(make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
-      output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
+      warp = stock.make_warp(nv12, model_w, model_h)
+      run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+      output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
   else:
     vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
     if args.model_type == 'vision_policy':
@@ -404,8 +392,8 @@ if __name__ == "__main__":
 
     for cam_w, cam_h in args.camera_resolutions:
       print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
-      nv12 = NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-      frame_copy_size = nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
       warp_input_dev = 'NPY' if Device.DEFAULT == 'AMD' else Device.DEFAULT
       make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=warp_input_dev)
       warp = TinyJit(make_warp(nv12, model_w, model_h), prune=True)

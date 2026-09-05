@@ -103,6 +103,23 @@ class TestStockEquivalence(OpenpilotTestCase):
     assert state.vision_output_slices == arch.metadata_structure['vision']['output_slices']
     assert state.policy_output_slices == arch.metadata_structure['policy']['output_slices']
 
+  def test_unified_run_model(self, tmp_path, monkeypatch, patch_modeld):
+    from openpilot.common.hardware import hw
+    from openpilot.selfdrive.modeld.helpers import dump_oob
+    shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
+              'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
+    pkl_data = {'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}},
+                'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}}
+    with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
+      dump_oob(pkl_data, f)
+    bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
+    patch_modeld(bundle)
+    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
+    state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
+    assert state.is_run_model and state.run_model is not None
+    assert state.run_policy is None and state.warp is None
+    assert 'img' in state.frame_views and 'big_img' in state.frame_views
+
 
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())
 
