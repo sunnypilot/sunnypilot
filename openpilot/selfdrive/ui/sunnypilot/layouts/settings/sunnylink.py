@@ -213,8 +213,8 @@ class SunnylinkLayout(Widget):
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
 
     self._mobile_app_btn = button_item_sp(
-      title=tr("Mobile App"),
-      button_text=tr("OPEN"),
+      title=tr("Sunnylink Local Connections"),
+      button_text=tr("CONFIGURE"),
       description=tr("Manage the mobile app(s) connected over Wi-Fi: pair a new app ") +
                   tr("or unpair existing ones."),
       callback=self._open_local_apps,

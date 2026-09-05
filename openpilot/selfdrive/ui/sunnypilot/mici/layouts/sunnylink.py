@@ -86,7 +86,7 @@ class SunnylinkLayoutMici(NavScroller):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
-    self._mobile_app_btn = BigButton(tr("mobile app"), "")
+    self._mobile_app_btn = BigButton(tr("sunnylink local"), "")
     self._mobile_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalAppsPanelMici()))
 
     self._scroller.add_widgets([
@@ -309,7 +309,7 @@ class LocalAppsPanelMici(NavScroller):
     name = local_app_display_name(app)
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
-      tr("slide to unpair") + f" {name}",
+      tr("slide to unpair"),
       icon,
       confirm_callback=lambda: remove_local_app(app.app_id),
       red=True,
