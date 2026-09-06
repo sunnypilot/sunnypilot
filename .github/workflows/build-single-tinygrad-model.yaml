@@ -146,7 +146,7 @@ jobs:
 
       - name: Validate hf_repo and JSON version
         env:
-          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ ! -f "$JSON_FILE" ]; then
             echo "JSON file $JSON_FILE does not exist!"
@@ -155,13 +155,8 @@ jobs:
           python3 -c "
           import sys
           from huggingface_hub import HfApi
-          try:
-              api = HfApi()
-              api.repo_info(repo_id=sys.argv[1], repo_type='dataset')
-              print(f'Success: Repo {sys.argv[1]} exists.')
-          except Exception as e:
-              print('HF validation failed:', e)
-              sys.exit(1)
+          HfApi().repo_info(repo_id=sys.argv[1], repo_type='dataset')
+          print(f'Success: Repo {sys.argv[1]} exists.')
           " "${{ inputs.hf_repo }}"
 
       - name: Download artifact name file
@@ -192,7 +187,7 @@ jobs:
 
       - name: Upload to Hugging Face
         env:
-          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           hf upload ${{ inputs.hf_repo }} \

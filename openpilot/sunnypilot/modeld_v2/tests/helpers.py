@@ -117,7 +117,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='split',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'vision_multi_policy': Archetype(
@@ -130,7 +130,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='multi_policy',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'tri_policy': Archetype(
@@ -144,7 +144,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='multi_policy',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'supercombo_non20hz': Archetype(

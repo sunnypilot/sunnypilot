@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.ui.lib.application import FontWeight
+from openpilot.system.ui.lib.application import FontWeight, TextAlignment
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import Button, ButtonStyle
@@ -20,7 +20,7 @@ class SunnylinkConsentPage(Widget):
     self._done_callback = done_callback
     self._step = 0
 
-    self._title = self._child(Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.AUDIOWIDE, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
+    self._title = self._child(Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.AUDIOWIDE, text_alignment=TextAlignment.LEFT))
 
     self._content = [
       {
@@ -43,7 +43,7 @@ class SunnylinkConsentPage(Widget):
     self._primary_btn = self._child(Button("", button_style=ButtonStyle.PRIMARY, click_callback=lambda: self._handle_choice("enable")))
     self._secondary_btn = self._child(Button("", button_style=ButtonStyle.NORMAL, click_callback=lambda: self._handle_choice("secondary")))
     self._danger_btn = self._child(Button("", button_style=ButtonStyle.DANGER, click_callback=lambda: self._handle_choice("disable")))
-    self._desc = self._child(Label("", font_size=90, font_weight=FontWeight.MEDIUM, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
+    self._desc = self._child(Label("", font_size=90, font_weight=FontWeight.MEDIUM, text_alignment=TextAlignment.LEFT))
 
   def _handle_choice(self, choice):
     if choice == "enable":

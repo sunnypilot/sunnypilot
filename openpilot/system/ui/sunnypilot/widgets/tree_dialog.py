@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 import pyray as rl
 from openpilot.common.params import Params
+from openpilot.system.ui.lib.application import TextAlignment
 from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import DialogResult
@@ -35,7 +36,7 @@ class TreeFolder:
 
 class TreeItemWidget(Button):
   def __init__(self, text, ref, is_folder=False, indent_level=0, click_callback=None, favorite_callback=None, is_favorite=False, is_expanded=False):
-    super().__init__(text, click_callback, button_style=ButtonStyle.NORMAL, text_alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
+    super().__init__(text, click_callback, button_style=ButtonStyle.NORMAL, text_alignment=TextAlignment.LEFT,
                      text_padding=20 + indent_level * 30, elide_right=True)
     self.text = text
     self.ref = ref

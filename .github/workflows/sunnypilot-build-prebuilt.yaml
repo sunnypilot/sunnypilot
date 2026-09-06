@@ -216,6 +216,9 @@ jobs:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
     if: ${{ needs.prepare_strategy.outputs.include_big_model == 'true' }}
+    concurrency:
+      group: prepare-chestnut
+      cancel-in-progress: false
     outputs:
       onnx_sha256: ${{ steps.resolve.outputs.onnx_sha256 }}
     env:
@@ -228,8 +231,10 @@ jobs:
         run: |
           REF="${{ github.head_ref || github.ref_name }}"
 
-          ONNX_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          BLOB_SHA=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx?ref=${REF}" --jq '.sha')
+          ONNX_HASH=$(gh api "repos/${GH_REPO}/git/blobs/${BLOB_SHA}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "ONNX hash: $ONNX_HASH"
+          [ -n "$ONNX_HASH" ] || { echo "::error::Failed to extract ONNX hash"; exit 1; }
           echo "onnx_sha256=$ONNX_HASH" >> $GITHUB_OUTPUT
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
@@ -238,7 +243,7 @@ jobs:
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
-            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
             TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
             [ "$TINYGRAD_MATCH" = "true" ] || return 1
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
@@ -252,18 +257,35 @@ jobs:
 
           echo "No matching model on HF — dispatching build"
           gh workflow run build-default-models.yaml --ref "$REF" -f target=big
+          sleep 10
 
-          echo "Polling HF for big model availability..."
+          BUILD_RUN_ID=$(gh run list --workflow build-default-models.yaml --branch "$REF" --limit 1 --json databaseId --jq '.[0].databaseId')
+          echo "Dispatched build run: $BUILD_RUN_ID"
+
+          echo "Waiting for build run to complete..."
           for i in $(seq 1 90); do
             sleep 30
-            if check_defaults; then
-              echo "Big model available on HF after $((i * 30))s"
-              exit 0
+            STATUS=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.status')
+            CONCLUSION=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.conclusion')
+            echo "Poll $i/90: status=$STATUS conclusion=$CONCLUSION"
+            if [ "$STATUS" = "completed" ]; then
+              if [ "$CONCLUSION" = "success" ]; then
+                echo "Build run succeeded, verifying HF..."
+                sleep 10
+                if check_defaults; then
+                  echo "Big model verified on HF"
+                  exit 0
+                fi
+                echo "::error::Build succeeded but model not found on HF"
+                exit 1
+              else
+                echo "::error::Build run failed with conclusion=$CONCLUSION"
+                exit 1
+              fi
             fi
-            echo "Poll $i/90: not yet available"
           done
 
-          echo "::error::Big model not available on HF after 45 minutes"
+          echo "::error::Build run did not complete within 45 minutes"
           exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -277,6 +299,9 @@ jobs:
   prepare_small_model:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: prepare-small-model
+      cancel-in-progress: false
     outputs:
       driving_onnx_sha256: ${{ steps.resolve.outputs.driving_onnx_sha256 }}
     env:
@@ -289,8 +314,10 @@ jobs:
         run: |
           REF="${{ github.head_ref || github.ref_name }}"
 
-          DRIVING_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/driving_supercombo.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          BLOB_SHA=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/driving_supercombo.onnx?ref=${REF}" --jq '.sha')
+          DRIVING_HASH=$(gh api "repos/${GH_REPO}/git/blobs/${BLOB_SHA}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "Driving ONNX hash: $DRIVING_HASH"
+          [ -n "$DRIVING_HASH" ] || { echo "::error::Failed to extract driving ONNX hash"; exit 1; }
           echo "driving_onnx_sha256=$DRIVING_HASH" >> $GITHUB_OUTPUT
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
@@ -299,7 +326,7 @@ jobs:
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
-            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
             TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
             [ "$TINYGRAD_MATCH" = "true" ] || return 1
             DRIVING=$(echo "$DEFAULTS" | jq --arg hash "$DRIVING_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
@@ -313,18 +340,35 @@ jobs:
 
           echo "No matching model on HF — dispatching build"
           gh workflow run build-default-models.yaml --ref "$REF" -f target=small
+          sleep 10
 
-          echo "Polling HF for model availability..."
+          BUILD_RUN_ID=$(gh run list --workflow build-default-models.yaml --branch "$REF" --limit 1 --json databaseId --jq '.[0].databaseId')
+          echo "Dispatched build run: $BUILD_RUN_ID"
+
+          echo "Waiting for build run to complete..."
           for i in $(seq 1 60); do
             sleep 30
-            if check_defaults; then
-              echo "Model available on HF after $((i * 30))s"
-              exit 0
+            STATUS=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.status')
+            CONCLUSION=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.conclusion')
+            echo "Poll $i/60: status=$STATUS conclusion=$CONCLUSION"
+            if [ "$STATUS" = "completed" ]; then
+              if [ "$CONCLUSION" = "success" ]; then
+                echo "Build run succeeded, verifying HF..."
+                sleep 10
+                if check_defaults; then
+                  echo "Small model verified on HF"
+                  exit 0
+                fi
+                echo "::error::Build succeeded but model not found on HF"
+                exit 1
+              else
+                echo "::error::Build run failed with conclusion=$CONCLUSION"
+                exit 1
+              fi
             fi
-            echo "Poll $i/60: not yet available"
           done
 
-          echo "::error::Small driving model not available on HF after 30 minutes"
+          echo "::error::Small model build did not complete within 30 minutes"
           exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -338,6 +382,9 @@ jobs:
   prepare_dm_model:
     needs: [ prepare_strategy ]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: prepare-dm-model
+      cancel-in-progress: false
     outputs:
       dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
     env:
@@ -350,8 +397,10 @@ jobs:
         run: |
           REF="${{ github.head_ref || github.ref_name }}"
 
-          DM_HASH=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx?ref=${REF}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
+          BLOB_SHA=$(gh api "repos/${GH_REPO}/contents/openpilot/selfdrive/modeld/models/dmonitoring_model.onnx?ref=${REF}" --jq '.sha')
+          DM_HASH=$(gh api "repos/${GH_REPO}/git/blobs/${BLOB_SHA}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "DM ONNX hash: $DM_HASH"
+          [ -n "$DM_HASH" ] || { echo "::error::Failed to extract DM ONNX hash"; exit 1; }
           echo "dm_onnx_sha256=$DM_HASH" >> $GITHUB_OUTPUT
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
@@ -360,7 +409,7 @@ jobs:
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
-            DEFAULTS=$(curl -fsSL "$JSON_URL" 2>/dev/null) || return 1
+            DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
             TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
             [ "$TINYGRAD_MATCH" = "true" ] || return 1
             DM=$(echo "$DEFAULTS" | jq --arg hash "$DM_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
@@ -374,18 +423,35 @@ jobs:
 
           echo "No matching DM model on HF — dispatching build"
           gh workflow run build-default-models.yaml --ref "$REF" -f target=dm
+          sleep 10
 
-          echo "Polling HF for DM model availability..."
+          BUILD_RUN_ID=$(gh run list --workflow build-default-models.yaml --branch "$REF" --limit 1 --json databaseId --jq '.[0].databaseId')
+          echo "Dispatched build run: $BUILD_RUN_ID"
+
+          echo "Waiting for build run to complete..."
           for i in $(seq 1 60); do
             sleep 30
-            if check_defaults; then
-              echo "DM model available on HF after $((i * 30))s"
-              exit 0
+            STATUS=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.status')
+            CONCLUSION=$(gh api "repos/${GH_REPO}/actions/runs/${BUILD_RUN_ID}" --jq '.conclusion')
+            echo "Poll $i/60: status=$STATUS conclusion=$CONCLUSION"
+            if [ "$STATUS" = "completed" ]; then
+              if [ "$CONCLUSION" = "success" ]; then
+                echo "Build run succeeded, verifying HF..."
+                sleep 10
+                if check_defaults; then
+                  echo "DM model verified on HF"
+                  exit 0
+                fi
+                echo "::error::Build succeeded but DM model not found on HF"
+                exit 1
+              else
+                echo "::error::Build run failed with conclusion=$CONCLUSION"
+                exit 1
+              fi
             fi
-            echo "Poll $i/60: not yet available"
           done
 
-          echo "::error::DM model not available on HF after 30 minutes"
+          echo "::error::DM model build did not complete within 30 minutes"
           exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

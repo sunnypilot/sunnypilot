@@ -7,10 +7,12 @@ import tempfile
 from pathlib import Path
 
 from openpilot.common.file_chunker import get_manifest_path
-from openpilot.common.hardware.usb import CHESTNUT_FW_VERSION, CHESTNUT_USB_IDS, USB_DEVICES_PATH
+from openpilot.common.hardware.usb import CHESTNUT_USB_PRODUCT, USB_DEVICES_PATH, is_chestnut_usb_id
 
 MODELS_DIR = Path(__file__).resolve().parent / 'models'
 TG_INPUT_DEVICES_PATH = MODELS_DIR / 'tg_input_devices.json'
+CHESTNUT_POWERED_VOLTAGE = 5000
+CHESTNUT_PCIE_READY = 0x78
 
 
 def get_tg_input_devices(process_name: str, chestnut: bool):
@@ -50,7 +52,7 @@ def chestnut_present() -> bool:
     try:
       usb_id = (int((d / "idVendor").read_text(), 16), int((d / "idProduct").read_text(), 16))
       product = (d / "product").read_text().strip()
-      if usb_id in CHESTNUT_USB_IDS and product == f"custom {CHESTNUT_FW_VERSION}-CLEAN":
+      if is_chestnut_usb_id(*usb_id) and product == CHESTNUT_USB_PRODUCT:
         return True
     except Exception:
       pass
@@ -58,3 +60,7 @@ def chestnut_present() -> bool:
 
 def chestnut_compiled() -> bool:
   return Path(get_manifest_path(modeld_pkl_path(chestnut=True))).is_file()
+
+
+def chestnut_ready(state) -> bool:
+  return state.supplyVoltage >= CHESTNUT_POWERED_VOLTAGE and not state.supplyFault and state.pcieLtssm == CHESTNUT_PCIE_READY

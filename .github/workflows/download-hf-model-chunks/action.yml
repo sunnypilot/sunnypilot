@@ -46,6 +46,13 @@ runs:
             printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" >> "$DOWNLOAD_LIST"
           done < <(echo "$ARTIFACT" | jq -r '.chunks[].file_name')
           echo "$NUM_CHUNKS" > "${DEST_DIR}/${CANONICAL}.chunkmanifest"
+
+          if [ "$CANONICAL" = "dmonitoring_model_tinygrad.pkl" ]; then
+            for warp in dm_warp_1928x1208_tinygrad.pkl dm_warp_1344x760_tinygrad.pkl; do
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${warp}', safe=':/'))")
+              printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${warp}" >> "$DOWNLOAD_LIST"
+            done
+          fi
         }
 
         echo "$MODELS_JSON" | jq -c '.[]' | while IFS= read -r model; do
