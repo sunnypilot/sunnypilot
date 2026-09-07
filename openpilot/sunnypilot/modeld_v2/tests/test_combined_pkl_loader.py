@@ -33,7 +33,9 @@ class TestFindDrivingPkl(OpenpilotTestCase):
     bundle = DummyBundle(models=[])
     assert _find_driving_pkl(bundle) is None
 
-  def test_returns_none_when_pkl_not_on_disk(self):
+  def test_returns_none_when_pkl_not_on_disk(self, tmp_path, monkeypatch):
+    from openpilot.common.hardware import hw
+    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
     bundle = DummyBundle(models=[
       DummyModel('vision', 'driving_fof_tinygrad.pkl'),
       DummyModel('policy', 'driving_fof_tinygrad.pkl'),

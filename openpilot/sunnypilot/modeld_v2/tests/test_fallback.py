@@ -6,16 +6,14 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import io
-import requests
 
-from openpilot.common.file_chunker import get_chunk_name
+from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.common.hardware import hw
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.modeld.helpers import dump_oob
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
 from openpilot.sunnypilot.modeld_v2.tests.helpers import DummyModel, DummyBundle, CAM_W, CAM_H
-from openpilot.sunnypilot.models.fetcher import ModelParser, ModelFetcher
 
 tmp_path = tests_helpers.tmp_path
 
@@ -36,12 +34,12 @@ class TestFallback(OpenpilotTestCase):
     assert big_pkl is not None and lebowski_file in big_pkl
     assert small_pkl is not None and tsfdo_file in small_pkl
 
-  def test_download_models_and_init_modelstate_fallback(self, tmp_path, monkeypatch):
+  def test_chunked_models_and_init_modelstate_fallback(self, tmp_path, monkeypatch):
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
-    big_json = requests.get(ModelFetcher.MODEL_URL_CHESTNUT).json()
-    big_bundle = ModelParser.parse_models(big_json)[-1]
-    small_json = requests.get(ModelFetcher.MODEL_URL).json()
-    small_bundle = ModelParser.parse_models(small_json)[-1]
+    # Loader behavior must not depend on whichever model a live catalog lists
+    # last today. Keep both artifacts local, combined and chunked.
+    big_bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_big_tinygrad.pkl')])
+    small_bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_small_tinygrad.pkl')])
 
     buf = io.BytesIO()
     dump_oob(tests_helpers.make_pkl_data(tests_helpers.ARCHETYPES['supercombo_non20hz']), buf)
@@ -49,8 +47,9 @@ class TestFallback(OpenpilotTestCase):
 
     for bundle in (big_bundle, small_bundle):
       artifact = bundle.models[0].artifact
-      for i in range(len(artifact.chunks)):
-        (tmp_path / get_chunk_name(artifact.fileName, i, len(artifact.chunks))).write_bytes(oob_bytes if i == 0 else b"")
+      (tmp_path / get_manifest_path(artifact.fileName)).write_text('2')
+      for i in range(2):
+        (tmp_path / get_chunk_name(artifact.fileName, i, 2)).write_bytes(oob_bytes if i == 0 else b"")
 
     monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: small_bundle)
     assert modeld_module.ModelState(CAM_W, CAM_H, chestnut=False).chestnut is False

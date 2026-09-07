@@ -1,0 +1,76 @@
+{
+  "_comment": [
+    "Large models a Jetson can run, indexed by their git-lfs oid in comma's",
+    "openpilot history. openpilot updates big_driving_supercombo.onnx in place,",
+    "so every commit that touches it leaves a distinct object that both comma's",
+    "and sunnypilot's LFS still serve. That history is the only public source of",
+    "big-model ONNX: every bundle the model manager offers is a tinygrad pkl",
+    "rendered for the comma's QCOM GPU, which TensorRT cannot parse.",
+    "",
+    "Recover an oid without checking anything out:",
+    "  git cat-file -p <commit>:openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx",
+    "",
+    "built_seconds is measured on an Orin Nano Super 8 GB, TensorRT 10.3, and is",
+    "there so the UI can say how long a first provision will take rather than",
+    "leaving someone watching an unmoving bar."
+  ],
+  "models": [
+    {
+      "name": "Cinque Terre",
+      "date": "2026-09-04",
+      "commit": "68b5f8e486",
+      "oid": "e8d821733be15ebe9e27498bc27ad8bbbd741980ece37d77f377294010b8ff28",
+      "size": 765950064,
+      "built_seconds": 102,
+      "default": true
+    },
+    {
+      "name": "BMRLNAPv6",
+      "date": "2026-09-01",
+      "commit": "9d683c0651",
+      "oid": "f3669cb7c8a9a8a13fcd6a8575958dd09a9ec76d9c9072ccdc76fad7cfa3a28d",
+      "size": 765955335,
+      "built_seconds": 163
+    },
+    {
+      "name": "TGC v2",
+      "date": "2026-09-01",
+      "commit": "1e4e01ee0e",
+      "oid": "1791d5940b2c048d0639813426dd2cf1d6f2a6727ed51e17c8bcea8bbe754123",
+      "size": 765950064,
+      "built_seconds": 166
+    },
+    {
+      "name": "BMRLNAP",
+      "date": "2026-08-31",
+      "commit": "4adbb85742",
+      "oid": "a086d5249fc308bb73993d1e64630c669d4c7df5bde85f42ad61902543648525",
+      "size": 765953504,
+      "built_seconds": 166
+    },
+    {
+      "name": "Lebowski",
+      "date": "2026-08-14",
+      "commit": "516ec1e682",
+      "oid": "a501760a9d1d5fef0eab2b8c5d122d06124fc26dc8e0782e0aa94b82a208f0ff",
+      "size": 1757355221,
+      "built_seconds": 294
+    },
+    {
+      "name": "Be Right Here",
+      "date": "2026-08-01",
+      "commit": "bf74ce5447",
+      "oid": "10926f2c0911821ca0e72439c1c3bf3ec11f0a08789aa14b7ee8f25379b2afa4",
+      "size": 1753235978,
+      "built_seconds": 230
+    },
+    {
+      "name": "Nested restructure",
+      "date": "2026-06-21",
+      "commit": "5edc0bd89d",
+      "oid": "471f372751d5931e939320c211e35b7255f8fa8015125b3b3fd48ef43020257e",
+      "size": 195490097,
+      "built_seconds": 131
+    }
+  ]
+}
