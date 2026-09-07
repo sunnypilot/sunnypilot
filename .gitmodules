@@ -19,3 +19,6 @@
 [submodule "sunnypilot/neural_network_data"]
 	path = openpilot/sunnypilot/neural_network_data
   url = https://github.com/sunnypilot/neural-network-data.git
+[submodule "jetlink"]
+  path = jetlink_repo
+  url = https://github.com/zoompilot/jetlink.git
