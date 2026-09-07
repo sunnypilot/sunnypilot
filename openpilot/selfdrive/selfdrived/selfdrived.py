@@ -85,6 +85,7 @@ class SelfdriveD(CruiseHelper):
     self.big_model_loading = False
     self.big_model_active = False
     self.big_model_failed = False
+    self.big_model_running = False
     self.big_model_ready_t = 0.
 
     # Setup sockets
@@ -198,10 +199,15 @@ class SelfdriveD(CruiseHelper):
     loading = self.params.get_bool("ChestnutLoading")
     if self.big_model_loading and not loading:
       self.big_model_ready_t = time.monotonic()
-      self.events_sp.add(custom.OnroadEventSP.EventName.bigModelReady)
     self.big_model_loading = loading
     if self.big_model_loading:
       self.events.add(EventName.bigModelLoading)
+
+    # ChestnutLoading also clears after a failed load, so only modelV2.big means the big model is up
+    running_big = self.sm.alive['modelV2'] and self.sm.valid['modelV2'] and self.sm['modelV2'].big
+    if running_big and not self.big_model_running:
+      self.events_sp.add(custom.OnroadEventSP.EventName.bigModelReady)
+    self.big_model_running = running_big
 
     big_active = self.params.get("ChestnutActive")
     chestnut_present = self.sm['deviceState'].chestnutPresent
