@@ -803,7 +803,7 @@ def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = Fa
     "minimum_selector_version": str(helpers.REQUIRED_JSON_VERSION),
     "ref": ref,
     "models": [{
-      "type": "supercombo",
+      "type": "driving",
       "artifact": {
         "file_name": f"{short_name}.pkl",
         "download_uri": {"url": f"https://example.com/{short_name}.pkl", "sha256": "s"},
@@ -885,6 +885,16 @@ class TestModelFetcherSources(OpenpilotTestCase):
       bundles = ModelFetcher(mock.MagicMock()).model_parser.parse_models({"bundles": [chunked]})
       assert len(bundles[0].models[0].artifact.chunks) == 0
       assert os.listdir(model_dir) == []
+
+  def test_model_type_driving_and_legacy_chunked_both_parse(self):
+    """New manifests type the whole pkl `driving`; `chunked` must keep parsing because an upgrading
+    device reads its cached v22 catalog before the first refetch, and an unknown type raises."""
+    driving = manifest_bundle("small", "aaa")
+    legacy = manifest_bundle("old", "bbb", index=1)
+    legacy["models"][0]["type"] = "chunked"
+    bundles = ModelFetcher(mock.MagicMock()).model_parser.parse_models({"bundles": [driving, legacy]})
+    assert bundles[0].models[0].type == helpers.ModelManager.Model.Type.driving
+    assert bundles[1].models[0].type == helpers.ModelManager.Model.Type.chunked
 
 
 class TestSourceCacheIntegrity(OpenpilotTestCase):

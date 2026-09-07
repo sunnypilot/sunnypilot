@@ -165,7 +165,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
       policy @3;
       offPolicy @4;
       onPolicy @5;
-      chunked @6;
+      chunked @6;  # legacy: the combined driving pkl split into .chunkNNofMM files (manifests v18-v22)
+      driving @7;  # the combined driving pkl, published whole (selector version 20+)
     }
   }
 
