@@ -5,8 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
+from openpilot.sunnypilot import accelerators
 from openpilot.sunnypilot.models.fetcher import get_cached_bundles
-from openpilot.sunnypilot.models.helpers import get_active_source, get_selected_bundle, resolve_bundle_by_ref
+from openpilot.sunnypilot.models.helpers import effective_small_bundle, get_active_source, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_MODEL
 
 
@@ -37,10 +38,27 @@ def big_model_state() -> str | None:
           ChestnutState.LOADING: 'loading'}.get(ui_state.chestnut_state)
 
 
+def big_model_progress() -> tuple[str, float, str] | None:
+  """(stage, 0..1, message) while an accelerator is working, else None. The message
+  is carried because a stage like "waiting for the jetson" has no meaningful fraction"""
+  progress = getattr(ui_state, 'accelerator_progress', None)
+  if not progress:
+    return None
+  stage = str(progress.get('stage', ''))
+  if stage in ('', 'ready'):
+    return None
+  return stage, float(progress.get('frac', 0.0)), str(progress.get('msg', ''))
+
+
 def carrying_model() -> tuple[str | None, str | None, str | None]:
   """(source, internal name, display name) of what actually drives. Runner-matched:
   when a Default big cannot carry, stock modeld runs the Default small, never the
   small slot's pick; a custom big has no automatic fallback yet -> (None, None, None)."""
+  # only when no board is fitted does the chestnut state describe the jetlink view
+  if not ui_state.chestnut_present and ui_state.chestnut_state == ChestnutState.ACTIVE:
+    name = accelerators.active_model_name()
+    if name is not None:
+      return 'accelerator', name, name
   source = active_source()
   if source == "chestnut":
     bundle = get_selected_bundle(ui_state.params, "chestnut")
@@ -53,7 +71,7 @@ def carrying_model() -> tuple[str | None, str | None, str | None]:
       name = default_model_name("qcom")
       return "qcom", name, name
     return None, None, None
-  bundle = get_selected_bundle(ui_state.params, "qcom")
+  bundle = effective_small_bundle(ui_state.params)
   if bundle:
     return "qcom", bundle.internalName, bundle.displayName
   name = default_model_name("qcom")
@@ -69,6 +87,14 @@ def queued_name(current_ref) -> str | None:
   return None
 
 
+def slot_bundle(source: str):
+  # the qcom slot reads through effective_small_bundle: under the jetlink override
+  # stock modeld runs the default small model and the stored bundle is not loaded
+  if source == "qcom":
+    return effective_small_bundle(ui_state.params)
+  return get_selected_bundle(ui_state.params, source)
+
+
 def model_info() -> tuple[str, str, str]:
   """returns (active source, active model name, other model name)
 
@@ -77,8 +103,8 @@ def model_info() -> tuple[str, str, str]:
   would flash the wrong model."""
   source = active_source()
   other = "qcom" if source == "chestnut" else "chestnut"
-  active_bundle = get_selected_bundle(ui_state.params, source)
-  other_bundle = get_selected_bundle(ui_state.params, other)
+  active_bundle = slot_bundle(source)
+  other_bundle = slot_bundle(other)
 
   active_name = active_bundle.displayName if active_bundle else default_model_name(source)
   other_name = other_bundle.displayName if other_bundle else default_model_name(other)
