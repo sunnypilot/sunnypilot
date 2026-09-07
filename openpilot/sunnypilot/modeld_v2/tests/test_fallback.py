@@ -8,7 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 import io
 import requests
 
-from openpilot.common.file_chunker import get_chunk_name
+from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.common.hardware import hw
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.modeld.helpers import dump_oob
@@ -51,6 +51,8 @@ class TestFallback(OpenpilotTestCase):
       artifact = bundle.models[0].artifact
       for i in range(len(artifact.chunks)):
         (tmp_path / get_chunk_name(artifact.fileName, i, len(artifact.chunks))).write_bytes(oob_bytes if i == 0 else b"")
+      # A completed download records the chunk count alongside the chunk files.
+      (tmp_path / get_manifest_path(artifact.fileName)).write_text(str(len(artifact.chunks)))
 
     monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: small_bundle)
     assert modeld_module.ModelState(CAM_W, CAM_H, chestnut=False).chestnut is False

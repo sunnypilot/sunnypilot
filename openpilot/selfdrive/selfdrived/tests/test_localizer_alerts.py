@@ -1,15 +1,18 @@
 import collections
+from unittest.mock import Mock
 
 from opendbc.car.structs import car
 
 from openpilot.cereal import log, messaging
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.params import Params
+from openpilot.common.realtime import Ratekeeper
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator
 from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
 from openpilot.selfdrive.selfdrived.selfdrived import SelfdriveD
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
 
 EventName = log.OnroadEvent.EventName
 
@@ -21,50 +24,20 @@ SERVICES = {'controlsState': None, 'deviceState': None, 'modelV2': None, 'userBo
             'vehicleParameters': None, 'carControl': None, 'pandaStates': 0}
 
 
-class FakeSubMaster:
-  """A SubMaster that has received nothing: every message is the capnp default."""
-
-  def __init__(self):
-    self.frame = 10000
-    self.data = {s: getattr(messaging.new_message(s, size), s) for s, size in SERVICES.items()}
-    self.seen = dict.fromkeys(SERVICES, False)
-    self.alive = dict.fromkeys(SERVICES, True)
-    self.valid = dict.fromkeys(SERVICES, True)
-    self.freq_ok = dict.fromkeys(SERVICES, True)
-    self.updated = dict.fromkeys(SERVICES, False)
-    self.recv_frame = collections.defaultdict(int)
-
-  def __getitem__(self, s):
-    return self.data[s]
-
-  def all_checks(self, service_list=None):
-    return True
-
-  def all_alive(self, service_list=None):
-    return True
-
-  def all_freq_ok(self, service_list=None):
-    return True
-
-
-class FakeRatekeeper:
-  lagging = False
-
-
-class FakeIcbm:
-  def run(self, *args):
-    pass
-
-
 class TestLocalizerAlerts(OpenpilotTestCase):
   def setup_method(self):
     self.sd = SelfdriveD.__new__(SelfdriveD)
     self.sd.params = Params()
-    self.sd.sm = FakeSubMaster()
+    self.sd.sm = messaging.SubMaster(list(SERVICES))
+    self.sd.sm.frame = 10000
+    for service, size in SERVICES.items():
+      self.sd.sm.data[service] = getattr(messaging.new_message(service, size), service)
+      self.sd.sm.alive[service] = self.sd.sm.valid[service] = self.sd.sm.freq_ok[service] = True
+    self.sd.sm.recv_frame = collections.defaultdict(int)
     self.sd.events = Events()
     self.sd.events_sp = EventsSP()
     self.sd.CP = car.CarParams.new_message()
-    self.sd.rk = FakeRatekeeper()
+    self.sd.rk = Mock(spec=Ratekeeper, lagging=False)
     self.sd.pose_calibrator = PoseCalibrator()
     self.sd.calibrated_pose = None
     self.sd.excessive_actuation_check = ExcessiveActuationCheck()
@@ -75,6 +48,7 @@ class TestLocalizerAlerts(OpenpilotTestCase):
     self.sd.big_model_loading = False
     self.sd.big_model_active = False
     self.sd.big_model_failed = False
+    self.sd.big_model_running = False
     self.sd.big_model_ready_t = 0.  # past the settling window
     self.sd.dm_lockout_set = False
     self.sd.dm_uncertain_alerted = False
@@ -95,7 +69,7 @@ class TestLocalizerAlerts(OpenpilotTestCase):
     self.sd.distance_traveled = 0
     self.sd.experimental_mode = False
     self.sd.is_metric = False
-    self.sd.icbm = FakeIcbm()
+    self.sd.icbm = Mock(spec=IntelligentCruiseButtonManagement)
 
     # calibrated, so only the seen guard keeps paramsdTemporaryError away
     self.sd.sm['extrinsicsCalibration'].calStatus = log.ExtrinsicsCalibration.Status.calibrated
