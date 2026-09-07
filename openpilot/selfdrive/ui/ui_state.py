@@ -218,6 +218,10 @@ class UIState(UIStateSP):
       self._started_prev = self.started
 
   def _update_chestnut_state(self) -> None:
+    if self.accelerator_view is not None:
+      self.chestnut_state = self._accelerator_state()
+      return
+
     detected = self.sm["deviceState"].chestnutPresent
     if not self.started:
       self.chestnut_present = detected
@@ -267,7 +271,9 @@ class UIState(UIStateSP):
         self.usb_connected_ts = now
         self.usb_unknown = False
       elif self.usb_connected_ts is not None and now - self.usb_connected_ts > 10.:
-        self.usb_unknown = not any(is_chestnut_usb_id(d["vendorId"], d["productId"], True) for d in get_usb_state())
+        # the comma is the gadget for an off-board accelerator and enumerates nothing
+        self.usb_unknown = not (self.accelerator_view is not None or
+                                any(is_chestnut_usb_id(d["vendorId"], d["productId"], True) for d in get_usb_state()))
         self.usb_connected_ts = None
     elif self.usb_connected:
       if self.usb_disconnected_ts is None:

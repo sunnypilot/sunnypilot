@@ -7,17 +7,37 @@ See the LICENSE.md file in the root directory for more details.
 import pyray as rl
 
 from openpilot.cereal import custom
+from openpilot.sunnypilot import accelerators
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
-from openpilot.selfdrive.ui.mici.widgets.button import BigButton
+from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.selfdrive.ui.ui_state import ui_state, device
-from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
-                                                           default_model_name, model_info, queued_name)
+from openpilot.selfdrive.ui.sunnypilot.accelerator_link import link_enabled, link_toggle_meaningful, set_link_enabled
+from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_progress, big_model_state,
+                                                          bundles_for_source, carrying_model,
+                                                          default_model_name, model_info, queued_name)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
+
+
+class AcceleratorLinkToggle(BigToggle):
+  """not BigParamControl: the write also drops manager's runner cache and is refused onroad"""
+
+  def __init__(self):
+    super().__init__(tr("accelerator link"), initial_state=link_enabled(), toggle_callback=self._store)
+
+  def _store(self, checked: bool) -> None:
+    if not ui_state.is_offroad():
+      self.set_checked(link_enabled())
+      return
+    set_link_enabled(checked)
+
+  def refresh(self) -> None:
+    self.set_checked(link_enabled())
+
 
 def _model_info() -> tuple[str, str, str]:
   """(active model, info header, info text) for the panel. Runner-matched: the
@@ -30,6 +50,15 @@ def _model_info() -> tuple[str, str, str]:
     big = get_selected_bundle(ui_state.params, "chestnut")
     carry_display = big.displayName if big else default_model_name("chestnut")
   active_text = (carry_display or active_name).lower()
+  provisioning = big_model_progress()
+  if provisioning is not None:
+    stage, frac, msg = provisioning
+    if stage == 'failed':
+      return active_text, tr("big model"), tr("unavailable")
+    # "waiting for the jetson" says more than "connect 0%"; no percentage for a stage
+    # with nothing to measure
+    detail = tr(msg) if msg else tr(stage)
+    return active_text, tr("big model"), f"{detail} {frac * 100:.0f}%" if frac > 0 else detail
   if state == 'failed':
     return active_text, tr("big model"), tr("unavailable")
   if state == 'loading':
@@ -84,7 +113,10 @@ class ModelsLayoutMici(NavScroller):
     self.cancel_download_btn = BigButton(tr("cancel download"))
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
+    self.link_toggle = AcceleratorLinkToggle()
+    self.link_toggle.set_visible(link_toggle_meaningful())
+
+    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.link_toggle]
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -121,7 +153,30 @@ class ModelsLayoutMici(NavScroller):
       btn = BigButton(label.lower(), value=value)
       btn.set_click_callback(lambda s=source: self._select_hardware(s))
       hardware_btns.append(btn)
+    choices = accelerators.model_choices()
+    if choices:
+      selected = next((m['name'] for m in choices if m['selected']), '')
+      btn = BigButton(tr('accelerator models'), value=selected.lower())
+      btn.set_click_callback(self._select_accelerator)
+      hardware_btns.append(btn)
     self._push_selection_view(hardware_btns)
+
+  def _select_accelerator(self):
+    buttons = []
+    for choice in accelerators.model_choices():
+      value = tr('cached on accelerator') if choice['cached'] else tr('build required')
+      if choice['selected']:
+        value += f" ({tr('selected')})"
+      btn = BigButton(choice['name'].lower(), value=value)
+      btn.set_click_callback(lambda m=choice: self._choose_accelerator(m))
+      buttons.append(btn)
+    self._push_selection_view(buttons)
+
+  def _choose_accelerator(self, choice):
+    if not ui_state.is_offroad():
+      return
+    accelerators.select_model(choice['name'])
+    self._pop_to_main()
 
   def _select_hardware(self, source):
     self._selection_source = source
@@ -198,6 +253,9 @@ class ModelsLayoutMici(NavScroller):
     should_update = self._download_frame % (gui_app.target_fps / 2) == 0
     if should_update:
       self._download_progress = self._download_progress + "." if len(self._download_progress) < 3 else ""
+      # present() and unavailable_reason() read sysfs, so they ride this half-second tick
+      self.link_toggle.refresh()
+      self.link_toggle.set_visible(link_toggle_meaningful())
 
     is_downloading = (manager.selectedBundle
                       and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading)
