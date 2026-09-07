@@ -8,8 +8,9 @@ import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 from opendbc.car.structs import car
 from openpilot.common.constants import CV
+from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
-  NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
+  NoEntryAlert, ImmediateDisableAlert, SoftDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import PCM_LONG_REQUIRED_MAX_SET_SPEED, CONFIRM_SPEED_THRESHOLD
 from openpilot.common.hardware import HARDWARE
 
@@ -25,6 +26,14 @@ EventNameSP = custom.OnroadEventSP.EventName
 EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
 
 IS_MICI = HARDWARE.get_device_type() == 'mici'
+
+
+def soft_disable_alert(alert_text_2: str) -> AlertCallbackType:
+  def func(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+    if soft_disable_time < int(0.5 / DT_CTRL):
+      return ImmediateDisableAlert(alert_text_2)
+    return SoftDisableAlert(alert_text_2)
+  return func
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
@@ -253,11 +262,25 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 0.1),
   },
 
+  EventNameSP.bigModelAvailable: {
+    ET.PERMANENT: Alert(
+      "Model Available" if IS_MICI else "Big Model Available",
+      "Disengage to switch",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 3.),
+  },
+
   EventNameSP.bigModelReady: {
     ET.PERMANENT: Alert(
       "Big Model Ready",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 2.),
+  },
+
+  # an accelerator on its own power reconnects mid-drive, so no "restart the car"
+  EventNameSP.bigModelLinkLost: {
+    ET.SOFT_DISABLE: soft_disable_alert("Big Model Lost"),
+    ET.PERMANENT: NormalPermanentAlert("Big Model Lost", "Small model is driving,\nreconnecting if it comes back", duration=20.),
   },
 }

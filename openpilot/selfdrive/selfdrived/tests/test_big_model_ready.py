@@ -6,6 +6,7 @@ from openpilot.cereal import custom, messaging
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.selfdrived.events import Events, EventName
 from openpilot.selfdrive.selfdrived.selfdrived import SelfdriveD
+from openpilot.sunnypilot.selfdrive.selfdrived.accelerator_events import AcceleratorEvents
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 EventNameSP = custom.OnroadEventSP.EventName
@@ -18,11 +19,12 @@ class TestBigModelReady(unittest.TestCase):
     self.addCleanup(prefix.__exit__, None, None, None)
     # Drive the real update_events up to its initialization gate, without processes or live Params.
     sd = SelfdriveD.__new__(SelfdriveD)
-    sd.sm = messaging.SubMaster(['modelV2', 'controlsState', 'deviceState', 'lateralManeuverPlan', 'alertDebug'])
+    sd.sm = messaging.SubMaster(['modelV2', 'modelDataV2SP', 'controlsState', 'deviceState', 'lateralManeuverPlan', 'alertDebug'])
     sd.sm.data['modelV2'] = sd.sm['modelV2'].as_builder()
     sd.sm.seen['modelV2'] = sd.sm.alive['modelV2'] = sd.sm.valid['modelV2'] = True
     sd.events = Events()
     sd.events_sp = EventsSP()
+    sd.accelerator_events = AcceleratorEvents()
     sd.params = Mock()
     sd.big_model_loading = sd.big_model_active = sd.big_model_failed = sd.big_model_running = False
     sd.big_model_ready_t = 0.

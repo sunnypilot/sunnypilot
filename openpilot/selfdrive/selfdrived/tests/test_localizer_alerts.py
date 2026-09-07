@@ -9,6 +9,7 @@ from openpilot.selfdrive.locationd.helpers import PoseCalibrator
 from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
 from openpilot.selfdrive.selfdrived.selfdrived import SelfdriveD
+from openpilot.sunnypilot.selfdrive.selfdrived.accelerator_events import AcceleratorEvents
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 EventName = log.OnroadEvent.EventName
@@ -63,6 +64,7 @@ class TestLocalizerAlerts(OpenpilotTestCase):
     self.sd.sm = FakeSubMaster()
     self.sd.events = Events()
     self.sd.events_sp = EventsSP()
+    self.sd.accelerator_events = AcceleratorEvents()
     self.sd.CP = car.CarParams.new_message()
     self.sd.rk = FakeRatekeeper()
     self.sd.pose_calibrator = PoseCalibrator()
