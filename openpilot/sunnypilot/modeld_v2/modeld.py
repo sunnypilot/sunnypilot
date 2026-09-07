@@ -17,7 +17,7 @@ from tinygrad.tensor import Tensor
 
 import openpilot.cereal.messaging as messaging
 from openpilot.common.hardware import COMMA_HARDWARE
-from openpilot.selfdrive.modeld.helpers import chestnut_present, load_oob
+from openpilot.selfdrive.modeld.helpers import check_camera_jit, chestnut_present, load_oob
 from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.cereal.services import SERVICE_LIST
@@ -143,11 +143,14 @@ class ModelState(ModelStateBase):
         self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
           self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
         self.frame_views, self.npy = self.frame_buffers, self.numpy_inputs
+        check_camera_jit(jits['run_model'], cam_w, cam_h, pkl_path)
         self.run_model, self.run_policy, self.warp = jits['run_model'][(cam_w, cam_h)], None, None
       else:
         self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
+        check_camera_jit(jits, cam_w, cam_h, pkl_path)
         self.run_model, self.run_policy, self.warp = None, jits['run_policy'], jits[(cam_w, cam_h)]
     else:
+      check_camera_jit(jits, cam_w, cam_h, pkl_path)
       self.run_model, self.run_policy, self.warp = None, jits['run_policy'], jits[(cam_w, cam_h)]
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]

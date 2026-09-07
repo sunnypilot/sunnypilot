@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-from openpilot.selfdrive.modeld.helpers import MODELS_DIR, get_tg_input_devices
+from openpilot.selfdrive.modeld.helpers import MODELS_DIR, dm_warp_path, get_tg_input_devices
 from tinygrad.tensor import Tensor
 import time
 import pickle
@@ -45,7 +45,7 @@ class ModelState:
     self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
     self._blob_cache : dict[int, Tensor] = {}
     self.model_run = pickle.load(open_file_chunked(str(MODEL_PKL_PATH)))
-    with open(MODELS_DIR / f'dm_warp_{cam_w}x{cam_h}_tinygrad.pkl', "rb") as f:
+    with open(dm_warp_path(cam_w, cam_h), "rb") as f:
       self.image_warp = pickle.load(f)
 
   def run(self, buf: VisionBuf, calib: np.ndarray, transform: np.ndarray) -> tuple[np.ndarray, float]:

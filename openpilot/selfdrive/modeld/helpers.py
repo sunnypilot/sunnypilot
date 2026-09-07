@@ -47,6 +47,22 @@ def load_oob(f):
       yield pb
   return pickle.load(io.BytesIO(opcodes), buffers=buffers())
 
+# the jits are keyed by driver camera resolution, so a build from another device may have none for this one
+def _camera_mismatch(cam_w: int, cam_h: int, compiled: str, path) -> RuntimeError:
+  return RuntimeError(f"no jit for this device's {cam_w}x{cam_h} driver camera: {path} has only [{compiled or 'none'}], rebuild it")
+
+def dm_warp_path(cam_w: int, cam_h: int):
+  path = MODELS_DIR / f'dm_warp_{cam_w}x{cam_h}_tinygrad.pkl'
+  if not path.is_file():
+    compiled = ', '.join(sorted(p.name.split('_')[2] for p in MODELS_DIR.glob('dm_warp_*_tinygrad.pkl')))
+    raise _camera_mismatch(cam_w, cam_h, compiled, MODELS_DIR)
+  return path
+
+def check_camera_jit(jits: dict, cam_w: int, cam_h: int, path) -> None:
+  if (cam_w, cam_h) not in jits:
+    compiled = ', '.join(f'{w}x{h}' for w, h in sorted(k for k in jits if isinstance(k, tuple)))
+    raise _camera_mismatch(cam_w, cam_h, compiled, path)
+
 def chestnut_present() -> bool:
   for d in USB_DEVICES_PATH.glob("*"):
     try:

@@ -18,15 +18,19 @@ tinygrad_root = env.Dir("#").abspath
 tinygrad_files = ["#"+x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**", recursive=True, root_dir=tinygrad_root)
                   if 'pycache' not in x and os.path.isfile(os.path.join(tinygrad_root, x))]
 
-def estimate_pickle_max_size(onnx_size):
+def estimate_pickle_max_size(onnx_size, num_cameras=1):
   # QCOM programs for models with spatial recurrent features can approach 2x
-  # the ONNX size. Overestimating only adds an empty trailing chunk.
-  return 2.0 * onnx_size + 10 * 1024 * 1024
+  # the ONNX size, once per camera. Overestimating only adds an empty trailing chunk.
+  return 2.0 * onnx_size * num_cameras + 10 * 1024 * 1024
 
 if arch == 'comma_arm64':
   from openpilot.common.hardware import HARDWARE
-  camera = _os_fisheye if HARDWARE.get_device_type() == "mici" else _ar_ox_fisheye
-  camera_configs = [(camera.width, camera.height)]
+  # tizi and mici share the GPU, so a prebuilt can carry the jits for both driver cameras
+  if os.getenv('PREBUILT_ALL_CAMERAS'):
+    camera_configs = [(c.width, c.height) for c in (_ar_ox_fisheye, _os_fisheye)]
+  else:
+    camera = _os_fisheye if HARDWARE.get_device_type() == "mici" else _ar_ox_fisheye
+    camera_configs = [(camera.width, camera.height)]
   tg_backend = 'QCOM'
   tg_flags = f'DEV={tg_backend} IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1'
 else:
@@ -84,7 +88,7 @@ if not os.getenv('SKIP_TINYGRAD_COMPILE'):
           f'--onnx {File(f"models/{file_prefix}driving_supercombo.onnx").abspath} '
           f'--output {target_pkl_path} --frame-skip {frame_skip}')
     onnx_sizes_sum = sum(os.path.getsize(f) for f in driving_onnx_deps)
-    chunk_targets = get_chunk_targets(target_pkl_path, estimate_pickle_max_size(onnx_sizes_sum))
+    chunk_targets = get_chunk_targets(target_pkl_path, estimate_pickle_max_size(onnx_sizes_sum, len(camera_configs)))
     def do_compile(target, source, env, command=cmd, pkl=target_pkl_path, chunks=chunk_targets):
       from openpilot.system.hardware.chestnut.flash import link_up
       # chestnut can enumerate before its PCIe link is up due to varying 12V power behavior across cars

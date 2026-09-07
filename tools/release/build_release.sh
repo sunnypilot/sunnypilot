@@ -48,7 +48,7 @@ for policy in /sys/devices/system/cpu/cpufreq/policy*; do
   echo "$hardware_max" | sudo tee "$policy/scaling_max_freq" >/dev/null
 done
 
-scons
+PREBUILT_ALL_CAMERAS=1 scons
 if [ -n "$INCLUDE_BIG_MODEL" ]; then
   test -f openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl.chunkmanifest
 fi
