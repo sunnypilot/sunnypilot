@@ -151,7 +151,7 @@ def migrate_artifact(api: HfApi, session: requests.Session, hf_repo: str, name: 
 
 def migrate_manifest(src: dict, *, hf_repo: str, api: HfApi, session: requests.Session, selector_version: int, model_type: str,
                      only: set[str] | None = None, limit: int | None = None, workers: int = 8, work_dir: Path | None = None,
-                     dry_run: bool = False, log: Callable[[str], None] = print) -> dict:
+                     dry_run: bool = False, log: Callable[[str], None] = lambda line: print(line, flush=True)) -> dict:
   """The whole-file manifest for src. Raises before anything is written if a model cannot be migrated."""
   if "tinygrad_ref" not in src:
     raise ValueError("source manifest has no tinygrad_ref; the client's manifest test requires one")
@@ -224,10 +224,10 @@ def main() -> int:
     return 1
 
   if args.dry_run:
-    print(f"dry run: {len(dst['bundles'])} bundle(s) verified, {args.dst_json} not written")
+    print(f"dry run: {len(dst['bundles'])} bundle(s) verified, {args.dst_json} not written", flush=True)
     return 0
   write_manifest(args.dst_json, dst)
-  print(f"{args.dst_json} written with {len(dst['bundles'])} bundle(s) at selector version {args.selector_version}")
+  print(f"{args.dst_json} written with {len(dst['bundles'])} bundle(s) at selector version {args.selector_version}", flush=True)
   return 0
 
 
