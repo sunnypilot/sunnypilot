@@ -12,7 +12,8 @@ from openpilot.selfdrive.controls.lib.ford_model_action import ModelActionContro
 
 
 def make_model(x, y, heading):
-  return SimpleNamespace(position=SimpleNamespace(x=x, y=y), orientation=SimpleNamespace(z=heading))
+  times = np.linspace(0., 3., len(x))
+  return SimpleNamespace(position=SimpleNamespace(t=times, x=x, y=y), orientation=SimpleNamespace(t=times, z=heading))
 
 
 def circle(curvature):
@@ -20,26 +21,26 @@ def circle(curvature):
   return make_model(np.sin(curvature*s)/curvature, (1-np.cos(curvature*s))/curvature, curvature*s)
 
 
-def straight(offset=0.):
+def straight(offset=0., heading=0.):
   x = np.linspace(0., 60., 121)
-  return make_model(x, np.full_like(x, offset), np.zeros_like(x))
+  return make_model(x*np.cos(heading), offset+x*np.sin(heading), np.full_like(x, heading))
 
 
-def test_selected_action_controls_heading_even_when_model_previews_another_turn():
+def test_model_heading_is_used_even_when_scalar_action_differs():
   model = circle(.02)
-  assert encode_model_action(model, 0., 20.).path_angle == 0.
-  assert encode_model_action(model, -.004, 20.).path_angle == pytest.approx(-.08)
-  assert encode_model_action(model, 0., 20.).path_offset > 0.
+  for desired in (0., -.004, .004):
+    target = encode_model_action(model, desired, 20.)
+    assert target.path_angle == pytest.approx(.4)
+    assert target.path_offset == pytest.approx((1-math.cos(.4))/.02)
 
 
-def test_straight_centering_and_matched_curves_keep_base_gain_across_speed():
+def test_straight_centering_and_matched_model_circles():
   for speed in (2., 7., 20., 35.):
-    target = encode_model_action(straight(.4), 0., speed)
-    assert target == FordPath(True, .4, 0., 0., 0.)
+    assert encode_model_action(straight(.4), 0., speed) == FordPath(True, .4, 0., 0., 0.)
   for sign in (-1, 1):
     target = encode_model_action(circle(sign*.01), sign*.01, 20.)
-    assert target.path_offset == pytest.approx(sign*(1-math.cos(.07))/.01, abs=1e-6)
-    assert target.path_angle == pytest.approx(sign*.2)  # No 10 m cap at highway speed.
+    assert target.path_offset == pytest.approx(sign*(1-math.cos(.2))/.01)
+    assert target.path_angle == pytest.approx(sign*.2)
 
 
 def test_two_actuator_positions_are_sufficient_for_every_next_output():
@@ -54,31 +55,26 @@ def test_two_actuator_positions_are_sufficient_for_every_next_output():
     assert controller.update(model, desired, **kwargs) == copied.update(model, desired, **kwargs)
 
 
-def test_held_turn_releases_with_geometric_countersteering_and_no_retained_bias():
+def test_held_turn_releases_using_new_model_geometry_without_retained_bias():
   for sign in (-1., 1.):
     controller = ModelActionController()
     for _ in range(400):
       out = controller.update(circle(sign*.01), sign*.01, speed=20., dt=.01)
     assert out.path_angle == pytest.approx(sign*.2)
     previous = np.array([controller.c0, controller.c1])
-    opposed = False
-    for desired in sign*np.linspace(.01, 0., 101):
-      out = controller.update(straight(), desired, speed=20., dt=.01)
-      rotation = desired*3.
-      predicted = (1.-math.cos(rotation))/desired-10.*math.sin(rotation) if desired else 0.
-      expected = previous+np.clip([predicted, 20.*desired]-previous, [-.04, -.005], [.04, .005])
+    for _ in range(100):
+      out = controller.update(straight(), sign*.01, speed=20., dt=.01)
+      expected = previous+np.clip(-previous, [-.04, -.005], [.04, .005])
       values = np.array([controller.c0, controller.c1])
       np.testing.assert_allclose(values, expected, atol=1e-10)
-      opposed |= sign*out.path_offset < 0.
       previous = values
-    assert opposed
     assert out == FordPath(True, 0., 0., 0., 0.)
 
 
 def test_current_model_replacement_leaves_only_independent_actuator_slew():
   controller = ModelActionController()
   for _ in range(150):
-    controller.update(straight(1.), .04, speed=20., dt=.01)
+    controller.update(straight(1.-20*math.sin(.4), .4), .04, speed=20., dt=.01)
   for _ in range(25):
     out = controller.update(straight(), 0., speed=20., dt=.01)
   assert out.path_offset == pytest.approx(0.)
@@ -113,7 +109,7 @@ def test_selected_core_reversal_through_float32_and_wire_keeps_sign_and_zero_c2(
   previous = np.zeros(2)
   for i in range(600):
     sign = 1. if i < 300 else -1.
-    out = controller.update(straight(sign*8.), sign*.1, speed=30., dt=.01)
+    out = controller.update(straight(sign*8., sign*.8), sign*.1, speed=30., dt=.01)
     fields = np.array([out.path_offset, out.path_angle])
     assert (abs(fields) <= [5.1100001, .5000001]).all()
     assert (abs(fields-previous) <= [.0500001, .0055001]).all()
@@ -132,7 +128,7 @@ def test_selected_core_reversal_through_float32_and_wire_keeps_sign_and_zero_c2(
 
 def test_short_path_holds_available_endpoint_without_extrapolation():
   model = make_model([0., 1.], [0., .1], [0., 0.])
-  assert encode_model_action(model, .01, 20.) == FordPath(True, .1, .2, 0., 0.)
+  assert encode_model_action(model, .01, 20.) == FordPath(True, .1, 0., 0., 0.)
 
 
 def test_overflowing_arc_resets_instead_of_publishing_invalid_geometry():
@@ -181,14 +177,13 @@ def test_domain_and_elapsed_time_boundaries(field, value, valid):
   assert ModelActionController().update(straight(.4), **kwargs).valid == valid
 
 
-def test_arc_station_not_forward_x_or_model_heading_determines_offset():
+def test_arc_station_floor_not_forward_x_determines_offset():
   x = np.array([0., 6., 12.])
   y = .4+x*.75
-  target = encode_model_action(make_model(x, y, [2., -2., 1.]), -.01, 20.)
-  # Arc length is 1.25*x. At station 10, x=8 and y=6.4; use the full predicted pose.
-  expected = math.cos(-.03)*6.4-math.sin(-.03)*8.+(1.-math.cos(-.03))/-.01
-  assert target.path_offset == pytest.approx(expected)
-  assert target.path_angle == pytest.approx(-.2)
+  target = encode_model_action(make_model(x, y, [.4, .4, .4]), -.01, 20.)
+  # At one second arc station is 5 m; the 7 m minimum gives x=5.6, y=4.6.
+  assert target.path_offset == pytest.approx(4.6)
+  assert target.path_angle == pytest.approx(.4)
 
 
 def test_duplicate_stations_keep_valid_geometry_and_first_cycle_slew():
@@ -196,4 +191,4 @@ def test_duplicate_stations_keep_valid_geometry_and_first_cycle_slew():
   assert encode_model_action(model, 0., 20.) == FordPath(True, .4, 0., 0., 0.)
   out = ModelActionController().update(model, .01, speed=20., dt=.002)
   assert out.path_offset == pytest.approx(.01)
-  assert out.path_angle == pytest.approx(.001)
+  assert out.path_angle == 0.

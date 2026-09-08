@@ -1,123 +1,80 @@
-# Ford selected-action drive-test branch
+# Ford model-point drive-test branch
 
-The candidate is selectable on the **Ford CAN FD F-150 Lightning** behind
-its own persistent, default-off Sunnylink toggle. Version 6 uses calibrated
-measured turn rate for C0's existing 150 ms vehicle-pose forecast. C1 still uses
-selected, upstream-limited curvature. Raw Ford yaw remains an input-health and
-diagnostic signal; calibrated motion now affects C0. This is yaw feedback whose
-sensitivity depends on the existing preview time and path distance. There is no
-fitted PSCM plant model, added strength multiplier, new filter or extra core state.
-`calibration_approved=false`: offline checks do not establish physical tracking,
-turn-exit behavior or closed-loop stability.
+The default-off **Selected-Action Path Tracking (Experimental)** Sunnylink toggle
+now selects the v7 model-point candidate on the **Ford CAN FD F-150 Lightning**.
+The stored key remains `FordModelActionController`; an already enabled setting
+selects this revision after updating and completing an offroad-to-onroad cycle.
 
-The current cadence experiment transmits this controller's LMC2 requests at
-**20 Hz (50 ms)** while its calculation remains at **100 Hz**. See
-[cadence validation](ford_model_action_cadence.md). The v6 control law and
-per-second C0/C1 slew are unchanged; this is not a demonstrated tracking fix.
+The controller reads **model lateral position and model heading at the same
+point**. Start with the model's predicted distance at one second, enforce the
+existing seven-metre minimum, and hold the available endpoint when necessary.
+C0 is that point's lateral position in metres; C1 is its unwrapped heading in
+radians. C2 and C3 stay zero. The 150 ms yaw-based forecast and the reconstruction
+of heading from selected curvature are removed.
+
+This point choice is an engineering guess, not an identified Ford reference or
+PSCM calibration. `calibration_approved=false`: offline tests do not establish
+physical tracking, turn-exit behavior, or stability across different PSCMs.
+See [the model-point decision and validation](ford_model_points.md).
 
 ## Select and restore
 
-1. Install branch `hiimisaac-dev` from
-   `sunnypilot/sunnypilot` on the device using your normal branch-switch process.
-   Allow its build to finish before changing the setting.
-2. While offroad, open Sunnylink device settings → Vehicle → Ford and enable
-   **Selected-Action Path Tracking (Experimental)** (`FordModelActionController`).
+1. Install branch `hiimisaac-dev` from `sunnypilot/sunnypilot` and allow the build
+   to finish.
+2. While offroad, open Sunnylink device settings → Vehicle → Ford. Keep or enable
+   **Selected-Action Path Tracking (Experimental)**.
 3. Complete a real offroad-to-onroad cycle. `card` snapshots the toggle into
    `CarParamsSP`; the sender and `controlsd` share that selection. Changing a
-   stored toggle or disengaging alone cannot swap an active
-   controller. Initial physical evaluation remains controlled testing.
+   stored toggle or disengaging alone cannot swap an active controller.
 
-The startup log event `Ford path controller selected` should report
-`FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify `hypothesis=model-action-measured-pose-v6`. Active events report
-`pose_source=measured` when fresh calibrated motion is used, otherwise
-`pose_source=requested`. They also include `pose_yaw_rate`, `pose_age`, raw host
-`yaw_rate`, selected curvature and the command tuple.
+The startup event `Ford path controller selected` reports
+`FordModelActionController`. Periodic `Ford C2-free path tracking` events report
+`hypothesis=model-pose-one-second-v7`, `pose_source=model`, `preview_time_s=1.0`
+and `minimum_station_m=7.0`, plus input ages, slew state and the command tuple.
+Selected desired curvature is still logged, but no longer constructs C0/C1.
 
-Turning the new toggle off and completing another offroad-to-onroad cycle
-restores **PSCM Coefficient Observer** if selected, otherwise the original
-Ford path controller. The stored observer selection is preserved. The candidate
-takes priority on the supported vehicle, independently of EPS firmware query
-results. Other vehicles retain their existing selection.
+Turning the toggle off and completing another offroad-to-onroad cycle restores
+**PSCM Coefficient Observer** if selected, otherwise the original Ford path
+controller. Other vehicles keep their previous selection. The retired v8 toggle
+cannot select this candidate.
 
-The v8 implementation, its Sunnylink toggle and its dedicated tests are removed.
-A leftover `FordVirtualAngleController=1` file cannot enable the new controller.
-The shared Float32/CAN rounding helper now lives in `ford_model_action.py`;
-unused v8 PSCM-feedback plumbing is removed. Historical v8 route evidence remains
-in Git history and the archived validation documents.
+## Wiring and limits
 
-## Wiring and validation
+Both model fields must have matching, finite, strictly increasing time arrays
+starting at zero. Malformed geometry, stale required services, invalid timing,
+or disengagement resets both actuator states. Freshness still requires model,
+car-state and reference publications no older than 150 ms, with at most 5 ms
+future skew. The valid control timestep remains 2–100 ms.
 
-`Controls.__init__` selects the candidate once at startup. It shares the
-existing Ford call path, selected upstream-limited curvature, service gates,
-invalid-output disengagement, Float32 publication and downstream CAN builder.
-C2 and C3 stay zero. The cadence experiment updates the opendbc sender and
-submodule pointer. Panda safety is unchanged.
+Only the two unquantized C0/C1 slew positions persist in the core. Field caps are
+±5.11 m / ±0.5 rad and slew rates are 4 m/s / 0.5 rad/s. Calculation stays at
+100 Hz; the existing [cadence experiment](ford_model_action_cadence.md) sends this
+candidate at 20 Hz. Float32 publication, host-to-wire negation, packing and
+Panda safety are unchanged. The opendbc pin remains
+`87ca78e6e641eefb2d654f260a6ab08df3058bd5`.
 
-Measured-pose use requires healthy `deviceMotion` and `extrinsicsCalibration`
-services, calibrated extrinsics no older than 1 s, valid angular velocity and
-sensor/input flags, and finite calibrated yaw within ±3 rad/s. Both the motion
-publication and its embedded filter-state timestamp must be no older than
-150 ms; all three age checks allow at most 5 ms future skew. Calibration-only
-updates rebuild the cached pose before the candidate uses it.
-Unavailable, unhealthy or stale optional motion falls back to the v5
-requested-curvature forecast without resetting C0/C1 slew. Existing base-input
-failures still invalidate the command. C1, the ±5.11 m / ±0.5 rad field caps,
-4 m/s / 0.5 rad/s slew rates, packing and two core states are unchanged.
+Normal operation uses the model's point directly. The upstream scalar curvature
+and its clipping still exist for logging/other controllers, but no longer bound
+this candidate's heading target. Its C0/C1 field caps and slew still apply;
+passing Panda TX checks does not establish an actual vehicle acceleration bound.
+Lateral maneuver test mode supplies only a scalar curvature, not a model pose.
+It explicitly invalidates/disengages this candidate as `unsupported_reference`.
+Optional measured motion is no longer a command input.
 
-Sunnylink publishes the toggle through its generated settings schema and
-writes the registered Boolean through the existing parameter endpoint. The
-offroad UI rule and `needs_onroad_cycle` metadata describe when it can be
-changed and when it takes effect. An onroad backend write changes storage
-only; the controller continues using its startup selection.
+## Reproduce offline checks
 
-Native validation also exposed a pre-existing `params_keys_by_flag` bug:
-every returned buffer referenced the same reusable string. Sunnylink backup
-key enumeration could therefore return corrupted names. The bridge now
-returns separate strings owned by the parameter handle. Regression tests
-check distinct registered keys across flags, and toggle tests check its
-persistence and backup registration using the rebuilt native library.
-
-The current validation record is `ford_model_action_measured_pose_validation.json`.
-Its runtime replay exactly matches the reviewed offline candidate across
-340,757 recorded cycles and 681,514 Float32/CAN round trips. C1 and eligibility
-match v5 on all four extracts. The replay checks frozen recorded inputs; it does
-not simulate how the vehicle would respond to different commands.
-
-The candidate adds C0 during the recorded weak-bend turn-rate shortfalls and
-reduces it during the older overshoot example. Tight-turn C1 saturation remains.
-On the 70.24-second sustained quiet-path cohort, C0 amplitude RMS decreases but
-per-cycle change RMS rises about 28%; physical centering and tracking still need
-evaluation. All four routes came from the same truck, so cross-PSCM performance
-has not been demonstrated.
-
-`ford_model_action_no_yaw_damping_validation.json` archives v5 checks;
-the [v5 notes](ford_model_action_no_yaw_damping.md) explain the prior damping removal.
-`ford_model_action_full_prediction_validation.json` archives v4 checks;
-the [full-prediction notes](ford_model_action_full_prediction.md) explain cap removal
-and remaining physical uncertainty. `ford_model_action_prediction_validation.json`
-archives the capped v3 evaluation. `ford_model_action_damping_validation.json`
-archives the preceding v2 checks at their recorded source hashes.
-`ford_model_action_drive_test_validation.json` archives v1 wiring validation
-at the recorded source hashes, including 284 tests and 26 subtests. Its counts
-and 145-line controller size describe v1. The 469-line v8 module remains removed.
-
-The original 133,550-cycle route reconstruction, 485,238 packing round trips
-and mutation probes remain recorded separately in
-`ford_model_action_validation.json` at the offline-stage source hashes.
-
-## Reproduce deployment checks
-
-Initialize the branch's pinned opendbc submodule with `git submodule update --init opendbc_repo`
-and build the native Params library from this branch before testing.
+Initialize the pinned submodule and build the project's native Python dependencies:
 
 ```sh
+git submodule update --init opendbc_repo
 export PYTHONDONTWRITEBYTECODE=1
 export PYTHONPATH=.:opendbc_repo
-python -m pytest -q -p no:cacheprovider openpilot/selfdrive/controls/tests/test_ford_*.py tools/ford_pscm_lab openpilot/selfdrive/car/tests/test_ford_pscm_status.py openpilot/sunnypilot/sunnylink/tests openpilot/common/tests/test_params.py opendbc_repo/opendbc/car/ford/tests/test_ford.py
-python -m tools.ford_pscm_lab.stress_model_action --cycles 200000 --seed 20260907 --opendbc-revision "$(git -C opendbc_repo rev-parse HEAD)" --output .cache/ford_model_action_drive_test/stress.json
+python -m pytest -q openpilot/selfdrive/controls/tests/test_ford*.py tools/ford_pscm_lab opendbc_repo/opendbc/car/ford/tests/test_ford.py openpilot/sunnypilot/sunnylink/tests openpilot/sunnypilot/mads/tests openpilot/selfdrive/car/tests/test_ford_pscm_status.py openpilot/common/tests/test_params.py opendbc_repo/opendbc/safety/tests/test_ford.py
+python -m tools.ford_pscm_lab.stress_model_action --cycles 200000 --seed 20260908 --opendbc-revision 87ca78e6e641eefb2d654f260a6ab08df3058bd5 --output .cache/ford_model_points/stress.json
 ```
 
-The full hardware build and device boot are not performed by these offline
-tests. Installing the branch and enabling the toggle are separate actions;
-pushing the branch does not change a device's selected software or settings.
+Historical v1–v6 validation files retain their original source hashes and apply
+to those revisions. In particular, `ford_model_action_measured_pose_validation.json`
+describes v6, not the current model-point mapping. The hardware build and device
+boot are not performed by these offline checks. Pushing a branch does not update
+a device or change its stored settings.

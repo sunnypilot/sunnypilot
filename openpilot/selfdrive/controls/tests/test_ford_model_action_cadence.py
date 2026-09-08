@@ -88,7 +88,7 @@ def test_core_slew_per_second_and_actual_panda_acceptance():
   safety.set_controls_allowed(True)
   frames = []
   for frame in range(100):
-    command = core.update(straight(10.), .1, speed=20., dt=.01, pose_yaw_rate=0.)
+    command = core.update(straight(10., 1.), .1, speed=20., dt=.01)
     assert core.c0 == pytest.approx((frame + 1) * .04)
     assert core.c1 == pytest.approx((frame + 1) * .005)
     sp.fordLateralPath.valid = command.valid

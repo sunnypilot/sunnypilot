@@ -1,8 +1,8 @@
 """Deterministic numerical stress and exhaustive field-boundary CAN checks.
 
-Analytic straight/rotated paths and an independent rigid-motion transform
-check geometric prediction. The reference slew uses scalar arithmetic. Packing is checked against direct
-Float32/CAN packing of the continuous state, independently of host _packed.
+Analytic inclined lines check the shared model point; the slew oracle uses
+scalar arithmetic. Packing is checked against direct Float32/CAN packing of the
+continuous state, independently of host _packed.
 No synthetic plant is fitted or used to claim vehicle tracking performance.
 """
 import argparse
@@ -21,10 +21,10 @@ from opendbc.car.ford.fordcan import create_lat_ctl2_msg
 from tools.ford_pscm_lab.model_action_replay import PINNED_OPENDBC, WireCheck, verify_dependency, revision
 
 
-def line(offset, heading=0.):
+def line(offset, heading=0., speed=20.):
   s = np.linspace(0., 30., 33)
-  return SimpleNamespace(position=SimpleNamespace(x=s*math.cos(heading), y=offset+s*math.sin(heading)),
-                         orientation=SimpleNamespace(z=np.full_like(s, heading)))
+  return SimpleNamespace(position=SimpleNamespace(t=s/speed, x=s*math.cos(heading), y=offset+s*math.sin(heading)),
+                         orientation=SimpleNamespace(t=s/speed, z=np.full_like(s, heading)))
 
 
 def check_raw_packing(wire, controller, path):
@@ -62,7 +62,7 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
     valid = i % 211 != 0
     if i % 307 == 0:
       dt = .101
-    model, mirror = line(offset, heading), line(-offset, -heading)
+    model, mirror = line(offset, heading, speed), line(-offset, -heading, speed)
     if i % 401 == 0:
       model.position.y[4] = mirror.position.y[4] = math.nan
     out = controller.update(model, desired, speed=speed, dt=dt, yaw_rate=yaw, active=active, valid=valid)
@@ -71,16 +71,8 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
     assert out.valid == other.valid == expected_valid
     previous = np.array([c0, c1])
     if expected_valid:
-      distance, rotation = speed*.15, desired*speed*.15
-      # Independent full pose transform, including stable small-angle series.
-      if abs(rotation) < 1e-5:
-        ego_x = distance*(1.-rotation**2/6.+rotation**4/120.)
-        ego_y = distance*(rotation/2.-rotation**3/24.+rotation**5/720.)
-      else:
-        ego_x, ego_y = math.sin(rotation)/desired, (1.-math.cos(rotation))/desired
-      future_x, future_y = (7.+distance)*math.cos(heading), offset+(7.+distance)*math.sin(heading)
-      predicted = math.cos(rotation)*(future_y-ego_y)-math.sin(rotation)*(future_x-ego_x)
-      target = (max(-5.11, min(5.11, predicted)), max(-.5, min(.5, max(7., speed)*desired)))
+      station = min(30., max(7., speed))
+      target = (max(-5.11, min(5.11, offset+station*math.sin(heading))), max(-.5, min(.5, heading)))
       # Independent scalar slew oracle. Valid measured yaw cannot alter demand.
       c0 += max(-4.*dt, min(4.*dt, target[0]-c0))
       c1 += max(-.5*dt, min(.5*dt, target[1]-c1))
@@ -110,14 +102,14 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
         selected = float(np.clip(scalar, low, high))
         offset, heading = (selected, 0.) if field == 0 else (0., selected)
         controller.c0, controller.c1 = offset, heading
-        out = controller.update(line(offset), heading/20., speed=20., dt=.01)
+        out = controller.update(line(offset-20.*math.sin(heading), heading), heading/20., speed=20., dt=.01)
         check_raw_packing(wire, controller, out)
         boundary_cases += 1
   report = {'seed': seed, 'random_cycles': cycles, 'mirrored_core_updates': cycles,
             'invalid_or_inactive_resets': resets, 'field_boundary_cases': boundary_cases,
             'float32_can_round_trips': wire.count, 'analytic_targets_scalar_slew_and_mirror_checks_pass': True,
             'valid_yaw_does_not_affect_targets_checked': True,
-            'full_geometric_prediction_checked': True,
+            'shared_model_point_checked': True,
             'direct_raw_float32_packing_matches_host_output': True, 'max_continuous_step_c0_c1': max_continuous_step.tolist(),
             'calibration_approved': False, 'scope': 'Numerical construction only; no PSCM response or closed-loop performance claims.',
             'opendbc_import_head': revision(dependency),

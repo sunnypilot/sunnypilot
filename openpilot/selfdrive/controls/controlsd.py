@@ -87,7 +87,7 @@ class Controls(ControlsExt):
     self.sm.update(15)
     if self.sm.updated["extrinsicsCalibration"]:
       self.pose_calibrator.feed_extrinsics_calibration(self.sm['extrinsicsCalibration'])
-    if self.sm.updated["deviceMotion"] or (self.ford_model_action and self.sm.updated["extrinsicsCalibration"]):
+    if self.sm.updated["deviceMotion"]:
       device_motion = Pose.from_device_motion(self.sm['deviceMotion'])
       self.calibrated_pose = self.pose_calibrator.build_calibrated_pose(device_motion)
 
@@ -174,19 +174,12 @@ class Controls(ControlsExt):
         assert isinstance(self.ford_path_controller, FordModelActionController)
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
         now = time.monotonic()
-        motion = self.sm['deviceMotion']
-        pose_valid = (self.calibrated_pose is not None and self.pose_calibrator.calib_valid and
-                      self.sm.all_checks(['deviceMotion', 'extrinsicsCalibration']) and
-                      motion.angularVelocityDevice.valid and motion.sensorsOK and motion.inputsOK and
-                      -.005 <= now - self.sm.logMonoTime['deviceMotion'] * 1e-9 <= .15 and
-                      -.005 <= now - self.sm.logMonoTime['extrinsicsCalibration'] * 1e-9 <= 1.)
         self.ford_path = self.ford_path_controller.update(
           ford_model, self.desired_curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=now,
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
-          pose_yaw_rate=self.calibrated_pose.angular_velocity.z if pose_valid else None,
-          pose_time=motion.timestamp * 1e-9, pose_valid=pose_valid,
+          reference_source=reference_service,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
         )
         if not self.ford_path.valid:

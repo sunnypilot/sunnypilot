@@ -16,18 +16,17 @@ from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.ford.carcontroller import CarController
 from opendbc.car.ford.values import FordFlags
-from openpilot.cereal import custom, log
+from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from openpilot.selfdrive.controls.tests.test_ford_model_action import circle, straight
 from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import startup
-from openpilot.selfdrive.locationd.helpers import Pose, PoseCalibrator
 
 
 def update(controller, now=1., **overrides):
-  kwargs = {'model': straight(.4), 'desired_curvature': .01, 'speed': 20., 'yaw_rate': 0., 'now': now,
+  kwargs = {'model': straight(.4, .1), 'desired_curvature': .01, 'speed': 20., 'yaw_rate': 0., 'now': now,
                 'model_time': now, 'measurement_time': now, 'reference_time': now, 'active': True}
   kwargs.update(overrides)
   return controller.update(**kwargs)
@@ -82,7 +81,7 @@ def test_repeated_measurements_do_not_freeze_slew_or_cache_invalid_model_geometr
   controller = FordModelActionController()
   for i in range(10):
     result = update(controller, 1.+i*.01, measurement_time=1., model_time=1., reference_time=1.)
-  assert result.path_offset == pytest.approx(.14)  # Full preview accounts for selected turning toward the offset path.
+  assert result.path_offset == pytest.approx(.4)
   assert result.path_angle == pytest.approx(.05)
   broken = straight(.4)
   broken.position.y[5] = math.nan
@@ -96,7 +95,7 @@ def test_yaw_offset_does_not_change_the_base():
   for i in range(100):
     outputs = [update(c, 1.+i*.01, **kwargs) for c, kwargs in zip(controllers, variants, strict=True)]
     assert all(out == outputs[0] for out in outputs)
-  assert outputs[0].path_angle == pytest.approx(.2)
+  assert outputs[0].path_angle == pytest.approx(.1)
 
 
 def test_reference_source_can_change_to_an_older_but_fresh_publication():
@@ -105,7 +104,7 @@ def test_reference_source_can_change_to_an_older_but_fresh_publication():
   assert update(controller, 1.01, reference_time=.98).valid
 
 
-def test_release_keeps_current_geometry_and_may_grow_c0_while_c1_decreases():
+def test_current_model_geometry_controls_both_fields_independently_of_scalar_action():
   for sign in (-1., 1.):
     controller = FordModelActionController()
     for i in range(100):
@@ -113,11 +112,10 @@ def test_release_keeps_current_geometry_and_may_grow_c0_while_c1_decreases():
     for i in range(100):
       after = update(controller, 2.+i*.01, model=circle(sign*.02), desired_curvature=sign*.004)
     assert abs(after.path_offset) > abs(before.path_offset)
-    assert abs(after.path_angle) < abs(before.path_angle)
+    assert abs(after.path_angle) > abs(before.path_angle)
     for i in range(100):
       released = update(controller, 3.+i*.01, model=circle(sign*.02), desired_curvature=0.)
-    assert abs(released.path_offset) > abs(after.path_offset)  # Less expected turning raises the future-frame offset.
-    assert released.path_angle == pytest.approx(0.)
+    assert released == after  # A scalar reference change does not fabricate a different model pose.
 
 
 def _method(filename, class_name, method):
@@ -168,21 +166,17 @@ class Subscriptions:
 @pytest.mark.parametrize('maneuver', [False, True])
 @pytest.mark.parametrize('host_yaw', [.0072, .3])
 @pytest.mark.parametrize('initial_curvature', [0., .005])
-@pytest.mark.parametrize('calibrated_yaw', [None, -.05, .05])
-def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipeline, maneuver, host_yaw, initial_curvature, calibrated_yaw):
+def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipeline, maneuver, host_yaw, initial_curvature):
   call, publication = pipeline
   sm = Subscriptions(maneuver)
   controls = startup()
   controller = controls.ford_path_controller
-  if calibrated_yaw is not None:
-    controls.pose_calibrator.calib_valid = True
-    controls.calibrated_pose = SimpleNamespace(angular_velocity=SimpleNamespace(z=calibrated_yaw))
   initial_curvature *= -1 if maneuver else 1
   controls.sm, controls.desired_curvature, controls.curvature = sm, initial_curvature, 0.
   if initial_curvature:
     # Start at the old target so startup slew cannot hide prediction on the real call path.
-    controller.core.c0, controller.core.c1 = .4, 20.*initial_curvature
-  model = straight(.4)
+    controller.core.c0, controller.core.c1 = .4, .1
+  model = straight(.4, .1)
   model.action = SimpleNamespace(desiredCurvature=.1)
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=-host_yaw, canValid=True, steeringPressed=False, steeringTorque=0.)
@@ -192,17 +186,16 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   exec(call, environment)
   expected_curvature = initial_curvature+(-1 if maneuver else 1)*.000125
   assert controls.desired_curvature == pytest.approx(expected_curvature)
-  assert controls.ford_path.path_angle == pytest.approx(20.*expected_curvature)
-  expected_offset = .04
-  if initial_curvature:
-    grows = maneuver if calibrated_yaw is None else calibrated_yaw < 0.
-    expected_offset = .44 if grows else .36
-  assert controls.ford_path.path_offset == pytest.approx(expected_offset)
-  assert controller.diagnostics['yaw_rate'] == host_yaw
-  assert controller.diagnostics['pose_source'] == ('requested' if calibrated_yaw is None else 'measured')
-  assert controller.diagnostics['pose_yaw_rate'] == calibrated_yaw
-  assert cc.latActive and cc.actuators.curvature == 0.
-  assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
+  if maneuver:
+    assert controls.ford_path == FordPath() and not cc.latActive
+    assert controller.diagnostics['status'] == 'unsupported_reference'
+  else:
+    assert controls.ford_path.path_offset == pytest.approx(.44 if initial_curvature else .04)
+    assert controls.ford_path.path_angle == pytest.approx(.1 if initial_curvature else .005)
+    assert controller.diagnostics['yaw_rate'] == host_yaw
+    assert controller.diagnostics['pose_source'] == 'model'
+    assert cc.latActive and cc.actuators.curvature == 0.
+    assert controller.diagnostics['reference_age'] == pytest.approx(.02)
 
   cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
   downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, controls.CP_SP)
@@ -226,7 +219,7 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
     assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-controls.ford_path.path_offset)
     assert wire['LatCtlPath_An_Actl'] == pytest.approx(-controls.ford_path.path_angle)
     assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
-    assert wire['LatCtl_D2_Rq'] == (0 if fail else 2)
+    assert wire['LatCtl_D2_Rq'] == (0 if fail or maneuver else 2)
 
 
 @pytest.mark.parametrize('maneuver', [False, True])
@@ -246,108 +239,31 @@ def test_actual_controlsd_service_gates(pipeline, maneuver, failed):
   assert controls.ford_path.valid == cc.latActive == (failed == 'lateralManeuverPlan' and not maneuver)
 
 
-@pytest.mark.parametrize('fault', ['missing_pose', 'uncalibrated', 'motion_service', 'calibration_service', 'yaw_invalid',
-                                 'sensors_invalid', 'inputs_invalid', 'stale_calibration', 'future_calibration',
-                                 'stale_motion', 'future_motion', 'stale_estimate', 'future_estimate', 'missing_estimate',
-                                 'nan_yaw', 'infinite_yaw', 'yaw_range'])
-def test_actual_controlsd_unhealthy_pose_retains_requested_pose_and_engagement(pipeline, fault):
+@pytest.mark.parametrize('service', ['deviceMotion', 'extrinsicsCalibration'])
+def test_optional_pose_services_do_not_modify_model_point_requests(pipeline, service):
   sm = Subscriptions(False)
+  sm.failed.add(service)
   controls = startup()
   controls.sm, controls.desired_curvature, controls.curvature = sm, .01, 0.
-  controls.pose_calibrator.calib_valid = True
-  controls.calibrated_pose = SimpleNamespace(angular_velocity=SimpleNamespace(z=.05))
-  motion = sm.messages['deviceMotion']
-  if fault == 'missing_pose':
-    controls.calibrated_pose = None
-  elif fault == 'uncalibrated':
-    controls.pose_calibrator.calib_valid = False
-  elif fault == 'motion_service':
-    sm.failed.add('deviceMotion')
-  elif fault == 'calibration_service':
-    sm.failed.add('extrinsicsCalibration')
-  elif fault == 'yaw_invalid':
-    motion.angularVelocityDevice.valid = False
-  elif fault == 'sensors_invalid':
-    motion.sensorsOK = False
-  elif fault == 'inputs_invalid':
-    motion.inputsOK = False
-  elif fault == 'stale_calibration':
-    sm.logMonoTime['extrinsicsCalibration'] = -1_000_000
-  elif fault == 'future_calibration':
-    sm.logMonoTime['extrinsicsCalibration'] = 1_006_000_000
-  elif fault == 'stale_motion':
-    sm.logMonoTime['deviceMotion'] = 849_000_000
-  elif fault == 'future_motion':
-    sm.logMonoTime['deviceMotion'] = 1_006_000_000
-  elif fault == 'stale_estimate':
-    motion.timestamp = 849_000_000
-  elif fault == 'future_estimate':
-    motion.timestamp = 1_006_000_000
-  elif fault == 'missing_estimate':
-    motion.timestamp = 0
-  elif fault == 'nan_yaw':
-    controls.calibrated_pose.angular_velocity.z = math.nan
-  elif fault == 'infinite_yaw':
-    controls.calibrated_pose.angular_velocity.z = math.inf
-  elif fault == 'yaw_range':
-    controls.calibrated_pose.angular_velocity.z = 3.01
-  controller = controls.ford_path_controller
-  controller.core.c0, controller.core.c1 = .4, .2
+  controls.calibrated_pose = None
+  controls.ford_path_controller.core.c0, controls.ford_path_controller.core.c1 = .4, .1
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=-.3, canValid=True, steeringPressed=False, steeringTorque=0.)
-  model = straight(.4)
+  model = straight(.4, .1)
   model.action = SimpleNamespace(desiredCurvature=.01)
-  exec(pipeline[0], {'FordModelActionController': FordModelActionController, 'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                    'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
+  exec(pipeline[0], {'FordModelActionController': FordModelActionController, 'self': controls, 'CS': cs, 'CC': cc,
+                    'actuators': cc.actuators, 'model_v2': model, 'lp': SimpleNamespace(roll=0.),
+                    'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
   assert cc.latActive and controls.ford_path.valid
-  assert controls.ford_path.path_offset == pytest.approx(.36)
-  assert controls.ford_path.path_angle == pytest.approx(.195)  # Upstream acceleration limiting still applies.
-  assert controller.diagnostics['pose_source'] == 'requested'
-  assert controller.diagnostics['pose_yaw_rate'] is None
-  json.dumps(controller.diagnostics, allow_nan=False)
+  assert controls.ford_path.path_offset == pytest.approx(.44)
+  assert controls.ford_path.path_angle == pytest.approx(.1)
+  assert controls.ford_path_controller.diagnostics['pose_source'] == 'model'
 
 
-@pytest.mark.parametrize('pose_time', [None, math.nan, math.inf, -math.inf, 'bad', .849, 1.006])
-def test_invalid_pose_timestamp_uses_fallback_without_a_reset(pose_time):
+def test_maneuver_reference_clears_existing_model_point_requests():
   controller = FordModelActionController()
-  controller.core.c0, controller.core.c1 = .4, .2
-  out = update(controller, pose_yaw_rate=.05, pose_time=pose_time, pose_valid=True)
-  assert out.path_offset == pytest.approx(.36)
-  assert out.path_angle == pytest.approx(.2)
-  assert controller.diagnostics['pose_source'] == 'requested'
-  json.dumps(controller.diagnostics, allow_nan=False)
-
-
-def test_pose_fallback_and_recovery_preserve_slew_states():
-  controller = FordModelActionController()
-  controller.core.c0, controller.core.c1 = .4, .2
-  states = []
-  for i, healthy in enumerate((True, False, True)):
-    now = 1.+i*.01
-    out = update(controller, now, pose_yaw_rate=-.1, pose_time=now, pose_valid=healthy)
-    states.append(controller.core.c0)
-    assert out.path_angle == pytest.approx(.2)
-    assert controller.diagnostics['pose_source'] == ('measured' if healthy else 'requested')
-  assert states == pytest.approx([.44, .4, .44])
-
-
-def test_calibration_only_update_refreshes_pose_before_ford_uses_it():
-  controls = startup()
-  controls.pose_calibrator = PoseCalibrator()
-  motion = log.DeviceMotion.new_message()
-  motion.angularVelocityDevice.x = .5
-  motion.angularVelocityDevice.z = .1
-  controls.calibrated_pose = controls.pose_calibrator.build_calibrated_pose(Pose.from_device_motion(motion))
-  sm = Subscriptions(False)
-  sm.updated = {'extrinsicsCalibration': True, 'deviceMotion': False}
-  sm.update = lambda timeout: None
-  sm.messages.update(deviceMotion=motion, extrinsicsCalibration=log.ExtrinsicsCalibration.new_message(
-    rpyCalib=[0., .2, 0.], calStatus='calibrated'))
-  controls.sm = sm
-  controls_file = Path(__file__).resolve().parents[3]/'selfdrive/controls/controlsd.py'
-  method = _method(controls_file, 'Controls', 'update')
-  environment = {'Pose': Pose}
-  exec(compile(ast.Module(body=[method], type_ignores=[]), str(controls_file), 'exec'), environment)
-  environment['update'](controls)
-  assert controls.pose_calibrator.calib_valid
-  assert controls.calibrated_pose.angular_velocity.z == pytest.approx(math.sin(.2)*.5+math.cos(.2)*.1)
+  update(controller)
+  assert update(controller, 1.01, reference_source='lateralManeuverPlan') == FordPath()
+  assert controller.diagnostics['status'] == 'unsupported_reference'
+  assert (controller.core.c0, controller.core.c1) == (0., 0.)
+  assert update(controller, 1.02).path_angle == pytest.approx(.005)
