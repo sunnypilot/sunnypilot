@@ -10,6 +10,11 @@ fitted PSCM plant model, added strength multiplier, new filter or extra core sta
 `calibration_approved=false`: offline checks do not establish physical tracking,
 turn-exit behavior or closed-loop stability.
 
+The current cadence experiment transmits this controller's LMC2 requests at
+**20 Hz (50 ms)** while its calculation remains at **100 Hz**. See
+[cadence validation](ford_model_action_cadence.md). The v6 control law and
+per-second C0/C1 slew are unchanged; this is not a demonstrated tracking fix.
+
 ## Select and restore
 
 1. Install branch `hiimisaac-dev` from
@@ -17,8 +22,9 @@ turn-exit behavior or closed-loop stability.
    Allow its build to finish before changing the setting.
 2. While offroad, open Sunnylink device settings → Vehicle → Ford and enable
    **Selected-Action Path Tracking (Experimental)** (`FordModelActionController`).
-3. Complete a real offroad-to-onroad cycle. Selection occurs when `controlsd`
-   starts; changing a stored toggle or disengaging alone cannot swap an active
+3. Complete a real offroad-to-onroad cycle. `card` snapshots the toggle into
+   `CarParamsSP`; the sender and `controlsd` share that selection. Changing a
+   stored toggle or disengaging alone cannot swap an active
    controller. Initial physical evaluation remains controlled testing.
 
 The startup log event `Ford path controller selected` should report
@@ -45,7 +51,8 @@ in Git history and the archived validation documents.
 `Controls.__init__` selects the candidate once at startup. It shares the
 existing Ford call path, selected upstream-limited curvature, service gates,
 invalid-output disengagement, Float32 publication and downstream CAN builder.
-C2 and C3 stay zero. No opendbc pointer or Panda safety change is included.
+C2 and C3 stay zero. The cadence experiment updates the opendbc sender and
+submodule pointer. Panda safety is unchanged.
 
 Measured-pose use requires healthy `deviceMotion` and `extrinsicsCalibration`
 services, calibrated extrinsics no older than 1 s, valid angular velocity and
@@ -101,14 +108,14 @@ and mutation probes remain recorded separately in
 
 ## Reproduce deployment checks
 
-Initialize the branch's exact opendbc submodule (`c21a9013700734dd20b09e05aa68329ad8cc20f9`)
+Initialize the branch's pinned opendbc submodule with `git submodule update --init opendbc_repo`
 and build the native Params library from this branch before testing.
 
 ```sh
 export PYTHONDONTWRITEBYTECODE=1
 export PYTHONPATH=.:opendbc_repo
 python -m pytest -q -p no:cacheprovider openpilot/selfdrive/controls/tests/test_ford_*.py tools/ford_pscm_lab openpilot/selfdrive/car/tests/test_ford_pscm_status.py openpilot/sunnypilot/sunnylink/tests openpilot/common/tests/test_params.py opendbc_repo/opendbc/car/ford/tests/test_ford.py
-python -m tools.ford_pscm_lab.stress_model_action --cycles 200000 --seed 20260907 --opendbc-revision c21a9013700734dd20b09e05aa68329ad8cc20f9 --output .cache/ford_model_action_drive_test/stress.json
+python -m tools.ford_pscm_lab.stress_model_action --cycles 200000 --seed 20260907 --opendbc-revision "$(git -C opendbc_repo rev-parse HEAD)" --output .cache/ford_model_action_drive_test/stress.json
 ```
 
 The full hardware build and device boot are not performed by these offline

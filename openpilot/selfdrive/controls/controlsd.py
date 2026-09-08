@@ -12,7 +12,7 @@ from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
-from opendbc.car.ford.values import FordFlags
+from opendbc.car.ford.values import FordFlags, FordFlagsSP
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
@@ -59,7 +59,7 @@ class Controls(ControlsExt):
     self.ford_pscm_observer = (self.CP.brand == "ford" and self.CP.flags & FordFlags.CANFD and
                                self.params.get_bool("FordPscmObserver"))
     self.ford_path_controller = FordPscmObserverPathController() if self.ford_pscm_observer else FordPathController()
-    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
+    self.ford_path_controller = select_model_action_controller(self.CP, bool(self.CP_SP.flags & FordFlagsSP.MODEL_ACTION),
                                                               self.ford_path_controller)
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":

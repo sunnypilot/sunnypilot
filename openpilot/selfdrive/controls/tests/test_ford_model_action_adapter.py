@@ -205,10 +205,10 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
 
   cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
-  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, controls.CP_SP)
   vehicle = SimpleNamespace(out=structs.CarState(vEgo=20., vEgoRaw=20.), acc_tja_status_stock_values=defaultdict(int),
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
-  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 20)], downstream.CAN.main)
   for i, fail in enumerate((False, True)):
     if fail:
       sm.failed.add('modelV2')
@@ -216,8 +216,12 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
       assert not cc.latActive and controls.ford_path == FordPath()
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
-    _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, (i+1)*10_000_000)
-    parser.update([(i+1)*10_000_000, packets])
+    for tick in range(5 if fail else 1):
+      now_nanos = (i + tick + 1) * 10_000_000
+      _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, now_nanos)
+      lateral = [p for p in packets if p[0] == 0x3d6]
+      assert len(lateral) == int(not fail or tick == 4)
+      parser.update([now_nanos, packets])
     wire = parser.vl['LateralMotionControl2']
     assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-controls.ford_path.path_offset)
     assert wire['LatCtlPath_An_Actl'] == pytest.approx(-controls.ford_path.path_angle)
