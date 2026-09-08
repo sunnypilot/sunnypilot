@@ -5,6 +5,10 @@ command compatibility. The separate current adapter pass reconstructs input elig
 from service records, never from candidate/baseline output validity. Neither
 pass scores counterfactual motion. Source extracts and archived reports are
 read-only; --output selects a separate destination.
+
+Current comparisons require model_position_t and model_orientation_t arrays
+preserved from the rlogs. Older extracts lack these clocks and must be replayed
+using their archived tool revision; do not synthesize timestamps for them.
 """
 import argparse
 from collections import Counter
@@ -60,6 +64,20 @@ def verify_dependency(expected=PINNED_OPENDBC):
 
 def table(raw, name):
   return dict(zip(raw[name+'_names'], raw[name].T, strict=True))
+
+
+def extract_models(raw):
+  clock_fields = ('model_position_t', 'model_orientation_t')
+  if any(name not in raw for name in clock_fields):
+    raise ValueError('Current replay requires original model_position_t and model_orientation_t; ' +
+                     'use the archived replay revision for older extracts, or re-extract the original rlogs with both clocks')
+  paths = raw['model_paths']
+  if paths.ndim != 3 or paths.shape[1] != 4 or len(paths) == 0:
+    raise ValueError('Expected nonempty model_paths with four arrays per model')
+  if any(raw[name].shape != (len(paths), paths.shape[2]) for name in clock_fields):
+    raise ValueError('Model clocks must match the extracted model and point counts')
+  return [SimpleNamespace(position=SimpleNamespace(x=p[1], y=p[2], t=pt), orientation=SimpleNamespace(z=p[3], t=ht))
+          for p, pt, ht in zip(paths, raw[clock_fields[0]], raw[clock_fields[1]], strict=True)]
 
 
 def sample(stream, query, *, nearest=False):
@@ -122,10 +140,10 @@ def run(directory, output):
     raise ValueError('Output must be outside the source route directory')
   dependency = verify_dependency()
   with np.load(directory/'route.npz', allow_pickle=False) as raw:
+    models = extract_models(raw)
     streams = {name: table(raw, name) for name in ('controls', 'cs', 'cc', 'model', 'params', 'path')}
     if len(raw['maneuver']):
       raise ValueError('This extract cannot identify the selected maneuver service per cycle; use the integration tests for that source')
-    models = [SimpleNamespace(position=SimpleNamespace(x=p[1], y=p[2]), orientation=SimpleNamespace(z=p[3])) for p in raw['model_paths']]
   with np.load(directory/'encoder_comparison.npz', allow_pickle=False) as archive:
     baseline = {key: archive[key] for key in ('t', 'valid', 'action_heading')}
   with np.load(directory/'pose_candidate/pose_replay.npz', allow_pickle=False) as pose:

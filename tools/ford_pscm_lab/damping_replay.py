@@ -1,4 +1,4 @@
-"""Compare pinned selected-action controllers or current code on complete rlogs.
+"""Compare pinned historical selected-action controllers on complete rlogs.
 
 Original controls publication times proxy computation time. Consumed model
 timestamps are exact; carState is causal and carControl is matched within 5 ms.
@@ -74,10 +74,13 @@ def run(directory, output, baseline_version='v1', candidate_version='v2', window
   directory, output = directory.resolve(), output.resolve()
   if output == directory or directory in output.parents:
     raise ValueError('Output must be outside the source route directory')
+  if candidate_version == 'current':
+    raise ValueError('This historical damping replay requires unchanged C1 and does not preserve model clocks; ' +
+                     'select a pinned v2/v3/v4 candidate, or use a model-point replay for current code')
   verify_dependency(DEPLOYMENT_OPENDBC)
   revisions = {'v1': V1_REVISION, 'v2': V2_REVISION, 'v3': V3_REVISION, 'v4': V4_REVISION}
   baseline_source = load_controller(revisions[baseline_version])
-  candidate_source = ford_model_action if candidate_version == 'current' else load_controller(revisions[candidate_version])
+  candidate_source = load_controller(revisions[candidate_version])
   streams, models, sources, t0 = extract(directory)
   controls, model = streams['controls'], streams['model']
   t = controls['t']
@@ -149,8 +152,7 @@ def run(directory, output, baseline_version='v1', candidate_version='v2', window
             'baseline_version': baseline_version, 'baseline_revision': revisions[baseline_version],
             'candidate_version': candidate_version, 'candidate_revision': revisions.get(candidate_version, 'working_tree'),
             'focus_windows': windows, 'baseline_source_sha256': baseline_source.source_sha256,
-            'candidate_source_sha256': (hashlib.sha256(Path(ford_model_action.__file__).read_bytes()).hexdigest()
-                                        if candidate_version == 'current' else candidate_source.source_sha256),
+            'candidate_source_sha256': candidate_source.source_sha256,
             'source_rlog_sha256': sources, 'opendbc_head': DEPLOYMENT_OPENDBC,
             'source_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__), Path(ford_model_action.__file__))}}
   output.mkdir(parents=True, exist_ok=True)

@@ -4,7 +4,7 @@
   "scope": "Model-point construction only; physical tracking not validated.",
   "calibration_approved": false,
   "tests": {
-    "passed": 572,
+    "passed": 585,
     "subtests_passed": 9146,
     "inapplicable_skips": 178
   },
@@ -13,7 +13,11 @@
     "openpilot/selfdrive/controls/controlsd.py": "bea720b8ec68d6b8a6ad4376ae37324e2404833fb13097a8ab7710a1cedf37a5",
     "tools/ford_pscm_lab/stress_model_action.py": "0221f85ea2f5757d3b54d077ed8be1faaa6a5d2ed8371de1137f3b6f3d70bf47",
     "openpilot/sunnypilot/sunnylink/settings_ui_src/pages/vehicle.yaml": "ec5e0d9023f7260ae619a4cc6ec538d39053ac13e4515bd0de7d854b79d8abf6",
-    "openpilot/sunnypilot/sunnylink/settings_ui.json": "62e5178a8deee32ef5a88026094cedde359130741688e8a4bcfa82155ef4cca3"
+    "openpilot/sunnypilot/sunnylink/settings_ui.json": "62e5178a8deee32ef5a88026094cedde359130741688e8a4bcfa82155ef4cca3",
+    "tools/ford_pscm_lab/model_action_replay.py": "95d546cc87c065fa7d581b41382e1ab78bacc4030931b81388cb69c61adf32f7",
+    "tools/ford_pscm_lab/damping_replay.py": "1c253b99342d8113739b0a0551ca66ec6ced9e0aa96338ce6cb42e09c04178a4",
+    "tools/ford_pscm_lab/test_model_action_replay.py": "7aa01cbf197155175215aa4494cfc909029526fbacad0a1e1a2a214583064c4b",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_cadence.py": "d647e33c83581257f2662c3fec725bb9cd245fb48d579c2e38388318592a2690"
   },
   "routes": {
     "a5": {
@@ -385,6 +389,243 @@
         "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_model_points/replay.py": "762ebaac3b31737ad609d5b9788514147c696e548fd1ee09458314a0eea30434",
         ".cache/ford_route9e/route.npz": "9f169338caf2b5a5377332d15914d1dde57be8b922e25c1bbe16264e0f1be6fb",
         "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_model_points/9e_models.npz": "acacf8f0d16fd986b6d74e4a02d704fa5b5b3327fe66dcbe149806f2a5bc3d65"
+      }
+    }
+  },
+  "stress": {
+    "seed": 20260908,
+    "random_cycles": 200000,
+    "mirrored_core_updates": 200000,
+    "invalid_or_inactive_resets": 3537,
+    "field_boundary_cases": 18138,
+    "float32_can_round_trips": 218138,
+    "analytic_targets_scalar_slew_and_mirror_checks_pass": true,
+    "valid_yaw_does_not_affect_targets_checked": true,
+    "shared_model_point_checked": true,
+    "direct_raw_float32_packing_matches_host_output": true,
+    "max_continuous_step_c0_c1": [
+      0.40000000000000147,
+      0.05000000000000002
+    ],
+    "calibration_approved": false,
+    "scope": "Numerical construction only; no PSCM response or closed-loop performance claims.",
+    "opendbc_import_head": "87ca78e6e641eefb2d654f260a6ab08df3058bd5",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/stress_model_action.py": "0221f85ea2f5757d3b54d077ed8be1faaa6a5d2ed8371de1137f3b6f3d70bf47",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "e7502ab68d04aef52edcffcef4b1d42c04e9008ab6892789aac3a865c100cb6d",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/model_action_replay.py": "95d546cc87c065fa7d581b41382e1ab78bacc4030931b81388cb69c61adf32f7"
+    }
+  },
+  "unwind": {
+    "report": "docs/ford_model_points_unwind.json",
+    "sha256": "7395a4e66a275fd72d744f5a8244f1b9c8840bb7efff2eec225f15b9c033cd6e",
+    "full_cap_release_send_phase_cases": 10,
+    "summary": {
+      "tight": {
+        "episodes": 7,
+        "c0": {
+          "below_90pct_s": {
+            "n": 7,
+            "median_s": 0.0,
+            "min_s": -0.12269046900000546,
+            "max_s": 0.04266988000000538,
+            "earlier": 2,
+            "later": 2
+          },
+          "below_50pct_s": {
+            "n": 7,
+            "median_s": 0.12129962300002717,
+            "min_s": 0.0848213179999675,
+            "max_s": 0.8246327600000001,
+            "earlier": 0,
+            "later": 7
+          },
+          "below_10pct_s": {
+            "n": 7,
+            "median_s": 0.1376267710000434,
+            "min_s": 0.0,
+            "max_s": 0.45046578099999124,
+            "earlier": 0,
+            "later": 6
+          },
+          "near_zero_s": {
+            "n": 5,
+            "median_s": 0.1399018539999588,
+            "min_s": -0.5224231490000193,
+            "max_s": 1.9510819790000085,
+            "earlier": 1,
+            "later": 4
+          },
+          "common_half_s": {
+            "n": 7,
+            "median_s": 0.07685077599995793,
+            "min_s": -0.2591174110000338,
+            "max_s": 0.5661551039999893,
+            "earlier": 1,
+            "later": 6
+          },
+          "fixed_clearance_s": {
+            "n": 7,
+            "median_s": 0.10080577899998389,
+            "min_s": 0.0,
+            "max_s": 0.4609723959999883,
+            "earlier": 0,
+            "later": 5
+          }
+        },
+        "c1": {
+          "below_90pct_s": {
+            "n": 7,
+            "median_s": -0.3856273459999784,
+            "min_s": -0.5246007750000103,
+            "max_s": 0.5545458859999997,
+            "earlier": 6,
+            "later": 1
+          },
+          "below_50pct_s": {
+            "n": 7,
+            "median_s": -0.2540558009999927,
+            "min_s": -0.46442294700000275,
+            "max_s": -0.21144918100003451,
+            "earlier": 7,
+            "later": 0
+          },
+          "below_10pct_s": {
+            "n": 6,
+            "median_s": -0.15774414349999688,
+            "min_s": -0.20159088100001554,
+            "max_s": 0.0,
+            "earlier": 5,
+            "later": 0
+          },
+          "near_zero_s": {
+            "n": 5,
+            "median_s": 0.0,
+            "min_s": -0.148710938000022,
+            "max_s": 1.5534367700000047,
+            "earlier": 2,
+            "later": 2
+          },
+          "common_half_s": {
+            "n": 7,
+            "median_s": -0.2528352759999848,
+            "min_s": -0.45502116000000115,
+            "max_s": -0.15168304499999863,
+            "earlier": 7,
+            "later": 0
+          },
+          "fixed_clearance_s": {
+            "n": 7,
+            "median_s": -0.10267424500000288,
+            "min_s": -0.1688626670000417,
+            "max_s": -0.040530361999969955,
+            "earlier": 7,
+            "later": 0
+          }
+        }
+      },
+      "ordinary": {
+        "episodes": 4,
+        "c0": {
+          "below_90pct_s": {
+            "n": 4,
+            "median_s": 0.49771416100000465,
+            "min_s": 0.2530698499999744,
+            "max_s": 3.195503137000003,
+            "earlier": 0,
+            "later": 4
+          },
+          "below_50pct_s": {
+            "n": 4,
+            "median_s": 0.3417062340000143,
+            "min_s": 0.19507780300000377,
+            "max_s": 0.4595077099999685,
+            "earlier": 0,
+            "later": 4
+          },
+          "below_10pct_s": {
+            "n": 4,
+            "median_s": 0.11352378200000146,
+            "min_s": 0.09310488600004874,
+            "max_s": 1.1537201169999776,
+            "earlier": 0,
+            "later": 4
+          },
+          "near_zero_s": {
+            "n": 4,
+            "median_s": 0.6988682280000234,
+            "min_s": 0.40513631699997177,
+            "max_s": 3.1885321799999815,
+            "earlier": 0,
+            "later": 4
+          },
+          "common_half_s": {
+            "n": 4,
+            "median_s": 1.0263607459999946,
+            "min_s": 0.7940629349999995,
+            "max_s": 2.846801904000017,
+            "earlier": 0,
+            "later": 4
+          },
+          "fixed_clearance_s": {
+            "n": 2,
+            "median_s": 1.97568246000003,
+            "min_s": 1.5486082510000188,
+            "max_s": 2.4027566690000413,
+            "earlier": 0,
+            "later": 2
+          }
+        },
+        "c1": {
+          "below_90pct_s": {
+            "n": 4,
+            "median_s": -0.0037014085000066643,
+            "min_s": -0.25255103900002496,
+            "max_s": 0.3999567310000316,
+            "earlier": 2,
+            "later": 1
+          },
+          "below_50pct_s": {
+            "n": 4,
+            "median_s": -0.17102558000001977,
+            "min_s": -0.2489269939999872,
+            "max_s": -0.046780566999984785,
+            "earlier": 4,
+            "later": 0
+          },
+          "below_10pct_s": {
+            "n": 4,
+            "median_s": -0.10130154349999998,
+            "min_s": -0.29764589699999533,
+            "max_s": 0.05121605200002932,
+            "earlier": 2,
+            "later": 1
+          },
+          "near_zero_s": {
+            "n": 4,
+            "median_s": -0.022888650000027155,
+            "min_s": -0.10325871399999187,
+            "max_s": 0.24679704999999785,
+            "earlier": 2,
+            "later": 1
+          },
+          "common_half_s": {
+            "n": 4,
+            "median_s": -0.22263683349999042,
+            "min_s": -0.2573995380000156,
+            "max_s": -0.09939024700003074,
+            "earlier": 4,
+            "later": 0
+          },
+          "fixed_clearance_s": {
+            "n": 2,
+            "median_s": -0.17009618150001415,
+            "min_s": -0.24998850800000127,
+            "max_s": -0.09020385500002703,
+            "earlier": 2,
+            "later": 0
+          }
+        }
       }
     }
   }

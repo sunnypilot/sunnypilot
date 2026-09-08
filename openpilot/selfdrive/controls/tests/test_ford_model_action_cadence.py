@@ -106,3 +106,41 @@ def test_core_slew_per_second_and_actual_panda_acceptance():
       assert wire['LatCtlPath_An_Actl'] == pytest.approx(-command.path_angle)
       assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
   assert frames == list(range(0, 100, 5))
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('phase', range(5))
+def test_saturated_turn_unwinds_on_first_update_and_next_scheduled_can_frame(sign, phase):
+  controller, cs = sender()
+  core = ModelActionController()
+  cc, sp = structs.CarControl(latActive=True), structs.CarControlSP()
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 0)], controller.CAN.main)
+  change_frame = 200 + phase
+  first_unwind = first_zero_c0 = first_zero_c1 = None
+  turn, released = straight(sign*10., sign), straight()
+  for frame in range(change_frame+135):
+    command = core.update(turn if frame < change_frame else released, sign*.1, speed=20., dt=.01)
+    if frame >= change_frame:
+      elapsed = (frame-change_frame+1)*.01
+      assert sign*core.c0 == pytest.approx(max(0., 5.11-4.*elapsed), abs=1e-10)
+      assert sign*core.c1 == pytest.approx(max(0., .5-.5*elapsed), abs=1e-10)
+    sp.fordLateralPath.valid = command.valid
+    sp.fordLateralPath.pathOffset, sp.fordLateralPath.pathAngle = command.path_offset, command.path_angle
+    _, packets = controller.update(cc.as_reader(), sp, cs, frame*10_000_000)
+    lateral = [p for p in packets if p[0] == 0x3d6]
+    if not lateral or frame < change_frame:
+      continue
+    parser.update([frame*10_000_000, lateral])
+    wire = parser.vl['LateralMotionControl2']
+    c0, c1 = -sign*wire['LatCtlPathOffst_L_Actl'], -sign*wire['LatCtlPath_An_Actl']
+    assert 0. <= c0 < 5.11 and 0. <= c1 < .5
+    assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
+    if first_unwind is None:
+      first_unwind = frame
+    if c0 == 0. and first_zero_c0 is None:
+      first_zero_c0 = frame
+    if c1 == 0. and first_zero_c1 is None:
+      first_zero_c1 = frame
+  assert first_unwind == ((change_frame+4)//5)*5
+  assert first_zero_c0 == ((change_frame+127+4)//5)*5
+  assert first_zero_c1 == ((change_frame+99+4)//5)*5

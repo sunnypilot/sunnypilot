@@ -5,6 +5,7 @@ import pytest
 
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from tools.ford_pscm_lab import model_action_replay as replay
+from tools.ford_pscm_lab import damping_replay
 
 
 def test_service_sampling_keeps_original_gaps_and_never_pulls_future_inputs():
@@ -68,6 +69,32 @@ def test_explicit_stress_dependency_still_requires_an_exact_match(monkeypatch):
 def test_source_route_directory_cannot_be_overwritten(tmp_path):
   with pytest.raises(ValueError, match='outside the source'):
     replay.run(tmp_path, tmp_path/'selected_controller')
+
+
+def test_current_replay_rejects_missing_model_clocks_before_comparing_outputs(tmp_path, monkeypatch):
+  source = tmp_path/'source'
+  source.mkdir()
+  np.savez(source/'route.npz', model_paths=np.zeros((1, 4, 33)))
+  monkeypatch.setattr(replay, 'verify_dependency', lambda: tmp_path)
+  with pytest.raises(ValueError, match='requires original model_position_t and model_orientation_t'):
+    replay.run(source, tmp_path/'output')
+  assert not (tmp_path/'output').exists()
+
+
+def test_extract_models_preserves_both_actual_clocks_and_rejects_count_mismatch():
+  clocks = np.array([[0., .3, 1.7]])
+  raw = {'model_paths': np.zeros((1, 4, 3)), 'model_position_t': clocks, 'model_orientation_t': clocks+.01}
+  model, = replay.extract_models(raw)
+  np.testing.assert_array_equal(model.position.t, clocks[0])
+  np.testing.assert_array_equal(model.orientation.t, clocks[0]+.01)
+  raw['model_orientation_t'] = clocks[:, :2]
+  with pytest.raises(ValueError, match='must match'):
+    replay.extract_models(raw)
+
+
+def test_historical_damping_replay_rejects_current_controller(tmp_path):
+  with pytest.raises(ValueError, match='historical damping replay requires unchanged C1'):
+    damping_replay.run(tmp_path/'source', tmp_path/'output', candidate_version='current')
 
 
 @pytest.mark.parametrize('field,value', [(0, 5.12), (1, .501), (2, .00002), (3, .000001), (0, np.nan)])
