@@ -1,0 +1,87 @@
+name: Test Models Compatibility With New Tinygrad
+on:
+  push:
+    paths:
+      - 'tinygrad_repo/**'
+      - '.github/workflows/test_models.yml'
+      - 'openpilot/sunnypilot/modeld_v2/**'
+  pull_request:
+    paths:
+      - 'tinygrad_repo/**'
+      - '.github/workflows/test_models.yml'
+      - 'openpilot/sunnypilot/modeld_v2/**'
+  workflow_dispatch:
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.set-matrix.outputs.models }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and Parse json
+        id: set-matrix
+        run: |
+          python3 -c '
+          import json, urllib.request, sys, os, re
+
+          with open("openpilot/sunnypilot/models/fetcher.py", "r") as f:
+            content = f.read()
+            match = re.search(r"MODEL_URL\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", content)
+            if not match:
+              raise ValueError("MODEL_URL not found in fetcher.py")
+            url = match.group(1)
+
+          req = urllib.request.urlopen(url)
+          data = json.loads(req.read())
+
+          artifacts = []
+          for bundle in data.get("bundles", []):
+            for model in bundle.get("models", []):
+              if "artifact" in model:
+                artifacts.append(model["artifact"])
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"models={json.dumps(artifacts)}\n")
+          '
+
+  test-model:
+    name: Test ${{ matrix.artifact.file_name }}
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    container: ghcr.io/commaai/openpilot-base:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: ${{ fromJson(needs.generate-matrix.outputs.models) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Download Model Chunks in Parallel
+        run: |
+          mkdir -p /tmp/model_chunks
+          echo '${{ toJson(matrix.artifact.chunks) }}' > chunks.json
+
+          BASE_URL="${{ matrix.artifact.download_uri.url }}"
+          BASE_DIR=$(dirname "$BASE_URL")
+
+          python3 -c '
+          import json, os
+          with open("chunks.json") as f:
+            chunks = json.load(f)
+          manifest_path = f"/tmp/model_chunks/${{ matrix.artifact.file_name }}.chunkmanifest"
+          with open(manifest_path, "w") as f:
+            f.write(str(len(chunks)))
+          for c in chunks:
+            print(c["file_name"])
+          ' | xargs -I {} -P 10 bash -c "echo 'Downloading {}...' && curl -f -s -S -L -o '/tmp/model_chunks/{}' \"$BASE_DIR/{}\""
+
+      - name: Run Model Compatibility Test
+        env:
+          MODEL_BASE_NAME: ${{ matrix.artifact.file_name }}
+          MODEL_CHUNK_DIR: "/tmp/model_chunks"
+          PYTHONPATH: ".:./tinygrad_repo"
+        run: |
+          python3 -m pytest openpilot/sunnypilot/modeld_v2/tests/test_models.py
