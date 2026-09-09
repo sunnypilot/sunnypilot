@@ -15,7 +15,7 @@ on:
 jobs:
   test_stock_parity:
     name: Compare Stock vs Sunnypilot Model Replay
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
