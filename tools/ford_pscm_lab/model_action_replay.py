@@ -1,23 +1,18 @@
 """Replay the selected core and its adapter on route90/95 original-time extracts.
 
-The historical pass uses pinned v1 source and the archived eligibility mask to check
-command compatibility. The separate current adapter pass reconstructs input eligibility
+The historical pass deliberately uses the archived eligibility mask to check
+command compatibility. The separate adapter pass reconstructs input eligibility
 from service records, never from candidate/baseline output validity. Neither
 pass scores counterfactual motion. Source extracts and archived reports are
 read-only; --output selects a separate destination.
-
-Current comparisons require model_position_t and model_orientation_t arrays
-preserved from the rlogs. Older extracts lack these clocks and must be replayed
-using their archived tool revision; do not synthesize timestamps for them.
 """
 import argparse
 from collections import Counter
-from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
 import subprocess
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 
 import numpy as np
 import opendbc
@@ -30,24 +25,6 @@ from openpilot.selfdrive.controls.lib.ford_path import _model_path
 
 
 PINNED_OPENDBC = '72a775d35e54c21ff5c5798acef22016eedcc0a7'
-V1_REVISION = '5fc16abc7662020706e29f57d31a6d5e2bc1293a'
-V2_REVISION = '744a97d9bc08d8743b250eceff7c88585b5480de'
-V3_REVISION = '01f8d51c82b3e863f1012d383b5994813ef01b81'
-V4_REVISION = '7e63449749d112f096c56cb848dd289054e5f85b'
-
-
-@lru_cache(maxsize=4)
-def load_controller(commit):
-  """Load exact archived Python source for offline comparisons, never production."""
-  if len(commit) != 40 or any(c not in '0123456789abcdef' for c in commit):
-    raise ValueError('A full immutable commit hash is required')
-  filename = 'openpilot/selfdrive/controls/lib/ford_model_action.py'
-  root = Path(__file__).resolve().parents[2]
-  source = subprocess.check_output(['git', '-C', str(root), 'show', f'{commit}:{filename}'])
-  module = ModuleType(f'ford_model_action_{commit}')
-  exec(compile(source, f'{commit}:{filename}', 'exec'), module.__dict__)
-  module.source_sha256 = hashlib.sha256(source).hexdigest()
-  return module
 
 
 def revision(directory):
@@ -64,20 +41,6 @@ def verify_dependency(expected=PINNED_OPENDBC):
 
 def table(raw, name):
   return dict(zip(raw[name+'_names'], raw[name].T, strict=True))
-
-
-def extract_models(raw):
-  clock_fields = ('model_position_t', 'model_orientation_t')
-  if any(name not in raw for name in clock_fields):
-    raise ValueError('Current replay requires original model_position_t and model_orientation_t; ' +
-                     'use the archived replay revision for older extracts, or re-extract the original rlogs with both clocks')
-  paths = raw['model_paths']
-  if paths.ndim != 3 or paths.shape[1] != 4 or len(paths) == 0:
-    raise ValueError('Expected nonempty model_paths with four arrays per model')
-  if any(raw[name].shape != (len(paths), paths.shape[2]) for name in clock_fields):
-    raise ValueError('Model clocks must match the extracted model and point counts')
-  return [SimpleNamespace(position=SimpleNamespace(x=p[1], y=p[2], t=pt), orientation=SimpleNamespace(z=p[3], t=ht))
-          for p, pt, ht in zip(paths, raw[clock_fields[0]], raw[clock_fields[1]], strict=True)]
 
 
 def sample(stream, query, *, nearest=False):
@@ -140,10 +103,10 @@ def run(directory, output):
     raise ValueError('Output must be outside the source route directory')
   dependency = verify_dependency()
   with np.load(directory/'route.npz', allow_pickle=False) as raw:
-    models = extract_models(raw)
     streams = {name: table(raw, name) for name in ('controls', 'cs', 'cc', 'model', 'params', 'path')}
     if len(raw['maneuver']):
       raise ValueError('This extract cannot identify the selected maneuver service per cycle; use the integration tests for that source')
+    models = [SimpleNamespace(position=SimpleNamespace(x=p[1], y=p[2]), orientation=SimpleNamespace(z=p[3])) for p in raw['model_paths']]
   with np.load(directory/'encoder_comparison.npz', allow_pickle=False) as archive:
     baseline = {key: archive[key] for key in ('t', 'valid', 'action_heading')}
   with np.load(directory/'pose_candidate/pose_replay.npz', allow_pickle=False) as pose:
@@ -161,8 +124,7 @@ def run(directory, output):
                     (cs['valid'] == 1) & (cs['can_valid'] == 1) & (params['valid'] == 1) &
                     (t-params['t'] >= 0.) & (t-params['t'] <= .15) & exact & (model['valid'] == 1))
   dt = np.r_[.01, np.diff(t)]
-  archived = load_controller(V1_REVISION)
-  core, entry_clock_core, adapter, wire = archived.ModelActionController(), ModelActionController(), FordModelActionController(), WireCheck()
+  core, entry_clock_core, adapter, wire = ModelActionController(), ModelActionController(), FordModelActionController(), WireCheck()
   commands = np.zeros((len(t), 4))
   adapted = np.zeros_like(commands)
   valid = np.zeros(len(t), bool)
@@ -181,10 +143,11 @@ def run(directory, output):
     adapter_valid[i] = new_gate.valid
     reasons[adapter.diagnostics['status']] += 1
     wire.check(new_gate)
-    # Current core receives actual yaw and a fresh 10 ms engagement tick.
+    # Isolate the adapter's fresh 10 ms engagement tick from the archived
+    # harness, which used the preceding publication interval even on engage.
     entry_dt = dt[i] if i > 0 and baseline['valid'][i-1] else .01
     expected_adapter = entry_clock_core.update(selected_model, controls['desired'][i], speed=cs['speed'][i], dt=entry_dt,
-                                               yaw_rate=cs['yaw'][i], active=bool(baseline['valid'][i]))
+                                               active=bool(baseline['valid'][i]))
     assert new_gate == expected_adapter, f'Unexplained adapter difference at cycle {i}'
   np.testing.assert_array_equal(valid, baseline['valid'])
   np.testing.assert_array_equal(commands[:, :2], baseline['action_heading'])
@@ -227,7 +190,7 @@ def run(directory, output):
             'calibration_approved': False, 'executes_live_selector': False, 'cycles': len(t),
             'core_active_cycles': int(valid.sum()), 'core_exact_archived_match': True, 'cohorts_reproduced': True,
             'adapter_active_cycles': int(adapter_valid.sum()), 'adapter_status_counts': dict(reasons),
-            'adapter_matches_current_core_with_yaw_and_fresh_engagement_dt': True,
+            'adapter_exact_match_with_fresh_engagement_dt': True,
             'core_active_path_shorter_than_7m_cycles': int(np.sum(valid & (coverage < 7.))),
             'adapter_validity_differs_from_archive_cycles': int(np.sum(adapter_valid != valid)),
             'adapter_command_differs_from_archive_cycles': int(np.any(abs(adapted-commands) > 1e-9, axis=1).sum()),
@@ -236,8 +199,7 @@ def run(directory, output):
             'timing': 'Original controls publication timestamps proxy computation time; repeated frames and gaps retained. No identified delay.',
             'eligibility': 'Adapter checks recorded services independently; full SubMaster health is unavailable. Core uses archived validity.',
             'reference': 'Recorded controlsState.desiredCurvature, already selected/limited. These two routes have no maneuver publications.',
-            'host_yaw': 'Extract cs.yaw equals -carState.yawRate; current adapter uses it for input-health checks and diagnostics only.',
-            'archived_core_revision': V1_REVISION, 'archived_core_source_sha256': archived.source_sha256,
+            'host_yaw': 'Extract cs.yaw already equals -carState.yawRate. Used only for inherited finite/range gate, never feedback.',
             'cohorts': cohorts, 'workspace_head': revision(root), 'opendbc_import_head': revision(dependency),
             'opendbc_import_path': str(dependency),
             'source_sha256': {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}}

@@ -12,7 +12,7 @@ from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
-from opendbc.car.ford.values import FordFlags, FordFlagsSP
+from opendbc.car.ford.values import FordFlags
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
@@ -59,7 +59,7 @@ class Controls(ControlsExt):
     self.ford_pscm_observer = (self.CP.brand == "ford" and self.CP.flags & FordFlags.CANFD and
                                self.params.get_bool("FordPscmObserver"))
     self.ford_path_controller = FordPscmObserverPathController() if self.ford_pscm_observer else FordPathController()
-    self.ford_path_controller = select_model_action_controller(self.CP, bool(self.CP_SP.flags & FordFlagsSP.MODEL_ACTION),
+    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
                                                               self.ford_path_controller)
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":
@@ -171,15 +171,12 @@ class Controls(ControlsExt):
     if self.CP.brand == "ford":
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
       if self.ford_model_action:
-        assert isinstance(self.ford_path_controller, FordModelActionController)
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
-        now = time.monotonic()
         self.ford_path = self.ford_path_controller.update(
-          ford_model, self.desired_curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=now,
+          ford_model, self.desired_curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
-          reference_source=reference_service,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
         )
         if not self.ford_path.valid:
@@ -191,7 +188,6 @@ class Controls(ControlsExt):
                          measured_curvature=self.curvature,
                          **self.ford_path_controller.diagnostics)
       elif self.ford_pscm_observer:
-        assert isinstance(self.ford_path_controller, FordPscmObserverPathController)
         self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
                                                           current_curvature=self.curvature, v_ego=CS.vEgo,
                                                           v_ego_raw=CS.vEgoRaw, active=CC.latActive)

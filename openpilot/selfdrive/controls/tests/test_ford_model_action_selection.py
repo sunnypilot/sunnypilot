@@ -7,14 +7,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from opendbc.car import structs
-from opendbc.car.ford.values import FordFlags, FordFlagsSP
-from openpilot.cereal import custom
+from opendbc.car.ford.values import FordFlags
 from openpilot.common.params import Params, ParamKeyFlag, ParamKeyType
-from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController, FordPscmObserverPathController
-from openpilot.sunnypilot.mads.helpers import set_car_specific_params
 
 
 def car_params(**overrides):
@@ -22,7 +18,7 @@ def car_params(**overrides):
                              'carFw': []} | overrides))
 
 
-def startup(cp=None, params=None, cp_sp=None):
+def startup(cp=None, params=None):
   filename = Path(__file__).resolve().parents[1]/'controlsd.py'
   tree = ast.parse(filename.read_text())
   cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'Controls')
@@ -31,15 +27,8 @@ def startup(cp=None, params=None, cp_sp=None):
   end = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_path')
   if params is None:
     params = SimpleNamespace(get_bool=lambda key: key == 'FordModelActionController')
-  cp = cp or car_params()
-  # card snapshots the toggle into CarParamsSP before controlsd starts.
-  if cp_sp is None:
-    cp_sp = structs.CarParamsSP()
-    if cp.brand == 'ford':
-      set_car_specific_params(cp, cp_sp, params)
-  controls = SimpleNamespace(CP=cp, CP_SP=cp_sp, params=params, calibrated_pose=None,
-                             pose_calibrator=SimpleNamespace(calib_valid=False))
-  environment = {'self': controls, 'FordFlags': FordFlags, 'FordFlagsSP': FordFlagsSP, 'FordPath': FordPath,
+  controls = SimpleNamespace(CP=cp or car_params(), params=params)
+  environment = {'self': controls, 'FordFlags': FordFlags, 'FordPath': FordPath,
                  'FordPathController': FordPathController, 'FordPscmObserverPathController': FordPscmObserverPathController,
                  'FordModelActionController': FordModelActionController,
                  'select_model_action_controller': select_model_action_controller,
@@ -56,21 +45,7 @@ def test_actual_startup_priority(candidate, observer):
   expected = FordModelActionController if candidate else previous
   assert type(selected.ford_path_controller) is expected
   assert selected.ford_model_action == candidate
-  assert bool(selected.CP_SP.flags & FordFlagsSP.MODEL_ACTION) == candidate
   assert selected.ford_path == FordPath()
-
-
-@pytest.mark.parametrize('selected', [False, True])
-def test_controller_and_sender_share_card_snapshot_when_stored_toggle_changes(selected):
-  cp, cp_sp = car_params(), structs.CarParamsSP(flags=128)
-  set_car_specific_params(cp, cp_sp, SimpleNamespace(get_bool=lambda key: selected))
-  with custom.CarParamsSP.from_bytes(convert_to_capnp(cp_sp).to_bytes()) as snapshot:
-    controls = startup(cp, SimpleNamespace(get_bool=lambda key: not selected), snapshot)
-  assert controls.ford_model_action == selected
-  assert bool(controls.CP_SP.flags & FordFlagsSP.MODEL_ACTION) == selected
-  assert controls.CP_SP.flags & 128
-  set_car_specific_params(cp, cp_sp, SimpleNamespace(get_bool=lambda key: False))
-  assert cp_sp.flags == 128
 
 
 @pytest.mark.parametrize('overrides', [{'brand': 'tesla'}, {'flags': 0}, {'carFingerprint': 'FORD_F_150_MK14'}])
