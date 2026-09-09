@@ -1,0 +1,99 @@
+# One-off: turn a chunked driving_models manifest into a whole-file one (selector version 20) without recompiling.
+# Reads the chunks named by the source manifest, uploads each joined pkl beside them, writes the target manifest.
+# Delete together with release/ci/migrate_whole_file_models.py once the catalog is on whole files.
+name: migrate-whole-file-models
+run-name: Migrate ${{ inputs.target_hardware }} driving_models v${{ inputs.src_json_version }} -> v${{ inputs.dst_json_version }}${{ inputs.dry_run && ' (dry run)' || '' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_hardware:
+        description: 'Manifest family to migrate'
+        required: true
+        default: 'qcom'
+        type: choice
+        options:
+          - qcom
+          - chestnut
+      src_json_version:
+        description: 'Chunked driving_models version to read (22 for qcom, 25 for chestnut)'
+        required: true
+        default: '22'
+        type: string
+      dst_json_version:
+        description: 'Whole-file driving_models version to write (23 for qcom, 26 for chestnut)'
+        required: true
+        default: '23'
+        type: string
+      selector_version:
+        description: 'minimum_selector_version stamped on every migrated bundle (REQUIRED_JSON_VERSION in helpers.py)'
+        required: true
+        default: '20'
+        type: string
+      hf_repo:
+        description: 'Dataset that receives the whole files (the chunks are read from the URLs in the source manifest)'
+        required: true
+        default: 'sunnypilot/sunnypilot_models_v1'
+        type: string
+      docs_repo:
+        description: 'GitHub repo holding the driving_models JSON on its gh-pages branch'
+        required: true
+        default: 'sunnypilot/sunnypilot-models'
+        type: string
+      only:
+        description: 'Comma-separated short names to migrate (empty = whole catalog)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Download and verify only: no uploads, no manifest'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  PREFIX: driving_models_${{ inputs.target_hardware == 'chestnut' && 'chestnut_' || '' }}v
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout sunnypilot (the dispatching repo and branch)
+        uses: actions/checkout@v4
+
+      - name: Checkout docs repo (gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.docs_repo }}
+          ref: gh-pages
+          path: docs
+          ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
+
+      - name: Install dependencies
+        run: pip install --upgrade "huggingface_hub>=0.22.0" requests
+
+      - name: Migrate
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 release/ci/migrate_whole_file_models.py \
+            --src-json "docs/docs/${PREFIX}${{ inputs.src_json_version }}.json" \
+            --dst-json "docs/docs/${PREFIX}${{ inputs.dst_json_version }}.json" \
+            --hf-repo "${{ inputs.hf_repo }}" \
+            --selector-version "${{ inputs.selector_version }}" \
+            --only "${{ inputs.only }}" \
+            --work-dir "${{ runner.temp }}" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Push the whole-file manifest to the docs repo
+        if: ${{ !inputs.dry_run }}
+        run: |
+          cd docs
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git pull origin gh-pages
+          git add "docs/${PREFIX}${{ inputs.dst_json_version }}.json"
+          git commit -m "Add ${PREFIX}${{ inputs.dst_json_version }}.json: whole files migrated from ${PREFIX}${{ inputs.src_json_version }}.json" || echo "No changes to commit"
+          git push origin gh-pages
