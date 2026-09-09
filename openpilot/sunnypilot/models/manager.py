@@ -33,8 +33,13 @@ MAX_CONCURRENT_CHUNKS = 12
 # Byte-range piece size. Small enough that even a ~50 MB small model splits into enough pieces to
 # keep all connections busy, and a throttled connection only ever holds back one small piece.
 PIECE_SIZE = 8 * 1024 * 1024
-PIECE_RETRIES = 3  # attempts per piece before the download fails
+PIECE_RETRIES = 3  # attempts per piece before the transfer as a whole is retried
 PIECE_BACKOFF = 1.0  # seconds before a piece's second attempt, growing linearly
+# A transfer whose pieces exhaust their retries (dropped link, DNS blip, overloaded server) is
+# retried from its resume state after a cancellable backoff of RETRY_BACKOFF * 2**attempt seconds.
+DOWNLOAD_ATTEMPTS = 4
+RETRY_BACKOFF = 2.0
+RETRY_POLL = 0.25  # how often a backoff checks for a cancel
 # HTTP statuses a server sends while overloaded or throttling; any other 4xx/5xx is permanent
 TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
@@ -322,6 +327,26 @@ class ModelManagerSP:
     _remove_download_state(path)
     del self._download_start_times[artifact.fileName]
 
+  async def _download_with_retries(self, url: str, path: str, artifact) -> None:
+    """A transfer that fails transiently is retried after a cancellable backoff. Every retry resumes
+    from the sidecar, so nothing already on disk is fetched again. Permanent errors raise at once."""
+    for attempt in range(DOWNLOAD_ATTEMPTS):
+      try:
+        await self._download_file(url, path, artifact)
+        return
+      except Exception as e:
+        if not _is_transient(e) or attempt == DOWNLOAD_ATTEMPTS - 1:
+          raise
+        delay = RETRY_BACKOFF * 2 ** attempt
+        cloudlog.warning(f"Retrying {artifact.fileName} in {delay:g}s after {type(e).__name__}: {e}")
+        progress = artifact.downloadProgress
+        self._set_progress(artifact, progress.status, progress.progress, progress.eta, 0.0)  # stalled: no speed
+        deadline = time.monotonic() + delay
+        while (remaining := deadline - time.monotonic()) > 0:
+          if self._download_interrupted():
+            raise DownloadCancelled("Download cancelled") from e
+          await asyncio.sleep(min(RETRY_POLL, remaining))
+
   async def _download_chunked(self, base_url: str, base_path: str, artifact, skip: frozenset[int] | set[int] = frozenset()) -> None:
     from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 
@@ -415,7 +440,7 @@ class ModelManagerSP:
           if not await verify_file(chunk_path, chunk.sha256):
             raise ValueError(f"Hash validation failed for chunk {i+1} of {filename}")
       else:
-        await self._download_file(url, full_path, artifact)
+        await self._download_with_retries(url, full_path, artifact)
         self._set_progress(artifact, status.verifying, 99)
         if not await verify_file(full_path, expected_hash):
           # nothing in a bad file is worth resuming from
@@ -524,11 +549,14 @@ class ModelManagerSP:
       self._download_ref = ref_to_download
       try:
         self.download(model_to_download, Paths.model_root(), source)
+      except DownloadCancelled:
+        self.selected_bundle = None  # a cancel clears the row
       except Exception as e:
-        cloudlog.exception(e)
+        cloudlog.exception(e)  # a failure stays on the row until the next request or a cancel
+      else:
+        self.selected_bundle = None
       finally:
         self._release_download_ref()
-        self.selected_bundle = None
 
   def main_thread(self) -> None:
     """Main thread for model management"""

@@ -212,8 +212,9 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.info_text.set_text(info_text)
 
     if manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed:
-      self.current_model_info.info_header.set_text(tr("error") + self._download_progress)
-      self.current_model_info.info_text.set_text(tr("download failed"))
+      # a failed bundle stays on the row until the next request, so it names the model and does not animate
+      self.current_model_info.info_header.set_text(tr("error"))
+      self.current_model_info.info_text.set_text(f"{manager.selectedBundle.internalName.lower()}  |  {tr('download failed')}")
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
       self.cancel_download_btn.set_visible(True)
