@@ -19,40 +19,18 @@ jobs:
         id: set-matrix
         run: |
           python3 -c '
-          import json, urllib.request, sys, os, re, random
+          import json, urllib.request, os, re
 
           with open("openpilot/sunnypilot/models/fetcher.py", "r") as f:
-            content = f.read()
-            match = re.search(r"MODEL_URL\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", content)
-            match_chestnut = re.search(r"MODEL_URL_CHESTNUT\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", content)
-            if not match:
-              raise ValueError("MODEL_URL not found in fetcher.py")
-            url = match.group(1)
-            chestnut_url = match_chestnut.group(1) if match_chestnut else None
-
-          req = urllib.request.urlopen(url)
-          data = json.loads(req.read())
+            urls = re.findall(r"MODEL_URL(?:_CHESTNUT)?\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", f.read())
 
           artifacts = []
-          for bundle in data.get("bundles", []):
-            for model in bundle.get("models", []):
-              if "artifact" in model:
-                artifacts.append(model["artifact"])
-
-          if chestnut_url:
-            try:
-              req_chestnut = urllib.request.urlopen(chestnut_url)
-              data_chestnut = json.loads(req_chestnut.read())
-              chestnut_artifacts = [
-                m["artifact"]
-                for b in data_chestnut.get("bundles", [])
-                for m in b.get("models", [])
-                if "artifact" in m
-              ]
-              if chestnut_artifacts:
-                artifacts.append(random.choice(chestnut_artifacts))
-            except Exception as e:
-              print(f"Failed to fetch Chestnut models: {e}", file=sys.stderr)
+          for url in urls:
+            data = json.loads(urllib.request.urlopen(url).read())
+            for bundle in data.get("bundles", []):
+              for model in bundle.get("models", []):
+                if "artifact" in model:
+                  artifacts.append(model["artifact"])
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"models={json.dumps(artifacts)}\n")
