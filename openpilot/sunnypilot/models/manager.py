@@ -29,8 +29,11 @@ DOWNLOAD_TIMEOUT = (30, 30)
 # HuggingFace throttles each connection to ~1-2 MB/s but not the connection count; 12 saturates the device link
 MAX_CONCURRENT_PIECES = 12
 PIECE_SIZE = 8 * 1024 * 1024
-PIECE_ATTEMPTS = 3
+PIECE_ATTEMPTS = 3  # per piece, before the transfer as a whole is retried
 PIECE_BACKOFF = 1.0  # seconds, growing linearly: waits 1 s then 2 s between a piece's three attempts
+DOWNLOAD_ATTEMPTS = 4  # whole-transfer attempts, each resuming from the sidecar
+RETRY_BACKOFF = 2.0  # seconds, doubling: waits 2, 4 then 8 s between the four transfer attempts
+RETRY_POLL = 0.25  # how often a backoff checks for a cancel
 TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
 # byte ranges count encoded bytes but iter_content yields decoded ones, so ask for an unencoded body
@@ -298,6 +301,25 @@ class ModelManagerSP:
     artifact.downloadProgress.resuming = False
     del self._download_start_times[artifact.fileName]
 
+  async def _download_with_retries(self, url: str, path: str, artifact) -> None:
+    """Retries a transient failure after a cancellable backoff, resuming from the sidecar; permanent errors raise at once."""
+    for attempt in range(DOWNLOAD_ATTEMPTS):
+      try:
+        await self._download_file(url, path, artifact)
+        return
+      except Exception as e:
+        if not _is_transient(e) or attempt == DOWNLOAD_ATTEMPTS - 1:
+          raise
+        delay = RETRY_BACKOFF * 2 ** attempt
+        cloudlog.warning(f"Retrying {artifact.fileName} in {delay:g}s after {type(e).__name__}: {e}")
+        progress = artifact.downloadProgress
+        self._set_progress(artifact, progress.status, progress.progress, progress.eta, 0.0)  # stalled: no speed
+        deadline = time.monotonic() + delay
+        while (remaining := deadline - time.monotonic()) > 0:
+          if self._download_interrupted():
+            raise DownloadCancelled("Download cancelled") from e
+          await asyncio.sleep(min(RETRY_POLL, remaining))
+
   async def _process_artifact(self, artifact, destination_path: str) -> None:
     if not artifact.downloadUri.uri:
       return None
@@ -323,7 +345,7 @@ class ModelManagerSP:
           return
 
       self._set_progress(artifact, status.downloading, 0)
-      await self._download_file(url, full_path, artifact)
+      await self._download_with_retries(url, full_path, artifact)
       self._set_progress(artifact, status.verifying, 99)
       if not await verify_file(full_path, expected_hash):
         _remove_file(full_path)
@@ -333,13 +355,11 @@ class ModelManagerSP:
       self._set_progress(artifact, status.downloaded, 100)
 
     except DownloadCancelled:
+      # not a failure: the request handler clears the row
       self._download_start_times.pop(artifact.fileName, None)
-      artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
       artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
-      if self.selected_bundle:
-        self.selected_bundle.status = status.failed
       self._report_status()
       raise
 
@@ -401,6 +421,8 @@ class ModelManagerSP:
       self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict(), block=True)
       self.active_bundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
 
+    except DownloadCancelled:
+      raise  # not a failure
     except Exception:
       if self.selected_bundle is not None:
         self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
@@ -428,11 +450,14 @@ class ModelManagerSP:
       self._download_ref = ref_to_download
       try:
         self.download(model_to_download, Paths.model_root(), source)
+      except DownloadCancelled:
+        self.selected_bundle = None
       except Exception as e:
-        cloudlog.exception(e)
+        cloudlog.exception(e)  # a failure stays on the row until the next request
+      else:
+        self.selected_bundle = None
       finally:
         self._release_download_ref()
-        self.selected_bundle = None
 
   def main_thread(self) -> None:
     """Main thread for model management"""
