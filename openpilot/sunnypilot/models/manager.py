@@ -37,6 +37,7 @@ PIECE_BACKOFF = 1.0  # seconds before a piece's second attempt, growing linearly
 # HTTP statuses a server sends while overloaded or throttling; any other 4xx/5xx is permanent
 TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
+SPEED_SMOOTHING = 0.7  # weight of the previous speed sample in the published speed
 
 
 class DownloadCancelled(Exception):
@@ -168,6 +169,7 @@ class ModelManagerSP:
         artifact.downloadProgress.status = source_artifact.downloadProgress.status
         artifact.downloadProgress.progress = source_artifact.downloadProgress.progress
         artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
+        artifact.downloadProgress.speed = source_artifact.downloadProgress.speed
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
     """Calculate ETA based on elapsed time and current progress"""
@@ -184,30 +186,42 @@ class ModelManagerSP:
 
     return max(1, int(eta))  # Return at least 1 second if download is ongoing
 
-  def _set_progress(self, artifact, status, progress: float, eta: int = 0) -> None:
+  def _set_progress(self, artifact, status, progress: float, eta: int = 0, speed: float = 0.0) -> None:
     artifact.downloadProgress.status = status
     artifact.downloadProgress.progress = progress
     artifact.downloadProgress.eta = eta
+    artifact.downloadProgress.speed = speed
     self._sync_artifact_progress(artifact)
     self._report_status()
 
-  def _publish_progress(self, artifact, done_bytes: int, total: int) -> None:
+  def _publish_progress(self, artifact, done_bytes: int, total: int, speed: float) -> None:
     # 99 until the assembled file passes its hash check
     progress = min(99.0, done_bytes / total * 100) if total > 0 else 0.0
-    eta = self._calculate_eta(artifact.fileName, progress)
-    self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta)
+    if speed > 0 and total > 0:
+      eta = max(1, int((total - done_bytes) / speed))
+    else:
+      eta = self._calculate_eta(artifact.fileName, progress)
+    self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta, speed)
 
   async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int) -> None:
-    """Publishes progress every REPORT_INTERVAL until every piece has landed, surfacing the first
-    worker failure and a cancel. Runs on the event loop: workers never touch messaging."""
+    """Publishes progress, speed and eta every REPORT_INTERVAL until every piece has landed, surfacing
+    the first worker failure and a cancel. Runs on the event loop: workers never touch messaging."""
     pending = set(tasks)
+    last_bytes = progress.snapshot()
+    last_time, speed = time.monotonic(), 0.0
     while pending:
       done, pending = await asyncio.wait(pending, timeout=REPORT_INTERVAL)
       for task in done:
         task.result()  # re-raises a worker failure
       if self._download_interrupted():
         raise DownloadCancelled("Download cancelled")
-      self._publish_progress(artifact, progress.snapshot(), total)
+      now = time.monotonic()
+      done_bytes = progress.snapshot()
+      if (dt := now - last_time) > 0:
+        instant = max(0.0, (done_bytes - last_bytes) / dt)
+        speed = instant if speed == 0 else SPEED_SMOOTHING * speed + (1 - SPEED_SMOOTHING) * instant
+      last_time, last_bytes = now, done_bytes
+      self._publish_progress(artifact, done_bytes, total, speed)
 
   async def _download_file(self, url: str, path: str, artifact) -> None:
     """Downloads `url` to `path` as parallel byte-range pieces written in place at their offsets, so
@@ -339,6 +353,7 @@ class ModelManagerSP:
       self._download_start_times.pop(artifact.fileName, None)
       artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
         self.selected_bundle.status = status.failed
@@ -352,6 +367,7 @@ class ModelManagerSP:
           os.remove(f)
       artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
         self.selected_bundle.status = status.failed
@@ -394,6 +410,7 @@ class ModelManagerSP:
           artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
           artifact.downloadProgress.progress = 100
           artifact.downloadProgress.eta = 0
+          artifact.downloadProgress.speed = 0
         else:
           seen_artifacts.add(artifact.fileName)
           await self._process_artifact(artifact, destination_path)

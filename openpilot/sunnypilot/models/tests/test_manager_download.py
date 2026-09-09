@@ -288,6 +288,14 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert self.read_path() == WHOLE_BODY
     self.run_with_server(body)
 
+  def test_speed_and_eta_reported(self):
+    def body():
+      artifact = self.download_file()
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloading
+      assert artifact.downloadProgress.speed > 0
+      assert artifact.downloadProgress.eta >= 1
+    self.run_with_server(body)
+
   def test_progress_is_monotonic_and_bounded(self):
     def body():
       self.download_file()
@@ -557,6 +565,7 @@ class TestProcessArtifact(ManagerDownloadTestBase):
       assert self.read_path() == WHOLE_BODY
       assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
       assert artifact.downloadProgress.progress == 100
+      assert artifact.downloadProgress.speed == 0
       assert artifact.downloadProgress.eta == 0
     self.run_with_server(body)
 
