@@ -1,5 +1,4 @@
 import argparse
-import concurrent.futures
 import os
 import sys
 import time
@@ -110,8 +109,8 @@ def compare_models_on_route(new_model_path, old_model_path, route_or_path=None, 
                             plot_directory=None, enforce_timings=False):
   video_url_or_path = get_replay_video_source(route_or_path, segment_index)
   frame_reader = FrameReader(video_url_or_path, pix_fmt="nv12")
-  new_results = replay_model_on_frames(new_model_path, frame_reader, number_of_frames)
   old_results = replay_model_on_frames(old_model_path, frame_reader, number_of_frames)
+  new_results = replay_model_on_frames(new_model_path, frame_reader, number_of_frames)
 
   for step_index, (new_step, old_step) in enumerate(zip(new_results, old_results, strict=True)):
     new_array = new_step["raw_output"]
